@@ -68,7 +68,6 @@ AgentCraft/
 │   │   │   │   └── index.ts
 │   │   │   ├── config/               # Configuration loading utilities
 │   │   │   │   ├── config-loader.ts
-│   │   │   │   ├── yaml-parser.ts
 │   │   │   │   └── index.ts
 │   │   │   ├── errors/               # Error type hierarchy
 │   │   │   │   ├── base-error.ts
@@ -162,16 +161,16 @@ AgentCraft/
 │
 ├── configs/                          # Built-in configurations (product defaults)
 │   ├── templates/                    # Built-in Agent Templates
-│   │   └── example-agent.yaml
+│   │   └── example-agent.json
 │   ├── skills/                       # Built-in Skills
-│   │   └── code-review.yaml
+│   │   └── code-review.json
 │   ├── workflows/                    # Built-in Workflows
-│   │   └── trellis-standard.yaml
+│   │   └── trellis-standard.json
 │   ├── prompts/                      # Built-in Prompts
-│   │   └── system-default.yaml
+│   │   └── system-default.json
 │   └── providers/                    # Provider presets
-│       ├── anthropic.yaml
-│       └── openai.yaml
+│       ├── anthropic.json
+│       └── openai.json
 │
 ├── tests/                            # Cross-package tests
 │   ├── integration/                  # Integration tests (multi-package)

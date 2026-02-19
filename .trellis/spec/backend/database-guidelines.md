@@ -25,7 +25,7 @@ AgentCraft needs to persist agent configurations, instance states, and operation
 
 ### File-Based Configuration (Primary)
 
-Agent Templates, Skills, Workflows, and Prompts are stored as **human-readable config files** (YAML/JSON/TOML).
+Agent Templates, Skills, Workflows, and Prompts are stored as **human-readable config files** (JSON).
 
 **Rationale**:
 - Version-controllable with Git
@@ -36,34 +36,54 @@ Agent Templates, Skills, Workflows, and Prompts are stored as **human-readable c
 ```
 configs/
 ├── templates/
-│   ├── code-reviewer.yaml
-│   └── ci-agent.yaml
+│   ├── code-reviewer.json
+│   └── ci-agent.json
 ├── skills/
-│   ├── typescript-expert.yaml
-│   └── code-review.yaml
+│   ├── typescript-expert.json
+│   └── code-review.json
 ├── workflows/
-│   └── trellis-standard.yaml
+│   └── trellis-standard.json
 └── prompts/
     └── system-prompts/
 ```
 
-### Runtime State Store
+### Runtime State: Workspace-as-Storage
 
-Agent Instance runtime state (running processes, health status) stored in a lightweight embedded store.
+Agent Instance = a workspace directory. Runtime state lives **inside** the workspace as `.agentcraft.json`.
 
-**Candidates**: SQLite, LevelDB, or simple JSON file with file locking.
+**No separate database or state store.** The `AgentManager` discovers instances by scanning workspace directories.
+
+**Storage layout**:
+```
+{instancesBaseDir}/
+├── my-reviewer/                 # Instance name = directory name
+│   ├── .agentcraft.json         # Instance metadata (id, status, template, timestamps)
+│   ├── AGENTS.md                # Materialized skills/rules
+│   ├── .cursor/mcp.json         # Materialized MCP config
+│   └── ...                      # Other materialized Domain Context files
+├── ci-bot/
+│   └── .agentcraft.json
+└── .corrupted/                  # Damaged instance dirs moved here on recovery
+```
+
+**Design**:
+- Each Instance is a **directory**, not a database row or standalone JSON file
+- `.agentcraft.json` is the only metadata; other files are materialized Domain Context
+- On startup, `AgentManager.initialize()` scans all subdirectories and reads `.agentcraft.json`
+- **Atomic writes**: write to `.agentcraft.json.tmp`, then `rename` to `.agentcraft.json`
+- **Startup recovery**: stale `running`/`starting` states corrected to `stopped` (process lost)
+- Corrupted directories (missing or invalid `.agentcraft.json`) moved to `.corrupted/`
 
 **Requirements**:
-- Fast read/write for health checks and status queries
-- Survives process restart (agent manager crash recovery)
-- No external database server required for CLI mode
+- Survives process restart (scan directories to recover)
+- No external database server required
+- Corrupted instances isolated, not blocking startup
 
 ### Server-Mode Database (Future)
 
-When deployed as Docker service via API, may upgrade to a proper database (PostgreSQL/SQLite) for:
-- Multi-user access
-- Query capabilities
-- Transaction support
+When deployed as Docker service via API, may add a database layer for:
+- Multi-user concurrent access and query capabilities
+- The workspace-as-storage model remains the source of truth; database acts as a cache/index
 
 ---
 
@@ -77,7 +97,7 @@ Runtime state references configs by name/path. Never duplicate config content in
 // Good — Reference by name
 interface AgentInstanceState {
   instanceId: string;
-  templateRef: string;       // "code-reviewer" → resolves to configs/templates/code-reviewer.yaml
+  templateRef: string;       // "code-reviewer" → resolves to configs/templates/code-reviewer.json
   status: InstanceStatus;
   pid?: number;
   launchedAt: string;
@@ -110,7 +130,7 @@ Every state transition must be logged and persisted.
 
 | Item | Convention | Example |
 |------|-----------|---------|
-| Config files | kebab-case | `code-reviewer.yaml` |
+| Config files | kebab-case | `code-reviewer.json` |
 | Config directories | kebab-case plural | `templates/`, `skills/` |
 | State fields | camelCase | `instanceId`, `launchedAt` |
 | Enum values | PascalCase | `Running`, `Stopped`, `Crashed` |
@@ -128,13 +148,12 @@ Config files include a `version` field. When schema changes:
 3. Migration reads old format, writes new format
 4. Old files are backed up before migration
 
-```yaml
-# Template config with version
-version: "1.0"
-name: code-reviewer
-skills:
-  - typescript-expert
-  - code-review
+```json
+{
+  "version": "1.0",
+  "name": "code-reviewer",
+  "skills": ["typescript-expert", "code-review"]
+}
 ```
 
 ### Runtime State Migrations

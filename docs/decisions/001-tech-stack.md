@@ -16,7 +16,7 @@ AgentCraft is a platform for building, managing, and composing AI agents. It req
 - MCP/ACP protocol integration (both as server)
 - Agent process lifecycle management (spawn, monitor, heartbeat, terminate)
 - REST API for Docker deployment
-- Configuration-driven composition (YAML-based templates)
+- Configuration-driven composition (JSON-based templates)
 - Test-driven development
 - Future desktop UI and Web UI
 - Integration with game engines (Unreal/Unity) via ACP
@@ -39,7 +39,7 @@ AgentCraft is a platform for building, managing, and composing AI agents. It req
 |---------|-----------|-----------|
 | CLI | Commander.js + Inquirer.js | Mature, composable |
 | Schema Validation | Zod | Runtime validation + JSON Schema generation |
-| Config Format | YAML (primary) + JSON | Human-readable, Git-friendly |
+| Config Format | JSON | Native Node.js support, Zod JSON Schema generation, zero extra dependency |
 | Process Management | execa + child_process | Cross-platform process lifecycle |
 | HTTP Framework | Hono | Lightweight, TS-first, multi-runtime |
 | API Documentation | @hono/zod-openapi | Auto-generate OpenAPI from Zod schemas |
@@ -52,8 +52,10 @@ AgentCraft is a platform for building, managing, and composing AI agents. It req
 
 | Purpose | Technology | Rationale |
 |---------|-----------|-----------|
-| Runtime State | better-sqlite3 | Embedded, no external server, reliable concurrent access |
-| Configuration | YAML files | Version-controllable, human-editable |
+| Runtime State | JSON files (per-instance) | Zero dependency, native Node.js, atomic write + rename |
+| Configuration | JSON files | Version-controllable, native TS/Node.js support |
+
+> **Evolution path**: If concurrent access or query complexity exceeds JSON file capability (>100 agents, multi-process writes), migrate `AgentStateStore` implementation to better-sqlite3 without changing the interface.
 
 ### Testing
 

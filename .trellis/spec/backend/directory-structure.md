@@ -43,7 +43,7 @@ shared ← core ← cli
 packages/core/src/
 ├── template/           # Agent Template management
 │   ├── schema/         # Zod schemas for template validation
-│   ├── loader/         # YAML/JSON template parsing
+│   ├── loader/         # JSON template parsing
 │   ├── registry/       # Template CRUD operations
 │   └── index.ts
 ├── initializer/        # Agent Instance construction

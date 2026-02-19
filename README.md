@@ -13,7 +13,7 @@
 | 功能 | 说明 | 状态 |
 |------|------|------|
 | **自定义业务 Agent** | 通过 Domain Context（Skills、MCP、Prompt、记忆）动态拼装 Agent | 🔲 规划中 |
-| **Agent Template 系统** | YAML 配置文件定义 Agent 模板，引用式组合而非嵌入 | 🔲 规划中 |
+| **Agent Template 系统** | JSON 配置文件定义 Agent 模板，引用式组合而非嵌入 | 🔲 规划中 |
 | **Agent 生命周期管理** | 创建、启动、监控、停止 Agent Instance | 🔲 规划中 |
 | **交互式 CLI (REPL)** | 类似 Python 交互环境的命令行界面，主要操作入口 | 🔲 规划中 |
 | **CI 集成** | Agent 可通过 CLI 被 TeamCity 等 CI 工具调用 | 🔲 规划中 |
@@ -114,9 +114,9 @@ shared ← core ← cli
 | 测试 | Vitest |
 | HTTP 框架 | Hono |
 | Schema 校验 | Zod |
-| 配置格式 | YAML |
+| 配置格式 | JSON |
 | 日志 | pino |
-| 状态存储 | better-sqlite3 |
+| 状态存储 | JSON 文件（per-instance）|
 | MCP SDK | @modelcontextprotocol/sdk |
 
 详细选型理由见 [ADR-001](docs/decisions/001-tech-stack.md)。
