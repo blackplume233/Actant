@@ -1,31 +1,98 @@
 # AgentCraft
 
-A platform for building, managing, and composing AI agents. Designed for complex business domains (e.g. game development) where users need to rapidly assemble, reuse, and deploy agents with zero friction.
+一个用于构建、管理和编排 AI Agent 的平台。面向游戏开发等复杂业务场景，让用户能够快速拼装、复用合适的 Agent，零成本地将 AI 嵌入工作流。
 
-## Key Scenarios
+> **项目阶段**: 早期开发中 — 架构设计已完成，核心功能开发中
 
-| Scenario | Description |
-|----------|-------------|
-| **Custom Business Agent** | Dynamically compose agents with Domain Context — Skills, MCP, Prompts, memory |
-| **CI Integration** | Agents callable via CLI for TeamCity-like CI pipelines |
-| **Persistent Agent** | Long-running agents with heartbeat, self-growth, long-term memory, scheduled tasks |
-| **Agent as Service** | Persistent agents integrated into IM / Email as virtual employees |
-| **ACP Integration** | AgentServer exposed via ACP for Unreal/Unity engine communication |
-| **Agent-to-Agent** | Agents invoking other agents through MCP |
+---
 
-## Architecture
+## 功能概览
+
+### 核心能力
+
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| **自定义业务 Agent** | 通过 Domain Context（Skills、MCP、Prompt、记忆）动态拼装 Agent | 🔲 规划中 |
+| **Agent Template 系统** | YAML 配置文件定义 Agent 模板，引用式组合而非嵌入 | 🔲 规划中 |
+| **Agent 生命周期管理** | 创建、启动、监控、停止 Agent Instance | 🔲 规划中 |
+| **交互式 CLI (REPL)** | 类似 Python 交互环境的命令行界面，主要操作入口 | 🔲 规划中 |
+| **CI 集成** | Agent 可通过 CLI 被 TeamCity 等 CI 工具调用 | 🔲 规划中 |
+| **持久化 Agent** | 长期运行的 Agent，具备心跳、自我成长、长期记忆、定时任务 | 🔲 规划中 |
+| **Agent as Service** | 持续运行的 Agent 接入 IM / Email，作为虚拟雇员 | 🔲 规划中 |
+| **ACP 协议集成** | 通过 Agent Client Protocol 接入 Unreal/Unity 等引擎 | 🔲 规划中 |
+| **MCP 协议集成** | Agent 通过 MCP 调用其他 Agent 或访问平台功能 | 🔲 规划中 |
+| **RESTful API** | 所有 CLI 操作暴露为 HTTP 接口，支持 Docker 部署 | 🔲 规划中 |
+| **Web 管理界面** | Agent 监控和配置的可视化管理面板 | 🔲 未来阶段 |
+
+### 已完成
+
+- ✅ 项目架构设计（pnpm monorepo，6 个包）
+- ✅ 技术栈选型确定（[ADR-001](docs/decisions/001-tech-stack.md)）
+- ✅ 目录结构规范（[ADR-002](docs/decisions/002-directory-structure.md)）
+- ✅ 开发规范文档（后端指南、前端指南、跨层思维指南）
+- ✅ 项目脚手架搭建（包结构、TypeScript 配置、Vitest 配置）
+
+---
+
+## Quick Start
+
+### 环境要求
+
+- [Node.js](https://nodejs.org/) >= 22.0.0
+- [pnpm](https://pnpm.io/) >= 9.0.0
+
+### 安装与运行
+
+```bash
+# 克隆仓库
+git clone https://github.com/blackplume233/AgentCraft.git
+cd AgentCraft
+
+# 安装依赖
+pnpm install
+
+# 开发模式启动 CLI
+pnpm dev
+
+# 构建所有包
+pnpm build
+
+# 运行测试
+pnpm test
+
+# 类型检查
+pnpm type-check
+```
+
+### 常用命令
+
+| 命令 | 说明 |
+|------|------|
+| `pnpm dev` | 开发模式启动 CLI |
+| `pnpm build` | 构建所有包 |
+| `pnpm test` | 运行全部测试 |
+| `pnpm test:watch` | 测试监听模式 |
+| `pnpm lint` | 代码检查 |
+| `pnpm type-check` | TypeScript 类型检查 |
+| `pnpm clean` | 清理构建产物 |
+
+---
+
+## 架构
+
+### 模块结构
 
 ```
 AgentCraft
-├── @agentcraft/shared       Shared types, errors, config, logger, utils
-├── @agentcraft/core         Template, Initializer, Manager, Domain Context
-├── @agentcraft/cli          Interactive CLI (REPL) — primary interface
-├── @agentcraft/api          RESTful API (Hono) — enables Docker deployment
-├── @agentcraft/acp          Agent Client Protocol server
-└── @agentcraft/mcp-server   Model Context Protocol server
+├── @agentcraft/shared       公共类型、错误、配置、日志、工具
+├── @agentcraft/core         模板、初始化器、管理器、领域上下文
+├── @agentcraft/cli          交互式 CLI（REPL）— 主要操作界面
+├── @agentcraft/api          RESTful API（Hono）— 支持 Docker 部署
+├── @agentcraft/acp          Agent Client Protocol 服务端
+└── @agentcraft/mcp-server   Model Context Protocol 服务端
 ```
 
-Module dependency graph:
+### 依赖关系
 
 ```
 shared ← core ← cli
@@ -34,123 +101,99 @@ shared ← core ← cli
               ← mcp-server
 ```
 
-> `cli`, `api`, `acp`, and `mcp-server` never depend on each other. All go through `core`.
+> `cli`、`api`、`acp`、`mcp-server` 之间不互相依赖，全部通过 `core` 交互。
 
-## Tech Stack
+### 技术栈
 
-| Layer | Technology |
-|-------|-----------|
-| Runtime | Node.js 22 LTS |
-| Language | TypeScript 5.7+ (strict) |
-| Package Manager | pnpm 9+ (workspace monorepo) |
-| Build | tsup |
-| Test | Vitest |
-| HTTP | Hono |
-| Schema | Zod |
-| Config | YAML |
-| Logging | pino |
-| State | better-sqlite3 |
-| MCP | @modelcontextprotocol/sdk |
+| 层面 | 技术 |
+|------|------|
+| 运行时 | Node.js 22 LTS |
+| 语言 | TypeScript 5.7+（strict 模式）|
+| 包管理 | pnpm 9+（workspace monorepo）|
+| 构建 | tsup |
+| 测试 | Vitest |
+| HTTP 框架 | Hono |
+| Schema 校验 | Zod |
+| 配置格式 | YAML |
+| 日志 | pino |
+| 状态存储 | better-sqlite3 |
+| MCP SDK | @modelcontextprotocol/sdk |
 
-See [ADR-001](docs/decisions/001-tech-stack.md) for full rationale.
+详细选型理由见 [ADR-001](docs/decisions/001-tech-stack.md)。
 
-## Prerequisites
+---
 
-- [Node.js](https://nodejs.org/) >= 22.0.0
-- [pnpm](https://pnpm.io/) >= 9.0.0
-
-## Getting Started
-
-```bash
-# Clone the repository
-git clone https://github.com/blackplume233/AgentCraft.git
-cd AgentCraft
-
-# Install dependencies
-pnpm install
-
-# Run in development mode
-pnpm dev
-
-# Build all packages
-pnpm build
-```
-
-## Scripts
-
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Start CLI in development mode |
-| `pnpm build` | Build all packages |
-| `pnpm test` | Run all tests |
-| `pnpm test:watch` | Run tests in watch mode |
-| `pnpm lint` | Lint all source files |
-| `pnpm lint:fix` | Lint and auto-fix |
-| `pnpm type-check` | Type-check all packages |
-| `pnpm clean` | Clean all build artifacts |
-
-## Project Structure
+## 项目结构
 
 ```
 AgentCraft/
-├── packages/              Source code (pnpm workspace)
-│   ├── shared/            Shared types, errors, utilities
-│   ├── core/              Core business logic
-│   ├── cli/               CLI frontend (REPL)
+├── packages/              源码（pnpm workspace）
+│   ├── shared/            公共类型、错误、工具
+│   ├── core/              核心业务逻辑
+│   ├── cli/               CLI 前端（REPL）
 │   ├── api/               RESTful API
-│   ├── acp/               ACP protocol server
-│   └── mcp-server/        MCP protocol server
-├── configs/               Built-in configurations (templates, skills, workflows)
-├── docs/                  Project documentation
-│   ├── decisions/         Architecture Decision Records
-│   ├── design/            Feature design documents
-│   ├── human/             Human-authored notes and reviews
-│   └── agent/             Agent-generated analysis and logs
-├── tests/                 Cross-package integration & E2E tests
-├── scripts/               Build and dev scripts
-└── .trellis/              AI development framework
+│   ├── acp/               ACP 协议服务端
+│   └── mcp-server/        MCP 协议服务端
+├── configs/               内置配置（模板、技能、工作流）
+├── docs/                  项目文档
+│   ├── decisions/         架构决策记录（ADR）
+│   ├── design/            功能设计文档
+│   ├── human/             人工编写的笔记和评审
+│   └── agent/             Agent 生成的分析和日志
+├── tests/                 跨包集成测试 & E2E 测试
+├── scripts/               构建和开发脚本
+└── .trellis/              AI 开发框架
 ```
 
-See [ADR-002](docs/decisions/002-directory-structure.md) for full directory rationale.
+详细目录说明见 [ADR-002](docs/decisions/002-directory-structure.md)。
 
-## Core Concepts
+---
 
-**Agent Template** — A configuration file that defines an agent's Domain Context (Skills, Workflows, Prompts, MCP tools, SubAgents), initialization process, and defaults. Templates compose references rather than embedding full configs.
+## 核心概念
 
-**Agent Instance** — A runnable agent constructed from a Template, with an assigned Provider, Backend, Domain Context, hooks, and plugins. Can execute one-shot tasks or run as a persistent service.
+| 概念 | 说明 |
+|------|------|
+| **Model Provider** | 基础模型 API（如 OpenAI、Anthropic）|
+| **Agent Client** | Agent 前端 — TUI、IDE 插件、专用应用（如 Claude Desktop）|
+| **Agent Backend** | Agent 的功能实现（如 Claude Code、Cursor 核心），不含交互界面 |
+| **Domain Context** | 领域上下文 — 由 Workflow、Prompt、MCP/Tools、Skills、SubAgent 组成 |
+| **Agent Template** | Agent 配置文件，定义 Domain Context、初始化流程、默认后端和提供者 |
+| **Agent Instance** | 可运行的 Agent 实例，拥有完整的运行环境和生命周期 |
+| **Employee** | 持续运行的 Agent Instance，作为持久化工作者 |
 
-**Domain Context** — The business-specific context assembled for each agent:
+### 启动模式
 
-| Component | Description |
-|-----------|-------------|
-| Workflow | Default instructions, hooks, commands |
-| Prompt | System prompts and instruction sets |
-| MCP/Tools | Model Context Protocol servers and tools |
-| Skills | Behavioral rules and domain knowledge |
-| SubAgent | Nested agent references for composition |
+| 模式 | 生命周期管理方 | 典型场景 |
+|------|---------------|---------|
+| Direct | 用户 | 直接打开 IDE / TUI |
+| ACP Background | 调用方 | 第三方 Client 通过 ACP 管理 |
+| ACP Service | AgentCraft | 持久化雇员 Agent |
+| One-Shot | AgentCraft | 执行任务后自动终止 |
 
-**Launch Modes**:
+---
 
-| Mode | Lifecycle Owner | Use Case |
-|------|----------------|----------|
-| Direct | User | Open IDE / TUI directly |
-| ACP Background | Caller | Third-party client manages via ACP |
-| ACP Service | AgentCraft | Persistent employee agent |
-| One-Shot | AgentCraft | Execute task and auto-terminate |
+## 文档
 
-## Development Principles
+| 文档 | 说明 |
+|------|------|
+| [ADR-001: 技术栈](docs/decisions/001-tech-stack.md) | TypeScript + pnpm monorepo 选型理由 |
+| [ADR-002: 目录结构](docs/decisions/002-directory-structure.md) | 项目目录规范和人机文档分离 |
+| [后端开发指南](.trellis/spec/backend/index.md) | 后端架构、模块设计、开发原则 |
+| [前端开发指南](.trellis/spec/frontend/index.md) | CLI 优先策略、界面层规划 |
+| [跨层思维指南](.trellis/spec/guides/cross-layer-thinking-guide.md) | 数据流分析和层间边界处理 |
 
-1. **CLI-First, UI-Ready** — All features work via text config and CLI before any UI integration
-2. **Test-Driven** — All CLI/config behaviors must have comprehensive unit tests
-3. **Plan Before Execute** — Explicit design and confirmation before implementation
-4. **Thorough Review** — Code quality, extensibility, and maintainability verified before merge
+---
 
-## Documentation
+## 参考项目
 
-- [Architecture Decisions](docs/decisions/) — ADRs tracking key technical choices
-- [Backend Guidelines](.trellis/spec/backend/index.md) — Backend development standards
-- [Frontend Guidelines](.trellis/spec/frontend/index.md) — CLI and future UI guidelines
-- [Cross-Layer Guide](.trellis/spec/guides/cross-layer-thinking-guide.md) — Thinking through data flow
+| 项目 | 关联 |
+|------|------|
+| [PicoClaw](https://picoclaw.net/) | Agent 持续集成 |
+| [pi-mono/ai](https://github.com/badlogic/pi-mono/tree/main/packages/ai) | Agent 后端实现参考 |
+| [ACP](https://agentclientprotocol.com/) | Agent Client Protocol 框架 |
+| [n8n](https://n8n.io/) | 工作流自动化模式 |
+| [Trellis](https://github.com/mindfold-ai/Trellis) | 工程初始化及 Workflow 设计 |
+| [UnrealFairy](https://github.com/blackplume233/UnrealFairy) | 关联项目 — AgentCraft 将取代其 Agent 子系统 |
 
 ## License
 
