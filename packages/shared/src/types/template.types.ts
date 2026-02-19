@@ -1,4 +1,4 @@
-import type { DomainContextConfig } from "./domain-context.types.js";
+import type { DomainContextConfig } from "./domain-context.types";
 
 export interface AgentTemplate {
   name: string;

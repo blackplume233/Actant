@@ -2,7 +2,7 @@ export type {
   AgentInstanceMeta,
   AgentStatus,
   LaunchMode,
-} from "./agent.types.js";
+} from "./agent.types";
 export type {
   AgentTemplate,
   AgentBackendConfig,
@@ -11,8 +11,49 @@ export type {
   ModelProviderType,
   InitializerConfig,
   InitializerStep,
-} from "./template.types.js";
+} from "./template.types";
 export type {
   DomainContextConfig,
   McpServerRef,
-} from "./domain-context.types.js";
+} from "./domain-context.types";
+export type {
+  SkillDefinition,
+  PromptDefinition,
+  WorkflowDefinition,
+  McpServerDefinition,
+} from "./domain-component.types";
+export {
+  RPC_ERROR_CODES,
+  type RpcRequest,
+  type RpcResponse,
+  type RpcError,
+  type RpcErrorCode,
+  type RpcMethodMap,
+  type RpcMethod,
+  type TemplateListParams,
+  type TemplateListResult,
+  type TemplateGetParams,
+  type TemplateGetResult,
+  type TemplateLoadParams,
+  type TemplateLoadResult,
+  type TemplateUnloadParams,
+  type TemplateUnloadResult,
+  type TemplateValidateParams,
+  type TemplateValidateResult,
+  type AgentCreateParams,
+  type AgentCreateResult,
+  type AgentStartParams,
+  type AgentStartResult,
+  type AgentStopParams,
+  type AgentStopResult,
+  type AgentDestroyParams,
+  type AgentDestroyResult,
+  type AgentStatusParams,
+  type AgentStatusResult,
+  type AgentListParams,
+  type AgentListResult,
+  type DaemonPingParams,
+  type DaemonPingResult,
+  type DaemonShutdownParams,
+  type DaemonShutdownResult,
+} from "./rpc.types";

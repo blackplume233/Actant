@@ -1,0 +1,6 @@
+{
+  "name": "code-review",
+  "description": "Rules for reviewing code quality",
+  "content": "- Check for proper error handling\n- Verify type safety\n- Review naming conventions\n- Look for potential performance issues",
+  "tags": ["review", "quality"]
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createLogger } from "./logger.js";
+import { createLogger } from "./logger";
 
 describe("createLogger", () => {
   it("creates a pino logger with the given module name", () => {

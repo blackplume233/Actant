@@ -14,7 +14,10 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@agentcraft/core": "workspace:*",
-    "@agentcraft/shared": "workspace:*"
+    "@agentcraft/api": "workspace:*",
+    "@agentcraft/shared": "workspace:*",
+    "chalk": "^5.6.2",
+    "cli-table3": "^0.6.5",
+    "commander": "^14.0.3"
   }
 }

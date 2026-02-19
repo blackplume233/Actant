@@ -5,5 +5,5 @@
     "rootDir": "./src"
   },
   "include": ["src", "bin"],
-  "references": [{ "path": "../shared" }, { "path": "../core" }]
+  "references": [{ "path": "../shared" }, { "path": "../api" }]
 }

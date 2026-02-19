@@ -1,9 +1,9 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["src/index.ts"],
+  entry: ["src/index.ts", "src/bin/agentcraft.ts", "src/daemon-entry.ts"],
   format: ["esm"],
-  dts: true,
+  dts: { compilerOptions: { composite: false } },
   clean: true,
   sourcemap: true,
 });

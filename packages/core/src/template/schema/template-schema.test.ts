@@ -3,7 +3,7 @@ import {
   AgentTemplateSchema,
   DomainContextSchema,
   McpServerRefSchema,
-} from "./template-schema.js";
+} from "./template-schema";
 
 const VALID_TEMPLATE = {
   name: "code-review-agent",

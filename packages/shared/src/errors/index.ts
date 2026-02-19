@@ -1,15 +1,16 @@
-export { AgentCraftError, type ErrorCategory } from "./base-error.js";
+export { AgentCraftError, type ErrorCategory } from "./base-error";
 export {
   ConfigNotFoundError,
   ConfigValidationError,
   TemplateNotFoundError,
   SkillReferenceError,
+  ComponentReferenceError,
   CircularReferenceError,
-} from "./config-errors.js";
+} from "./config-errors";
 export {
   AgentLaunchError,
   AgentNotFoundError,
   AgentAlreadyRunningError,
   InstanceCorruptedError,
   WorkspaceInitError,
-} from "./lifecycle-errors.js";
+} from "./lifecycle-errors";

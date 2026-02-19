@@ -1,0 +1,40 @@
+{
+  "name": "code-review-agent",
+  "version": "1.0.0",
+  "description": "A code review agent powered by Claude",
+  "backend": {
+    "type": "claude-code",
+    "config": {
+      "model": "claude-sonnet-4-20250514"
+    }
+  },
+  "provider": {
+    "type": "anthropic",
+    "config": {
+      "apiKeyEnv": "ANTHROPIC_API_KEY"
+    }
+  },
+  "domainContext": {
+    "skills": ["code-review", "typescript-expert"],
+    "prompts": ["system-code-reviewer"],
+    "mcpServers": [
+      {
+        "name": "filesystem",
+        "command": "npx",
+        "args": ["-y", "@anthropic/mcp-filesystem"]
+      }
+    ],
+    "workflow": "trellis-standard"
+  },
+  "initializer": {
+    "steps": [
+      { "type": "create-workspace" },
+      { "type": "install-dependencies" },
+      { "type": "apply-workflow" }
+    ]
+  },
+  "metadata": {
+    "author": "AgentCraft Team",
+    "tags": "code-review,typescript"
+  }
+}

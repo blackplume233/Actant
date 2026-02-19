@@ -1,4 +1,4 @@
-import { AgentCraftError, type ErrorCategory } from "./base-error.js";
+import { AgentCraftError, type ErrorCategory } from "./base-error";
 
 export class AgentLaunchError extends AgentCraftError {
   readonly code = "AGENT_LAUNCH_ERROR";

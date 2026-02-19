@@ -7,7 +7,7 @@ import type {
   McpServerRef,
   InitializerConfig,
 } from "@agentcraft/shared";
-import type { AgentTemplateOutput } from "./template-schema.js";
+import type { AgentTemplateOutput } from "./template-schema";
 
 /**
  * Static type alignment checks between Zod inferred types and shared interfaces.

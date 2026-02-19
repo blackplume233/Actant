@@ -11,7 +11,7 @@ import {
   AgentAlreadyRunningError,
   InstanceCorruptedError,
   WorkspaceInitError,
-} from "./index.js";
+} from "./index";
 
 describe("AgentCraftError hierarchy", () => {
   it("ConfigNotFoundError has correct code and category", () => {

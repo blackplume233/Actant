@@ -1,4 +1,4 @@
-import { AgentCraftError, type ErrorCategory } from "./base-error.js";
+import { AgentCraftError, type ErrorCategory } from "./base-error";
 
 export class ConfigNotFoundError extends AgentCraftError {
   readonly code = "CONFIG_NOT_FOUND";
@@ -41,6 +41,18 @@ export class SkillReferenceError extends AgentCraftError {
 
   constructor(skillName: string) {
     super(`Skill "${skillName}" not found in registry`, { skillName });
+  }
+}
+
+export class ComponentReferenceError extends AgentCraftError {
+  readonly code = "COMPONENT_REFERENCE_ERROR";
+  readonly category: ErrorCategory = "configuration";
+
+  constructor(componentType: string, componentName: string) {
+    super(`${componentType} "${componentName}" not found in registry`, {
+      componentType,
+      componentName,
+    });
   }
 }
 

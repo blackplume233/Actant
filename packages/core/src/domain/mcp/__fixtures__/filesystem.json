@@ -1,0 +1,7 @@
+{
+  "name": "filesystem",
+  "description": "MCP server for filesystem access",
+  "command": "npx",
+  "args": ["-y", "@anthropic/mcp-filesystem"],
+  "env": { "ROOT_DIR": "/workspace" }
+}

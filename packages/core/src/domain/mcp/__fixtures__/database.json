@@ -1,0 +1,7 @@
+{
+  "name": "database",
+  "description": "MCP server for PostgreSQL access",
+  "command": "npx",
+  "args": ["-y", "mcp-postgres"],
+  "env": { "DB_URL": "postgres://localhost:5432/mydb" }
+}
