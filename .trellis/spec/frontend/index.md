@@ -95,4 +95,4 @@ The web UI will consume the same REST API that the CLI uses, ensuring feature pa
 
 ---
 
-**Language**: All documentation should be written in **English**.
+**Language**: See [Language Conventions](../backend/quality-guidelines.md#language-conventions) in Quality Guidelines.

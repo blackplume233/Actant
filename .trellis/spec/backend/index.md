@@ -149,4 +149,4 @@ Agent Instances support multiple launch patterns:
 
 ---
 
-**Language**: All documentation should be written in **English**.
+**Language**: See [Language Conventions](./quality-guidelines.md#language-conventions) in Quality Guidelines.

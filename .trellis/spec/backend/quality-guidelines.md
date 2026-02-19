@@ -191,3 +191,21 @@ Before approving any feature:
 - [ ] **Logged**: Are important operations logged with structured context?
 - [ ] **Documented**: Are non-obvious design decisions explained?
 - [ ] **Small scope**: Is the change small enough for one coherent commit?
+
+---
+
+## Language Conventions
+
+The project owner's preferred language is **Chinese (中文)**. Apply the following rules:
+
+| Context | Language | Examples |
+|---------|----------|---------|
+| **Documentation output** (specs, ADRs, design docs, guides, READMEs) | Chinese preferred, English acceptable | 设计文档、架构决策记录、指南 |
+| **Code** (variable names, function names, class names) | English only | `createAgent()`, `templateName` |
+| **Code comments** | English preferred (keep minimal per quality guidelines) | Non-obvious logic notes |
+| **Commit messages** | English | `feat: add template loader` |
+| **CLI user-facing strings** | English (i18n later) | Error messages, help text |
+| **Log messages** | English | Structured log entries |
+| **Git branch names** | English | `feat/template-loader` |
+
+> **Rule**: When producing documentation, default to Chinese. When writing code or technical identifiers, use English. If a document already exists in one language, follow its existing language unless asked to change.
