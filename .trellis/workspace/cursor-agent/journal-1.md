@@ -65,3 +65,66 @@
 ### Next Steps
 
 - None - task complete
+
+## Session 2: Core Agent Phase 3-8 + Import Refactor
+
+**Date**: 2026-02-20
+**Task**: Core Agent Phase 3-8 + Import Refactor
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## 完成内容
+
+| 模块 | 说明 |
+|------|------|
+| Domain Managers | Skill/Prompt/MCP/Workflow 四大领域组件管理器，含 BaseComponentManager 抽象 |
+| Initializer | Agent 实例初始化器 + ContextMaterializer 上下文物化 |
+| State | 实例元数据持久化（atomic write）、scanInstances、状态纠偏 |
+| Manager | AgentManager 生命周期管理 + Launcher 策略模式（MockLauncher） |
+| Template | TemplateLoader 文件加载 + TemplateRegistry 注册表 |
+| API Daemon | Daemon + SocketServer（JSON-RPC 2.0 / Unix Socket / NDJSON） |
+| RPC Handlers | template.* / agent.* / daemon.* 全套 handler |
+| CLI | commander.js 命令集 + RpcClient 薄客户端 + REPL 交互模式 |
+| E2E Tests | 19 个测试文件，197 个用例全部通过（含 12 个 CLI E2E） |
+| Import Refactor | 移除 85 个文件的 .js 扩展名，删除 12 个单文件转发 barrel |
+
+## 架构决策
+
+- **Daemon + Thin Client**: CLI 不直接依赖 @agentcraft/core，通过 @agentcraft/api daemon 中转
+- **JSON-RPC 2.0 over Unix Socket**: 进程间通信协议，NDJSON 分帧
+- **Docker 类比**: Template=Dockerfile, Instance=Container, Daemon=dockerd, CLI=docker
+- **Import 规范**: 无 .js 扩展名 + 仅保留有意义的聚合 barrel
+
+## 关键文件
+
+- `packages/core/src/domain/` — 四大领域管理器
+- `packages/core/src/initializer/` — 实例初始化 + 上下文物化
+- `packages/core/src/manager/` — 生命周期管理
+- `packages/core/src/state/` — 元数据持久化
+- `packages/api/src/daemon/` — Daemon + SocketServer
+- `packages/api/src/handlers/` — RPC handler 注册
+- `packages/cli/src/commands/` — CLI 命令集
+- `packages/cli/src/client/rpc-client.ts` — RPC 客户端
+- `packages/cli/src/__tests__/e2e-cli.test.ts` — E2E 测试
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `c8ac88b` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

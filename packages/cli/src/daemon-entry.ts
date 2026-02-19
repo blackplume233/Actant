@@ -1,12 +1,9 @@
 import { Daemon } from "@agentcraft/api";
+import { onShutdownSignal } from "@agentcraft/shared";
 
 const daemon = new Daemon();
 
-process.on("SIGINT", async () => {
-  await daemon.stop();
-  process.exit(0);
-});
-process.on("SIGTERM", async () => {
+onShutdownSignal(async () => {
   await daemon.stop();
   process.exit(0);
 });

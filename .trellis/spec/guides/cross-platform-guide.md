@@ -1,0 +1,114 @@
+# Cross-Platform Compatibility Guide
+
+> **Goal**: AgentCraft must run on Linux, macOS, and Windows. Every feature must work on all three platforms.
+
+---
+
+## Platform Utilities
+
+All platform-specific logic is centralized in `packages/shared/src/platform/platform.ts`.
+
+**Never write platform-specific code inline.** Always use the shared utilities:
+
+| Utility | Purpose |
+|---------|---------|
+| `getDefaultIpcPath()` | Default daemon IPC path (Unix socket or Windows named pipe) |
+| `getIpcPath(homeDir)` | IPC path for a given home directory |
+| `ipcRequiresFileCleanup()` | Whether stale IPC files need `unlink` before listening |
+| `onShutdownSignal(handler)` | Cross-platform graceful shutdown (SIGINT/SIGTERM/SIGBREAK) |
+| `isWindows()` | Platform check |
+
+---
+
+## IPC: Unix Sockets vs Named Pipes
+
+| Platform | IPC Mechanism | Path Format |
+|----------|--------------|-------------|
+| macOS/Linux | Unix domain socket | `~/.agentcraft/agentcraft.sock` |
+| Windows | Named pipe | `\\.\pipe\agentcraft` |
+
+Node.js `net.createServer` and `net.createConnection` handle both transparently — the only difference is the path string.
+
+**Rules**:
+- Never hardcode `.sock` paths. Use `getIpcPath()` or `getDefaultIpcPath()`.
+- Before listening on Unix sockets, call `unlink()` to remove stale files — but only when `ipcRequiresFileCleanup()` returns true.
+- Named pipes on Windows are automatically cleaned up when the server closes.
+
+---
+
+## Signal Handling
+
+| Signal | macOS/Linux | Windows |
+|--------|-------------|---------|
+| `SIGINT` | Ctrl+C | Ctrl+C (terminal only) |
+| `SIGTERM` | Standard termination | **Not supported** |
+| `SIGBREAK` | Not available | Ctrl+Break |
+
+**Rules**:
+- Never use `process.on("SIGTERM", ...)` directly. Use `onShutdownSignal()` from shared.
+- `onShutdownSignal()` registers SIGINT + SIGTERM on Unix, SIGINT + SIGBREAK on Windows.
+
+---
+
+## Process Management
+
+### Daemonization
+
+`fork()` with `detached: true` behaves differently:
+- **Unix**: Creates a new process group/session (true daemon)
+- **Windows**: Creates a new console window
+
+This is acceptable for now. Future consideration: Windows service integration for production.
+
+### Process Existence Check
+
+`process.kill(pid, 0)` works cross-platform in Node.js for checking if a process exists.
+
+---
+
+## File System
+
+### Path Handling
+
+- **Always** use `node:path` (`join`, `resolve`, `dirname`) — never concatenate with `/` or `\`.
+- `homedir()` from `node:os` returns the correct home on all platforms.
+- `tmpdir()` from `node:os` returns platform-appropriate temp directory.
+
+### File Operations
+
+- `fs.rename()` across volumes may fail on Windows. The atomic write pattern in `instance-meta-io.ts` (write tmp then rename) works because both files are in the same directory.
+- File paths on Windows are case-insensitive but case-preserving. Avoid relying on case sensitivity for file lookups.
+
+---
+
+## Shell Scripts (.trellis/scripts/)
+
+The `.trellis/scripts/*.sh` files are Bash scripts for the development workflow (not runtime).
+
+**Windows requirements**:
+- **Git Bash** (included with Git for Windows) — recommended
+- **WSL** (Windows Subsystem for Linux) — also works
+- These scripts are not needed for running AgentCraft itself, only for the Trellis development workflow
+
+---
+
+## Checklist for New Features
+
+Before implementing any feature, verify:
+
+- [ ] No hardcoded Unix socket paths (use `getIpcPath()`)
+- [ ] No direct `SIGTERM` handlers (use `onShutdownSignal()`)
+- [ ] File paths use `node:path` (`join`, not string concatenation)
+- [ ] No shell commands that only work on Unix (e.g., `chmod`, `ln -s`)
+- [ ] Tests use `getIpcPath()` for socket paths
+- [ ] If spawning child processes, handle Windows `.cmd` / `.bat` extensions for npm scripts
+
+---
+
+## Known Limitations
+
+| Area | Status | Notes |
+|------|--------|-------|
+| Daemon daemonization | Partial | `detached: true` opens console on Windows |
+| Shell scripts | Unix-only | Require Git Bash or WSL on Windows |
+| File permissions | N/A | Windows doesn't support Unix-style permissions |

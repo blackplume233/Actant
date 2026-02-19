@@ -8,7 +8,7 @@ import {
   AgentManager,
   MockLauncher,
 } from "@agentcraft/core";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger, getIpcPath } from "@agentcraft/shared";
 
 const logger = createLogger("app-context");
 
@@ -37,7 +37,7 @@ export class AppContext {
     this.homeDir = config?.homeDir ?? DEFAULT_HOME;
     this.templatesDir = join(this.homeDir, "templates");
     this.instancesDir = join(this.homeDir, "instances");
-    this.socketPath = join(this.homeDir, "agentcraft.sock");
+    this.socketPath = getIpcPath(this.homeDir);
     this.pidFilePath = join(this.homeDir, "daemon.pid");
 
     this.templateLoader = new TemplateLoader();

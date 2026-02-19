@@ -1,12 +1,11 @@
-import { join } from "node:path";
-import { homedir } from "node:os";
 import { Command } from "commander";
+import { getDefaultIpcPath } from "@agentcraft/shared";
 import { RpcClient } from "./client/rpc-client";
 import { createTemplateCommand, createAgentCommand, createDaemonCommand } from "./commands/index";
 import { presentError } from "./output/index";
 
 export function defaultSocketPath(): string {
-  return process.env["AGENTCRAFT_SOCKET"] ?? join(homedir(), ".agentcraft", "agentcraft.sock");
+  return process.env["AGENTCRAFT_SOCKET"] ?? getDefaultIpcPath();
 }
 
 export function createProgram(socketPath?: string): Command {

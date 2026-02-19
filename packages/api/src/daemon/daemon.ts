@@ -1,5 +1,5 @@
 import { unlink } from "node:fs/promises";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger, ipcRequiresFileCleanup } from "@agentcraft/shared";
 import { AppContext, type AppConfig } from "../services/app-context";
 import { SocketServer } from "./socket-server";
 import {
@@ -46,10 +46,12 @@ export class Daemon {
 
     await this.ctx.init();
 
-    try {
-      await unlink(this.ctx.socketPath);
-    } catch {
-      // socket file may not exist
+    if (ipcRequiresFileCleanup()) {
+      try {
+        await unlink(this.ctx.socketPath);
+      } catch {
+        // socket file may not exist
+      }
     }
 
     await this.server.listen(this.ctx.socketPath);
@@ -79,10 +81,12 @@ export class Daemon {
     await this.server.close();
     await removePidFile(this.ctx.pidFilePath);
 
-    try {
-      await unlink(this.ctx.socketPath);
-    } catch {
-      // socket file may have been cleaned up already
+    if (ipcRequiresFileCleanup()) {
+      try {
+        await unlink(this.ctx.socketPath);
+      } catch {
+        // socket file may have been cleaned up already
+      }
     }
 
     logger.info("Daemon stopped");

@@ -4,7 +4,7 @@ import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { RpcRequest, RpcResponse } from "@agentcraft/shared";
-import { RPC_ERROR_CODES } from "@agentcraft/shared";
+import { RPC_ERROR_CODES, getIpcPath } from "@agentcraft/shared";
 import { AppContext } from "../../services/app-context";
 import { SocketServer } from "../socket-server";
 import {
@@ -53,7 +53,7 @@ describe("SocketServer integration", () => {
 
   beforeAll(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "ac-socket-test-"));
-    socketPath = join(tmpDir, "test.sock");
+    socketPath = getIpcPath(tmpDir);
     ctx = new AppContext({ homeDir: tmpDir });
     await ctx.init();
 

@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { fork } from "node:child_process";
 import { join } from "node:path";
 import chalk from "chalk";
+import { onShutdownSignal } from "@agentcraft/shared";
 import { RpcClient } from "../../client/rpc-client";
 import { presentError } from "../../output/index";
 import { defaultSocketPath } from "../../program";
@@ -24,11 +25,7 @@ export function createDaemonStartCommand(): Command {
           const { Daemon } = await import("@agentcraft/api");
           const daemon = new Daemon();
 
-          process.on("SIGINT", async () => {
-            await daemon.stop();
-            process.exit(0);
-          });
-          process.on("SIGTERM", async () => {
+          onShutdownSignal(async () => {
             await daemon.stop();
             process.exit(0);
           });
