@@ -1,54 +1,102 @@
 # Directory Structure
 
-> How frontend code is organized in this project.
+> How frontend code (CLI and future UI) is organized in AgentCraft.
+>
+> **Canonical reference**: See [ADR-002](../../../docs/decisions/002-directory-structure.md) for the full project directory structure.
 
 ---
 
 ## Overview
 
-<!--
-Document your project's frontend directory structure here.
-
-Questions to answer:
-- Where do components live?
-- How are features/modules organized?
-- Where are shared utilities?
-- How are assets organized?
--->
-
-(To be filled by the team)
+AgentCraft's frontend is split across phases. The CLI package is the current primary interface. Web UI and Tauri Desktop are planned for later phases.
 
 ---
 
-## Directory Layout
+## CLI Package (`@agentcraft/cli`)
 
 ```
-<!-- Replace with your actual structure -->
-src/
-├── ...
-└── ...
+packages/cli/
+├── src/
+│   ├── commands/                # Command implementations
+│   │   ├── agent/               # agent create|list|start|stop|status|logs
+│   │   ├── template/            # template create|list|edit|validate
+│   │   ├── skill/               # skill add|list|remove
+│   │   ├── config/              # config get|set|list
+│   │   └── index.ts             # Command registry
+│   ├── repl/                    # Interactive REPL loop
+│   │   ├── repl.ts
+│   │   ├── history.ts
+│   │   └── completion.ts
+│   ├── output/                  # Output formatters
+│   │   ├── formatter.ts         # Base interface
+│   │   ├── table.ts
+│   │   ├── json.ts
+│   │   └── text.ts
+│   ├── errors/                  # CLI error presentation
+│   │   └── error-presenter.ts
+│   └── index.ts
+├── bin/
+│   └── agentcraft.ts            # CLI entry point (#!/usr/bin/env node)
+├── package.json
+├── tsconfig.json
+└── vitest.config.ts
 ```
 
 ---
 
-## Module Organization
+## Future: Web UI Package (`@agentcraft/web`)
 
-<!-- How should new features be organized? -->
+> Phase 2 — React + Vite, consumes `@agentcraft/api` via REST.
 
-(To be filled by the team)
+```
+packages/web/                    # (future)
+├── src/
+│   ├── app/                     # App shell, routing
+│   ├── pages/
+│   │   ├── agents/
+│   │   ├── templates/
+│   │   └── dashboard/
+│   ├── components/
+│   │   ├── common/
+│   │   └── agent/
+│   ├── hooks/
+│   ├── services/                # API client (uses @agentcraft/shared types)
+│   ├── stores/
+│   └── types/
+├── public/
+├── package.json
+├── tsconfig.json
+└── vite.config.ts
+```
 
 ---
 
-## Naming Conventions
+## Future: Tauri Desktop (`@agentcraft/desktop`)
 
-<!-- File and folder naming rules -->
+> Phase 3 — Tauri 2.0 shell wrapping Web UI, adds system tray, notifications, auto-start.
 
-(To be filled by the team)
+```
+packages/desktop/                # (future)
+├── src/                         # Reuses packages/web as frontend
+├── src-tauri/                   # Rust shell (thin layer)
+│   ├── src/
+│   │   └── main.rs              # IPC commands, system integration
+│   ├── Cargo.toml
+│   └── tauri.conf.json
+├── package.json
+└── tsconfig.json
+```
 
 ---
 
-## Examples
+## Code Sharing Strategy
 
-<!-- Link to well-organized modules as examples -->
+```
+packages/shared/src/types/    ← Shared type definitions
+                    ↓
+    ┌───────────────┼───────────────┐
+    ↓               ↓               ↓
+  cli/            api/            web/ (future)
+```
 
-(To be filled by the team)
+All frontends import types from `@agentcraft/shared`. No direct type duplication.

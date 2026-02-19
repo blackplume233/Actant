@@ -1,0 +1,24 @@
+{
+  "name": "agentcraft",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A platform for building, managing, and composing AI agents",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev": "pnpm --filter @agentcraft/cli run dev",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint packages/*/src --ext .ts",
+    "lint:fix": "eslint packages/*/src --ext .ts --fix",
+    "type-check": "pnpm -r run type-check",
+    "clean": "pnpm -r run clean"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "author": "blackplume <blackplume233@gmail.com>",
+  "license": "MIT"
+}

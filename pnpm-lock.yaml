@@ -1,0 +1,53 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .: {}
+
+  packages/acp:
+    dependencies:
+      '@agentcraft/core':
+        specifier: workspace:*
+        version: link:../core
+      '@agentcraft/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/api:
+    dependencies:
+      '@agentcraft/core':
+        specifier: workspace:*
+        version: link:../core
+      '@agentcraft/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/cli:
+    dependencies:
+      '@agentcraft/core':
+        specifier: workspace:*
+        version: link:../core
+      '@agentcraft/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/core:
+    dependencies:
+      '@agentcraft/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/mcp-server:
+    dependencies:
+      '@agentcraft/core':
+        specifier: workspace:*
+        version: link:../core
+      '@agentcraft/shared':
+        specifier: workspace:*
+        version: link:../shared
+
+  packages/shared: {}

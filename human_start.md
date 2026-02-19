@@ -53,11 +53,11 @@
          6. 配置初始化器，参考Trellis
          7. 默认的Agent后端，Agent Provider等
       2. 考虑到各类配置都是可以复用的，Template中大部分都应当是对具体配置的名字引用，配置的具体参数由各类配置的管理器管理，如Skill，Workflowtemplate，mcp，插件等
-   3. Agent 初始化器：基于一个AgentTemplate来构造一个Agent Instance，其实质是构造一个可以直接让Agent工作的工作环境（一般是指一个工作目录）
+   3. Agent 初始化器：基于一个AgentTemplate来构造一个Agent Instance，其实质是构造一个可以直接让Agent工作的工作环境（一般是指一个工作目录）。注意到可能会需要构造一次性的临时Agent Instance
       1. 要求用户指定Agent BackEnd,AgentProvder,可以使用默认值
       2. 根据初始化器的流程初始化工作目录
       3. 如果是ServiceAgent则启动对应的Agent
-   4. Agent 管理器：负责持续管理所有现存的Agent Instance，维护他们的状态，提供开启，关闭，监控等功能
+   4. Agent 管理器：负责持续管理所有现存的Agent Instance，维护他们的状态，提供开启，关闭，监控等功能。需要注意到一个Agent Instance可如果不是服务型则可能同时存在多个Session
       1. Agent的启动包含多种方式：
          1. 直接正常启动对应的Agent，如直接开启一个Claude Code界面，直接打开Cursor等
          2. 通过ACP形式启动对应Agent，交互过程由AgentCraft管理，一般运行在后台
@@ -75,13 +75,15 @@
 
 4. Agent Craft API：针对所有的Command操作提供标准的Restful API，以使得Agent Craft本身可以作为一个服务以Docker的形式部署
 
+5. Agent Craft GUI : 提供方便的UI操作
+
    
 
 
 
 ## 参考项目
 
-1. Agent持续集成[PicoClaw - Ultra-Lightweight AI Assistant | Go-Powered, Performance First](https://picoclaw.net/)
+1. Agent持续集成[PicoClaw - Ultra-Lightweight AI Assistant | Go-Powered, Performance First](https://picoclaw.net/)|[spacedriveapp/spacebot：面向团队、社区和多用户环境的 AI 代理。 --- spacedriveapp/spacebot: An AI agent for teams, communities, and multi-user environments.](https://github.com/spacedriveapp/spacebot)
 2. Agent 后端实现：[pi-mono/packages/ai at main · badlogic/pi-mono](https://github.com/badlogic/pi-mono/tree/main/packages/ai)
 3. ACP框架：[Introduction - Agent Client Protocol](https://agentclientprotocol.com/get-started/introduction)
 4. 持续工作流：[AI Workflow Automation Platform & Tools - n8n](https://n8n.io/?ps_partner_key=NmFhNmYzNGU5Mzlm&ps_xid=txaQHU6MF5FcNO&gsxid=txaQHU6MF5FcNO&gspk=NmFhNmYzNGU5Mzlm&gad_source=1&gad_campaignid=23397401030&gbraid=0AAAABCODLju4k9WBgYyOUf4mbvMCAnNw-&gclid=Cj0KCQiAhtvMBhDBARIsAL26pjFKJuIizz3rI0mvli2l8NPfecZ7DwVi_SuJSB6GfiuPEPB-pWU4q8QaAr4uEALw_wcB)

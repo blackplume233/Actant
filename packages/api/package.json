@@ -1,0 +1,19 @@
+{
+  "name": "@agentcraft/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx --watch src/index.ts",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@agentcraft/core": "workspace:*",
+    "@agentcraft/shared": "workspace:*"
+  }
+}
