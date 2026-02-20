@@ -1,13 +1,13 @@
 import { Command } from "commander";
-import { fork } from "node:child_process";
 import { join } from "node:path";
+import { fork } from "node:child_process";
 import chalk from "chalk";
 import { onShutdownSignal } from "@agentcraft/shared";
 import { RpcClient } from "../../client/rpc-client";
-import { presentError } from "../../output/index";
+import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 import { defaultSocketPath } from "../../program";
 
-export function createDaemonStartCommand(): Command {
+export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): Command {
   return new Command("start")
     .description("Start the AgentCraft daemon")
     .option("--foreground", "Run in foreground (don't daemonize)", false)
@@ -16,7 +16,7 @@ export function createDaemonStartCommand(): Command {
 
       const alive = await client.ping();
       if (alive) {
-        console.log(chalk.yellow("Daemon is already running."));
+        printer.warn("Daemon is already running.");
         return;
       }
 
@@ -31,12 +31,12 @@ export function createDaemonStartCommand(): Command {
           });
 
           await daemon.start();
-          console.log(chalk.green("Daemon started (foreground)."), `PID: ${process.pid}`);
-          console.log(chalk.dim("Press Ctrl+C to stop."));
+          printer.log(`${chalk.green("Daemon started (foreground).")} PID: ${process.pid}`);
+          printer.dim("Press Ctrl+C to stop.");
 
           await new Promise(() => {});
         } catch (err) {
-          presentError(err);
+          presentError(err, printer);
           process.exitCode = 1;
         }
       } else {
@@ -46,7 +46,7 @@ export function createDaemonStartCommand(): Command {
           stdio: "ignore",
         });
         child.unref();
-        console.log(chalk.green("Daemon started."), `PID: ${child.pid}`);
+        printer.log(`${chalk.green("Daemon started.")} PID: ${child.pid}`);
       }
     });
 }

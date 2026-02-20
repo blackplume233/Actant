@@ -1,9 +1,8 @@
 import { Command } from "commander";
 import type { RpcClient } from "../../client/rpc-client";
-import { formatAgentList, type OutputFormat } from "../../output/index";
-import { presentError } from "../../output/index";
+import { presentError, formatAgentList, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
 
-export function createAgentListCommand(client: RpcClient): Command {
+export function createAgentListCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("list")
     .alias("ls")
     .description("List all agents")
@@ -11,9 +10,9 @@ export function createAgentListCommand(client: RpcClient): Command {
     .action(async (opts: { format: OutputFormat }) => {
       try {
         const agents = await client.call("agent.list", {});
-        console.log(formatAgentList(agents, opts.format));
+        printer.log(formatAgentList(agents, opts.format));
       } catch (err) {
-        presentError(err);
+        presentError(err, printer);
         process.exitCode = 1;
       }
     });

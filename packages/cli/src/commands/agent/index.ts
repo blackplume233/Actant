@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import type { RpcClient } from "../../client/rpc-client";
+import type { CliPrinter } from "../../output/index";
 import { createAgentCreateCommand } from "./create";
 import { createAgentStartCommand } from "./start";
 import { createAgentStopCommand } from "./stop";
@@ -10,19 +11,19 @@ import { createAgentResolveCommand } from "./resolve";
 import { createAgentAttachCommand } from "./attach";
 import { createAgentDetachCommand } from "./detach";
 
-export function createAgentCommand(client: RpcClient): Command {
+export function createAgentCommand(client: RpcClient, printer?: CliPrinter): Command {
   const cmd = new Command("agent")
     .description("Manage agent instances");
 
-  cmd.addCommand(createAgentCreateCommand(client));
-  cmd.addCommand(createAgentStartCommand(client));
-  cmd.addCommand(createAgentStopCommand(client));
-  cmd.addCommand(createAgentStatusCommand(client));
-  cmd.addCommand(createAgentListCommand(client));
-  cmd.addCommand(createAgentDestroyCommand(client));
-  cmd.addCommand(createAgentResolveCommand(client));
-  cmd.addCommand(createAgentAttachCommand(client));
-  cmd.addCommand(createAgentDetachCommand(client));
+  cmd.addCommand(createAgentCreateCommand(client, printer));
+  cmd.addCommand(createAgentStartCommand(client, printer));
+  cmd.addCommand(createAgentStopCommand(client, printer));
+  cmd.addCommand(createAgentStatusCommand(client, printer));
+  cmd.addCommand(createAgentListCommand(client, printer));
+  cmd.addCommand(createAgentDestroyCommand(client, printer));
+  cmd.addCommand(createAgentResolveCommand(client, printer));
+  cmd.addCommand(createAgentAttachCommand(client, printer));
+  cmd.addCommand(createAgentDetachCommand(client, printer));
 
   return cmd;
 }

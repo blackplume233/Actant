@@ -1,10 +1,9 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import type { RpcClient } from "../../client/rpc-client";
-import type { OutputFormat } from "../../output/index";
-import { presentError } from "../../output/index";
+import { presentError, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
 
-export function createAgentResolveCommand(client: RpcClient): Command {
+export function createAgentResolveCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("resolve")
     .description("Resolve spawn info for an agent (external spawn support)")
     .argument("<name>", "Agent instance name")
@@ -18,27 +17,27 @@ export function createAgentResolveCommand(client: RpcClient): Command {
         });
 
         if (opts.format === "json") {
-          console.log(JSON.stringify(result, null, 2));
+          printer.log(JSON.stringify(result, null, 2));
         } else if (opts.format === "quiet") {
-          console.log(result.command, ...result.args);
+          printer.log([result.command, ...result.args].join(" "));
         } else {
           if (result.created) {
-            console.log(chalk.green("Instance created.\n"));
+            printer.log(`${chalk.green("Instance created.")}\n`);
           }
-          console.log(`${chalk.bold("Instance:")}  ${result.instanceName}`);
-          console.log(`${chalk.bold("Backend:")}   ${result.backendType}`);
-          console.log(`${chalk.bold("Workspace:")} ${result.workspaceDir}`);
-          console.log(`${chalk.bold("Command:")}   ${result.command}`);
-          console.log(`${chalk.bold("Args:")}      ${result.args.join(" ")}`);
+          printer.log(`${chalk.bold("Instance:")}  ${result.instanceName}`);
+          printer.log(`${chalk.bold("Backend:")}   ${result.backendType}`);
+          printer.log(`${chalk.bold("Workspace:")} ${result.workspaceDir}`);
+          printer.log(`${chalk.bold("Command:")}   ${result.command}`);
+          printer.log(`${chalk.bold("Args:")}      ${result.args.join(" ")}`);
           if (result.env && Object.keys(result.env).length > 0) {
-            console.log(`${chalk.bold("Env:")}`);
+            printer.log(chalk.bold("Env:"));
             for (const [k, v] of Object.entries(result.env)) {
-              console.log(`  ${k}=${v}`);
+              printer.log(`  ${k}=${v}`);
             }
           }
         }
       } catch (err) {
-        presentError(err);
+        presentError(err, printer);
         process.exitCode = 1;
       }
     });

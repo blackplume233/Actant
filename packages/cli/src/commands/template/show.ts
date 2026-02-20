@@ -1,9 +1,8 @@
 import { Command } from "commander";
 import type { RpcClient } from "../../client/rpc-client";
-import { formatTemplateDetail, type OutputFormat } from "../../output/index";
-import { presentError } from "../../output/index";
+import { presentError, formatTemplateDetail, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
 
-export function createTemplateShowCommand(client: RpcClient): Command {
+export function createTemplateShowCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("show")
     .description("Show template details")
     .argument("<name>", "Template name")
@@ -11,9 +10,9 @@ export function createTemplateShowCommand(client: RpcClient): Command {
     .action(async (name: string, opts: { format: OutputFormat }) => {
       try {
         const template = await client.call("template.get", { name });
-        console.log(formatTemplateDetail(template, opts.format));
+        printer.log(formatTemplateDetail(template, opts.format));
       } catch (err) {
-        presentError(err);
+        presentError(err, printer);
         process.exitCode = 1;
       }
     });

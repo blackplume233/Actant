@@ -1,10 +1,10 @@
 import { Command } from "commander";
 import chalk from "chalk";
 import { RpcClient } from "../../client/rpc-client";
-import type { OutputFormat } from "../../output/index";
+import { type CliPrinter, defaultPrinter, type OutputFormat } from "../../output/index";
 import { defaultSocketPath } from "../../program";
 
-export function createDaemonStatusCommand(): Command {
+export function createDaemonStatusCommand(printer: CliPrinter = defaultPrinter): Command {
   return new Command("status")
     .description("Check if the daemon is running")
     .option("-f, --format <format>", "Output format: table, json, quiet", "table")
@@ -15,23 +15,23 @@ export function createDaemonStatusCommand(): Command {
         const result = await client.call("daemon.ping", {});
 
         if (opts.format === "json") {
-          console.log(JSON.stringify({ running: true, ...result }, null, 2));
+          printer.log(JSON.stringify({ running: true, ...result }, null, 2));
         } else if (opts.format === "quiet") {
-          console.log("running");
+          printer.log("running");
         } else {
-          console.log(chalk.green("Daemon is running."));
-          console.log(`  Version: ${result.version}`);
-          console.log(`  Uptime:  ${result.uptime}s`);
-          console.log(`  Agents:  ${result.agents}`);
+          printer.success("Daemon is running.");
+          printer.log(`  Version: ${result.version}`);
+          printer.log(`  Uptime:  ${result.uptime}s`);
+          printer.log(`  Agents:  ${result.agents}`);
         }
       } catch {
         if (opts.format === "json") {
-          console.log(JSON.stringify({ running: false }, null, 2));
+          printer.log(JSON.stringify({ running: false }, null, 2));
         } else if (opts.format === "quiet") {
-          console.log("stopped");
+          printer.log("stopped");
         } else {
-          console.log(chalk.red("Daemon is not running."));
-          console.log(chalk.dim("Start with: agentcraft daemon start"));
+          printer.log(chalk.red("Daemon is not running."));
+          printer.dim("Start with: agentcraft daemon start");
         }
         process.exitCode = 1;
       }

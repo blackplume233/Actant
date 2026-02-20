@@ -1,7 +1,7 @@
 {
   "id": 22,
   "title": "CLI 包 console.log 违反质量规范 — 需引入结构化输出层",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "cli",
     "enhancement",
@@ -17,9 +17,15 @@
   "relatedIssues": [],
   "taskRef": null,
   "githubRef": "blackplume233/AgentCraft#6",
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-20T16:17:44",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T12:24:39",
-  "updatedAt": "2026-02-20T12:24:39",
-  "closedAt": null
+  "updatedAt": "2026-02-20T16:17:44",
+  "closedAt": "2026-02-20T16:17:44"
 }

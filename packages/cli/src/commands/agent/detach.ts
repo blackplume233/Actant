@@ -1,9 +1,8 @@
 import { Command } from "commander";
-import chalk from "chalk";
 import type { RpcClient } from "../../client/rpc-client";
-import { presentError } from "../../output/index";
+import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 
-export function createAgentDetachCommand(client: RpcClient): Command {
+export function createAgentDetachCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("detach")
     .description("Detach an externally-managed process from an agent")
     .argument("<name>", "Agent instance name")
@@ -14,12 +13,12 @@ export function createAgentDetachCommand(client: RpcClient): Command {
           name,
           cleanup: opts.cleanup,
         });
-        console.log(chalk.green("Process detached."));
+        printer.success("Process detached.");
         if (result.workspaceCleaned) {
-          console.log(chalk.dim("Ephemeral workspace cleaned up."));
+          printer.dim("Ephemeral workspace cleaned up.");
         }
       } catch (err) {
-        presentError(err);
+        presentError(err, printer);
         process.exitCode = 1;
       }
     });

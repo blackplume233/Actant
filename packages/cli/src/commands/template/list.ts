@@ -1,9 +1,8 @@
 import { Command } from "commander";
 import type { RpcClient } from "../../client/rpc-client";
-import { formatTemplateList, type OutputFormat } from "../../output/index";
-import { presentError } from "../../output/index";
+import { presentError, formatTemplateList, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
 
-export function createTemplateListCommand(client: RpcClient): Command {
+export function createTemplateListCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("list")
     .alias("ls")
     .description("List all registered templates")
@@ -11,9 +10,9 @@ export function createTemplateListCommand(client: RpcClient): Command {
     .action(async (opts: { format: OutputFormat }) => {
       try {
         const templates = await client.call("template.list", {});
-        console.log(formatTemplateList(templates, opts.format));
+        printer.log(formatTemplateList(templates, opts.format));
       } catch (err) {
-        presentError(err);
+        presentError(err, printer);
         process.exitCode = 1;
       }
     });

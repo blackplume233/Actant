@@ -2,17 +2,19 @@ import { createInterface, type Interface } from "node:readline";
 import chalk from "chalk";
 import { createProgram } from "../program";
 import type { RpcClient } from "../client/rpc-client";
+import { type CliPrinter, defaultPrinter } from "../output/index";
 
 export async function startRepl(
   client: RpcClient,
   socketPath: string,
   input: NodeJS.ReadableStream = process.stdin,
   output: NodeJS.WritableStream = process.stdout,
+  printer: CliPrinter = defaultPrinter,
 ): Promise<void> {
   const alive = await client.ping();
   if (!alive) {
-    console.error(chalk.red("Cannot connect to daemon."));
-    console.error(chalk.dim("Start with: agentcraft daemon start"));
+    printer.errorStyled("Cannot connect to daemon.");
+    printer.errorDim("Start with: agentcraft daemon start");
     process.exitCode = 1;
     return;
   }
@@ -44,14 +46,14 @@ export async function startRepl(
     }
 
     if (trimmed === "help") {
-      const program = createProgram(socketPath);
+      const program = createProgram(socketPath, printer);
       program.outputHelp();
       rl.prompt();
       return;
     }
 
     try {
-      const program = createProgram(socketPath);
+      const program = createProgram(socketPath, printer);
       program.exitOverride();
       program.configureOutput({
         writeOut: (str: string) => output.write(str),
@@ -83,7 +85,7 @@ export async function startRepl(
   });
 }
 
-function parseArgs(line: string): string[] {
+export function parseArgs(line: string): string[] {
   const args: string[] = [];
   let current = "";
   let inQuote: string | null = null;

@@ -1,9 +1,9 @@
 import { Command } from "commander";
-import chalk from "chalk";
 import { RpcClient } from "../../client/rpc-client";
+import { type CliPrinter, defaultPrinter } from "../../output/index";
 import { defaultSocketPath } from "../../program";
 
-export function createDaemonStopCommand(): Command {
+export function createDaemonStopCommand(printer: CliPrinter = defaultPrinter): Command {
   return new Command("stop")
     .description("Stop the AgentCraft daemon")
     .action(async () => {
@@ -11,9 +11,9 @@ export function createDaemonStopCommand(): Command {
 
       try {
         await client.call("daemon.shutdown", {});
-        console.log(chalk.green("Daemon stopping..."));
+        printer.success("Daemon stopping...");
       } catch {
-        console.log(chalk.yellow("Daemon is not running."));
+        printer.warn("Daemon is not running.");
       }
     });
 }

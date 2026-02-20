@@ -122,7 +122,7 @@ AgentCraft 同时扮演：
 
 ## 当前进行中 (Current)
 
-Phase 1 全部完成（Issues #8, #9, #10, #11, #15 已关闭），准备进入 Phase 2。
+Phase 1 全部完成（Issues #8, #9, #10, #11, #15 已关闭，质量改进 #20, #22 已关闭），准备进入 Phase 2。
 
 ### Phase 1 完成总结
 
@@ -133,6 +133,8 @@ Phase 1 全部完成（Issues #8, #9, #10, #11, #15 已关闭），准备进入 
 | 外部 Spawn | resolve/attach/detach 完整 API + RPC handler + CLI 命令，支持 metadata 传递 |
 | One-shot 模式 | autoDestroy 自动销毁、ephemeral workspace 策略、WorkspacePolicy 类型系统 |
 | 崩溃重启 | 指数退避 RestartTracker、最大重试限制、daemon 重启恢复、稳定期自动重置计数器 |
+| CLI 输出层 | CliPrinter 抽象层替代 console.log，支持可注入输出、便于测试和格式切换 |
+| CLI 测试覆盖 | 56 个单元测试覆盖 printer/formatter/error-presenter/rpc-client/repl/commands |
 
 ### 耐久测试覆盖 — 持续验证能力
 
@@ -199,6 +201,8 @@ Phase 1 全部完成（Issues #8, #9, #10, #11, #15 已关闭），准备进入 
 | #10 | one-shot 模式完整实现 | 2026-02-20 | Phase 1 |
 | #11 | acp-service 崩溃重启策略 | 2026-02-20 | Phase 1 |
 | #15 | agent.resolve / attach / detach API — 外部 Spawn 支持 | 2026-02-20 | Phase 1 |
+| #20 | CLI 包测试覆盖率为零 — 补充单元测试 | 2026-02-20 | Phase 1 (质量) |
+| #22 | CLI 包 console.log 违反质量规范 — 引入 CliPrinter 结构化输出层 | 2026-02-20 | Phase 1 (质量) |
 | #7 | 审查与文档化：配置结构与对外接口 + Workflow 约定 | 2026-02-20 | Phase 1 (准备) |
 | #4 | Real Agent Launcher implementation | 2026-02-20 | Phase 1 (准备) |
 
