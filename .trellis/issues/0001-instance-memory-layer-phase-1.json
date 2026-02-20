@@ -6,7 +6,7 @@
     "core",
     "feature",
     "memory",
-    "priority:P1"
+    "priority:P3"
   ],
   "milestone": "long-term",
   "body": "为 Agent 实例增加 .memory/ 目录，实现跨 session 记忆持久化。",
@@ -28,5 +28,5 @@
   "createdAt": "2026-02-20T10:20:02",
   "updatedAt": "2026-02-20T12:58:52",
   "closedAt": null,
-  "githubRef": null
+  "githubRef": "blackplume233/AgentCraft#10"
 }

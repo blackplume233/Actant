@@ -93,7 +93,7 @@ describe("instance-meta-io", () => {
       expect(result.workspacePolicy).toBe("persistent");
     });
 
-    it("should default workspacePolicy to ephemeral for one-shot (legacy meta)", async () => {
+    it("should default workspacePolicy to persistent for one-shot (legacy meta)", async () => {
       const legacy = makeMeta({ launchMode: "one-shot" });
       const { workspacePolicy: _, ...legacyWithoutPolicy } = legacy;
       await writeFile(
@@ -102,7 +102,7 @@ describe("instance-meta-io", () => {
         "utf-8",
       );
       const result = await readInstanceMeta(tmpDir);
-      expect(result.workspacePolicy).toBe("ephemeral");
+      expect(result.workspacePolicy).toBe("persistent");
     });
   });
 

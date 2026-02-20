@@ -1,7 +1,7 @@
 {
   "id": 30,
   "title": "detachAgent cleanup 测试断言与实现语义不匹配 — 1 个单元测试持续失败",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "core",
     "priority:P1",
@@ -16,9 +16,15 @@
   "relatedIssues": [],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-20T15:50:23",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T15:08:43",
-  "updatedAt": "2026-02-20T15:08:43",
-  "closedAt": null
+  "updatedAt": "2026-02-20T15:50:23",
+  "closedAt": "2026-02-20T15:50:23"
 }

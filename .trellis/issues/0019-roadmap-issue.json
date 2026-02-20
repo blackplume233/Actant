@@ -1,7 +1,7 @@
 {
   "id": 19,
   "title": "Roadmap 与 Issue 元数据不一致",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "enhancement",
     "priority:P1",
@@ -16,15 +16,20 @@
   "relatedIssues": [],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
+  "closedAs": "completed",
   "comments": [
     {
       "text": "[Review 2026-02-20] 补充发现：除原先指出的 #1/#4/#7 元数据不一致外，更大的不一致是 Phase 1 的 5 个 Issue（#8,#9,#10,#11,#15）在 Roadmap 标记 ✅ 完成但在 issue tracker 中仍为 Open。已创建 #29 跟踪。建议将 #19 和 #29 合并修复。",
       "date": "2026-02-20T15:09:06",
       "author": "cursor-agent"
+    },
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-20T15:50:52",
+      "author": "cursor-agent"
     }
   ],
   "createdAt": "2026-02-20T12:22:02",
-  "updatedAt": "2026-02-20T15:09:06",
-  "closedAt": null
+  "updatedAt": "2026-02-20T15:50:52",
+  "closedAt": "2026-02-20T15:50:52"
 }

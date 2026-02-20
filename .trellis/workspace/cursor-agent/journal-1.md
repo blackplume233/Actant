@@ -462,3 +462,91 @@ AgentCraft 同时扮演：ACP Client + MCP Server + ACP Proxy
 ### Next Steps
 
 - None - task complete
+
+## Session 9: 场景测试 + 耐久测试基础设施
+
+**Date**: 2026-02-20
+**Task**: 场景测试 + 耐久测试基础设施
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## 本次工作
+
+建立三层测试体系（单元 → 场景 → 耐久），将耐久测试作为**持续验证能力**融入开发工作流。
+
+### 场景测试 (agent-lifecycle-scenarios.test.ts) — 9 tests
+
+多步工作流正确性验证，纳入常规 `pnpm test`：
+
+| 场景 | 验证链 |
+|------|--------|
+| acp-service 连续崩溃 | running → crash → restart(新PID) → 超限 → error |
+| one-shot 自动销毁 | created → running → exit → destroy + workspace 清理 |
+| 外部 Spawn 完整流程 | resolve → attach → crash → detach cleanup |
+| Daemon 重启恢复 | acp-service 恢复 running, direct 恢复 stopped |
+| 混合并发 | 3 模式同时运行 → 全崩溃 → 各自正确反应 |
+| 完整生命周期循环 | create → start → stop → start(新PID) → stop → destroy |
+
+### 耐久测试 (agent-manager.endurance.test.ts) — 10 tests
+
+长时间运行正确性验证，按需执行 `pnpm test:endurance`：
+
+| 场景 ID | 名称 | 内容 |
+|---------|------|------|
+| E-LIFE | 生命周期循环 | 反复 create/start/stop/destroy |
+| E-SVC | 崩溃重启 | 随机崩溃 → 退避重启 → 恢复 |
+| E-SHOT | one-shot 清理 | ephemeral/persistent 交替 |
+| E-EXT | 外部 Spawn | resolve → attach → crash → detach 循环 |
+| E-DAEMON | Daemon 恢复 | 反复模拟 daemon 宕机重启 |
+| E-MIX | 混合并发 | 多 Agent 多模式随机操作 |
+| shutdown/* | 关停行为矩阵 | 4 种模式各自的关停语义验证 |
+
+### 基础设施
+
+- `vitest.endurance.config.ts` — 独立配置，15 分钟/测试超时
+- `vitest.config.ts` — 排除 `*.endurance.test.ts`
+- `package.json` — 新增 `test:endurance` 脚本
+- `ENDURANCE_DURATION_MS` 环境变量控制运行时长
+
+### 工作流集成
+
+- **耐久测试规范** (`.trellis/spec/endurance-testing.md`) — 覆盖矩阵、不变量定义、演进策略
+- **workflow.md** — Code Quality Checklist + Pre-end Checklist 新增耐久测试同步条目
+- **Cursor Rule** (`.cursor/rules/endurance-testing.mdc`) — 修改核心文件时自动提醒
+- **roadmap.md** — 耐久测试覆盖跟踪表，Phase 2/3+ 场景已预留
+
+### 关键设计
+
+- `createPidController()` — 精确控制哪些 PID "死亡"，避免全局 mock 竞态
+- 结构化不变量检查 (INV-DISK, INV-CLEAN, INV-STATUS, INV-COUNT, INV-PID)
+- 每个测试输出统计摘要，可跟踪吞吐量趋势
+
+**变更文件**:
+- `packages/core/src/manager/agent-lifecycle-scenarios.test.ts` (新)
+- `packages/core/src/manager/agent-manager.endurance.test.ts` (新)
+- `vitest.endurance.config.ts` (新)
+- `.trellis/spec/endurance-testing.md` (新)
+- `.cursor/rules/endurance-testing.mdc` (新)
+- `vitest.config.ts`, `package.json`, `.trellis/workflow.md`, `.trellis/roadmap.md`, `.trellis/spec/index.md`
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9e4c51d` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

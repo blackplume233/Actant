@@ -1,7 +1,7 @@
 {
   "id": 25,
   "title": "测试用例实现深度审查 — 类型安全、断言与配对缺口",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "enhancement",
     "priority:P2",
@@ -15,8 +15,8 @@
   "relatedFiles": [],
   "relatedIssues": [],
   "taskRef": null,
-  "githubRef": null,
-  "closedAs": null,
+  "githubRef": "blackplume233/AgentCraft#7",
+  "closedAs": "completed",
   "comments": [
     {
       "text": "[Review 更严格] 补充：1) 测试代码也应禁止非空断言，见 #26。2) 测试中固定 setTimeout 存在 flaky 风险，见 #28。3) CI 须强制 type-check，见 #27。",
@@ -27,9 +27,14 @@
       "text": "[Review 2026-02-20] 补充发现：detachAgent cleanup 测试（agent-manager.test.ts 第 518-524 行）断言与 spec 语义不匹配导致持续失败，已创建 #30 跟踪。此外 build 后 CLI E2E 测试恢复通过（12 个），process-launcher 即时退出测试也恢复通过，说明之前的失败根因是 shared 包未构建，非测试逻辑问题。",
       "date": "2026-02-20T15:09:14",
       "author": "cursor-agent"
+    },
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-20T15:57:44",
+      "author": "cursor-agent"
     }
   ],
   "createdAt": "2026-02-20T13:17:08",
-  "updatedAt": "2026-02-20T15:09:14",
-  "closedAt": null
+  "updatedAt": "2026-02-20T15:57:44",
+  "closedAt": "2026-02-20T15:57:44"
 }

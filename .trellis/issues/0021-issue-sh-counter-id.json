@@ -1,7 +1,7 @@
 {
   "id": 21,
   "title": "issue.sh .counter 自增脱节导致 ID 冲突",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "bug",
     "core",
@@ -17,9 +17,15 @@
   "relatedIssues": [],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-20T15:50:22",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T12:24:27",
-  "updatedAt": "2026-02-20T12:24:27",
-  "closedAt": null
+  "updatedAt": "2026-02-20T15:50:22",
+  "closedAt": "2026-02-20T15:50:22"
 }

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 8
+- **Total Sessions**: 9
 - **Last Active**: 2026-02-20
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~464 | Active |
+| `journal-1.md` | ~552 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 9 | 2026-02-20 | 场景测试 + 耐久测试基础设施 | `9e4c51d` |
 | 8 | 2026-02-20 | Fix #26 #27 #28: quality enforcement | `37f885e` |
 | 7 | 2026-02-20 | Agent Lifecycle, ACP Proxy, MCP Server, External Spawn Specs | `fc8ab6f` |
 | 6 | 2026-02-20 | Spec-first config & API contract documentation (Issue #7) | `08d0f00` |

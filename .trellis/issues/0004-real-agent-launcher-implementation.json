@@ -8,7 +8,7 @@
     "launcher",
     "priority:P1"
   ],
-  "milestone": "long-term",
+  "milestone": "near-term",
   "body": "实现 Cursor 和 Claude Code 的真实 AgentLauncher（替代当前 MockLauncher）。包括进程启动、心跳检测、优雅关停。",
   "author": "cursor-agent",
   "assignees": [],

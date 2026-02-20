@@ -68,9 +68,30 @@ ensure_issues_dir() {
 
 next_id() {
   ensure_issues_dir
-  local current
-  current=$(cat "$COUNTER_FILE")
-  local next=$((current + 1))
+  local counter_val max_file_id next
+  counter_val=$(cat "$COUNTER_FILE")
+
+  # Scan existing files for the actual maximum ID to prevent conflicts
+  max_file_id=0
+  for f in "$ISSUES_DIR"/[0-9][0-9][0-9][0-9]-*.json; do
+    [[ ! -f "$f" ]] && continue
+    local fid
+    fid=$(basename "$f" | grep -o '^[0-9]\+' | sed 's/^0*//')
+    [[ -z "$fid" ]] && fid=0
+    (( fid > max_file_id )) && max_file_id=$fid
+  done
+
+  local base=$(( counter_val > max_file_id ? counter_val : max_file_id ))
+  next=$((base + 1))
+
+  # Check for file name collision before committing
+  local padded
+  padded=$(printf "%04d" "$next")
+  while ls "$ISSUES_DIR"/${padded}-*.json >/dev/null 2>&1; do
+    next=$((next + 1))
+    padded=$(printf "%04d" "$next")
+  done
+
   echo "$next" > "$COUNTER_FILE"
   echo "$next"
 }

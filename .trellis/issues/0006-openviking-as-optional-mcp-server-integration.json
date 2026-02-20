@@ -1,7 +1,7 @@
 {
   "id": 6,
   "title": "OpenViking as optional MCP Server integration",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "discussion",
     "mcp",
@@ -17,10 +17,16 @@
     3
   ],
   "taskRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "not-planned",
+  "comments": [
+    {
+      "text": "Closed as not-planned",
+      "date": "2026-02-20T15:57:44",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T10:23:18",
-  "updatedAt": "2026-02-20T10:23:18",
-  "closedAt": null,
+  "updatedAt": "2026-02-20T15:57:44",
+  "closedAt": "2026-02-20T15:57:44",
   "githubRef": null
 }
