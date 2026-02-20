@@ -1,0 +1,70 @@
+{
+  "name": "daemon-connectivity",
+  "description": "验证 Daemon 的启动、状态查询、以及 Daemon 未运行时 CLI 的错误处理",
+  "tags": ["daemon", "connectivity"],
+  "setup": {
+    "daemon": false,
+    "launcherMode": "mock",
+    "templates": []
+  },
+  "steps": [
+    {
+      "id": "status-no-daemon",
+      "description": "Daemon 未运行时查询状态",
+      "command": "daemon status",
+      "expect": "退出码非 0，提示无法连接到 Daemon 或 Daemon 未运行"
+    },
+    {
+      "id": "agent-list-no-daemon",
+      "description": "Daemon 未运行时执行 agent 命令",
+      "command": "agent list",
+      "expect": "退出码非 0，错误提示与 Daemon 连接相关"
+    },
+    {
+      "id": "start-daemon",
+      "description": "启动 Daemon（前台模式）",
+      "command": "daemon start --foreground",
+      "expect": "Daemon 成功启动（后台运行），不报错",
+      "_note": "此步骤需后台启动 Daemon"
+    },
+    {
+      "id": "status-running",
+      "description": "确认 Daemon 正在运行",
+      "command": "daemon status -f json",
+      "expect": "退出码 0，返回 JSON 包含 running=true 和 version 字段"
+    },
+    {
+      "id": "version-check",
+      "description": "确认版本号",
+      "command": "--version",
+      "expect": "输出版本号（如 0.1.0），退出码 0"
+    },
+    {
+      "id": "help-check",
+      "description": "确认帮助信息",
+      "command": "--help",
+      "expect": "输出包含 AgentCraft、template、agent、daemon 等关键词的帮助信息"
+    },
+    {
+      "id": "daemon-ping-via-agent",
+      "description": "通过 agent list 间接验证 Daemon 连通性",
+      "command": "agent list -f json",
+      "expect": "成功返回空数组（因为没有创建过 Agent），说明 Daemon 连接正常"
+    },
+    {
+      "id": "stop-daemon",
+      "description": "停止 Daemon",
+      "command": "daemon stop",
+      "expect": "成功停止，退出码 0"
+    },
+    {
+      "id": "status-after-stop",
+      "description": "Daemon 停止后查询状态",
+      "command": "daemon status",
+      "expect": "退出码非 0，提示 Daemon 未运行或无法连接"
+    }
+  ],
+  "cleanup": [
+    "daemon stop"
+  ]
+}
