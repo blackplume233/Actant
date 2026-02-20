@@ -2,7 +2,7 @@ import { spawn } from "node:child_process";
 import type { AgentInstanceMeta } from "@agentcraft/shared";
 import { AgentLaunchError, createLogger } from "@agentcraft/shared";
 import type { AgentLauncher, AgentProcess } from "./agent-launcher";
-import { resolveBackend } from "./backend-resolver";
+import { resolveBackend, isAcpBackend } from "./backend-resolver";
 import { isProcessAlive, sendSignal, delay } from "./process-utils";
 
 const logger = createLogger("process-launcher");
@@ -40,12 +40,14 @@ export class ProcessLauncher implements AgentLauncher {
       meta.backendConfig,
     );
 
-    logger.info({ name: meta.name, command, args, backendType: meta.backendType }, "Spawning backend process");
+    const useAcp = isAcpBackend(meta.backendType);
+
+    logger.info({ name: meta.name, command, args, backendType: meta.backendType, acp: useAcp }, "Spawning backend process");
 
     const child = spawn(command, args, {
       cwd: workspaceDir,
-      detached: true,
-      stdio: "ignore",
+      detached: !useAcp,
+      stdio: useAcp ? ["pipe", "pipe", "pipe"] : "ignore",
     });
 
     const spawnResult = await new Promise<{ pid: number } | { error: Error }>((resolve) => {
@@ -72,7 +74,12 @@ export class ProcessLauncher implements AgentLauncher {
 
     const pid = spawnResult.pid;
 
-    child.unref();
+    if (!useAcp) {
+      child.unref();
+    }
+
+    let earlyExit = false;
+    child.once("exit", () => { earlyExit = true; });
 
     child.on("error", (err) => {
       logger.error({ name: meta.name, pid, error: err }, "Backend process error after spawn");
@@ -81,7 +88,7 @@ export class ProcessLauncher implements AgentLauncher {
     if (this.spawnVerifyDelayMs > 0) {
       await delay(this.spawnVerifyDelayMs);
 
-      if (!isProcessAlive(pid)) {
+      if (earlyExit || !isProcessAlive(pid)) {
         throw new AgentLaunchError(
           meta.name,
           new Error(`Process exited immediately after spawn (pid=${pid}, command=${command})`),
@@ -89,13 +96,23 @@ export class ProcessLauncher implements AgentLauncher {
       }
     }
 
-    logger.info({ name: meta.name, pid, command }, "Backend process spawned");
+    logger.info({ name: meta.name, pid, command, acp: useAcp }, "Backend process spawned");
 
-    return {
+    const result: AgentProcess = {
       pid,
       workspaceDir,
       instanceName: meta.name,
     };
+
+    if (useAcp && child.stdin && child.stdout && child.stderr) {
+      result.stdio = {
+        stdin: child.stdin,
+        stdout: child.stdout,
+        stderr: child.stderr,
+      };
+    }
+
+    return result;
   }
 
   async terminate(agentProcess: AgentProcess): Promise<void> {

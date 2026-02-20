@@ -9,6 +9,7 @@ import {
   createMcpCommand,
   createWorkflowCommand,
   createDaemonCommand,
+  createProxyCommand,
 } from "./commands/index";
 import { presentError, type CliPrinter } from "./output/index";
 
@@ -31,6 +32,7 @@ export function createProgram(socketPath?: string, printer?: CliPrinter): Comman
   program.addCommand(createMcpCommand(client, printer));
   program.addCommand(createWorkflowCommand(client, printer));
   program.addCommand(createDaemonCommand(printer));
+  program.addCommand(createProxyCommand(printer));
 
   program.exitOverride();
 

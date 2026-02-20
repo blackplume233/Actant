@@ -1,7 +1,7 @@
-import { mkdir, rm, access } from "node:fs/promises";
+import { mkdir, rm, access, symlink, lstat, unlink, readlink } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy } from "@agentcraft/shared";
+import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, WorkDirConflict } from "@agentcraft/shared";
 import {
   AgentCraftError,
   ConfigValidationError,
@@ -23,6 +23,10 @@ export interface InitializerOptions {
 export interface InstanceOverrides {
   launchMode: LaunchMode;
   workspacePolicy: WorkspacePolicy;
+  /** Absolute path for the agent workspace. When omitted, defaults to {instancesBaseDir}/{name}. */
+  workDir: string;
+  /** Behavior when workDir already exists. Default: "error". */
+  workDirConflict: WorkDirConflict;
   metadata: Record<string, string>;
 }
 
@@ -54,14 +58,39 @@ export class AgentInitializer {
     overrides?: Partial<InstanceOverrides>,
   ): Promise<AgentInstanceMeta> {
     const template = this.templateRegistry.getOrThrow(templateName);
-    const workspaceDir = join(this.instancesBaseDir, name);
+    const customWorkDir = overrides?.workDir;
+    const workspaceDir = customWorkDir ?? join(this.instancesBaseDir, name);
+    const conflictPolicy = overrides?.workDirConflict ?? "error";
 
-    if (await dirExists(workspaceDir)) {
-      throw new ConfigValidationError(
-        `Instance directory "${name}" already exists`,
-        [{ path: "name", message: `Directory already exists: ${workspaceDir}` }],
-      );
+    const exists = await dirExists(workspaceDir);
+    if (exists) {
+      switch (conflictPolicy) {
+        case "error":
+          throw new ConfigValidationError(
+            `Instance directory "${name}" already exists`,
+            [{ path: "name", message: `Directory already exists: ${workspaceDir}` }],
+          );
+        case "overwrite":
+          await rm(workspaceDir, { recursive: true, force: true });
+          logger.info({ workspaceDir }, "Existing directory removed (overwrite)");
+          break;
+        case "append":
+          logger.info({ workspaceDir }, "Appending to existing directory");
+          break;
+      }
     }
+
+    if (customWorkDir) {
+      const linkPath = join(this.instancesBaseDir, name);
+      if (await entryExists(linkPath)) {
+        throw new ConfigValidationError(
+          `Instance registration "${name}" already exists in instancesBaseDir`,
+          [{ path: "name", message: `Entry already exists: ${linkPath}` }],
+        );
+      }
+    }
+
+    const shouldCleanupOnError = conflictPolicy !== "append" && !exists;
 
     try {
       await mkdir(workspaceDir, { recursive: true });
@@ -91,9 +120,18 @@ export class AgentInitializer {
       };
 
       await writeInstanceMeta(workspaceDir, meta);
-      logger.info({ name, templateName }, "Agent instance created");
+
+      if (customWorkDir) {
+        await symlink(workspaceDir, join(this.instancesBaseDir, name), "dir");
+      }
+
+      logger.info({ name, templateName, workspaceDir, customWorkDir: !!customWorkDir }, "Agent instance created");
       return meta;
     } catch (err) {
+      if (shouldCleanupOnError) {
+        await rm(workspaceDir, { recursive: true, force: true }).catch(() => {});
+        logger.debug({ workspaceDir }, "Cleaned up workspace after failed creation");
+      }
       if (err instanceof AgentCraftError) {
         throw err;
       }
@@ -132,16 +170,31 @@ export class AgentInitializer {
   }
 
   /**
-   * Destroy an instance by removing its entire workspace directory.
+   * Destroy an instance by removing its workspace directory.
+   * For symlinked instances (custom workDir): removes the symlink and `.agentcraft.json`
+   * from the target, but preserves the rest of the user's directory.
+   * For normal instances: removes the entire workspace directory.
    */
   async destroyInstance(name: string): Promise<void> {
-    const workspaceDir = join(this.instancesBaseDir, name);
-    if (!(await dirExists(workspaceDir))) {
+    const entryPath = join(this.instancesBaseDir, name);
+    if (!(await entryExists(entryPath))) {
       logger.warn({ name }, "Instance directory not found, nothing to destroy");
       return;
     }
-    await rm(workspaceDir, { recursive: true, force: true });
-    logger.info({ name }, "Agent instance destroyed");
+
+    if (await isSymlink(entryPath)) {
+      const targetDir = await readlink(entryPath);
+      try {
+        await unlink(join(targetDir, ".agentcraft.json"));
+      } catch {
+        // .agentcraft.json may have been removed already
+      }
+      await unlink(entryPath);
+      logger.info({ name, targetDir }, "Symlinked agent instance unregistered");
+    } else {
+      await rm(entryPath, { recursive: true, force: true });
+      logger.info({ name }, "Agent instance destroyed");
+    }
   }
 }
 
@@ -149,6 +202,25 @@ async function dirExists(path: string): Promise<boolean> {
   try {
     await access(path);
     return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Check if an entry (file, dir, or symlink) exists without following symlinks. */
+async function entryExists(path: string): Promise<boolean> {
+  try {
+    await lstat(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function isSymlink(path: string): Promise<boolean> {
+  try {
+    const stats = await lstat(path);
+    return stats.isSymbolicLink();
   } catch {
     return false;
   }

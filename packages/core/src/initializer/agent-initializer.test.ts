@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtemp, rm, readFile, access, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, readFile, access, mkdir, writeFile, lstat, readlink } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { AgentTemplate } from "@agentcraft/shared";
@@ -199,6 +199,95 @@ describe("AgentInitializer", () => {
     });
   });
 
+  describe("createInstance with custom workDir", () => {
+    let customDir: string;
+
+    beforeEach(async () => {
+      customDir = await mkdtemp(join(tmpdir(), "agentcraft-workdir-test-"));
+    });
+
+    afterEach(async () => {
+      await rm(customDir, { recursive: true, force: true }).catch(() => {});
+    });
+
+    it("should create instance in a custom directory and symlink from instancesBaseDir", async () => {
+      const targetDir = join(customDir, "my-project");
+      const meta = await initializer.createInstance("custom-agent", "test-template", {
+        workDir: targetDir,
+      });
+
+      expect(meta.name).toBe("custom-agent");
+
+      const metaRaw = await readFile(join(targetDir, ".agentcraft.json"), "utf-8");
+      expect(JSON.parse(metaRaw).name).toBe("custom-agent");
+
+      const linkStat = await lstat(join(tmpDir, "custom-agent"));
+      expect(linkStat.isSymbolicLink()).toBe(true);
+
+      const linkTarget = await readlink(join(tmpDir, "custom-agent"));
+      expect(linkTarget).toBe(targetDir);
+    });
+
+    it("should materialize domain context files into custom workDir", async () => {
+      const targetDir = join(customDir, "project-with-agent");
+      await initializer.createInstance("ctx-agent", "test-template", {
+        workDir: targetDir,
+      });
+
+      const agents = await readFile(join(targetDir, "AGENTS.md"), "utf-8");
+      expect(agents).toContain("skill-a");
+    });
+
+    it("should error by default when custom workDir already exists", async () => {
+      await mkdir(join(customDir, "existing-project"));
+      await expect(
+        initializer.createInstance("exist-agent", "test-template", {
+          workDir: join(customDir, "existing-project"),
+        }),
+      ).rejects.toThrow(ConfigValidationError);
+    });
+
+    it("should overwrite existing directory when workDirConflict is 'overwrite'", async () => {
+      const target = join(customDir, "overwrite-project");
+      await mkdir(target, { recursive: true });
+      await writeFile(join(target, "old-file.txt"), "old content");
+
+      const meta = await initializer.createInstance("overwrite-agent", "test-template", {
+        workDir: target,
+        workDirConflict: "overwrite",
+      });
+
+      expect(meta.name).toBe("overwrite-agent");
+      await expect(access(join(target, "old-file.txt"))).rejects.toThrow();
+      await expect(access(join(target, ".agentcraft.json"))).resolves.toBeUndefined();
+    });
+
+    it("should append to existing directory when workDirConflict is 'append'", async () => {
+      const target = join(customDir, "append-project");
+      await mkdir(target, { recursive: true });
+      await writeFile(join(target, "existing-file.txt"), "keep me");
+
+      const meta = await initializer.createInstance("append-agent", "test-template", {
+        workDir: target,
+        workDirConflict: "append",
+      });
+
+      expect(meta.name).toBe("append-agent");
+      const kept = await readFile(join(target, "existing-file.txt"), "utf-8");
+      expect(kept).toBe("keep me");
+      await expect(access(join(target, ".agentcraft.json"))).resolves.toBeUndefined();
+    });
+
+    it("should error when instance name already registered in instancesBaseDir", async () => {
+      await initializer.createInstance("taken-name", "test-template");
+      await expect(
+        initializer.createInstance("taken-name", "test-template", {
+          workDir: join(customDir, "new-project"),
+        }),
+      ).rejects.toThrow(ConfigValidationError);
+    });
+  });
+
   describe("destroyInstance", () => {
     it("should remove the instance directory completely", async () => {
       await initializer.createInstance("to-destroy", "test-template");
@@ -211,6 +300,29 @@ describe("AgentInitializer", () => {
       await expect(
         initializer.destroyInstance("nonexistent"),
       ).resolves.toBeUndefined();
+    });
+
+    it("should remove symlink but preserve custom workDir content", async () => {
+      const customDir = await mkdtemp(join(tmpdir(), "agentcraft-destroy-test-"));
+      try {
+        const targetDir = join(customDir, "user-project");
+        await mkdir(targetDir, { recursive: true });
+        await writeFile(join(targetDir, "readme.md"), "My project");
+
+        await initializer.createInstance("linked-agent", "test-template", {
+          workDir: targetDir,
+          workDirConflict: "append",
+        });
+
+        await initializer.destroyInstance("linked-agent");
+
+        await expect(access(join(tmpDir, "linked-agent"))).rejects.toThrow();
+        const readme = await readFile(join(targetDir, "readme.md"), "utf-8");
+        expect(readme).toBe("My project");
+        await expect(access(join(targetDir, ".agentcraft.json"))).rejects.toThrow();
+      } finally {
+        await rm(customDir, { recursive: true, force: true });
+      }
     });
   });
 });

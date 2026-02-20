@@ -8,6 +8,7 @@ import {
   registerAgentHandlers,
   registerDomainHandlers,
   registerDaemonHandlers,
+  registerProxyHandlers,
 } from "../handlers/index";
 import { writePidFile, removePidFile, readPidFile, isProcessRunning } from "./pid-file";
 
@@ -28,6 +29,7 @@ export class Daemon {
     registerAgentHandlers(this.handlers);
     registerDomainHandlers(this.handlers);
     registerDaemonHandlers(this.handlers, () => this.stop());
+    registerProxyHandlers(this.handlers);
   }
 
   get socketPath(): string {
@@ -60,7 +62,7 @@ export class Daemon {
     await writePidFile(this.ctx.pidFilePath);
     this.running = true;
 
-    logger.info({ pid: process.pid, socket: this.ctx.socketPath }, "Daemon started");
+    logger.info({ pid: process.pid, socket: this.ctx.socketPath, homeDir: this.ctx.homeDir }, "Daemon started");
   }
 
   async stop(): Promise<void> {

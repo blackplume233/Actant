@@ -155,14 +155,24 @@ Phase 1 (已完成)
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
-| #16 | ACP Proxy — 标准 ACP 协议网关 | P1 | #9, #15 | 待开始 |
+| #16 | ACP Proxy — 标准 ACP 协议网关 | P1 | #9, #15 | ✅ 完成 |
 | #17 | MCP Server — Agent 间通信能力 | P2 | #12 | 待开始 |
 | #5 | Template hot-reload on file change | P2 | - | 待开始 |
+
+#### #16 ACP Proxy — 标准 ACP 协议网关 ✅ 完成
+> **实现内容**：
+> - `@agentcraft/acp` 包：`AcpConnection`（封装 `@agentclientprotocol/sdk` ClientSideConnection + 子进程管理），`AcpConnectionManager`（连接池管理），`AcpCommunicator`（AgentCommunicator 适配）
+> - `claude-code` 后端从 `claude --project-dir` 改为 `claude-agent-acp`（ACP stdio 通信）
+> - `ProcessLauncher` 支持 ACP backends 保持 stdio pipes
+> - `AgentManager` 集成 ACP：`startAgent` 建立连接，`stopAgent` 断开，`runPrompt` 优先 ACP，新增 `promptAgent`
+> - `agent.prompt` RPC handler + CLI 命令
+> - `proxy.connect/disconnect/forward` RPC handlers
+> - `agentcraft proxy <name>` CLI 命令：对外 ACP Agent 接口，对内 RPC 转发
 
 **Phase 3 依赖关系:**
 ```
 Phase 2 #12 (来自 MVP)
- ├──→ #16 ACP Proxy (标准 ACP 网关, 依赖 #15 resolve/attach)
+ ├──→ #16 ACP Proxy (标准 ACP 网关, 依赖 #15 resolve/attach) ✅
  └──→ #17 MCP Server (Agent-to-Agent, 依赖 agent.run/prompt)
 
 #5 Template hot-reload (独立)
@@ -211,7 +221,7 @@ Phase 2 #12 (来自 MVP)
 
 ## 当前进行中 (Current)
 
-Phase 1 和 Phase 2 MVP 全部完成，当前聚焦 **Phase 3: 通信与协议**。
+Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 已完成。当前聚焦 **Phase 3 剩余项（#17 MCP Server）**。
 
 ### Phase 1 完成总结
 
@@ -236,6 +246,18 @@ Phase 1 和 Phase 2 MVP 全部完成，当前聚焦 **Phase 3: 通信与协议**
 | 端到端集成 | 示例模板 (code-review-agent)、Quick-start 文档、MVE E2E 集成测试 (6 场景) |
 | 示例内容 | 2 skills + 1 prompt + 1 MCP + 1 workflow + 1 template |
 | 测试覆盖 | 313 tests across 29 files (从 290 增长到 313) |
+
+### Phase 3 进展总结（#16 ACP Proxy 已完成）
+
+| 功能 | 实现内容 |
+|------|---------|
+| ACP 包 (`@agentcraft/acp`) | `AcpConnection`（stdio + ClientSideConnection），`AcpConnectionManager`（连接池），`AcpCommunicator`（AgentCommunicator 适配） |
+| Backend 重构 | `claude-code` 使用 `claude-agent-acp`，`ProcessLauncher` 支持 ACP stdio pipes |
+| AgentManager ACP 集成 | `startAgent` 建立 ACP 连接，`stopAgent` 断开，`runPrompt` ACP 优先回退 CLI，`promptAgent` 新方法 |
+| RPC 新方法 | `agent.prompt`（ACP session 交互），`proxy.connect/disconnect/forward`（Proxy session 管理） |
+| CLI 新命令 | `agent prompt <name> -m <message>`，`agentcraft proxy <name> [--env-passthrough]` |
+| 测试 | `AcpConnectionManager` 单元测试，`AcpCommunicator` 单元测试，`proxy-handlers` 单元测试（14 new tests） |
+| Spec 更新 | api-contracts.md §3.6/§3.7/§7 标记已实现，config-spec.md 新增 `ANTHROPIC_API_KEY`，roadmap.md #16 完成 |
 
 ### 耐久测试覆盖 — 持续验证能力
 
@@ -270,7 +292,7 @@ Phase 1 和 Phase 2 MVP 全部完成，当前聚焦 **Phase 3: 通信与协议**
 
 | 顺序 | Issue | 标题 | 依赖 | 说明 |
 |------|-------|------|------|------|
-| 6 | **#16** | ACP Proxy — 标准 ACP 协议网关 | #9, #15 | 外部 ACP Client 以标准协议接入托管 Agent |
+| 6 | **#16** | ACP Proxy — 标准 ACP 协议网关 | #9, #15 | ✅ **已完成** |
 | 7 | **#17** | MCP Server — Agent 间通信能力 | #12 | 暴露 agentcraft_run_agent 等 MCP tools |
 | 8 | #5 | Template hot-reload on file change | 无 | Daemon 监听 template 变更自动 reload |
 
@@ -311,6 +333,7 @@ Phase 1 和 Phase 2 MVP 全部完成，当前聚焦 **Phase 3: 通信与协议**
 | #12 | Daemon ↔ Agent 通信 (ACP Client 简化版) | 2026-02-20 | Phase 2 MVP |
 | #25 | CLI Agent 交互 (chat / run) | 2026-02-20 | Phase 2 MVP |
 | #26 | MVP 端到端集成与示例模板 | 2026-02-20 | Phase 2 MVP |
+| #16 | ACP Proxy — 标准 ACP 协议网关 | 2026-02-20 | Phase 3 |
 
 ---
 
@@ -353,7 +376,7 @@ Phase 1 ──→ #12 Daemon ↔ Agent 通信 (P0)
 ═══════════════════════════════════════════════════════════════
 
 #12 (来自 MVP)
- ├──→ #16 ACP Proxy (P1)         ← 外部应用接入
+ ├──→ #16 ACP Proxy (P1) ✅       ← 外部应用接入
  └──→ #17 MCP Server (P2)        ← Agent-to-Agent
 
 #5 Template hot-reload (P2) — 独立

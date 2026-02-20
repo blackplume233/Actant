@@ -1,7 +1,7 @@
 {
   "id": 34,
   "title": "Daemon 未读取 AGENTCRAFT_HOME 环境变量",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "bug",
     "priority:P1",
@@ -15,9 +15,15 @@
   "relatedIssues": [],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-20T17:59:07",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T17:38:57",
-  "updatedAt": "2026-02-20T17:38:57",
-  "closedAt": null
+  "updatedAt": "2026-02-20T17:59:07",
+  "closedAt": "2026-02-20T17:59:07"
 }

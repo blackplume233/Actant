@@ -362,8 +362,10 @@ Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
 
 | 变量 | 作用 | 默认值 |
 |------|------|--------|
+| `AGENTCRAFT_HOME` | 覆盖数据根目录（homeDir） | `~/.agentcraft` |
 | `AGENTCRAFT_SOCKET` | 覆盖 IPC Socket 路径 | 平台默认 |
 | `AGENTCRAFT_LAUNCHER_MODE` | 设定 Launcher 模式（`"mock"` / `"real"`） | `"real"` |
+| `ANTHROPIC_API_KEY` | Anthropic API 密钥，`claude-agent-acp` 需要此变量 | 无（必须设置才能使用 ACP） |
 | `LOG_LEVEL` | Pino 日志级别 | `"info"`（CLI 中未设置时为 `"silent"`） |
 
 ---

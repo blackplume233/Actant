@@ -13,6 +13,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@agentcraft/acp": "workspace:*",
     "@agentcraft/core": "workspace:*",
     "@agentcraft/shared": "workspace:*"
   }

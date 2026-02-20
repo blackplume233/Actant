@@ -92,7 +92,7 @@ async function runChatLoop(
           maxTurns: opts.maxTurns,
           sessionId: opts.sessionId,
         },
-      });
+      }, { timeoutMs: 305_000 });
 
       output.write(result.text + "\n\n");
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveBackend } from "./backend-resolver";
+import { resolveBackend, isAcpBackend } from "./backend-resolver";
 
 describe("resolveBackend", () => {
   it("should use executablePath from backendConfig when provided", () => {
@@ -14,10 +14,16 @@ describe("resolveBackend", () => {
     expect(result.args).toEqual(["/workspace"]);
   });
 
-  it("should build correct args for claude-code backend", () => {
-    const result = resolveBackend("claude-code", "/workspace", { executablePath: "/usr/bin/claude" });
-    expect(result.command).toBe("/usr/bin/claude");
-    expect(result.args).toEqual(["--project-dir", "/workspace"]);
+  it("should resolve claude-code to claude-agent-acp with no args", () => {
+    const result = resolveBackend("claude-code", "/workspace");
+    expect(result.command).toMatch(/claude-agent-acp/);
+    expect(result.args).toEqual([]);
+  });
+
+  it("should use executablePath override for claude-code", () => {
+    const result = resolveBackend("claude-code", "/workspace", { executablePath: "/custom/acp" });
+    expect(result.command).toBe("/custom/acp");
+    expect(result.args).toEqual([]);
   });
 
   it("should throw for custom backend without executablePath", () => {
@@ -37,5 +43,19 @@ describe("resolveBackend", () => {
     });
     expect(result.command).toBe("node");
     expect(result.args).toEqual(["-e", "console.log('hello')"]);
+  });
+});
+
+describe("isAcpBackend", () => {
+  it("should return true for claude-code", () => {
+    expect(isAcpBackend("claude-code")).toBe(true);
+  });
+
+  it("should return false for cursor", () => {
+    expect(isAcpBackend("cursor")).toBe(false);
+  });
+
+  it("should return false for custom", () => {
+    expect(isAcpBackend("custom")).toBe(false);
   });
 });

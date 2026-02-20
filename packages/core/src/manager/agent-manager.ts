@@ -11,16 +11,44 @@ import {
 import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
-import { resolveBackend } from "./launcher/backend-resolver";
+import { resolveBackend, isAcpBackend } from "./launcher/backend-resolver";
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
 import { RestartTracker, type RestartPolicy } from "./restart-tracker";
 import { delay } from "./launcher/process-utils";
 import { scanInstances, updateInstanceMeta } from "../state/index";
-import type { AgentCommunicator, PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
+import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
 import { createCommunicator } from "../communicator/create-communicator";
 
 const logger = createLogger("agent-manager");
+
+/**
+ * Minimal ACP connection manager interface.
+ * The real implementation lives in @agentcraft/acp; this avoids a circular dependency.
+ */
+export interface AcpConnectionManagerLike {
+  connect(name: string, options: {
+    command: string;
+    args: string[];
+    cwd: string;
+    connectionOptions?: {
+      autoApprove?: boolean;
+      env?: Record<string, string>;
+    };
+  }): Promise<{ sessionId: string }>;
+  has(name: string): boolean;
+  getPrimarySessionId(name: string): string | undefined;
+  getConnection(name: string): AcpConnectionLike | undefined;
+  disconnect(name: string): Promise<void>;
+  disposeAll(): Promise<void>;
+}
+
+export interface AcpConnectionLike {
+  prompt(sessionId: string, text: string): Promise<{ stopReason: string; text: string }>;
+  streamPrompt(sessionId: string, text: string): AsyncIterable<unknown>;
+  newSession(cwd: string): Promise<{ sessionId: string }>;
+  isConnected: boolean;
+}
 
 export interface ManagerOptions {
   corruptedDir?: string;
@@ -28,6 +56,8 @@ export interface ManagerOptions {
   watcherPollIntervalMs?: number;
   /** Restart policy for acp-service agents. */
   restartPolicy?: Partial<RestartPolicy>;
+  /** ACP connection manager for ACP-based backends. */
+  acpManager?: AcpConnectionManagerLike;
 }
 
 export class AgentManager {
@@ -36,6 +66,7 @@ export class AgentManager {
   private readonly corruptedDir: string;
   private readonly watcher: ProcessWatcher;
   private readonly restartTracker: RestartTracker;
+  private readonly acpManager?: AcpConnectionManagerLike;
 
   constructor(
     private readonly initializer: AgentInitializer,
@@ -49,6 +80,7 @@ export class AgentManager {
       { pollIntervalMs: options?.watcherPollIntervalMs },
     );
     this.restartTracker = new RestartTracker(options?.restartPolicy);
+    this.acpManager = options?.acpManager;
   }
 
   /**
@@ -135,7 +167,8 @@ export class AgentManager {
   }
 
   /**
-   * Start an agent — launch the backend process pointing at the workspace.
+   * Start an agent — launch the backend process.
+   * For ACP backends, also establishes ACP connection (initialize + session/new).
    * @throws {AgentNotFoundError} if agent is not in cache
    * @throws {AgentAlreadyRunningError} if agent is already running
    */
@@ -152,13 +185,28 @@ export class AgentManager {
 
     try {
       const proc = await this.launcher.launch(dir, starting);
+      this.processes.set(name, proc);
+
+      if (isAcpBackend(meta.backendType) && this.acpManager) {
+        const { command, args } = resolveBackend(meta.backendType, dir, meta.backendConfig);
+        await this.acpManager.connect(name, {
+          command,
+          args,
+          cwd: dir,
+          connectionOptions: { autoApprove: true },
+        });
+        logger.info({ name }, "ACP connection established");
+      }
+
       const running = await updateInstanceMeta(dir, { status: "running", pid: proc.pid });
       this.cache.set(name, running);
-      this.processes.set(name, proc);
       this.watcher.watch(name, proc.pid);
       this.restartTracker.recordStart(name);
-      logger.info({ name, pid: proc.pid, launchMode: starting.launchMode }, "Agent started");
+      logger.info({ name, pid: proc.pid, launchMode: starting.launchMode, acp: isAcpBackend(meta.backendType) }, "Agent started");
     } catch (err) {
+      if (this.acpManager?.has(name)) {
+        await this.acpManager.disconnect(name).catch(() => {});
+      }
       const errored = await updateInstanceMeta(dir, { status: "error" });
       this.cache.set(name, errored);
       throw err;
@@ -166,7 +214,7 @@ export class AgentManager {
   }
 
   /**
-   * Stop an agent — terminate the backend process.
+   * Stop an agent — disconnect ACP and terminate the backend process.
    * @throws {AgentNotFoundError} if agent is not in cache
    */
   async stopAgent(name: string): Promise<void> {
@@ -184,6 +232,12 @@ export class AgentManager {
 
     const stopping = await updateInstanceMeta(dir, { status: "stopping" });
     this.cache.set(name, stopping);
+
+    if (this.acpManager?.has(name)) {
+      await this.acpManager.disconnect(name).catch((err) => {
+        logger.warn({ name, error: err }, "Error disconnecting ACP during stop");
+      });
+    }
 
     const proc = this.processes.get(name);
     if (proc) {
@@ -335,8 +389,7 @@ export class AgentManager {
 
   /**
    * Send a prompt to an agent and collect the full response.
-   * The agent does not need to be "running" as a long-lived service —
-   * this uses the backend CLI in print mode for one-shot execution.
+   * Uses ACP connection if the agent is started with ACP, otherwise falls back to CLI pipe mode.
    */
   async runPrompt(
     name: string,
@@ -344,14 +397,25 @@ export class AgentManager {
     options?: RunPromptOptions,
   ): Promise<PromptResult> {
     const meta = this.requireAgent(name);
+
+    if (this.acpManager?.has(name)) {
+      const conn = this.acpManager.getConnection(name);
+      const sessionId = this.acpManager.getPrimarySessionId(name);
+      if (conn && sessionId) {
+        logger.debug({ name, sessionId }, "Sending prompt via ACP");
+        const result = await conn.prompt(sessionId, prompt);
+        return { text: result.text, sessionId };
+      }
+    }
+
     const dir = join(this.instancesBaseDir, name);
-    const communicator = this.getCommunicator(meta);
+    const communicator = createCommunicator(meta.backendType);
     return communicator.runPrompt(dir, prompt, options);
   }
 
   /**
    * Send a prompt to an agent and stream the response.
-   * Uses the backend CLI in streaming print mode.
+   * Uses ACP connection if available, otherwise falls back to CLI pipe mode.
    */
   streamPrompt(
     name: string,
@@ -360,18 +424,50 @@ export class AgentManager {
   ): AsyncIterable<StreamChunk> {
     const meta = this.requireAgent(name);
     const dir = join(this.instancesBaseDir, name);
-    const communicator = this.getCommunicator(meta);
+    const communicator = createCommunicator(meta.backendType);
     return communicator.streamPrompt(dir, prompt, options);
   }
 
-  private getCommunicator(meta: AgentInstanceMeta): AgentCommunicator {
-    return createCommunicator(meta.backendType);
+  /**
+   * Send a message to a running agent via its ACP session.
+   * Unlike runPrompt, this requires the agent to be started with ACP.
+   * @throws {Error} if agent has no ACP connection
+   */
+  async promptAgent(
+    name: string,
+    message: string,
+    sessionId?: string,
+  ): Promise<PromptResult> {
+    this.requireAgent(name);
+
+    if (!this.acpManager?.has(name)) {
+      throw new Error(`Agent "${name}" has no ACP connection. Start it first with \`agent start\`.`);
+    }
+
+    const conn = this.acpManager.getConnection(name);
+    if (!conn) {
+      throw new Error(`ACP connection for "${name}" not found`);
+    }
+
+    const targetSessionId = sessionId ?? this.acpManager.getPrimarySessionId(name);
+    if (!targetSessionId) {
+      throw new Error(`No session found for agent "${name}"`);
+    }
+
+    const result = await conn.prompt(targetSessionId, message);
+    return { text: result.text, sessionId: targetSessionId };
   }
 
-  /** Shut down the process watcher and release resources. */
-  dispose(): void {
+  /** Check if an agent has an active ACP connection. */
+  hasAcpConnection(name: string): boolean {
+    return this.acpManager?.has(name) ?? false;
+  }
+
+  /** Shut down the process watcher, ACP connections, and release resources. */
+  async dispose(): Promise<void> {
     this.watcher.dispose();
     this.restartTracker.dispose();
+    await this.acpManager?.disposeAll();
   }
 
   private async handleProcessExit(info: ProcessExitInfo): Promise<void> {
@@ -387,6 +483,10 @@ export class AgentManager {
     const action = handler.getProcessExitAction(instanceName, meta);
 
     logger.warn({ instanceName, pid, launchMode: meta.launchMode, action: action.type, previousStatus: meta.status }, "Agent process exited unexpectedly");
+
+    if (this.acpManager?.has(instanceName)) {
+      await this.acpManager.disconnect(instanceName).catch(() => {});
+    }
 
     const dir = join(this.instancesBaseDir, instanceName);
     const exitedAt = new Date().toISOString();

@@ -168,7 +168,11 @@ AgentCraft 的接口架构：
 |------|------|------|
 | `launchMode` | `LaunchMode` | 覆盖模板默认启动模式 |
 | `workspacePolicy` | `WorkspacePolicy` | 覆盖默认 workspace 策略 |
+| `workDir` | `string` | 自定义 workspace 绝对路径（省略则默认 `{instancesDir}/{name}`） |
+| `workDirConflict` | `"error" \| "overwrite" \| "append"` | workDir 已存在时的行为，默认 `"error"` |
 | `metadata` | `Record<string, string>` | 额外元数据 |
+
+**workDir 机制**：当指定 `workDir` 时，域上下文文件和 `.agentcraft.json` 写入该目录，同时在 `{instancesDir}/{name}` 创建指向它的 symlink 以供 Manager 发现。Destroy 时仅移除 symlink 和 `.agentcraft.json`，保留用户目录中的其余文件。
 
 ### 3.3 外部 Spawn 支持
 
@@ -368,11 +372,11 @@ interface WorkflowDefinition {
 
 > 实现参考：`packages/api/src/handlers/domain-handlers.ts`，类型定义见 `packages/shared/src/types/domain-component.types.ts`
 
-### 3.6 Agent 任务 API（ACP 集成 — Phase 3）
+### 3.6 Agent 任务 API（ACP 集成） ✅ 已实现
 
-> 状态：**规范已定义，未实现**
+> 状态：**已实现**（Phase 3 — ACP 集成）
 
-供 ACP Proxy 或 MCP Server 向 AgentCraft 管理的 Agent 发送任务。**依赖 Daemon 与 Agent 间的 ACP 连接**（即 `processOwnership: "managed"`）。Phase 3 实现后，将演进 §3.4 的 print 模式方案为 ACP 通信。
+供 ACP Proxy 或 MCP Server 向 AgentCraft 管理的 Agent 发送任务。**依赖 Daemon 与 Agent 间的 ACP 连接**（即 `processOwnership: "managed"`）。`agent.prompt` 通过 Daemon 持有的 ACP 连接与已启动的 Agent 通信。`agent.run` 对已启动的 ACP Agent 优先使用 ACP 连接，对未启动的 Agent 仍回退到 CLI pipe 模式。
 
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
@@ -418,7 +422,9 @@ interface WorkflowDefinition {
 | `response` | `string` | Agent 回复 |
 | `sessionId` | `string` | 可复用的 session ID |
 
-### 3.7 Proxy Session 管理
+### 3.7 Proxy Session 管理 ✅ 已实现
+
+> 状态：**已实现**（Phase 3 — ACP 集成）
 
 ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调用。
 
@@ -468,7 +474,7 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 
 | 命令 | 参数 | 选项 | 对应 RPC |
 |------|------|------|---------|
-| `agent create <name>` | `name` | `-t, --template`（必填）, `--launch-mode`, `-f, --format` | `agent.create` |
+| `agent create <name>` | `name` | `-t, --template`（必填）, `--launch-mode`, `--work-dir`, `--overwrite`, `--append`, `-f, --format` | `agent.create` |
 | `agent start <name>` | `name` | — | `agent.start` |
 | `agent stop <name>` | `name` | — | `agent.stop` |
 | `agent status [name]` | `name`（可选） | `-f, --format` | `agent.status` / `agent.list` |
@@ -484,11 +490,12 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | 命令 | 参数 | 选项 | 对应 RPC |
 |------|------|------|---------|
 | `agent run <name>` | `name` | `--prompt`（必填）, `--model`, `--max-turns`, `--timeout`, `--session-id`, `--format` | `agent.run` |
+| `agent prompt <name>` | `name` | `-m, --message`（必填）, `--session-id`, `--format` | `agent.prompt` |
 | `agent chat <name>` | `name` | `--model`, `--max-turns`, `--session-id` | `agent.run`（循环调用） |
 
-- `agent run`：发送单次 prompt，输出结果后退出。支持 `--format text|json`。
+- `agent run`：发送单次 prompt，输出结果后退出。对已启动（`agent start`）的 ACP Agent 优先使用 ACP 连接，否则回退到 CLI pipe 模式。支持 `--format text|json`。
+- `agent prompt`：向已启动的 ACP Agent 发送消息。要求 Agent 已通过 `agent start` 启动。
 - `agent chat`：进入交互式 REPL 模式。输入 `exit`/`quit` 或 Ctrl+C 退出。通过 `--session-id` 和 claude-code session 机制维护跨消息上下文。
-- 两者均使用 claude-code CLI print 模式（`claude -p`），**不依赖** `agent start`。
 
 ### 4.3 外部 Spawn 命令
 
@@ -562,6 +569,12 @@ interface AgentProcess {
   pid: number;
   workspaceDir: string;
   instanceName: string;
+  /** Present when the process uses ACP stdio protocol. */
+  stdio?: {
+    stdin: Writable;
+    stdout: Readable;
+    stderr: Readable;
+  };
 }
 
 interface AgentLauncher {
@@ -639,12 +652,13 @@ interface RunPromptOptions {
 
 | 实现 | Backend | 说明 |
 |------|---------|------|
-| `ClaudeCodeCommunicator` | `claude-code` | `claude -p --output-format json\|stream-json`，stdin/stdout 通信 |
+| `ClaudeCodeCommunicator` | `claude-code` | `claude -p --output-format json\|stream-json`，stdin/stdout 通信（fallback） |
+| `AcpCommunicator` | `claude-code` (ACP) | 通过 ACP session 发送 prompt，用于已 start 的 Agent |
 | `CursorCommunicator` | `cursor` | Stub — Cursor CLI 尚不支持 pipe 模式，调用时抛出错误 |
 
-工厂函数 `createCommunicator(backendType)` 根据 `AgentBackendType` 选择实现。
+工厂函数 `createCommunicator(backendType)` 根据 `AgentBackendType` 选择实现。`AgentManager` 对已启动的 ACP Agent 优先使用 `AcpCommunicator`。
 
-> 实现参考：`packages/core/src/communicator/`
+> 实现参考：`packages/core/src/communicator/`，`packages/acp/src/communicator.ts`
 
 ### 5.5 CLI 错误展示
 
@@ -657,9 +671,9 @@ CLI 层按以下优先级处理错误：
 
 ---
 
-## 7. ACP Proxy — 标准 ACP 协议网关
+## 7. ACP Proxy — 标准 ACP 协议网关 ✅ 已实现
 
-> 状态：**规范已定义，未实现**
+> 状态：**已实现**（Phase 3 — ACP 集成）
 
 ACP Proxy 是一个轻量进程（`agentcraft proxy`），对外暴露标准 ACP Agent 接口（stdio），对内通过 JSON-RPC 连接 AgentCraft Daemon。外部客户端（IDE / Unreal / Unity）无需了解 AgentCraft 内部实现，以标准 ACP 协议即可使用托管 Agent。
 

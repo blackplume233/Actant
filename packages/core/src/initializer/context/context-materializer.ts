@@ -57,6 +57,10 @@ export class ContextMaterializer {
 
     if (domainContext.mcpServers && domainContext.mcpServers.length > 0) {
       tasks.push(this.materializeMcpServers(workspaceDir, domainContext.mcpServers, configDir));
+
+      if (backendType === "claude-code") {
+        tasks.push(this.materializeClaudePermissions(workspaceDir, domainContext.mcpServers, configDir));
+      }
     }
 
     if (domainContext.workflow) {
@@ -112,6 +116,44 @@ export class ContextMaterializer {
     await writeFile(
       join(configDir, "mcp.json"),
       JSON.stringify(config, null, 2) + "\n",
+      "utf-8",
+    );
+  }
+
+  /**
+   * Claude Code settings.local.json — pre-approve tools so agents can operate autonomously.
+   * Includes both MCP tools (`mcp__<server>` prefix) and essential built-in tools.
+   */
+  private async materializeClaudePermissions(
+    workspaceDir: string,
+    servers: McpServerRef[],
+    configDirName: string,
+  ): Promise<void> {
+    const configDir = join(workspaceDir, configDirName);
+    await mkdir(configDir, { recursive: true });
+
+    const allowedTools: string[] = [
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "MultiEdit",
+      "WebFetch",
+      "WebSearch",
+    ];
+    for (const server of servers) {
+      allowedTools.push(`mcp__${server.name}`);
+    }
+
+    const settings = {
+      permissions: {
+        allow: allowedTools,
+        deny: [],
+      },
+    };
+    await writeFile(
+      join(configDir, "settings.local.json"),
+      JSON.stringify(settings, null, 2) + "\n",
       "utf-8",
     );
   }

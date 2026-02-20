@@ -21,6 +21,7 @@ export function createAgentRunCommand(client: RpcClient, printer: CliPrinter = d
       format: string;
     }) => {
       try {
+        const rpcTimeout = (opts.timeout ?? 300_000) + 5_000;
         const result = await client.call("agent.run", {
           name,
           prompt: opts.prompt,
@@ -30,7 +31,7 @@ export function createAgentRunCommand(client: RpcClient, printer: CliPrinter = d
             timeoutMs: opts.timeout,
             sessionId: opts.sessionId,
           },
-        });
+        }, { timeoutMs: rpcTimeout });
 
         if (opts.format === "json") {
           printer.log(JSON.stringify(result, null, 2));

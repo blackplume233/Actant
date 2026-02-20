@@ -5,3 +5,4 @@ export { createPromptCommand } from "./prompt/index";
 export { createMcpCommand } from "./mcp/index";
 export { createWorkflowCommand } from "./workflow/index";
 export { createDaemonCommand } from "./daemon/index";
+export { createProxyCommand } from "./proxy";

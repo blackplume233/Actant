@@ -94,12 +94,18 @@ export interface TemplateValidateResult {
 
 // agent.*
 
+export type WorkDirConflict = "error" | "overwrite" | "append";
+
 export interface AgentCreateParams {
   name: string;
   template: string;
   overrides?: {
     launchMode?: LaunchMode;
     workspacePolicy?: WorkspacePolicy;
+    /** Absolute path to use as workspace directory instead of the default {instancesDir}/{name}. */
+    workDir?: string;
+    /** Behavior when workDir already exists. Default: "error". */
+    workDirConflict?: WorkDirConflict;
     metadata?: Record<string, string>;
   };
 }
@@ -180,6 +186,50 @@ export interface AgentRunResult {
   sessionId?: string;
 }
 
+// agent.prompt (ACP session)
+
+export interface AgentPromptParams {
+  name: string;
+  message: string;
+  sessionId?: string;
+}
+
+export interface AgentPromptResult {
+  response: string;
+  sessionId: string;
+}
+
+// proxy.*
+
+export interface ProxyConnectParams {
+  agentName: string;
+  envPassthrough?: boolean;
+}
+
+export interface ProxySession {
+  sessionId: string;
+  agentName: string;
+  envPassthrough: boolean;
+  connectedAt: string;
+}
+
+export type ProxyConnectResult = ProxySession;
+
+export interface ProxyDisconnectParams {
+  sessionId: string;
+}
+
+export interface ProxyDisconnectResult {
+  ok: boolean;
+}
+
+export interface ProxyForwardParams {
+  sessionId: string;
+  acpMessage: Record<string, unknown>;
+}
+
+export type ProxyForwardResult = Record<string, unknown>;
+
 // skill.*
 
 export type SkillListParams = Record<string, never>;
@@ -256,6 +306,10 @@ export interface RpcMethodMap {
   "agent.attach": { params: AgentAttachParams; result: AgentAttachResult };
   "agent.detach": { params: AgentDetachParams; result: AgentDetachResult };
   "agent.run": { params: AgentRunParams; result: AgentRunResult };
+  "agent.prompt": { params: AgentPromptParams; result: AgentPromptResult };
+  "proxy.connect": { params: ProxyConnectParams; result: ProxyConnectResult };
+  "proxy.disconnect": { params: ProxyDisconnectParams; result: ProxyDisconnectResult };
+  "proxy.forward": { params: ProxyForwardParams; result: ProxyForwardResult };
   "skill.list": { params: SkillListParams; result: SkillListResult };
   "skill.get": { params: SkillGetParams; result: SkillGetResult };
   "prompt.list": { params: PromptListParams; result: PromptListResult };

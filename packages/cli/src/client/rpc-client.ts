@@ -9,6 +9,7 @@ export class RpcClient {
   async call<M extends RpcMethod>(
     method: M,
     params: RpcMethodMap[M]["params"],
+    options?: { timeoutMs?: number },
   ): Promise<RpcMethodMap[M]["result"]> {
     const id = ++requestId;
     const request: RpcRequest = {
@@ -18,7 +19,7 @@ export class RpcClient {
       params: params as Record<string, unknown>,
     };
 
-    const response = await this.send(request);
+    const response = await this.send(request, options?.timeoutMs);
 
     if (response.error) {
       const err = new RpcCallError(response.error.message, response.error.code, response.error.data);
@@ -37,7 +38,10 @@ export class RpcClient {
     }
   }
 
-  private send(request: RpcRequest): Promise<RpcResponse> {
+  private send(request: RpcRequest, timeoutMs?: number): Promise<RpcResponse> {
+    const effectiveTimeout = timeoutMs
+      ?? (process.env["AGENTCRAFT_RPC_TIMEOUT_MS"] ? Number(process.env["AGENTCRAFT_RPC_TIMEOUT_MS"]) : 10_000);
+
     return new Promise((resolve, reject) => {
       const socket = createConnection(this.socketPath, () => {
         socket.write(JSON.stringify(request) + "\n");
@@ -66,9 +70,9 @@ export class RpcClient {
         reject(new ConnectionError(this.socketPath, err));
       });
 
-      socket.setTimeout(10_000, () => {
+      socket.setTimeout(effectiveTimeout, () => {
         socket.destroy();
-        reject(new Error("RPC call timed out"));
+        reject(new Error(`RPC call timed out after ${effectiveTimeout}ms`));
       });
     });
   }

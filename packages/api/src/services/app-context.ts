@@ -13,6 +13,7 @@ import {
   createLauncher,
   type LauncherMode,
 } from "@agentcraft/core";
+import { AcpConnectionManager } from "@agentcraft/acp";
 import { createLogger, getIpcPath } from "@agentcraft/shared";
 
 const logger = createLogger("app-context");
@@ -42,13 +43,14 @@ export class AppContext {
   readonly mcpConfigManager: McpConfigManager;
   readonly workflowManager: WorkflowManager;
   readonly agentInitializer: AgentInitializer;
+  readonly acpConnectionManager: AcpConnectionManager;
   readonly agentManager: AgentManager;
 
   private initialized = false;
   private startTime = Date.now();
 
   constructor(config?: AppConfig) {
-    this.homeDir = config?.homeDir ?? DEFAULT_HOME;
+    this.homeDir = config?.homeDir ?? process.env.AGENTCRAFT_HOME ?? DEFAULT_HOME;
     this.configsDir = config?.configsDir ?? join(this.homeDir, "configs");
     this.templatesDir = join(this.configsDir, "templates");
     this.instancesDir = join(this.homeDir, "instances");
@@ -75,10 +77,14 @@ export class AppContext {
         },
       },
     );
+    this.acpConnectionManager = new AcpConnectionManager();
+    const launcherMode = config?.launcherMode
+      ?? (process.env["AGENTCRAFT_LAUNCHER_MODE"] as LauncherMode | undefined);
     this.agentManager = new AgentManager(
       this.agentInitializer,
-      createLauncher({ mode: config?.launcherMode }),
+      createLauncher({ mode: launcherMode }),
       this.instancesDir,
+      { acpManager: launcherMode !== "mock" ? this.acpConnectionManager : undefined },
     );
   }
 

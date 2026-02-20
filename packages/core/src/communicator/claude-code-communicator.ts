@@ -66,11 +66,25 @@ export class ClaudeCodeCommunicator implements AgentCommunicator {
         }
 
         try {
-          const parsed = JSON.parse(stdout) as { result?: string; session_id?: string };
-          resolve({
-            text: parsed.result ?? stdout,
-            sessionId: parsed.session_id,
-          });
+          const parsed = JSON.parse(stdout) as Record<string, unknown>;
+          const result = parsed["result"] as string | undefined;
+          const sessionId = parsed["session_id"] as string | undefined;
+          const subtype = parsed["subtype"] as string | undefined;
+
+          if (subtype && subtype !== "success") {
+            logger.warn({ subtype }, "claude-code returned non-success subtype");
+          }
+
+          let text: string;
+          if (result && result.length > 0) {
+            text = result;
+          } else if (subtype === "error_max_turns") {
+            text = "[max turns reached — no final result text]";
+          } else {
+            text = stdout.trim();
+          }
+
+          resolve({ text, sessionId });
         } catch {
           resolve({ text: stdout.trim() });
         }

@@ -13,6 +13,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@agentclientprotocol/sdk": "^0.14.1",
     "@agentcraft/core": "workspace:*",
     "@agentcraft/shared": "workspace:*"
   }
