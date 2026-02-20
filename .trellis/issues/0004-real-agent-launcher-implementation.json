@@ -1,0 +1,24 @@
+{
+  "id": 4,
+  "title": "Real Agent Launcher implementation",
+  "status": "open",
+  "labels": [
+    "core",
+    "feature",
+    "launcher",
+    "priority:P1"
+  ],
+  "milestone": "near-term",
+  "body": "实现 Cursor 和 Claude Code 的真实 AgentLauncher（替代当前 MockLauncher）。包括进程启动、心跳检测、优雅关停。",
+  "author": "cursor-agent",
+  "assignees": [],
+  "relatedFiles": [],
+  "relatedIssues": [],
+  "taskRef": null,
+  "closedAs": null,
+  "comments": [],
+  "createdAt": "2026-02-20T10:23:18",
+  "updatedAt": "2026-02-20T10:23:18",
+  "closedAt": null,
+  "githubRef": null
+}

@@ -1,0 +1,28 @@
+{
+  "id": 2,
+  "title": "Memory Consolidation + Shared Memory (Phase 2)",
+  "status": "open",
+  "labels": [
+    "core",
+    "feature",
+    "memory",
+    "priority:P2"
+  ],
+  "milestone": "mid-term",
+  "body": "MemoryConsolidator 和 MemoryPromoter。CLI 增加 agentcraft memory 子命令。依赖 #1 完成。",
+  "author": "cursor-agent",
+  "assignees": [],
+  "relatedFiles": [
+    "docs/design/memory-layer-agent-evolution.md"
+  ],
+  "relatedIssues": [
+    1
+  ],
+  "taskRef": null,
+  "closedAs": null,
+  "comments": [],
+  "createdAt": "2026-02-20T10:23:05",
+  "updatedAt": "2026-02-20T10:23:05",
+  "closedAt": null,
+  "githubRef": null
+}

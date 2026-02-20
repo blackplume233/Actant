@@ -25,6 +25,12 @@ These guides help you **ask the right questions before coding**.
 | [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning CLI ↔ Core ↔ ACP/MCP/API |
 | [Cross-Platform Guide](./cross-platform-guide.md) | Ensure Linux/macOS/Windows compatibility | Any feature touching IPC, signals, file paths, or process management |
 
+### Design References (Mid-term)
+
+| Design Doc | Purpose | Status |
+|------------|---------|--------|
+| [Memory Layer & Agent Evolution](../../../docs/design/memory-layer-agent-evolution.md) | Instance memory, cross-session learning, Template evolution | Draft — Mid-term |
+
 ---
 
 ## AgentCraft-Specific Thinking Triggers
@@ -46,6 +52,15 @@ These guides help you **ask the right questions before coding**.
 - [ ] Adding plugin capabilities (memory, scheduler)
 
 → Consider: Is this reusable across templates? Is it referenced by name? Can it be swapped?
+
+### When to Think About Agent Evolution
+
+- [ ] Feature involves Agent session lifecycle (start/stop)
+- [ ] Feature changes what gets materialized into workspace
+- [ ] Feature adds new instance-level persistent state
+- [ ] Feature involves cross-instance or cross-session data
+
+→ Read [Memory Layer Design](../../../docs/design/memory-layer-agent-evolution.md)
 
 ### When to Think About Cross-Layer Issues
 

@@ -19,6 +19,9 @@
 | **docker exec** | **(future) 向运行中 Agent 发任务** | 与活跃实例交互 |
 | **Docker Hub / Registry** | **Template Registry** | 存储和分发模板 |
 | **Volume** | **Domain Context (物化文件)** | 实例的持久化数据/配置 |
+| **Container writable layer** | **Memory Layer (.memory/)** | 实例运行时积累的可写状态（[设计文档](./memory-layer-agent-evolution.md)） |
+| **Union FS (overlay)** | **Materialization = Template ∪ Memory** | 物化时合并只读模板层与可写记忆层 |
+| **docker commit** | **Memory Promotion → Shared Pool** | 将实例经验提升为可共享知识 |
 | **Network** | **MCP / ACP** | 实例间及外部的通信通道 |
 | **Container Runtime (containerd)** | **Agent Launcher (Cursor/Claude Code)** | 真正执行工作的引擎 |
 | **dockerd (daemon)** | **AgentCraft Daemon** | 持久进程，管理一切 |
@@ -148,6 +151,8 @@ ACP Client     ──(ACP)─────────┘
 | Image (built template) | `TemplateRegistry` | ✅ 已完成 |
 | Container (instance) | `AgentInitializer` + workspace dir | ✅ 已完成 |
 | Volume (domain context) | `ContextMaterializer` + Domain Managers | ✅ 已完成 |
+| Container writable layer (memory) | **不存在** | 中期实现：`.memory/` + re-materialize（[设计文档](./memory-layer-agent-evolution.md)） |
+| Union FS (Template ∪ Memory) | **不存在** | 中期实现：ContextBroker 合并物化 |
 | Container Runtime | `AgentLauncher` interface + `MockLauncher` | 接口已定义，真实实现待做 |
 | dockerd | **不存在** | 需要实现：`@agentcraft/api` 作为 daemon |
 | docker CLI | `@agentcraft/cli`（当前是 one-shot 直接调用 core） | 需要重构为 RPC client |

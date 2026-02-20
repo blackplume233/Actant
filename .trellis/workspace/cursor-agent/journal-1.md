@@ -128,3 +128,51 @@
 ### Next Steps
 
 - None - task complete
+
+## Session 3: Cross-platform compatibility (Linux/macOS/Windows)
+
+**Date**: 2026-02-20
+**Task**: Cross-platform compatibility (Linux/macOS/Windows)
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## Changes
+
+| Area | Description |
+|------|-------------|
+| shared/platform | New platform utilities module: IPC path, signal handling, platform detection |
+| api/daemon | Socket cleanup guarded by `ipcRequiresFileCleanup()` |
+| api/app-context | Hardcoded `.sock` → `getIpcPath()` for Windows named pipe support |
+| cli/program | Hardcoded `.sock` → `getDefaultIpcPath()` |
+| cli/daemon-entry | SIGINT/SIGTERM → cross-platform `onShutdownSignal()` |
+| cli/daemon/start | SIGINT/SIGTERM → cross-platform `onShutdownSignal()` |
+| api/tests | Socket test uses `getIpcPath()` instead of hardcoded `.sock` |
+| spec/guides | New cross-platform-guide.md added |
+
+## Key Decisions
+
+- Windows IPC uses named pipes (`\\.\pipe\agentcraft`) instead of Unix sockets
+- `onShutdownSignal()` listens SIGINT+SIGTERM on Unix, SIGINT+SIGBREAK on Windows
+- Shell scripts (.trellis/scripts/) remain bash-only; Windows users use Git Bash or WSL
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `3a307ec` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

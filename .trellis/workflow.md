@@ -112,7 +112,8 @@ cat .trellis/spec/backend/logging-guidelines.md    # For logging
 |   |   \-- git-context.sh   # Git context implementation
 |   |-- init-developer.sh    # Initialize developer identity
 |   |-- get-developer.sh     # Get current developer name
-|   |-- task.sh              # Manage tasks
+|   |-- task.sh              # Manage tasks (active work)
+|   |-- issue.sh             # Manage issues (backlog)
 |   |-- get-context.sh       # Get session context
 |   \-- add-session.sh       # One-click session recording
 |-- workspace/           # Developer workspaces
@@ -120,9 +121,12 @@ cat .trellis/spec/backend/logging-guidelines.md    # For logging
 |   \-- {developer}/     # Per-developer directories
 |       |-- index.md     # Personal index (with @@@auto markers)
 |       \-- journal-N.md # Journal files (sequential numbering)
-|-- tasks/               # Task tracking
+|-- tasks/               # Task tracking (active work)
 |   \-- {MM}-{DD}-{name}/
 |       \-- task.json
+|-- issues/              # Issue tracking (backlog)
+|   |-- .counter         # Auto-increment ID counter
+|   \-- {NNNN}-{slug}.json  # Individual issue files
 |-- spec/                # [!] MUST READ before coding
 |   |-- frontend/        # Frontend guidelines (if applicable)
 |   |   |-- index.md               # Start here - guidelines index
@@ -302,7 +306,7 @@ spec/
 - [OK] Bug fixed that reveals missing guidance
 - [OK] New convention established
 
-### 3. Tasks - Task Tracking
+### 3. Tasks - Active Work Tracking
 
 Each task is a directory containing `task.json`:
 
@@ -322,6 +326,123 @@ tasks/
 ./.trellis/scripts/task.sh archive <name>  # Archive to archive/{year-month}/
 ./.trellis/scripts/task.sh list            # List active tasks
 ./.trellis/scripts/task.sh list-archive    # List archived tasks
+```
+
+### 4. Issues - Backlog Tracking
+
+Issues are lightweight JSON files for tracking ideas, bugs, design proposals, and improvements.
+
+```
+issues/
+|-- .counter                 # Auto-increment ID
+|-- 0001-add-memory-layer.json
+|-- 0002-fix-socket-timeout.json
+\-- 0003-improve-cli-output.json
+```
+
+**Issue vs Task**:
+
+| Concept | Issue | Task |
+|---------|-------|------|
+| Purpose | Backlog — what needs doing | Active work — what's being done now |
+| Lifecycle | open → (promote) → in-progress → closed | planning → in_progress → review → completed |
+| Storage | Single JSON file per issue | Directory with task.json, prd.md, jsonl contexts |
+| Transition | `issue.sh promote <id>` creates a Task | `task.sh archive <name>` archives completed Task |
+
+**Workflow**: Issue (idea) → **promote** → Task (active work) → **archive** → Done
+
+**Commands**:
+```bash
+./.trellis/scripts/issue.sh create "<title>" --feature --priority P1 --milestone mid-term
+./.trellis/scripts/issue.sh create "Bug title" --bug --priority P0 --label core
+./.trellis/scripts/issue.sh create "Design question" --discussion --body "Should we..."
+./.trellis/scripts/issue.sh list [--milestone mid-term] [--priority P1] [--rfc]
+./.trellis/scripts/issue.sh show <id>
+./.trellis/scripts/issue.sh edit <id> --assign cursor-agent --milestone mid-term
+./.trellis/scripts/issue.sh label <id> --add rfc --remove question
+./.trellis/scripts/issue.sh comment <id> "Design doc completed"
+./.trellis/scripts/issue.sh close <id> --as completed
+./.trellis/scripts/issue.sh close <id> --as duplicate --ref 3
+./.trellis/scripts/issue.sh close <id> --as not-planned --reason "Out of scope"
+./.trellis/scripts/issue.sh promote <id>       # → Creates Task from Issue
+./.trellis/scripts/issue.sh search "memory"
+./.trellis/scripts/issue.sh stats
+```
+
+**Status**: `open` / `closed` (binary, like GitHub)
+**Close reasons**: `completed` / `not-planned` / `duplicate`
+**Labels** (convention, not enforced):
+- Type: `bug` `feature` `enhancement` `question` `discussion` `rfc` `chore` `docs`
+- Priority: `priority:P0` `priority:P1` `priority:P2` `priority:P3`
+- Area: `core` `cli` `api` `mcp` `shared` `acp`
+- Meta: `duplicate` `wontfix` `blocked` `good-first-issue`
+**Milestones**: `near-term` | `mid-term` | `long-term`
+
+### 5. GitHub Sync (via MCP)
+
+Local issues can sync with GitHub Issues when a GitHub MCP server is available (e.g., `@modelcontextprotocol/server-github`).
+
+**Architecture**: The AI Agent acts as orchestrator — `issue.sh` prepares/receives data, the Agent calls MCP tools for actual GitHub API communication.
+
+```
+┌─────────────┐     export     ┌───────────┐   mcp__github__   ┌──────────┐
+│ Local Issue  │ ──────────────→│  AI Agent  │ ────────────────→ │  GitHub  │
+│ (.json file) │ ←──────────────│ (MCP Hub)  │ ←──────────────── │  Issues  │
+└─────────────┘  import-github └───────────┘   create/get/...  └──────────┘
+```
+
+**Push to GitHub** (local → remote):
+```bash
+# 1. Export local issue as MCP-ready JSON
+./.trellis/scripts/issue.sh export <id> --owner <org> --repo <repo>
+# 2. AI Agent calls mcp__github__create_issue with the exported JSON
+# 3. Link local issue to the newly created GitHub issue
+./.trellis/scripts/issue.sh link <id> --github <org>/<repo>#<number>
+# 4. Later, push updates
+./.trellis/scripts/issue.sh export <id> --update
+# AI Agent calls mcp__github__update_issue with the JSON
+```
+
+**Pull from GitHub** (remote → local):
+```bash
+# 1. AI Agent calls mcp__github__get_issue to fetch GitHub issue data
+# 2. Pipe the JSON into import-github
+echo '<mcp_response_json>' | ./.trellis/scripts/issue.sh import-github
+# Duplicate detection: if owner/repo#number already imported, skips and returns existing ID
+```
+
+**Manual Linking**:
+```bash
+# Link local issue to existing GitHub issue
+./.trellis/scripts/issue.sh link <id> --github owner/repo#number
+# Or with explicit params
+./.trellis/scripts/issue.sh link <id> --owner <o> --repo <r> --number <n>
+# Remove link
+./.trellis/scripts/issue.sh unlink <id>
+```
+
+**MCP Tools Used** (from `@modelcontextprotocol/server-github`):
+
+| Tool | Usage |
+|------|-------|
+| `mcp__github__create_issue` | Push new issue to GitHub |
+| `mcp__github__update_issue` | Update existing linked issue |
+| `mcp__github__get_issue` | Pull single issue from GitHub |
+| `mcp__github__list_issues` | Pull multiple issues from GitHub |
+| `mcp__github__search_issues` | Search GitHub issues |
+| `mcp__github__add_issue_comment` | Sync comments |
+
+**`githubRef` Field** (stored in issue JSON):
+```json
+{
+  "githubRef": {
+    "owner": "myorg",
+    "repo": "myrepo",
+    "number": 42,
+    "url": "https://github.com/myorg/myrepo/issues/42",
+    "syncedAt": "2026-02-20T10:30:00"
+  }
+}
 ```
 
 ---
@@ -383,9 +504,25 @@ git commit -m "type(scope): description"
 ./.trellis/scripts/get-context.sh    # Get full context
 ./.trellis/scripts/add-session.sh    # Record session
 
-# Task management
+# Task management (active work)
 ./.trellis/scripts/task.sh list      # List tasks
 ./.trellis/scripts/task.sh create "<title>" # Create task
+
+# Issue management (backlog, discussions, ideas — GitHub-style)
+./.trellis/scripts/issue.sh create "<title>" [options]  # Create issue
+./.trellis/scripts/issue.sh list [filters]              # List open issues
+./.trellis/scripts/issue.sh show <id>                   # Show details + body + comments
+./.trellis/scripts/issue.sh edit <id> [fields]          # Edit fields
+./.trellis/scripts/issue.sh label <id> --add/--remove   # Manage labels
+./.trellis/scripts/issue.sh comment <id> "<text>"       # Add to discussion
+./.trellis/scripts/issue.sh close <id> --as <reason>    # Close (completed/not-planned/duplicate)
+./.trellis/scripts/issue.sh promote <id>                # Issue → Task
+./.trellis/scripts/issue.sh search "<query>"            # Full-text search
+./.trellis/scripts/issue.sh stats                       # Statistics
+./.trellis/scripts/issue.sh export <id> [--owner/--repo] # Export for MCP push
+./.trellis/scripts/issue.sh import-github               # Import from MCP pull (stdin)
+./.trellis/scripts/issue.sh link <id> --github o/r#n    # Link to GitHub issue
+./.trellis/scripts/issue.sh unlink <id>                 # Remove GitHub link
 
 # Slash commands
 /trellis:finish-work          # Pre-commit checklist

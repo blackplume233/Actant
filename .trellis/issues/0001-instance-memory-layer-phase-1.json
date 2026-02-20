@@ -1,0 +1,26 @@
+{
+  "id": 1,
+  "title": "Instance Memory Layer (Phase 1)",
+  "status": "open",
+  "labels": [
+    "core",
+    "feature",
+    "memory",
+    "priority:P1"
+  ],
+  "milestone": "mid-term",
+  "body": "为 Agent 实例增加 .memory/ 目录，实现跨 session 记忆持久化。",
+  "author": "cursor-agent",
+  "assignees": [],
+  "relatedFiles": [
+    "docs/design/memory-layer-agent-evolution.md"
+  ],
+  "relatedIssues": [],
+  "taskRef": null,
+  "closedAs": null,
+  "comments": [],
+  "createdAt": "2026-02-20T10:20:02",
+  "updatedAt": "2026-02-20T10:29:47",
+  "closedAt": null,
+  "githubRef": null
+}
