@@ -1,0 +1,190 @@
+{
+  "name": "bilibili-video-analysis",
+  "description": "构建一个能够从 Bilibili 下载视频并完成全量分析的 Agent。验证 Agent 创建、任务执行（agent run）、产物生成和完整的生命周期管理。",
+  "tags": ["agent-lifecycle", "task-execution", "domain-context", "video-analysis", "e2e"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock",
+    "templates": [
+      {
+        "name": "video-analyzer",
+        "inline": {
+          "name": "video-analyzer",
+          "version": "1.0.0",
+          "description": "Bilibili 视频下载与分析专家",
+          "backend": {
+            "type": "claude-code",
+            "config": {
+              "model": "claude-sonnet-4-20250514"
+            }
+          },
+          "provider": {
+            "type": "anthropic",
+            "config": {
+              "apiKeyEnv": "ANTHROPIC_API_KEY"
+            }
+          },
+          "domainContext": {
+            "skills": ["video-analysis", "bilibili-expert", "content-summarization"],
+            "prompts": ["system-video-analyzer", "bilibili-download-guide"],
+            "mcpServers": [
+              {
+                "name": "filesystem",
+                "command": "npx",
+                "args": ["-y", "@anthropic/mcp-filesystem"]
+              },
+              {
+                "name": "fetch",
+                "command": "uvx",
+                "args": ["mcp-server-fetch"]
+              }
+            ],
+            "workflow": "trellis-standard"
+          },
+          "initializer": {
+            "steps": [
+              { "type": "create-workspace" },
+              { "type": "apply-workflow" },
+              { "type": "materialize-skills" }
+            ]
+          },
+          "metadata": {
+            "author": "QA Test",
+            "tags": "video-analysis,bilibili,download"
+          }
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "template-list",
+      "description": "确认 video-analyzer 模板已加载",
+      "command": "template list -f json",
+      "expect": "返回包含 video-analyzer 的模板列表，name 字段匹配"
+    },
+    {
+      "id": "template-show",
+      "description": "查看模板详情确认 Domain Context 配置",
+      "command": "template show video-analyzer -f json",
+      "expect": "返回 JSON 包含完整的 domainContext（skills、prompts、mcpServers、workflow）"
+    },
+    {
+      "id": "agent-create",
+      "description": "使用 video-analyzer 模板创建 Agent 实例",
+      "command": "agent create bilibili-analyzer -t video-analyzer -f json",
+      "expect": "成功返回 JSON，包含 name=bilibili-analyzer，status=created，templateName=video-analyzer",
+      "artifacts": "$AGENTCRAFT_HOME/instances/bilibili-analyzer/ 目录应已创建，包含 workspace/ 和元数据文件"
+    },
+    {
+      "id": "agent-list-after-create",
+      "description": "确认 Agent 出现在列表中",
+      "command": "agent list -f json",
+      "expect": "返回数组包含 bilibili-analyzer，status 为 created 或 stopped"
+    },
+    {
+      "id": "agent-status-created",
+      "description": "检查 Agent 初始状态",
+      "command": "agent status bilibili-analyzer -f json",
+      "expect": "返回 JSON，status 字段为 created 或 stopped，template 信息完整，backend 为 claude-code"
+    },
+    {
+      "id": "workspace-verify",
+      "description": "验证 workspace 目录结构和 Domain Context 物化",
+      "command": "agent resolve bilibili-analyzer",
+      "expect": "返回 workspace 路径",
+      "artifacts": "workspace 目录应包含：AGENTS.md、.claude/ 或 .cursor/ 配置目录、skills/ 或 prompts/ 目录、.trellis/ 工作流配置"
+    },
+    {
+      "id": "agent-start",
+      "description": "启动 Agent",
+      "command": "agent start bilibili-analyzer",
+      "expect": "成功启动，输出包含 Started 或类似字样，退出码 0"
+    },
+    {
+      "id": "agent-status-running",
+      "description": "确认 Agent 状态为 running",
+      "command": "agent status bilibili-analyzer -f json",
+      "expect": "返回 JSON，status 字段为 running，包含 pid 和启动时间信息"
+    },
+    {
+      "id": "agent-task-download",
+      "description": "发送任务：下载 Bilibili 视频",
+      "command": "agent run bilibili-analyzer --prompt \"请帮我从 Bilibili 下载这个视频：https://www.bilibili.com/video/BV1GJ411x7h7（或其他测试用的公开视频），保存到 workspace/downloads/ 目录\" --timeout 300000 -f json",
+      "expect": "成功返回 JSON，包含执行结果文本，无超时错误，退出码 0",
+      "note": "使用较长的 timeout (300000ms = 5分钟)，因为视频下载可能需要时间"
+    },
+    {
+      "id": "verify-downloaded-video",
+      "description": "验证视频文件是否成功下载",
+      "command": "agent resolve bilibili-analyzer",
+      "expect": "返回 workspace 路径，可用于拼接检查 downloads/ 目录",
+      "artifacts": "workspace/downloads/ 目录应存在视频文件（.mp4/.flv 等格式）"
+    },
+    {
+      "id": "agent-task-analysis",
+      "description": "发送任务：分析已下载的视频内容",
+      "command": "agent run bilibili-analyzer --prompt \"请对刚才下载的视频进行全量分析：1) 视频基本信息（时长、分辨率、帧率）2) 内容摘要 3) 关键画面时间戳 4) 生成分析报告保存到 workspace/analysis-report.md\" --timeout 300000 -f json",
+      "expect": "成功返回 JSON，包含分析结果文本，无超时错误，退出码 0",
+      "note": "同样使用 5 分钟超时，视频分析是计算密集型任务"
+    },
+    {
+      "id": "verify-analysis-report",
+      "description": "验证分析报告是否生成",
+      "command": "agent resolve bilibili-analyzer",
+      "expect": "返回 workspace 路径",
+      "artifacts": "workspace/analysis-report.md 应存在且内容非空，包含视频分析和时间戳信息"
+    },
+    {
+      "id": "agent-logs",
+      "description": "查看 Agent 日志（如有日志功能）",
+      "command": "agent logs bilibili-analyzer --lines 50",
+      "expect": "返回最近的日志输出，无致命错误",
+      "note": "此步骤为可选，如果 logs 命令不存在则跳过"
+    },
+    {
+      "id": "agent-stop",
+      "description": "停止 Agent",
+      "command": "agent stop bilibili-analyzer",
+      "expect": "成功停止，输出包含 Stopped 字样，退出码 0"
+    },
+    {
+      "id": "agent-status-stopped",
+      "description": "确认 Agent 状态为 stopped",
+      "command": "agent status bilibili-analyzer -f json",
+      "expect": "返回 JSON，status 字段为 stopped"
+    },
+    {
+      "id": "agent-destroy-no-force",
+      "description": "不带 --force 销毁应失败或提示",
+      "command": "agent destroy bilibili-analyzer",
+      "expect": "退出码非 0 或提示需要 --force 标志"
+    },
+    {
+      "id": "agent-destroy",
+      "description": "带 --force 销毁 Agent",
+      "command": "agent destroy bilibili-analyzer --force",
+      "expect": "成功销毁，退出码 0"
+    },
+    {
+      "id": "agent-list-after-destroy",
+      "description": "确认 Agent 已不存在",
+      "command": "agent list -f json",
+      "expect": "返回空数组或 bilibili-analyzer 不在列表中",
+      "artifacts": "bilibili-analyzer 的 workspace 目录和实例元数据应已被清理（可选：下载的视频和分析报告可选择保留或清理）"
+    }
+  ],
+  "cleanup": [
+    "agent destroy bilibili-analyzer --force",
+    "template unload video-analyzer"
+  ],
+  "notes": [
+    "前置条件1：需要修复 Issue #34 (Daemon 未读取 AGENTCRAFT_HOME 环境变量) 后才能运行",
+    "前置条件2：需要设置 ANTHROPIC_API_KEY 环境变量用于 claude-code 后端",
+    "前置条件3：系统中需安装 claude-code CLI 工具",
+    "关键变更：模板后端从 cursor 改为 claude-code，因为 cursor 后端暂不支持 agent.run 程序化通信",
+    "测试范围：完整生命周期 + 两次任务执行（视频下载 + 内容分析）+ 产物验证",
+    "当前状态：BLOCKED - 等待 Issue #34 修复",
+    "执行命令：修复后使用 `qa run bilibili-video-analysis` 执行此场景"
+  ]
+}
