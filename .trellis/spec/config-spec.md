@@ -153,6 +153,8 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 | `backendConfig` | `Record<string, unknown>` | 否 | — | 后端配置快照（创建时从模板写入） |
 | `status` | [`AgentStatus`](#agentstatus) | **是** | — | 当前生命周期状态 |
 | `launchMode` | [`LaunchMode`](#launchmode) | **是** | — | 启动模式 |
+| `workspacePolicy` | [`WorkspacePolicy`](#workspacepolicy) | **是** | `"persistent"` | workspace 生命周期策略 |
+| `processOwnership` | [`ProcessOwnership`](#processownership) | 否 | — | 进程管理方（运行时字段） |
 | `createdAt` | `string` | **是** | — | ISO 8601 创建时间 |
 | `updatedAt` | `string` | **是** | — | ISO 8601 更新时间 |
 | `pid` | `number` | 否 | — | 运行时 OS 进程 ID |
@@ -166,19 +168,42 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 |----|------|-----------|
 | `"created"` | 已创建，未启动 | → `starting` |
 | `"starting"` | 启动中 | → `running` / `error` |
-| `"running"` | 进程活跃 | → `stopping` / `error` |
+| `"running"` | 进程活跃 | → `stopping` / `error` / `crashed` |
 | `"stopping"` | 关闭中 | → `stopped` / `error` |
 | `"stopped"` | 正常终止 | → `starting` |
-| `"error"` | 异常终止 | → `starting` |
+| `"error"` | 异常终止（启动/终止阶段失败） | → `starting` |
+| `"crashed"` | 进程意外死亡（ProcessWatcher 检测到） | → `starting` |
+
+**`error` vs `crashed` 的区别**：`error` 发生在 AgentCraft 主动操作（start/stop）过程中；`crashed` 发生在 Agent 正常运行期间，由 ProcessWatcher 通过 PID 监控发现。对于 `processOwnership: "external"` 的 Agent，若 ProcessWatcher 发现 PID 不存在但客户端未 detach，状态变为 `crashed`。
 
 ### LaunchMode
+
+定义 Agent 进程的生命周期语义。
 
 | 值 | 生命周期所有者 | 场景 |
 |----|--------------|------|
 | `"direct"` | 用户 | 直接打开 IDE / TUI |
 | `"acp-background"` | 调用方 | 外部客户端通过 ACP 管理 |
-| `"acp-service"` | AgentCraft | 持久化员工 Agent |
-| `"one-shot"` | AgentCraft | 执行后自动终止 |
+| `"acp-service"` | AgentCraft | 持久化员工 Agent，崩溃自动重启 |
+| `"one-shot"` | AgentCraft | 执行后自动终止，可选自动清理 workspace |
+
+### WorkspacePolicy
+
+定义 workspace（文件系统）的生命周期策略。**独立于进程生命周期**。
+
+| 值 | 说明 | 典型 LaunchMode |
+|----|------|----------------|
+| `"persistent"` | workspace 持久保留，多次 spawn 复用 | `direct`, `acp-service` |
+| `"ephemeral"` | 任务完成后可清理 workspace | `one-shot` |
+
+### ProcessOwnership
+
+运行时字段，标识当前进程由谁管理。仅在 `status` 为 `running` / `crashed` 时有值。
+
+| 值 | 说明 | 谁 spawn 的 | AgentCraft 能做什么 |
+|----|------|-----------|-------------------|
+| `"managed"` | AgentCraft Daemon spawn 的 | Daemon | 发 ACP 消息、重启、终止 |
+| `"external"` | 外部客户端 spawn 的（通过 `agent.attach` 注册） | 外部客户端 | PID 监控、状态追踪，**不能**发 ACP 消息 |
 
 ---
 
@@ -302,7 +327,38 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 
 ---
 
-## 7. 环境变量
+## 7. EnvChannel — 环境请求路由
+
+Daemon 内部配置，决定 Agent 的环境请求（`fs/readTextFile` 等 ACP 回调）如何处理。
+
+```typescript
+type EnvChannel =
+  | { type: "local"; workspaceDir: string }
+  | { type: "passthrough"; proxySessionId: string }
+```
+
+| 类型 | 说明 | 触发条件 |
+|------|------|---------|
+| `"local"` | Daemon 在 Agent workspace 内本地处理 | 默认；ACP Proxy 未启用 `--env-passthrough` |
+| `"passthrough"` | 转发给 ACP Proxy → 穿透回外部客户端 | ACP Proxy 启用 `--env-passthrough` |
+
+---
+
+## 8. ProxySession — Proxy 会话状态
+
+Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `sessionId` | `string` | 唯一会话 ID |
+| `agentName` | `string` | 关联的 Agent 实例名 |
+| `envPassthrough` | `boolean` | 是否开启环境穿透 |
+| `rpcChannel` | `JsonRpcChannel` | Proxy ↔ Daemon 的 RPC 连接 |
+| `connectedAt` | `string` | ISO 8601 连接时间 |
+
+---
+
+## 9. 环境变量
 
 | 变量 | 作用 | 默认值 |
 |------|------|--------|

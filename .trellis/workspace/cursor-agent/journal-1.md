@@ -285,3 +285,52 @@
 ### Next Steps
 
 - None - task complete
+
+## Session 6: Spec-first config & API contract documentation (Issue #7)
+
+**Date**: 2026-02-20
+**Task**: Spec-first config & API contract documentation (Issue #7)
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## 完成内容
+
+| 产出 | 说明 |
+|------|------|
+| `spec/index.md` | 建立"规范 > 实现"的文档层次，明确协议和配置结构是项目主要产出 |
+| `spec/config-spec.md` | 配置规范：AgentTemplate、AgentInstanceMeta、DomainContext 组件、AppConfig、平台 IPC、环境变量、后端解析规则 |
+| `spec/api-contracts.md` | 接口契约：JSON-RPC 2.0 协议、错误码、13 个 RPC 方法、CLI 命令映射、内部契约（Launcher/Registry/Client） |
+| `backend/index.md` 更新 | 将规范文档提升为独立引用，与实现指南分层展示 |
+| `workflow.md` 更新 | 在 3 处关键位置加入"配置/接口变更必须同步规范文档"的约定 |
+| Issue #7 关闭 | "审查与文档化：配置结构与对外接口 + Workflow 约定"标记为 completed |
+
+**核心理念变更**：
+- 之前：文档记录代码做了什么（code → docs）
+- 之后：规范定义系统应该是什么，代码必须符合规范（spec → code）
+
+**新文件**:
+- `.trellis/spec/index.md`
+- `.trellis/spec/config-spec.md`
+- `.trellis/spec/api-contracts.md`
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `08d0f00` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

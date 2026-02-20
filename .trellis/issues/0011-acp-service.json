@@ -1,0 +1,24 @@
+{
+  "id": 11,
+  "title": "acp-service 崩溃重启策略",
+  "status": "open",
+  "labels": [
+    "core",
+    "feature",
+    "launcher",
+    "priority:P1"
+  ],
+  "milestone": "near-term",
+  "body": "## 目标\n\nacp-service 模式的 Agent 应在崩溃后自动重启，保证持久化员工的高可用。\n\n## 功能\n\n1. **RestartPolicy**：可配置重启策略\n   - maxRestarts: 最大重启次数（默认 5）\n   - backoffMs: 退避间隔（默认 1000ms，指数退避）\n   - resetAfterMs: 稳定运行多久后重置计数器（默认 300000ms = 5min）\n2. **崩溃检测**：复用 ProcessWatcher 的进程退出事件\n3. **自动重启**：满足策略时自动调用 launcher.launch()\n4. **超出限制**：达到 maxRestarts 后 status = error，记录日志，不再重启\n5. **守护进程重启恢复**：daemon 重启时，acp-service 模式的 Agent 应自动恢复到 running\n\n## 依赖\n\n- #8 ProcessWatcher\n\n## 验收\n\n- acp-service Agent 被 kill 后自动重启\n- 指数退避策略生效\n- 超出重启限制后停止重启\n- daemon 重启后 acp-service Agent 自动恢复",
+  "author": "cursor-agent",
+  "assignees": [],
+  "relatedFiles": [],
+  "relatedIssues": [],
+  "taskRef": null,
+  "githubRef": null,
+  "closedAs": null,
+  "comments": [],
+  "createdAt": "2026-02-20T11:35:25",
+  "updatedAt": "2026-02-20T11:35:25",
+  "closedAt": null
+}

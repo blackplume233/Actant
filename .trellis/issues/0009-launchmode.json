@@ -1,0 +1,24 @@
+{
+  "id": 9,
+  "title": "LaunchMode 行为分化",
+  "status": "open",
+  "labels": [
+    "core",
+    "feature",
+    "launcher",
+    "priority:P0"
+  ],
+  "milestone": "near-term",
+  "body": "## 目标\n\n当前 AgentManager.startAgent() 完全忽略 launchMode，所有模式行为相同。需要根据不同 LaunchMode 走不同的启动/终止/监控路径。\n\n## 功能\n\n1. **direct**：spawn 进程（保持现状），注册 ProcessWatcher\n2. **acp-background**：spawn headless 进程 + 分配 ACP endpoint + 返回连接信息给调用方\n3. **acp-service**：spawn headless 进程 + 注册心跳监控 + 崩溃自动重启策略\n4. **one-shot**：spawn 进程 + 注册 ProcessWatcher + 进程退出时自动 status=stopped + 可选自动清理\n\n## 依赖\n\n- #8 ProcessWatcher（至少 direct 和 one-shot 需要）\n\n## 验收\n\n- startAgent 根据 launchMode 执行不同逻辑\n- 各模式对应的生命周期行为符合规范定义\n- 单元测试覆盖四种模式的差异化行为",
+  "author": "cursor-agent",
+  "assignees": [],
+  "relatedFiles": [],
+  "relatedIssues": [],
+  "taskRef": null,
+  "githubRef": null,
+  "closedAs": null,
+  "comments": [],
+  "createdAt": "2026-02-20T11:35:05",
+  "updatedAt": "2026-02-20T11:35:05",
+  "closedAt": null
+}

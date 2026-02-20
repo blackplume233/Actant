@@ -1,0 +1,27 @@
+{
+  "id": 12,
+  "title": "ACP 协议集成 — Daemon 侧 ACP Client + agent.run/prompt",
+  "status": "open",
+  "labels": [
+    "acp",
+    "core",
+    "feature",
+    "priority:P1"
+  ],
+  "milestone": "mid-term",
+  "body": "## 目标\n\n实现 Daemon 作为 ACP Client 与托管 Agent 进程通信的能力。这是 ACP Proxy (#16) 和 MCP Server (#17) 的共同基础。\n\n## 背景\n\n当前 ProcessLauncher spawn Agent 后，Daemon 不持有 Agent 的 ACP 连接（stdin/stdout）。要实现 agent.run（一站式任务执行）和 agent.prompt（向运行中 Agent 发消息），Daemon 需要作为 ACP Client 管理 Agent 的 stdio 通信。\n\n## 功能\n\n### 1. Daemon 侧 ACP Client\n- ProcessLauncher spawn 时捕获 Agent 的 stdin/stdout\n- 实现 ACP Client 协议栈（initialize, session/new, session/prompt）\n- 处理 Agent 的环境请求回调（fs/readTextFile 等）→ 在 workspace 内本地处理或通过 EnvChannel 转发\n- 连接状态管理（AcpConnection per Agent）\n\n### 2. agent.run RPC 方法\n- 一站式操作：create ephemeral instance → spawn → ACP session → prompt → wait → cleanup\n- 返回 Agent 完成结果\n- processOwnership: \"managed\"\n\n### 3. agent.prompt RPC 方法\n- 向已运行的 managed Agent 发送消息\n- 支持 session 复用（sessionId 参数）\n- 仅 processOwnership: \"managed\" 可用（external 的 ACP 连接不在 Daemon 手中）\n\n### 4. EnvChannel 路由\n- local: Daemon 在 workspace 内处理环境请求（默认）\n- passthrough: 转发给 ACP Proxy（由 #16 实现）\n\n## 设计变更\n\n> 旧方案（已弃用）：Agent 暴露 ACP endpoint (port/socket)，客户端直连。\n> 新方案：Daemon 持有 ACP 连接，通过 RPC 或 Proxy 桥接外部访问。\n> 原因：统一管理、安全性更好、支持更灵活的接入模式。\n\n## 依赖\n\n- #9 LaunchMode 行为分化（spawn 时需要根据 LaunchMode 决定是否捕获 stdio）\n\n## 被依赖\n\n- #16 ACP Proxy（需要 Daemon ACP 连接来转发消息）\n- #17 MCP Server（需要 agent.run / agent.prompt）\n\n## 验收\n\n- [ ] Daemon spawn Agent 时正确捕获 stdin/stdout\n- [ ] ACP Client 握手成功（initialize）\n- [ ] agent.run 完整流程可用（create → spawn → prompt → result → cleanup）\n- [ ] agent.prompt 可向 running Agent 发送消息\n- [ ] Agent 环境请求在 workspace 内正确处理\n- [ ] EnvChannel 路由框架就绪\n- [ ] 单元测试覆盖",
+  "author": "cursor-agent",
+  "assignees": [],
+  "relatedFiles": [
+    "packages/core/src/manager/launcher/",
+    "packages/api/src/handlers/"
+  ],
+  "relatedIssues": [9, 16, 17],
+  "taskRef": null,
+  "githubRef": null,
+  "closedAs": null,
+  "comments": [],
+  "createdAt": "2026-02-20T11:35:35",
+  "updatedAt": "2026-02-20T18:00:00",
+  "closedAt": null
+}

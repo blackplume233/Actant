@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 5
+- **Total Sessions**: 6
 - **Last Active**: 2026-02-20
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~287 | Active |
+| `journal-1.md` | ~336 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 6 | 2026-02-20 | Spec-first config & API contract documentation (Issue #7) | `08d0f00` |
 | 5 | 2026-02-20 | Implement Real Agent Launcher (ProcessLauncher + backend-aware init) | `e7a0ea2` |
 | 4 | 2026-02-20 | Issue 管理系统 + Memory Layer 设计 + GitHub MCP 同步 | `227f84e` |
 | 3 | 2026-02-20 | Cross-platform compatibility (Linux/macOS/Windows) | `3a307ec` |

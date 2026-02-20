@@ -8,6 +8,7 @@
 
 ```
 spec/
+├── agent-lifecycle.md    ← Agent 生命周期与使用模式（主要产出）
 ├── config-spec.md        ← 配置规范（主要产出）
 ├── api-contracts.md      ← 接口契约（主要产出）
 │
@@ -22,8 +23,9 @@ spec/
 
 | 文档 | 内容 | 约束力 |
 |------|------|--------|
+| [Agent 生命周期](./agent-lifecycle.md) | 运行模式、接入方式、使用场景、状态转换 | **强制** — 理解系统行为的核心文档 |
 | [配置规范](./config-spec.md) | 所有配置结构、Schema、枚举、环境变量 | **强制** — 任何配置变更必须先更新此文档 |
-| [接口契约](./api-contracts.md) | RPC 方法、CLI 命令、IPC 协议、错误码 | **强制** — 任何接口变更必须先更新此文档 |
+| [接口契约](./api-contracts.md) | RPC 方法、CLI 命令、ACP Proxy、MCP Server、错误码 | **强制** — 任何接口变更必须先更新此文档 |
 
 ### 第二层：实现指南（Implementation Guidelines）
 

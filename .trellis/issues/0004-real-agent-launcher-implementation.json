@@ -1,7 +1,7 @@
 {
   "id": 4,
   "title": "Real Agent Launcher implementation",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "core",
     "feature",
@@ -15,10 +15,16 @@
   "relatedFiles": [],
   "relatedIssues": [],
   "taskRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-20T11:34:46",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T10:23:18",
-  "updatedAt": "2026-02-20T10:23:18",
-  "closedAt": null,
+  "updatedAt": "2026-02-20T11:34:46",
+  "closedAt": "2026-02-20T11:34:46",
   "githubRef": null
 }

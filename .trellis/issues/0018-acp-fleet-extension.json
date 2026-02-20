@@ -1,0 +1,24 @@
+{
+  "id": 18,
+  "title": "ACP-Fleet 扩展协议 — AgentCraft API 对齐 ACP 标准",
+  "status": "open",
+  "labels": [
+    "acp",
+    "protocol",
+    "vision",
+    "priority:P4"
+  ],
+  "milestone": "long-term",
+  "body": "## 愿景\n\n将 AgentCraft 的自定义 JSON-RPC API 演进为 ACP 的标准扩展协议（ACP-Fleet），使 AgentCraft Daemon 本身成为一个 ACP Server，任何 ACP Client 无需额外适配即可管理 Agent 集群。\n\n## 背景\n\n当前 AgentCraft 使用自定义 JSON-RPC 协议与 CLI / ACP Proxy / MCP Server 通信，这导致：\n- 每种接入方式需要单独的协议适配层\n- 外部客户端必须了解 AgentCraft 的私有 API\n- ACP Proxy 需要完整的协议翻译（ACP ↔ JSON-RPC）\n\nACP 建立在 JSON-RPC 2.0 上，使用命名空间方法，天然支持扩展。如果 AgentCraft 的 API 直接表达为 ACP 扩展命名空间（fleet/*），则：\n- Daemon 本身就是 ACP Server，ACP Proxy 简化为纯 transport 适配（stdio↔socket）\n- 标准 ACP Client 通过 capabilities 发现 fleet 扩展\n- Agent 管理平台之间可互操作\n\n## 设计概要\n\n### 协议扩展\n\n```\n标准 ACP 命名空间（已有）：\n  initialize, session/*, fs/*, terminal/*, tool/*\n\nACP-Fleet 扩展命名空间（新增）：\n  fleet/agent.create, fleet/agent.start, fleet/agent.stop\n  fleet/agent.resolve, fleet/agent.attach, fleet/agent.detach\n  fleet/agent.list, fleet/agent.status\n  fleet/session.create  → 绑定目标 Agent 后使用标准 session/prompt\n  fleet/template.list, fleet/template.load\n  fleet/ping, fleet/shutdown\n```\n\n### 能力声明\n\n```json\n{\n  \"capabilities\": {\n    \"session\": true,\n    \"fleet\": {\n      \"version\": \"0.1.0\",\n      \"agents\": true,\n      \"templates\": true,\n      \"routing\": true\n    }\n  }\n}\n```\n\n不认识 fleet 扩展的标准 ACP Client 会忽略它，完全向后兼容。\n\n### Transport 扩展\n\n| Transport | 场景 |\n|-----------|------|\n| stdio | 外部 ACP Client spawn 进程（需 shim） |\n| Unix Socket | 本地 CLI / 本地应用 |\n| WebSocket | 远程客户端 / Web 应用 |\n| HTTP | REST 风格 / CI/CD |\n\n### Session 路由\n\n```\nfleet/session.create({ agent: \"reviewer\" }) → { sessionId: \"s-123\" }\nsession/prompt({ sessionId: \"s-123\", message: \"...\" }) → 路由到 reviewer\n```\n\nClient 先绑定目标 Agent，之后用标准 session/prompt，标准 ACP Client 无需修改。\n\n### ACP Proxy 简化\n\n旧设计：Client → ACP Proxy (协议翻译) → Daemon\n新设计：Client → agentcraft connect (纯 stdio↔socket transport) → Daemon (ACP Server)\n\n## 演进路径\n\n1. Phase 1（当前）：自定义 JSON-RPC — 已实现\n2. Phase 2：ACP 框架对齐 — 消息格式对齐 ACP 规范，添加 initialize + capabilities\n3. Phase 3：ACP-Fleet 发布 — 正式定义 fleet/* 命名空间，transport 扩展\n4. Phase 4：社区标准化 — 发布 ACP-Fleet Extension Spec\n\n## 对现有 Issue 的影响\n\n- #12 ACP 协议集成 → Daemon ACP Client + 未来 ACP Server 框架\n- #16 ACP Proxy → 从协议翻译降级为 transport shim\n- #17 MCP Server → 成为 ACP-Fleet 到 MCP 的桥接\n- #15 resolve/attach/detach → 语义不变，换命名空间\n\n## 依赖\n\n- #12 ACP 协议集成（Daemon 侧 ACP 能力基础）\n- #16 ACP Proxy（验证 ACP 接入模式可用性）\n- ACP 标准演进方向\n\n## 验收\n\n- [ ] AgentCraft Daemon 可作为 ACP Server 接受连接\n- [ ] fleet/* 命名空间方法可用\n- [ ] 标准 ACP Client 通过 capabilities 发现 fleet 扩展\n- [ ] agentcraft connect (stdio shim) 替代 agentcraft proxy\n- [ ] fleet/session.create + session/prompt 路由可用\n- [ ] ACP-Fleet Extension Spec 文档发布",
+  "author": "cursor-agent",
+  "assignees": [],
+  "relatedFiles": [],
+  "relatedIssues": [12, 16, 17],
+  "taskRef": null,
+  "githubRef": null,
+  "closedAs": null,
+  "comments": [],
+  "createdAt": "2026-02-20T19:00:00",
+  "updatedAt": "2026-02-20T19:00:00",
+  "closedAt": null
+}
