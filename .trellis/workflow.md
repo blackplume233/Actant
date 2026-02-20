@@ -235,6 +235,11 @@ Use the task management script:
 - [OK] If configuration fields, schemas, or environment variables changed → update `spec/config-spec.md`
 - [OK] If RPC methods, CLI commands, error codes, or public APIs changed → update `spec/api-contracts.md`
 
+**Endurance test sync (功能变更时必选)**:
+- [OK] If changes affect agent lifecycle, state machine, communication, or process management → update `*.endurance.test.ts` per `spec/endurance-testing.md`
+- [OK] If existing endurance tests break due to interface changes → fix them in the same commit
+- [OK] Quick regression passes: `ENDURANCE_DURATION_MS=5000 pnpm test:endurance`
+
 **Project-specific checks**:
 - See `.trellis/spec/frontend/quality-guidelines.md` for frontend
 - See `.trellis/spec/backend/quality-guidelines.md` for backend
@@ -269,6 +274,7 @@ Use `/trellis:finish-work` command to run through:
 4. [OK] Working directory clean (or WIP noted)
 5. [OK] Spec docs updated if needed
 6. [OK] Config/interface changes → `spec/config-spec.md` / `spec/api-contracts.md` updated
+7. [OK] Endurance tests synced if lifecycle/state/communication changed → `spec/endurance-testing.md`
 
 ---
 

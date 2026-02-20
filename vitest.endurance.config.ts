@@ -12,11 +12,8 @@ export default defineConfig({
   test: {
     globals: true,
     passWithNoTests: true,
-    include: ["packages/*/src/**/*.test.ts"],
-    exclude: ["packages/*/src/**/*.endurance.test.ts"],
-    coverage: {
-      include: ["packages/*/src/**/*.ts"],
-      exclude: ["packages/*/src/**/*.test.ts", "packages/*/src/**/index.ts"],
-    },
+    include: ["packages/*/src/**/*.endurance.test.ts"],
+    testTimeout: 15 * 60 * 1000, // 15 minutes per test
+    hookTimeout: 60 * 1000,
   },
 });

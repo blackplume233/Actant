@@ -134,6 +134,18 @@ Phase 1 全部完成（Issues #8, #9, #10, #11, #15 已关闭），准备进入 
 | One-shot 模式 | autoDestroy 自动销毁、ephemeral workspace 策略、WorkspacePolicy 类型系统 |
 | 崩溃重启 | 指数退避 RestartTracker、最大重试限制、daemon 重启恢复、稳定期自动重置计数器 |
 
+### 耐久测试覆盖 — 持续验证能力
+
+> 耐久测试随 Phase 同步演进，详见 `spec/endurance-testing.md`。
+
+| Phase | 覆盖场景 | 状态 |
+|-------|---------|------|
+| **Phase 1** | E-LIFE 生命周期循环 · E-SVC 崩溃重启 · E-SHOT one-shot 清理 · E-EXT 外部 Spawn · E-DAEMON 恢复 · E-MIX 混合并发 · 各模式关停行为矩阵 | ✅ 已实现 (10 场景) |
+| **Phase 2** | E-RPC 高频通信 · E-ACP Proxy 持续转发 · E-MCP Agent 间通信 | ⏳ 待实现 |
+| **Phase 3+** | E-PLUG 插件加载卸载 · E-MEM 记忆系统持久性 | ⏳ 待实现 |
+
+每个 Phase 的功能完成时，**必须**同步扩展对应的耐久测试场景。
+
 ---
 
 ## 后续优先 (Next Up)
