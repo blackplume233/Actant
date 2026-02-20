@@ -8,6 +8,7 @@
     "build": "pnpm -r run build",
     "dev": "pnpm --filter @agentcraft/cli run dev",
     "test": "vitest run",
+    "test:changed": "vitest run --changed",
     "test:watch": "vitest",
     "check": "pnpm run type-check && vitest run",
     "lint": "eslint packages/*/src",
