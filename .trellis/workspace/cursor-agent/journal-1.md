@@ -612,3 +612,77 @@ AgentCraft 同时扮演：ACP Client + MCP Server + ACP Proxy
 ### Next Steps
 
 - None - task complete
+
+## Session 12: ACP Integration, QA Scenario & Bug Fixes
+
+**Date**: 2026-02-20
+**Task**: ACP Integration, QA Scenario & Bug Fixes
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## 本次会话完成内容
+
+### 1. QA 场景执行与修复（bilibili-video-analysis）
+
+运行 `/qa bilibili-video-analysis` 场景，经过 3 轮 QA 循环发现并修复了以下问题：
+
+| 问题 | 修复 |
+|------|------|
+| `agent-run-task` 返回 `error_max_turns` 原始 JSON | 改进 `ClaudeCodeCommunicator` 解析逻辑，返回描述性消息 |
+| Agent 请求 MCP 工具授权无法自主运行 | `ContextMaterializer` 物化时生成 `.claude/settings.local.json` 预授权工具 |
+| RPC 客户端 10s 超时导致 `agent run` 失败 | `RpcClient.call()` 支持可配置超时，`agent run` 自动按任务超时 +5s |
+
+最终 QA 结果：**8/8 步骤全部 PASS**，Agent 成功产出 4324 字节的视频分析报告。
+
+### 2. QA 场景更新
+
+更新 `bilibili-video-analysis.json` 场景：
+- 目标视频改为 BV12mZtBTEJB（极客湾手机游戏性能大横评，255万播放）
+- 核心步骤改为让 Agent 产出 `report.md` 分析报告文件
+- 添加 `tech-review-analysis` skill，优化 prompts
+- 增加报告产物验证步骤
+
+### 3. Ship 审查修复
+
+| 问题 | 修复 |
+|------|------|
+| `acp/connection.ts` 2 处 non-null assertion | 改为防御性检查 |
+| `packages/acp/tsconfig.json` 缺少 `composite` | 添加 `composite: true` |
+| `process-launcher.test.ts` 僵尸进程检测失败 | 增加 `child.once('exit')` 事件追踪 |
+| `mvp-e2e-integration.test.ts` 超时 | mock 模式下跳过 ACP 连接 |
+
+### 4. Issue 创建
+
+- **#36**: Agent 工具权限管理机制设计（P2, security, architecture）
+
+### 关键文件
+
+- `packages/core/src/communicator/claude-code-communicator.ts` — error_max_turns 解析
+- `packages/core/src/initializer/context/context-materializer.ts` — 新增 MCP 权限物化
+- `packages/cli/src/client/rpc-client.ts` — 可配置超时
+- `packages/cli/src/commands/agent/run.ts` — RPC 超时自适应
+- `packages/core/src/manager/launcher/process-launcher.ts` — 早退检测改进
+- `packages/api/src/services/app-context.ts` — mock 模式跳过 ACP
+- `.agents/skills/qa-engineer/scenarios/bilibili-video-analysis.json` — 场景更新
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `180edd9` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

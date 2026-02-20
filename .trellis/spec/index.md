@@ -28,6 +28,15 @@ spec/
 | [接口契约](./api-contracts.md) | RPC 方法、CLI 命令、ACP Proxy、MCP Server、错误码 | **强制** — 任何接口变更必须先更新此文档 |
 | [耐久测试规范](./endurance-testing.md) | 覆盖矩阵、不变量、演进策略、维护规范 | **强制** — 生命周期/通信变更必须同步更新耐久测试 |
 
+### 重要设计文档
+
+以下设计文档对理解系统架构至关重要，实现时应作为核心参考：
+
+| 文档 | 内容 | 重要性 |
+|------|------|--------|
+| [Agent 启动场景与 ACP 架构](../../docs/design/agent-launch-scenarios.md) | 7 种启动/交互场景、ACP Gateway 架构、协议分层、控制权谱系 | **核心** — 所有 ACP/Proxy/Chat 相关实现的架构依据 |
+| [架构 Docker 类比](../../docs/design/architecture-docker-analogy.md) | CLI-Daemon 分层设计的概念映射 | 参考 — 理解整体架构思路 |
+
 ### 第二层：实现指南（Implementation Guidelines）
 
 **指南描述如何"正确地实现"**。为开发者提供编码规范、错误处理模式、日志策略等。

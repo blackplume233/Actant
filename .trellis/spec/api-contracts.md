@@ -7,52 +7,63 @@
 
 ## 概述
 
-AgentCraft 的接口架构：
+AgentCraft 的接口架构（两层协议分工）：
 
 ```
-                                   外部 ACP Client
-                                        │
-                                   ACP / stdio
-                                        │
-     CLI (agentcraft)           ACP Proxy (agentcraft proxy)
-           │                            │
-    RpcClient (JSON-RPC 2.0)    RpcClient (JSON-RPC 2.0)
-           │                            │
-           └────────────┬───────────────┘
-                        │
-             ┌──────────┼──────────┐
-             │    Unix Socket /    │
-             │    Named Pipe       │
-             └──────────┼──────────┘
-                        │
-               Daemon (SocketServer)
-                        │
-                HandlerRegistry
-       ┌────────┬───┬───┼───┬────────┐
-       ▼        ▼   ▼   ▼   ▼        ▼
-    Agent  Template Domain Daemon  Proxy      MCP Server
-   Handlers Handlers Handlers Handlers Handlers  (MCP/stdio)
-                                                    │
-                                               外部 Agent A
-                                             (通过 MCP tool call)
+     管理操作 (RPC)                          实时交互 (ACP)
+
+  CLI (agentcraft)                 外部 ACP Client (IDE/Desktop)
+        │                                    │
+  RpcClient (JSON-RPC 2.0)             ACP / stdio
+        │                                    │
+  Unix Socket / Named Pipe          ACP Proxy (薄层 stdio↔socket)
+        │                                    │
+        │                             ACP / Unix socket
+        │                                    │
+        │                         agent chat (内置 ACP Client)
+        │                                    │
+        │                             ACP / Unix socket
+        │                                    │
+        └────────────────┬───────────────────┘
+                         │
+              ┌──────────▼──────────────────────┐
+              │       AgentCraft Core (Daemon)    │
+              │                                   │
+              │  RPC: HandlerRegistry             │
+              │   ├─ Agent/Template/Domain/Daemon │
+              │   └─ Proxy(legacy) handlers       │
+              │                                   │
+              │  ACP Gateway: Session 多路复用     │
+              │   ├─ AgentSideConnection (面向上游)│
+              │   └─ ClientSideConnection (面向下游)│
+              └──────────────┬────────────────────┘
+                             │ ACP / stdio (唯一连接)
+                             ▼
+                      Agent 子进程
+                      (claude-agent-acp)
 ```
+
+> 详细场景分析参见 [Agent 启动场景与 ACP 架构](../../docs/design/agent-launch-scenarios.md)
 
 ### 协议分工
 
-| 协议 | 用途 | 方向 |
-|------|------|------|
-| **JSON-RPC 2.0** | CLI / ACP Proxy ↔ Daemon 内部通信 | 内部 |
-| **ACP / stdio** | 外部客户端 ↔ ACP Proxy；Daemon ↔ 托管 Agent | 外部 + 内部 |
-| **MCP / stdio** | 外部 Agent ↔ AgentCraft MCP Server | 外部 |
+| 协议层 | 传输 | 用途 | 场景 |
+|--------|------|------|------|
+| **JSON-RPC 2.0** | Unix socket, request/response | 管理操作：create/start/stop/list/resolve/attach/detach | 所有场景 |
+| **ACP** | Unix socket (上游) / stdio (下游), streaming | 实时交互：prompt/stream/cancel/notifications | Agent start + chat/proxy |
+| **MCP / stdio** | stdio | Agent-to-Agent 通信 | 外部 Agent 调用 |
+
+**核心原则**：RPC 层处理管理操作，ACP Gateway 层处理实时交互。不存在"用 RPC 传 ACP 消息"的错位。
 
 ### 四种外部接入模式
 
 | 模式 | 协议 | 适用场景 | 参见 |
 |------|------|---------|------|
 | **CLI** | JSON-RPC via Socket | 开发者 / 脚本自动化 | §4 |
-| **ACP Proxy** | ACP / stdio | IDE / 应用接入托管 Agent | §7 |
+| **ACP Proxy** | ACP / stdio → ACP Gateway | IDE / 应用接入托管 Agent | §7 |
+| **agent chat** | ACP / Unix socket → ACP Gateway | 终端交互式聊天（流式） | §4.2, §7 |
 | **MCP Server** | MCP / stdio | Agent-to-Agent 通信 | §8 |
-| **Self-spawn + Attach** | JSON-RPC via Socket | 外部客户端自己 spawn Agent，注册到 AgentCraft | §3.4 |
+| **Self-spawn + Attach** | JSON-RPC via Socket | 外部客户端自己 spawn Agent，注册到 AgentCraft | §3.3 |
 
 - **传输层**：JSON-RPC 2.0，换行分隔，通过 Unix Socket（Windows Named Pipe）
 - **客户端超时**：10 秒
@@ -671,94 +682,132 @@ CLI 层按以下优先级处理错误：
 
 ---
 
-## 7. ACP Proxy — 标准 ACP 协议网关 ✅ 已实现
+## 7. ACP 实时交互层 — ACP Gateway + Proxy + Chat
 
-> 状态：**已实现**（Phase 3 — ACP 集成）
+> 状态：**架构重设计中**（参见 [Issue #35](../../.trellis/issues/0035-acp-proxy-full-protocol.json)、[启动场景文档](../../docs/design/agent-launch-scenarios.md)）
+>
+> 当前实现为 legacy Proxy（RPC 中继），将迁移至 ACP Gateway 架构。
 
-ACP Proxy 是一个轻量进程（`agentcraft proxy`），对外暴露标准 ACP Agent 接口（stdio），对内通过 JSON-RPC 连接 AgentCraft Daemon。外部客户端（IDE / Unreal / Unity）无需了解 AgentCraft 内部实现，以标准 ACP 协议即可使用托管 Agent。
+### 7.1 目标架构：ACP Gateway（极简 session 路由器）+ 并行 ACP Client
 
-### 7.1 架构
+**Gateway 极简化**：只按 sessionId 做消息转发，不解析/修改/拦截 ACP 消息内容。
+
+**ACP Client 并行结构**：所有 Client 是独立的 peers，地位平等，并行连接 Gateway：
 
 ```
-外部 ACP Client (IDE / Unreal)
-    │
-    │  标准 ACP / stdio
-    ▼
-agentcraft proxy --agent <name>
-    │
-    │  JSON-RPC / Unix Socket
-    ▼
-AgentCraft Daemon
-    │
-    │  ACP / stdio (Daemon 拥有的连接)
-    ▼
-托管 Agent 进程
+  IDE (外部ACP Client) ──Proxy(stdio↔socket)──┐
+  Desktop (外部ACP Client) ──Proxy(stdio↔socket)──┤
+  agent chat (内置ACP Client) ─────────────────┤  ← 并行 peers
+  Web UI (WebSocket ACP Client) ───────────────┤     互不依赖
+                                                ▼
+          ACP Gateway (极简 session 路由器)
+          ├─ sessionId → Client 映射
+          ├─ 上行: 转发到 Agent
+          └─ 下行: 按 sessionId 路由回 Client
+                                                │
+                                           ACP / stdio
+                                                │
+                                         Agent 子进程
 ```
 
-**从外部客户端视角**：`agentcraft proxy` 就是一个标准 ACP Agent。配置方式与 `claude` / `cursor-agent` 完全相同。
+Proxy 不是 Gateway 的一部分——它是外部 ACP Client 的 transport 层（stdio ↔ socket 转换）。Chat 的内置 ACP Client 与 Proxy 转发来的外部 ACP Client 地位完全平等。
 
-### 7.2 两种运行模式
+### 7.2 Proxy 角色
+
+Proxy 是**纯 transport 转换层**，不理解 ACP 消息内容：
+- 接收：外部客户端的 ACP 消息（从 stdin）
+- 转发：写入 Core 的 ACP Unix socket
+- 回传：Core 的 ACP 响应/通知写回 stdout
+
+**从外部客户端视角**：`agentcraft proxy <name>` 就是一个标准 ACP Agent。
+
+### 7.3 两种运行模式
 
 | 模式 | 标志 | 行为 | 适用场景 |
 |------|------|------|---------|
-| **Workspace 隔离**（默认） | 无 | Agent 环境请求在 AgentCraft workspace 内闭环 | 纯任务委托 |
+| **Workspace 隔离**（默认） | 无 | Agent 环境请求在 Core 本地处理（workspace 内） | 纯任务委托 |
 | **环境穿透** | `--env-passthrough` | Agent 环境请求穿透回外部客户端 | 远程 Agent 操作本地文件 |
 
 #### Workspace 隔离模式
 
 ```
-Client ──prompt──→ Proxy ──→ Daemon ──→ Agent
-Client ←─result──  Proxy ←── Daemon ←── Agent
+Client ──prompt──→ Proxy ──→ Core (ACP Gateway) ──→ Agent
+Client ←─result──  Proxy ←── Core ←── Agent
 
-Agent 的 fs/readTextFile 等请求 → Daemon 在 workspace 内处理
+Agent 的 readTextFile/writeTextFile 请求 → Core 在 workspace 内本地处理
+Agent 的 requestPermission 请求 → Core 自动批准
 ```
 
 #### 环境穿透模式
 
 ```
-Client ──prompt──→ Proxy ──→ Daemon ──→ Agent
-Client ←─result──  Proxy ←── Daemon ←── Agent
+Client ──prompt──→ Proxy ──→ Core (ACP Gateway) ──→ Agent
+Client ←─result──  Proxy ←── Core ←── Agent
 
-Agent ──fs/readTextFile──→ Daemon ──proxy.envCallback──→ Proxy ──ACP──→ Client
-Client ──file content──→ Proxy ──proxy.envCallback──→ Daemon ──→ Agent
+Agent ──readTextFile──→ Core ──→ Proxy ──ACP──→ Client (穿透到 IDE 端文件系统)
+Agent ──requestPermission──→ Core ──→ Proxy ──ACP──→ Client (穿透到 IDE 端审批)
 ```
 
-### 7.3 ACP 消息流
+### 7.4 多 Client 共存
+
+Core 作为 ACP Gateway 天然支持多个 Client 同时连接同一 Agent：
+
+```
+IDE (via Proxy)    ──ACP/socket──→ Core: Session 1
+Claude Desktop     ──ACP/socket──→ Core: Session 2
+Terminal (chat)    ──ACP/socket──→ Core: Session 3
+                                     │
+                                  AcpConnection (单一连接)
+                                     │
+                                  Agent 子进程
+```
+
+每个 Client 获得独立的 ACP Session，Core 按 `sessionId` 路由 `sessionUpdate` 通知回正确的 Client。
+
+### 7.5 ACP 消息流（目标架构）
 
 #### 初始化
 
 ```
-Client                    Proxy                     Daemon
-  │──initialize──────────→│                         │
-  │                        │──proxy.connect(RPC)───→│
-  │                        │←─ProxySession + caps───│
-  │←─initialize/result────│                         │
-  │  (标准 ACP 能力声明)    │                         │
+Client               Proxy            Core (Gateway)          Agent
+  │──initialize─────→│                │                        │
+  │                   │──ACP/socket──→│                        │
+  │                   │               │──initialize──────────→│
+  │                   │               │←─agentInfo + caps─────│
+  │                   │←─ACP/socket───│                        │
+  │←─initialize/result│               │                        │
+  │  (真实 Agent 能力) │               │                        │
 ```
 
-#### 会话交互
+#### 会话交互（流式）
 
 ```
-Client                    Proxy                     Daemon            Agent
-  │──session/prompt──────→│                         │                  │
-  │                        │──proxy.forward(RPC)───→│                  │
-  │                        │                         │──ACP prompt───→│
-  │                        │                         │←─ACP update────│
-  │                        │←─streaming response────│                  │
-  │←─session/update───────│                         │                  │
+Client               Proxy            Core (Gateway)          Agent
+  │──session/prompt──→│──ACP/socket──→│──prompt──────────────→│
+  │                   │               │←─sessionUpdate────────│
+  │                   │←─ACP/socket───│  (agent_message_chunk) │
+  │←─sessionUpdate────│               │←─sessionUpdate────────│
+  │  (逐 chunk 流式)   │               │  (tool_call)          │
+  │←─sessionUpdate────│←─ACP/socket───│                        │
+  │  (tool_call)       │               │←─prompt/result────────│
+  │←─prompt/result────│←─ACP/socket───│                        │
 ```
 
-### 7.4 外部客户端配置示例
+### 7.6 外部客户端配置示例
 
 ```json
 {
   "agent": {
     "command": "agentcraft",
-    "args": ["proxy", "--agent", "my-agent"],
+    "args": ["proxy", "my-agent"],
     "protocol": "acp/stdio"
   }
 }
 ```
+
+### 7.7 Legacy Proxy（当前实现，将废弃）
+
+当前 Proxy 通过 RPC `proxy.connect` / `proxy.forward` 中继 ACP 消息，存在无流式、无通知、硬编码握手等限制。相关 RPC 方法（§3.7）在新架构下不再被 Proxy 使用，保留给兼容性场景。
 
 ---
 
