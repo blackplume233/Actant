@@ -28,13 +28,13 @@ AgentCraft 的接口架构：
                Daemon (SocketServer)
                         │
                 HandlerRegistry
-           ┌────────┬───┼───┬────────┐
-           ▼        ▼   ▼   ▼        ▼
-        Agent   Template Daemon  Proxy      MCP Server
-       Handlers Handlers Handlers Handlers  (MCP/stdio)
-                                               │
-                                          外部 Agent A
-                                        (通过 MCP tool call)
+       ┌────────┬───┬───┼───┬────────┐
+       ▼        ▼   ▼   ▼   ▼        ▼
+    Agent  Template Domain Daemon  Proxy      MCP Server
+   Handlers Handlers Handlers Handlers Handlers  (MCP/stdio)
+                                                    │
+                                               外部 Agent A
+                                             (通过 MCP tool call)
 ```
 
 ### 协议分工
@@ -252,18 +252,136 @@ Client → agent.attach({ name: "reviewer", pid: 12345 })
 - 清除 `processOwnership`、`pid`，状态变为 `"stopped"`
 - 若 `cleanup: true` 且 `workspacePolicy: "ephemeral"`，删除 workspace 目录并销毁实例
 
-### 3.4 Agent 任务 API（需 ACP 集成）
+### 3.4 Agent 通信（MVP — print 模式） ✅ 已实现
 
-供 ACP Proxy 或 MCP Server 向 AgentCraft 管理的 Agent 发送任务。**依赖 Daemon 与 Agent 间的 ACP 连接**（即 `processOwnership: "managed"`）。
+> 状态：**已实现**（Phase 2 MVP）
+
+通过 Agent 后端 CLI 的 print 模式（`claude -p`）发送 prompt 并接收 response。每次调用 spawn 一个独立进程，**不依赖** `agent.start` 启动的长驻进程。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `agent.run` | `{ name, prompt, options? }` | `AgentRunResult` | `AGENT_NOT_FOUND` |
+
+#### agent.run
+
+向已创建的 Agent 发送单次 prompt，通过后端 CLI print 模式执行，返回完整结果。
+
+**参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | `string` | **是** | 已创建的 Agent 实例名 |
+| `prompt` | `string` | **是** | 发送给 Agent 的消息 |
+| `options` | `object` | 否 | 可选配置（见下表） |
+
+**options 字段：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `systemPromptFile` | `string` | 系统提示词文件路径 |
+| `appendSystemPrompt` | `string` | 追加到系统提示词的内容 |
+| `sessionId` | `string` | 复用 claude-code session（`--resume`） |
+| `timeoutMs` | `number` | 超时时间（默认 300000ms） |
+| `maxTurns` | `number` | 最大 agentic turns |
+| `model` | `string` | 指定模型（如 `claude-sonnet-4-20250514`） |
+
+**返回 `AgentRunResult`：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `text` | `string` | Agent 回复内容 |
+| `sessionId` | `string?` | 可复用的 session ID（用于后续 `agent.run` 延续上下文） |
+
+**通信机制：**
+
+```
+CLI / 外部调用
+    │
+    │  agent.run RPC
+    ▼
+Daemon → AgentManager.runPrompt()
+    │
+    │  spawn("claude", ["-p", "--output-format", "json", prompt])
+    │  cwd = agent workspace directory
+    ▼
+临时 claude -p 进程
+    │
+    │  stdout JSON: { result, session_id }
+    ▼
+返回 AgentRunResult
+```
+
+> **注意**：`agent.run` 不依赖 `agent.start`。它在 agent 的 workspace 目录下 spawn 独立的 `claude -p` 进程。`agent start` 启动的长驻进程用于未来 ACP Proxy 集成（Phase 3）。
+
+> 实现参考：`packages/core/src/communicator/claude-code-communicator.ts`
+
+### 3.5 Domain 组件管理 ✅ 已实现
+
+> 状态：**已实现**（Phase 2 MVP）
+
+查询 Daemon 已加载的领域组件（skills、prompts、MCP 配置、workflows）。组件定义在 Daemon 启动时从 `configs/` 目录自动加载。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `skill.list` | `{}` | `SkillDefinition[]` | — |
+| `skill.get` | `{ name }` | `SkillDefinition` | `CONFIG_NOT_FOUND` |
+| `prompt.list` | `{}` | `PromptDefinition[]` | — |
+| `prompt.get` | `{ name }` | `PromptDefinition` | `CONFIG_NOT_FOUND` |
+| `mcp.list` | `{}` | `McpServerDefinition[]` | — |
+| `mcp.get` | `{ name }` | `McpServerDefinition` | `CONFIG_NOT_FOUND` |
+| `workflow.list` | `{}` | `WorkflowDefinition[]` | — |
+| `workflow.get` | `{ name }` | `WorkflowDefinition` | `CONFIG_NOT_FOUND` |
+
+#### 组件类型定义
+
+```typescript
+interface SkillDefinition {
+  name: string;
+  description?: string;
+  content: string;       // 技能规则内容（markdown/text）
+  tags?: string[];
+}
+
+interface PromptDefinition {
+  name: string;
+  description?: string;
+  content: string;       // 提示词内容，支持 {{variable}} 占位符
+  variables?: string[];  // 内容中预期的变量名
+}
+
+interface McpServerDefinition {
+  name: string;
+  description?: string;
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+}
+
+interface WorkflowDefinition {
+  name: string;
+  description?: string;
+  content: string;       // 工作流内容（markdown）
+}
+```
+
+> `CONFIG_NOT_FOUND` 错误映射到 `GENERIC_BUSINESS` (-32000) RPC 错误码。
+
+> 实现参考：`packages/api/src/handlers/domain-handlers.ts`，类型定义见 `packages/shared/src/types/domain-component.types.ts`
+
+### 3.6 Agent 任务 API（ACP 集成 — Phase 3）
+
+> 状态：**规范已定义，未实现**
+
+供 ACP Proxy 或 MCP Server 向 AgentCraft 管理的 Agent 发送任务。**依赖 Daemon 与 Agent 间的 ACP 连接**（即 `processOwnership: "managed"`）。Phase 3 实现后，将演进 §3.4 的 print 模式方案为 ACP 通信。
 
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
 | `agent.run` | `{ template, prompt, cleanup? }` | `RunResult` | `TEMPLATE_NOT_FOUND`, `AGENT_LAUNCH` |
 | `agent.prompt` | `{ name, message, sessionId? }` | `PromptResult` | `AGENT_NOT_FOUND`, `AGENT_NOT_ATTACHED` |
 
-#### agent.run
+#### agent.run (ACP 版本)
 
-一站式操作：创建 ephemeral 实例 → 启动 → 发送 prompt → 等待完成 → 可选清理。
+一站式操作：创建 ephemeral 实例 → 启动 → 通过 ACP 发送 prompt → 等待完成 → 可选清理。
 
 **参数：**
 
@@ -283,7 +401,7 @@ Client → agent.attach({ name: "reviewer", pid: 12345 })
 
 #### agent.prompt
 
-向已运行的 managed Agent 发送消息。
+向已运行的 managed Agent 发送消息（通过 Daemon 持有的 ACP 连接）。
 
 **参数：**
 
@@ -300,7 +418,7 @@ Client → agent.attach({ name: "reviewer", pid: 12345 })
 | `response` | `string` | Agent 回复 |
 | `sessionId` | `string` | 可复用的 session ID |
 
-### 3.5 Proxy Session 管理
+### 3.7 Proxy Session 管理
 
 ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调用。
 
@@ -311,7 +429,7 @@ ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调
 | `proxy.forward` | `{ sessionId, acpMessage }` | `AcpMessage` | 转发 ACP 消息给 Agent |
 | `proxy.envCallback` | `{ sessionId, response }` | `{ ok }` | 回传环境请求的结果 |
 
-### 3.6 守护进程
+### 3.8 守护进程
 
 | 方法 | 参数 | 返回 | 说明 |
 |------|------|------|------|
@@ -346,6 +464,8 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 
 ### 4.2 Agent 命令 (`agentcraft agent`)
 
+#### 生命周期管理
+
 | 命令 | 参数 | 选项 | 对应 RPC |
 |------|------|------|---------|
 | `agent create <name>` | `name` | `-t, --template`（必填）, `--launch-mode`, `-f, --format` | `agent.create` |
@@ -359,6 +479,17 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 
 **启动模式**：`direct`, `acp-background`, `acp-service`, `one-shot`
 
+#### Agent 交互（✅ 已实现）
+
+| 命令 | 参数 | 选项 | 对应 RPC |
+|------|------|------|---------|
+| `agent run <name>` | `name` | `--prompt`（必填）, `--model`, `--max-turns`, `--timeout`, `--session-id`, `--format` | `agent.run` |
+| `agent chat <name>` | `name` | `--model`, `--max-turns`, `--session-id` | `agent.run`（循环调用） |
+
+- `agent run`：发送单次 prompt，输出结果后退出。支持 `--format text|json`。
+- `agent chat`：进入交互式 REPL 模式。输入 `exit`/`quit` 或 Ctrl+C 退出。通过 `--session-id` 和 claude-code session 机制维护跨消息上下文。
+- 两者均使用 claude-code CLI print 模式（`claude -p`），**不依赖** `agent start`。
+
 ### 4.3 外部 Spawn 命令
 
 | 命令 | 参数 | 选项 | 对应 RPC |
@@ -367,7 +498,31 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | `agent attach <name>` | `name` | `--pid`（必填）, `--metadata` | `agent.attach` |
 | `agent detach <name>` | `name` | `--cleanup` | `agent.detach` |
 
-### 4.4 ACP Proxy 命令
+### 4.4 Domain 组件命令（✅ 已实现）
+
+| 命令 | 参数 | 选项 | 对应 RPC |
+|------|------|------|---------|
+| `skill list` | — | `-f, --format` | `skill.list` |
+| `skill show <name>` | `name` | `-f, --format` | `skill.get` |
+| `prompt list` | — | `-f, --format` | `prompt.list` |
+| `prompt show <name>` | `name` | `-f, --format` | `prompt.get` |
+| `mcp list` | — | `-f, --format` | `mcp.list` |
+| `mcp show <name>` | `name` | `-f, --format` | `mcp.get` |
+| `workflow list` | — | `-f, --format` | `workflow.list` |
+| `workflow show <name>` | `name` | `-f, --format` | `workflow.get` |
+
+组件定义文件从 `~/.agentcraft/configs/` 目录加载（可通过 `--configs-dir` 覆盖）：
+
+```
+~/.agentcraft/configs/
+├── skills/          # SkillDefinition JSON
+├── prompts/         # PromptDefinition JSON
+├── mcp/             # McpServerDefinition JSON
+├── workflows/       # WorkflowDefinition JSON
+└── templates/       # AgentTemplate JSON
+```
+
+### 4.5 ACP Proxy 命令
 
 | 命令 | 参数 | 选项 | 行为 |
 |------|------|------|------|
@@ -382,7 +537,7 @@ agentcraft proxy my-agent --env-passthrough  # 环境穿透模式
 agentcraft proxy my-agent -t review-template # 不存在则自动创建
 ```
 
-### 4.5 守护进程命令 (`agentcraft daemon`)
+### 4.6 守护进程命令 (`agentcraft daemon`)
 
 | 命令 | 选项 | 行为 |
 |------|------|------|
@@ -452,7 +607,46 @@ interface RpcClient {
 - `RpcCallError` — RPC 返回错误：`{ message, code, data? }`
 - `ConnectionError` — Socket 连接失败：`{ socketPath, cause }`
 
-### 5.4 CLI 错误展示
+### 5.4 AgentCommunicator
+
+Agent 后端通信的抽象接口。不同 backend（claude-code、cursor）实现各自的通信协议。
+
+```typescript
+interface AgentCommunicator {
+  runPrompt(workspaceDir: string, prompt: string, options?: RunPromptOptions): Promise<PromptResult>;
+  streamPrompt(workspaceDir: string, prompt: string, options?: RunPromptOptions): AsyncIterable<StreamChunk>;
+}
+
+interface PromptResult {
+  text: string;
+  sessionId?: string;
+}
+
+interface StreamChunk {
+  type: "text" | "tool_use" | "result" | "error";
+  content: string;
+}
+
+interface RunPromptOptions {
+  systemPromptFile?: string;
+  appendSystemPrompt?: string;
+  sessionId?: string;
+  timeoutMs?: number;
+  maxTurns?: number;
+  model?: string;
+}
+```
+
+| 实现 | Backend | 说明 |
+|------|---------|------|
+| `ClaudeCodeCommunicator` | `claude-code` | `claude -p --output-format json\|stream-json`，stdin/stdout 通信 |
+| `CursorCommunicator` | `cursor` | Stub — Cursor CLI 尚不支持 pipe 模式，调用时抛出错误 |
+
+工厂函数 `createCommunicator(backendType)` 根据 `AgentBackendType` 选择实现。
+
+> 实现参考：`packages/core/src/communicator/`
+
+### 5.5 CLI 错误展示
 
 CLI 层按以下优先级处理错误：
 
