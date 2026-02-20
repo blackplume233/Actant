@@ -550,3 +550,65 @@ AgentCraft 同时扮演：ACP Client + MCP Server + ACP Proxy
 ### Next Steps
 
 - None - task complete
+
+## Session 10: Phase 1 质量改进: CliPrinter + CLI 单元测试
+
+**Date**: 2026-02-20
+**Task**: Phase 1 质量改进: CliPrinter + CLI 单元测试
+
+### Summary
+
+完成 Issue #20 (CLI 测试覆盖) 和 #22 (CliPrinter 输出层)。重构 17 个 CLI 文件替换 console.log，新增 56 个单元测试覆盖 printer/formatter/error-presenter/rpc-client/repl/commands。Phase 1 全部任务（含质量审查）完毕，准备进入 Phase 2。
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e26ce70` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+## Session 11: Phase 1 质量改进: CliPrinter + CLI 单元测试
+
+**Date**: 2026-02-20
+**Task**: Phase 1 质量改进: CliPrinter + CLI 单元测试
+
+### Summary
+
+完成 Issue #20 (CLI 测试覆盖) 和 #22 (CliPrinter 输出层)。重构 17 个 CLI 文件替换 console.log，新增 56 个单元测试覆盖 printer/formatter/error-presenter/rpc-client/repl/commands。Phase 1 全部任务（含质量审查）完毕，准备进入 Phase 2。
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e26ce70` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

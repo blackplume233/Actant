@@ -1,0 +1,6 @@
+{
+  "name": "typescript-expert",
+  "description": "TypeScript best practices and advanced patterns",
+  "content": "## TypeScript Best Practices\n\n- Use strict mode (`strict: true` in tsconfig)\n- Prefer interfaces over type aliases for object shapes\n- Use discriminated unions for state machines and variant types\n- Avoid `any`, prefer `unknown` with type guards\n- Use `satisfies` operator for type-safe object literals\n- Leverage template literal types for string patterns\n- Use `const` assertions for literal types\n- Prefer `readonly` for immutable data structures",
+  "tags": ["typescript", "patterns", "best-practices"]
+}

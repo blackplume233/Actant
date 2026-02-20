@@ -6,6 +6,7 @@ import {
   HandlerRegistry,
   registerTemplateHandlers,
   registerAgentHandlers,
+  registerDomainHandlers,
   registerDaemonHandlers,
 } from "../handlers/index";
 import { writePidFile, removePidFile, readPidFile, isProcessRunning } from "./pid-file";
@@ -25,6 +26,7 @@ export class Daemon {
 
     registerTemplateHandlers(this.handlers);
     registerAgentHandlers(this.handlers);
+    registerDomainHandlers(this.handlers);
     registerDaemonHandlers(this.handlers, () => this.stop());
   }
 

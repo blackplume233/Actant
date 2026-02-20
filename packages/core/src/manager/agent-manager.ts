@@ -17,6 +17,8 @@ import { getLaunchModeHandler } from "./launch-mode-handler";
 import { RestartTracker, type RestartPolicy } from "./restart-tracker";
 import { delay } from "./launcher/process-utils";
 import { scanInstances, updateInstanceMeta } from "../state/index";
+import type { AgentCommunicator, PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
+import { createCommunicator } from "../communicator/create-communicator";
 
 const logger = createLogger("agent-manager");
 
@@ -329,6 +331,41 @@ export class AgentManager {
     }
 
     return { ok: true, workspaceCleaned };
+  }
+
+  /**
+   * Send a prompt to an agent and collect the full response.
+   * The agent does not need to be "running" as a long-lived service —
+   * this uses the backend CLI in print mode for one-shot execution.
+   */
+  async runPrompt(
+    name: string,
+    prompt: string,
+    options?: RunPromptOptions,
+  ): Promise<PromptResult> {
+    const meta = this.requireAgent(name);
+    const dir = join(this.instancesBaseDir, name);
+    const communicator = this.getCommunicator(meta);
+    return communicator.runPrompt(dir, prompt, options);
+  }
+
+  /**
+   * Send a prompt to an agent and stream the response.
+   * Uses the backend CLI in streaming print mode.
+   */
+  streamPrompt(
+    name: string,
+    prompt: string,
+    options?: RunPromptOptions,
+  ): AsyncIterable<StreamChunk> {
+    const meta = this.requireAgent(name);
+    const dir = join(this.instancesBaseDir, name);
+    const communicator = this.getCommunicator(meta);
+    return communicator.streamPrompt(dir, prompt, options);
+  }
+
+  private getCommunicator(meta: AgentInstanceMeta): AgentCommunicator {
+    return createCommunicator(meta.backendType);
   }
 
   /** Shut down the process watcher and release resources. */

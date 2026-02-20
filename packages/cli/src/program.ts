@@ -1,7 +1,15 @@
 import { Command } from "commander";
 import { getDefaultIpcPath } from "@agentcraft/shared";
 import { RpcClient } from "./client/rpc-client";
-import { createTemplateCommand, createAgentCommand, createDaemonCommand } from "./commands/index";
+import {
+  createTemplateCommand,
+  createAgentCommand,
+  createSkillCommand,
+  createPromptCommand,
+  createMcpCommand,
+  createWorkflowCommand,
+  createDaemonCommand,
+} from "./commands/index";
 import { presentError, type CliPrinter } from "./output/index";
 
 export function defaultSocketPath(): string {
@@ -18,6 +26,10 @@ export function createProgram(socketPath?: string, printer?: CliPrinter): Comman
 
   program.addCommand(createTemplateCommand(client, printer));
   program.addCommand(createAgentCommand(client, printer));
+  program.addCommand(createSkillCommand(client, printer));
+  program.addCommand(createPromptCommand(client, printer));
+  program.addCommand(createMcpCommand(client, printer));
+  program.addCommand(createWorkflowCommand(client, printer));
   program.addCommand(createDaemonCommand(printer));
 
   program.exitOverride();

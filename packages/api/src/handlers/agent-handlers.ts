@@ -16,6 +16,8 @@ import type {
   AgentAttachResult,
   AgentDetachParams,
   AgentDetachResult,
+  AgentRunParams,
+  AgentRunResult,
 } from "@agentcraft/shared";
 import { AgentNotFoundError } from "@agentcraft/shared";
 import type { AppContext } from "../services/app-context";
@@ -31,6 +33,7 @@ export function registerAgentHandlers(registry: HandlerRegistry): void {
   registry.register("agent.resolve", handleAgentResolve);
   registry.register("agent.attach", handleAgentAttach);
   registry.register("agent.detach", handleAgentDetach);
+  registry.register("agent.run", handleAgentRun);
 }
 
 async function handleAgentCreate(
@@ -111,4 +114,12 @@ async function handleAgentDetach(
 ): Promise<AgentDetachResult> {
   const { name, cleanup } = params as unknown as AgentDetachParams;
   return ctx.agentManager.detachAgent(name, { cleanup });
+}
+
+async function handleAgentRun(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<AgentRunResult> {
+  const { name, prompt, options } = params as unknown as AgentRunParams;
+  return ctx.agentManager.runPrompt(name, prompt, options);
 }

@@ -1,6 +1,6 @@
 import Table from "cli-table3";
 import chalk from "chalk";
-import type { AgentTemplate, AgentInstanceMeta } from "@agentcraft/shared";
+import type { AgentTemplate, AgentInstanceMeta, SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition } from "@agentcraft/shared";
 
 export type OutputFormat = "table" | "json" | "quiet";
 
@@ -172,5 +172,176 @@ export function formatAgentDetail(
     }
   }
 
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// Domain component formatters
+// ---------------------------------------------------------------------------
+
+export function formatSkillList(
+  skills: SkillDefinition[],
+  format: OutputFormat,
+): string {
+  if (format === "json") return JSON.stringify(skills, null, 2);
+  if (format === "quiet") return skills.map((s) => s.name).join("\n");
+  if (skills.length === 0) return chalk.dim("No skills loaded.");
+
+  const table = new Table({
+    head: [chalk.cyan("Name"), chalk.cyan("Tags"), chalk.cyan("Description")],
+  });
+
+  for (const s of skills) {
+    table.push([
+      s.name,
+      s.tags?.join(", ") ?? chalk.dim("—"),
+      s.description ?? chalk.dim("—"),
+    ]);
+  }
+
+  return table.toString();
+}
+
+export function formatSkillDetail(
+  skill: SkillDefinition,
+  format: OutputFormat,
+): string {
+  if (format === "json") return JSON.stringify(skill, null, 2);
+  if (format === "quiet") return skill.name;
+
+  const lines = [
+    `${chalk.bold("Skill:")}       ${skill.name}`,
+    ...(skill.description ? [`${chalk.bold("Description:")} ${skill.description}`] : []),
+    ...(skill.tags?.length ? [`${chalk.bold("Tags:")}        ${skill.tags.join(", ")}`] : []),
+    "",
+    chalk.bold("Content:"),
+    skill.content,
+  ];
+  return lines.join("\n");
+}
+
+export function formatPromptList(
+  prompts: PromptDefinition[],
+  format: OutputFormat,
+): string {
+  if (format === "json") return JSON.stringify(prompts, null, 2);
+  if (format === "quiet") return prompts.map((p) => p.name).join("\n");
+  if (prompts.length === 0) return chalk.dim("No prompts loaded.");
+
+  const table = new Table({
+    head: [chalk.cyan("Name"), chalk.cyan("Variables"), chalk.cyan("Description")],
+  });
+
+  for (const p of prompts) {
+    table.push([
+      p.name,
+      p.variables?.join(", ") ?? chalk.dim("—"),
+      p.description ?? chalk.dim("—"),
+    ]);
+  }
+
+  return table.toString();
+}
+
+export function formatPromptDetail(
+  prompt: PromptDefinition,
+  format: OutputFormat,
+): string {
+  if (format === "json") return JSON.stringify(prompt, null, 2);
+  if (format === "quiet") return prompt.name;
+
+  const lines = [
+    `${chalk.bold("Prompt:")}      ${prompt.name}`,
+    ...(prompt.description ? [`${chalk.bold("Description:")} ${prompt.description}`] : []),
+    ...(prompt.variables?.length ? [`${chalk.bold("Variables:")}   ${prompt.variables.join(", ")}`] : []),
+    "",
+    chalk.bold("Content:"),
+    prompt.content,
+  ];
+  return lines.join("\n");
+}
+
+export function formatMcpList(
+  servers: McpServerDefinition[],
+  format: OutputFormat,
+): string {
+  if (format === "json") return JSON.stringify(servers, null, 2);
+  if (format === "quiet") return servers.map((s) => s.name).join("\n");
+  if (servers.length === 0) return chalk.dim("No MCP servers loaded.");
+
+  const table = new Table({
+    head: [chalk.cyan("Name"), chalk.cyan("Command"), chalk.cyan("Description")],
+  });
+
+  for (const s of servers) {
+    const cmd = [s.command, ...(s.args ?? [])].join(" ");
+    table.push([
+      s.name,
+      cmd,
+      s.description ?? chalk.dim("—"),
+    ]);
+  }
+
+  return table.toString();
+}
+
+export function formatMcpDetail(
+  server: McpServerDefinition,
+  format: OutputFormat,
+): string {
+  if (format === "json") return JSON.stringify(server, null, 2);
+  if (format === "quiet") return server.name;
+
+  const lines = [
+    `${chalk.bold("MCP Server:")}  ${server.name}`,
+    ...(server.description ? [`${chalk.bold("Description:")} ${server.description}`] : []),
+    `${chalk.bold("Command:")}     ${server.command}`,
+    ...(server.args?.length ? [`${chalk.bold("Args:")}        ${server.args.join(" ")}`] : []),
+  ];
+
+  if (server.env && Object.keys(server.env).length > 0) {
+    lines.push("");
+    lines.push(chalk.bold("Environment:"));
+    for (const [k, v] of Object.entries(server.env)) {
+      lines.push(`  ${k}=${v}`);
+    }
+  }
+
+  return lines.join("\n");
+}
+
+export function formatWorkflowList(
+  workflows: WorkflowDefinition[],
+  format: OutputFormat,
+): string {
+  if (format === "json") return JSON.stringify(workflows, null, 2);
+  if (format === "quiet") return workflows.map((w) => w.name).join("\n");
+  if (workflows.length === 0) return chalk.dim("No workflows loaded.");
+
+  const table = new Table({
+    head: [chalk.cyan("Name"), chalk.cyan("Description")],
+  });
+
+  for (const w of workflows) {
+    table.push([w.name, w.description ?? chalk.dim("—")]);
+  }
+
+  return table.toString();
+}
+
+export function formatWorkflowDetail(
+  workflow: WorkflowDefinition,
+  format: OutputFormat,
+): string {
+  if (format === "json") return JSON.stringify(workflow, null, 2);
+  if (format === "quiet") return workflow.name;
+
+  const lines = [
+    `${chalk.bold("Workflow:")}    ${workflow.name}`,
+    ...(workflow.description ? [`${chalk.bold("Description:")} ${workflow.description}`] : []),
+    "",
+    chalk.bold("Content:"),
+    workflow.content,
+  ];
   return lines.join("\n");
 }

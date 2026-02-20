@@ -1,0 +1,5 @@
+{
+  "name": "trellis-standard",
+  "description": "Standard Trellis development workflow",
+  "content": "# Development Workflow\n\n## Quick Start\n\n1. **Read context** — Understand current project state\n2. **Plan** — Break down the task into actionable steps\n3. **Implement** — Write code following project guidelines\n4. **Test** — Run lint, type-check, and tests\n5. **Record** — Document changes in session journal\n\n## Code Quality Checklist\n\n- [ ] Lint checks pass\n- [ ] Type checks pass\n- [ ] Tests pass\n- [ ] No `any` types introduced\n- [ ] Error handling is comprehensive\n- [ ] Changes documented if needed"
+}

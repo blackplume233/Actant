@@ -1,5 +1,6 @@
 import type { AgentTemplate } from "./template.types";
 import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, DetachResult } from "./agent.types";
+import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition } from "./domain-component.types";
 
 // ---------------------------------------------------------------------------
 // JSON-RPC 2.0 base types
@@ -159,6 +160,66 @@ export interface AgentDetachParams {
 
 export type AgentDetachResult = DetachResult;
 
+// agent.run
+
+export interface AgentRunParams {
+  name: string;
+  prompt: string;
+  options?: {
+    systemPromptFile?: string;
+    appendSystemPrompt?: string;
+    sessionId?: string;
+    timeoutMs?: number;
+    maxTurns?: number;
+    model?: string;
+  };
+}
+
+export interface AgentRunResult {
+  text: string;
+  sessionId?: string;
+}
+
+// skill.*
+
+export type SkillListParams = Record<string, never>;
+export type SkillListResult = SkillDefinition[];
+
+export interface SkillGetParams {
+  name: string;
+}
+export type SkillGetResult = SkillDefinition;
+
+// prompt.*
+
+export type PromptListParams = Record<string, never>;
+export type PromptListResult = PromptDefinition[];
+
+export interface PromptGetParams {
+  name: string;
+}
+export type PromptGetResult = PromptDefinition;
+
+// mcp.*
+
+export type McpListParams = Record<string, never>;
+export type McpListResult = McpServerDefinition[];
+
+export interface McpGetParams {
+  name: string;
+}
+export type McpGetResult = McpServerDefinition;
+
+// workflow.*
+
+export type WorkflowListParams = Record<string, never>;
+export type WorkflowListResult = WorkflowDefinition[];
+
+export interface WorkflowGetParams {
+  name: string;
+}
+export type WorkflowGetResult = WorkflowDefinition;
+
 // daemon.*
 
 export type DaemonPingParams = Record<string, never>;
@@ -194,6 +255,15 @@ export interface RpcMethodMap {
   "agent.resolve": { params: AgentResolveParams; result: AgentResolveResult };
   "agent.attach": { params: AgentAttachParams; result: AgentAttachResult };
   "agent.detach": { params: AgentDetachParams; result: AgentDetachResult };
+  "agent.run": { params: AgentRunParams; result: AgentRunResult };
+  "skill.list": { params: SkillListParams; result: SkillListResult };
+  "skill.get": { params: SkillGetParams; result: SkillGetResult };
+  "prompt.list": { params: PromptListParams; result: PromptListResult };
+  "prompt.get": { params: PromptGetParams; result: PromptGetResult };
+  "mcp.list": { params: McpListParams; result: McpListResult };
+  "mcp.get": { params: McpGetParams; result: McpGetResult };
+  "workflow.list": { params: WorkflowListParams; result: WorkflowListResult };
+  "workflow.get": { params: WorkflowGetParams; result: WorkflowGetResult };
   "daemon.ping": { params: DaemonPingParams; result: DaemonPingResult };
   "daemon.shutdown": { params: DaemonShutdownParams; result: DaemonShutdownResult };
 }

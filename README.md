@@ -12,10 +12,11 @@
 
 | 功能 | 说明 | 状态 |
 |------|------|------|
-| **自定义业务 Agent** | 通过 Domain Context（Skills、MCP、Prompt、记忆）动态拼装 Agent | 🔲 规划中 |
-| **Agent Template 系统** | JSON 配置文件定义 Agent 模板，引用式组合而非嵌入 | 🔲 规划中 |
-| **Agent 生命周期管理** | 创建、启动、监控、停止 Agent Instance | 🔲 规划中 |
-| **交互式 CLI (REPL)** | 类似 Python 交互环境的命令行界面，主要操作入口 | 🔲 规划中 |
+| **自定义业务 Agent** | 通过 Domain Context（Skills、MCP、Prompt、记忆）动态拼装 Agent | ✅ 已完成 |
+| **Agent Template 系统** | JSON 配置文件定义 Agent 模板，引用式组合而非嵌入 | ✅ 已完成 |
+| **Agent 生命周期管理** | 创建、启动、监控、停止 Agent Instance | ✅ 已完成 |
+| **交互式 CLI (REPL)** | 类似 Python 交互环境的命令行界面，主要操作入口 | ✅ 已完成 |
+| **Agent 通信** | 通过 claude-code CLI 与 Agent 进行 prompt/response 交互 | ✅ 已完成 |
 | **CI 集成** | Agent 可通过 CLI 被 TeamCity 等 CI 工具调用 | 🔲 规划中 |
 | **持久化 Agent** | 长期运行的 Agent，具备心跳、自我成长、长期记忆、定时任务 | 🔲 规划中 |
 | **Agent as Service** | 持续运行的 Agent 接入 IM / Email，作为虚拟雇员 | 🔲 规划中 |
@@ -31,6 +32,8 @@
 - ✅ 目录结构规范（[ADR-002](docs/decisions/002-directory-structure.md)）
 - ✅ 开发规范文档（后端指南、前端指南、跨层思维指南）
 - ✅ 项目脚手架搭建（包结构、TypeScript 配置、Vitest 配置）
+- ✅ Phase 1: 核心运行时（进程管理、LaunchMode 分化、崩溃重启、外部 Spawn）
+- ✅ Phase 2 MVP: Agent 拼装与交互（Domain Context 全链路、CLI 管理、Agent 通信）
 
 ---
 
@@ -40,8 +43,9 @@
 
 - [Node.js](https://nodejs.org/) >= 22.0.0
 - [pnpm](https://pnpm.io/) >= 9.0.0
+- [Claude Code CLI](https://docs.claude.com/) (用于 Agent 通信)
 
-### 安装与运行
+### 安装与构建
 
 ```bash
 # 克隆仓库
@@ -51,26 +55,75 @@ cd AgentCraft
 # 安装依赖
 pnpm install
 
-# 开发模式启动 CLI
-pnpm dev
-
 # 构建所有包
 pnpm build
-
-# 运行测试
-pnpm test
-
-# 类型检查
-pnpm type-check
 ```
 
-### 常用命令
+### MVP 使用流程
+
+```bash
+# 1. 启动 Daemon（后台进程管理器）
+agentcraft daemon start
+
+# 2. 查看可用模板和组件
+agentcraft template list
+agentcraft skill list
+agentcraft prompt list
+
+# 3. 从模板创建 Agent（技能和提示词会自动物化到 workspace）
+agentcraft agent create my-agent --template code-review-agent
+
+# 4. 查看 Agent 状态
+agentcraft agent status my-agent
+
+# 5. 以 Service 模式启动 Agent
+agentcraft agent start my-agent
+
+# 6. 向 Agent 发送单次任务
+agentcraft agent run my-agent --prompt "Review the error handling in src/index.ts"
+
+# 7. 进入交互式对话模式
+agentcraft agent chat my-agent
+
+# 8. 停止 Agent
+agentcraft agent stop my-agent
+
+# 9. 销毁 Agent（删除 workspace）
+agentcraft agent destroy my-agent --force
+
+# 10. 关闭 Daemon
+agentcraft daemon stop
+```
+
+> **`agent run/chat` 与 `agent start` 的关系**
+>
+> - `agent run` / `agent chat` 使用 claude-code CLI 的 print 模式（`claude -p`），每次交互是一次独立的进程调用，**不依赖** `agent start`。即使未执行 `agent start`，也可以直接使用 `agent run` 和 `agent chat` 与 Agent 交互。
+> - `agent start` 将 Agent 作为长驻 Service 启动，用于后续 ACP Proxy 集成等场景（Phase 3）。
+> - `agent chat` 的 `--session-id` 选项通过 claude-code 的 session 机制实现跨消息的上下文延续。
+
+### 自定义组件
+
+将组件定义文件放入 `~/.agentcraft/configs/` 目录：
+
+```
+~/.agentcraft/configs/
+├── skills/          # 技能定义 (JSON)
+├── prompts/         # 提示词定义 (JSON)
+├── mcp/             # MCP Server 配置 (JSON)
+├── workflows/       # 工作流定义 (JSON)
+└── templates/       # Agent 模板 (JSON)
+```
+
+项目内置了示例配置，位于 `configs/` 目录。
+
+### 开发命令
 
 | 命令 | 说明 |
 |------|------|
 | `pnpm dev` | 开发模式启动 CLI |
 | `pnpm build` | 构建所有包 |
 | `pnpm test` | 运行全部测试 |
+| `pnpm test:changed` | 仅运行受变更影响的测试 |
 | `pnpm test:watch` | 测试监听模式 |
 | `pnpm lint` | 代码检查 |
 | `pnpm type-check` | TypeScript 类型检查 |

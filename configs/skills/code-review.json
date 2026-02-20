@@ -1,0 +1,6 @@
+{
+  "name": "code-review",
+  "description": "Rules and guidelines for reviewing code quality",
+  "content": "## Code Review Checklist\n\n- Check for proper error handling (try/catch, error boundaries)\n- Verify type safety (no `any`, proper generics)\n- Review naming conventions (descriptive, consistent casing)\n- Look for potential performance issues (unnecessary re-renders, N+1 queries)\n- Ensure tests cover edge cases\n- Validate input/output contracts match API specs\n- Check for security vulnerabilities (injection, XSS, auth bypass)",
+  "tags": ["review", "quality", "best-practices"]
+}

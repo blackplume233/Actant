@@ -10,6 +10,8 @@ import { createAgentDestroyCommand } from "./destroy";
 import { createAgentResolveCommand } from "./resolve";
 import { createAgentAttachCommand } from "./attach";
 import { createAgentDetachCommand } from "./detach";
+import { createAgentRunCommand } from "./run";
+import { createAgentChatCommand } from "./chat";
 
 export function createAgentCommand(client: RpcClient, printer?: CliPrinter): Command {
   const cmd = new Command("agent")
@@ -24,6 +26,8 @@ export function createAgentCommand(client: RpcClient, printer?: CliPrinter): Com
   cmd.addCommand(createAgentResolveCommand(client, printer));
   cmd.addCommand(createAgentAttachCommand(client, printer));
   cmd.addCommand(createAgentDetachCommand(client, printer));
+  cmd.addCommand(createAgentRunCommand(client, printer));
+  cmd.addCommand(createAgentChatCommand(client, printer));
 
   return cmd;
 }
