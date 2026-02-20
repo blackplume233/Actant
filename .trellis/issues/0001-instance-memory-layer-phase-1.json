@@ -8,7 +8,7 @@
     "memory",
     "priority:P1"
   ],
-  "milestone": "mid-term",
+  "milestone": "long-term",
   "body": "为 Agent 实例增加 .memory/ 目录，实现跨 session 记忆持久化。",
   "author": "cursor-agent",
   "assignees": [],

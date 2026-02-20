@@ -54,7 +54,7 @@ describe("SocketServer integration", () => {
   beforeAll(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "ac-socket-test-"));
     socketPath = getIpcPath(tmpDir);
-    ctx = new AppContext({ homeDir: tmpDir });
+    ctx = new AppContext({ homeDir: tmpDir, launcherMode: "mock" });
     await ctx.init();
 
     const handlers = new HandlerRegistry();

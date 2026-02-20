@@ -22,7 +22,7 @@ describe("template handlers", () => {
 
   beforeAll(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "ac-handler-test-"));
-    ctx = new AppContext({ homeDir: tmpDir });
+    ctx = new AppContext({ homeDir: tmpDir, launcherMode: "mock" });
     await ctx.init();
 
     registry = new HandlerRegistry();

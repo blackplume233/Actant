@@ -1,3 +1,5 @@
+import type { AgentBackendType } from "./template.types";
+
 /**
  * Agent Instance = a workspace directory.
  * `.agentcraft.json` is the metadata descriptor of that directory.
@@ -8,6 +10,10 @@ export interface AgentInstanceMeta {
   name: string;
   templateName: string;
   templateVersion: string;
+  /** Backend type (cursor / claude-code / custom). Set from template when instance is created. */
+  backendType: AgentBackendType;
+  /** Backend config from template (e.g. executablePath). Persisted so launcher can use without template registry. */
+  backendConfig?: Record<string, unknown>;
   status: AgentStatus;
   launchMode: LaunchMode;
   createdAt: string;

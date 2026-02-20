@@ -32,6 +32,7 @@ function makeMeta(name: string, overrides?: Partial<AgentInstanceMeta>): AgentIn
     name,
     templateName: "test-tpl",
     templateVersion: "1.0.0",
+    backendType: "cursor",
     status: "created",
     launchMode: "direct",
     createdAt: now,

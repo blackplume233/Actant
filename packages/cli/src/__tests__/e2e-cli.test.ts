@@ -50,7 +50,7 @@ describe("CLI E2E (stdio)", () => {
 
   beforeAll(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "ac-cli-e2e-"));
-    daemon = new Daemon({ homeDir: tmpDir });
+    daemon = new Daemon({ homeDir: tmpDir, launcherMode: "mock" });
     await daemon.start();
     socketPath = daemon.socketPath;
 

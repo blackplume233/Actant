@@ -18,6 +18,7 @@ function makeMeta(overrides?: Partial<AgentInstanceMeta>): AgentInstanceMeta {
     name: "test-agent",
     templateName: "test-template",
     templateVersion: "1.0.0",
+    backendType: "cursor",
     status: "created",
     launchMode: "direct",
     createdAt: now,
@@ -64,6 +65,18 @@ describe("instance-meta-io", () => {
 
       expect(result.pid).toBe(12345);
       expect(result.metadata).toEqual({ env: "production" });
+    });
+
+    it("should default backendType to cursor when missing (legacy meta)", async () => {
+      const legacy = makeMeta();
+      const { backendType: _, backendConfig: __, ...legacyWithoutBackend } = legacy;
+      await writeFile(
+        join(tmpDir, ".agentcraft.json"),
+        JSON.stringify(legacyWithoutBackend, null, 2),
+        "utf-8",
+      );
+      const result = await readInstanceMeta(tmpDir);
+      expect(result.backendType).toBe("cursor");
     });
   });
 

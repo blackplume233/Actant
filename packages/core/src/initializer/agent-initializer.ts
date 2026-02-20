@@ -64,7 +64,11 @@ export class AgentInitializer {
 
     try {
       await mkdir(workspaceDir, { recursive: true });
-      await this.materializer.materialize(workspaceDir, template.domainContext);
+      await this.materializer.materialize(
+        workspaceDir,
+        template.domainContext,
+        template.backend.type,
+      );
 
       const now = new Date().toISOString();
       const meta: AgentInstanceMeta = {
@@ -72,6 +76,8 @@ export class AgentInitializer {
         name,
         templateName: template.name,
         templateVersion: template.version,
+        backendType: template.backend.type,
+        backendConfig: template.backend.config ? { ...template.backend.config } : undefined,
         status: "created",
         launchMode: overrides?.launchMode ?? this.options?.defaultLaunchMode ?? "direct",
         createdAt: now,

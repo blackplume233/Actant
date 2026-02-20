@@ -52,6 +52,7 @@ describe("AgentInitializer", () => {
       expect(meta.name).toBe("my-agent");
       expect(meta.templateName).toBe("test-template");
       expect(meta.templateVersion).toBe("1.0.0");
+      expect(meta.backendType).toBe("cursor");
       expect(meta.status).toBe("created");
       expect(meta.launchMode).toBe("direct");
       expect(meta.id).toBeTruthy();
@@ -77,6 +78,23 @@ describe("AgentInitializer", () => {
 
       const prompts = await readFile(join(base, "prompts", "system.md"), "utf-8");
       expect(prompts).toContain("system-prompt");
+    });
+
+    it("should materialize to .claude/ for claude-code backend", async () => {
+      registry.register(
+        makeTemplate({
+          name: "claude-template",
+          backend: { type: "claude-code", config: { executablePath: "/usr/bin/claude" } },
+          domainContext: { mcpServers: [{ name: "m1", command: "cmd", args: [] }] },
+        }),
+      );
+      const meta = await initializer.createInstance("claude-agent", "claude-template");
+      expect(meta.backendType).toBe("claude-code");
+      expect(meta.backendConfig).toEqual({ executablePath: "/usr/bin/claude" });
+
+      const base = join(tmpDir, "claude-agent");
+      const mcp = JSON.parse(await readFile(join(base, ".claude", "mcp.json"), "utf-8"));
+      expect(mcp.mcpServers.m1.command).toBe("cmd");
     });
 
     it("should throw TemplateNotFoundError for missing template", async () => {

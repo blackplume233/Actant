@@ -16,11 +16,15 @@ export const LaunchModeSchema = z.enum([
   "one-shot",
 ]);
 
+const AgentBackendTypeSchema = z.enum(["cursor", "claude-code", "custom"]);
+
 export const AgentInstanceMetaSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
   templateName: z.string().min(1),
   templateVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
+  backendType: AgentBackendTypeSchema.optional(),
+  backendConfig: z.record(z.string(), z.unknown()).optional(),
   status: AgentStatusSchema,
   launchMode: LaunchModeSchema,
   createdAt: z.string().datetime(),

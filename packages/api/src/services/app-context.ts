@@ -6,7 +6,8 @@ import {
   TemplateLoader,
   AgentInitializer,
   AgentManager,
-  MockLauncher,
+  createLauncher,
+  type LauncherMode,
 } from "@agentcraft/core";
 import { createLogger, getIpcPath } from "@agentcraft/shared";
 
@@ -16,6 +17,8 @@ const DEFAULT_HOME = join(homedir(), ".agentcraft");
 
 export interface AppConfig {
   homeDir?: string;
+  /** "mock" for testing, "real" for production. Default: auto-detect from AGENTCRAFT_LAUNCHER_MODE env. */
+  launcherMode?: LauncherMode;
 }
 
 export class AppContext {
@@ -48,7 +51,7 @@ export class AppContext {
     );
     this.agentManager = new AgentManager(
       this.agentInitializer,
-      new MockLauncher(),
+      createLauncher({ mode: config?.launcherMode }),
       this.instancesDir,
     );
   }

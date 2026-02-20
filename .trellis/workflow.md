@@ -127,6 +127,7 @@ cat .trellis/spec/backend/logging-guidelines.md    # For logging
 |-- issues/              # Issue tracking (backlog)
 |   |-- .counter         # Auto-increment ID counter
 |   \-- {NNNN}-{slug}.json  # Individual issue files
+|-- roadmap.md           # Product roadmap — 当前/后续优先级，与 Issues/Tasks 对齐
 |-- spec/                # [!] MUST READ before coding
 |   |-- frontend/        # Frontend guidelines (if applicable)
 |   |   |-- index.md               # Start here - guidelines index
@@ -328,7 +329,18 @@ tasks/
 ./.trellis/scripts/task.sh list-archive    # List archived tasks
 ```
 
-### 4. Issues - Backlog Tracking
+### 4. roadmap.md - Product Roadmap
+
+**Purpose**: Single source of truth for "what we're doing now" and "what we do next". Aligns with Issues and Tasks.
+
+**When to update**:
+- [OK] When starting or completing a task (update "当前进行中" / "后续优先")
+- [OK] When reprioritizing or closing issues
+- [OK] When planning a release or milestone
+
+See `.trellis/roadmap.md` for structure and maintenance notes.
+
+### 5. Issues - Backlog Tracking
 
 Issues are lightweight JSON files for tracking ideas, bugs, design proposals, and improvements.
 
@@ -378,7 +390,7 @@ issues/
 - Meta: `duplicate` `wontfix` `blocked` `good-first-issue`
 **Milestones**: `near-term` | `mid-term` | `long-term`
 
-### 5. GitHub Sync (via MCP)
+### 6. GitHub Sync (via MCP)
 
 Local issues can sync with GitHub Issues when a GitHub MCP server is available (e.g., `@modelcontextprotocol/server-github`).
 

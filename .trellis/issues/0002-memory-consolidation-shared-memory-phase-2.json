@@ -8,7 +8,7 @@
     "memory",
     "priority:P2"
   ],
-  "milestone": "mid-term",
+  "milestone": "long-term",
   "body": "MemoryConsolidator 和 MemoryPromoter。CLI 增加 agentcraft memory 子命令。依赖 #1 完成。",
   "author": "cursor-agent",
   "assignees": [],

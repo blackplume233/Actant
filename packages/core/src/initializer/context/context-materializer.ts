@@ -1,6 +1,7 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import type { DomainContextConfig, McpServerRef } from "@agentcraft/shared";
+import type { AgentBackendType } from "@agentcraft/shared";
 import { createLogger } from "@agentcraft/shared";
 import type { SkillManager } from "../../domain/skill/skill-manager";
 import type { PromptManager } from "../../domain/prompt/prompt-manager";
@@ -8,6 +9,13 @@ import type { McpConfigManager } from "../../domain/mcp/mcp-config-manager";
 import type { WorkflowManager } from "../../domain/workflow/workflow-manager";
 
 const logger = createLogger("context-materializer");
+
+/** Config directory per backend: Cursor uses .cursor, Claude Code uses .claude (hooks/MCP go here). */
+const BACKEND_CONFIG_DIR: Record<AgentBackendType, string> = {
+  cursor: ".cursor",
+  "claude-code": ".claude",
+  custom: ".cursor",
+};
 
 /**
  * Optional Domain managers for full component resolution.
@@ -23,13 +31,14 @@ export interface DomainManagers {
 
 /**
  * Materializes Domain Context references into actual files in the instance workspace.
+ * Paths for IDE-specific config (MCP, etc.) depend on backendType (e.g. .cursor vs .claude).
  *
  * Materialization rules:
  *   skills      → AGENTS.md
- *   mcpServers  → .cursor/mcp.json
+ *   mcpServers  → {backendConfigDir}/mcp.json (e.g. .cursor/mcp.json or .claude/mcp.json)
  *   workflow    → .trellis/workflow.md
- *   prompts    → prompts/system.md
- *   subAgents  → recorded in .agentcraft.json (not materialized as files)
+ *   prompts     → prompts/system.md
+ *   subAgents   → recorded in .agentcraft.json (not materialized as files)
  */
 export class ContextMaterializer {
   constructor(private readonly managers?: DomainManagers) {}
@@ -37,7 +46,9 @@ export class ContextMaterializer {
   async materialize(
     workspaceDir: string,
     domainContext: DomainContextConfig,
+    backendType: AgentBackendType = "cursor",
   ): Promise<void> {
+    const configDir = BACKEND_CONFIG_DIR[backendType];
     const tasks: Promise<void>[] = [];
 
     if (domainContext.skills && domainContext.skills.length > 0) {
@@ -45,7 +56,7 @@ export class ContextMaterializer {
     }
 
     if (domainContext.mcpServers && domainContext.mcpServers.length > 0) {
-      tasks.push(this.materializeMcpServers(workspaceDir, domainContext.mcpServers));
+      tasks.push(this.materializeMcpServers(workspaceDir, domainContext.mcpServers, configDir));
     }
 
     if (domainContext.workflow) {
@@ -57,7 +68,7 @@ export class ContextMaterializer {
     }
 
     await Promise.all(tasks);
-    logger.debug({ workspaceDir }, "Domain context materialized");
+    logger.debug({ workspaceDir, backendType, configDir }, "Domain context materialized");
   }
 
   private async materializeSkills(workspaceDir: string, skillNames: string[]): Promise<void> {
@@ -77,15 +88,16 @@ export class ContextMaterializer {
   }
 
   /**
-   * MCP Servers → .cursor/mcp.json
+   * MCP Servers → {configDir}/mcp.json (e.g. .cursor/mcp.json or .claude/mcp.json)
    * Template provides inline McpServerRef configs; no name-based resolution needed.
    */
   private async materializeMcpServers(
     workspaceDir: string,
     servers: McpServerRef[],
+    configDirName: string,
   ): Promise<void> {
-    const cursorDir = join(workspaceDir, ".cursor");
-    await mkdir(cursorDir, { recursive: true });
+    const configDir = join(workspaceDir, configDirName);
+    await mkdir(configDir, { recursive: true });
 
     const mcpConfig: Record<string, { command: string; args: string[]; env?: Record<string, string> }> = {};
     for (const server of servers) {
@@ -98,7 +110,7 @@ export class ContextMaterializer {
 
     const config = { mcpServers: mcpConfig };
     await writeFile(
-      join(cursorDir, "mcp.json"),
+      join(configDir, "mcp.json"),
       JSON.stringify(config, null, 2) + "\n",
       "utf-8",
     );

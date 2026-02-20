@@ -176,3 +176,51 @@
 ### Next Steps
 
 - None - task complete
+
+## Session 4: Issue 管理系统 + Memory Layer 设计 + GitHub MCP 同步
+
+**Date**: 2026-02-20
+**Task**: Issue 管理系统 + Memory Layer 设计 + GitHub MCP 同步
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## 本次会话完成内容
+
+| 模块 | 内容 |
+|------|------|
+| Issue 管理系统 | 全新 GitHub-style 本地 issue tracker（`issue.sh`），支持 labels、milestone、markdown body、comments、promote → Task |
+| Memory Layer 设计 | 完成 Agent 进化机制设计文档（`memory-layer-agent-evolution.md`），含 4 层演进模型、ContextBroker、分阶段实现计划 |
+| GitHub MCP 同步 | issue.sh 新增 `export` / `import-github` / `link` / `unlink` 命令，通过 MCP 工具实现本地 ↔ GitHub 双向同步 |
+| 架构文档 | 更新 Docker 类比文档，新增 Memory Layer / Union FS / docker commit 映射 |
+| 工作流更新 | workflow.md 新增 Issue 章节、GitHub Sync 章节、命令速查 |
+| Task 归档 | `02-20-cross-platform-compat` 已归档至 `archive/2026-02/` |
+
+**关键设计决策**:
+- Issue 采用二元状态（open/closed）+ labels 分类，而非刚性 type/priority 枚举
+- GitHub 同步架构：AI Agent 作为 MCP 编排层，`issue.sh` 只负责数据准备/接收
+- `githubRef` 字段追踪远程关联，import 含重复检测
+- 无 MCP 时系统完全正常运作，sync 功能仅在主动调用时参与
+
+**新增 6 个 Issues**: #1-#6 覆盖 Memory Layer 三阶段 + Launcher + Hot-reload + OpenViking 集成
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `227f84e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

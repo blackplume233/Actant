@@ -13,6 +13,7 @@ export interface AgentTemplate {
 
 export interface AgentBackendConfig {
   type: AgentBackendType;
+  /** Optional backend-specific config (e.g. executablePath for launcher). Used in materialization and persisted on instance. */
   config?: Record<string, unknown>;
 }
 

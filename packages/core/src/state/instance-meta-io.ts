@@ -45,7 +45,11 @@ export async function readInstanceMeta(workspaceDir: string): Promise<AgentInsta
     );
   }
 
-  return result.data as AgentInstanceMeta;
+  const data = result.data as Record<string, unknown> & { backendType?: AgentInstanceMeta["backendType"] };
+  return {
+    ...data,
+    backendType: data.backendType ?? "cursor",
+  } as AgentInstanceMeta;
 }
 
 /** Atomic write: write to a temp file then rename (prevents partial writes). */

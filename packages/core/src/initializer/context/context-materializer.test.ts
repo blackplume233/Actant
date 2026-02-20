@@ -65,6 +65,18 @@ describe("ContextMaterializer", () => {
     expect(config.mcpServers.fs).not.toHaveProperty("env");
   });
 
+  it("should materialize MCP servers into .claude/mcp.json for claude-code backend", async () => {
+    const ctx: DomainContextConfig = {
+      mcpServers: [{ name: "fs", command: "npx", args: ["-y", "mcp-fs"] }],
+    };
+    await materializer.materialize(tmpDir, ctx, "claude-code");
+
+    const raw = await readFile(join(tmpDir, ".claude", "mcp.json"), "utf-8");
+    const config = JSON.parse(raw);
+    expect(config.mcpServers.fs.command).toBe("npx");
+    await expect(access(join(tmpDir, ".cursor", "mcp.json"))).rejects.toThrow();
+  });
+
   it("should materialize workflow into .trellis/workflow.md", async () => {
     const ctx: DomainContextConfig = { workflow: "trellis-standard" };
     await materializer.materialize(tmpDir, ctx);
