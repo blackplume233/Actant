@@ -97,6 +97,15 @@ AgentCraft
 
 ## Guidelines Index
 
+**Core Specifications** (see [spec/index.md](../index.md) for hierarchy):
+
+| Spec | Description |
+|------|-------------|
+| [Configuration Spec](../config-spec.md) | All schemas, types, and environment variables |
+| [API Contracts](../api-contracts.md) | RPC methods, CLI commands, IPC protocol |
+
+**Implementation Guides**:
+
 | Guide | Description | Status |
 |-------|-------------|--------|
 | [Directory Structure](./directory-structure.md) | Module organization and file layout | Initial |

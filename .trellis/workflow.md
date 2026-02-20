@@ -129,10 +129,13 @@ cat .trellis/spec/backend/logging-guidelines.md    # For logging
 |   \-- {NNNN}-{slug}.json  # Individual issue files
 |-- roadmap.md           # Product roadmap — 当前/后续优先级，与 Issues/Tasks 对齐
 |-- spec/                # [!] MUST READ before coding
-|   |-- frontend/        # Frontend guidelines (if applicable)
+|   |-- index.md                 # Spec overview (hierarchy: spec > impl)
+|   |-- config-spec.md           # [PRIMARY] Configuration specification
+|   |-- api-contracts.md         # [PRIMARY] Interface contracts
+|   |-- frontend/        # Frontend implementation guidelines
 |   |   |-- index.md               # Start here - guidelines index
 |   |   \-- *.md                   # Topic-specific docs
-|   |-- backend/         # Backend guidelines (if applicable)
+|   |-- backend/         # Backend implementation guidelines
 |   |   |-- index.md               # Start here - guidelines index
 |   |   \-- *.md                   # Topic-specific docs
 |   \-- guides/          # Thinking guides
@@ -228,6 +231,10 @@ Use the task management script:
 - [OK] Type checks pass (if applicable)
 - [OK] Manual feature testing passes
 
+**Doc sync (config / interface changes)**:
+- [OK] If configuration fields, schemas, or environment variables changed → update `spec/config-spec.md`
+- [OK] If RPC methods, CLI commands, error codes, or public APIs changed → update `spec/api-contracts.md`
+
 **Project-specific checks**:
 - See `.trellis/spec/frontend/quality-guidelines.md` for frontend
 - See `.trellis/spec/backend/quality-guidelines.md` for backend
@@ -261,6 +268,7 @@ Use `/trellis:finish-work` command to run through:
 3. [OK] No lint/test errors
 4. [OK] Working directory clean (or WIP noted)
 5. [OK] Spec docs updated if needed
+6. [OK] Config/interface changes → `spec/config-spec.md` / `spec/api-contracts.md` updated
 
 ---
 
@@ -472,6 +480,7 @@ echo '<mcp_response_json>' | ./.trellis/scripts/issue.sh import-github
    - For cross-layer features, use `/trellis:check-cross-layer`
    - Develop only one task at a time
    - Run lint and tests frequently
+   - [!] If changing config schemas or external interfaces, update `spec/config-spec.md` / `spec/api-contracts.md` in the **same commit**
 
 3. **After development complete**:
    - Use `/trellis:finish-work` for completion checklist

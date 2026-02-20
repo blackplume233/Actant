@@ -224,3 +224,64 @@
 ### Next Steps
 
 - None - task complete
+
+## Session 5: Implement Real Agent Launcher (ProcessLauncher + backend-aware init)
+
+**Date**: 2026-02-20
+**Task**: Implement Real Agent Launcher (ProcessLauncher + backend-aware init)
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## 完成内容
+
+| 模块 | 说明 |
+|------|------|
+| ProcessLauncher | 实现真实进程启动器，支持 spawn + SIGTERM/SIGKILL 优雅关闭 |
+| BackendResolver | 根据 backendType 解析可执行命令与参数（Cursor / Claude Code / Custom） |
+| ProcessUtils | 进程存活检测 (isProcessAlive)、信号发送、延时工具 |
+| CreateLauncher | 工厂函数，根据配置或环境变量切换 Mock/Real 模式 |
+| AgentInstanceMeta | 新增 backendType + backendConfig 字段，创建实例时从模板写入 |
+| ContextMaterializer | 根据 backendType 路由配置目录（.cursor/ vs .claude/） |
+| AppContext | 集成 createLauncher 工厂，支持 launcherMode 配置 |
+| 测试 | 全部 223 测试通过，新增 ProcessLauncher / BackendResolver / ProcessUtils / CreateLauncher 单元测试 |
+
+**新增文件**:
+- `packages/core/src/manager/launcher/backend-resolver.ts`
+- `packages/core/src/manager/launcher/process-launcher.ts`
+- `packages/core/src/manager/launcher/process-utils.ts`
+- `packages/core/src/manager/launcher/create-launcher.ts`
+- 对应 4 个测试文件
+
+**修改文件**:
+- `packages/shared/src/types/agent.types.ts` — AgentInstanceMeta 增加 backendType/backendConfig
+- `packages/shared/src/types/template.types.ts` — AgentBackendConfig.config JSDoc
+- `packages/core/src/state/instance-meta-schema.ts` — Zod schema 扩展
+- `packages/core/src/state/instance-meta-io.ts` — 旧文件向后兼容默认值
+- `packages/core/src/initializer/agent-initializer.ts` — 创建实例时写入 backendType
+- `packages/core/src/initializer/context/context-materializer.ts` — 后端感知目录路由
+- `packages/core/src/manager/index.ts` — 导出新模块
+- `packages/api/src/services/app-context.ts` — 使用 createLauncher 工厂
+- `vitest.config.ts` — 添加 @agentcraft/* 路径别名避免构建依赖
+- 多个测试文件更新以适配新字段
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `e7a0ea2` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
