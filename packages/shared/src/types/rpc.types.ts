@@ -57,7 +57,7 @@ export type RpcErrorCode = (typeof RPC_ERROR_CODES)[keyof typeof RPC_ERROR_CODES
 
 // template.*
 
-export interface TemplateListParams {}
+export type TemplateListParams = Record<string, never>;
 
 export type TemplateListResult = AgentTemplate[];
 
@@ -131,7 +131,7 @@ export interface AgentStatusParams {
 
 export type AgentStatusResult = AgentInstanceMeta;
 
-export interface AgentListParams {}
+export type AgentListParams = Record<string, never>;
 
 export type AgentListResult = AgentInstanceMeta[];
 
@@ -161,7 +161,7 @@ export type AgentDetachResult = DetachResult;
 
 // daemon.*
 
-export interface DaemonPingParams {}
+export type DaemonPingParams = Record<string, never>;
 
 export interface DaemonPingResult {
   version: string;
@@ -169,7 +169,7 @@ export interface DaemonPingResult {
   agents: number;
 }
 
-export interface DaemonShutdownParams {}
+export type DaemonShutdownParams = Record<string, never>;
 
 export interface DaemonShutdownResult {
   success: boolean;

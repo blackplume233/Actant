@@ -28,7 +28,7 @@ export function createProgram(socketPath?: string): Command {
 export async function run(argv?: string[]): Promise<void> {
   const args = argv ?? process.argv;
 
-  const hasSubcommand = args.length > 2 && !args[2]!.startsWith("-");
+  const hasSubcommand = args.length > 2 && !args[2]?.startsWith("-");
 
   if (!hasSubcommand) {
     const versionRequested = args.includes("-V") || args.includes("--version");

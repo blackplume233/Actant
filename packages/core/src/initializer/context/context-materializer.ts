@@ -123,7 +123,10 @@ export class ContextMaterializer {
     let content: string;
     if (this.managers?.workflows) {
       const resolved = this.managers.workflows.resolve([workflowName]);
-      content = this.managers.workflows.renderWorkflow(resolved[0]!);
+      const workflow = resolved[0];
+      content = workflow
+        ? this.managers.workflows.renderWorkflow(workflow)
+        : `# Workflow: ${workflowName}\n\n> Workflow "${workflowName}" not resolved.\n`;
     } else {
       content = [
         `# Workflow: ${workflowName}`,
