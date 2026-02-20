@@ -122,7 +122,17 @@ AgentCraft 同时扮演：
 
 ## 当前进行中 (Current)
 
-Phase 1 已完成，准备进入 Phase 2。
+Phase 1 全部完成（Issues #8, #9, #10, #11, #15 已关闭），准备进入 Phase 2。
+
+### Phase 1 完成总结
+
+| 功能 | 实现内容 |
+|------|---------|
+| ProcessWatcher | 定时轮询 PID 存活检测、退出事件回调、与 AgentManager 集成 |
+| LaunchMode 分化 | Handler 模式：direct/acp-background/acp-service/one-shot 各有独立的退出行为和恢复策略 |
+| 外部 Spawn | resolve/attach/detach 完整 API + RPC handler + CLI 命令，支持 metadata 传递 |
+| One-shot 模式 | autoDestroy 自动销毁、ephemeral workspace 策略、WorkspacePolicy 类型系统 |
+| 崩溃重启 | 指数退避 RestartTracker、最大重试限制、daemon 重启恢复、稳定期自动重置计数器 |
 
 ---
 
@@ -172,6 +182,11 @@ Phase 1 已完成，准备进入 Phase 2。
 
 | Issue | 标题 | 完成日期 | 所属阶段 |
 |-------|------|---------|---------|
+| #8 | ProcessWatcher：进程退出检测与心跳监控 | 2026-02-20 | Phase 1 |
+| #9 | LaunchMode 行为分化 | 2026-02-20 | Phase 1 |
+| #10 | one-shot 模式完整实现 | 2026-02-20 | Phase 1 |
+| #11 | acp-service 崩溃重启策略 | 2026-02-20 | Phase 1 |
+| #15 | agent.resolve / attach / detach API — 外部 Spawn 支持 | 2026-02-20 | Phase 1 |
 | #7 | 审查与文档化：配置结构与对外接口 + Workflow 约定 | 2026-02-20 | Phase 1 (准备) |
 | #4 | Real Agent Launcher implementation | 2026-02-20 | Phase 1 (准备) |
 

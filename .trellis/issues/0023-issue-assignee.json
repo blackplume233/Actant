@@ -17,8 +17,14 @@
   "taskRef": null,
   "githubRef": null,
   "closedAs": null,
-  "comments": [],
+  "comments": [
+    {
+      "text": "[Review 2026-02-20] 状态更新：项目实际并非空转。commit 2a85f82 已实现 Phase 1 核心功能（ProcessWatcher、LaunchMode 分化、崩溃重启、resolve/attach/detach），但 Issue 生命周期管理滞后 — Phase 1 的 5 个 Issue 未关闭（见 #29），Task 仍停留在 planning 状态。建议：1) 关闭 Phase 1 已完成的 Issue；2) 将任务推进到 Phase 2 首个 Issue。",
+      "date": "2026-02-20T15:09:10",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T12:24:53",
-  "updatedAt": "2026-02-20T12:24:53",
+  "updatedAt": "2026-02-20T15:09:10",
   "closedAt": null
 }

@@ -10,6 +10,12 @@ import type {
   AgentStatusParams,
   AgentStatusResult,
   AgentListResult,
+  AgentResolveParams,
+  AgentResolveResult,
+  AgentAttachParams,
+  AgentAttachResult,
+  AgentDetachParams,
+  AgentDetachResult,
 } from "@agentcraft/shared";
 import { AgentNotFoundError } from "@agentcraft/shared";
 import type { AppContext } from "../services/app-context";
@@ -22,6 +28,9 @@ export function registerAgentHandlers(registry: HandlerRegistry): void {
   registry.register("agent.destroy", handleAgentDestroy);
   registry.register("agent.status", handleAgentStatus);
   registry.register("agent.list", handleAgentList);
+  registry.register("agent.resolve", handleAgentResolve);
+  registry.register("agent.attach", handleAgentAttach);
+  registry.register("agent.detach", handleAgentDetach);
 }
 
 async function handleAgentCreate(
@@ -78,4 +87,28 @@ async function handleAgentList(
   ctx: AppContext,
 ): Promise<AgentListResult> {
   return ctx.agentManager.listAgents();
+}
+
+async function handleAgentResolve(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<AgentResolveResult> {
+  const { name, template } = params as unknown as AgentResolveParams;
+  return ctx.agentManager.resolveAgent(name, template);
+}
+
+async function handleAgentAttach(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<AgentAttachResult> {
+  const { name, pid, metadata } = params as unknown as AgentAttachParams;
+  return ctx.agentManager.attachAgent(name, pid, metadata);
+}
+
+async function handleAgentDetach(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<AgentDetachResult> {
+  const { name, cleanup } = params as unknown as AgentDetachParams;
+  return ctx.agentManager.detachAgent(name, { cleanup });
 }

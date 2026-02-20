@@ -1,7 +1,7 @@
 {
   "id": 10,
   "title": "one-shot 模式完整实现",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "core",
     "feature",
@@ -16,9 +16,15 @@
   "relatedIssues": [],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-20T15:09:27",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T11:35:13",
-  "updatedAt": "2026-02-20T11:35:13",
-  "closedAt": null
+  "updatedAt": "2026-02-20T15:09:27",
+  "closedAt": "2026-02-20T15:09:27"
 }

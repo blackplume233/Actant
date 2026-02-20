@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 6
+- **Total Sessions**: 8
 - **Last Active**: 2026-02-20
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~336 | Active |
+| `journal-1.md` | ~464 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,8 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 8 | 2026-02-20 | Fix #26 #27 #28: quality enforcement | `37f885e` |
+| 7 | 2026-02-20 | Agent Lifecycle, ACP Proxy, MCP Server, External Spawn Specs | `fc8ab6f` |
 | 6 | 2026-02-20 | Spec-first config & API contract documentation (Issue #7) | `08d0f00` |
 | 5 | 2026-02-20 | Implement Real Agent Launcher (ProcessLauncher + backend-aware init) | `e7a0ea2` |
 | 4 | 2026-02-20 | Issue 管理系统 + Memory Layer 设计 + GitHub MCP 同步 | `227f84e` |

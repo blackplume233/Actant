@@ -1,7 +1,7 @@
 import { mkdir, rm, access } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { AgentInstanceMeta, LaunchMode } from "@agentcraft/shared";
+import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy } from "@agentcraft/shared";
 import {
   AgentCraftError,
   ConfigValidationError,
@@ -22,6 +22,7 @@ export interface InitializerOptions {
 
 export interface InstanceOverrides {
   launchMode: LaunchMode;
+  workspacePolicy: WorkspacePolicy;
   metadata: Record<string, string>;
 }
 
@@ -71,6 +72,8 @@ export class AgentInitializer {
       );
 
       const now = new Date().toISOString();
+      const launchMode = overrides?.launchMode ?? this.options?.defaultLaunchMode ?? "direct";
+      const defaultPolicy: WorkspacePolicy = launchMode === "one-shot" ? "ephemeral" : "persistent";
       const meta: AgentInstanceMeta = {
         id: randomUUID(),
         name,
@@ -79,7 +82,8 @@ export class AgentInitializer {
         backendType: template.backend.type,
         backendConfig: template.backend.config ? { ...template.backend.config } : undefined,
         status: "created",
-        launchMode: overrides?.launchMode ?? this.options?.defaultLaunchMode ?? "direct",
+        launchMode,
+        workspacePolicy: overrides?.workspacePolicy ?? defaultPolicy,
         processOwnership: "managed",
         createdAt: now,
         updatedAt: now,

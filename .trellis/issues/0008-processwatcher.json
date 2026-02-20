@@ -1,7 +1,7 @@
 {
   "id": 8,
   "title": "ProcessWatcher：进程退出检测与心跳监控",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "core",
     "feature",
@@ -16,15 +16,20 @@
   "relatedIssues": [],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
+  "closedAs": "completed",
   "comments": [
     {
       "text": "[Review 2026-02-20] #8 是整个 Phase 1 的关键路径起点（P0），当前无 assignee 且未 promote 为 Task。Roadmap 已标注其为第一优先，建议立即启动。依赖链：#9、#10、#11、#15 全部等待 #8 完成。",
       "date": "2026-02-20T12:24:57",
       "author": "cursor-agent"
+    },
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-20T15:09:27",
+      "author": "cursor-agent"
     }
   ],
   "createdAt": "2026-02-20T11:34:58",
-  "updatedAt": "2026-02-20T12:24:57",
-  "closedAt": null
+  "updatedAt": "2026-02-20T15:09:27",
+  "closedAt": "2026-02-20T15:09:27"
 }

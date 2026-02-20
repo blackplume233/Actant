@@ -6,6 +6,9 @@ import { createAgentStopCommand } from "./stop";
 import { createAgentStatusCommand } from "./status";
 import { createAgentListCommand } from "./list";
 import { createAgentDestroyCommand } from "./destroy";
+import { createAgentResolveCommand } from "./resolve";
+import { createAgentAttachCommand } from "./attach";
+import { createAgentDetachCommand } from "./detach";
 
 export function createAgentCommand(client: RpcClient): Command {
   const cmd = new Command("agent")
@@ -17,6 +20,9 @@ export function createAgentCommand(client: RpcClient): Command {
   cmd.addCommand(createAgentStatusCommand(client));
   cmd.addCommand(createAgentListCommand(client));
   cmd.addCommand(createAgentDestroyCommand(client));
+  cmd.addCommand(createAgentResolveCommand(client));
+  cmd.addCommand(createAgentAttachCommand(client));
+  cmd.addCommand(createAgentDetachCommand(client));
 
   return cmd;
 }

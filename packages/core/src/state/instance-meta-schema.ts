@@ -19,6 +19,8 @@ export const LaunchModeSchema = z.enum([
 
 export const ProcessOwnershipSchema = z.enum(["managed", "external"]);
 
+export const WorkspacePolicySchema = z.enum(["persistent", "ephemeral"]);
+
 const AgentBackendTypeSchema = z.enum(["cursor", "claude-code", "custom"]);
 
 export const AgentInstanceMetaSchema = z.object({
@@ -30,6 +32,7 @@ export const AgentInstanceMetaSchema = z.object({
   backendConfig: z.record(z.string(), z.unknown()).optional(),
   status: AgentStatusSchema,
   launchMode: LaunchModeSchema,
+  workspacePolicy: WorkspacePolicySchema.optional(),
   processOwnership: ProcessOwnershipSchema.optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),

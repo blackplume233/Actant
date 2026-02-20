@@ -37,6 +37,7 @@ function makeMeta(name: string, overrides?: Partial<AgentInstanceMeta>): AgentIn
     backendType: "cursor",
     status: "created",
     launchMode: "direct",
+    workspacePolicy: "persistent",
     processOwnership: "managed",
     createdAt: now,
     updatedAt: now,
@@ -467,12 +468,14 @@ describe("AgentManager", () => {
       expect(result.command).toBeDefined();
       expect(result.args).toBeDefined();
       expect(result.backendType).toBe("cursor");
+      expect(result.created).toBe(false);
     });
 
     it("resolveAgent should auto-create from template if not found", async () => {
       const result = await manager.resolveAgent("auto-created", "test-tpl");
 
       expect(result.instanceName).toBe("auto-created");
+      expect(result.created).toBe(true);
       expect(manager.getAgent("auto-created")).toBeDefined();
       expect(manager.getAgent("auto-created")?.status).toBe("created");
     });
@@ -483,13 +486,20 @@ describe("AgentManager", () => {
 
     it("attachAgent should register external PID and set status to running", async () => {
       await manager.createAgent("ext-agent", "test-tpl");
-      await manager.attachAgent("ext-agent", 55555);
+      const result = await manager.attachAgent("ext-agent", 55555);
 
-      const meta = manager.getAgent("ext-agent");
-      expect(meta).toBeDefined();
-      expect(meta?.status).toBe("running");
-      expect(meta?.pid).toBe(55555);
-      expect(meta?.processOwnership).toBe("external");
+      expect(result.status).toBe("running");
+      expect(result.pid).toBe(55555);
+      expect(result.processOwnership).toBe("external");
+    });
+
+    it("attachAgent should merge metadata from caller", async () => {
+      await manager.createAgent("ext-meta", "test-tpl", {
+        metadata: { env: "prod" },
+      });
+      const result = await manager.attachAgent("ext-meta", 55555, { clientId: "unreal-123" });
+
+      expect(result.metadata).toEqual({ env: "prod", clientId: "unreal-123" });
     });
 
     it("attachAgent should throw if already attached", async () => {
@@ -503,24 +513,37 @@ describe("AgentManager", () => {
       await expect(manager.attachAgent("unknown", 12345)).rejects.toThrow(AgentNotFoundError);
     });
 
-    it("detachAgent should clear pid and set status to stopped", async () => {
+    it("detachAgent should clear pid and return DetachResult", async () => {
       await manager.createAgent("det-agent", "test-tpl");
       await manager.attachAgent("det-agent", 55555);
-      await manager.detachAgent("det-agent");
+      const result = await manager.detachAgent("det-agent");
 
+      expect(result).toEqual({ ok: true, workspaceCleaned: false });
       const meta = manager.getAgent("det-agent");
-      expect(meta).toBeDefined();
       expect(meta?.status).toBe("stopped");
       expect(meta?.pid).toBeUndefined();
       expect(meta?.processOwnership).toBe("managed");
     });
 
-    it("detachAgent with cleanup should destroy the agent", async () => {
-      await manager.createAgent("cleanup-agent", "test-tpl");
-      await manager.attachAgent("cleanup-agent", 55555);
-      await manager.detachAgent("cleanup-agent", { cleanup: true });
+    it("detachAgent with cleanup should destroy ephemeral workspace", async () => {
+      await manager.createAgent("cleanup-eph", "test-tpl", {
+        launchMode: "one-shot",
+        workspacePolicy: "ephemeral",
+      });
+      await manager.attachAgent("cleanup-eph", 55555);
+      const result = await manager.detachAgent("cleanup-eph", { cleanup: true });
 
-      expect(manager.getAgent("cleanup-agent")).toBeUndefined();
+      expect(result).toEqual({ ok: true, workspaceCleaned: true });
+      expect(manager.getAgent("cleanup-eph")).toBeUndefined();
+    });
+
+    it("detachAgent with cleanup should NOT destroy persistent workspace", async () => {
+      await manager.createAgent("cleanup-persist", "test-tpl");
+      await manager.attachAgent("cleanup-persist", 55555);
+      const result = await manager.detachAgent("cleanup-persist", { cleanup: true });
+
+      expect(result).toEqual({ ok: true, workspaceCleaned: false });
+      expect(manager.getAgent("cleanup-persist")).toBeDefined();
     });
 
     it("detachAgent should throw if not externally attached", async () => {

@@ -22,9 +22,14 @@
       "text": "[Review 更严格] instance-meta-io 修复建议：不要用 `as AgentInstanceMeta` 和 `Record<string, unknown> & { processOwnership?: ... }` 的 cast；应基于 schema 的 result.data 推断类型并补全默认值（backendType/processOwnership），或为 Zod 的 output 类型与 AgentInstanceMeta 建单一映射，避免手写 cast 与类型不同步。",
       "date": "2026-02-20T13:19:16",
       "author": "cursor-agent"
+    },
+    {
+      "text": "[Review 2026-02-20] type-check 状态更新：执行 pnpm build 后，原先 7 个错误减至 4 个。原因是 shared 包 dist 过期导致 WorkspacePolicy/DetachResult 找不到。build 后剩余错误全部来自 AgentInstanceMeta 接口 vs Zod Schema 的 required/optional 不同步（workspacePolicy/processOwnership），已创建 #31 跟踪。",
+      "date": "2026-02-20T15:09:06",
+      "author": "cursor-agent"
     }
   ],
   "createdAt": "2026-02-20T13:16:54",
-  "updatedAt": "2026-02-20T13:19:16",
+  "updatedAt": "2026-02-20T15:09:06",
   "closedAt": null
 }

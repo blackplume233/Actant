@@ -21,6 +21,7 @@ function makeMeta(overrides?: Partial<AgentInstanceMeta>): AgentInstanceMeta {
     backendType: "cursor",
     status: "created",
     launchMode: "direct",
+    workspacePolicy: "persistent",
     processOwnership: "managed",
     createdAt: now,
     updatedAt: now,
@@ -78,6 +79,30 @@ describe("instance-meta-io", () => {
       );
       const result = await readInstanceMeta(tmpDir);
       expect(result.backendType).toBe("cursor");
+    });
+
+    it("should default workspacePolicy to persistent for non-one-shot (legacy meta)", async () => {
+      const legacy = makeMeta();
+      const { workspacePolicy: _, ...legacyWithoutPolicy } = legacy;
+      await writeFile(
+        join(tmpDir, ".agentcraft.json"),
+        JSON.stringify(legacyWithoutPolicy, null, 2),
+        "utf-8",
+      );
+      const result = await readInstanceMeta(tmpDir);
+      expect(result.workspacePolicy).toBe("persistent");
+    });
+
+    it("should default workspacePolicy to ephemeral for one-shot (legacy meta)", async () => {
+      const legacy = makeMeta({ launchMode: "one-shot" });
+      const { workspacePolicy: _, ...legacyWithoutPolicy } = legacy;
+      await writeFile(
+        join(tmpDir, ".agentcraft.json"),
+        JSON.stringify(legacyWithoutPolicy, null, 2),
+        "utf-8",
+      );
+      const result = await readInstanceMeta(tmpDir);
+      expect(result.workspacePolicy).toBe("ephemeral");
     });
   });
 

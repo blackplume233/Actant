@@ -16,6 +16,8 @@ export interface AgentInstanceMeta {
   backendConfig?: Record<string, unknown>;
   status: AgentStatus;
   launchMode: LaunchMode;
+  /** Workspace lifecycle policy. "persistent" survives across spawns; "ephemeral" can be cleaned up after task. */
+  workspacePolicy: WorkspacePolicy;
   /** Who owns/manages the agent process. "managed" = AgentCraft, "external" = caller. */
   processOwnership: ProcessOwnership;
   createdAt: string;
@@ -41,6 +43,9 @@ export type LaunchMode =
 
 export type ProcessOwnership = "managed" | "external";
 
+/** Workspace filesystem lifecycle policy, independent of process lifecycle. */
+export type WorkspacePolicy = "persistent" | "ephemeral";
+
 /** Information needed to spawn an agent process externally. */
 export interface ResolveResult {
   workspaceDir: string;
@@ -49,4 +54,12 @@ export interface ResolveResult {
   env?: Record<string, string>;
   instanceName: string;
   backendType: AgentBackendType;
+  /** Whether a new instance was created by this resolve call. */
+  created: boolean;
+}
+
+/** Result of detaching an externally-managed process. */
+export interface DetachResult {
+  ok: boolean;
+  workspaceCleaned: boolean;
 }

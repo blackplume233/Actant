@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { rename, mkdir } from "node:fs/promises";
-import type { AgentInstanceMeta, AgentStatus, ResolveResult } from "@agentcraft/shared";
+import type { AgentInstanceMeta, AgentStatus, ResolveResult, DetachResult } from "@agentcraft/shared";
 import {
   AgentNotFoundError,
   AgentAlreadyRunningError,
@@ -239,9 +239,11 @@ export class AgentManager {
     overrides?: Partial<InstanceOverrides>,
   ): Promise<ResolveResult> {
     let meta = this.cache.get(name);
+    let created = false;
 
     if (!meta && templateName) {
       meta = await this.createAgent(name, templateName, overrides);
+      created = true;
     }
 
     if (!meta) {
@@ -257,6 +259,7 @@ export class AgentManager {
       args,
       instanceName: name,
       backendType: meta.backendType,
+      created,
     };
   }
 
@@ -266,7 +269,11 @@ export class AgentManager {
    * @throws {AgentNotFoundError} if agent is not in cache
    * @throws {AgentAlreadyAttachedError} if agent already has an attached process
    */
-  async attachAgent(name: string, pid: number): Promise<void> {
+  async attachAgent(
+    name: string,
+    pid: number,
+    attachMetadata?: Record<string, string>,
+  ): Promise<AgentInstanceMeta> {
     const meta = this.requireAgent(name);
 
     if (meta.status === "running" && meta.pid != null) {
@@ -274,24 +281,29 @@ export class AgentManager {
     }
 
     const dir = join(this.instancesBaseDir, name);
+    const mergedMetadata = attachMetadata
+      ? { ...meta.metadata, ...attachMetadata }
+      : meta.metadata;
     const updated = await updateInstanceMeta(dir, {
       status: "running",
       pid,
       processOwnership: "external",
+      metadata: mergedMetadata,
     });
     this.cache.set(name, updated);
     this.processes.set(name, { pid, workspaceDir: dir, instanceName: name });
     this.watcher.watch(name, pid);
     logger.info({ name, pid }, "External process attached");
+    return updated;
   }
 
   /**
    * Detach an externally-managed process.
-   * Clears pid and processOwnership, optionally destroys the workspace.
+   * Clears pid and processOwnership. If cleanup is requested and workspace is ephemeral, destroys the instance.
    * @throws {AgentNotFoundError} if agent is not in cache
    * @throws {AgentNotAttachedError} if agent has no attached process
    */
-  async detachAgent(name: string, options?: { cleanup?: boolean }): Promise<void> {
+  async detachAgent(name: string, options?: { cleanup?: boolean }): Promise<DetachResult> {
     const meta = this.requireAgent(name);
 
     if (meta.processOwnership !== "external") {
@@ -310,9 +322,13 @@ export class AgentManager {
     this.cache.set(name, updated);
     logger.info({ name }, "External process detached");
 
-    if (options?.cleanup) {
+    let workspaceCleaned = false;
+    if (options?.cleanup && meta.workspacePolicy === "ephemeral") {
       await this.destroyAgent(name);
+      workspaceCleaned = true;
     }
+
+    return { ok: true, workspaceCleaned };
   }
 
   /** Shut down the process watcher and release resources. */

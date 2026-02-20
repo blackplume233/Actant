@@ -1,7 +1,7 @@
 {
   "id": 27,
   "title": "CI 必须执行 type-check 且与 test 同门禁",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "priority:P1",
     "quality",
@@ -15,9 +15,15 @@
   "relatedIssues": [],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-20T14:55:40",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T13:19:04",
-  "updatedAt": "2026-02-20T13:19:04",
-  "closedAt": null
+  "updatedAt": "2026-02-20T14:55:40",
+  "closedAt": "2026-02-20T14:55:40"
 }

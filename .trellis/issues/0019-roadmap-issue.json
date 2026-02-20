@@ -17,8 +17,14 @@
   "taskRef": null,
   "githubRef": null,
   "closedAs": null,
-  "comments": [],
+  "comments": [
+    {
+      "text": "[Review 2026-02-20] 补充发现：除原先指出的 #1/#4/#7 元数据不一致外，更大的不一致是 Phase 1 的 5 个 Issue（#8,#9,#10,#11,#15）在 Roadmap 标记 ✅ 完成但在 issue tracker 中仍为 Open。已创建 #29 跟踪。建议将 #19 和 #29 合并修复。",
+      "date": "2026-02-20T15:09:06",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T12:22:02",
-  "updatedAt": "2026-02-20T12:22:02",
+  "updatedAt": "2026-02-20T15:09:06",
   "closedAt": null
 }

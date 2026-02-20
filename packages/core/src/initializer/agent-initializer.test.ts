@@ -132,6 +132,26 @@ describe("AgentInitializer", () => {
       expect(meta.launchMode).toBe("acp-service");
     });
 
+    it("should default workspacePolicy to persistent for non-one-shot modes", async () => {
+      const meta = await initializer.createInstance("persist-agent", "test-template");
+      expect(meta.workspacePolicy).toBe("persistent");
+    });
+
+    it("should default workspacePolicy to ephemeral for one-shot mode", async () => {
+      const meta = await initializer.createInstance("ephemeral-agent", "test-template", {
+        launchMode: "one-shot",
+      });
+      expect(meta.workspacePolicy).toBe("ephemeral");
+    });
+
+    it("should respect explicit workspacePolicy override", async () => {
+      const meta = await initializer.createInstance("custom-policy", "test-template", {
+        launchMode: "one-shot",
+        workspacePolicy: "persistent",
+      });
+      expect(meta.workspacePolicy).toBe("persistent");
+    });
+
     it("should create instance with minimal template (empty domainContext)", async () => {
       registry.register(makeTemplate({
         name: "minimal",

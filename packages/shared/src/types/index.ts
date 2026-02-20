@@ -3,7 +3,9 @@ export type {
   AgentStatus,
   LaunchMode,
   ProcessOwnership,
+  WorkspacePolicy,
   ResolveResult,
+  DetachResult,
 } from "./agent.types";
 export type {
   AgentTemplate,
@@ -54,6 +56,12 @@ export {
   type AgentStatusResult,
   type AgentListParams,
   type AgentListResult,
+  type AgentResolveParams,
+  type AgentResolveResult,
+  type AgentAttachParams,
+  type AgentAttachResult,
+  type AgentDetachParams,
+  type AgentDetachResult,
   type DaemonPingParams,
   type DaemonPingResult,
   type DaemonShutdownParams,

@@ -1,7 +1,7 @@
 {
   "id": 26,
   "title": "质量规范禁止模式：非空断言（!）在源码与测试中的全面清除",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "core",
     "priority:P1",
@@ -16,9 +16,15 @@
   "relatedIssues": [],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-20T14:55:40",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T13:19:00",
-  "updatedAt": "2026-02-20T13:19:00",
-  "closedAt": null
+  "updatedAt": "2026-02-20T14:55:40",
+  "closedAt": "2026-02-20T14:55:40"
 }

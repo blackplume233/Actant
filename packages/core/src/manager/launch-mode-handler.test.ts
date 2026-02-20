@@ -11,6 +11,7 @@ function makeMeta(overrides?: Partial<AgentInstanceMeta>): AgentInstanceMeta {
     backendType: "cursor",
     status: "running",
     launchMode: "direct",
+    workspacePolicy: "persistent",
     processOwnership: "managed",
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

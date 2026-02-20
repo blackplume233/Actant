@@ -1,5 +1,5 @@
 import type { AgentTemplate } from "./template.types";
-import type { AgentInstanceMeta, LaunchMode } from "./agent.types";
+import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, DetachResult } from "./agent.types";
 
 // ---------------------------------------------------------------------------
 // JSON-RPC 2.0 base types
@@ -44,6 +44,8 @@ export const RPC_ERROR_CODES = {
   COMPONENT_REFERENCE: -32006,
   INSTANCE_CORRUPTED: -32007,
   AGENT_LAUNCH: -32008,
+  AGENT_ALREADY_ATTACHED: -32009,
+  AGENT_NOT_ATTACHED: -32010,
   GENERIC_BUSINESS: -32000,
 } as const;
 
@@ -96,6 +98,7 @@ export interface AgentCreateParams {
   template: string;
   overrides?: {
     launchMode?: LaunchMode;
+    workspacePolicy?: WorkspacePolicy;
     metadata?: Record<string, string>;
   };
 }
@@ -132,6 +135,30 @@ export interface AgentListParams {}
 
 export type AgentListResult = AgentInstanceMeta[];
 
+// agent.resolve / agent.attach / agent.detach (external spawn)
+
+export interface AgentResolveParams {
+  name: string;
+  template?: string;
+}
+
+export type AgentResolveResult = ResolveResult;
+
+export interface AgentAttachParams {
+  name: string;
+  pid: number;
+  metadata?: Record<string, string>;
+}
+
+export type AgentAttachResult = AgentInstanceMeta;
+
+export interface AgentDetachParams {
+  name: string;
+  cleanup?: boolean;
+}
+
+export type AgentDetachResult = DetachResult;
+
 // daemon.*
 
 export interface DaemonPingParams {}
@@ -164,6 +191,9 @@ export interface RpcMethodMap {
   "agent.destroy": { params: AgentDestroyParams; result: AgentDestroyResult };
   "agent.status": { params: AgentStatusParams; result: AgentStatusResult };
   "agent.list": { params: AgentListParams; result: AgentListResult };
+  "agent.resolve": { params: AgentResolveParams; result: AgentResolveResult };
+  "agent.attach": { params: AgentAttachParams; result: AgentAttachResult };
+  "agent.detach": { params: AgentDetachParams; result: AgentDetachResult };
   "daemon.ping": { params: DaemonPingParams; result: DaemonPingResult };
   "daemon.shutdown": { params: DaemonShutdownParams; result: DaemonShutdownResult };
 }

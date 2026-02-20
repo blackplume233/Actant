@@ -334,3 +334,131 @@
 ### Next Steps
 
 - None - task complete
+
+## Session 7: Agent Lifecycle, ACP Proxy, MCP Server, External Spawn Specs
+
+**Date**: 2026-02-20
+**Task**: Agent Lifecycle, ACP Proxy, MCP Server, External Spawn Specs
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## 设计讨论与规范产出
+
+本次会话围绕 AgentCraft 的通信架构进行了深入设计讨论，产出完整规范文档。
+
+### 核心设计决策
+
+| 决策 | 结论 |
+|------|------|
+| Agent 能否用 ACP 直连托管 Agent | **不能** — ACP 连接被 Daemon 独占，Agent 无法扮演 ACP Client |
+| Agent-to-Agent 的正确路径 | **MCP** — Agent 调用 AgentCraft MCP Server tools |
+| 外部应用如何标准化接入 | **ACP Proxy** — agentcraft proxy 暴露标准 ACP/stdio 接口 |
+| 外部客户端自管 Agent 进程 | **Self-spawn + Attach** — resolve 获取信息，attach/detach 注册状态 |
+| AgentCraft API 是否对齐 ACP | **长期愿景 (#18)** — ACP-Fleet 扩展协议，Daemon 升级为 ACP Server |
+
+### 新增/更新文档
+
+| 文件 | 说明 |
+|------|------|
+| `spec/agent-lifecycle.md` | **新建** — 完整的 Agent 生命周期与使用模式规范（8 章节） |
+| `spec/api-contracts.md` | 新增 §3.3-3.5 (resolve/attach/detach, run/prompt, proxy session), §7 ACP Proxy, §8 MCP Server, §9 接入模式对比 |
+| `spec/config-spec.md` | 新增 processOwnership, workspacePolicy, crashed 状态, EnvChannel, ProxySession |
+| `spec/index.md` | 新增 agent-lifecycle.md 为第一层规范文档 |
+| `roadmap.md` | 重组 Phase 1-5，新增 #15-#18 |
+
+### 新增 Issues
+
+- **#15** agent.resolve/attach/detach API (P1, Phase 1)
+- **#16** ACP Proxy 标准 ACP 协议网关 (P1, Phase 2)
+- **#17** MCP Server Agent 间通信 (P2, Phase 2)
+- **#18** ACP-Fleet 扩展协议 (P4, Phase 5 长期愿景)
+- **#12** 重写为 Daemon 侧 ACP Client + agent.run/prompt
+
+### 协议分工总结
+
+```
+ACP:  人/应用 ↔ Agent（交互协议）
+MCP:  Agent ↔ 工具/服务（能力协议）
+AgentCraft 同时扮演：ACP Client + MCP Server + ACP Proxy
+```
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `fc8ab6f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+## Session 8: Fix #26 #27 #28: quality enforcement
+
+**Date**: 2026-02-20
+**Task**: Fix #26 #27 #28: quality enforcement
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## 完成内容
+
+| Issue | 描述 | 状态 |
+|-------|------|------|
+| #26 | 非空断言 (!) 全面清除 — 源码 + 测试 | ✅ Done |
+| #27 | CI 门禁脚本 `check` = type-check + test | ✅ Done |
+| #28 | 固定 setTimeout 替换为 vi.waitFor 条件等待 | ✅ Done |
+
+## 变更文件
+
+**生产代码**:
+- `packages/core/src/manager/launcher/process-launcher.ts` — `child.pid!` → 守卫
+
+**测试代码**:
+- `packages/core/src/manager/agent-manager.test.ts` — 5处 `!` 清除 + 8处 setTimeout→vi.waitFor
+- `packages/core/src/manager/launcher/process-launcher.test.ts` — `child.pid!` → 守卫
+- `packages/api/src/daemon/__tests__/socket-server.test.ts` — 5处 `res.error!` → `res.error?.`
+- `packages/core/src/template/loader/template-loader.test.ts` — 2处 `mcpServers!` → `?.`
+
+**配置**:
+- `package.json` — 新增 `check` 脚本
+
+## 验证结果
+
+- type-check: ✅ 6/6 包通过
+- test: ✅ 269 passed (12 CLI E2E 预存失败)
+- 非空断言扫描: ✅ 0 处
+- console.log 扫描: ✅ 0 处
+- any 类型扫描: ✅ 0 处
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `37f885e` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
