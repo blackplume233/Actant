@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AgentCraft — The Docker for AI Agents</title>
+  <meta name="description" content="像管理容器一样管理 AI Agent。声明式 Template 定义、隔离 Instance 运行、Memory 进化、标准协议嵌入工作流。">
+  <meta property="og:title" content="AgentCraft — The Docker for AI Agents">
+  <meta property="og:description" content="Build once, run anywhere. 用 Docker 的方式思考 AI Agent 编排。">
+  <meta property="og:type" content="website">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #09090f;
+      --bg-secondary: #0f0f17;
+      --bg-card: #13131d;
+      --bg-code: #181824;
+      --bg-hover: #1a1a28;
+      --border-subtle: rgba(255,255,255,0.05);
+      --border-medium: rgba(255,255,255,0.1);
+      --border-accent: rgba(232,112,64,0.2);
+      --text-primary: #ededf5;
+      --text-secondary: #9898a8;
+      --text-muted: #5e5e70;
+      --accent: #e87040;
+      --accent-light: #ff9060;
+      --accent-glow: rgba(232,112,64,0.15);
+      --blue: #4a9eff;
+      --purple: #9b6dff;
+      --green: #4ade80;
+      --cyan: #22d3ee;
+      --yellow: #fbbf24;
+      --gradient-brand: linear-gradient(135deg, #e87040 0%, #d95638 50%, #9b6dff 100%);
+      --gradient-cool: linear-gradient(135deg, #4a9eff 0%, #9b6dff 100%);
+      --gradient-warm: linear-gradient(135deg, #e87040 0%, #fbbf24 100%);
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+      --r-sm: 8px; --r-md: 12px; --r-lg: 16px; --r-xl: 24px;
+    }
+
+    html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none; z-index: 0;
+    }
+
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    section { position: relative; z-index: 1; }
+
+    /* ─── Nav ─── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      padding: 14px 0;
+      background: rgba(9,9,15,0.85);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    nav .container { display: flex; align-items: center; justify-content: space-between; }
+    .nav-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-primary); }
+    .nav-logo {
+      width: 30px; height: 30px; background: var(--gradient-brand);
+      border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 15px; color: #fff;
+    }
+    .nav-title { font-size: 17px; font-weight: 700; letter-spacing: -0.02em; }
+    .nav-links { display: flex; align-items: center; gap: 28px; list-style: none; }
+    .nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: color .2s; }
+    .nav-links a:hover { color: var(--text-primary); }
+    .nav-cta {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 18px; background: var(--accent); color: #fff !important;
+      border-radius: 999px; font-size: 13px; font-weight: 600; transition: all .2s;
+    }
+    .nav-cta:hover { background: var(--accent-light); transform: translateY(-1px); }
+
+    /* ─── Hero ─── */
+    .hero {
+      padding: 180px 0 100px;
+      text-align: center;
+      position: relative;
+    }
+    .hero-glow {
+      position: absolute; top: -300px; left: 50%; transform: translateX(-50%);
+      width: 900px; height: 700px;
+      background: radial-gradient(ellipse, rgba(232,112,64,0.1) 0%, rgba(155,109,255,0.05) 40%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 6px 16px; border: 1px solid var(--border-medium);
+      border-radius: 999px; font-size: 13px; color: var(--text-secondary);
+      margin-bottom: 36px; background: rgba(255,255,255,0.02);
+    }
+    .hero-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .hero h1 {
+      font-size: clamp(44px, 6.5vw, 80px);
+      font-weight: 900; line-height: 1.02; letter-spacing: -0.04em;
+      margin-bottom: 28px; max-width: 820px; margin-left: auto; margin-right: auto;
+    }
+    .hero h1 .docker-word {
+      background: var(--gradient-warm);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero h1 .agent-word {
+      background: var(--gradient-cool);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero-description {
+      font-size: 18px; color: var(--text-secondary); max-width: 580px;
+      margin: 0 auto 48px; line-height: 1.75;
+    }
+    .hero-install {
+      display: inline-flex; align-items: center; gap: 12px;
+      padding: 14px 24px; background: var(--bg-code);
+      border: 1px solid var(--border-medium); border-radius: var(--r-md);
+      font-family: var(--font-mono); font-size: 14px; color: var(--text-primary);
+      cursor: pointer; transition: border-color .2s; margin-bottom: 28px;
+    }
+    .hero-install:hover { border-color: var(--accent); }
+    .hero-install .prompt { color: var(--accent); user-select: none; }
+    .hero-install .copy-icon { color: var(--text-muted); transition: color .2s; flex-shrink: 0; }
+
+    .hero-actions { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 28px; border-radius: 999px; font-size: 15px; font-weight: 600;
+      text-decoration: none; transition: all .2s; cursor: pointer; border: none;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-light); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(232,112,64,.3); }
+    .btn-secondary { background: transparent; color: var(--text-primary); border: 1px solid var(--border-medium); }
+    .btn-secondary:hover { border-color: var(--text-muted); background: rgba(255,255,255,.02); }
+
+    /* ─── Section Headers ─── */
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-label {
+      display: inline-block; font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .12em;
+      color: var(--accent); margin-bottom: 14px;
+    }
+    .section-header h2 {
+      font-size: clamp(30px, 4vw, 48px); font-weight: 800;
+      letter-spacing: -0.025em; line-height: 1.1; margin-bottom: 14px;
+    }
+    .section-header p {
+      font-size: 16px; color: var(--text-secondary); max-width: 520px;
+      margin: 0 auto; line-height: 1.7;
+    }
+
+    /* ─── Analogy Section ─── */
+    .analogy { padding: 100px 0; }
+
+    .analogy-arch {
+      display: grid; grid-template-columns: 1fr 48px 1fr; gap: 0; align-items: center;
+      margin-bottom: 56px;
+    }
+    .arch-box {
+      padding: 28px; background: var(--bg-card);
+      border: 1px solid var(--border-subtle); border-radius: var(--r-lg);
+    }
+    .arch-box h4 {
+      font-size: 13px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .arch-box.docker h4 { color: var(--blue); }
+    .arch-box.agentcraft h4 { color: var(--accent); }
+    .arch-flow {
+      font-family: var(--font-mono); font-size: 12.5px; line-height: 1.8; color: var(--text-secondary);
+    }
+    .arch-flow .highlight { color: var(--text-primary); font-weight: 600; }
+    .arch-arrow {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; color: var(--text-muted);
+    }
+
+    .analogy-table {
+      width: 100%; border-collapse: collapse;
+      background: var(--bg-card); border: 1px solid var(--border-subtle);
+      border-radius: var(--r-lg); overflow: hidden;
+    }
+    .analogy-table thead th {
+      padding: 14px 20px; font-size: 12px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--text-muted); text-align: left;
+      border-bottom: 1px solid var(--border-subtle);
+      background: rgba(255,255,255,.02);
+    }
+    .analogy-table thead th:first-child { color: var(--blue); }
+    .analogy-table thead th:nth-child(2) { color: var(--accent); }
+    .analogy-table tbody td {
+      padding: 12px 20px; font-size: 14px; color: var(--text-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .analogy-table tbody tr:last-child td { border-bottom: none; }
+    .analogy-table tbody tr:hover { background: var(--bg-hover); }
+    .analogy-table .mono {
+      font-family: var(--font-mono); font-size: 13px; color: var(--text-primary);
+    }
+    .analogy-table .essence { color: var(--text-muted); font-size: 13px; }
+
+    /* ─── Vision Section ─── */
+    .vision { padding: 100px 0; }
+
+    .evolution-diagram {
+      max-width: 680px; margin: 0 auto 56px;
+      padding: 32px; background: var(--bg-card);
+      border: 1px solid var(--border-subtle); border-radius: var(--r-lg);
+      position: relative;
+    }
+    .evo-layer {
+      display: flex; align-items: center; gap: 16px; padding: 14px 0;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .evo-layer:last-child { border-bottom: none; }
+    .evo-tag {
+      flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+    }
+    .evo-tag.l3 { background: rgba(155,109,255,.15); color: var(--purple); }
+    .evo-tag.l2 { background: rgba(74,158,255,.15); color: var(--blue); }
+    .evo-tag.l1 { background: rgba(232,112,64,.15); color: var(--accent); }
+    .evo-tag.l0 { background: rgba(74,222,128,.15); color: var(--green); }
+    .evo-content h4 { font-size: 14px; font-weight: 700; margin-bottom: 2px; }
+    .evo-content p { font-size: 13px; color: var(--text-muted); }
+    .evo-arrow {
+      position: absolute; right: 44px; color: var(--text-muted);
+      font-family: var(--font-mono); font-size: 12px;
+    }
+
+    .vision-cards {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+    }
+    .vision-card {
+      padding: 32px 28px; background: var(--bg-card);
+      border: 1px solid var(--border-subtle); border-radius: var(--r-lg);
+      transition: border-color .3s, transform .3s;
+      position: relative; overflow: hidden;
+    }
+    .vision-card::after {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      opacity: 0; transition: opacity .3s;
+    }
+    .vision-card:nth-child(1)::after { background: var(--gradient-warm); }
+    .vision-card:nth-child(2)::after { background: var(--gradient-cool); }
+    .vision-card:nth-child(3)::after { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+    .vision-card:hover { border-color: var(--border-medium); transform: translateY(-4px); }
+    .vision-card:hover::after { opacity: 1; }
+    .vision-card .card-icon {
+      width: 40px; height: 40px; border-radius: var(--r-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; margin-bottom: 18px;
+    }
+    .vision-card:nth-child(1) .card-icon { background: rgba(232,112,64,.1); border: 1px solid rgba(232,112,64,.15); }
+    .vision-card:nth-child(2) .card-icon { background: rgba(74,158,255,.1); border: 1px solid rgba(74,158,255,.15); }
+    .vision-card:nth-child(3) .card-icon { background: rgba(74,222,128,.1); border: 1px solid rgba(74,222,128,.15); }
+    .vision-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.01em; }
+    .vision-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.7; }
+    .vision-card .metaphor {
+      margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--border-subtle);
+      font-size: 13px; color: var(--text-muted); font-style: italic; line-height: 1.6;
+    }
+
+    /* ─── Terminal Demo ─── */
+    .demo { padding: 100px 0; }
+    .terminal {
+      background: var(--bg-code); border: 1px solid var(--border-medium);
+      border-radius: var(--r-lg); overflow: hidden;
+      max-width: 780px; margin: 0 auto;
+      box-shadow: 0 32px 64px rgba(0,0,0,.5);
+    }
+    .terminal-header {
+      display: flex; align-items: center; gap: 8px;
+      padding: 13px 18px; background: rgba(255,255,255,.02);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .terminal-dot.red { background: #ff5f57; }
+    .terminal-dot.yellow { background: #febc2e; }
+    .terminal-dot.green { background: #28c840; }
+    .terminal-title {
+      flex: 1; text-align: center; font-size: 12px;
+      color: var(--text-muted); font-family: var(--font-mono);
+    }
+    .terminal-body {
+      padding: 22px 24px; font-family: var(--font-mono);
+      font-size: 13px; line-height: 1.85; overflow-x: auto;
+    }
+    .terminal-body .line { margin-bottom: 1px; white-space: nowrap; }
+    .terminal-body .comment { color: var(--text-muted); }
+    .terminal-body .command { color: var(--text-primary); }
+    .terminal-body .prompt-sign { color: var(--accent); user-select: none; }
+    .terminal-body .flag { color: var(--cyan); }
+    .terminal-body .string { color: var(--green); }
+    .terminal-body .output { color: var(--text-secondary); padding-left: 18px; white-space: normal; }
+    .terminal-body .success { color: var(--green); }
+    .terminal-body .docker-hint { color: var(--blue); }
+    .terminal-body .spacer { height: 10px; }
+
+    /* ─── How It Works ─── */
+    .flow { padding: 100px 0; }
+    .flow-steps {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+      position: relative;
+    }
+    .flow-steps::before {
+      content: ''; position: absolute; top: 36px; left: 10%; right: 10%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), var(--purple), var(--blue), var(--cyan), var(--green));
+      opacity: .25;
+    }
+    .flow-step { text-align: center; position: relative; }
+    .flow-step-num {
+      width: 40px; height: 40px; border-radius: 50%;
+      background: var(--bg-card); display: flex; align-items: center; justify-content: center;
+      font-size: 15px; font-weight: 700; margin: 0 auto 14px; position: relative; z-index: 1;
+    }
+    .flow-step:nth-child(1) .flow-step-num { border: 2px solid var(--accent); color: var(--accent); }
+    .flow-step:nth-child(2) .flow-step-num { border: 2px solid var(--purple); color: var(--purple); }
+    .flow-step:nth-child(3) .flow-step-num { border: 2px solid var(--blue); color: var(--blue); }
+    .flow-step:nth-child(4) .flow-step-num { border: 2px solid var(--cyan); color: var(--cyan); }
+    .flow-step:nth-child(5) .flow-step-num { border: 2px solid var(--green); color: var(--green); }
+    .flow-step h4 { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+    .flow-step p { font-size: 12px; color: var(--text-muted); line-height: 1.5; padding: 0 4px; }
+
+    /* ─── Roadmap ─── */
+    .roadmap { padding: 100px 0; }
+    .roadmap-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+      max-width: 900px; margin: 0 auto;
+    }
+    .roadmap-card {
+      padding: 24px; background: var(--bg-card);
+      border: 1px solid var(--border-subtle); border-radius: var(--r-md);
+      transition: border-color .2s;
+    }
+    .roadmap-card:hover { border-color: var(--border-medium); }
+    .roadmap-card .rm-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .roadmap-card .rm-icon {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0;
+    }
+    .rm-icon.done { background: rgba(74,222,128,.12); color: var(--green); }
+    .rm-icon.active { background: rgba(232,112,64,.12); color: var(--accent); }
+    .rm-icon.planned { background: rgba(152,152,168,.08); color: var(--text-muted); }
+    .roadmap-card h4 { font-size: 14px; font-weight: 700; line-height: 1.3; }
+    .roadmap-card .rm-tag {
+      display: inline-block; padding: 1px 8px; border-radius: 999px;
+      font-size: 10px; font-weight: 700; margin-left: 6px; vertical-align: middle;
+    }
+    .rm-tag.done { background: rgba(74,222,128,.12); color: var(--green); }
+    .rm-tag.active { background: rgba(232,112,64,.12); color: var(--accent); }
+    .rm-tag.planned { background: rgba(152,152,168,.08); color: var(--text-muted); }
+    .rm-tag.vision { background: rgba(155,109,255,.12); color: var(--purple); }
+    .roadmap-card p { font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+    .roadmap-card .rm-docker {
+      margin-top: 8px; font-size: 12px; color: var(--blue);
+      font-family: var(--font-mono);
+    }
+
+    /* ─── CTA ─── */
+    .cta-section { padding: 120px 0; text-align: center; position: relative; }
+    .cta-glow {
+      position: absolute; bottom: -100px; left: 50%; transform: translateX(-50%);
+      width: 600px; height: 400px;
+      background: radial-gradient(ellipse, rgba(155,109,255,.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cta-section h2 {
+      font-size: clamp(30px, 4vw, 50px); font-weight: 800;
+      letter-spacing: -0.03em; margin-bottom: 14px;
+    }
+    .cta-section > .container > p {
+      font-size: 17px; color: var(--text-secondary); margin-bottom: 40px;
+      max-width: 480px; margin-left: auto; margin-right: auto; line-height: 1.7;
+    }
+
+    /* ─── Footer ─── */
+    footer {
+      padding: 40px 0; border-top: 1px solid var(--border-subtle);
+      position: relative; z-index: 1;
+    }
+    .footer-content { display: flex; align-items: center; justify-content: space-between; }
+    .footer-brand { display: flex; align-items: center; gap: 8px; }
+    .footer-brand .nav-logo { width: 24px; height: 24px; font-size: 12px; }
+    .footer-brand span { font-size: 13px; color: var(--text-muted); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; transition: color .2s; }
+    .footer-links a:hover { color: var(--text-primary); }
+    .footer-tagline { font-size: 12px; color: var(--text-muted); }
+
+    /* ─── Responsive ─── */
+    @media (max-width:1024px) {
+      .analogy-arch { grid-template-columns: 1fr; gap: 12px; }
+      .arch-arrow { transform: rotate(90deg); }
+      .vision-cards { grid-template-columns: 1fr; }
+      .roadmap-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width:768px) {
+      .nav-links { display: none; }
+      .hero { padding: 140px 0 80px; }
+      .flow-steps { grid-template-columns: repeat(3, 1fr); }
+      .flow-steps::before { display: none; }
+      .roadmap-grid { grid-template-columns: 1fr; }
+      .footer-content { flex-direction: column; gap: 12px; text-align: center; }
+      .analogy-table { font-size: 13px; }
+      .analogy-table thead th, .analogy-table tbody td { padding: 10px 12px; }
+    }
+    @media (max-width:480px) {
+      .flow-steps { grid-template-columns: 1fr 1fr; }
+      .hero-install { font-size: 11px; padding: 10px 14px; }
+    }
+
+    /* ─── Animations ─── */
+    .fade-in { opacity: 0; transform: translateY(20px); transition: opacity .6s ease, transform .6s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border-medium); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- ─── Nav ─── -->
+<nav>
+  <div class="container">
+    <a href="#" class="nav-brand">
+      <div class="nav-logo">A</div>
+      <span class="nav-title">AgentCraft</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#analogy">Docker Analogy</a></li>
+      <li><a href="#vision">Vision</a></li>
+      <li><a href="#demo">Demo</a></li>
+      <li><a href="#roadmap">Roadmap</a></li>
+      <li><a href="https://github.com/blackplume233/AgentCraft" class="nav-cta">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        GitHub
+      </a></li>
+    </ul>
+  </div>
+</nav>
+
+<!-- ─── Hero ─── -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="container">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      Open Source — 面向复杂业务场景的 Agent 编排框架
+    </div>
+    <h1>
+      The <span class="docker-word">Docker</span><br>
+      for <span class="agent-word">AI Agents</span>
+    </h1>
+    <p class="hero-description">
+      像管理容器一样管理 AI Agent。<br>
+      声明式 Template 定义能力，一条命令创建隔离实例，<br>
+      通过标准协议零成本嵌入你的工作流。
+    </p>
+    <div class="hero-install" onclick="copyInstall(this)">
+      <span class="prompt">$</span>
+      <span>git clone https://github.com/blackplume233/AgentCraft.git</span>
+      <svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+    </div>
+    <div class="hero-actions">
+      <a href="https://github.com/blackplume233/AgentCraft" class="btn btn-primary">
+        Get Started
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14m-7-7l7 7-7 7"/></svg>
+      </a>
+      <a href="https://github.com/blackplume233/AgentCraft#readme" class="btn btn-secondary">Documentation</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Docker Analogy ─── -->
+<section class="analogy" id="analogy">
+  <div class="container">
+    <div class="section-header fade-in">
+      <span class="section-label">Core Concept</span>
+      <h2>If you understand Docker,<br>you understand AgentCraft</h2>
+      <p>同样的分层思维，同样的声明式定义，同样的 CLI / Daemon 架构。只是这次管理的不是容器，而是 AI Agent。</p>
+    </div>
+
+    <!-- Architecture comparison -->
+    <div class="analogy-arch fade-in">
+      <div class="arch-box docker">
+        <h4>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="4"/><path d="M6 10h4m-4 4h4m4-4h4m-4 4h4m-8-8h4"/></svg>
+          Docker
+        </h4>
+        <div class="arch-flow">
+          <span class="highlight">docker CLI</span> ──(REST)──▶ <span class="highlight">dockerd</span> ──▶ <span class="highlight">containerd</span> ──▶ runc<br>
+          <span style="color:var(--text-muted)">薄客户端 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 守护进程 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 容器运行时 &nbsp;&nbsp;&nbsp; 实际执行</span>
+        </div>
+      </div>
+      <div class="arch-arrow">≈</div>
+      <div class="arch-box agentcraft">
+        <h4>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4m-8.66-14.5l3.46 2m10.4 6l3.46 2m-17.32 0l3.46-2m10.4-6l3.46-2"/></svg>
+          AgentCraft
+        </h4>
+        <div class="arch-flow">
+          <span class="highlight">agentcraft CLI</span> ──(RPC)──▶ <span class="highlight">Daemon</span> ──▶ <span class="highlight">Launcher</span> ──▶ Claude / Cursor<br>
+          <span style="color:var(--text-muted)">薄客户端 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 守护进程 &nbsp;&nbsp;&nbsp; Agent 启动器 &nbsp; AI 运行时</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Concept mapping table -->
+    <div class="fade-in" style="overflow-x:auto">
+      <table class="analogy-table">
+        <thead>
+          <tr>
+            <th>Docker</th>
+            <th>AgentCraft</th>
+            <th>本质</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">Dockerfile</td>
+            <td class="mono">Agent Template (JSON)</td>
+            <td class="essence">声明式定义"这个 Agent 是什么"</td>
+          </tr>
+          <tr>
+            <td class="mono">Image</td>
+            <td class="mono">Template Registry</td>
+            <td class="essence">已验证、可复用、可分发的定义</td>
+          </tr>
+          <tr>
+            <td class="mono">Container</td>
+            <td class="mono">Agent Instance</td>
+            <td class="essence">从定义实例化的运行单元，拥有隔离文件系统</td>
+          </tr>
+          <tr>
+            <td class="mono">docker run</td>
+            <td class="mono">agent create + start</td>
+            <td class="essence">创建实例并启动</td>
+          </tr>
+          <tr>
+            <td class="mono">Volume</td>
+            <td class="mono">Domain Context</td>
+            <td class="essence">Skills / Prompts / MCP 物化为持久化文件</td>
+          </tr>
+          <tr>
+            <td class="mono">Writable Layer</td>
+            <td class="mono">Memory Layer</td>
+            <td class="essence">运行时积累的可写状态 — 后天经验</td>
+          </tr>
+          <tr>
+            <td class="mono">Union FS</td>
+            <td class="mono">Template ∪ Memory</td>
+            <td class="essence">只读模板层 + 可写记忆层的叠加物化</td>
+          </tr>
+          <tr>
+            <td class="mono">docker commit</td>
+            <td class="mono">Memory Promotion</td>
+            <td class="essence">实例经验提升为可共享知识</td>
+          </tr>
+          <tr>
+            <td class="mono">Network</td>
+            <td class="mono">ACP / MCP</td>
+            <td class="essence">实例间及外部的通信通道</td>
+          </tr>
+          <tr>
+            <td class="mono">docker-compose</td>
+            <td class="mono">Workflow + SubAgents</td>
+            <td class="essence">多实例编排</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Vision ─── -->
+<section class="vision" id="vision">
+  <div class="container">
+    <div class="section-header fade-in">
+      <span class="section-label">Vision</span>
+      <h2>Agents that learn, share,<br>and embed into your workflow</h2>
+      <p>Agent 不应该每次启动都失忆。让 Agent 进化、共享知识、成为工作流的一部分。</p>
+    </div>
+
+    <!-- Evolution layers diagram -->
+    <div class="evolution-diagram fade-in">
+      <div class="evo-layer">
+        <div class="evo-tag l3">L3</div>
+        <div class="evo-content">
+          <h4>Template Evolution</h4>
+          <p>种群进化 — 高置信度经验经人工审核写回 Template</p>
+        </div>
+      </div>
+      <div class="evo-layer">
+        <div class="evo-tag l2">L2</div>
+        <div class="evo-content">
+          <h4>Shared Memory</h4>
+          <p>跨实例共享 — 验证过的经验提升到共享知识池</p>
+        </div>
+      </div>
+      <div class="evo-layer">
+        <div class="evo-tag l1">L1</div>
+        <div class="evo-content">
+          <h4>Instance Memory</h4>
+          <p>实例记忆 — 每次 session 结束自动提取经验</p>
+        </div>
+      </div>
+      <div class="evo-layer">
+        <div class="evo-tag l0">L0</div>
+        <div class="evo-content">
+          <h4>Session</h4>
+          <p>会话 — Agent 在 context window 内工作</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vision cards -->
+    <div class="vision-cards">
+      <div class="vision-card fade-in">
+        <div class="card-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/></svg>
+        </div>
+        <h3>Agent 会进化</h3>
+        <p>实例在多次会话间积累经验 — 错误模式、用户偏好、最佳实践。下次启动时记忆自动注入，不再重复犯同样的错误。</p>
+        <div class="metaphor">Template 不变 ≠ Agent 不变。DNA 一生不变，但人一直在学习。进化发生在 Memory Layer。</div>
+      </div>
+
+      <div class="vision-card fade-in">
+        <div class="card-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.59 13.51l6.83 3.98M15.41 6.51l-6.82 3.98"/></svg>
+        </div>
+        <h3>Agent 会共享</h3>
+        <p>当经验在多个实例中被验证，自动提升到共享知识池。实例 A 踩过的坑，实例 B 不再重蹈覆辙。</p>
+        <div class="metaphor">像 docker commit 将容器改动固化为镜像，Memory Promotion 将实例经验固化为团队知识。</div>
+      </div>
+
+      <div class="vision-card fade-in">
+        <div class="card-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        </div>
+        <h3>Agent 嵌入工作流</h3>
+        <p>One-Shot 在 CI 中自动执行后销毁。Service 作为虚拟雇员接入 IM。ACP Proxy 让外部应用调用 Agent。MCP 让 Agent 互相协作。</p>
+        <div class="metaphor">Agent 不是孤岛，是工作流中可插拔的节点 — 像容器在编排系统中一样。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Demo ─── -->
+<section class="demo" id="demo">
+  <div class="container">
+    <div class="section-header fade-in">
+      <span class="section-label">See It In Action</span>
+      <h2>Manage Agents like containers</h2>
+      <p>熟悉的命令模式，熟悉的工作流。</p>
+    </div>
+    <div class="terminal fade-in">
+      <div class="terminal-header">
+        <div class="terminal-dot red"></div>
+        <div class="terminal-dot yellow"></div>
+        <div class="terminal-dot green"></div>
+        <span class="terminal-title">agentcraft — terminal</span>
+      </div>
+      <div class="terminal-body">
+        <div class="line comment"># 启动 Daemon <span class="docker-hint">≈ systemctl start docker</span></div>
+        <div class="line"><span class="prompt-sign">$ </span><span class="command">agentcraft daemon start</span></div>
+        <div class="line output success">✓ Daemon started (pid: 42851)</div>
+        <div class="spacer"></div>
+
+        <div class="line comment"># 查看可用模板 <span class="docker-hint">≈ docker images</span></div>
+        <div class="line"><span class="prompt-sign">$ </span><span class="command">agentcraft template list</span></div>
+        <div class="line output">  code-review-agent &nbsp;&nbsp;Code review + security audit</div>
+        <div class="line output">  bilibili-analyzer &nbsp;&nbsp;Video content analysis</div>
+        <div class="spacer"></div>
+
+        <div class="line comment"># 从模板创建 Agent <span class="docker-hint">≈ docker run</span></div>
+        <div class="line"><span class="prompt-sign">$ </span><span class="command">agentcraft agent create reviewer <span class="flag">--template</span> code-review-agent</span></div>
+        <div class="line output success">✓ Agent created: reviewer</div>
+        <div class="line output">  Skills → AGENTS.md &nbsp;|&nbsp; Prompts → system.md &nbsp;|&nbsp; MCP → mcp.json</div>
+        <div class="spacer"></div>
+
+        <div class="line comment"># 与 Agent 交互 <span class="docker-hint">≈ docker exec</span></div>
+        <div class="line"><span class="prompt-sign">$ </span><span class="command">agentcraft agent run reviewer <span class="flag">--prompt</span> <span class="string">"Review error handling in src/"</span></span></div>
+        <div class="line output">Analyzing... Found 3 issues in error handling.</div>
+        <div class="spacer"></div>
+
+        <div class="line comment"># 停止时自动提取经验 <span class="docker-hint">≈ docker stop (+ commit)</span></div>
+        <div class="line"><span class="prompt-sign">$ </span><span class="command">agentcraft agent stop reviewer</span></div>
+        <div class="line output success">✓ Memory extracted: 2 error patterns, 1 best practice</div>
+        <div class="spacer"></div>
+
+        <div class="line comment"># 再次启动时带着记忆 — 不再失忆</div>
+        <div class="line"><span class="prompt-sign">$ </span><span class="command">agentcraft agent start reviewer</span></div>
+        <div class="line output success">✓ Re-materialized with 3 memory insights</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── How It Works ─── -->
+<section class="flow" id="flow">
+  <div class="container">
+    <div class="section-header fade-in">
+      <span class="section-label">How It Works</span>
+      <h2>Define → Create → Run → Interact → Evolve</h2>
+    </div>
+    <div class="flow-steps fade-in">
+      <div class="flow-step">
+        <div class="flow-step-num">1</div>
+        <h4>Define</h4>
+        <p>用 JSON Template 声明 Skills、Prompts、MCP 工具</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">2</div>
+        <h4>Create</h4>
+        <p>物化 Template 为隔离的 Instance Workspace</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">3</div>
+        <h4>Run</h4>
+        <p>选择 LaunchMode 启动，Daemon 管理生命周期</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">4</div>
+        <h4>Interact</h4>
+        <p>CLI / ACP 发送任务，Agent 在 workspace 内工作</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-step-num">5</div>
+        <h4>Evolve</h4>
+        <p>Session 结束提取经验，下次启动注入 Memory</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Roadmap ─── -->
+<section class="roadmap" id="roadmap">
+  <div class="container">
+    <div class="section-header fade-in">
+      <span class="section-label">Roadmap</span>
+      <h2>Building the full stack</h2>
+      <p>像 Docker 生态一步步成长一样，AgentCraft 有序演进。</p>
+    </div>
+    <div class="roadmap-grid fade-in">
+      <div class="roadmap-card">
+        <div class="rm-header">
+          <div class="rm-icon done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <h4>Phase 1 <span class="rm-tag done">Done</span></h4>
+        </div>
+        <p>核心运行时 — 进程管理、LaunchMode、崩溃重启</p>
+        <div class="rm-docker">≈ containerd + runc</div>
+      </div>
+
+      <div class="roadmap-card">
+        <div class="rm-header">
+          <div class="rm-icon done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+          <h4>Phase 2 <span class="rm-tag done">Done</span></h4>
+        </div>
+        <p>Agent 拼装与交互 — Domain Context 物化、CLI 对话</p>
+        <div class="rm-docker">≈ docker build + exec</div>
+      </div>
+
+      <div class="roadmap-card">
+        <div class="rm-header">
+          <div class="rm-icon active"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/></svg></div>
+          <h4>Phase 3 <span class="rm-tag active">Active</span></h4>
+        </div>
+        <p>通信与协议 — ACP Proxy ✓ + MCP Server</p>
+        <div class="rm-docker">≈ docker network</div>
+      </div>
+
+      <div class="roadmap-card">
+        <div class="rm-header">
+          <div class="rm-icon planned"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></div>
+          <h4>Phase 4 <span class="rm-tag planned">Planned</span></h4>
+        </div>
+        <p>扩展体系 — Plugin 架构、Heartbeat、Scheduler</p>
+        <div class="rm-docker">≈ docker-compose</div>
+      </div>
+
+      <div class="roadmap-card">
+        <div class="rm-header">
+          <div class="rm-icon planned"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></div>
+          <h4>Phase 5 <span class="rm-tag planned">Planned</span></h4>
+        </div>
+        <p>记忆系统 — Memory Layer、共享知识池、进化</p>
+        <div class="rm-docker">≈ union fs + commit</div>
+      </div>
+
+      <div class="roadmap-card">
+        <div class="rm-header">
+          <div class="rm-icon planned"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg></div>
+          <h4>Phase 6 <span class="rm-tag vision">Vision</span></h4>
+        </div>
+        <p>ACP-Fleet — Daemon → ACP Server、Fleet 标准化</p>
+        <div class="rm-docker">≈ docker swarm</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── CTA ─── -->
+<section class="cta-section">
+  <div class="cta-glow"></div>
+  <div class="container">
+    <h2 class="fade-in">Ready to <span class="docker-word">containerize</span> your <span class="agent-word">AI Agents</span>?</h2>
+    <p class="fade-in">用 Docker 的方式思考 AI Agent。Define, Build, Ship, Run —<br>零成本嵌入你的工作流。</p>
+    <div class="hero-actions fade-in">
+      <a href="https://github.com/blackplume233/AgentCraft" class="btn btn-primary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+      <a href="https://github.com/blackplume233/AgentCraft#readme" class="btn btn-secondary">Read the Docs</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Footer ─── -->
+<footer>
+  <div class="container">
+    <div class="footer-content">
+      <div class="footer-brand">
+        <div class="nav-logo">A</div>
+        <span>AgentCraft &copy; 2026 &middot; MIT License</span>
+      </div>
+      <div class="footer-links">
+        <a href="https://github.com/blackplume233/AgentCraft">GitHub</a>
+        <a href="https://github.com/blackplume233/AgentCraft#readme">Docs</a>
+        <a href="https://github.com/blackplume233/AgentCraft/issues">Issues</a>
+      </div>
+      <span class="footer-tagline">Built for developers who orchestrate AI.</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+  function copyInstall(el) {
+    navigator.clipboard.writeText('git clone https://github.com/blackplume233/AgentCraft.git').then(() => {
+      const icon = el.querySelector('.copy-icon');
+      icon.style.color = 'var(--green)';
+      setTimeout(() => icon.style.color = '', 1500);
+    });
+  }
+
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+    document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+  } else {
+    document.querySelectorAll('.fade-in').forEach(el => el.classList.add('visible'));
+  }
+</script>
+
+</body>
+</html>
