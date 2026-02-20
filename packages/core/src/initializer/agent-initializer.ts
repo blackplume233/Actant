@@ -80,6 +80,7 @@ export class AgentInitializer {
         backendConfig: template.backend.config ? { ...template.backend.config } : undefined,
         status: "created",
         launchMode: overrides?.launchMode ?? this.options?.defaultLaunchMode ?? "direct",
+        processOwnership: "managed",
         createdAt: now,
         updatedAt: now,
         metadata: overrides?.metadata,

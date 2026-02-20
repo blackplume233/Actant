@@ -7,6 +7,7 @@ export const AgentStatusSchema = z.enum([
   "stopping",
   "stopped",
   "error",
+  "crashed",
 ]);
 
 export const LaunchModeSchema = z.enum([
@@ -15,6 +16,8 @@ export const LaunchModeSchema = z.enum([
   "acp-service",
   "one-shot",
 ]);
+
+export const ProcessOwnershipSchema = z.enum(["managed", "external"]);
 
 const AgentBackendTypeSchema = z.enum(["cursor", "claude-code", "custom"]);
 
@@ -27,6 +30,7 @@ export const AgentInstanceMetaSchema = z.object({
   backendConfig: z.record(z.string(), z.unknown()).optional(),
   status: AgentStatusSchema,
   launchMode: LaunchModeSchema,
+  processOwnership: ProcessOwnershipSchema.optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   pid: z.number().int().positive().optional(),

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -6,12 +6,14 @@ import type { AgentTemplate } from "@agentcraft/shared";
 import {
   AgentNotFoundError,
   AgentAlreadyRunningError,
+  AgentAlreadyAttachedError,
+  AgentNotAttachedError,
 } from "@agentcraft/shared";
 import { TemplateRegistry } from "../template/registry/template-registry";
 import { AgentInitializer } from "../initializer/agent-initializer";
 import { AgentManager } from "./agent-manager";
 import { MockLauncher } from "./launcher/mock-launcher";
-import { writeInstanceMeta } from "../state/instance-meta-io";
+import { writeInstanceMeta, readInstanceMeta } from "../state/instance-meta-io";
 import type { AgentInstanceMeta } from "@agentcraft/shared";
 
 function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
@@ -35,6 +37,7 @@ function makeMeta(name: string, overrides?: Partial<AgentInstanceMeta>): AgentIn
     backendType: "cursor",
     status: "created",
     launchMode: "direct",
+    processOwnership: "managed",
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -58,6 +61,7 @@ describe("AgentManager", () => {
   });
 
   afterEach(async () => {
+    manager.dispose();
     await rm(tmpDir, { recursive: true, force: true });
   });
 
@@ -224,30 +228,327 @@ describe("AgentManager", () => {
 
   describe("E2E: full lifecycle", () => {
     it("should: create → start → stop → destroy → recover", async () => {
-      // Create and start
       const meta = await manager.createAgent("e2e-agent", "test-tpl");
       expect(meta.status).toBe("created");
 
       await manager.startAgent("e2e-agent");
       expect(manager.getStatus("e2e-agent")).toBe("running");
 
-      // Stop
       await manager.stopAgent("e2e-agent");
       expect(manager.getStatus("e2e-agent")).toBe("stopped");
 
-      // Simulate restart recovery
       const newManager = new AgentManager(initializer, launcher, tmpDir);
       await newManager.initialize();
       expect(newManager.getAgent("e2e-agent")).toBeDefined();
       expect(newManager.getStatus("e2e-agent")).toBe("stopped");
 
-      // Re-start after recovery
       await newManager.startAgent("e2e-agent");
       expect(newManager.getStatus("e2e-agent")).toBe("running");
 
-      // Destroy
       await newManager.destroyAgent("e2e-agent");
       expect(newManager.getAgent("e2e-agent")).toBeUndefined();
+      newManager.dispose();
+    });
+  });
+
+  describe("LaunchMode behavior", () => {
+    it("should auto-restart acp-service agent on crash", async () => {
+      const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+        restartPolicy: { backoffBaseMs: 10, backoffMaxMs: 50 },
+      });
+      await watcherManager.initialize();
+
+      await watcherManager.createAgent("svc-agent", "test-tpl", { launchMode: "acp-service" });
+      await watcherManager.startAgent("svc-agent");
+      expect(watcherManager.getStatus("svc-agent")).toBe("running");
+      const firstPid = watcherManager.getAgent("svc-agent")!.pid!;
+
+      const processUtils = await import("./launcher/process-utils");
+      let exitTriggerCount = 0;
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockImplementation(() => {
+        exitTriggerCount++;
+        return exitTriggerCount > 1;
+      });
+
+      await new Promise((r) => setTimeout(r, 200));
+
+      expect(watcherManager.getStatus("svc-agent")).toBe("running");
+      const newPid = watcherManager.getAgent("svc-agent")!.pid!;
+      expect(newPid).not.toBe(firstPid);
+
+      spy.mockRestore();
+      watcherManager.dispose();
+    });
+
+    it("should recover acp-service agent on daemon restart", async () => {
+      const dir = join(tmpDir, "svc-stale");
+      await mkdir(dir);
+      await writeInstanceMeta(dir, makeMeta("svc-stale", {
+        status: "running",
+        pid: 99999,
+        launchMode: "acp-service",
+      }));
+
+      const newManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+      });
+      await newManager.initialize();
+
+      // acp-service should attempt restart: status should be running
+      expect(newManager.getStatus("svc-stale")).toBe("running");
+      expect(newManager.getAgent("svc-stale")?.pid).toBeDefined();
+
+      newManager.dispose();
+    });
+
+    it("should mark acp-service agent as error after restart limit exceeded", async () => {
+      const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+        restartPolicy: { maxRestarts: 1, backoffBaseMs: 5, backoffMaxMs: 10 },
+      });
+      await watcherManager.initialize();
+
+      await watcherManager.createAgent("svc-limit", "test-tpl", { launchMode: "acp-service" });
+      await watcherManager.startAgent("svc-limit");
+
+      const processUtils = await import("./launcher/process-utils");
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(false);
+
+      // Wait enough for: poll → crash → backoff → restart → poll → crash → exceeded
+      await new Promise((r) => setTimeout(r, 500));
+
+      expect(watcherManager.getStatus("svc-limit")).toBe("error");
+
+      spy.mockRestore();
+      watcherManager.dispose();
+    });
+
+    it("should auto-destroy one-shot agent with autoDestroy on exit", async () => {
+      const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+      });
+      await watcherManager.initialize();
+
+      await watcherManager.createAgent("oneshot-agent", "test-tpl", {
+        launchMode: "one-shot",
+        metadata: { autoDestroy: "true" },
+      });
+      await watcherManager.startAgent("oneshot-agent");
+      expect(watcherManager.getStatus("oneshot-agent")).toBe("running");
+
+      const processUtils = await import("./launcher/process-utils");
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(false);
+
+      await new Promise((r) => setTimeout(r, 200));
+
+      // Agent should be destroyed (no longer in cache)
+      expect(watcherManager.getAgent("oneshot-agent")).toBeUndefined();
+
+      spy.mockRestore();
+      watcherManager.dispose();
+    });
+
+    it("should mark one-shot agent as stopped without autoDestroy", async () => {
+      const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+      });
+      await watcherManager.initialize();
+
+      await watcherManager.createAgent("oneshot-keep", "test-tpl", {
+        launchMode: "one-shot",
+      });
+      await watcherManager.startAgent("oneshot-keep");
+
+      const processUtils = await import("./launcher/process-utils");
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(false);
+
+      await new Promise((r) => setTimeout(r, 200));
+
+      expect(watcherManager.getStatus("oneshot-keep")).toBe("stopped");
+      expect(watcherManager.getAgent("oneshot-keep")?.metadata?.exitedAt).toBeDefined();
+
+      spy.mockRestore();
+      watcherManager.dispose();
+    });
+
+    it("should mark direct agent as stopped on crash (no restart)", async () => {
+      const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+      });
+      await watcherManager.initialize();
+
+      await watcherManager.createAgent("direct-agent", "test-tpl");
+      await watcherManager.startAgent("direct-agent");
+
+      const processUtils = await import("./launcher/process-utils");
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(false);
+
+      await new Promise((r) => setTimeout(r, 120));
+
+      expect(watcherManager.getStatus("direct-agent")).toBe("stopped");
+
+      spy.mockRestore();
+      watcherManager.dispose();
+    });
+  });
+
+  describe("ProcessWatcher integration", () => {
+    it("should update status when watched process exits unexpectedly", async () => {
+      const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+      });
+      await watcherManager.initialize();
+
+      await watcherManager.createAgent("watched-agent", "test-tpl");
+      await watcherManager.startAgent("watched-agent");
+      expect(watcherManager.getStatus("watched-agent")).toBe("running");
+      expect(watcherManager.getAgent("watched-agent")!.pid).toBeDefined();
+
+      // Spy on isProcessAlive to simulate crash after a few polls
+      const processUtils = await import("./launcher/process-utils");
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(false);
+
+      // Wait for at least one poll cycle
+      await new Promise((r) => setTimeout(r, 120));
+
+      expect(watcherManager.getStatus("watched-agent")).toBe("stopped");
+      expect(watcherManager.getAgent("watched-agent")?.pid).toBeUndefined();
+
+      // Verify on-disk meta is also updated
+      const diskMeta = await readInstanceMeta(join(tmpDir, "watched-agent"));
+      expect(diskMeta.status).toBe("stopped");
+      expect(diskMeta.pid).toBeUndefined();
+
+      spy.mockRestore();
+      watcherManager.dispose();
+    });
+
+    it("should not update status for intentionally stopped agent", async () => {
+      await manager.createAgent("agent-stop", "test-tpl");
+      await manager.startAgent("agent-stop");
+      await manager.stopAgent("agent-stop");
+
+      // After stop, status should be stopped (not error)
+      expect(manager.getStatus("agent-stop")).toBe("stopped");
+    });
+
+    it("should start watcher on initialize", async () => {
+      const newManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+      });
+      await newManager.initialize();
+
+      // Watcher is running — verify by creating + starting an agent
+      // and then simulating crash
+      await newManager.createAgent("init-watch", "test-tpl");
+      await newManager.startAgent("init-watch");
+
+      const processUtils = await import("./launcher/process-utils");
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(false);
+
+      await new Promise((r) => setTimeout(r, 120));
+
+      expect(newManager.getStatus("init-watch")).toBe("stopped");
+
+      spy.mockRestore();
+      newManager.dispose();
+    });
+
+    it("dispose should stop the watcher", () => {
+      manager.dispose();
+      // No error means success — watcher is stopped
+    });
+  });
+
+  describe("resolve / attach / detach (external spawn)", () => {
+    it("resolveAgent should return spawn info for existing agent", async () => {
+      await manager.createAgent("res-agent", "test-tpl");
+      const result = await manager.resolveAgent("res-agent");
+
+      expect(result.instanceName).toBe("res-agent");
+      expect(result.workspaceDir).toContain("res-agent");
+      expect(result.command).toBeDefined();
+      expect(result.args).toBeDefined();
+      expect(result.backendType).toBe("cursor");
+    });
+
+    it("resolveAgent should auto-create from template if not found", async () => {
+      const result = await manager.resolveAgent("auto-created", "test-tpl");
+
+      expect(result.instanceName).toBe("auto-created");
+      expect(manager.getAgent("auto-created")).toBeDefined();
+      expect(manager.getAgent("auto-created")?.status).toBe("created");
+    });
+
+    it("resolveAgent should throw if agent not found and no template", async () => {
+      await expect(manager.resolveAgent("ghost")).rejects.toThrow(AgentNotFoundError);
+    });
+
+    it("attachAgent should register external PID and set status to running", async () => {
+      await manager.createAgent("ext-agent", "test-tpl");
+      await manager.attachAgent("ext-agent", 55555);
+
+      const meta = manager.getAgent("ext-agent")!;
+      expect(meta.status).toBe("running");
+      expect(meta.pid).toBe(55555);
+      expect(meta.processOwnership).toBe("external");
+    });
+
+    it("attachAgent should throw if already attached", async () => {
+      await manager.createAgent("dup-attach", "test-tpl");
+      await manager.attachAgent("dup-attach", 55555);
+
+      await expect(manager.attachAgent("dup-attach", 66666)).rejects.toThrow(AgentAlreadyAttachedError);
+    });
+
+    it("attachAgent should throw for unknown agent", async () => {
+      await expect(manager.attachAgent("unknown", 12345)).rejects.toThrow(AgentNotFoundError);
+    });
+
+    it("detachAgent should clear pid and set status to stopped", async () => {
+      await manager.createAgent("det-agent", "test-tpl");
+      await manager.attachAgent("det-agent", 55555);
+      await manager.detachAgent("det-agent");
+
+      const meta = manager.getAgent("det-agent")!;
+      expect(meta.status).toBe("stopped");
+      expect(meta.pid).toBeUndefined();
+      expect(meta.processOwnership).toBe("managed");
+    });
+
+    it("detachAgent with cleanup should destroy the agent", async () => {
+      await manager.createAgent("cleanup-agent", "test-tpl");
+      await manager.attachAgent("cleanup-agent", 55555);
+      await manager.detachAgent("cleanup-agent", { cleanup: true });
+
+      expect(manager.getAgent("cleanup-agent")).toBeUndefined();
+    });
+
+    it("detachAgent should throw if not externally attached", async () => {
+      await manager.createAgent("managed-agent", "test-tpl");
+      await expect(manager.detachAgent("managed-agent")).rejects.toThrow(AgentNotAttachedError);
+    });
+
+    it("should mark externally-attached process as crashed on unexpected exit", async () => {
+      const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+      });
+      await watcherManager.initialize();
+
+      await watcherManager.createAgent("ext-crash", "test-tpl");
+      await watcherManager.attachAgent("ext-crash", 55555);
+
+      const processUtils = await import("./launcher/process-utils");
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(false);
+
+      await new Promise((r) => setTimeout(r, 120));
+
+      expect(watcherManager.getStatus("ext-crash")).toBe("crashed");
+      expect(watcherManager.getAgent("ext-crash")?.pid).toBeUndefined();
+
+      spy.mockRestore();
+      watcherManager.dispose();
     });
   });
 });

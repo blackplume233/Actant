@@ -39,11 +39,11 @@ AgentCraft 同时扮演：
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
-| #8 | ProcessWatcher：进程退出检测与心跳监控 | P0 | - | 待开始 |
-| #9 | LaunchMode 行为分化 | P0 | #8 | 待开始 |
-| #15 | agent.resolve / agent.attach / agent.detach API | P1 | #8, #9 | 待开始 |
-| #10 | one-shot 模式完整实现 | P1 | #8, #9 | 待开始 |
-| #11 | acp-service 崩溃重启策略 | P1 | #8 | 待开始 |
+| #8 | ProcessWatcher：进程退出检测与心跳监控 | P0 | - | ✅ 完成 |
+| #9 | LaunchMode 行为分化 | P0 | #8 | ✅ 完成 |
+| #15 | agent.resolve / agent.attach / agent.detach API | P1 | #8, #9 | ✅ 完成 |
+| #10 | one-shot 模式完整实现 | P1 | #8, #9 | ✅ 完成 |
+| #11 | acp-service 崩溃重启策略 | P1 | #8 | ✅ 完成 |
 
 **Phase 1 依赖关系:**
 ```
@@ -122,7 +122,7 @@ AgentCraft 同时扮演：
 
 ## 当前进行中 (Current)
 
-（无活跃任务）
+Phase 1 已完成，准备进入 Phase 2。
 
 ---
 

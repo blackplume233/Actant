@@ -2,6 +2,8 @@ export type {
   AgentInstanceMeta,
   AgentStatus,
   LaunchMode,
+  ProcessOwnership,
+  ResolveResult,
 } from "./agent.types";
 export type {
   AgentTemplate,

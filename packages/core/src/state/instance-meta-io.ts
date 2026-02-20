@@ -45,10 +45,14 @@ export async function readInstanceMeta(workspaceDir: string): Promise<AgentInsta
     );
   }
 
-  const data = result.data as Record<string, unknown> & { backendType?: AgentInstanceMeta["backendType"] };
+  const data = result.data as Record<string, unknown> & {
+    backendType?: AgentInstanceMeta["backendType"];
+    processOwnership?: AgentInstanceMeta["processOwnership"];
+  };
   return {
     ...data,
     backendType: data.backendType ?? "cursor",
+    processOwnership: data.processOwnership ?? "managed",
   } as AgentInstanceMeta;
 }
 

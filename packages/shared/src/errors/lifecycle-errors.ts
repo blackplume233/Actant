@@ -31,6 +31,24 @@ export class AgentAlreadyRunningError extends AgentCraftError {
   }
 }
 
+export class AgentAlreadyAttachedError extends AgentCraftError {
+  readonly code = "AGENT_ALREADY_ATTACHED";
+  readonly category: ErrorCategory = "lifecycle";
+
+  constructor(instanceName: string) {
+    super(`Agent "${instanceName}" already has an attached process`, { instanceName });
+  }
+}
+
+export class AgentNotAttachedError extends AgentCraftError {
+  readonly code = "AGENT_NOT_ATTACHED";
+  readonly category: ErrorCategory = "lifecycle";
+
+  constructor(instanceName: string) {
+    super(`Agent "${instanceName}" has no attached process`, { instanceName });
+  }
+}
+
 export class InstanceCorruptedError extends AgentCraftError {
   readonly code = "INSTANCE_CORRUPTED";
   readonly category: ErrorCategory = "lifecycle";

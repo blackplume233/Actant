@@ -16,6 +16,8 @@ export interface AgentInstanceMeta {
   backendConfig?: Record<string, unknown>;
   status: AgentStatus;
   launchMode: LaunchMode;
+  /** Who owns/manages the agent process. "managed" = AgentCraft, "external" = caller. */
+  processOwnership: ProcessOwnership;
   createdAt: string;
   updatedAt: string;
   pid?: number;
@@ -28,10 +30,23 @@ export type AgentStatus =
   | "running"
   | "stopping"
   | "stopped"
-  | "error";
+  | "error"
+  | "crashed";
 
 export type LaunchMode =
   | "direct"
   | "acp-background"
   | "acp-service"
   | "one-shot";
+
+export type ProcessOwnership = "managed" | "external";
+
+/** Information needed to spawn an agent process externally. */
+export interface ResolveResult {
+  workspaceDir: string;
+  command: string;
+  args: string[];
+  env?: Record<string, string>;
+  instanceName: string;
+  backendType: AgentBackendType;
+}
