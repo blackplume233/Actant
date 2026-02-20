@@ -18,8 +18,14 @@
   "taskRef": null,
   "githubRef": null,
   "closedAs": null,
-  "comments": [],
+  "comments": [
+    {
+      "text": "[Review] 本次深度审查测试用例时同时发现：core 包 type-check 未通过（见 #24），以及测试类型安全与配对缺口（见 #25）。CLI 单元测试补充可与 #24 修复并行推进。",
+      "date": "2026-02-20T13:17:12",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-20T12:22:12",
-  "updatedAt": "2026-02-20T12:22:12",
+  "updatedAt": "2026-02-20T13:17:12",
   "closedAt": null
 }

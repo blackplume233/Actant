@@ -26,7 +26,7 @@ describe("TemplateLoader", () => {
       expect(template.provider.type).toBe("anthropic");
       expect(template.domainContext.skills).toEqual(["code-review", "typescript-expert"]);
       expect(template.domainContext.mcpServers).toHaveLength(1);
-      expect(template.domainContext.mcpServers![0]!.name).toBe("filesystem");
+      expect(template.domainContext.mcpServers?.[0]?.name).toBe("filesystem");
       expect(template.initializer?.steps).toHaveLength(3);
       expect(template.metadata).toEqual({
         author: "AgentCraft Team",
@@ -60,7 +60,7 @@ describe("TemplateLoader", () => {
       expect(template.domainContext.mcpServers).toHaveLength(2);
       expect(template.domainContext.subAgents).toEqual(["code-reviewer", "test-runner"]);
       expect(template.initializer?.steps).toHaveLength(4);
-      expect(template.domainContext.mcpServers![1]!.env).toEqual({
+      expect(template.domainContext.mcpServers?.[1]?.env).toEqual({
         DB_URL: "postgres://localhost:5432/gamedb",
       });
     });

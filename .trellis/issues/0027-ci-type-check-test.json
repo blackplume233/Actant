@@ -1,0 +1,23 @@
+{
+  "id": 27,
+  "title": "CI 必须执行 type-check 且与 test 同门禁",
+  "status": "open",
+  "labels": [
+    "priority:P1",
+    "quality",
+    "review"
+  ],
+  "milestone": null,
+  "body": "## 审查发现（更严格标准）\n\n当前 `pnpm run type-check` 在 **packages/core** 失败（见 #24），但 `pnpm test` 可通过。若 CI 只跑 `pnpm test`，类型错误会被放行，质量门禁失效。\n\n## 建议\n\n- **CI 流水线**：必须包含 `pnpm run type-check`，且与 `pnpm test` **同门禁**（任一失败即失败）。\n- **本地/PR**：在 `package.json` 或文档中明确 `check` / `ci` 脚本为 `type-check && test`（及 lint 若已配置），避免只跑 test。\n- 修复 #24 后，确保 CI 已配置 type-check，并保留为长期要求。\n",
+  "author": "cursor-agent",
+  "assignees": [],
+  "relatedFiles": [],
+  "relatedIssues": [],
+  "taskRef": null,
+  "githubRef": null,
+  "closedAs": null,
+  "comments": [],
+  "createdAt": "2026-02-20T13:19:04",
+  "updatedAt": "2026-02-20T13:19:04",
+  "closedAt": null
+}

@@ -38,7 +38,11 @@ function spawnSleeper(cwd: string): Promise<number> {
     child.on("error", reject);
     child.once("spawn", () => {
       child.unref();
-      resolve(child.pid!);
+      if (child.pid == null) {
+        reject(new Error("spawn event fired but pid is null"));
+        return;
+      }
+      resolve(child.pid);
     });
   });
 }

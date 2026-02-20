@@ -57,7 +57,11 @@ export class ProcessLauncher implements AgentLauncher {
         resolve({ pid: child.pid });
       } else {
         child.once("spawn", () => {
-          resolve({ pid: child.pid! });
+          if (child.pid == null) {
+            resolve({ error: new Error("spawn event fired but pid is null") });
+            return;
+          }
+          resolve({ pid: child.pid });
         });
       }
     });

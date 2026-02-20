@@ -92,7 +92,7 @@ describe("SocketServer integration", () => {
     });
 
     expect(res.error).toBeDefined();
-    expect(res.error!.code).toBe(RPC_ERROR_CODES.METHOD_NOT_FOUND);
+    expect(res.error?.code).toBe(RPC_ERROR_CODES.METHOD_NOT_FOUND);
   });
 
   it("returns PARSE_ERROR for invalid JSON", async () => {
@@ -117,7 +117,7 @@ describe("SocketServer integration", () => {
     });
 
     expect(res.error).toBeDefined();
-    expect(res.error!.code).toBe(RPC_ERROR_CODES.PARSE_ERROR);
+    expect(res.error?.code).toBe(RPC_ERROR_CODES.PARSE_ERROR);
   });
 
   it("returns INVALID_REQUEST for malformed request", async () => {
@@ -128,7 +128,7 @@ describe("SocketServer integration", () => {
     } as unknown as RpcRequest);
 
     expect(res.error).toBeDefined();
-    expect(res.error!.code).toBe(RPC_ERROR_CODES.INVALID_REQUEST);
+    expect(res.error?.code).toBe(RPC_ERROR_CODES.INVALID_REQUEST);
   });
 
   it("returns business error with correct code for TemplateNotFoundError", async () => {
@@ -140,8 +140,8 @@ describe("SocketServer integration", () => {
     });
 
     expect(res.error).toBeDefined();
-    expect(res.error!.code).toBe(RPC_ERROR_CODES.TEMPLATE_NOT_FOUND);
-    expect(res.error!.message).toContain("not found");
+    expect(res.error?.code).toBe(RPC_ERROR_CODES.TEMPLATE_NOT_FOUND);
+    expect(res.error?.message).toContain("not found");
   });
 
   it("handles full agent lifecycle over RPC", async () => {
