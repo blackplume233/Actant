@@ -149,17 +149,19 @@ Phase 1 (已完成)
 ---
 
 ### Phase 3: 通信与协议 (Connectivity)
-**目标**: 标准协议接入 — 外部应用通过 ACP Proxy 接入，Agent 间通过 MCP Server 通信
+**目标**: 标准协议接入 — 外部应用通过 ACP Proxy 接入，Agent 间通过 MCP Server 通信；雇员型 Agent 持续调度
 **时间**: MVP 完成后
-**成功标准**: ACP Proxy 可被任意 ACP Client spawn 使用；MCP Server 可被其他 Agent 调用
+**成功标准**: ACP Proxy Direct Bridge 可被任意 ACP Client spawn 使用；雇员型 Agent 可被 Daemon 持续调度；MCP Server 可被其他 Agent 调用
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
-| #16 | ACP Proxy — 标准 ACP 协议网关 | P1 | #9, #15 | ✅ 完成 |
+| #16 | ACP Proxy — 标准 ACP 协议网关（基础版） | P1 | #9, #15 | ✅ 完成 |
+| **#35** | **ACP Proxy + Chat — Direct Bridge 与 Session Lease 双模式** | **P1** | #16 | 待开始 |
+| **#37** | **雇员型 Agent — 持续调度与主动行为系统** | **P1** | #12, #11 | 待开始 |
 | #17 | MCP Server — Agent 间通信能力 | P2 | #12 | 待开始 |
 | #5 | Template hot-reload on file change | P2 | - | 待开始 |
 
-#### #16 ACP Proxy — 标准 ACP 协议网关 ✅ 完成
+#### #16 ACP Proxy — 标准 ACP 协议网关（基础版） ✅ 完成
 > **实现内容**：
 > - `@agentcraft/acp` 包：`AcpConnection`（封装 `@agentclientprotocol/sdk` ClientSideConnection + 子进程管理），`AcpConnectionManager`（连接池管理），`AcpCommunicator`（AgentCommunicator 适配）
 > - `claude-code` 后端从 `claude --project-dir` 改为 `claude-agent-acp`（ACP stdio 通信）
@@ -169,10 +171,35 @@ Phase 1 (已完成)
 > - `proxy.connect/disconnect/forward` RPC handlers
 > - `agentcraft proxy <name>` CLI 命令：对外 ACP Agent 接口，对内 RPC 转发
 
+#### #35 ACP Proxy + Chat — Direct Bridge 与 Session Lease 双模式
+> **架构决策**：废弃 ACP Gateway，支持两种连接模式。
+>
+> **模式 A — Direct Bridge**：Client 自己 spawn Agent 进程 + 持有 AcpConnection，进程随连接走。最简单，适合一次性使用。
+>
+> **模式 B — Session Lease（默认）**：Daemon 持有 Agent 进程和 AcpConnection，客户端租借 Session。零冷启动，多客户端可并发（独立 Session），session 可恢复。
+>
+> **核心原则**：
+> - CWD 永远是 agent workspace
+> - 1 Instance : 1 Process : N Sessions
+> - agent chat / proxy 默认走 Session Lease，`--direct` 切换为 Direct Bridge
+
+#### #37 雇员型 Agent — 持续调度与主动行为系统
+> **参考 OpenClaw 架构**，实现六种输入类型驱动 Agent 主动行为：
+>
+> - Heartbeat（定时主动检查）、Cron（定时任务）、Hook（内部事件）、Webhook（外部事件）、Agent-to-Agent（协作）
+> - Task Queue 串行执行 + 优先级
+> - Execution Log + `agent watch` 实时观察
+> - 模板支持 `schedule` 配置字段
+
 **Phase 3 依赖关系:**
 ```
 Phase 2 #12 (来自 MVP)
- ├──→ #16 ACP Proxy (标准 ACP 网关, 依赖 #15 resolve/attach) ✅
+ ├──→ #16 ACP Proxy 基础版 (依赖 #15 resolve/attach) ✅
+ │     └──→ #35 Proxy + Chat 双模式
+ │           Session Lease（默认）+ Direct Bridge（--direct）
+ │
+ ├──→ #37 雇员型 Agent 调度 (依赖 #11 acp-service + #12 ACP 通信)
+ │
  └──→ #17 MCP Server (Agent-to-Agent, 依赖 agent.run/prompt)
 
 #5 Template hot-reload (独立)
@@ -181,18 +208,19 @@ Phase 2 #12 (来自 MVP)
 ---
 
 ### Phase 4: 扩展体系 (Extensibility)
-**目标**: 可插拔的插件架构
+**目标**: 可插拔的插件架构，将雇员型 Agent 的调度组件 Plugin 化
 **时间**: Phase 3 完成后
-**成功标准**: Employee = acp-service + plugins，插件可独立开发/加载
+**成功标准**: Plugin 接口清晰，#37 的 Input 系统可重构为 Plugin 形态
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
-| #13 | Plugin 体系设计（heartbeat/scheduler/memory 可插拔） | P2 | #8 | 待开始 |
+| #13 | Plugin 体系设计（heartbeat/scheduler/memory 可插拔） | P2 | #8, #37 | 待开始 |
 | #14 | Agent 进程 stdout/stderr 日志收集 | P3 | - | 待开始 |
+| #36 | Agent 工具权限管理机制设计 | P2 | - | 待开始 |
 
 **Phase 4 关键设计:**
 - Plugin 接口定义（生命周期钩子、配置解析）
-- 核心插件集：heartbeat / scheduler / memory
+- #37 的 HeartbeatInput / CronInput / HookInput 重构为 Plugin 形态
 - 插件加载器（本地文件 / 远程 registry）
 
 ---
@@ -221,7 +249,7 @@ Phase 2 #12 (来自 MVP)
 
 ## 当前进行中 (Current)
 
-Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 已完成。当前聚焦 **Phase 3 剩余项（#17 MCP Server）**。
+Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 基础版已完成。当前聚焦 **Phase 3 核心项：#35 Proxy + Chat 双模式（Session Lease + Direct Bridge）+ #37 雇员型 Agent 调度**。
 
 ### Phase 1 完成总结
 
@@ -288,30 +316,33 @@ Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 已完成。当前聚
 | 4 | **#25** | CLI Agent 交互 (chat / run) | #12 | `agent run` 单次任务 + `agent chat` 交互模式 + 流式输出 |
 | 5 | **#26** | MVP 端到端集成与示例模板 | #23-25 | 示例模板 + Quick-start 文档 + E2E 测试 |
 
-### P1 — Phase 3 通信协议
+### P1 — Phase 3 通信协议与调度
 
 | 顺序 | Issue | 标题 | 依赖 | 说明 |
 |------|-------|------|------|------|
-| 6 | **#16** | ACP Proxy — 标准 ACP 协议网关 | #9, #15 | ✅ **已完成** |
-| 7 | **#17** | MCP Server — Agent 间通信能力 | #12 | 暴露 agentcraft_run_agent 等 MCP tools |
-| 8 | #5 | Template hot-reload on file change | 无 | Daemon 监听 template 变更自动 reload |
+| 6 | **#16** | ACP Proxy — 基础版 | #9, #15 | ✅ **已完成** |
+| 7 | **#35** | **Proxy + Chat — Direct Bridge 与 Session Lease 双模式** | #16 | Session Lease（默认）+ Direct Bridge，废弃 Gateway |
+| 8 | **#37** | **雇员型 Agent — 持续调度与主动行为** | #11, #12 | 参考 OpenClaw，Heartbeat/Cron/Webhook/Hook 输入系统 |
+| 9 | **#17** | MCP Server — Agent 间通信能力 | #12 | 暴露 agentcraft_run_agent 等 MCP tools |
+| 10 | #5 | Template hot-reload on file change | 无 | Daemon 监听 template 变更自动 reload |
 
 ### P2 — Phase 4 扩展
 
 | 顺序 | Issue | 标题 | 依赖 | 说明 |
 |------|-------|------|------|------|
-| 9 | **#13** | Plugin 体系设计 | #8 | 可插拔插件架构，Employee = acp-service + plugins |
-| 10 | #14 | Agent 进程 stdout/stderr 日志收集 | 无 | 进程输出写入日志文件 + 可选实时查询 |
+| 11 | **#13** | Plugin 体系设计 | #8, #37 | 可插拔插件架构，#37 Input 系统重构为 Plugin |
+| 12 | #36 | Agent 工具权限管理机制 | 无 | 模板级/实例级权限控制 |
+| 13 | #14 | Agent 进程 stdout/stderr 日志收集 | 无 | 进程输出写入日志文件 + 可选实时查询 |
 
 ### P3 — Phase 5 记忆 & 长期
 
 | 顺序 | Issue | 标题 | 说明 |
 |------|-------|------|------|
-| 11 | #1 | Instance Memory Layer | 实例级长期记忆 |
-| 12 | #2 | Memory Consolidation + Shared Memory | 跨实例记忆整合 |
-| 13 | #3 | Context Layers + ContextBroker | 上下文分层与代理 |
-| 14 | #6 | OpenViking as optional MCP Server | 可选 MCP 集成 |
-| 15 | #18 | ACP-Fleet 扩展协议 | 长期愿景：Daemon 升级为 ACP Server |
+| 14 | #1 | Instance Memory Layer | 实例级长期记忆 |
+| 15 | #2 | Memory Consolidation + Shared Memory | 跨实例记忆整合 |
+| 16 | #3 | Context Layers + ContextBroker | 上下文分层与代理 |
+| 17 | #6 | OpenViking as optional MCP Server | 可选 MCP 集成 |
+| 18 | #18 | ACP-Fleet 扩展协议 | 长期愿景：Daemon 升级为 ACP Server |
 
 ---
 
@@ -372,11 +403,17 @@ Phase 1 ──→ #12 Daemon ↔ Agent 通信 (P0)
 
 
 ═══════════════════════════════════════════════════════════════
-                  Phase 3: 通信与协议
+                  Phase 3: 通信与协议与调度
 ═══════════════════════════════════════════════════════════════
 
 #12 (来自 MVP)
- ├──→ #16 ACP Proxy (P1) ✅       ← 外部应用接入
+ ├──→ #16 ACP Proxy 基础版 (P1) ✅
+ │     └──→ #35 Proxy + Chat 双模式 (P1)  ← Session Lease（默认）+ Direct Bridge
+ │
+ ├──→ #37 雇员型 Agent 调度 (P1)   ← 参考 OpenClaw
+ │     (依赖 #11 acp-service + #12 ACP 通信)
+ │     Heartbeat / Cron / Webhook / Hook 输入系统
+ │
  └──→ #17 MCP Server (P2)        ← Agent-to-Agent
 
 #5 Template hot-reload (P2) — 独立
@@ -388,10 +425,11 @@ Phase 1 ──→ #12 Daemon ↔ Agent 通信 (P0)
 
 #8 ProcessWatcher (来自 Phase 1)
  └──→ #13 Plugin 体系设计 (P2)
-       ├──→ heartbeat 插件
-       ├──→ scheduler 插件
-       └──→ memory 插件 (连接 Phase 5)
+       ├──→ #37 Input 系统 Plugin 化 (重构)
+       ├──→ memory 插件 (连接 Phase 5)
+       └──→ 自定义插件加载器
 
+#36 Agent 工具权限管理 (P2) — 独立
 #14 日志收集 (P3) — 独立
 
 
