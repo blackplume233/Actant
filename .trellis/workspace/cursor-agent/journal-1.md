@@ -754,3 +754,53 @@ Phase 3: Session Lease + Proxy ACP 适配器
 ### Next Steps
 
 - None - task complete
+
+## Session 14: Issue #35 QA 修复 + QA Agent 真实环境默认 + /qa-loop 命令
+
+**Date**: 2026-02-21
+**Task**: Issue #35 QA cyclic verification, QA Agent real-env default, /qa-loop slash command
+
+### Summary
+
+完成 Issue #35 全功能 QA 循环验证的收尾工作：修复 3 个 Issue (#40/#41/#42)、将 QA Agent 默认测试环境从 mock 切换为 real、创建 `/qa-loop` 斜杠命令用于编排循环验证流程、新增 5 个 Session 相关 QA 场景和循环验证工作流文档。
+
+### Main Changes
+
+| 类别 | 内容 |
+|------|------|
+| **Bug Fix #40** | `daemon stop` 错误处理 — 注入 RpcClient，确保连接失败时输出 "Daemon is not running" |
+| **Bug Fix #41** | `session.create/prompt/cancel/close` 参数校验 — 添加运行时验证，防止 "undefined" 错误 |
+| **Doc Fix #42** | `api-contracts.md` 5 处不一致修正 |
+| **QA Agent 更新** | SKILL.md 默认 `launcherMode: "real"`，除非用户显式指定 mock |
+| **/qa-loop 命令** | `.cursor/rules/qa-loop.mdc` — 编排 test→report→issue→fix→retest 循环直到 100% PASS |
+| **QA 场景 (×5)** | session-lifecycle、session-cancel-integration、proxy-lease-mode、session-error-handling、multi-session-isolation |
+| **循环验证工作流** | `workflows/cyclic-verification.md` — 标准化 5 阶段循环 + Issue #35 实践经验 |
+| **Issue 记录** | #39 (mock 架构限制)、#40-#42 (已修复) |
+| **.gitignore** | 忽略根目录 `daemon` PID 文件 |
+
+### Key Decisions
+
+- QA 测试默认使用真实 launcher 模式（Issue #39 教训：mock 模式无法验证 ACP/Session Lease）
+- `/qa-loop` 作为 QA Agent 的编排层，QA Agent 负责单次测试执行和判断
+- 循环验证每轮回归必须重新执行全部测试（不可只跑失败项）
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `aa9aca8` | fix(qa): Issue #35 QA fixes, real-env QA default, and /qa-loop command |
+
+### Testing
+
+- [OK] pnpm lint: 通过
+- [OK] pnpm type-check: 6/6 包通过
+- [OK] pnpm test:changed: 37/37 tests passed (4 files)
+- [OK] 代码模式扫描: 0 console.log, 0 any, 0 非空断言
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

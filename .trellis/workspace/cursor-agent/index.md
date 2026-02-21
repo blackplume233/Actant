@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 13
-- **Last Active**: 2026-02-20
+- **Total Sessions**: 14
+- **Last Active**: 2026-02-21
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~756 | Active |
+| `journal-1.md` | ~810 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 14 | 2026-02-21 | Issue #35 QA 修复 + QA Agent 真实环境默认 + /qa-loop 命令 | `aa9aca8` |
 | 13 | 2026-02-20 | ACP 连接架构重设计：Direct Bridge + Session Lease 双模式 | `9571164` |
 | 12 | 2026-02-20 | ACP Integration, QA Scenario & Bug Fixes | `180edd9` |
 | 11 | 2026-02-20 | Phase 1 质量改进: CliPrinter + CLI 单元测试 | `e26ce70` |
