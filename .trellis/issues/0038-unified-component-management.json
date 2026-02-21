@@ -22,9 +22,14 @@
     "packages/cli/src/commands/prompt.ts",
     "packages/api/src/handlers/domain-handlers.ts"
   ],
-  "relatedIssues": [23, 24, 39, 13],
+  "relatedIssues": [
+    23,
+    24,
+    39,
+    13
+  ],
   "taskRef": null,
-  "githubRef": null,
+  "githubRef": "blackplume233/AgentCraft#43",
   "closedAs": null,
   "comments": [],
   "createdAt": "2026-02-21T12:00:00",

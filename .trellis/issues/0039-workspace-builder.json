@@ -18,9 +18,13 @@
     "packages/core/src/domain/skill/skill-manager.ts",
     "packages/core/src/domain/prompt/prompt-manager.ts"
   ],
-  "relatedIssues": [23, 38, 26],
+  "relatedIssues": [
+    23,
+    38,
+    26
+  ],
   "taskRef": null,
-  "githubRef": null,
+  "githubRef": "blackplume233/AgentCraft#45",
   "closedAs": null,
   "comments": [],
   "createdAt": "2026-02-21T12:00:00",

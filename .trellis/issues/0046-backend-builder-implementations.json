@@ -1,0 +1,24 @@
+{
+  "id": 46,
+  "title": "BackendBuilder 接口 + CursorBuilder + ClaudeCodeBuilder 实现",
+  "status": "open",
+  "labels": ["feature", "architecture", "priority:P0", "phase3b"],
+  "milestone": "mid-term",
+  "body": "## 目标\n\n定义 BackendBuilder Strategy 接口，实现 Cursor 和 Claude Code 两种后端的差异化 workspace 构建。\n\n## 依赖\n\n- #44 PluginManager（用于 plugin 物化）\n\n## 交付物\n\n### 1. BackendBuilder 接口 + 类型\n\n```typescript\ninterface BackendBuilder {\n  readonly backendType: AgentBackendType;\n  scaffold(workspaceDir, meta): Promise<void>;\n  materializeSkills(workspaceDir, skills): Promise<void>;\n  materializePrompts(workspaceDir, prompts): Promise<void>;\n  materializeMcpConfig(workspaceDir, servers): Promise<void>;\n  materializePlugins(workspaceDir, plugins): Promise<void>;\n  injectPermissions(workspaceDir, permissions): Promise<void>;\n  materializeWorkflow(workspaceDir, workflow): Promise<void>;\n  verify(workspaceDir): Promise<VerifyResult>;\n}\n```\n\n`BuildResult`, `VerifyResult`, `PermissionSet` 类型定义。\n\n### 2. CursorBuilder\n\n- `.cursor/rules/*.mdc` — 每个 skill 一个规则文件\n- `.cursor/mcp.json` — MCP 配置\n- `.cursor/extensions.json` — 推荐扩展\n- `AGENTS.md` — skill 概述\n- `prompts/system.md` — system prompt\n\n### 3. ClaudeCodeBuilder\n\n- `.claude/mcp.json` — MCP 配置\n- `.claude/settings.local.json` — 权限\n- `.claude/plugins.json` — Cloud Code plugins\n- `CLAUDE.md` — 主指令文件\n- `AGENTS.md` — Agent Skills 声明\n\n## 文件路径\n\n```\npackages/core/src/builder/\n  ├── backend-builder.ts\n  ├── cursor-builder.ts\n  ├── claude-code-builder.ts\n  └── index.ts\n```\n\n## 验收标准\n\n- [ ] BackendBuilder 接口定义清晰\n- [ ] CursorBuilder 所有方法实现\n- [ ] ClaudeCodeBuilder 所有方法实现\n- [ ] 单元测试覆盖两个 Builder",
+  "author": "cursor-agent",
+  "assignees": [],
+  "relatedFiles": [
+    "packages/core/src/builder/backend-builder.ts",
+    "packages/core/src/builder/cursor-builder.ts",
+    "packages/core/src/builder/claude-code-builder.ts",
+    "packages/core/src/initializer/context/context-materializer.ts"
+  ],
+  "relatedIssues": [39, 44],
+  "taskRef": null,
+  "githubRef": null,
+  "closedAs": null,
+  "comments": [],
+  "createdAt": "2026-02-21T21:00:00",
+  "updatedAt": "2026-02-21T21:00:00",
+  "closedAt": null
+}

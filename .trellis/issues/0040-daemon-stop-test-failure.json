@@ -2,7 +2,12 @@
   "id": 40,
   "title": "daemon stop 连接失败时未输出 'Daemon is not running' 消息",
   "status": "open",
-  "labels": ["bug", "qa", "cli", "priority:P1"],
+  "labels": [
+    "bug",
+    "qa",
+    "cli",
+    "priority:P1"
+  ],
   "milestone": null,
   "body": "## 测试发现\n\n**场景**: Issue #35 随机漫步测试 — 完整测试套件\n**步骤**: 6.3 - pnpm test\n\n## 复现方式\n\n```bash\npnpm test\n# 或直接运行:\npnpm vitest run packages/cli/src/commands/__tests__/commands.test.ts\n```\n\n## 期望行为\n\n`createDaemonStopCommand > connection fails: prints Daemon is not running` 测试通过。\n当 daemon stop 连接失败时，应输出包含 'Daemon is not running' 的消息。\n\n## 实际行为\n\n测试失败：\n```\nAssertionError: expected false to be true\n❯ packages/cli/src/commands/__tests__/commands.test.ts:318:74\n  expect(output.logs.some((l) => l.includes(\"Daemon is not running\"))).toBe(true)\n```\n\n## 分析\n\n`daemon stop` 命令的错误处理分支可能在 catch 中未正确调用 printer 输出 'Daemon is not running' 消息，或者错误输出到了 stderr 而非 logs。\n\n检查文件: `packages/cli/src/commands/daemon/stop.ts`",
   "author": "qa-agent",
@@ -15,5 +20,6 @@
   "createdAt": "2026-02-21T10:20:00.000Z",
   "updatedAt": "2026-02-21T10:20:00.000Z",
   "closedAt": null,
-  "closedAs": null
+  "closedAs": null,
+  "githubRef": "blackplume233/AgentCraft#46"
 }

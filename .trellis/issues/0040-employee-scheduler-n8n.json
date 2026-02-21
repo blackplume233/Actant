@@ -27,9 +27,16 @@
     "packages/core/src/manager/agent-manager.ts",
     "packages/core/src/template/schema/template-schema.ts"
   ],
-  "relatedIssues": [37, 11, 12, 13, 17, 38],
+  "relatedIssues": [
+    37,
+    11,
+    12,
+    13,
+    17,
+    38
+  ],
   "taskRef": null,
-  "githubRef": null,
+  "githubRef": "blackplume233/AgentCraft#47",
   "closedAs": null,
   "comments": [],
   "createdAt": "2026-02-21T12:00:00",

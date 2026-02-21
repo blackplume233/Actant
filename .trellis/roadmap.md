@@ -132,7 +132,7 @@ AgentCraft 同时扮演：
 - [x] 示例模板：`configs/templates/code-review-agent.json`（引用真实 skills/prompts/MCP）
 - [x] Quick-start 文档更新（README 中添加 MVP 使用流程）
 - [x] 端到端测试：template load → agent create → verify workspace → agent start → agent run → agent stop
-- [ ] `agentcraft init` 快速引导命令（可选，交互式创建模板）
+- ~~`agentcraft init` 快速引导命令~~ → 移至长期目标（Phase 6+）
 
 **Phase 2 依赖关系:**
 ```
@@ -156,10 +156,18 @@ Phase 1 (已完成)
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
 | #16 | ACP Proxy — 标准 ACP 协议网关（基础版） | P1 | #9, #15 | ✅ 完成 |
-| **#35** | **ACP Proxy + Chat — Direct Bridge 与 Session Lease 双模式** | **P1** | #16 | 待开始 |
-| **#38** | **统一组件管理体系 — Skill / Prompt / Plugin 完整 CRUD** | **P1** | #23, #24 | 待开始 |
-| **#39** | **Workspace 构造器 — 面向不同后端的差异化构建** | **P1** | #38 | 待开始 |
-| **#40** | **雇员型 Agent — 内置调度器 + N8N 集成** | **P1** | #37, #12, #11 | 待开始 |
+| #35 | ACP Proxy + Chat — Direct Bridge 与 Session Lease 双模式 | P1 | #16 | ✅ 完成 |
+| **#38** | **统一组件管理体系 — Skill / Prompt / Plugin 完整 CRUD** | **P1** | #23, #24 | ⬜ 进行中 |
+|   #43 | └─ BaseComponentManager CRUD 增强 | P0 | - | ⬜ 待开始 |
+|   #44 | └─ PluginManager + Schema + 示例 | P0 | #43 | ⬜ 待开始 |
+|   #45 | └─ RPC Handlers + CLI 命令扩展 | P0 | #43, #44 | ⬜ 待开始 |
+| **#39** | **Workspace 构造器 — 差异化后端构建** | **P1** | #38 | ⬜ 待开始 |
+|   #46 | └─ BackendBuilder + CursorBuilder + ClaudeCodeBuilder | P0 | #44 | ⬜ 待开始 |
+|   #47 | └─ WorkspaceBuilder Pipeline + 迁移 | P0 | #46 | ⬜ 待开始 |
+| **#40** | **雇员型 Agent — 内置调度器 + N8N 集成** | **P1** | #37, #12, #11 | ⬜ 待开始 |
+|   #48 | └─ TaskQueue + Dispatcher + ExecutionLog | P0 | - | ⬜ 待开始 |
+|   #49 | └─ InputRouter + InputSources | P0 | #48 | ⬜ 待开始 |
+|   #50 | └─ EmployeeScheduler + 集成 + CLI | P0 | #48, #49 | ⬜ 待开始 |
 | #37 | 雇员型 Agent — 设计文档（原始设计） | ref | #12, #11 | 设计完成 |
 | #17 | MCP Server — Agent 间通信能力 | P2 | #12 | 待开始 |
 | #5 | Template hot-reload on file change | P2 | - | 待开始 |
@@ -216,13 +224,24 @@ Phase 1 (已完成)
 ```
 Phase 2 (已完成)
  ├──→ #16 ACP Proxy 基础版 ✅
- │     └──→ #35 Proxy + Chat 双模式
+ │     └──→ #35 Proxy + Chat 双模式 ✅
  │
- ├──→ #38 统一组件管理体系 (依赖 #23/#24 已完成)
- │     └──→ #39 Workspace 构造器 (依赖 PluginManager)
+ ├──→ 管理线 (3a): #38 统一组件管理
+ │     #43 BaseComponentManager CRUD
+ │       └──→ #44 PluginManager + Schema
+ │             └──→ #45 RPC + CLI
+ │                   └──→ #38 完成 ✓
  │
- ├──→ #40 雇员型 Agent + 调度器 + N8N (依赖 #11/#12 已完成)
- │     ← #37 设计文档
+ ├──→ 构造线 (3b): #39 Workspace 构造器 (依赖 3a #44)
+ │     #46 BackendBuilder + CursorBuilder + ClaudeCodeBuilder
+ │       └──→ #47 WorkspaceBuilder Pipeline + 迁移
+ │             └──→ #39 完成 ✓
+ │
+ ├──→ 调度线 (3c): #40 雇员型 Agent (独立于 3a/3b)
+ │     #48 TaskQueue + Dispatcher
+ │       └──→ #49 InputRouter + Sources
+ │             └──→ #50 Scheduler + 集成 + CLI
+ │                   └──→ #40 完成 ✓
  │
  └──→ #17 MCP Server (Agent-to-Agent)
 
@@ -284,12 +303,13 @@ AgentCraft-side Plugin (#13, Phase 4):
 
 ## 当前进行中 (Current)
 
-Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 基础版已完成。当前聚焦 **Phase 3 核心项**：
-- **#38** 统一组件管理（Skill/Prompt/Plugin CRUD） — 基础能力，其他模块依赖
-- **#39** Workspace 构造器（BackendBuilder strategy pattern） — 依赖 #38
-- **#40** 雇员型 Agent + 调度器 + N8N 集成 — 可与 #39 并行
-- **#35** Proxy + Chat 双模式（Session Lease + Direct Bridge）
+Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 和 #35 双模式已完成。当前聚焦 **Phase 3 剩余核心项**，按三条并行线推进：
 
+**管理线 (3a)**: #43 → #44 → #45 → 完成 #38
+**构造线 (3b)**: #46 → #47 → 完成 #39（依赖 3a 的 PluginManager）
+**调度线 (3c)**: #48 → #49 → #50 → 完成 #40（独立，可与 3a 并行）
+
+详细 TODO 跟踪见：`.trellis/phase3-todo.md`
 详细设计见：`docs/design/mvp-next-design.md`
 
 ### Phase 1 完成总结

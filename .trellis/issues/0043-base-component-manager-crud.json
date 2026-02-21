@@ -1,0 +1,21 @@
+{
+  "id": 43,
+  "title": "BaseComponentManager CRUD 增强 + 持久化",
+  "status": "open",
+  "labels": ["feature", "domain", "priority:P0", "phase3a"],
+  "milestone": "mid-term",
+  "body": "## 目标\n\n增强 BaseComponentManager，为所有领域组件（Skill/Prompt/MCP/Workflow/Plugin）提供统一的 CRUD + 持久化 + 导入导出 + 搜索过滤能力。\n\n## 当前状态\n\n`BaseComponentManager` 仅有：register / unregister / get / has / resolve / list / clear / loadFromDirectory\n\n## 新增方法\n\n```typescript\n// CRUD\nasync add(component: T, persist?: boolean): Promise<void>;\nasync update(name: string, patch: Partial<T>): Promise<T>;\nasync remove(name: string, persist?: boolean): Promise<boolean>;\n\n// Import / Export\nasync importFromFile(filePath: string): Promise<T>;\nasync exportToFile(name: string, filePath: string): Promise<void>;\n\n// Search / Filter\nsearch(query: string): T[];\nfilter(predicate: (c: T) => boolean): T[];\n\n// 持久化目录\nprotected persistDir?: string;\nasync setPersistDir(dir: string): Promise<void>;\n```\n\n## 影响范围\n\n- `packages/core/src/domain/base-component-manager.ts` — 主要修改\n- 所有子类自动继承（SkillManager/PromptManager/McpConfigManager/WorkflowManager）\n- 单元测试\n\n## 验收标准\n\n- [ ] add/update/remove 方法实现 + 持久化到 persistDir\n- [ ] importFromFile/exportToFile 可用\n- [ ] search/filter 可用\n- [ ] 不破坏现有 register/unregister/loadFromDirectory 行为\n- [ ] 单元测试覆盖所有新方法",
+  "author": "cursor-agent",
+  "assignees": [],
+  "relatedFiles": [
+    "packages/core/src/domain/base-component-manager.ts"
+  ],
+  "relatedIssues": [38],
+  "taskRef": null,
+  "githubRef": null,
+  "closedAs": null,
+  "comments": [],
+  "createdAt": "2026-02-21T21:00:00",
+  "updatedAt": "2026-02-21T21:00:00",
+  "closedAt": null
+}

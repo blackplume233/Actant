@@ -25,9 +25,17 @@
     "packages/acp/src/connection.ts",
     "packages/acp/src/connection-manager.ts"
   ],
-  "relatedIssues": [11, 12, 13, 17, 35, 1, 2],
+  "relatedIssues": [
+    11,
+    12,
+    13,
+    17,
+    35,
+    1,
+    2
+  ],
   "taskRef": null,
-  "githubRef": null,
+  "githubRef": "blackplume233/AgentCraft#41",
   "closedAs": null,
   "comments": [],
   "createdAt": "2026-02-21T06:00:00",
