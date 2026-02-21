@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run test:*)",
+      "Bash(npm run lint:*)",
+      "Bash(npx eslint:*)",
+      "Bash(npx tsc:*)",
+      "Bash(wc -l:*)",
+      "Bash(find:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(ls:*)",
+      "Bash(pnpm test:*)",
+      "Bash(gh issue create:*)",
+      "Bash(brew install:*)",
+      "Bash(gh auth login:*)",
+      "Bash(./.trellis/scripts/get-context.sh:*)",
+      "Bash(./.trellis/scripts/issue.sh create:*)",
+      "Bash(./.trellis/scripts/issue.sh show:*)",
+      "Bash(./.trellis/scripts/issue.sh search:*)",
+      "Bash(# 验证更新后的场景 python3 -c \"\" import json with open\\(''.agents/skills/qa-engineer/scenarios/bilibili-video-analysis.json''\\) as f: data = json.load\\(f\\) print\\(f''名称: {data[\\\\\"\"name\\\\\"\"]}''\\) print\\(f''描述: {data[\\\\\"\"description\\\\\"\"]}''\\) print\\(f''步骤数: {len\\(data[\\\\\"\"steps\\\\\"\"]\\)}''\\) print\\(f''标签: {data[\\\\\"\"tags\\\\\"\"]}''\\) print\\(\\) print\\(''关键步骤:''\\) for step in data[''steps'']: if ''task'' in step[''id''] or ''verify'' in step[''id'']: print\\(f'' - {step[\\\\\"\"id\\\\\"\"]}: {step[\\\\\"\"description\\\\\"\"]}''\\) print\\(\\) print\\(''模板后端:'', data[''setup''][''templates''][0][''inline''][''backend''][''type'']\\) \"\" || cat .agents/skills/qa-engineer/scenarios/bilibili-video-analysis.json)",
+      "Bash(pnpm type-check:*)",
+      "Bash(__NEW_LINE_4ce862bc8290b68f__ echo \"\")"
+    ]
+  }
+}

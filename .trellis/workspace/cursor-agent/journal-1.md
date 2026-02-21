@@ -686,3 +686,71 @@ AgentCraft 同时扮演：ACP Client + MCP Server + ACP Proxy
 ### Next Steps
 
 - None - task complete
+
+## Session 13: ACP 连接架构重设计：Direct Bridge + Session Lease 双模式
+
+**Date**: 2026-02-20
+**Task**: ACP 连接架构重设计：Direct Bridge + Session Lease 双模式
+
+### Summary
+
+(Add summary)
+
+### Main Changes
+
+## 设计讨论与架构决策
+
+本次会话延续上一次的 ACP Gateway 废弃讨论，完成了连接架构的最终设计：
+
+### 核心决策
+
+| 决策 | 内容 |
+|------|------|
+| **默认模式** | Direct Bridge（Client spawn 进程，端到端 ACP） |
+| **可选模式** | Session Lease（`--lease`，Daemon 持有连接，客户端租借 Session） |
+| **并发策略** | 自动实例化（Direct Bridge）+ 多 Session（Session Lease） |
+| **不变量** | CWD 永远 agent workspace、1 Instance : 1 Process 严格 1:1 |
+| **IDE ACP 接入** | Session Lease 下 Proxy 做 ACP 协议适配器（翻译 ACP ↔ Daemon API） |
+
+### 设计演进路径
+
+1. 发现 CWD 传递链断裂 → 废弃 ACP Gateway
+2. 纯 Direct Bridge → 冷启动问题 → 引入租约模型
+3. Agent 级租约 → 阻塞问题 → Session 级租约
+4. Instance:Process 关系 → 严格 1:1 + 自动实例化
+5. IDE ACP 接入 → Proxy ACP 适配器（路径 2）
+6. 默认模式确认 → Direct Bridge 默认，Session Lease `--lease` 可选
+
+### 变更文件
+
+| 文件 | 变更 |
+|------|------|
+| `docs/design/agent-launch-scenarios.md` | **重写**：三种连接模式 + 9 种启动场景 + 协议分层 |
+| `.trellis/issues/0035-acp-proxy-full-protocol.json` | 更新：双模式架构 + Proxy ACP 适配器 + 实现计划调整 |
+| `.trellis/issues/0037-employee-agent-scheduling.json` | **新建**：雇员型 Agent 调度系统（参考 OpenClaw） |
+| `docs/design/acp-gateway-deprecation-discussion.md` | **新建**：完整设计讨论记录 |
+| `.trellis/roadmap.md` | 更新 #35 描述和依赖关系 |
+
+### 实现优先级
+
+Phase 1: Direct Bridge（默认模式，最常用）
+Phase 2: Chat 直连 + 流式渲染
+Phase 3: Session Lease + Proxy ACP 适配器
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `9571164` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 12
+- **Total Sessions**: 13
 - **Last Active**: 2026-02-20
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~688 | Active |
+| `journal-1.md` | ~756 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 13 | 2026-02-20 | ACP 连接架构重设计：Direct Bridge + Session Lease 双模式 | `9571164` |
 | 12 | 2026-02-20 | ACP Integration, QA Scenario & Bug Fixes | `180edd9` |
 | 11 | 2026-02-20 | Phase 1 质量改进: CliPrinter + CLI 单元测试 | `e26ce70` |
 | 10 | 2026-02-20 | Phase 1 质量改进: CliPrinter + CLI 单元测试 | `e26ce70` |
