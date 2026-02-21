@@ -19,7 +19,20 @@
       "Bash(./.trellis/scripts/issue.sh search:*)",
       "Bash(# 验证更新后的场景 python3 -c \"\" import json with open\\(''.agents/skills/qa-engineer/scenarios/bilibili-video-analysis.json''\\) as f: data = json.load\\(f\\) print\\(f''名称: {data[\\\\\"\"name\\\\\"\"]}''\\) print\\(f''描述: {data[\\\\\"\"description\\\\\"\"]}''\\) print\\(f''步骤数: {len\\(data[\\\\\"\"steps\\\\\"\"]\\)}''\\) print\\(f''标签: {data[\\\\\"\"tags\\\\\"\"]}''\\) print\\(\\) print\\(''关键步骤:''\\) for step in data[''steps'']: if ''task'' in step[''id''] or ''verify'' in step[''id'']: print\\(f'' - {step[\\\\\"\"id\\\\\"\"]}: {step[\\\\\"\"description\\\\\"\"]}''\\) print\\(\\) print\\(''模板后端:'', data[''setup''][''templates''][0][''inline''][''backend''][''type'']\\) \"\" || cat .agents/skills/qa-engineer/scenarios/bilibili-video-analysis.json)",
       "Bash(pnpm type-check:*)",
-      "Bash(__NEW_LINE_4ce862bc8290b68f__ echo \"\")"
+      "Bash(__NEW_LINE_4ce862bc8290b68f__ echo \"\")",
+      "Bash(./.trellis/scripts/task.sh create:*)",
+      "Bash(./.trellis/scripts/task.sh:*)",
+      "Bash(pnpm run:*)",
+      "Bash(npx pnpm run type-check:*)",
+      "Bash(npx pnpm run lint:*)",
+      "Bash(./.trellis/scripts/issue.sh close:*)",
+      "Bash(git checkout:*)",
+      "Bash(npx pnpm run test:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(npx pnpm run build:*)",
+      "*"
     ]
   }
 }

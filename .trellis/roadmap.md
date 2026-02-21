@@ -148,16 +148,19 @@ Phase 1 (已完成)
 
 ---
 
-### Phase 3: 通信与协议 (Connectivity)
-**目标**: 标准协议接入 — 外部应用通过 ACP Proxy 接入，Agent 间通过 MCP Server 通信；雇员型 Agent 持续调度
-**时间**: MVP 完成后
-**成功标准**: ACP Proxy Direct Bridge 可被任意 ACP Client spawn 使用；雇员型 Agent 可被 Daemon 持续调度；MCP Server 可被其他 Agent 调用
+### Phase 3: 通信 · 管理 · 构造 · 调度 (Connectivity & Management)
+**目标**: 标准协议接入、完整组件管理、差异化构造器、雇员型 Agent 持续调度
+**时间**: 当前
+**成功标准**: 组件完整 CRUD + Plugin 管理；不同后端差异化 workspace 构建；雇员型 Agent 可被 Daemon 持续调度 + N8N 可选集成
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
 | #16 | ACP Proxy — 标准 ACP 协议网关（基础版） | P1 | #9, #15 | ✅ 完成 |
 | **#35** | **ACP Proxy + Chat — Direct Bridge 与 Session Lease 双模式** | **P1** | #16 | 待开始 |
-| **#37** | **雇员型 Agent — 持续调度与主动行为系统** | **P1** | #12, #11 | 待开始 |
+| **#38** | **统一组件管理体系 — Skill / Prompt / Plugin 完整 CRUD** | **P1** | #23, #24 | 待开始 |
+| **#39** | **Workspace 构造器 — 面向不同后端的差异化构建** | **P1** | #38 | 待开始 |
+| **#40** | **雇员型 Agent — 内置调度器 + N8N 集成** | **P1** | #37, #12, #11 | 待开始 |
+| #37 | 雇员型 Agent — 设计文档（原始设计） | ref | #12, #11 | 设计完成 |
 | #17 | MCP Server — Agent 间通信能力 | P2 | #12 | 待开始 |
 | #5 | Template hot-reload on file change | P2 | - | 待开始 |
 
@@ -183,24 +186,45 @@ Phase 1 (已完成)
 > - 1 Instance : 1 Process : N Sessions
 > - agent chat / proxy 默认走 Session Lease，`--direct` 切换为 Direct Bridge
 
-#### #37 雇员型 Agent — 持续调度与主动行为系统
-> **参考 OpenClaw 架构**，实现六种输入类型驱动 Agent 主动行为：
+#### #38 统一组件管理体系 — Skill / Prompt / Plugin 完整 CRUD
+> **目标**：增强 BaseComponentManager 支持完整 CRUD + import/export + 搜索过滤。新增 PluginManager 管理 Cloud Code 插件。
 >
-> - Heartbeat（定时主动检查）、Cron（定时任务）、Hook（内部事件）、Webhook（外部事件）、Agent-to-Agent（协作）
-> - Task Queue 串行执行 + 优先级
-> - Execution Log + `agent watch` 实时观察
-> - 模板支持 `schedule` 配置字段
+> - Skill/Prompt：add/update/remove + 持久化 + 导入导出
+> - Plugin（Cloud Code）：完整 CRUD，支持 npm/file/config 三种安装方式
+> - CLI：扩展 skill/prompt 管理命令 + 新增 plugin 全套命令
+> - 模板 domainContext 支持 `plugins` 字段
+
+#### #39 Workspace 构造器 — 面向不同后端的差异化构建
+> **目标**：用 Strategy Pattern 重构 workspace 构建流程，取代当前硬编码的 ContextMaterializer。
+>
+> - `BackendBuilder` 接口：scaffold / materialize / inject-permissions / verify
+> - `CursorBuilder`：`.cursor/rules/*.mdc` + `.cursor/mcp.json` + AGENTS.md
+> - `ClaudeCodeBuilder`：`.claude/*` + CLAUDE.md + plugins.json
+> - `CustomBuilder`：通过 template config 自定义路径
+> - Pipeline：resolve → validate → scaffold → materialize → inject → verify
+
+#### #40 雇员型 Agent — 内置调度器 + N8N 集成
+> **基于 #37 设计**，实现内置简单调度器 + 可选 N8N 集成。
+>
+> - 内置调度器：InputRouter → TaskQueue → TaskDispatcher
+> - InputSources：Heartbeat / Cron（croner 库）/ Hook / Webhook
+> - N8N 集成三模式：N8N→AgentCraft（Webhook）、AgentCraft→N8N（MCP）、双向
+> - CLI：agent dispatch / agent tasks / agent logs / agent watch
+> - 模板支持 `schedule` + `schedule.n8n` 配置字段
 
 **Phase 3 依赖关系:**
 ```
-Phase 2 #12 (来自 MVP)
- ├──→ #16 ACP Proxy 基础版 (依赖 #15 resolve/attach) ✅
+Phase 2 (已完成)
+ ├──→ #16 ACP Proxy 基础版 ✅
  │     └──→ #35 Proxy + Chat 双模式
- │           Session Lease（默认）+ Direct Bridge（--direct）
  │
- ├──→ #37 雇员型 Agent 调度 (依赖 #11 acp-service + #12 ACP 通信)
+ ├──→ #38 统一组件管理体系 (依赖 #23/#24 已完成)
+ │     └──→ #39 Workspace 构造器 (依赖 PluginManager)
  │
- └──→ #17 MCP Server (Agent-to-Agent, 依赖 agent.run/prompt)
+ ├──→ #40 雇员型 Agent + 调度器 + N8N (依赖 #11/#12 已完成)
+ │     ← #37 设计文档
+ │
+ └──→ #17 MCP Server (Agent-to-Agent)
 
 #5 Template hot-reload (独立)
 ```
@@ -208,20 +232,31 @@ Phase 2 #12 (来自 MVP)
 ---
 
 ### Phase 4: 扩展体系 (Extensibility)
-**目标**: 可插拔的插件架构，将雇员型 Agent 的调度组件 Plugin 化
+**目标**: 可插拔的系统级插件架构，将调度组件 Plugin 化；权限管理
 **时间**: Phase 3 完成后
-**成功标准**: Plugin 接口清晰，#37 的 Input 系统可重构为 Plugin 形态
+**成功标准**: AgentCraft 系统级 Plugin 接口清晰，#40 的 Input 系统可重构为 Plugin 形态
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
-| #13 | Plugin 体系设计（heartbeat/scheduler/memory 可插拔） | P2 | #8, #37 | 待开始 |
+| #13 | AgentCraft 系统级 Plugin 体系（heartbeat/scheduler/memory 可插拔） | P2 | #8, #40 | 待开始 |
 | #14 | Agent 进程 stdout/stderr 日志收集 | P3 | - | 待开始 |
 | #36 | Agent 工具权限管理机制设计 | P2 | - | 待开始 |
 
 **Phase 4 关键设计:**
-- Plugin 接口定义（生命周期钩子、配置解析）
-- #37 的 HeartbeatInput / CronInput / HookInput 重构为 Plugin 形态
+- AgentCraft 系统级 Plugin 接口（生命周期钩子、配置解析）— 区别于 #38 的 Agent 侧 Plugin
+- #40 的 HeartbeatInput / CronInput / HookInput 重构为 Plugin 形态
 - 插件加载器（本地文件 / 远程 registry）
+
+**Plugin 类型说明：**
+```
+Agent-side Plugin (#38, Phase 3):
+  Agent workspace 中的能力扩展（Claude Code plugin、Cursor Extension 等）
+  由 PluginManager 管理，通过 BackendBuilder 物化到 workspace
+
+AgentCraft-side Plugin (#13, Phase 4):
+  AgentCraft Daemon 的系统级扩展（HeartbeatMonitor、Scheduler、MemoryLayer 等）
+  由 Plugin 接口定义生命周期钩子
+```
 
 ---
 
@@ -249,7 +284,13 @@ Phase 2 #12 (来自 MVP)
 
 ## 当前进行中 (Current)
 
-Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 基础版已完成。当前聚焦 **Phase 3 核心项：#35 Proxy + Chat 双模式（Session Lease + Direct Bridge）+ #37 雇员型 Agent 调度**。
+Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 基础版已完成。当前聚焦 **Phase 3 核心项**：
+- **#38** 统一组件管理（Skill/Prompt/Plugin CRUD） — 基础能力，其他模块依赖
+- **#39** Workspace 构造器（BackendBuilder strategy pattern） — 依赖 #38
+- **#40** 雇员型 Agent + 调度器 + N8N 集成 — 可与 #39 并行
+- **#35** Proxy + Chat 双模式（Session Lease + Direct Bridge）
+
+详细设计见：`docs/design/mvp-next-design.md`
 
 ### Phase 1 完成总结
 
@@ -316,15 +357,17 @@ Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 基础版已完成。
 | 4 | **#25** | CLI Agent 交互 (chat / run) | #12 | `agent run` 单次任务 + `agent chat` 交互模式 + 流式输出 |
 | 5 | **#26** | MVP 端到端集成与示例模板 | #23-25 | 示例模板 + Quick-start 文档 + E2E 测试 |
 
-### P1 — Phase 3 通信协议与调度
+### P1 — Phase 3 通信 · 管理 · 构造 · 调度
 
 | 顺序 | Issue | 标题 | 依赖 | 说明 |
 |------|-------|------|------|------|
 | 6 | **#16** | ACP Proxy — 基础版 | #9, #15 | ✅ **已完成** |
-| 7 | **#35** | **Proxy + Chat — Direct Bridge 与 Session Lease 双模式** | #16 | Session Lease（默认）+ Direct Bridge，废弃 Gateway |
-| 8 | **#37** | **雇员型 Agent — 持续调度与主动行为** | #11, #12 | 参考 OpenClaw，Heartbeat/Cron/Webhook/Hook 输入系统 |
-| 9 | **#17** | MCP Server — Agent 间通信能力 | #12 | 暴露 agentcraft_run_agent 等 MCP tools |
-| 10 | #5 | Template hot-reload on file change | 无 | Daemon 监听 template 变更自动 reload |
+| 7 | **#38** | **统一组件管理体系 — Skill/Prompt/Plugin CRUD** | #23, #24 | BaseComponentManager 增强 + PluginManager + CLI 扩展 |
+| 8 | **#39** | **Workspace 构造器 — 差异化后端构建** | #38 | BackendBuilder strategy + CursorBuilder/ClaudeCodeBuilder |
+| 9 | **#40** | **雇员型 Agent — 内置调度器 + N8N 集成** | #11, #12, #37 | TaskQueue + InputRouter + Scheduler + N8N Bridge |
+| 10 | **#35** | **Proxy + Chat — Direct Bridge 与 Session Lease 双模式** | #16 | Session Lease（默认）+ Direct Bridge，废弃 Gateway |
+| 11 | **#17** | MCP Server — Agent 间通信能力 | #12 | 暴露 agentcraft_run_agent 等 MCP tools |
+| 12 | #5 | Template hot-reload on file change | 无 | Daemon 监听 template 变更自动 reload |
 
 ### P2 — Phase 4 扩展
 
@@ -388,33 +431,46 @@ Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 基础版已完成。
 
 
 ═══════════════════════════════════════════════════════════════
-            Phase 2: MVP — Agent 拼装与交互  ← 当前
+              Phase 2: MVP — Agent 拼装与交互  ✅
 ═══════════════════════════════════════════════════════════════
 
 拼装线:
-Phase 1 ──→ #23 Domain Context 全链路打通 (P0)
-              └──→ #24 Domain 组件加载与 CLI 管理 (P0)
-                    └──→ #26 MVP 端到端集成
+Phase 1 ──→ #23 Domain Context 全链路打通 (P0) ✅
+              └──→ #24 Domain 组件加载与 CLI 管理 (P0) ✅
+                    └──→ #26 MVP 端到端集成 ✅
 
 交互线:
-Phase 1 ──→ #12 Daemon ↔ Agent 通信 (P0)
-              └──→ #25 CLI Agent 交互 chat/run (P0)
-                    └──→ #26 MVP 端到端集成
+Phase 1 ──→ #12 Daemon ↔ Agent 通信 (P0) ✅
+              └──→ #25 CLI Agent 交互 chat/run (P0) ✅
+                    └──→ #26 MVP 端到端集成 ✅
 
 
 ═══════════════════════════════════════════════════════════════
-                  Phase 3: 通信与协议与调度
+       Phase 3: 通信 · 管理 · 构造 · 调度  ← 当前
 ═══════════════════════════════════════════════════════════════
 
+协议线:
 #12 (来自 MVP)
  ├──→ #16 ACP Proxy 基础版 (P1) ✅
- │     └──→ #35 Proxy + Chat 双模式 (P1)  ← Session Lease（默认）+ Direct Bridge
+ │     └──→ #35 Proxy + Chat 双模式 (P1)
+ │           Session Lease（默认）+ Direct Bridge（--direct）
  │
- ├──→ #37 雇员型 Agent 调度 (P1)   ← 参考 OpenClaw
- │     (依赖 #11 acp-service + #12 ACP 通信)
- │     Heartbeat / Cron / Webhook / Hook 输入系统
- │
- └──→ #17 MCP Server (P2)        ← Agent-to-Agent
+ └──→ #17 MCP Server (P2) ← Agent-to-Agent
+
+管理线:
+#23/#24 (来自 MVP)
+ └──→ #38 统一组件管理体系 (P1)
+       Skill/Prompt CRUD + PluginManager + import/export
+       └──→ #39 Workspace 构造器 (P1)
+             BackendBuilder strategy: Cursor/ClaudeCode/Custom
+             scaffold → materialize → inject → verify
+
+调度线:
+#11/#12 (来自 Phase 1/2)
+ └──→ #40 雇员型 Agent + 调度器 + N8N (P1)
+       ← #37 设计文档
+       InputRouter → TaskQueue → TaskDispatcher
+       Heartbeat / Cron / Hook / Webhook / N8N Bridge
 
 #5 Template hot-reload (P2) — 独立
 
@@ -424,8 +480,8 @@ Phase 1 ──→ #12 Daemon ↔ Agent 通信 (P0)
 ═══════════════════════════════════════════════════════════════
 
 #8 ProcessWatcher (来自 Phase 1)
- └──→ #13 Plugin 体系设计 (P2)
-       ├──→ #37 Input 系统 Plugin 化 (重构)
+ └──→ #13 AgentCraft 系统级 Plugin 体系 (P2)
+       ├──→ #40 Input 系统 Plugin 化 (重构)
        ├──→ memory 插件 (连接 Phase 5)
        └──→ 自定义插件加载器
 
