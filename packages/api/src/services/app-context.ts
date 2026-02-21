@@ -6,6 +6,7 @@ import {
   TemplateLoader,
   AgentInitializer,
   AgentManager,
+  SessionRegistry,
   SkillManager,
   PromptManager,
   McpConfigManager,
@@ -45,6 +46,7 @@ export class AppContext {
   readonly agentInitializer: AgentInitializer;
   readonly acpConnectionManager: AcpConnectionManager;
   readonly agentManager: AgentManager;
+  readonly sessionRegistry: SessionRegistry;
 
   private initialized = false;
   private startTime = Date.now();
@@ -78,6 +80,7 @@ export class AppContext {
       },
     );
     this.acpConnectionManager = new AcpConnectionManager();
+    this.sessionRegistry = new SessionRegistry();
     const launcherMode = config?.launcherMode
       ?? (process.env["AGENTCRAFT_LAUNCHER_MODE"] as LauncherMode | undefined);
     this.agentManager = new AgentManager(

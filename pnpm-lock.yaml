@@ -62,9 +62,15 @@ importers:
 
   packages/cli:
     dependencies:
+      '@agentcraft/acp':
+        specifier: workspace:*
+        version: link:../acp
       '@agentcraft/api':
         specifier: workspace:*
         version: link:../api
+      '@agentcraft/core':
+        specifier: workspace:*
+        version: link:../core
       '@agentcraft/shared':
         specifier: workspace:*
         version: link:../shared

@@ -147,6 +147,11 @@ export type AgentListResult = AgentInstanceMeta[];
 export interface AgentResolveParams {
   name: string;
   template?: string;
+  overrides?: {
+    launchMode?: LaunchMode;
+    workspacePolicy?: WorkspacePolicy;
+    metadata?: Record<string, string>;
+  };
 }
 
 export type AgentResolveResult = ResolveResult;
@@ -199,7 +204,59 @@ export interface AgentPromptResult {
   sessionId: string;
 }
 
-// proxy.*
+// session.* (Session Lease mode)
+
+export interface SessionCreateParams {
+  agentName: string;
+  clientId: string;
+  idleTtlMs?: number;
+}
+
+export interface SessionLeaseInfo {
+  sessionId: string;
+  agentName: string;
+  clientId: string | null;
+  state: "active" | "idle" | "expired";
+  createdAt: string;
+  lastActivityAt: string;
+  idleTtlMs: number;
+}
+
+export type SessionCreateResult = SessionLeaseInfo;
+
+export interface SessionPromptParams {
+  sessionId: string;
+  text: string;
+}
+
+export interface SessionPromptResult {
+  stopReason: string;
+  text: string;
+}
+
+export interface SessionCancelParams {
+  sessionId: string;
+}
+
+export interface SessionCancelResult {
+  ok: boolean;
+}
+
+export interface SessionCloseParams {
+  sessionId: string;
+}
+
+export interface SessionCloseResult {
+  ok: boolean;
+}
+
+export interface SessionListParams {
+  agentName?: string;
+}
+
+export type SessionListResult = SessionLeaseInfo[];
+
+// proxy.* (legacy)
 
 export interface ProxyConnectParams {
   agentName: string;
@@ -307,6 +364,11 @@ export interface RpcMethodMap {
   "agent.detach": { params: AgentDetachParams; result: AgentDetachResult };
   "agent.run": { params: AgentRunParams; result: AgentRunResult };
   "agent.prompt": { params: AgentPromptParams; result: AgentPromptResult };
+  "session.create": { params: SessionCreateParams; result: SessionCreateResult };
+  "session.prompt": { params: SessionPromptParams; result: SessionPromptResult };
+  "session.cancel": { params: SessionCancelParams; result: SessionCancelResult };
+  "session.close": { params: SessionCloseParams; result: SessionCloseResult };
+  "session.list": { params: SessionListParams; result: SessionListResult };
   "proxy.connect": { params: ProxyConnectParams; result: ProxyConnectResult };
   "proxy.disconnect": { params: ProxyDisconnectParams; result: ProxyDisconnectResult };
   "proxy.forward": { params: ProxyForwardParams; result: ProxyForwardResult };

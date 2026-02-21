@@ -6,6 +6,7 @@ import {
   HandlerRegistry,
   registerTemplateHandlers,
   registerAgentHandlers,
+  registerSessionHandlers,
   registerDomainHandlers,
   registerDaemonHandlers,
   registerProxyHandlers,
@@ -27,6 +28,7 @@ export class Daemon {
 
     registerTemplateHandlers(this.handlers);
     registerAgentHandlers(this.handlers);
+    registerSessionHandlers(this.handlers);
     registerDomainHandlers(this.handlers);
     registerDaemonHandlers(this.handlers, () => this.stop());
     registerProxyHandlers(this.handlers);

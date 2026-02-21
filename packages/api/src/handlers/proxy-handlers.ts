@@ -16,6 +16,11 @@ const logger = createLogger("proxy-handlers");
 
 const proxySessions = new Map<string, ProxySession>();
 
+/**
+ * @deprecated Legacy RPC-relay proxy handlers. Retained for backward compatibility.
+ * New proxy connections should use Direct Bridge mode (CLI spawns agent directly)
+ * or Session Lease mode (session.* RPC methods). See issue #35.
+ */
 export function registerProxyHandlers(registry: HandlerRegistry): void {
   registry.register("proxy.connect", handleProxyConnect);
   registry.register("proxy.disconnect", handleProxyDisconnect);

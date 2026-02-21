@@ -99,8 +99,8 @@ async function handleAgentResolve(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<AgentResolveResult> {
-  const { name, template } = params as unknown as AgentResolveParams;
-  return ctx.agentManager.resolveAgent(name, template);
+  const { name, template, overrides } = params as unknown as AgentResolveParams;
+  return ctx.agentManager.resolveAgent(name, template, overrides);
 }
 
 async function handleAgentAttach(
