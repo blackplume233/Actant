@@ -682,118 +682,117 @@ CLI 层按以下优先级处理错误：
 
 ---
 
-## 7. ACP 实时交互层 — ACP Gateway + Proxy + Chat
+## 7. ACP 实时交互层 — Direct Bridge + Session Lease 双模式
 
-> 状态：**架构重设计中**（参见 [Issue #35](../../.trellis/issues/0035-acp-proxy-full-protocol.json)、[启动场景文档](../../docs/design/agent-launch-scenarios.md)）
+> 状态：**已实现**（参见 [Issue #35](../../.trellis/issues/0035-acp-proxy-full-protocol.json)、[启动场景文档](../../docs/design/agent-launch-scenarios.md)）
 >
-> 当前实现为 legacy Proxy（RPC 中继），将迁移至 ACP Gateway 架构。
+> 最终架构：**Direct Bridge（默认）+ Session Lease（`--lease`）**。废弃原 ACP Gateway 架构。
 
-### 7.1 目标架构：ACP Gateway（极简 session 路由器）+ 并行 ACP Client
+### 7.1 架构概述
 
-**Gateway 极简化**：只按 sessionId 做消息转发，不解析/修改/拦截 ACP 消息内容。
+Issue #35 经过多轮演进，最终采用双模式架构：
 
-**ACP Client 并行结构**：所有 Client 是独立的 peers，地位平等，并行连接 Gateway：
+| 模式 | 命令 | 谁持有进程 | 谁持有 ACP | 适用场景 |
+|------|------|-----------|-----------|---------|
+| **Direct Bridge**（默认） | `proxy <name>` | Proxy 进程 | Proxy 进程 | IDE 接入、完全隔离 |
+| **Session Lease** | `proxy <name> --lease` | Daemon | Daemon | 多客户端共享、会话保持 |
 
-```
-  IDE (外部ACP Client) ──Proxy(stdio↔socket)──┐
-  Desktop (外部ACP Client) ──Proxy(stdio↔socket)──┤
-  agent chat (内置ACP Client) ─────────────────┤  ← 并行 peers
-  Web UI (WebSocket ACP Client) ───────────────┤     互不依赖
-                                                ▼
-          ACP Gateway (极简 session 路由器)
-          ├─ sessionId → Client 映射
-          ├─ 上行: 转发到 Agent
-          └─ 下行: 按 sessionId 路由回 Client
-                                                │
-                                           ACP / stdio
-                                                │
-                                         Agent 子进程
-```
+**核心设计原则**：
+1. **CWD 永远是 agent workspace** — 消除 cwd 映射问题
+2. **1 Instance : 1 Process（严格 1:1）** — 永远不会出现一个 Instance 对应多个 Process
+3. **并发通过自动实例化** — Instance 被占用时自动创建 ephemeral 副本
 
-Proxy 不是 Gateway 的一部分——它是外部 ACP Client 的 transport 层（stdio ↔ socket 转换）。Chat 的内置 ACP Client 与 Proxy 转发来的外部 ACP Client 地位完全平等。
+### 7.2 Direct Bridge 模式（默认）
 
-### 7.2 Proxy 角色
-
-Proxy 是**纯 transport 转换层**，不理解 ACP 消息内容：
-- 接收：外部客户端的 ACP 消息（从 stdin）
-- 转发：写入 Core 的 ACP Unix socket
-- 回传：Core 的 ACP 响应/通知写回 stdout
-
-**从外部客户端视角**：`agentcraft proxy <name>` 就是一个标准 ACP Agent。
-
-### 7.3 两种运行模式
-
-| 模式 | 标志 | 行为 | 适用场景 |
-|------|------|------|---------|
-| **Workspace 隔离**（默认） | 无 | Agent 环境请求在 Core 本地处理（workspace 内） | 纯任务委托 |
-| **环境穿透** | `--env-passthrough` | Agent 环境请求穿透回外部客户端 | 远程 Agent 操作本地文件 |
-
-#### Workspace 隔离模式
+**流程**：Proxy 自行 spawn Agent，建立 stdio 桥接，Daemon 仅做生命周期管理。
 
 ```
-Client ──prompt──→ Proxy ──→ Core (ACP Gateway) ──→ Agent
-Client ←─result──  Proxy ←── Core ←── Agent
-
-Agent 的 readTextFile/writeTextFile 请求 → Core 在 workspace 内本地处理
-Agent 的 requestPermission 请求 → Core 自动批准
+IDE → agentcraft proxy my-agent
+     → Daemon.resolve(name) → workspace + command
+     → 如果 Instance 已被占用 → 自动从 Template 创建 ephemeral Instance
+     → Proxy spawn Agent（cwd = instance workspace）
+     → Daemon.attach(instanceName, pid)
+     → stdio 双向桥接：IDE ←→ Proxy ←→ Agent
+     → 断开时：terminate Agent → Daemon.detach() → ephemeral Instance 自动销毁
 ```
 
-#### 环境穿透模式
+**特点**：
+- 纯字节流转发，不做 ACP 消息解析
+- 进程随连接走，完全隔离
+- 支持自动实例化（并发连接）
+
+### 7.3 Session Lease 模式（`--lease`）
+
+**流程**：Daemon 持有 Agent 进程和 AcpConnection，客户端租借 Session。
 
 ```
-Client ──prompt──→ Proxy ──→ Core (ACP Gateway) ──→ Agent
-Client ←─result──  Proxy ←── Core ←── Agent
-
-Agent ──readTextFile──→ Core ──→ Proxy ──ACP──→ Client (穿透到 IDE 端文件系统)
-Agent ──requestPermission──→ Core ──→ Proxy ──ACP──→ Client (穿透到 IDE 端审批)
+agentcraft agent start my-agent       # Daemon 启动 Agent（warm）
+agentcraft proxy my-agent --lease     # IDE 通过 Session Lease 接入
+  → Daemon 调用 newSession(agentWorkspace) → sessionId
+  → 建立 streaming relay：Client ←→ Daemon ←→ Agent
+  → 断开时：session 进入 idle，Agent 保持运行
 ```
 
-### 7.4 多 Client 共存
+**Session Registry** 管理会话生命周期：
+- `active` → `idle` → `expired` 状态转换
+- Idle TTL 默认 30 分钟，超时自动清理
+- 支持会话恢复（客户端重连）
 
-Core 作为 ACP Gateway 天然支持多个 Client 同时连接同一 Agent：
+### 7.4 Session Lease API
 
-```
-IDE (via Proxy)    ──ACP/socket──→ Core: Session 1
-Claude Desktop     ──ACP/socket──→ Core: Session 2
-Terminal (chat)    ──ACP/socket──→ Core: Session 3
-                                     │
-                                  AcpConnection (单一连接)
-                                     │
-                                  Agent 子进程
-```
+Session Lease 模式使用以下 RPC 方法：
 
-每个 Client 获得独立的 ACP Session，Core 按 `sessionId` 路由 `sessionUpdate` 通知回正确的 Client。
+| 方法 | 参数 | 返回 | 说明 |
+|------|------|------|------|
+| `session.create` | `{ agentName, clientId, idleTtlMs? }` | `SessionLeaseInfo` | 创建新会话 |
+| `session.prompt` | `{ sessionId, text }` | `SessionPromptResult` | 发送消息（同步） |
+| `session.cancel` | `{ sessionId }` | `{ ok }` | 取消正在进行的 prompt |
+| `session.close` | `{ sessionId }` | `{ ok }` | 关闭会话 |
+| `session.list` | `{ agentName? }` | `SessionLeaseInfo[]` | 列会话 |
 
-### 7.5 ACP 消息流（目标架构）
+**SessionLeaseInfo** 结构：
 
-#### 初始化
-
-```
-Client               Proxy            Core (Gateway)          Agent
-  │──initialize─────→│                │                        │
-  │                   │──ACP/socket──→│                        │
-  │                   │               │──initialize──────────→│
-  │                   │               │←─agentInfo + caps─────│
-  │                   │←─ACP/socket───│                        │
-  │←─initialize/result│               │                        │
-  │  (真实 Agent 能力) │               │                        │
-```
-
-#### 会话交互（流式）
-
-```
-Client               Proxy            Core (Gateway)          Agent
-  │──session/prompt──→│──ACP/socket──→│──prompt──────────────→│
-  │                   │               │←─sessionUpdate────────│
-  │                   │←─ACP/socket───│  (agent_message_chunk) │
-  │←─sessionUpdate────│               │←─sessionUpdate────────│
-  │  (逐 chunk 流式)   │               │  (tool_call)          │
-  │←─sessionUpdate────│←─ACP/socket───│                        │
-  │  (tool_call)       │               │←─prompt/result────────│
-  │←─prompt/result────│←─ACP/socket───│                        │
+```typescript
+interface SessionLeaseInfo {
+  sessionId: string;
+  agentName: string;
+  clientId: string | null;    // null when idle
+  state: "active" | "idle" | "expired";
+  createdAt: string;
+  lastActivityAt: string;
+  idleTtlMs: number;
+}
 ```
 
-### 7.6 外部客户端配置示例
+### 7.5 Proxy ACP 协议适配器（Session Lease 模式）
+
+IDE 只会说 ACP 协议，Proxy 在 Session Lease 模式下做协议翻译：
+
+| IDE ACP 消息 | Proxy 处理 | Daemon RPC |
+|-------------|-----------|-----------|
+| `initialize` | 返回缓存的 Agent 能力 | （不转发） |
+| `session/new` | 调用 | `session.create` |
+| `session/prompt` | 调用 | `session.prompt` |
+| `session/cancel` | 调用 | `session.cancel` |
+
+**非 ACP 客户端**（CLI chat、Web UI）直接使用 Daemon 结构化 API，无需适配层。
+
+### 7.6 agent chat 实现
+
+`agentcraft agent chat <name>` 根据 Agent 状态自动选择模式：
+
+1. **Agent 未运行** → Direct Bridge 模式
+   - 自行 spawn Agent
+   - 使用 `AcpConnection.streamPrompt()` 流式输出
+   - 退出时清理进程
+
+2. **Agent 已运行**（`agent start`）→ Daemon-managed 模式
+   - 使用 `agent.prompt` RPC（同步）
+   - 保留 session 上下文
+
+### 7.7 外部客户端配置示例
+
+**Direct Bridge 模式**（推荐用于 IDE）：
 
 ```json
 {
@@ -805,9 +804,17 @@ Client               Proxy            Core (Gateway)          Agent
 }
 ```
 
-### 7.7 Legacy Proxy（当前实现，将废弃）
+**Session Lease 模式**（需要预启动 Agent）：
 
-当前 Proxy 通过 RPC `proxy.connect` / `proxy.forward` 中继 ACP 消息，存在无流式、无通知、硬编码握手等限制。相关 RPC 方法（§3.7）在新架构下不再被 Proxy 使用，保留给兼容性场景。
+```bash
+agentcraft agent start my-agent
+# 然后
+agentcraft proxy my-agent --lease
+```
+
+### 7.8 Legacy Proxy（已废弃）
+
+原 `proxy.connect` / `proxy.forward` RPC 方法（§3.7）已标记为 legacy，保留给兼容性场景。新代码应使用 Direct Bridge 或 Session Lease 模式。
 
 ---
 

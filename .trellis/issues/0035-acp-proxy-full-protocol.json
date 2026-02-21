@@ -1,7 +1,7 @@
 {
   "id": 35,
   "title": "ACP Proxy + Agent Chat — Direct Bridge 与 Session Lease 双模式",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "acp",
     "feature",
@@ -29,7 +29,7 @@
   "relatedIssues": [16, 12, 37],
   "taskRef": null,
   "githubRef": "blackplume233/AgentCraft#18",
-  "closedAs": null,
+  "closedAs": "completed",
   "comments": [
     {
       "text": "方案更新：从增强 proxy.forward（Daemon 中继）改为 Proxy Direct Bridge（双连接桥接）。Proxy 进程直接持有 AgentSideConnection + ClientSideConnection，透明桥接所有 ACP 方法，Daemon 仅做 resolve/attach/detach 生命周期管理。详细设计见 body 更新。",
@@ -65,9 +65,14 @@
       "text": "**默认模式确认 + IDE ACP 接入方案**\n\nDirect Bridge 确认为默认模式（大多数时候使用）。Session Lease 通过 --lease 选项启用。\n\nIDE（Cursor/Claude Desktop）在 Session Lease 模式下的接入方案：Proxy 做 ACP 协议适配器。IDE 侧说 ACP，Proxy 翻译为 Daemon 结构化 API（session.create/prompt/cancel）。Daemon 不需要实现 ACP Server。\n\n实现优先级调整：Phase 1 先做 Direct Bridge（最常用），Phase 2 做 Chat 直连 + 流式渲染，Phase 3 再做 Session Lease。",
       "date": "2026-02-21T09:00:00",
       "author": "human"
+    },
+    {
+      "text": "**完成 Issue #35 待办**\n\n1. ✅ 实现 `session.cancel` 与 ACP cancel 集成 — 调用 `acpConnectionManager.getConnection()` 获取连接并执行 `conn.cancel(sessionId)`\n2. ✅ 更新 `api-contracts.md` 第 7 节 — 反映 Direct Bridge + Session Lease 双模式的实际实现\n3. ✅ Issue #35 标记为完成\n\n主要变更文件：\n- `packages/api/src/handlers/session-handlers.ts` — 实现 `handleSessionCancel`\n- `.trellis/spec/api-contracts.md` — 更新 §7 架构文档",
+      "date": "2026-02-21T17:30:00",
+      "author": "claude-agent"
     }
   ],
   "createdAt": "2026-02-20T18:30:00",
   "updatedAt": "2026-02-21T08:00:00",
-  "closedAt": null
+  "closedAt": "2026-02-21T17:30:00"
 }

@@ -80,11 +80,28 @@ async function handleSessionPrompt(
 
 async function handleSessionCancel(
   params: Record<string, unknown>,
-  _ctx: AppContext,
+  ctx: AppContext,
 ): Promise<SessionCancelResult> {
   const { sessionId } = params as unknown as SessionCancelParams;
 
-  logger.info({ sessionId }, "Session cancel requested (not yet wired to ACP cancel)");
+  const lease = ctx.sessionRegistry.get(sessionId);
+  if (!lease) {
+    throw new Error(`Session "${sessionId}" not found`);
+  }
+
+  const conn = ctx.acpConnectionManager.getConnection(lease.agentName);
+  if (!conn) {
+    throw new Error(`Agent "${lease.agentName}" has no ACP connection`);
+  }
+
+  try {
+    await conn.cancel(sessionId);
+    logger.info({ sessionId, agentName: lease.agentName }, "Session cancel sent to ACP");
+  } catch (err) {
+    logger.error({ sessionId, error: err }, "Failed to cancel ACP session");
+    throw new Error(`Failed to cancel session: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+  }
+
   return { ok: true };
 }
 
