@@ -164,13 +164,14 @@ describe("CursorBuilder", () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it("verify returns warnings when AGENTS.md missing", async () => {
+  it("scaffold creates default AGENTS.md", async () => {
     const builder = new CursorBuilder();
     await builder.scaffold(tmpDir);
 
     const result = await builder.verify(tmpDir);
     expect(result.valid).toBe(true);
-    expect(result.warnings.some((w) => normalizePath(w).includes("AGENTS.md"))).toBe(true);
+    expect(result.errors).toHaveLength(0);
+    expect(result.warnings).toHaveLength(0);
   });
 });
 

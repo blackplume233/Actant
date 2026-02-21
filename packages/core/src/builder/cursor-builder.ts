@@ -19,6 +19,7 @@ export class CursorBuilder implements BackendBuilder {
   async scaffold(workspaceDir: string): Promise<void> {
     await mkdir(join(workspaceDir, ".cursor", "rules"), { recursive: true });
     await mkdir(join(workspaceDir, "prompts"), { recursive: true });
+    await writeFile(join(workspaceDir, "AGENTS.md"), "# Agent Skills\n", "utf-8");
   }
 
   async materializeSkills(workspaceDir: string, skills: SkillDefinition[]): Promise<void> {

@@ -72,6 +72,7 @@ export function formatTemplateDetail(
   lines.push(`  Skills:      ${ctx.skills?.length ?? 0} ref(s)   ${(ctx.skills ?? []).join(", ") || chalk.dim("none")}`);
   lines.push(`  Prompts:     ${ctx.prompts?.length ?? 0} ref(s)   ${(ctx.prompts ?? []).join(", ") || chalk.dim("none")}`);
   lines.push(`  MCP Servers: ${ctx.mcpServers?.length ?? 0} ref(s)   ${(ctx.mcpServers ?? []).map((s) => s.name).join(", ") || chalk.dim("none")}`);
+  lines.push(`  Plugins:     ${ctx.plugins?.length ?? 0} ref(s)   ${(ctx.plugins ?? []).join(", ") || chalk.dim("none")}`);
   lines.push(`  Workflow:    ${ctx.workflow ?? chalk.dim("none")}`);
   lines.push(`  SubAgents:   ${(ctx.subAgents ?? []).join(", ") || chalk.dim("none")}`);
 
