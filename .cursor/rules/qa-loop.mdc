@@ -44,16 +44,22 @@ alwaysApply: false
    - 在 Windows 上使用命名管道路径作为 `AGENTCRAFT_SOCKET`
 5. **启动 Daemon**
 
-### Phase 1: 随机漫步测试
+### Phase 1: 随机漫步测试（增量日志模式）
 
-由 QA SubAgent 执行：
+由 QA SubAgent 执行。**核心要求：每执行一步就立即将该步的完整记录追加到日志文件，不得等全部执行完再回忆填写。**
 
+日志文件：`.trellis/tasks/<current-task>/qa-log-roundN.md`
+
+每步的写入流程：
+1. **执行前** → 将原始输入（完整命令/工具调用及参数）追加到日志文件
+2. **执行后** → 将原始返回值（stdout 全文、stderr 全文、exit_code）追加到日志文件
+3. **判断** → 紧跟输出之后，追加 PASS/WARN/FAIL + 判断依据
+
+测试执行策略：
 1. 按场景组逐步执行测试步骤
 2. 随机交叉执行、随机插入干扰操作、随机化参数
-3. 对每步记录完整 stdout/stderr/exit_code
-4. 智能判定 PASS / WARN / FAIL
-5. 同时运行单元测试套件（`pnpm test`）
-6. 生成完整 QA 报告
+3. 同时运行单元测试套件（`pnpm test`）
+4. 日志文件即执行过程的第一手记录，供最终报告引用
 
 ### Phase 2: Issue 创建
 
@@ -88,11 +94,15 @@ alwaysApply: false
 
 ## 报告格式
 
-每轮测试产出报告保存在任务目录下：
+每轮测试产出两个文件，保存在任务目录下：
 
 ```
-.trellis/tasks/<current-task>/qa-report-roundN.md
+.trellis/tasks/<current-task>/qa-log-roundN.md      ← 增量日志（执行过程中逐条追加）
+.trellis/tasks/<current-task>/qa-report-roundN.md    ← 最终报告（执行结束后从日志汇总）
 ```
+
+**qa-log 是证据链**：包含每步的原始输入、原始输出、判断，在执行过程中实时写入。
+**qa-report 是摘要**：从 qa-log 汇总生成，包含摘要表格、失败分析、完整日志引用。
 
 最终汇总报告输出到对话中，格式：
 
@@ -137,3 +147,4 @@ alwaysApply: false
 3. **收敛保障** — 如果连续 3 轮通过率无提升，主动分析瓶颈并报告
 4. **环境隔离** — 所有测试在临时目录中执行，不影响用户环境
 5. **Windows 兼容** — `AGENTCRAFT_SOCKET` 使用命名管道，RPC 参数用 Base64 编码避免 PowerShell 转义问题
+6. **每步即时写入日志** — 每执行一步（Shell 命令、Read 文件、Grep 搜索、SubAgent 调用等）都必须在执行完毕后立即将原始输入、原始输出、判断追加到 `qa-log-roundN.md`。严禁积攒到执行结束后再回忆填写。日志是给人类审查用的第一手证据链，事后重建的日志不可信。

@@ -38,10 +38,13 @@
    - 随机重复操作验证幂等性
    - 随机化参数
 
-4. **生成报告**
-   - 记录每步的 stdout/stderr/exit_code
-   - 判定 PASS/WARN/FAIL
-   - 保存到 `.trellis/tasks/<task>/qa-report-roundN.md`
+4. **增量写入日志（边执行边记录）**
+   - 每步执行完毕后立即将以下内容追加到 `.trellis/tasks/<task>/qa-log-roundN.md`：
+     - **原始输入**：完整命令/工具调用及所有参数
+     - **原始输出**：stdout 全文、stderr 全文、exit_code（不省略不截断）
+     - **判断**：PASS/WARN/FAIL + 判断依据（紧跟输出之后）
+   - 严禁积攒到执行结束后再回忆填写，日志是给人类审查的第一手证据链
+   - 执行结束后从日志汇总生成 `.trellis/tasks/<task>/qa-report-roundN.md`
 
 ### Phase 2: Issue 创建
 

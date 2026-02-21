@@ -241,16 +241,27 @@ AGENTCRAFT_HOME="$TEST_DIR" AGENTCRAFT_SOCKET="$TEST_DIR/agentcraft.sock" \
 - 如果是 `inline`：写入临时 JSON 文件，然后 `template load <file>`
 - 如果是 `file`：直接 `template load <path>`
 
-#### Step 6: 执行步骤
+#### Step 6: 执行步骤（增量写入日志）
 
-逐步执行场景 `steps` 中的每个命令：
+逐步执行场景 `steps` 中的每个命令。**每执行一步，立即将该步的完整记录追加写入日志文件**，不得等到全部执行完再回忆拼凑。
 
-1. 执行 CLI 命令，完整记录 stdout、stderr、exit_code
-2. 智能判断输出是否合理（参照 `expect`）
-3. 如有 `artifacts` 字段，进行产物白盒验证
-4. 给出 PASS / WARN / FAIL 判定和分析
+每步的写入流程：
 
-**重要**：每一步都要完整记录原始输入输出，供最终报告使用。
+1. **执行前**：将待执行的完整命令（原始输入）追加到日志文件
+2. **执行**：执行命令，捕获 stdout、stderr、exit_code
+3. **执行后**：将以下内容追加到日志文件：
+   - 完整的原始返回值（stdout 全文、stderr 全文、exit_code）
+   - 如有 `artifacts` 字段，执行产物检查并记录检查命令和结果
+   - **判断**：PASS / WARN / FAIL + 判断依据（观察到了什么、为什么如此判定）
+4. 对 WARN/FAIL 额外记录：期望行为 vs 实际行为的差异分析
+
+日志文件路径：`.trellis/tasks/<current-task>/qa-log-roundN.md`
+
+**关键原则**：
+- **即时写入** — 每步执行完立即 append 到日志文件，不积攒
+- **原始值优先** — stdout/stderr 完整记录，不省略不截断不改写
+- **判断紧随其后** — 判断必须紧跟在原始输出之后，方便人类逐条审查
+- **日志即证据链** — 最终报告的执行日志部分直接引用日志文件内容
 
 #### Step 7: 问题处理
 
@@ -313,9 +324,53 @@ ls .agents/skills/qa-engineer/scenarios/*.json 2>/dev/null
 
 ---
 
-## 测试报告格式
+## 日志与报告
 
-每次测试完成后，输出以下格式的报告。**完整执行日志**部分必须包含每步的原始输入输出。
+### 增量日志文件（执行过程中持续写入）
+
+日志文件是 QA 的**第一手证据链**，在执行过程中逐条追加，不在结束后回填。
+
+文件路径：`.trellis/tasks/<current-task>/qa-log-roundN.md`
+
+每条日志记录的格式：
+
+````markdown
+### [Step N] <描述>
+**时间**: <ISO 时间戳>
+
+#### 输入
+```
+<完整的原始命令 / 工具调用，含所有参数>
+```
+
+#### 输出
+```
+exit_code: <code>
+
+--- stdout ---
+<stdout 全文，不省略不截断>
+
+--- stderr ---
+<stderr 全文，或 (empty)>
+```
+
+#### 产物检查（如有）
+```
+<检查命令>
+<检查结果>
+```
+
+#### 判断: PASS / WARN / FAIL
+<判断依据：观察到了什么事实，为什么做出这个判定，期望 vs 实际的差异>
+````
+
+**写入时机**：每步执行完毕后立即追加（Write tool append 模式或重写整文件）。严禁积攒到最后再写。
+
+### 最终报告文件（执行结束后生成）
+
+文件路径：`.trellis/tasks/<current-task>/qa-report-roundN.md`
+
+最终报告从增量日志文件中汇总生成，结构如下：
 
 ```markdown
 ## QA 集成测试报告
@@ -329,7 +384,6 @@ ls .agents/skills/qa-engineer/scenarios/*.json 2>/dev/null
 | # | 步骤 | 命令 | 判定 | 耗时 |
 |---|------|------|------|------|
 | 1 | <描述> | `<命令>` | PASS/WARN/FAIL | <耗时> |
-| 2 | ... | ... | ... | ... |
 
 ### 失败/警告分析（如有）
 **步骤 N - <描述> [FAIL/WARN]**:
@@ -337,33 +391,8 @@ ls .agents/skills/qa-engineer/scenarios/*.json 2>/dev/null
 - 实际观察: <实际输出摘要>
 - 分析: <根因分析>
 
----
-
 ### 完整执行日志
-
-#### [Setup] 环境准备
-临时目录: <path>
-Socket: <path>
-Launcher: mock
-Daemon PID: <pid>
-
-#### [Step N] <描述> — PASS/WARN/FAIL
-$ agentcraft <command>
-exit_code: <code>
-
---- stdout ---
-<完整的 stdout 输出>
-
---- stderr ---
-<完整的 stderr 输出，或 (empty)>
-
-**判断**: <Agent 的判断说明>
-**产物检查**: <如有 artifacts 验证，记录结果>
-
-#### [Cleanup]
-<清理命令和输出>
-Daemon 已停止
-临时目录已删除
+<引用 qa-log-roundN.md 的全部内容，或 inline 包含>
 
 ### 创建的 Issue（如有）
 | Issue | 标题 | 类型 | 优先级 |
@@ -391,8 +420,10 @@ Daemon 已停止
 
 1. **环境隔离是第一优先级** — 每次测试必须使用临时目录，绝不影响用户的真实 AgentCraft 环境。
 2. **真实环境优先** — 默认使用真实 launcher 模式运行测试（不设置 `AGENTCRAFT_LAUNCHER_MODE`），除非用户明确要求 mock 模式或场景文件 `setup.launcherMode` 显式为 `"mock"`。真实模式能覆盖进程生命周期、ACP 连接、Session Lease 等 mock 模式无法验证的场景。
-3. **完整记录原始 I/O** — 报告中的执行日志必须包含每步的原始 stdout 和 stderr 全文，不得省略或截断。
-4. **避免重复 Issue** — 创建前先搜索，已有相同问题的 Issue 则添加 Comment。
-5. **cleanup 必须执行** — 无论测试成败，cleanup 步骤都要执行。停止 Daemon、删除临时目录。
-6. **引用要精确** — 报告中提及文件路径、退出码、输出内容时必须是实际值，不可虚构。
-7. **保持客观** — 判断基于事实观察，分析基于技术推理，不做无根据的猜测。
+3. **每步即时写入日志** — 每执行一步就立即将原始输入、原始输出、判断追加到日志文件（`qa-log-roundN.md`）。严禁积攒到执行结束后再回忆填写。日志是给人类审查用的第一手证据链。
+4. **完整记录原始 I/O** — 日志中的 stdout 和 stderr 必须是执行时的原始全文，不得省略、截断或改写。
+5. **判断紧跟输出** — 每条日志的判断（PASS/WARN/FAIL + 理由）必须紧跟在该步的原始输出之后，方便人类逐条审查。
+6. **避免重复 Issue** — 创建前先搜索，已有相同问题的 Issue 则添加 Comment。
+7. **cleanup 必须执行** — 无论测试成败，cleanup 步骤都要执行。停止 Daemon、删除临时目录。
+8. **引用要精确** — 报告中提及文件路径、退出码、输出内容时必须是实际值，不可虚构。
+9. **保持客观** — 判断基于事实观察，分析基于技术推理，不做无根据的猜测。
