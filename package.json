@@ -12,8 +12,8 @@
     "test:endurance": "vitest run --config vitest.endurance.config.ts",
     "test:watch": "vitest",
     "check": "pnpm run type-check && vitest run",
-    "lint": "eslint packages/*/src",
-    "lint:fix": "eslint packages/*/src --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "type-check": "pnpm -r run type-check",
     "clean": "pnpm -r run clean"
   },
