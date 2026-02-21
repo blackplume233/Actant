@@ -66,6 +66,24 @@ This is acceptable for now. Future consideration: Windows service integration fo
 
 ---
 
+## Symlinks and Junctions
+
+Custom `workDir` instances use a link from `{instancesDir}/{name}` → target directory.
+
+| Platform | Link Type | Privileges |
+|----------|-----------|------------|
+| macOS/Linux | Symbolic link (`"dir"`) | Normal user |
+| Windows | Junction (`"junction"`) | Normal user |
+
+Windows directory symlinks (`"dir"`) require Administrator or Developer Mode. Junctions have no such restriction and behave identically for our use case — `lstat().isSymbolicLink()` returns `true`, and `readlink()` returns the target path.
+
+**Rules**:
+- Use `process.platform === "win32" ? "junction" : "dir"` as the symlink type.
+- Remove links with `rm(path, { recursive: true, force: true })` instead of `unlink()` — `unlink` fails on Windows junctions.
+- When comparing `readlink()` results, normalize with `path.resolve()` to handle platform path differences.
+
+---
+
 ## File System
 
 ### Path Handling
@@ -100,6 +118,7 @@ Before implementing any feature, verify:
 - [ ] No direct `SIGTERM` handlers (use `onShutdownSignal()`)
 - [ ] File paths use `node:path` (`join`, not string concatenation)
 - [ ] No shell commands that only work on Unix (e.g., `chmod`, `ln -s`)
+- [ ] Symlinks use `"junction"` type on Windows, `"dir"` on Unix (see Symlinks section)
 - [ ] Tests use `getIpcPath()` for socket paths
 - [ ] If spawning child processes, handle Windows `.cmd` / `.bat` extensions for npm scripts
 

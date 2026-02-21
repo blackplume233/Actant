@@ -122,7 +122,8 @@ export class AgentInitializer {
       await writeInstanceMeta(workspaceDir, meta);
 
       if (customWorkDir) {
-        await symlink(workspaceDir, join(this.instancesBaseDir, name), "dir");
+        const linkType = process.platform === "win32" ? "junction" : "dir";
+        await symlink(workspaceDir, join(this.instancesBaseDir, name), linkType);
       }
 
       logger.info({ name, templateName, workspaceDir, customWorkDir: !!customWorkDir }, "Agent instance created");
@@ -189,7 +190,7 @@ export class AgentInitializer {
       } catch {
         // .agentcraft.json may have been removed already
       }
-      await unlink(entryPath);
+      await rm(entryPath, { recursive: true, force: true });
       logger.info({ name, targetDir }, "Symlinked agent instance unregistered");
     } else {
       await rm(entryPath, { recursive: true, force: true });

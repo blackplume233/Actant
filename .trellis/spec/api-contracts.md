@@ -183,7 +183,7 @@ AgentCraft 的接口架构（两层协议分工）：
 | `workDirConflict` | `"error" \| "overwrite" \| "append"` | workDir 已存在时的行为，默认 `"error"` |
 | `metadata` | `Record<string, string>` | 额外元数据 |
 
-**workDir 机制**：当指定 `workDir` 时，域上下文文件和 `.agentcraft.json` 写入该目录，同时在 `{instancesDir}/{name}` 创建指向它的 symlink 以供 Manager 发现。Destroy 时仅移除 symlink 和 `.agentcraft.json`，保留用户目录中的其余文件。
+**workDir 机制**：当指定 `workDir` 时，域上下文文件和 `.agentcraft.json` 写入该目录，同时在 `{instancesDir}/{name}` 创建指向它的链接以供 Manager 发现（macOS/Linux 使用 symlink，Windows 使用 junction）。Destroy 时仅移除链接和 `.agentcraft.json`，保留用户目录中的其余文件。
 
 ### 3.3 外部 Spawn 支持
 

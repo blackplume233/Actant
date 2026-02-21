@@ -28,13 +28,17 @@ describe("ConnectionError", () => {
 });
 
 describe("RpcClient", () => {
-  let tmpDir: string;
+  let tmpDir: string | undefined;
   let socketPath: string;
   let server: Server;
 
   beforeAll(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "rpc-client-test-"));
-    socketPath = join(tmpDir, "sock");
+    if (process.platform === "win32") {
+      socketPath = `\\\\.\\pipe\\rpc-client-test-${process.pid}-${Date.now()}`;
+    } else {
+      tmpDir = await mkdtemp(join(tmpdir(), "rpc-client-test-"));
+      socketPath = join(tmpDir, "sock");
+    }
 
     server = createServer((socket) => {
       let buffer = "";
@@ -80,7 +84,9 @@ describe("RpcClient", () => {
     await new Promise<void>((resolve) => {
       server.close(() => resolve());
     });
-    await rm(tmpDir, { recursive: true, force: true });
+    if (tmpDir) {
+      await rm(tmpDir, { recursive: true, force: true });
+    }
   });
 
   it("call() sends request and receives successful response", async () => {
@@ -105,7 +111,10 @@ describe("RpcClient", () => {
   });
 
   it("ping() returns false when connection fails", async () => {
-    const client = new RpcClient(join(tmpDir, "nonexistent.sock"));
+    const badPath = process.platform === "win32"
+      ? `\\\\.\\pipe\\nonexistent-${Date.now()}`
+      : `/tmp/nonexistent-${Date.now()}.sock`;
+    const client = new RpcClient(badPath);
     expect(await client.ping()).toBe(false);
   });
 });

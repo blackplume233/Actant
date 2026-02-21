@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, readFile, access, mkdir, writeFile, lstat, readlink } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import type { AgentTemplate } from "@agentcraft/shared";
 import {
@@ -225,7 +225,7 @@ describe("AgentInitializer", () => {
       expect(linkStat.isSymbolicLink()).toBe(true);
 
       const linkTarget = await readlink(join(tmpDir, "custom-agent"));
-      expect(linkTarget).toBe(targetDir);
+      expect(resolve(linkTarget)).toBe(resolve(targetDir));
     });
 
     it("should materialize domain context files into custom workDir", async () => {
