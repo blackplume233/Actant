@@ -1,0 +1,92 @@
+{
+  "name": "session-error-handling",
+  "description": "验证 Session API 的参数验证、边界条件和错误处理：空参数、无效 ID、重复操作等",
+  "tags": ["session", "error", "validation", "negative", "issue-35"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock",
+    "templates": [
+      {
+        "name": "error-tpl",
+        "inline": {
+          "name": "error-tpl",
+          "version": "1.0.0",
+          "backend": { "type": "cursor" },
+          "provider": { "type": "anthropic" },
+          "domainContext": {}
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "create-empty-params",
+      "description": "session.create 空参数",
+      "command": "RPC session.create {}",
+      "expect": "返回 'Required parameter \"agentName\" is missing or invalid'"
+    },
+    {
+      "id": "prompt-empty-params",
+      "description": "session.prompt 空参数",
+      "command": "RPC session.prompt {}",
+      "expect": "返回 'Required parameter \"sessionId\" is missing or invalid'"
+    },
+    {
+      "id": "cancel-empty-params",
+      "description": "session.cancel 空参数",
+      "command": "RPC session.cancel {}",
+      "expect": "返回 'Required parameter \"sessionId\" is missing or invalid'"
+    },
+    {
+      "id": "close-empty-params",
+      "description": "session.close 空参数",
+      "command": "RPC session.close {}",
+      "expect": "返回 'Required parameter \"sessionId\" is missing or invalid'"
+    },
+    {
+      "id": "create-invalid-agent",
+      "description": "session.create 不存在的 agent",
+      "command": "RPC session.create {\"agentName\":\"ghost\",\"clientId\":\"c1\"}",
+      "expect": "返回 'Agent \"ghost\" not found'"
+    },
+    {
+      "id": "cancel-invalid-session",
+      "description": "session.cancel 不存在的 session",
+      "command": "RPC session.cancel {\"sessionId\":\"invalid-uuid\"}",
+      "expect": "返回 'Session \"invalid-uuid\" not found'"
+    },
+    {
+      "id": "close-invalid-session",
+      "description": "session.close 不存在的 session",
+      "command": "RPC session.close {\"sessionId\":\"invalid-uuid\"}",
+      "expect": "返回 'Session \"invalid-uuid\" not found'"
+    },
+    {
+      "id": "prompt-invalid-session",
+      "description": "session.prompt 不存在的 session",
+      "command": "RPC session.prompt {\"sessionId\":\"invalid-uuid\",\"text\":\"test\"}",
+      "expect": "返回 'Session \"invalid-uuid\" not found'"
+    },
+    {
+      "id": "create-agent-not-started",
+      "description": "session.create 对 created 状态的 agent",
+      "command": "agent create err-agent -t error-tpl && RPC session.create {\"agentName\":\"err-agent\",\"clientId\":\"c1\"}",
+      "expect": "返回 'not running (status: created)'"
+    },
+    {
+      "id": "duplicate-agent-create",
+      "description": "重名创建 Agent",
+      "command": "agent create err-agent -t error-tpl",
+      "expect": "返回错误 'already exists'"
+    },
+    {
+      "id": "agent-stop-already-stopped",
+      "description": "停止已停止的 Agent",
+      "command": "agent stop err-agent",
+      "expect": "退出码 0（幂等操作，但应注意可能返回误导性的 'Stopped' 消息）"
+    }
+  ],
+  "cleanup": [
+    "agent destroy err-agent --force"
+  ]
+}

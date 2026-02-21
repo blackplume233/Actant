@@ -32,6 +32,13 @@ async function handleSessionCreate(
 ): Promise<SessionCreateResult> {
   const { agentName, clientId, idleTtlMs } = params as unknown as SessionCreateParams;
 
+  if (!agentName || typeof agentName !== 'string') {
+    throw new Error('Required parameter "agentName" is missing or invalid');
+  }
+  if (!clientId || typeof clientId !== 'string') {
+    throw new Error('Required parameter "clientId" is missing or invalid');
+  }
+
   const meta = ctx.agentManager.getAgent(agentName);
   if (!meta) {
     throw new Error(`Agent "${agentName}" not found`);
@@ -54,6 +61,13 @@ async function handleSessionPrompt(
   ctx: AppContext,
 ): Promise<SessionPromptResult> {
   const { sessionId, text } = params as unknown as SessionPromptParams;
+
+  if (!sessionId || typeof sessionId !== 'string') {
+    throw new Error('Required parameter "sessionId" is missing or invalid');
+  }
+  if (!text || typeof text !== 'string') {
+    throw new Error('Required parameter "text" is missing or invalid');
+  }
 
   const lease = ctx.sessionRegistry.get(sessionId);
   if (!lease) {
@@ -84,6 +98,10 @@ async function handleSessionCancel(
 ): Promise<SessionCancelResult> {
   const { sessionId } = params as unknown as SessionCancelParams;
 
+  if (!sessionId || typeof sessionId !== 'string') {
+    throw new Error('Required parameter "sessionId" is missing or invalid');
+  }
+
   const lease = ctx.sessionRegistry.get(sessionId);
   if (!lease) {
     throw new Error(`Session "${sessionId}" not found`);
@@ -110,6 +128,10 @@ async function handleSessionClose(
   ctx: AppContext,
 ): Promise<SessionCloseResult> {
   const { sessionId } = params as unknown as SessionCloseParams;
+
+  if (!sessionId || typeof sessionId !== 'string') {
+    throw new Error('Required parameter "sessionId" is missing or invalid');
+  }
 
   const closed = ctx.sessionRegistry.close(sessionId);
   if (!closed) {

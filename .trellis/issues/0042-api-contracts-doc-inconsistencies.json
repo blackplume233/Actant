@@ -1,0 +1,20 @@
+{
+  "id": 42,
+  "title": "api-contracts.md 文档与实现不一致（envCallback / env-passthrough / ResolveResult）",
+  "status": "open",
+  "labels": ["enhancement", "qa", "docs", "priority:P2"],
+  "milestone": null,
+  "body": "## 测试发现\n\n**场景**: Issue #35 随机漫步测试 — 文档一致性白盒验证\n**步骤**: 场景组 7\n\n## 不一致列表\n\n### 1. proxy.envCallback — 文档有但未实现\n- **文档** (§3.7): 定义了 `proxy.envCallback` RPC 方法\n- **实现**: `proxy-handlers.ts` 中无此方法，仅有 `proxy.connect`, `proxy.disconnect`, `proxy.forward`\n\n### 2. --env-passthrough 选项 — 文档有但未实现\n- **文档** (§4.5): proxy 命令支持 `--env-passthrough` 选项\n- **实现**: `proxy.ts` 仅定义 `--lease` 和 `-t, --template` 选项\n\n### 3. ResolveResult 字段名不一致\n- **文档** (§3.3): 使用 `name` 字段\n- **实现**: 代码使用 `instanceName` 字段\n\n### 4. agent.resolve overrides 参数 — 实现有但未文档化\n- **实现**: `AgentResolveParams` 包含 `overrides` (launchMode, workspacePolicy, metadata)\n- **文档**: 仅描述 `name` 和 `template` 参数\n\n### 5. Proxy session/prompt 响应不完整\n- **实现**: proxy 仅发送 `stopReason` 给 IDE，`text` 未转发\n- 可能是设计意图（ACP 通过流式通知发送内容），但文档未明确说明\n\n## 建议\n\n1. 如果 envCallback 和 env-passthrough 已废弃，应从文档中移除或标记为 planned\n2. 统一 ResolveResult 的字段命名\n3. 补充 overrides 参数的文档\n4. 明确 proxy 响应转发策略",
+  "author": "qa-agent",
+  "assignees": [],
+  "relatedFiles": [
+    ".trellis/spec/api-contracts.md",
+    "packages/api/src/handlers/proxy-handlers.ts",
+    "packages/cli/src/commands/proxy.ts"
+  ],
+  "comments": [],
+  "createdAt": "2026-02-21T10:20:00.000Z",
+  "updatedAt": "2026-02-21T10:20:00.000Z",
+  "closedAt": null,
+  "closedAs": null
+}

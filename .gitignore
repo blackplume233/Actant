@@ -25,3 +25,4 @@ coverage/
 # Runtime
 *.log
 data/
+/daemon

@@ -205,12 +205,21 @@ AgentCraft 的接口架构（两层协议分工）：
 |------|------|------|------|
 | `name` | `string` | **是** | Agent 实例名 |
 | `template` | `string` | 否 | 若实例不存在，使用此模板自动创建 |
+| `overrides` | `object` | 否 | 覆盖模板默认配置（见下表） |
+
+**overrides 字段：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `launchMode` | `LaunchMode` | 覆盖模板默认启动模式 |
+| `workspacePolicy` | `WorkspacePolicy` | 覆盖默认 workspace 策略 |
+| `metadata` | `Record<string, string>` | 额外元数据 |
 
 **返回 `ResolveResult`：**
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
-| `name` | `string` | 实例名 |
+| `instanceName` | `string` | 实例名 |
 | `workspaceDir` | `string` | 已物化的 workspace 绝对路径 |
 | `backendType` | `AgentBackendType` | 后端类型 |
 | `command` | `string` | 可执行文件路径 |
@@ -444,7 +453,7 @@ ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调
 | `proxy.connect` | `{ agentName, envPassthrough }` | `ProxySession` | 建立 Proxy session |
 | `proxy.disconnect` | `{ sessionId }` | `{ ok }` | 断开 Proxy session |
 | `proxy.forward` | `{ sessionId, acpMessage }` | `AcpMessage` | 转发 ACP 消息给 Agent |
-| `proxy.envCallback` | `{ sessionId, response }` | `{ ok }` | 回传环境请求的结果 |
+| `proxy.envCallback` | `{ sessionId, response }` | `{ ok }` | 回传环境请求的结果 *(not yet implemented)* |
 
 ### 3.8 守护进程
 
@@ -544,16 +553,18 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 
 | 命令 | 参数 | 选项 | 行为 |
 |------|------|------|------|
-| `proxy <name>` | Agent 实例名 | `--env-passthrough`, `-t, --template` | 启动 ACP Proxy 进程（详见 §7） |
+| `proxy <name>` | Agent 实例名 | `--lease`, `-t, --template` | 启动 ACP Proxy 进程（详见 §7） |
 
 **用法：** 外部 ACP Client 将 `agentcraft proxy <name>` 作为 Agent 可执行文件 spawn。
 
 ```bash
 # 外部客户端配置示例
-agentcraft proxy my-agent                    # workspace 隔离模式
-agentcraft proxy my-agent --env-passthrough  # 环境穿透模式
+agentcraft proxy my-agent                    # Direct Bridge 模式（默认）
+agentcraft proxy my-agent --lease            # Session Lease 模式（需预启动 Agent）
 agentcraft proxy my-agent -t review-template # 不存在则自动创建
 ```
+
+> `--env-passthrough` 选项 *(not yet implemented)*
 
 ### 4.6 守护进程命令 (`agentcraft daemon`)
 

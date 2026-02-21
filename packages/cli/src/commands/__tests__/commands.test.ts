@@ -309,10 +309,13 @@ describe("createDaemonStopCommand", () => {
   });
 
   it("connection fails: prints Daemon is not running", async () => {
+    const mock = createMockClient();
+    mock.call.mockRejectedValue(new Error("Connection refused"));
+    const client = mock as unknown as RpcClient;
     const { printer, output } = createTestPrinter();
     const parent = new Command();
     parent.exitOverride();
-    parent.addCommand(createDaemonStopCommand(printer));
+    parent.addCommand(createDaemonStopCommand(printer, client));
     await parent.parseAsync(["node", "test", "stop"]);
 
     expect(output.logs.some((l) => l.includes("Daemon is not running"))).toBe(true);

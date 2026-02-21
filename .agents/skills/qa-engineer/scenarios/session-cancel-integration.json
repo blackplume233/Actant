@@ -1,0 +1,62 @@
+{
+  "name": "session-cancel-integration",
+  "description": "验证 Issue #35 核心功能：session.cancel 调用 ACP cancel 集成，包括错误处理和边界条件",
+  "tags": ["session", "cancel", "acp", "issue-35", "integration"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock",
+    "templates": [
+      {
+        "name": "cancel-tpl",
+        "inline": {
+          "name": "cancel-tpl",
+          "version": "1.0.0",
+          "backend": { "type": "cursor" },
+          "provider": { "type": "anthropic" },
+          "domainContext": {}
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "cancel-no-session",
+      "description": "取消不存在的 sessionId",
+      "command": "RPC session.cancel {\"sessionId\":\"nonexistent\"}",
+      "expect": "返回错误 'Session \"nonexistent\" not found'"
+    },
+    {
+      "id": "cancel-empty-param",
+      "description": "空参数调用 cancel",
+      "command": "RPC session.cancel {}",
+      "expect": "返回参数验证错误 'Required parameter \"sessionId\" is missing or invalid'"
+    },
+    {
+      "id": "cancel-empty-string",
+      "description": "空字符串 sessionId",
+      "command": "RPC session.cancel {\"sessionId\":\"\"}",
+      "expect": "返回参数验证错误"
+    },
+    {
+      "id": "create-agent-for-cancel",
+      "description": "创建 Agent 用于测试无 ACP 连接场景",
+      "command": "agent create cancel-agent -t cancel-tpl",
+      "expect": "退出码 0"
+    },
+    {
+      "id": "start-agent-timing",
+      "description": "启动 Agent 并立即尝试 session.create",
+      "command": "agent start cancel-agent && RPC session.create {\"agentName\":\"cancel-agent\",\"clientId\":\"c1\"}",
+      "expect": "session.create 返回 'has no ACP connection'（cursor 后端无 ACP）"
+    }
+  ],
+  "cleanup": [
+    "agent stop cancel-agent",
+    "agent destroy cancel-agent --force"
+  ],
+  "notes": [
+    "session.cancel 的完整 ACP 集成测试需要 claude-code 后端",
+    "此场景仅验证错误路径和参数验证",
+    "handleSessionCancel 实现: 获取 lease → 获取 ACP connection → conn.cancel(sessionId)"
+  ]
+}

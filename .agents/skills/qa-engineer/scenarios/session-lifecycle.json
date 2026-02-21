@@ -1,0 +1,91 @@
+{
+  "name": "session-lifecycle",
+  "description": "验证 Session Lease API 完整生命周期：session.create/list/prompt/cancel/close 的 RPC 调用和错误处理",
+  "tags": ["session", "lifecycle", "acp", "issue-35"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock",
+    "templates": [
+      {
+        "name": "session-tpl",
+        "inline": {
+          "name": "session-tpl",
+          "version": "1.0.0",
+          "backend": { "type": "cursor" },
+          "provider": { "type": "anthropic" },
+          "domainContext": {}
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "agent-create",
+      "description": "创建 Agent 实例",
+      "command": "agent create sess-test -t session-tpl -f json",
+      "expect": "成功返回 JSON，status=created"
+    },
+    {
+      "id": "session-list-empty",
+      "description": "Session 列表初始为空",
+      "command": "RPC session.list {\"agentName\":\"sess-test\"}",
+      "expect": "返回空数组 result=[]"
+    },
+    {
+      "id": "session-create-not-running",
+      "description": "未启动 Agent 时创建 Session 应失败",
+      "command": "RPC session.create {\"agentName\":\"sess-test\",\"clientId\":\"c1\"}",
+      "expect": "返回错误 'not running'"
+    },
+    {
+      "id": "session-create-no-agent",
+      "description": "不存在的 Agent 创建 Session 应失败",
+      "command": "RPC session.create {\"agentName\":\"ghost\",\"clientId\":\"c1\"}",
+      "expect": "返回错误 'not found'"
+    },
+    {
+      "id": "session-cancel-invalid",
+      "description": "取消不存在的 Session",
+      "command": "RPC session.cancel {\"sessionId\":\"fake-id\"}",
+      "expect": "返回错误 'not found'"
+    },
+    {
+      "id": "session-close-invalid",
+      "description": "关闭不存在的 Session",
+      "command": "RPC session.close {\"sessionId\":\"fake-id\"}",
+      "expect": "返回错误 'not found'"
+    },
+    {
+      "id": "session-prompt-invalid",
+      "description": "Prompt 不存在的 Session",
+      "command": "RPC session.prompt {\"sessionId\":\"fake-id\",\"text\":\"hello\"}",
+      "expect": "返回错误 'not found'"
+    },
+    {
+      "id": "session-list-filter",
+      "description": "Session 列表按 agent 过滤",
+      "command": "RPC session.list {\"agentName\":\"nonexistent\"}",
+      "expect": "返回空数组 result=[]"
+    },
+    {
+      "id": "session-list-all",
+      "description": "Session 列表无过滤",
+      "command": "RPC session.list {}",
+      "expect": "返回空数组 result=[]"
+    },
+    {
+      "id": "cleanup",
+      "description": "清理 Agent",
+      "command": "agent destroy sess-test --force",
+      "expect": "退出码 0"
+    }
+  ],
+  "cleanup": [
+    "agent destroy sess-test --force"
+  ],
+  "notes": [
+    "Session Lease 完整正向流程（create→prompt→cancel→close）在 mock 模式下无法测试",
+    "需要 claude-code 后端的真实 ACP 连接才能创建 session",
+    "参见 Issue #39: session-lease-mock-untestable"
+  ]
+}

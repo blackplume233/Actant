@@ -555,6 +555,7 @@ git commit -m "type(scope): description"
 /trellis:finish-work          # Pre-commit checklist
 /trellis:break-loop           # Post-debug analysis
 /trellis:check-cross-layer    # Cross-layer verification
+/qa-loop [scope] [options]    # QA cyclic verification loop (test→fix→retest until 100% pass)
 ```
 
 ---

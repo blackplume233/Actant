@@ -19,6 +19,7 @@ allowed-tools: Shell, Read, Write, Glob, Grep, SemanticSearch, Task
 - **白盒为辅**：必要时深入检查文件系统上的产物（workspace 目录、元数据文件、配置持久化等）
 - **智能判断**：不依赖机械断言，基于专业经验综合判断输出和产物是否合理
 - **问题追踪**：发现问题时通过 `.trellis/scripts/issue.sh` 创建 Issue
+- **真实环境优先**：默认使用 `launcherMode: "real"` 运行测试，除非用户明确指定 mock 模式
 
 ---
 
@@ -50,7 +51,7 @@ allowed-tools: Shell, Read, Write, Glob, Grep, SemanticSearch, Task
   "tags": ["分类标签"],
   "setup": {
     "daemon": true,
-    "launcherMode": "mock",
+    "launcherMode": "real",
     "templates": [
       {
         "name": "模板名",
@@ -210,10 +211,12 @@ echo "临时目录: $TEST_DIR"
 后续所有 CLI 命令通过以下方式执行，确保环境隔离：
 
 ```bash
-AGENTCRAFT_HOME="$TEST_DIR" AGENTCRAFT_SOCKET="$TEST_DIR/agentcraft.sock" AGENTCRAFT_LAUNCHER_MODE="mock" node <project_root>/packages/cli/dist/bin/agentcraft.js <command>
+AGENTCRAFT_HOME="$TEST_DIR" AGENTCRAFT_SOCKET="$TEST_DIR/agentcraft.sock" node <project_root>/packages/cli/dist/bin/agentcraft.js <command>
 ```
 
 其中 `<project_root>` 是当前工作区根目录。
+
+**Launcher 模式选择**：默认使用真实模式（不设 `AGENTCRAFT_LAUNCHER_MODE`）。仅当用户明确要求 mock 测试、或场景文件中 `setup.launcherMode` 为 `"mock"` 时，才追加 `AGENTCRAFT_LAUNCHER_MODE="mock"`。
 
 #### Step 3: 构建检查
 
@@ -225,7 +228,7 @@ ls packages/cli/dist/bin/agentcraft.js 2>/dev/null || pnpm build
 #### Step 4: 启动 Daemon
 
 ```bash
-AGENTCRAFT_HOME="$TEST_DIR" AGENTCRAFT_SOCKET="$TEST_DIR/agentcraft.sock" AGENTCRAFT_LAUNCHER_MODE="mock" \
+AGENTCRAFT_HOME="$TEST_DIR" AGENTCRAFT_SOCKET="$TEST_DIR/agentcraft.sock" \
   node packages/cli/dist/bin/agentcraft.js daemon start --foreground &
 ```
 
@@ -387,8 +390,9 @@ Daemon 已停止
 ## 注意事项
 
 1. **环境隔离是第一优先级** — 每次测试必须使用临时目录，绝不影响用户的真实 AgentCraft 环境。
-2. **完整记录原始 I/O** — 报告中的执行日志必须包含每步的原始 stdout 和 stderr 全文，不得省略或截断。
-3. **避免重复 Issue** — 创建前先搜索，已有相同问题的 Issue 则添加 Comment。
-4. **cleanup 必须执行** — 无论测试成败，cleanup 步骤都要执行。停止 Daemon、删除临时目录。
-5. **引用要精确** — 报告中提及文件路径、退出码、输出内容时必须是实际值，不可虚构。
-6. **保持客观** — 判断基于事实观察，分析基于技术推理，不做无根据的猜测。
+2. **真实环境优先** — 默认使用真实 launcher 模式运行测试（不设置 `AGENTCRAFT_LAUNCHER_MODE`），除非用户明确要求 mock 模式或场景文件 `setup.launcherMode` 显式为 `"mock"`。真实模式能覆盖进程生命周期、ACP 连接、Session Lease 等 mock 模式无法验证的场景。
+3. **完整记录原始 I/O** — 报告中的执行日志必须包含每步的原始 stdout 和 stderr 全文，不得省略或截断。
+4. **避免重复 Issue** — 创建前先搜索，已有相同问题的 Issue 则添加 Comment。
+5. **cleanup 必须执行** — 无论测试成败，cleanup 步骤都要执行。停止 Daemon、删除临时目录。
+6. **引用要精确** — 报告中提及文件路径、退出码、输出内容时必须是实际值，不可虚构。
+7. **保持客观** — 判断基于事实观察，分析基于技术推理，不做无根据的猜测。

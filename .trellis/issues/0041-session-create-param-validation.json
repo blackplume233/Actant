@@ -1,0 +1,18 @@
+{
+  "id": 41,
+  "title": "session.create 缺少参数验证，空参数暴露 'undefined' 内部细节",
+  "status": "open",
+  "labels": ["enhancement", "qa", "api", "priority:P2"],
+  "milestone": null,
+  "body": "## 测试发现\n\n**场景**: Issue #35 随机漫步测试 — 边界条件\n**步骤**: 5.9 - session.create 空参数\n\n## 复现方式\n\n```bash\n# RPC 调用 session.create 传入空对象\n{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"session.create\",\"params\":{}}\n```\n\n## 期望行为\n\n返回参数验证错误，如 `Required field 'agentName' is missing`。\n\n## 实际行为\n\n返回 `Agent \"undefined\" not found`，暴露了 JavaScript 内部实现细节。\n\n## 分析\n\n`handleSessionCreate` 中使用 `params as unknown as SessionCreateParams` 进行类型断言，没有运行时参数验证。当 `agentName` 未提供时，解构为 `undefined`，传入 `getAgent(undefined)` 返回 null，最终错误消息包含字面量 `undefined`。\n\n## 建议修复\n\n在 `handleSessionCreate` 开头添加参数验证：\n```typescript\nif (!agentName || typeof agentName !== 'string') {\n  throw new Error('Required parameter \"agentName\" is missing or invalid');\n}\nif (!clientId || typeof clientId !== 'string') {\n  throw new Error('Required parameter \"clientId\" is missing or invalid');\n}\n```\n\n同样的问题可能存在于 session.prompt、session.cancel、session.close 等处理器中。",
+  "author": "qa-agent",
+  "assignees": [],
+  "relatedFiles": [
+    "packages/api/src/handlers/session-handlers.ts"
+  ],
+  "comments": [],
+  "createdAt": "2026-02-21T10:20:00.000Z",
+  "updatedAt": "2026-02-21T10:20:00.000Z",
+  "closedAt": null,
+  "closedAs": null
+}
