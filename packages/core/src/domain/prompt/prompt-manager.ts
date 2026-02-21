@@ -40,7 +40,7 @@ export class PromptManager extends BaseComponentManager<PromptDefinition> {
     return `# System Prompts\n\n${sections.join("\n\n---\n\n")}\n`;
   }
 
-  protected validate(data: unknown, source: string): PromptDefinition {
+  validate(data: unknown, source: string): PromptDefinition {
     const result = PromptDefinitionSchema.safeParse(data);
     if (!result.success) {
       throw new ConfigValidationError(

@@ -4,13 +4,69 @@ import type {
   PromptGetParams,
   McpGetParams,
   WorkflowGetParams,
+  ComponentAddParams,
+  ComponentUpdateParams,
+  ComponentRemoveParams,
+  ComponentImportParams,
+  ComponentExportParams,
   SkillDefinition,
   PromptDefinition,
   McpServerDefinition,
   WorkflowDefinition,
 } from "@agentcraft/shared";
+import type { BaseComponentManager, NamedComponent } from "@agentcraft/core";
 import type { AppContext } from "../services/app-context";
-import type { HandlerRegistry } from "./handler-registry";
+import type { HandlerRegistry, RpcHandler } from "./handler-registry";
+
+// ---------------------------------------------------------------------------
+// Generic CRUD handler factory
+// ---------------------------------------------------------------------------
+
+interface CrudHandlers {
+  add: RpcHandler;
+  update: RpcHandler;
+  remove: RpcHandler;
+  import: RpcHandler;
+  export: RpcHandler;
+}
+
+function createCrudHandlers<T extends NamedComponent>(
+  getManager: (ctx: AppContext) => BaseComponentManager<T>,
+): CrudHandlers {
+  return {
+    add: async (params: Record<string, unknown>, ctx: AppContext) => {
+      const { component } = params as unknown as ComponentAddParams;
+      const mgr = getManager(ctx);
+      const validated = mgr.validate(component, "rpc-add");
+      await mgr.add(validated, true);
+      return { name: validated.name };
+    },
+    update: async (params: Record<string, unknown>, ctx: AppContext) => {
+      const { name, patch } = params as unknown as ComponentUpdateParams;
+      const result = await getManager(ctx).update(name, patch as Partial<T>, true);
+      return { name: result.name };
+    },
+    remove: async (params: Record<string, unknown>, ctx: AppContext) => {
+      const { name } = params as unknown as ComponentRemoveParams;
+      const success = await getManager(ctx).remove(name, true);
+      return { success };
+    },
+    import: async (params: Record<string, unknown>, ctx: AppContext) => {
+      const { filePath } = params as unknown as ComponentImportParams;
+      const result = await getManager(ctx).importFromFile(filePath);
+      return { name: result.name };
+    },
+    export: async (params: Record<string, unknown>, ctx: AppContext) => {
+      const { name, filePath } = params as unknown as ComponentExportParams;
+      await getManager(ctx).exportToFile(name, filePath);
+      return { success: true };
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Registration
+// ---------------------------------------------------------------------------
 
 export function registerDomainHandlers(registry: HandlerRegistry): void {
   registry.register("skill.list", handleSkillList);
@@ -21,7 +77,31 @@ export function registerDomainHandlers(registry: HandlerRegistry): void {
   registry.register("mcp.get", handleMcpGet);
   registry.register("workflow.list", handleWorkflowList);
   registry.register("workflow.get", handleWorkflowGet);
+
+  const skillCrud = createCrudHandlers<SkillDefinition>((ctx) => ctx.skillManager);
+  const promptCrud = createCrudHandlers<PromptDefinition>((ctx) => ctx.promptManager);
+  const mcpCrud = createCrudHandlers<McpServerDefinition>((ctx) => ctx.mcpConfigManager);
+  const workflowCrud = createCrudHandlers<WorkflowDefinition>((ctx) => ctx.workflowManager);
+
+  const crudSets = [
+    { prefix: "skill", crud: skillCrud },
+    { prefix: "prompt", crud: promptCrud },
+    { prefix: "mcp", crud: mcpCrud },
+    { prefix: "workflow", crud: workflowCrud },
+  ];
+
+  for (const { prefix, crud } of crudSets) {
+    registry.register(`${prefix}.add`, crud.add);
+    registry.register(`${prefix}.update`, crud.update);
+    registry.register(`${prefix}.remove`, crud.remove);
+    registry.register(`${prefix}.import`, crud.import);
+    registry.register(`${prefix}.export`, crud.export);
+  }
 }
+
+// ---------------------------------------------------------------------------
+// Existing read-only handlers (preserved)
+// ---------------------------------------------------------------------------
 
 async function handleSkillList(
   _params: Record<string, unknown>,

@@ -21,7 +21,7 @@ export class WorkflowManager extends BaseComponentManager<WorkflowDefinition> {
     return workflow.content;
   }
 
-  protected validate(data: unknown, source: string): WorkflowDefinition {
+  validate(data: unknown, source: string): WorkflowDefinition {
     const result = WorkflowDefinitionSchema.safeParse(data);
     if (!result.success) {
       throw new ConfigValidationError(

@@ -8,6 +8,8 @@ import {
   registerAgentHandlers,
   registerSessionHandlers,
   registerDomainHandlers,
+  registerSourceHandlers,
+  registerPresetHandlers,
   registerDaemonHandlers,
   registerProxyHandlers,
 } from "../handlers/index";
@@ -30,6 +32,8 @@ export class Daemon {
     registerAgentHandlers(this.handlers);
     registerSessionHandlers(this.handlers);
     registerDomainHandlers(this.handlers);
+    registerSourceHandlers(this.handlers);
+    registerPresetHandlers(this.handlers);
     registerDaemonHandlers(this.handlers, () => this.stop());
     registerProxyHandlers(this.handlers);
   }

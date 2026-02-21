@@ -11,6 +11,7 @@ import {
   PromptManager,
   McpConfigManager,
   WorkflowManager,
+  SourceManager,
   createLauncher,
   type LauncherMode,
 } from "@agentcraft/core";
@@ -47,6 +48,7 @@ export class AppContext {
   readonly acpConnectionManager: AcpConnectionManager;
   readonly agentManager: AgentManager;
   readonly sessionRegistry: SessionRegistry;
+  readonly sourceManager: SourceManager;
 
   private initialized = false;
   private startTime = Date.now();
@@ -66,6 +68,13 @@ export class AppContext {
     this.promptManager = new PromptManager();
     this.mcpConfigManager = new McpConfigManager();
     this.workflowManager = new WorkflowManager();
+
+    this.sourceManager = new SourceManager(this.homeDir, {
+      skillManager: this.skillManager,
+      promptManager: this.promptManager,
+      mcpConfigManager: this.mcpConfigManager,
+      workflowManager: this.workflowManager,
+    });
 
     this.agentInitializer = new AgentInitializer(
       this.templateRegistry,
@@ -99,6 +108,7 @@ export class AppContext {
     await mkdir(this.instancesDir, { recursive: true });
 
     await this.loadDomainComponents();
+    await this.sourceManager.initialize();
 
     try {
       await this.templateRegistry.loadBuiltins(this.templatesDir);
@@ -126,6 +136,7 @@ export class AppContext {
 
     for (const { manager, sub } of dirs) {
       const dirPath = join(this.configsDir, sub);
+      manager.setPersistDir(dirPath);
       try {
         await manager.loadFromDirectory(dirPath);
       } catch {

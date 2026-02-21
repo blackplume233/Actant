@@ -4,5 +4,7 @@ export { createSkillCommand } from "./skill/index";
 export { createPromptCommand } from "./prompt/index";
 export { createMcpCommand } from "./mcp/index";
 export { createWorkflowCommand } from "./workflow/index";
+export { createSourceCommand } from "./source/index";
+export { createPresetCommand } from "./preset/index";
 export { createDaemonCommand } from "./daemon/index";
 export { createProxyCommand } from "./proxy";

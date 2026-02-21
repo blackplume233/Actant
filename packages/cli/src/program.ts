@@ -8,6 +8,8 @@ import {
   createPromptCommand,
   createMcpCommand,
   createWorkflowCommand,
+  createSourceCommand,
+  createPresetCommand,
   createDaemonCommand,
   createProxyCommand,
 } from "./commands/index";
@@ -31,6 +33,8 @@ export function createProgram(socketPath?: string, printer?: CliPrinter): Comman
   program.addCommand(createPromptCommand(client, printer));
   program.addCommand(createMcpCommand(client, printer));
   program.addCommand(createWorkflowCommand(client, printer));
+  program.addCommand(createSourceCommand(client, printer));
+  program.addCommand(createPresetCommand(client, printer));
   program.addCommand(createDaemonCommand(printer));
   program.addCommand(createProxyCommand(printer));
 

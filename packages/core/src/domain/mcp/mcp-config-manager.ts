@@ -34,7 +34,7 @@ export class McpConfigManager extends BaseComponentManager<McpServerDefinition> 
     return { mcpServers };
   }
 
-  protected validate(data: unknown, source: string): McpServerDefinition {
+  validate(data: unknown, source: string): McpServerDefinition {
     const result = McpServerDefinitionSchema.safeParse(data);
     if (!result.success) {
       throw new ConfigValidationError(

@@ -1,6 +1,7 @@
 import type { AgentTemplate } from "./template.types";
 import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, DetachResult } from "./agent.types";
 import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition } from "./domain-component.types";
+import type { SourceEntry, SourceConfig, PresetDefinition } from "./source.types";
 
 // ---------------------------------------------------------------------------
 // JSON-RPC 2.0 base types
@@ -355,6 +356,96 @@ export interface GatewayLeaseResult {
   socketPath: string;
 }
 
+export interface ComponentAddParams {
+  component: Record<string, unknown>;
+}
+
+export interface ComponentAddResult {
+  name: string;
+}
+
+export interface ComponentUpdateParams {
+  name: string;
+  patch: Record<string, unknown>;
+}
+
+export interface ComponentUpdateResult {
+  name: string;
+}
+
+export interface ComponentRemoveParams {
+  name: string;
+}
+
+export interface ComponentRemoveResult {
+  success: boolean;
+}
+
+export interface ComponentImportParams {
+  filePath: string;
+}
+
+export interface ComponentImportResult {
+  name: string;
+}
+
+export interface ComponentExportParams {
+  name: string;
+  filePath: string;
+}
+
+export interface ComponentExportResult {
+  success: boolean;
+}
+
+export type SourceListParams = Record<string, never>;
+export type SourceListResult = SourceEntry[];
+
+export interface SourceAddParams {
+  name: string;
+  config: SourceConfig;
+}
+
+export interface SourceAddResult {
+  name: string;
+  components: { skills: number; prompts: number; mcp: number; workflows: number; presets: number };
+}
+
+export interface SourceRemoveParams {
+  name: string;
+}
+
+export interface SourceRemoveResult {
+  success: boolean;
+}
+
+export interface SourceSyncParams {
+  name?: string;
+}
+
+export interface SourceSyncResult {
+  synced: string[];
+}
+
+export interface PresetListParams {
+  packageName?: string;
+}
+
+export type PresetListResult = PresetDefinition[];
+
+export interface PresetShowParams {
+  qualifiedName: string;
+}
+
+export type PresetShowResult = PresetDefinition;
+
+export interface PresetApplyParams {
+  qualifiedName: string;
+  templateName: string;
+}
+
+export type PresetApplyResult = AgentTemplate;
+
 // ---------------------------------------------------------------------------
 // Method registry type — maps method name to params/result for type safety
 // ---------------------------------------------------------------------------
@@ -386,12 +477,39 @@ export interface RpcMethodMap {
   "proxy.forward": { params: ProxyForwardParams; result: ProxyForwardResult };
   "skill.list": { params: SkillListParams; result: SkillListResult };
   "skill.get": { params: SkillGetParams; result: SkillGetResult };
+  "skill.add": { params: ComponentAddParams; result: ComponentAddResult };
+  "skill.update": { params: ComponentUpdateParams; result: ComponentUpdateResult };
+  "skill.remove": { params: ComponentRemoveParams; result: ComponentRemoveResult };
+  "skill.import": { params: ComponentImportParams; result: ComponentImportResult };
+  "skill.export": { params: ComponentExportParams; result: ComponentExportResult };
   "prompt.list": { params: PromptListParams; result: PromptListResult };
   "prompt.get": { params: PromptGetParams; result: PromptGetResult };
+  "prompt.add": { params: ComponentAddParams; result: ComponentAddResult };
+  "prompt.update": { params: ComponentUpdateParams; result: ComponentUpdateResult };
+  "prompt.remove": { params: ComponentRemoveParams; result: ComponentRemoveResult };
+  "prompt.import": { params: ComponentImportParams; result: ComponentImportResult };
+  "prompt.export": { params: ComponentExportParams; result: ComponentExportResult };
   "mcp.list": { params: McpListParams; result: McpListResult };
   "mcp.get": { params: McpGetParams; result: McpGetResult };
+  "mcp.add": { params: ComponentAddParams; result: ComponentAddResult };
+  "mcp.update": { params: ComponentUpdateParams; result: ComponentUpdateResult };
+  "mcp.remove": { params: ComponentRemoveParams; result: ComponentRemoveResult };
+  "mcp.import": { params: ComponentImportParams; result: ComponentImportResult };
+  "mcp.export": { params: ComponentExportParams; result: ComponentExportResult };
   "workflow.list": { params: WorkflowListParams; result: WorkflowListResult };
   "workflow.get": { params: WorkflowGetParams; result: WorkflowGetResult };
+  "workflow.add": { params: ComponentAddParams; result: ComponentAddResult };
+  "workflow.update": { params: ComponentUpdateParams; result: ComponentUpdateResult };
+  "workflow.remove": { params: ComponentRemoveParams; result: ComponentRemoveResult };
+  "workflow.import": { params: ComponentImportParams; result: ComponentImportResult };
+  "workflow.export": { params: ComponentExportParams; result: ComponentExportResult };
+  "source.list": { params: SourceListParams; result: SourceListResult };
+  "source.add": { params: SourceAddParams; result: SourceAddResult };
+  "source.remove": { params: SourceRemoveParams; result: SourceRemoveResult };
+  "source.sync": { params: SourceSyncParams; result: SourceSyncResult };
+  "preset.list": { params: PresetListParams; result: PresetListResult };
+  "preset.show": { params: PresetShowParams; result: PresetShowResult };
+  "preset.apply": { params: PresetApplyParams; result: PresetApplyResult };
   "daemon.ping": { params: DaemonPingParams; result: DaemonPingResult };
   "daemon.shutdown": { params: DaemonShutdownParams; result: DaemonShutdownResult };
   "gateway.lease": { params: GatewayLeaseParams; result: GatewayLeaseResult };

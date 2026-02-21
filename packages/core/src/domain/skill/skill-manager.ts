@@ -27,7 +27,7 @@ export class SkillManager extends BaseComponentManager<SkillDefinition> {
     return `# Agent Skills\n\n${sections.join("\n\n---\n\n")}\n`;
   }
 
-  protected validate(data: unknown, source: string): SkillDefinition {
+  validate(data: unknown, source: string): SkillDefinition {
     const result = SkillDefinitionSchema.safeParse(data);
     if (!result.success) {
       throw new ConfigValidationError(
