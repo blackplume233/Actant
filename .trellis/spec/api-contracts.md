@@ -341,9 +341,11 @@ Daemon → AgentManager.runPrompt()
 
 ### 3.5 Domain 组件管理 ✅ 已实现
 
-> 状态：**已实现**（Phase 2 MVP）
+> 状态：**已实现**（Phase 2 MVP + Phase 3a 增强）
 
-查询 Daemon 已加载的领域组件（skills、prompts、MCP 配置、workflows）。组件定义在 Daemon 启动时从 `configs/` 目录自动加载。
+查询、增删改 Daemon 已加载的领域组件（skills、prompts、MCP 配置、workflows、plugins）。组件定义在 Daemon 启动时从 `configs/` 目录自动加载。
+
+#### 组件查询
 
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
@@ -355,6 +357,22 @@ Daemon → AgentManager.runPrompt()
 | `mcp.get` | `{ name }` | `McpServerDefinition` | `CONFIG_NOT_FOUND` |
 | `workflow.list` | `{}` | `WorkflowDefinition[]` | — |
 | `workflow.get` | `{ name }` | `WorkflowDefinition` | `CONFIG_NOT_FOUND` |
+| `plugin.list` | `{}` | `PluginDefinition[]` | — |
+| `plugin.get` | `{ name }` | `PluginDefinition` | `CONFIG_NOT_FOUND` |
+
+#### 组件 CRUD（Phase 3a 新增） ✅ 已实现
+
+通用 CRUD 操作适用于所有组件类型。以 `plugin` 为例（`skill`/`prompt`/`mcp`/`workflow` 同理）：
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `plugin.add` | `{ filePath }` | `{ name, success }` | `CONFIG_VALIDATION` |
+| `plugin.update` | `{ name, data }` | `{ name, success }` | `CONFIG_NOT_FOUND` |
+| `plugin.remove` | `{ name }` | `{ name, success }` | `CONFIG_NOT_FOUND` |
+| `plugin.import` | `{ filePath }` | `{ name, success }` | `CONFIG_VALIDATION` |
+| `plugin.export` | `{ name, filePath }` | `{ filePath, success }` | `CONFIG_NOT_FOUND` |
+
+> `createCrudHandlers` 工厂函数为每种组件类型生成统一的 CRUD handlers。
 
 #### 组件类型定义
 
@@ -385,6 +403,15 @@ interface WorkflowDefinition {
   name: string;
   description?: string;
   content: string;       // 工作流内容（markdown）
+}
+
+interface PluginDefinition {
+  name: string;
+  description?: string;
+  type: "npm" | "file" | "config";  // 安装方式
+  source?: string;                   // npm 包名 / 文件路径 / 配置 ID
+  config?: Record<string, unknown>;  // 插件配置
+  enabled?: boolean;                 // 是否启用（默认 true）
 }
 ```
 
@@ -455,7 +482,60 @@ ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调
 | `proxy.forward` | `{ sessionId, acpMessage }` | `AcpMessage` | 转发 ACP 消息给 Agent |
 | `proxy.envCallback` | `{ sessionId, response }` | `{ ok }` | 回传环境请求的结果 *(not yet implemented)* |
 
-### 3.8 守护进程
+### 3.8 调度器管理（Phase 3c 新增） ✅ 已实现
+
+> 状态：**已实现**（Phase 3c — Employee Agent Scheduler）
+
+管理雇员型 Agent 的任务调度。调度器在 Agent 启动时根据 template 的 `schedule` 配置自动初始化。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `agent.dispatch` | `{ name, prompt, priority? }` | `{ queued }` | `AGENT_NOT_FOUND` |
+| `agent.tasks` | `{ name }` | `{ queued, processing, tasks }` | `AGENT_NOT_FOUND` |
+| `agent.logs` | `{ name, limit? }` | `ExecutionRecord[]` | `AGENT_NOT_FOUND` |
+| `schedule.list` | `{ name }` | `{ sources, running }` | `AGENT_NOT_FOUND` |
+
+#### agent.dispatch
+
+手动向 Agent 的任务队列推送一次性任务。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | `string` | **是** | Agent 实例名 |
+| `prompt` | `string` | **是** | 任务 prompt |
+| `priority` | `"low" \| "normal" \| "high" \| "critical"` | 否 | 优先级（默认 `"normal"`） |
+
+#### agent.tasks
+
+查看 Agent 的当前任务队列状态。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `queued` | `number` | 队列中等待的任务数 |
+| `processing` | `boolean` | 是否正在处理任务 |
+| `tasks` | `AgentTask[]` | 排队中的任务列表 |
+
+#### agent.logs
+
+查看 Agent 的任务执行历史。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | `string` | **是** | Agent 实例名 |
+| `limit` | `number` | 否 | 返回最近 N 条记录 |
+
+#### schedule.list
+
+查看 Agent 的输入源（Heartbeat/Cron/Hook）状态。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `sources` | `Array<{ id, type, active }>` | 已注册的输入源列表 |
+| `running` | `boolean` | 调度器是否正在运行 |
+
+> 实现参考：`packages/api/src/handlers/schedule-handlers.ts`，`packages/core/src/scheduler/`
+
+### 3.9 守护进程
 
 | 方法 | 参数 | 返回 | 说明 |
 |------|------|------|------|
@@ -531,12 +611,23 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 |------|------|------|---------|
 | `skill list` | — | `-f, --format` | `skill.list` |
 | `skill show <name>` | `name` | `-f, --format` | `skill.get` |
+| `skill add <file>` | `file` | — | `skill.add` |
+| `skill remove <name>` | `name` | — | `skill.remove` |
+| `skill export <name>` | `name` | `-o, --output <file>` | `skill.export` |
 | `prompt list` | — | `-f, --format` | `prompt.list` |
 | `prompt show <name>` | `name` | `-f, --format` | `prompt.get` |
+| `prompt add <file>` | `file` | — | `prompt.add` |
+| `prompt remove <name>` | `name` | — | `prompt.remove` |
+| `prompt export <name>` | `name` | `-o, --output <file>` | `prompt.export` |
 | `mcp list` | — | `-f, --format` | `mcp.list` |
 | `mcp show <name>` | `name` | `-f, --format` | `mcp.get` |
 | `workflow list` | — | `-f, --format` | `workflow.list` |
 | `workflow show <name>` | `name` | `-f, --format` | `workflow.get` |
+| `plugin list` | — | `-f, --format` | `plugin.list` |
+| `plugin show <name>` | `name` | `-f, --format` | `plugin.get` |
+| `plugin add <file>` | `file` | — | `plugin.add` |
+| `plugin remove <name>` | `name` | — | `plugin.remove` |
+| `plugin export <name>` | `name` | `-o, --output <file>` | `plugin.export` |
 
 组件定义文件从 `~/.agentcraft/configs/` 目录加载（可通过 `--configs-dir` 覆盖）：
 
@@ -546,10 +637,29 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 ├── prompts/         # PromptDefinition JSON
 ├── mcp/             # McpServerDefinition JSON
 ├── workflows/       # WorkflowDefinition JSON
+├── plugins/         # PluginDefinition JSON
 └── templates/       # AgentTemplate JSON
 ```
 
-### 4.5 ACP Proxy 命令
+### 4.5 调度器命令（Phase 3c 新增）
+
+#### Agent 任务调度
+
+| 命令 | 参数 | 选项 | 对应 RPC |
+|------|------|------|---------|
+| `agent dispatch <name>` | `name` | `-m, --message`（必填）, `-p, --priority` | `agent.dispatch` |
+| `agent tasks <name>` | `name` | `-f, --format` | `agent.tasks` |
+| `agent logs <name>` | `name` | `--limit <n>`, `-f, --format` | `agent.logs` |
+
+#### 调度源管理
+
+| 命令 | 参数 | 选项 | 对应 RPC |
+|------|------|------|---------|
+| `schedule list <name>` | `name` | `-f, --format` | `schedule.list` |
+
+> 实现参考：`packages/cli/src/commands/agent/dispatch.ts`, `packages/cli/src/commands/schedule/`
+
+### 4.6 ACP Proxy 命令
 
 | 命令 | 参数 | 选项 | 行为 |
 |------|------|------|------|

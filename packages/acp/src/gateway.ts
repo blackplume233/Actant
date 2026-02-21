@@ -6,6 +6,9 @@ import {
   type Agent,
   type InitializeResponse,
   type ClientCapabilities,
+  type NewSessionResponse,
+  type LoadSessionResponse,
+  type SetSessionConfigOptionResponse,
 } from "@agentclientprotocol/sdk";
 import { createLogger } from "@agentcraft/shared";
 import type { AcpConnection } from "./connection";
@@ -180,12 +183,12 @@ export class AcpGateway {
           sessionId: info.sessionId,
           modes: info.modes,
           configOptions: info.configOptions,
-        } as any;
+        } as NewSessionResponse;
       },
 
       loadSession: async (params) => {
         await this.downstream.loadSession(params.sessionId, params.cwd);
-        return {} as any;
+        return {} as LoadSessionResponse;
       },
 
       prompt: async (params) => {
@@ -205,7 +208,7 @@ export class AcpGateway {
       setSessionConfigOption: async (params) => {
         return await this.downstream.setSessionConfigOption(
           params.sessionId, params.configId, params.value,
-        ) as any;
+        ) as unknown as SetSessionConfigOptionResponse;
       },
     };
   }

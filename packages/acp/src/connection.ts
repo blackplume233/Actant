@@ -383,11 +383,11 @@ export class AcpConnection {
         sessionUpdate: (p) => handler.sessionUpdate(p),
         readTextFile: (p) => handler.readTextFile(p),
         writeTextFile: (p) => handler.writeTextFile(p),
-        createTerminal: handler.createTerminal ? (p) => handler.createTerminal!(p) : undefined,
-        terminalOutput: handler.terminalOutput ? (p) => handler.terminalOutput!(p) : undefined,
-        waitForTerminalExit: handler.waitForTerminalExit ? (p) => handler.waitForTerminalExit!(p) : undefined,
-        killTerminal: handler.killTerminal ? (p) => handler.killTerminal!(p) : undefined,
-        releaseTerminal: handler.releaseTerminal ? (p) => handler.releaseTerminal!(p) : undefined,
+        createTerminal: handler.createTerminal?.bind(handler),
+        terminalOutput: handler.terminalOutput?.bind(handler),
+        waitForTerminalExit: handler.waitForTerminalExit?.bind(handler),
+        killTerminal: handler.killTerminal?.bind(handler),
+        releaseTerminal: handler.releaseTerminal?.bind(handler),
       };
     }
 

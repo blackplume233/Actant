@@ -42,6 +42,7 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 | `provider` | [`ModelProviderConfig`](#modelproviderconfig) | **是** | 模型提供商 |
 | `domainContext` | [`DomainContextConfig`](#domaincontextconfig) | **是** | 领域上下文组合 |
 | `initializer` | [`InitializerConfig`](#initializerconfig) | 否 | 自定义初始化流程 |
+| `schedule` | [`ScheduleConfig`](#scheduleconfig) | 否 | 雇员型调度配置（Phase 3c 新增） |
 | `metadata` | `Record<string, string>` | 否 | 任意键值元数据 |
 
 ### AgentBackendConfig
@@ -85,6 +86,7 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 | `prompts` | `string[]` | `[]` | Prompt 名称列表 |
 | `mcpServers` | [`McpServerRef[]`](#mcpserverref) | `[]` | MCP 服务器引用 |
 | `workflow` | `string` | — | Workflow 名称 |
+| `plugins` | `string[]` | `[]` | Plugin 名称列表（Phase 3a 新增） |
 | `subAgents` | `string[]` | `[]` | 子 Agent 模板名称 |
 
 ### McpServerRef
@@ -109,6 +111,43 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 | `type` | `string` | **是** | 步骤类型标识符 |
 | `config` | `Record<string, unknown>` | 否 | 步骤特定配置 |
 
+### ScheduleConfig（Phase 3c 新增）
+
+定义雇员型 Agent 的自动调度策略。当模板包含 `schedule` 字段时，Agent 启动后自动初始化 EmployeeScheduler。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `heartbeat` | `HeartbeatConfig` | 否 | 心跳定时任务 |
+| `cron` | `CronConfig[]` | 否 | Cron 定时任务列表（默认 `[]`） |
+| `hooks` | `HookConfig[]` | 否 | 事件驱动任务列表（默认 `[]`） |
+
+#### HeartbeatConfig
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `intervalMs` | `number` | **是** | 间隔毫秒数（≥1000） |
+| `prompt` | `string` | **是** | 每次心跳发送的 prompt |
+| `priority` | `"low" \| "normal" \| "high" \| "critical"` | 否 | 任务优先级 |
+
+#### CronConfig
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `pattern` | `string` | **是** | Cron 表达式（6 位，使用 croner 库） |
+| `prompt` | `string` | **是** | 触发时发送的 prompt |
+| `timezone` | `string` | 否 | 时区（如 `"Asia/Shanghai"`） |
+| `priority` | `"low" \| "normal" \| "high" \| "critical"` | 否 | 任务优先级 |
+
+#### HookConfig
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `eventName` | `string` | **是** | 事件名称 |
+| `prompt` | `string` | **是** | 触发时发送的 prompt（支持 `{{payload}}` 占位符） |
+| `priority` | `"low" \| "normal" \| "high" \| "critical"` | 否 | 任务优先级 |
+
+> 实现参考：`packages/core/src/scheduler/schedule-config.ts`
+
 ### 示例
 
 ```json
@@ -130,7 +169,16 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
     "mcpServers": [
       { "name": "filesystem", "command": "npx", "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"] }
     ],
-    "workflow": "review-workflow"
+    "workflow": "review-workflow",
+    "plugins": ["memory-plugin"]
+  },
+  "schedule": {
+    "cron": [
+      { "pattern": "0 9 * * 1-5", "prompt": "Check for pending PRs and review them", "timezone": "Asia/Shanghai" }
+    ],
+    "hooks": [
+      { "eventName": "pr.opened", "prompt": "Review the new PR: {{payload}}" }
+    ]
   }
 }
 ```
@@ -248,6 +296,23 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 | `command` | `string` | **是** | 可执行命令 |
 | `args` | `string[]` | 否 | 命令参数 |
 | `env` | `Record<string, string>` | 否 | 环境变量 |
+
+### PluginDefinition（Phase 3a 新增）
+
+Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 BackendBuilder 物化到 workspace。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | `string` | **是** | 唯一名称 |
+| `description` | `string` | 否 | 描述 |
+| `type` | `"npm" \| "file" \| "config"` | **是** | 安装方式 |
+| `source` | `string` | 否 | npm 包名 / 文件路径 / 配置 ID |
+| `config` | `Record<string, unknown>` | 否 | 插件特定配置 |
+| `enabled` | `boolean` | 否 | 是否启用（默认 `true`） |
+
+> 注意：这是 Agent 侧 Plugin（Phase 3a），不同于 AgentCraft 系统级 Plugin（Phase 4 #13）。
+
+> 实现参考：`packages/core/src/domain/plugin/plugin-manager.ts`，类型定义见 `packages/shared/src/types/domain-component.types.ts`
 
 ---
 

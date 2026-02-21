@@ -162,7 +162,7 @@
 - [x] Phase 3c 全部完成
 - [x] roadmap.md 更新
 - [x] 全量测试通过（538/538 tests, 49 files）
-- [ ] spec 文档同步（api-contracts.md, config-spec.md）
+- [x] spec 文档同步（api-contracts.md, config-spec.md）
 
 ---
 

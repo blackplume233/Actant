@@ -8,6 +8,9 @@ import type {
 import { createLogger } from "@agentcraft/shared";
 import type { AcpConnection } from "./connection";
 
+interface PlanEntry { status: string; content: string }
+type UnknownRecord = Record<string, unknown>;
+
 const logger = createLogger("acp-communicator");
 
 /**
@@ -80,7 +83,7 @@ function mapNotificationToChunks(notification: SessionNotification): StreamChunk
           } else if (item.type === "diff") {
             chunks.push({
               type: "text",
-              content: `[Diff: ${(item as any).path}]`,
+              content: `[Diff: ${(item as UnknownRecord).path ?? ""}]`,
             });
           }
         }
@@ -88,13 +91,15 @@ function mapNotificationToChunks(notification: SessionNotification): StreamChunk
       return chunks;
     }
 
-    case "plan":
+    case "plan": {
+      const entries = (update as UnknownRecord).entries as PlanEntry[] | undefined;
       return [{
         type: "text",
-        content: (update as any).entries
-          ?.map((e: any) => `[Plan ${e.status}] ${e.content}`)
+        content: entries
+          ?.map((e) => `[Plan ${e.status}] ${e.content}`)
           .join("\n") ?? "[Plan updated]",
       }];
+    }
 
     case "available_commands_update":
       return [];
@@ -102,7 +107,7 @@ function mapNotificationToChunks(notification: SessionNotification): StreamChunk
     case "current_mode_update":
       return [{
         type: "text",
-        content: `[Mode changed: ${(update as any).modeId}]`,
+        content: `[Mode changed: ${(update as UnknownRecord).modeId ?? "unknown"}]`,
       }];
 
     case "config_option_update":
@@ -122,9 +127,9 @@ function mapContentToChunk(content: ContentBlock): StreamChunk | null {
     case "audio":
       return { type: "text", content: "[Audio content]" };
     case "resource":
-      return { type: "text", content: `[Resource: ${(content as any).resource?.uri ?? "unknown"}]` };
+      return { type: "text", content: `[Resource: ${((content as UnknownRecord).resource as UnknownRecord)?.uri ?? "unknown"}]` };
     case "resource_link":
-      return { type: "text", content: `[ResourceLink: ${(content as any).uri ?? "unknown"}]` };
+      return { type: "text", content: `[ResourceLink: ${(content as UnknownRecord).uri ?? "unknown"}]` };
     default:
       return null;
   }
