@@ -804,3 +804,75 @@ Phase 3: Session Lease + Proxy ACP 适配器
 ### Next Steps
 
 - None - task complete
+
+---
+
+## Session 15: ACP Complete Server Architecture — 设计 + 全量实现
+
+**Date**: 2026-02-21
+**Task**: ACP 协议完备性分析、架构设计、Gateway/Terminal/Callback Router 实现
+
+### Summary
+
+完成 ACP 协议完备 Server 架构的全生命周期：从逐行协议功能对比分析，到 Direct Bridge + Session Lease 双模架构设计文档，再到 5 个 Phase 的代码实现。新增 3 个核心模块（LocalTerminalManager、ClientCallbackRouter、AcpGateway），重写 AcpConnection 支持完整 Client 回调，重写 Session Lease Proxy 为 ACP 管道模式，修复 session.cancel ID 错位 bug。
+
+### Main Changes
+
+| Feature | Description |
+|---------|-------------|
+| **协议分析文档** | 逐行对比 ACP 规范 vs AgentCraft 实现，列出所有缺失项 |
+| **架构设计文档** | Direct Bridge (透明转发) + Session Lease (Gateway + 回调路由 + 本地伪装) |
+| **LocalTerminalManager** | 完整 ACP terminal/* 回调实现 (create/output/wait_for_exit/kill/release) |
+| **ClientCallbackRouter** | 根据 IDE capabilities 智能路由回调：转发给 IDE 或本地伪装处理 |
+| **AcpGateway** | AgentSideConnection 桥接上游 IDE 和下游 Agent，支持租约状态切换 |
+| **AcpConnection 重写** | 支持 loadSession/setMode/setConfigOption/authenticate + 多内容 prompt + 流式接口 |
+| **AcpCommunicator 增强** | 完整映射所有 ACP notification 类型 (thought/plan/tool_call/mode/config) |
+| **Proxy Lease 重写** | 优先 gateway.lease socket 管道，降级回退 legacy RPC 翻译 |
+| **Bug 修复** | session.cancel 使用 Agent 的 primary ACP session ID |
+| **RPC 类型** | 新增 gateway.lease 方法类型定义 |
+
+**Updated Files**:
+- `docs/design/acp-protocol-gap-analysis.md` (新建)
+- `docs/design/acp-complete-server-architecture.md` (新建)
+- `packages/acp/src/terminal-manager.ts` (新建)
+- `packages/acp/src/callback-router.ts` (新建)
+- `packages/acp/src/gateway.ts` (新建)
+- `packages/acp/src/connection.ts` (重写)
+- `packages/acp/src/connection-manager.ts` (重写)
+- `packages/acp/src/communicator.ts` (增强)
+- `packages/acp/src/index.ts` (更新导出)
+- `packages/cli/src/commands/proxy.ts` (重写 Lease 模式)
+- `packages/api/src/handlers/session-handlers.ts` (修复 cancel bug)
+- `packages/shared/src/types/rpc.types.ts` (新增 gateway.lease)
+
+### Key Decisions
+
+- AcpConnection 引入 `ClientCallbackHandler` 接口实现插拔式回调委托，为 Gateway 模式奠定基础
+- CallbackRouter 对所有 terminal/* 回调增加 try-catch 降级：IDE 转发失败自动回退本地处理
+- Proxy Lease 模式保留 legacy RPC 翻译作为降级回退（gateway.lease RPC 尚未在 Daemon 端注册）
+- `as any` 仅用于 ACP SDK 类型定义不完整的必要场景（8 处），不影响运行时安全
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `44e58f8` | docs: add ACP protocol gap analysis and complete server architecture design |
+| `2c33e4d` | feat(acp): implement complete ACP server architecture with Gateway, terminal callbacks, and callback routing |
+
+### Testing
+
+- [OK] type-check: 5/5 包通过 (acp, cli, api, shared, core)
+- [OK] test:changed: 311/311 tests passed (30 files)
+- [OK] 代码模式扫描: 0 console.log, 0 非空断言
+- [⚠️] pnpm lint: 跳过 (pnpm 不在 PATH)
+- [⚠️] e2e-cli: 12 tests 预存失败 (shared/dist 产物缺失，非本次引入)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Daemon 端注册 `gateway.lease` RPC handler（创建 Gateway socket 并返回路径）
+- 为 Gateway 添加集成测试（模拟 IDE ↔ Gateway ↔ Agent 三方交互）
+- 修复 E2E 测试 dist 产物缺失问题
