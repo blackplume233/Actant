@@ -398,7 +398,7 @@ spawn("claude-agent-acp", [], { cwd: workspaceDir, stdio: ["pipe","pipe","pipe"]
 - [x] 接收并存储 `configOptions`
 - [x] `AcpCommunicator` 增强通知映射
 
-### Phase 2: ACP Gateway 实现 -- DONE
+### Phase 2: ACP Gateway 实现 -- DONE (部分限制)
 
 **新文件：** `packages/acp/src/gateway.ts`, `packages/acp/src/callback-router.ts`
 
@@ -406,6 +406,7 @@ spawn("claude-agent-acp", [], { cwd: workspaceDir, stdio: ["pipe","pipe","pipe"]
 - [x] `ClientCallbackRouter`：根据 IDE 能力路由回调（转发 vs 伪装）
 - [x] 支持租约状态切换（Mode A ↔ Mode B）
 - [x] `AcpConnectionManager` 更新：支持 Gateway 预创建和 lease socket 接入
+- [ ] **已知限制**：`terminal/output`、`terminal/wait_for_exit`、`terminal/kill`、`terminal/release` 4 个回调的 IDE 转发为 stub（#43）。SDK 的 `AgentSideConnection` 不直接暴露这些方法，需通过底层 JSON-RPC 或 extMethod 扩展。当前 fallback 到本地 `LocalTerminalManager` 处理，功能可用但 IDE 终端面板无法集成。
 
 ### Phase 3: Session Lease Proxy 重写 -- DONE
 
