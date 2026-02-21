@@ -876,3 +876,59 @@ Phase 3: Session Lease + Proxy ACP 适配器
 - Daemon 端注册 `gateway.lease` RPC handler（创建 Gateway socket 并返回路径）
 - 为 Gateway 添加集成测试（模拟 IDE ↔ Gateway ↔ Agent 三方交互）
 - 修复 E2E 测试 dist 产物缺失问题
+
+---
+
+## Session 16: Unified Component Management — CRUD, Source Registry & Presets (#38)
+
+**Date**: 2026-02-21
+**Task**: 02-21-unified-component-management
+
+### Summary
+
+Implemented Phase 3a unified component management system: enhanced `BaseComponentManager` with full CRUD/persistence/import-export/search-filter, added extensible Source Registry (GitHub + Local sources with `package@name` namespacing), and introduced Preset as named component composition bundles. Wired up 28 new RPC methods and corresponding CLI commands across all 6 domains (skill, prompt, mcp, workflow, source, preset).
+
+### Main Changes
+
+- **BaseComponentManager enhanced**: `add`, `update`, `remove` (with persistence), `importFromFile`, `exportToFile`, `search`, `filter` methods; `setPersistDir` for runtime persistence path
+- **Source Management** (`packages/core/src/source/`): `ComponentSource` interface, `LocalSource`, `GitHubSource`, `SourceManager` with source registration, sync, and `package@name` namespaced component injection
+- **Preset system**: `PresetDefinition` type — named bundles of skills/prompts/mcpServers/workflows that can be applied to AgentTemplates in one operation; renamed from "Plugin" to reserve that term for Phase 4 system-level extensibility
+- **Shared types** (`packages/shared/src/types/`): `source.types.ts` with `SourceConfig`, `SourceEntry`, `PackageManifest`, `PresetDefinition`; 28 new RPC type definitions in `rpc.types.ts`
+- **API handlers**: `createCrudHandlers` generic factory for 20 domain CRUD RPC methods; `source-handlers.ts` (4 methods); `preset-handlers.ts` (3 methods)
+- **CLI commands**: `add`/`remove`/`export` subcommands for skill/prompt/mcp/workflow; full `source` command (list/add/remove/sync); full `preset` command (list/show/apply)
+- **AppContext integration**: `SourceManager` initialized with all domain managers, auto-loads on startup
+- **Tests**: 20 unit tests for BaseComponentManager CRUD; 11 unit tests for SourceManager (source lifecycle, preset handling, persistence)
+
+### Key Design Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| "Plugin" naming | Renamed to **Preset** | Reserve "Plugin" for Phase 4 system-level extensibility (code + source + preset extensions) |
+| Source extensibility | `ComponentSource` interface | Future source types (npm, HTTP registry) only need to implement one interface |
+| Component namespacing | `package@name` format | Prevents naming collisions across sources while keeping local components simple |
+| MCP management | Configuration-only, not runtime | MCPs are config definitions, not executable code in this context |
+| CRUD handler pattern | Generic factory `createCrudHandlers<T>()` | Eliminates duplication across 4 domain types (20 handlers from 1 factory) |
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d5675a4` | feat: unified component management with CRUD, source registry, and presets (#38) |
+
+### Testing
+
+- [OK] type-check: 6/6 packages passed (shared, core, acp, mcp-server, api, cli)
+- [OK] test:changed: 354/354 tests passed (33 files)
+- [OK] lint: 0 new errors in changed files (38 pre-existing in acp/trellis)
+- [OK] Code pattern scan: 0 new console.log, 0 new `any` type, 0 new non-null assertions
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Phase 4: System-level Plugin architecture (code extensions, source extensions, preset extensions)
+- Integration tests for source sync (GitHub clone, local scan end-to-end)
+- Update `.trellis/spec/` documentation to reflect new component management APIs
+- Wire up `preset.apply` to actually modify AgentTemplate files on disk

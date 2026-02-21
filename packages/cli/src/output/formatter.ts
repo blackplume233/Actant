@@ -1,6 +1,6 @@
 import Table from "cli-table3";
 import chalk from "chalk";
-import type { AgentTemplate, AgentInstanceMeta, SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition } from "@agentcraft/shared";
+import type { AgentTemplate, AgentInstanceMeta, SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "@agentcraft/shared";
 
 export type OutputFormat = "table" | "json" | "quiet";
 
@@ -343,5 +343,50 @@ export function formatWorkflowDetail(
     chalk.bold("Content:"),
     workflow.content,
   ];
+  return lines.join("\n");
+}
+
+export function formatPluginList(plugins: PluginDefinition[], format: OutputFormat): string {
+  if (format === "json") return JSON.stringify(plugins, null, 2);
+  if (format === "quiet") return plugins.map((p) => p.name).join("\n");
+  if (plugins.length === 0) return chalk.dim("No plugins loaded.");
+
+  const table = new Table({
+    head: [chalk.cyan("Name"), chalk.cyan("Type"), chalk.cyan("Source"), chalk.cyan("Enabled"), chalk.cyan("Description")],
+  });
+
+  for (const p of plugins) {
+    table.push([
+      p.name,
+      p.type,
+      p.source ?? chalk.dim("—"),
+      p.enabled !== false ? chalk.green("yes") : chalk.red("no"),
+      p.description ?? chalk.dim("—"),
+    ]);
+  }
+
+  return table.toString();
+}
+
+export function formatPluginDetail(plugin: PluginDefinition, format: OutputFormat): string {
+  if (format === "json") return JSON.stringify(plugin, null, 2);
+  if (format === "quiet") return plugin.name;
+
+  const lines = [
+    `${chalk.bold("Plugin:")}      ${plugin.name}`,
+    ...(plugin.description ? [`${chalk.bold("Description:")} ${plugin.description}`] : []),
+    `${chalk.bold("Type:")}        ${plugin.type}`,
+    ...(plugin.source ? [`${chalk.bold("Source:")}      ${plugin.source}`] : []),
+    `${chalk.bold("Enabled:")}     ${plugin.enabled !== false ? chalk.green("yes") : chalk.red("no")}`,
+  ];
+
+  if (plugin.config && Object.keys(plugin.config).length > 0) {
+    lines.push("");
+    lines.push(chalk.bold("Config:"));
+    for (const [k, v] of Object.entries(plugin.config)) {
+      lines.push(`  ${k}: ${JSON.stringify(v)}`);
+    }
+  }
+
   return lines.join("\n");
 }

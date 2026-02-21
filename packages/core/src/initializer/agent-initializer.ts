@@ -10,7 +10,7 @@ import {
   createLogger,
 } from "@agentcraft/shared";
 import type { TemplateRegistry } from "../template/registry/template-registry";
-import { ContextMaterializer, type DomainManagers } from "./context/context-materializer";
+import { WorkspaceBuilder, type DomainManagers } from "../builder/workspace-builder";
 import { readInstanceMeta, writeInstanceMeta } from "../state/index";
 
 const logger = createLogger("agent-initializer");
@@ -31,14 +31,14 @@ export interface InstanceOverrides {
 }
 
 export class AgentInitializer {
-  private readonly materializer: ContextMaterializer;
+  private readonly builder: WorkspaceBuilder;
 
   constructor(
     private readonly templateRegistry: TemplateRegistry,
     private readonly instancesBaseDir: string,
     private readonly options?: InitializerOptions,
   ) {
-    this.materializer = new ContextMaterializer(options?.domainManagers);
+    this.builder = new WorkspaceBuilder(options?.domainManagers);
   }
 
   /**
@@ -94,11 +94,7 @@ export class AgentInitializer {
 
     try {
       await mkdir(workspaceDir, { recursive: true });
-      await this.materializer.materialize(
-        workspaceDir,
-        template.domainContext,
-        template.backend.type,
-      );
+      await this.builder.build(workspaceDir, template.domainContext, template.backend.type);
 
       const now = new Date().toISOString();
       const launchMode = overrides?.launchMode ?? this.options?.defaultLaunchMode ?? "direct";

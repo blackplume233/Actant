@@ -4,6 +4,8 @@ import type {
   PromptGetParams,
   McpGetParams,
   WorkflowGetParams,
+  PluginGetParams,
+  PluginDefinition,
   ComponentAddParams,
   ComponentUpdateParams,
   ComponentRemoveParams,
@@ -77,17 +79,21 @@ export function registerDomainHandlers(registry: HandlerRegistry): void {
   registry.register("mcp.get", handleMcpGet);
   registry.register("workflow.list", handleWorkflowList);
   registry.register("workflow.get", handleWorkflowGet);
+  registry.register("plugin.list", handlePluginList);
+  registry.register("plugin.get", handlePluginGet);
 
   const skillCrud = createCrudHandlers<SkillDefinition>((ctx) => ctx.skillManager);
   const promptCrud = createCrudHandlers<PromptDefinition>((ctx) => ctx.promptManager);
   const mcpCrud = createCrudHandlers<McpServerDefinition>((ctx) => ctx.mcpConfigManager);
   const workflowCrud = createCrudHandlers<WorkflowDefinition>((ctx) => ctx.workflowManager);
+  const pluginCrud = createCrudHandlers<PluginDefinition>((ctx) => ctx.pluginManager);
 
   const crudSets = [
     { prefix: "skill", crud: skillCrud },
     { prefix: "prompt", crud: promptCrud },
     { prefix: "mcp", crud: mcpCrud },
     { prefix: "workflow", crud: workflowCrud },
+    { prefix: "plugin", crud: pluginCrud },
   ];
 
   for (const { prefix, crud } of crudSets) {
@@ -177,4 +183,23 @@ async function handleWorkflowGet(
     throw new ConfigNotFoundError(`Workflow "${name}" not found`);
   }
   return workflow;
+}
+
+async function handlePluginList(
+  _params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<PluginDefinition[]> {
+  return ctx.pluginManager.list();
+}
+
+async function handlePluginGet(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<PluginDefinition> {
+  const { name } = params as unknown as PluginGetParams;
+  const plugin = ctx.pluginManager.get(name);
+  if (!plugin) {
+    throw new ConfigNotFoundError(`Plugin "${name}" not found`);
+  }
+  return plugin;
 }

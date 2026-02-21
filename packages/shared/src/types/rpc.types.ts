@@ -1,6 +1,6 @@
 import type { AgentTemplate } from "./template.types";
 import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, DetachResult } from "./agent.types";
-import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition } from "./domain-component.types";
+import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "./domain-component.types";
 import type { SourceEntry, SourceConfig, PresetDefinition } from "./source.types";
 
 // ---------------------------------------------------------------------------
@@ -192,6 +192,46 @@ export interface AgentRunResult {
   sessionId?: string;
 }
 
+// agent.dispatch
+
+export interface AgentDispatchParams {
+  name: string;
+  prompt: string;
+  priority?: string;
+}
+export interface AgentDispatchResult {
+  queued: boolean;
+}
+
+// agent.tasks
+
+export interface AgentTasksParams {
+  name: string;
+}
+export interface AgentTasksResult {
+  queued: number;
+  processing: boolean;
+  tasks: unknown[];
+}
+
+// agent.logs
+
+export interface AgentLogsParams {
+  name: string;
+  limit?: number;
+}
+export type AgentLogsResult = unknown[];
+
+// schedule.list
+
+export interface ScheduleListParams {
+  name: string;
+}
+export interface ScheduleListResult {
+  sources: Array<{ id: string; type: string; active: boolean }>;
+  running: boolean;
+}
+
 // agent.prompt (ACP session)
 
 export interface AgentPromptParams {
@@ -327,6 +367,16 @@ export interface WorkflowGetParams {
   name: string;
 }
 export type WorkflowGetResult = WorkflowDefinition;
+
+// plugin.*
+
+export type PluginListParams = Record<string, never>;
+export type PluginListResult = PluginDefinition[];
+
+export interface PluginGetParams {
+  name: string;
+}
+export type PluginGetResult = PluginDefinition;
 
 // daemon.*
 
@@ -467,6 +517,10 @@ export interface RpcMethodMap {
   "agent.detach": { params: AgentDetachParams; result: AgentDetachResult };
   "agent.run": { params: AgentRunParams; result: AgentRunResult };
   "agent.prompt": { params: AgentPromptParams; result: AgentPromptResult };
+  "agent.dispatch": { params: AgentDispatchParams; result: AgentDispatchResult };
+  "agent.tasks": { params: AgentTasksParams; result: AgentTasksResult };
+  "agent.logs": { params: AgentLogsParams; result: AgentLogsResult };
+  "schedule.list": { params: ScheduleListParams; result: ScheduleListResult };
   "session.create": { params: SessionCreateParams; result: SessionCreateResult };
   "session.prompt": { params: SessionPromptParams; result: SessionPromptResult };
   "session.cancel": { params: SessionCancelParams; result: SessionCancelResult };
@@ -503,6 +557,13 @@ export interface RpcMethodMap {
   "workflow.remove": { params: ComponentRemoveParams; result: ComponentRemoveResult };
   "workflow.import": { params: ComponentImportParams; result: ComponentImportResult };
   "workflow.export": { params: ComponentExportParams; result: ComponentExportResult };
+  "plugin.list": { params: PluginListParams; result: PluginListResult };
+  "plugin.get": { params: PluginGetParams; result: PluginGetResult };
+  "plugin.add": { params: ComponentAddParams; result: ComponentAddResult };
+  "plugin.update": { params: ComponentUpdateParams; result: ComponentUpdateResult };
+  "plugin.remove": { params: ComponentRemoveParams; result: ComponentRemoveResult };
+  "plugin.import": { params: ComponentImportParams; result: ComponentImportResult };
+  "plugin.export": { params: ComponentExportParams; result: ComponentExportResult };
   "source.list": { params: SourceListParams; result: SourceListResult };
   "source.add": { params: SourceAddParams; result: SourceAddResult };
   "source.remove": { params: SourceRemoveParams; result: SourceRemoveResult };

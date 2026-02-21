@@ -13,6 +13,9 @@ import { createAgentDetachCommand } from "./detach";
 import { createAgentRunCommand } from "./run";
 import { createAgentPromptCommand } from "./prompt";
 import { createAgentChatCommand } from "./chat";
+import { createAgentDispatchCommand } from "./dispatch";
+import { createAgentTasksCommand } from "./tasks";
+import { createAgentLogsCommand } from "./logs";
 
 export function createAgentCommand(client: RpcClient, printer?: CliPrinter): Command {
   const cmd = new Command("agent")
@@ -30,6 +33,9 @@ export function createAgentCommand(client: RpcClient, printer?: CliPrinter): Com
   cmd.addCommand(createAgentRunCommand(client, printer));
   cmd.addCommand(createAgentPromptCommand(client, printer));
   cmd.addCommand(createAgentChatCommand(client, printer));
+  cmd.addCommand(createAgentDispatchCommand(client, printer));
+  cmd.addCommand(createAgentTasksCommand(client, printer));
+  cmd.addCommand(createAgentLogsCommand(client, printer));
 
   return cmd;
 }

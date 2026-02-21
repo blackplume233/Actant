@@ -39,6 +39,9 @@ export interface DomainManagers {
  *   workflow    → .trellis/workflow.md
  *   prompts     → prompts/system.md
  *   subAgents   → recorded in .agentcraft.json (not materialized as files)
+ *
+ * @deprecated Use WorkspaceBuilder + BackendBuilder instead (Phase 3b).
+ * Kept for backward compatibility; will be removed in a future version.
  */
 export class ContextMaterializer {
   constructor(private readonly managers?: DomainManagers) {}

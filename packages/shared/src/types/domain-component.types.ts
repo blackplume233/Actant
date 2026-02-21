@@ -38,3 +38,21 @@ export interface McpServerDefinition {
   args?: string[];
   env?: Record<string, string>;
 }
+
+/**
+ * A Plugin = an agent-side capability extension.
+ * Examples: Claude Code plugins, Cursor extensions, custom tool integrations.
+ * Distinct from AgentCraft system-level plugins (Phase 4 #13).
+ */
+export interface PluginDefinition {
+  name: string;
+  description?: string;
+  /** Plugin type: npm package, local file, or JSON config */
+  type: "npm" | "file" | "config";
+  /** For npm: package specifier (e.g. "@anthropic/memory"). For file: relative path. */
+  source?: string;
+  /** Plugin-specific configuration */
+  config?: Record<string, unknown>;
+  /** Whether this plugin is enabled by default */
+  enabled?: boolean;
+}

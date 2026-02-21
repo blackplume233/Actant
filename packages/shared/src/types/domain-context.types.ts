@@ -4,6 +4,7 @@ export interface DomainContextConfig {
   mcpServers?: McpServerRef[];
   workflow?: string;
   subAgents?: string[];
+  plugins?: string[];
 }
 
 export interface McpServerRef {

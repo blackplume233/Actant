@@ -148,27 +148,30 @@ Phase 1 (已完成)
 
 ---
 
-### Phase 3: 通信 · 管理 · 构造 · 调度 (Connectivity & Management)
-**目标**: 标准协议接入、完整组件管理、差异化构造器、雇员型 Agent 持续调度
+### Phase 3: 通信 · 管理 · 构造 · 共享 · 调度 (Connectivity & Management)
+**目标**: 标准协议接入、完整组件管理、差异化构造器、可共享生态体系、雇员型 Agent 持续调度
 **时间**: 当前
-**成功标准**: 组件完整 CRUD + Plugin 管理；不同后端差异化 workspace 构建；雇员型 Agent 可被 Daemon 持续调度 + N8N 可选集成
+**成功标准**: 组件完整 CRUD + Plugin 管理；不同后端差异化 workspace 构建；模板权限控制；Template/组件可通过 Source 分享 + 版本管理；雇员型 Agent 可被 Daemon 持续调度 + N8N 可选集成
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
 | #16 | ACP Proxy — 标准 ACP 协议网关（基础版） | P1 | #9, #15 | ✅ 完成 |
 | #35 | ACP Proxy + Chat — Direct Bridge 与 Session Lease 双模式 | P1 | #16 | ✅ 完成 |
-| **#38** | **统一组件管理体系 — Skill / Prompt / Plugin 完整 CRUD** | **P1** | #23, #24 | ⬜ 进行中 |
-|   #43 | └─ BaseComponentManager CRUD 增强 | P0 | - | ⬜ 待开始 |
-|   #44 | └─ PluginManager + Schema + 示例 | P0 | #43 | ⬜ 待开始 |
-|   #45 | └─ RPC Handlers + CLI 命令扩展 | P0 | #43, #44 | ⬜ 待开始 |
-| **#39** | **Workspace 构造器 — 差异化后端构建** | **P1** | #38 | ⬜ 待开始 |
-|   #46 | └─ BackendBuilder + CursorBuilder + ClaudeCodeBuilder | P0 | #44 | ⬜ 待开始 |
-|   #47 | └─ WorkspaceBuilder Pipeline + 迁移 | P0 | #46 | ⬜ 待开始 |
-| **#40** | **雇员型 Agent — 内置调度器 + N8N 集成** | **P1** | #37, #12, #11 | ⬜ 待开始 |
-|   #48 | └─ TaskQueue + Dispatcher + ExecutionLog | P0 | - | ⬜ 待开始 |
-|   #49 | └─ InputRouter + InputSources | P0 | #48 | ⬜ 待开始 |
-|   #50 | └─ EmployeeScheduler + 集成 + CLI | P0 | #48, #49 | ⬜ 待开始 |
+| **#38** | **统一组件管理体系 — Skill / Prompt / Plugin 完整 CRUD** | **P1** | #23, #24 | ✅ 完成 |
+|   #43 | └─ BaseComponentManager CRUD 增强 | P0 | - | ✅ 完成 |
+|   #44 | └─ PluginManager + Schema + 示例 | P0 | #43 | ✅ 完成 |
+|   #45 | └─ RPC Handlers + CLI 命令扩展 | P0 | #43, #44 | ✅ 完成 |
+| **#39** | **Workspace 构造器 — 差异化后端构建** | **P1** | #38 | ✅ 完成 |
+|   #46 | └─ BackendBuilder + CursorBuilder + ClaudeCodeBuilder | P0 | #44 | ✅ 完成 |
+|   #47 | └─ WorkspaceBuilder Pipeline + 迁移 | P0 | #46 | ✅ 完成 |
+| **#40** | **雇员型 Agent — 内置调度器 + N8N 集成** | **P1** | #37, #12, #11 | ✅ 完成 |
+|   #48 | └─ TaskQueue + Dispatcher + ExecutionLog | P0 | - | ✅ 完成 |
+|   #49 | └─ InputRouter + InputSources | P0 | #48 | ✅ 完成 |
+|   #50 | └─ EmployeeScheduler + 集成 + CLI | P0 | #48, #49 | ✅ 完成 |
 | #37 | 雇员型 Agent — 设计文档（原始设计） | ref | #12, #11 | 设计完成 |
+| **#51** | **AgentTemplate 权限控制 — 对齐 Claude Code permissions** | **P1** | #39, #46 | ⬜ 待开始 |
+| **#52** | **AgentTemplate 可通过 Source 分享 + Preset 支持** | **P1** | #38 | ⬜ 待开始 |
+| **#53** | **可共享内容版本控制 — 组件/模板/预设版本管理** | **P1** | #38, #52 | ⬜ 待开始 |
 | #17 | MCP Server — Agent 间通信能力 | P2 | #12 | 待开始 |
 | #5 | Template hot-reload on file change | P2 | - | 待开始 |
 
@@ -220,6 +223,31 @@ Phase 1 (已完成)
 > - CLI：agent dispatch / agent tasks / agent logs / agent watch
 > - 模板支持 `schedule` + `schedule.n8n` 配置字段
 
+#### #51 AgentTemplate 权限控制 — 对齐 Claude Code permissions
+> **目标**：模板作者可在 AgentTemplate 中声明工具权限、文件系统沙箱、网络策略，直接对齐 Claude Code 原生 `permissions` + `sandbox` 结构。
+>
+> - `permissions` 字段：allow / deny / ask 三级策略 + defaultMode + sandbox
+> - 预设语法糖：`"permissive"` / `"standard"` / `"restricted"` / `"readonly"`
+> - ContextMaterializer 根据 backendType 差异化物化（Claude Code 透传，Cursor 适配映射）
+> - 向后兼容：未设 permissions 等同当前默认行为
+
+#### #52 AgentTemplate 可通过 Source 分享 + Preset 支持
+> **目标**：将 AgentTemplate 纳入 Source 可共享组件体系，用户可从远程 Source 安装模板。
+>
+> - FetchResult / PackageManifest / PresetDefinition 新增 templates 字段
+> - SourceManagerDeps 新增 templateRegistry，注入/清除逻辑扩展
+> - LocalSource / GitHubSource 扫描 `templates/` 目录
+> - Preset 支持引用模板（installPreset 安装完整模板包）
+> - CLI：`template install <package>@<name>` / `template export`
+
+#### #53 可共享内容版本控制 — 组件/模板/预设版本管理
+> **目标**：为所有可共享组件（Skill、Prompt、Workflow、McpServer、Plugin、Template、Preset）建立版本管理体系。
+>
+> - 基础层：所有组件类型新增 `version?: string` 字段
+> - 引用层：组件引用支持版本约束语法（`name:^1.0.0`）
+> - 同步层：syncSource 返回 SyncReport（added/updated/removed/breaking），大版本变更给出警告
+> - 高级层（后续）：Lock 文件锁定 + 版本快照回滚
+
 **Phase 3 依赖关系:**
 ```
 Phase 2 (已完成)
@@ -235,7 +263,12 @@ Phase 2 (已完成)
  ├──→ 构造线 (3b): #39 Workspace 构造器 (依赖 3a #44)
  │     #46 BackendBuilder + CursorBuilder + ClaudeCodeBuilder
  │       └──→ #47 WorkspaceBuilder Pipeline + 迁移
- │             └──→ #39 完成 ✓
+ │       │     └──→ #39 完成 ✓
+ │       └──→ #51 AgentTemplate 权限控制 (依赖 #46 BackendBuilder)
+ │
+ ├──→ 共享增强线 (3d): Source 体系完善 (依赖 3a #38)
+ │     #52 AgentTemplate 可通过 Source 分享 + Preset 支持
+ │       └──→ #53 可共享内容版本控制 — 组件/模板/预设版本管理
  │
  ├──→ 调度线 (3c): #40 雇员型 Agent (独立于 3a/3b)
  │     #48 TaskQueue + Dispatcher
@@ -303,11 +336,17 @@ AgentCraft-side Plugin (#13, Phase 4):
 
 ## 当前进行中 (Current)
 
-Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 和 #35 双模式已完成。当前聚焦 **Phase 3 剩余核心项**，按三条并行线推进：
+Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。当前聚焦 **Phase 3 剩余增强项**（#51 权限控制、#52 Source 分享、#53 版本控制）和 **Phase 4 扩展体系**。
 
-**管理线 (3a)**: #43 → #44 → #45 → 完成 #38
-**构造线 (3b)**: #46 → #47 → 完成 #39（依赖 3a 的 PluginManager）
-**调度线 (3c)**: #48 → #49 → #50 → 完成 #40（独立，可与 3a 并行）
+**已完成线**：
+- ✅ 管理线 (3a): #43 → #44 → #45 → #38 完成
+- ✅ 构造线 (3b): #46 → #47 → #39 完成
+- ✅ 调度线 (3c): #48 → #49 → #50 → #40 完成
+
+**待推进**：
+- #51 AgentTemplate 权限控制（依赖 #39 已完成）
+- #52 AgentTemplate 可通过 Source 分享（依赖 #38 已完成）
+- #53 可共享内容版本控制（依赖 #52）
 
 详细 TODO 跟踪见：`.trellis/phase3-todo.md`
 详细设计见：`docs/design/mvp-next-design.md`
@@ -336,17 +375,15 @@ Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 和 #35 双模式已�
 | 示例内容 | 2 skills + 1 prompt + 1 MCP + 1 workflow + 1 template |
 | 测试覆盖 | 313 tests across 29 files (从 290 增长到 313) |
 
-### Phase 3 进展总结（#16 ACP Proxy 已完成）
+### Phase 3 进展总结（核心三线全部完成）
 
-| 功能 | 实现内容 |
-|------|---------|
-| ACP 包 (`@agentcraft/acp`) | `AcpConnection`（stdio + ClientSideConnection），`AcpConnectionManager`（连接池），`AcpCommunicator`（AgentCommunicator 适配） |
-| Backend 重构 | `claude-code` 使用 `claude-agent-acp`，`ProcessLauncher` 支持 ACP stdio pipes |
-| AgentManager ACP 集成 | `startAgent` 建立 ACP 连接，`stopAgent` 断开，`runPrompt` ACP 优先回退 CLI，`promptAgent` 新方法 |
-| RPC 新方法 | `agent.prompt`（ACP session 交互），`proxy.connect/disconnect/forward`（Proxy session 管理） |
-| CLI 新命令 | `agent prompt <name> -m <message>`，`agentcraft proxy <name> [--env-passthrough]` |
-| 测试 | `AcpConnectionManager` 单元测试，`AcpCommunicator` 单元测试，`proxy-handlers` 单元测试（14 new tests） |
-| Spec 更新 | api-contracts.md §3.6/§3.7/§7 标记已实现，config-spec.md 新增 `ANTHROPIC_API_KEY`，roadmap.md #16 完成 |
+| 子阶段 | 功能 | 实现内容 |
+|--------|------|---------|
+| 协议线 | ACP 包 (`@agentcraft/acp`) | `AcpConnection`、`AcpConnectionManager`、`AcpCommunicator`、Proxy + Chat 双模式 |
+| 3a 管理 | 统一组件管理体系 | `BaseComponentManager` CRUD 增强 + `PluginManager` + Plugin RPC/CLI 全套命令 |
+| 3b 构造 | Workspace 构造器 | `BackendBuilder` 接口 + `CursorBuilder` + `ClaudeCodeBuilder` + `WorkspaceBuilder` Pipeline + `AgentInitializer` 迁移 |
+| 3c 调度 | 雇员型 Agent 调度器 | `TaskQueue` + `TaskDispatcher` + `ExecutionLog` + `InputRouter` (Heartbeat/Cron/Hook) + `EmployeeScheduler` + Schedule RPC/CLI |
+| 测试 | 538 tests / 49 files | 全量通过，从 313 tests (Phase 2) 增长到 538 tests |
 
 ### 耐久测试覆盖 — 持续验证能力
 
@@ -386,8 +423,11 @@ Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 和 #35 双模式已�
 | 8 | **#39** | **Workspace 构造器 — 差异化后端构建** | #38 | BackendBuilder strategy + CursorBuilder/ClaudeCodeBuilder |
 | 9 | **#40** | **雇员型 Agent — 内置调度器 + N8N 集成** | #11, #12, #37 | TaskQueue + InputRouter + Scheduler + N8N Bridge |
 | 10 | **#35** | **Proxy + Chat — Direct Bridge 与 Session Lease 双模式** | #16 | Session Lease（默认）+ Direct Bridge，废弃 Gateway |
-| 11 | **#17** | MCP Server — Agent 间通信能力 | #12 | 暴露 agentcraft_run_agent 等 MCP tools |
-| 12 | #5 | Template hot-reload on file change | 无 | Daemon 监听 template 变更自动 reload |
+| 11 | **#51** | **AgentTemplate 权限控制** | #39, #46 | 对齐 Claude Code permissions + sandbox，动态生成后端配置 |
+| 12 | **#52** | **AgentTemplate 可通过 Source 分享** | #38 | Source/Preset 支持 Template，TemplateRegistry 注入 |
+| 13 | **#53** | **可共享内容版本控制** | #38, #52 | 组件 version 字段 + SyncReport + 版本约束语法 |
+| 14 | **#17** | MCP Server — Agent 间通信能力 | #12 | 暴露 agentcraft_run_agent 等 MCP tools |
+| 15 | #5 | Template hot-reload on file change | 无 | Daemon 监听 template 变更自动 reload |
 
 ### P2 — Phase 4 扩展
 
@@ -428,6 +468,15 @@ Phase 1、Phase 2 MVP 全部完成，Phase 3 #16 ACP Proxy 和 #35 双模式已�
 | #25 | CLI Agent 交互 (chat / run) | 2026-02-20 | Phase 2 MVP |
 | #26 | MVP 端到端集成与示例模板 | 2026-02-20 | Phase 2 MVP |
 | #16 | ACP Proxy — 标准 ACP 协议网关 | 2026-02-20 | Phase 3 |
+| #35 | ACP Proxy + Chat — Direct Bridge 与 Session Lease 双模式 | 2026-02-20 | Phase 3 |
+| #43 | BaseComponentManager CRUD 增强 | 2026-02-21 | Phase 3a |
+| #44 | PluginManager + Schema + 示例 | 2026-02-21 | Phase 3a |
+| #45 | RPC Handlers + CLI 命令扩展 | 2026-02-21 | Phase 3a |
+| #46 | BackendBuilder + CursorBuilder + ClaudeCodeBuilder | 2026-02-21 | Phase 3b |
+| #47 | WorkspaceBuilder Pipeline + AgentInitializer 迁移 | 2026-02-21 | Phase 3b |
+| #48 | TaskQueue + TaskDispatcher + ExecutionLog | 2026-02-21 | Phase 3c |
+| #49 | InputRouter + HeartbeatInput + CronInput + HookInput | 2026-02-21 | Phase 3c |
+| #50 | EmployeeScheduler + AgentManager 集成 + CLI | 2026-02-22 | Phase 3c |
 
 ---
 
@@ -481,9 +530,16 @@ Phase 1 ──→ #12 Daemon ↔ Agent 通信 (P0) ✅
 #23/#24 (来自 MVP)
  └──→ #38 统一组件管理体系 (P1)
        Skill/Prompt CRUD + PluginManager + import/export
-       └──→ #39 Workspace 构造器 (P1)
-             BackendBuilder strategy: Cursor/ClaudeCode/Custom
-             scaffold → materialize → inject → verify
+       ├──→ #39 Workspace 构造器 (P1)
+       │     BackendBuilder strategy: Cursor/ClaudeCode/Custom
+       │     scaffold → materialize → inject → verify
+       │     └──→ #51 AgentTemplate 权限控制 (P1)
+       │           对齐 Claude Code permissions + sandbox
+       │
+       └──→ 共享增强线:
+             #52 AgentTemplate 可通过 Source 分享 (P1)
+               └──→ #53 可共享内容版本控制 (P1)
+                     组件/模板/预设版本管理 + SyncReport
 
 调度线:
 #11/#12 (来自 Phase 1/2)

@@ -1,4 +1,5 @@
 import { z } from "zod/v4";
+import { ScheduleConfigSchema } from "../../scheduler/schedule-config";
 
 export const McpServerRefSchema = z.object({
   name: z.string().min(1),
@@ -13,6 +14,7 @@ export const DomainContextSchema = z.object({
   mcpServers: z.array(McpServerRefSchema).optional().default([]),
   workflow: z.string().optional(),
   subAgents: z.array(z.string()).optional().default([]),
+  plugins: z.array(z.string()).optional().default([]),
 });
 
 export const AgentBackendSchema = z.object({
@@ -42,6 +44,7 @@ export const AgentTemplateSchema = z.object({
   provider: ModelProviderSchema,
   domainContext: DomainContextSchema,
   initializer: InitializerSchema.optional(),
+  schedule: ScheduleConfigSchema.optional(),
   metadata: z.record(z.string(), z.string()).optional(),
 });
 

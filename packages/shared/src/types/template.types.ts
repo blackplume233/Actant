@@ -8,6 +8,11 @@ export interface AgentTemplate {
   provider: ModelProviderConfig;
   domainContext: DomainContextConfig;
   initializer?: InitializerConfig;
+  schedule?: {
+    heartbeat?: { intervalMs: number; prompt: string; priority?: string };
+    cron?: Array<{ pattern: string; prompt: string; timezone?: string; priority?: string }>;
+    hooks?: Array<{ eventName: string; prompt: string; priority?: string }>;
+  };
   metadata?: Record<string, string>;
 }
 

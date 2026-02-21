@@ -11,8 +11,10 @@ import {
   PromptManager,
   McpConfigManager,
   WorkflowManager,
+  PluginManager,
   SourceManager,
   createLauncher,
+  EmployeeScheduler,
   type LauncherMode,
 } from "@agentcraft/core";
 import { AcpConnectionManager } from "@agentcraft/acp";
@@ -44,11 +46,13 @@ export class AppContext {
   readonly promptManager: PromptManager;
   readonly mcpConfigManager: McpConfigManager;
   readonly workflowManager: WorkflowManager;
+  readonly pluginManager: PluginManager;
   readonly agentInitializer: AgentInitializer;
   readonly acpConnectionManager: AcpConnectionManager;
   readonly agentManager: AgentManager;
   readonly sessionRegistry: SessionRegistry;
   readonly sourceManager: SourceManager;
+  readonly schedulers: Map<string, EmployeeScheduler>;
 
   private initialized = false;
   private startTime = Date.now();
@@ -68,6 +72,7 @@ export class AppContext {
     this.promptManager = new PromptManager();
     this.mcpConfigManager = new McpConfigManager();
     this.workflowManager = new WorkflowManager();
+    this.pluginManager = new PluginManager();
 
     this.sourceManager = new SourceManager(this.homeDir, {
       skillManager: this.skillManager,
@@ -98,6 +103,7 @@ export class AppContext {
       this.instancesDir,
       { acpManager: launcherMode !== "mock" ? this.acpConnectionManager : undefined },
     );
+    this.schedulers = new Map();
   }
 
   async init(): Promise<void> {
@@ -132,6 +138,7 @@ export class AppContext {
       { manager: this.promptManager, sub: "prompts" },
       { manager: this.mcpConfigManager, sub: "mcp" },
       { manager: this.workflowManager, sub: "workflows" },
+      { manager: this.pluginManager, sub: "plugins" },
     ] as const;
 
     for (const { manager, sub } of dirs) {

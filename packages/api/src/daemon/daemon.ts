@@ -12,6 +12,7 @@ import {
   registerPresetHandlers,
   registerDaemonHandlers,
   registerProxyHandlers,
+  registerScheduleHandlers,
 } from "../handlers/index";
 import { writePidFile, removePidFile, readPidFile, isProcessRunning } from "./pid-file";
 
@@ -36,6 +37,7 @@ export class Daemon {
     registerPresetHandlers(this.handlers);
     registerDaemonHandlers(this.handlers, () => this.stop());
     registerProxyHandlers(this.handlers);
+    registerScheduleHandlers(this.handlers);
   }
 
   get socketPath(): string {
