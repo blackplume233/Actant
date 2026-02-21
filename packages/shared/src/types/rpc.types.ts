@@ -344,6 +344,18 @@ export interface DaemonShutdownResult {
 }
 
 // ---------------------------------------------------------------------------
+// Gateway lease — request an ACP Gateway socket for Session Lease
+// ---------------------------------------------------------------------------
+
+export interface GatewayLeaseParams {
+  agentName: string;
+}
+
+export interface GatewayLeaseResult {
+  socketPath: string;
+}
+
+// ---------------------------------------------------------------------------
 // Method registry type — maps method name to params/result for type safety
 // ---------------------------------------------------------------------------
 
@@ -382,6 +394,7 @@ export interface RpcMethodMap {
   "workflow.get": { params: WorkflowGetParams; result: WorkflowGetResult };
   "daemon.ping": { params: DaemonPingParams; result: DaemonPingResult };
   "daemon.shutdown": { params: DaemonShutdownParams; result: DaemonShutdownResult };
+  "gateway.lease": { params: GatewayLeaseParams; result: GatewayLeaseResult };
 }
 
 export type RpcMethod = keyof RpcMethodMap;

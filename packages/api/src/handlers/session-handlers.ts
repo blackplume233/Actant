@@ -112,9 +112,15 @@ async function handleSessionCancel(
     throw new Error(`Agent "${lease.agentName}" has no ACP connection`);
   }
 
+  // Use the Agent's primary ACP session ID, not the lease session ID
+  const acpSessionId = ctx.acpConnectionManager.getPrimarySessionId(lease.agentName);
+  if (!acpSessionId) {
+    throw new Error(`Agent "${lease.agentName}" has no primary ACP session`);
+  }
+
   try {
-    await conn.cancel(sessionId);
-    logger.info({ sessionId, agentName: lease.agentName }, "Session cancel sent to ACP");
+    await conn.cancel(acpSessionId);
+    logger.info({ sessionId, acpSessionId, agentName: lease.agentName }, "Session cancel sent to ACP");
   } catch (err) {
     logger.error({ sessionId, error: err }, "Failed to cancel ACP session");
     throw new Error(`Failed to cancel session: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
