@@ -40,14 +40,55 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
           process.exitCode = 1;
         }
       } else {
-        const daemonScript = join(import.meta.dirname, "..", "daemon-entry.js");
+        const daemonScript = join(import.meta.dirname, "daemon-entry.js");
+
+        const stderrChunks: Buffer[] = [];
         const child = fork(daemonScript, [], {
           detached: true,
-          stdio: "ignore",
+          stdio: ["ignore", "ignore", "pipe", "ipc"],
           env: process.env,
         });
+
+        child.stderr?.on("data", (chunk: Buffer) => {
+          stderrChunks.push(chunk);
+        });
+
+        let earlyExit = false;
+        let earlyExitCode: number | null = null;
+        child.on("exit", (code) => {
+          earlyExit = true;
+          earlyExitCode = code;
+        });
+
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        if (earlyExit) {
+          const stderr = Buffer.concat(stderrChunks).toString().trim();
+          printer.error(`Daemon process exited unexpectedly (code: ${earlyExitCode}).`);
+          if (stderr) printer.error(stderr);
+          process.exitCode = 1;
+          return;
+        }
+
+        let healthy = false;
+        for (let i = 0; i < 3; i++) {
+          healthy = await client.ping();
+          if (healthy) break;
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+
+        child.stderr?.destroy();
+        if (child.connected) child.disconnect();
         child.unref();
-        printer.log(`${chalk.green("Daemon started.")} PID: ${child.pid}`);
+
+        if (healthy) {
+          printer.log(`${chalk.green("Daemon started.")} PID: ${child.pid}`);
+        } else {
+          const stderr = Buffer.concat(stderrChunks).toString().trim();
+          printer.error("Daemon process started but is not responding.");
+          if (stderr) printer.error(stderr);
+          process.exitCode = 1;
+        }
       }
     });
 }
