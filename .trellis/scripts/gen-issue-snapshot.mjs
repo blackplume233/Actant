@@ -14,8 +14,56 @@ const ISSUES_DIR = join(__dirname, "..", "issues");
 const version = process.argv[2] || "v0.1.0";
 const outputPath = process.argv[3] || join(__dirname, "..", "..", "docs", "stage", version, "issue-snapshot.json");
 
+function parseFrontmatter(raw) {
+  const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) return {};
+  const yaml = m[1];
+  const result = {};
+  let currentKey = null;
+  let collecting = false;
+  let arr = [];
+
+  for (const line of yaml.split(/\r?\n/)) {
+    const indented = line.match(/^  - (.+)/);
+    const kv = line.match(/^(\w[\w.]*?):\s*(.*)/);
+    if (indented && collecting) {
+      let v = indented[1].trim();
+      if (v === "null") v = null;
+      else if (/^-?\d+$/.test(v)) v = Number(v);
+      else if (v.startsWith('"') && v.endsWith('"')) v = v.slice(1, -1);
+      arr.push(v);
+      continue;
+    }
+    if (collecting) { result[currentKey] = arr; collecting = false; arr = []; }
+    if (kv) {
+      currentKey = kv[1];
+      const val = kv[2].trim();
+      if (val === "" || val === undefined) { collecting = true; arr = []; }
+      else if (val === "[]") { result[currentKey] = []; }
+      else if (val === "null") { result[currentKey] = null; }
+      else if (/^-?\d+$/.test(val)) { result[currentKey] = Number(val); }
+      else if (val.startsWith('"') && val.endsWith('"')) { result[currentKey] = val.slice(1, -1); }
+      else { result[currentKey] = val; }
+    }
+  }
+  if (collecting) result[currentKey] = arr;
+  return result;
+}
+
 async function main() {
-  const files = (await readdir(ISSUES_DIR)).filter(f => /^\d{4}-.*\.json$/.test(f));
+  const allFiles = await readdir(ISSUES_DIR);
+  const issueFiles = allFiles.filter(f => /^\d{4}-.*\.(json|md)$/.test(f));
+
+  // Deduplicate: prefer .md over .json for same prefix
+  const seen = new Map();
+  for (const f of issueFiles) {
+    const prefix = f.replace(/\.(json|md)$/, "");
+    const ext = f.endsWith(".md") ? "md" : "json";
+    if (!seen.has(prefix) || ext === "md") {
+      seen.set(prefix, f);
+    }
+  }
+  const files = [...seen.values()].sort();
 
   const snapshot = {
     version,
@@ -29,7 +77,12 @@ async function main() {
   for (const f of files) {
     let data;
     try {
-      data = JSON.parse(await readFile(join(ISSUES_DIR, f), "utf8"));
+      const raw = await readFile(join(ISSUES_DIR, f), "utf8");
+      if (f.endsWith(".json")) {
+        data = JSON.parse(raw);
+      } else {
+        data = parseFrontmatter(raw);
+      }
     } catch {
       console.warn(`  ⚠ Skipping malformed: ${f}`);
       continue;
@@ -45,6 +98,10 @@ async function main() {
       snapshot.byMilestone[data.milestone] = (snapshot.byMilestone[data.milestone] || 0) + 1;
     }
 
+    // Normalize githubRef — may be string or object
+    let ghRef = data.githubRef;
+    if (ghRef && typeof ghRef === "object") ghRef = ghRef.url || null;
+
     snapshot.issues.push({
       id: data.id,
       title: data.title,
@@ -52,7 +109,7 @@ async function main() {
       labels: data.labels || [],
       milestone: data.milestone || null,
       closedAs: data.closedAs || null,
-      githubRef: data.githubRef ? data.githubRef.url : null
+      githubRef: ghRef || null
     });
   }
 

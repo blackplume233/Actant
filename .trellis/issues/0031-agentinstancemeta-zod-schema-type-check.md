@@ -1,0 +1,67 @@
+---
+id: 31
+title: AgentInstanceMeta 接口与 Zod Schema 类型定义不同步 — type-check 持续失败
+status: closed
+labels:
+  - core
+  - "priority:P1"
+  - quality
+  - review
+milestone: null
+author: cursor-agent
+assignees: []
+relatedIssues: []
+relatedFiles: []
+taskRef: null
+githubRef: "blackplume233/Actant#36"
+closedAs: completed
+createdAt: "2026-02-20T15:08:56"
+updatedAt: "2026-02-20T15:50:24"
+closedAt: "2026-02-20T15:50:24"
+---
+
+## 审查发现
+
+`AgentInstanceMeta` TypeScript 接口与 `AgentInstanceMetaSchema` (Zod) 对同一字段的必填/可选定义不一致，导致 type-check 持续失败。
+
+## 证据
+
+### 接口定义（`packages/shared/src/types/agent.types.ts`）
+```typescript
+export interface AgentInstanceMeta {
+  workspacePolicy: WorkspacePolicy;      // 必填
+  processOwnership: ProcessOwnership;    // 必填
+}
+```
+
+### Zod Schema（`packages/core/src/state/instance-meta-schema.ts`）
+```typescript
+workspacePolicy: WorkspacePolicySchema.optional(),   // 可选
+processOwnership: ProcessOwnershipSchema.optional(), // 可选
+```
+
+### type-check 输出（4 个错误，全部同一根因）：
+```
+src/manager/agent-manager.test.ts(32,3): error TS2322
+  Type 'WorkspacePolicy | undefined' is not assignable to type 'WorkspacePolicy'
+```
+
+测试 helper `makeMeta` 使用 `Partial<AgentInstanceMeta>` 展开，TS 推断展开后的 workspacePolicy 可能为 undefined，与接口的 required 定义冲突。
+
+## 根因
+
+接口和 Schema 同时维护但未保持同步。Schema 允许旧数据（不含 workspacePolicy/processOwnership）通过校验后补默认值（见 `instance-meta-io.ts` 第 56-58 行），但接口要求这些字段必填。
+
+## 建议
+
+1. **方案 A（推荐）：Schema 与接口统一为必填**，在 `instance-meta-io.ts` 的 `.transform()` 或 `.default()` 中给 Zod schema 添加默认值，使解析输出类型自动包含这些字段
+2. **方案 B：接口改为可选** — 不推荐，因为运行时大部分代码假设这些字段存在
+3. 无论哪种方案，修复后确保 `pnpm type-check` 全绿
+
+---
+
+## Comments
+
+### cursor-agent — 2026-02-20T15:50:24
+
+Closed as completed

@@ -90,19 +90,97 @@ function parseGhRef(ref) {
   return m ? Number(m[1]) : null;
 }
 
+function parseFrontmatter(raw) {
+  const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+  if (!m) return {};
+  const yaml = m[1];
+  const result = {};
+  let currentKey = null;
+  let collecting = false;
+  let arr = [];
+
+  for (const line of yaml.split(/\r?\n/)) {
+    const indented = line.match(/^  - (.+)/);
+    const kv = line.match(/^(\w[\w.]*?):\s*(.*)/);
+    if (indented && collecting) {
+      arr.push(parseYV(indented[1].trim()));
+      continue;
+    }
+    if (collecting) { result[currentKey] = arr; collecting = false; arr = []; }
+    if (kv) {
+      currentKey = kv[1];
+      const val = kv[2].trim();
+      if (val === "" || val === undefined) { collecting = true; arr = []; }
+      else if (val === "[]") { result[currentKey] = []; }
+      else { result[currentKey] = parseYV(val); }
+    }
+  }
+  if (collecting) result[currentKey] = arr;
+  return result;
+}
+
+function parseYV(s) {
+  if (s === "null" || s === "~") return null;
+  if (s === "true") return true;
+  if (s === "false") return false;
+  if (/^-?\d+$/.test(s)) return Number(s);
+  if (s.startsWith('"') && s.endsWith('"')) return s.slice(1, -1);
+  if (s.startsWith("'") && s.endsWith("'")) return s.slice(1, -1);
+  if (s.startsWith("[") && s.endsWith("]")) {
+    const inner = s.slice(1, -1).trim();
+    if (!inner) return [];
+    return inner.split(/,\s*/).map(v => parseYV(v.trim()));
+  }
+  return s;
+}
+
+function parseIssueBody(raw) {
+  const m = raw.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n([\s\S*)$/);
+  const body = m ? m[1].trim() : "";
+  // Extract body without comments section
+  const commentsIdx = body.indexOf("\n## Comments");
+  return commentsIdx >= 0 ? body.slice(0, commentsIdx).trim() : body;
+}
+
+function parseComments(raw) {
+  const commentsMatch = raw.match(/\n## Comments\s*\n([\s\S]*)$/);
+  if (!commentsMatch) return [];
+  const comments = [];
+  const blocks = commentsMatch[1].split(/\n### /).filter(Boolean);
+  for (const block of blocks) {
+    const hdr = block.match(/^(.+?)\s*—\s*(.+?)\s*\n([\s\S]*)/);
+    if (hdr) comments.push({ author: hdr[1].trim(), date: hdr[2].trim(), text: hdr[3].trim() });
+  }
+  return comments;
+}
+
 async function loadLocalIssues() {
   const files = await readdir(ISSUES_DIR);
   const issues = [];
   for (const f of files) {
-    if (!f.endsWith(".json") || f.startsWith(".")) continue;
+    if (f.startsWith(".")) continue;
+    const isJson = f.endsWith(".json");
+    const isMd = f.endsWith(".md") && /^\d{4}-/.test(f);
+    if (!isJson && !isMd) continue;
+
     const raw = await readFile(join(ISSUES_DIR, f), "utf-8");
     try {
-      const data = JSON.parse(raw);
+      let data;
+      if (isJson) {
+        data = JSON.parse(raw);
+      } else {
+        data = parseFrontmatter(raw);
+        data.body = parseIssueBody(raw);
+        data.comments = parseComments(raw);
+        if (typeof data.githubRef === "string" && data.githubRef !== "null") {
+          // keep as string — parseGhRef handles it
+        }
+      }
       data._file = f;
       data._path = join(ISSUES_DIR, f);
       issues.push(data);
-    } catch {
-      console.warn(`  [skip] Failed to parse ${f}`);
+    } catch (e) {
+      console.warn(`  [skip] Failed to parse ${f}: ${e.message}`);
     }
   }
   issues.sort((a, b) => (a.id || 0) - (b.id || 0));

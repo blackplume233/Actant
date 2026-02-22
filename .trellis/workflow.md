@@ -126,7 +126,7 @@ cat .trellis/spec/backend/logging-guidelines.md    # For logging
 |       \-- task.json
 |-- issues/              # Issue tracking (backlog)
 |   |-- .counter         # Auto-increment ID counter
-|   \-- {NNNN}-{slug}.json  # Individual issue files
+|   \-- {NNNN}-{slug}.md    # Obsidian Markdown issue files (YAML frontmatter + wikilinks + body)
 |-- roadmap.md           # Product roadmap — 当前/后续优先级，与 Issues/Tasks 对齐
 |-- spec/                # [!] MUST READ before coding
 |   |-- index.md                 # Spec overview (hierarchy: spec > impl)
@@ -356,14 +356,14 @@ See `.trellis/roadmap.md` for structure and maintenance notes.
 
 ### 5. Issues - Backlog Tracking
 
-Issues are lightweight JSON files for tracking ideas, bugs, design proposals, and improvements.
+Issues are Obsidian-style Markdown files for tracking ideas, bugs, design proposals, and improvements. Each file uses YAML frontmatter for structured metadata, `[[wikilinks]]` for related issue navigation, and rich Markdown body + comments.
 
 ```
 issues/
 |-- .counter                 # Auto-increment ID
-|-- 0001-add-memory-layer.json
-|-- 0002-fix-socket-timeout.json
-\-- 0003-improve-cli-output.json
+|-- 0001-add-memory-layer.md
+|-- 0002-fix-socket-timeout.md
+\-- 0003-improve-cli-output.md
 ```
 
 **Issue vs Task**:
@@ -372,7 +372,7 @@ issues/
 |---------|-------|------|
 | Purpose | Backlog — what needs doing | Active work — what's being done now |
 | Lifecycle | open → (promote) → in-progress → closed | planning → in_progress → review → completed |
-| Storage | Single JSON file per issue | Directory with task.json, prd.md, jsonl contexts |
+| Storage | Single Markdown file per issue | Directory with task.json, prd.md, jsonl contexts |
 | Transition | `issue.sh promote <id>` creates a Task | `task.sh archive <name>` archives completed Task |
 
 **Workflow**: Issue (idea) → **promote** → Task (active work) → **archive** → Done
@@ -413,7 +413,7 @@ Local issues can sync with GitHub Issues when a GitHub MCP server is available (
 ```
 ┌─────────────┐     export     ┌───────────┐   mcp__github__   ┌──────────┐
 │ Local Issue  │ ──────────────→│  AI Agent  │ ────────────────→ │  GitHub  │
-│ (.json file) │ ←──────────────│ (MCP Hub)  │ ←──────────────── │  Issues  │
+│  (.md file)  │ ←──────────────│ (MCP Hub)  │ ←──────────────── │  Issues  │
 └─────────────┘  import-github └───────────┘   create/get/...  └──────────┘
 ```
 
@@ -458,17 +458,9 @@ echo '<mcp_response_json>' | ./.trellis/scripts/issue.sh import-github
 | `mcp__github__search_issues` | Search GitHub issues |
 | `mcp__github__add_issue_comment` | Sync comments |
 
-**`githubRef` Field** (stored in issue JSON):
-```json
-{
-  "githubRef": {
-    "owner": "myorg",
-    "repo": "myrepo",
-    "number": 42,
-    "url": "https://github.com/myorg/myrepo/issues/42",
-    "syncedAt": "2026-02-20T10:30:00"
-  }
-}
+**`githubRef` Field** (stored in issue YAML frontmatter):
+```yaml
+githubRef: "myorg/myrepo#42"
 ```
 
 ---
