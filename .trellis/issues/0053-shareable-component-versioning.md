@@ -1,7 +1,8 @@
 ---
 id: 53
 title: 可共享内容缺少版本控制能力 — 组件/模板/预设的版本管理体系
-status: open
+status: closed
+closedAt: "2026-02-22"
 labels:
   - feature
   - source
@@ -29,7 +30,6 @@ githubRef: "blackplume233/Actant#106"
 closedAs: null
 createdAt: "2026-02-21T23:30:00"
 updatedAt: "2026-02-22T03:46:43"
-closedAt: null
 ---
 
 **Related Issues**: [[0038-rename-agentcraft-to-actant]], [[0049-input-router-sources]], [[0052-shareable-agent-template-source]], [[0059-create-official-default-source-repo-compatible-with-agent-sk]]

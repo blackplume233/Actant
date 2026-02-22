@@ -1,7 +1,8 @@
 ---
 id: 56
 title: 明确 Actant 自身工作目录与 AgentInstance 工作目录的职责划分
-status: open
+status: closed
+closedAt: "2026-02-22"
 labels:
   - architecture
   - design
@@ -27,7 +28,6 @@ githubRef: "blackplume233/Actant#109"
 closedAs: null
 createdAt: "2026-02-22T18:00:00"
 updatedAt: "2026-02-22T18:00:00"
-closedAt: null
 ---
 
 **Related Issues**: [[0058-domain-config-format-redesign]], [[0055-installation-help-update-mechanism]], [[0038-rename-agentcraft-to-actant]]

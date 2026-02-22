@@ -1,7 +1,8 @@
 ---
 id: 52
 title: AgentTemplate 应当可通过 Source 分享，Preset 中也应包含 AgentTemplate
-status: open
+status: closed
+closedAt: "2026-02-22"
 labels:
   - feature
   - source
@@ -28,7 +29,6 @@ githubRef: "blackplume233/Actant#105"
 closedAs: null
 createdAt: "2026-02-21T23:15:00"
 updatedAt: "2026-02-22T03:46:42"
-closedAt: null
 ---
 
 **Related Issues**: [[0038-rename-agentcraft-to-actant]], [[0049-input-router-sources]], [[0051-template-permission-control]], [[0059-create-official-default-source-repo-compatible-with-agent-sk]]

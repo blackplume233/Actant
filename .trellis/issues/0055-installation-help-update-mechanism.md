@@ -1,7 +1,8 @@
 ---
 id: 55
 title: Actant 安装流程 · Help 指令 · 本地部署自更新机制
-status: open
+status: closed
+closedAt: "2026-02-22"
 labels:
   - feature
   - cli
@@ -39,7 +40,6 @@ githubRef: "blackplume233/Actant#108"
 closedAs: null
 createdAt: "2026-02-22T12:00:00"
 updatedAt: "2026-02-22T03:46:41"
-closedAt: null
 ---
 
 **Related Issues**: [[0010-one-shot]], [[0011-acp-service]], [[0015-resolve-attach-detach]], [[0034-daemon-agentcraft-home]], [[0038-rename-agentcraft-to-actant]], [[0059-create-official-default-source-repo-compatible-with-agent-sk]]

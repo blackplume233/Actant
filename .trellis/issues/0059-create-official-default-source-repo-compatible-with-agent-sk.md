@@ -1,7 +1,8 @@
 ---
 id: 59
 title: 创建官方默认 Source 仓库 — 兼容 Agent Skills (skill.sh) 格式的 GitHub 组件包
-status: open
+status: closed
+closedAt: "2026-02-22"
 labels:
   - feature
   - "priority:P1"
@@ -30,7 +31,6 @@ githubRef: "blackplume233/Actant#111"
 closedAs: null
 createdAt: "2026-02-22T03:45:42"
 updatedAt: "2026-02-22T03:46:35"
-closedAt: null
 ---
 
 **Related Issues**: [[0052-shareable-agent-template-source]], [[0053-shareable-component-versioning]], [[0058-domain-config-format-redesign]], [[0038-rename-agentcraft-to-actant]], [[0054-domain-context-extensibility-guide]], [[0055-installation-help-update-mechanism]]

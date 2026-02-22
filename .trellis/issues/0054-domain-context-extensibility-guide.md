@@ -1,7 +1,8 @@
 ---
 id: 54
 title: DomainContext 类型扩展缺乏指导文档与框架级支持
-status: open
+status: closed
+closedAt: "2026-02-22"
 labels:
   - enhancement
   - documentation
@@ -30,7 +31,6 @@ githubRef: "blackplume233/Actant#107"
 closedAs: null
 createdAt: "2026-02-22T00:00:00"
 updatedAt: "2026-02-22T03:46:40"
-closedAt: null
 ---
 
 **Related Issues**: [[0052-shareable-agent-template-source]], [[0053-shareable-component-versioning]], [[0059-create-official-default-source-repo-compatible-with-agent-sk]]

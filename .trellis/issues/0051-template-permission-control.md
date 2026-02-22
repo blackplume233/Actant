@@ -1,7 +1,8 @@
 ---
 id: 51
 title: AgentTemplate 权限控制 — 对齐 Claude Code permissions 配置结构
-status: open
+status: closed
+closedAt: "2026-02-22"
 labels:
   - feature
   - template
@@ -25,7 +26,6 @@ githubRef: "blackplume233/Actant#104"
 closedAs: null
 createdAt: "2026-02-21T22:30:00"
 updatedAt: "2026-02-21T22:45:00"
-closedAt: null
 ---
 
 **Related Issues**: [[0036-agent]], [[0039-session-lease-mock-untestable]], [[0046-backend-builder-implementations]], [[0050-employee-scheduler-integration]]

@@ -1,7 +1,8 @@
 ---
 id: 58
 title: DomainContext 各类型目录结构与格式设计 — 每种类型一个完整的文件体系
-status: open
+status: closed
+closedAt: "2026-02-22"
 labels:
   - architecture
   - design
@@ -38,7 +39,6 @@ githubRef: "blackplume233/Actant#110"
 closedAs: null
 createdAt: "2026-02-22T18:30:00"
 updatedAt: "2026-02-22T03:46:44"
-closedAt: null
 ---
 
 **Related Issues**: [[0056-actant-and-instance-working-directory-design]], [[0055-installation-help-update-mechanism]], [[0059-create-official-default-source-repo-compatible-with-agent-sk]]
