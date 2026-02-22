@@ -21,7 +21,7 @@ relatedFiles:
   - packages/shared/src/types/domain-component.types.ts
   - docs/design/mvp-next-design.md
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#104"
 closedAs: null
 createdAt: "2026-02-21T22:30:00"
 updatedAt: "2026-02-21T22:45:00"

@@ -3,6 +3,10 @@ name: project-reviewer
 description: '持续审查项目进度、代码质量与 Roadmap 合理性的只读 SubAgent。不直接修改任何源码或文档，仅通过创建 Issue 和添加 Comment 输出审查意见。触发方式：用户提及 "/review"、"审查项目"、"review progress" 等关键词时自动激活。'
 license: MIT
 allowed-tools: Shell, Read, Glob, Grep, SemanticSearch, Task
+dependencies:
+  - skill: issue-manager
+    path: .agents/skills/issue-manager
+    usage: Issue 创建/搜索/评论/统计（审查意见输出）
 ---
 
 # Project Reviewer SubAgent
@@ -41,12 +45,12 @@ allowed-tools: Shell, Read, Glob, Grep, SemanticSearch, Task
 # Roadmap
 cat .trellis/roadmap.md
 
-# 活跃任务
-./.trellis/scripts/task.sh list
+# 活跃任务（直接读取 .trellis/tasks/ 目录）
+ls .trellis/tasks/ 2>/dev/null | head -20
 
 # Issue 统计
-./.trellis/scripts/issue.sh stats
-./.trellis/scripts/issue.sh list
+./.agents/skills/issue-manager/scripts/issue.sh stats
+./.agents/skills/issue-manager/scripts/issue.sh list
 
 # 最近 git 活动
 git log --oneline -20
@@ -109,15 +113,15 @@ git log --oneline -20
 cat .trellis/roadmap.md
 
 # 所有 Issue
-./.trellis/scripts/issue.sh list
-./.trellis/scripts/issue.sh list --milestone near-term
-./.trellis/scripts/issue.sh list --milestone mid-term
+./.agents/skills/issue-manager/scripts/issue.sh list
+./.agents/skills/issue-manager/scripts/issue.sh list --milestone near-term
+./.agents/skills/issue-manager/scripts/issue.sh list --milestone mid-term
 
 # 代码中的 TODO/FIXME
 rg 'TODO|FIXME|HACK|XXX' --type ts packages/
 
 # Issue 详情（按需查看）
-./.trellis/scripts/issue.sh show <id>
+./.agents/skills/issue-manager/scripts/issue.sh show <id>
 ```
 
 ---
@@ -127,14 +131,16 @@ rg 'TODO|FIXME|HACK|XXX' --type ts packages/
 ### Step 1: 收集上下文
 
 ```bash
-# 获取完整项目上下文
-./.trellis/scripts/get-context.sh
+# 获取项目上下文
+git status --short
+git log --oneline -10 --format="%h %s (%cr)"
+git branch --show-current
 
 # 获取 Roadmap
 cat .trellis/roadmap.md
 
 # 获取 Issue 统计
-./.trellis/scripts/issue.sh stats
+./.agents/skills/issue-manager/scripts/issue.sh stats
 
 # 获取最近活动
 git log --oneline -20 --format="%h %s (%cr)"
@@ -158,12 +164,12 @@ git log --oneline -20 --format="%h %s (%cr)"
 
 ```bash
 # critical 级别问题
-./.trellis/scripts/issue.sh create "<title>" \
+./.agents/skills/issue-manager/scripts/issue.sh create "<title>" \
   --feature --priority P1 --label review \
   --body "## 审查发现\n\n<详细描述>\n\n## 证据\n\n<证据>\n\n## 建议\n\n<建议>"
 
 # warning 级别问题
-./.trellis/scripts/issue.sh create "<title>" \
+./.agents/skills/issue-manager/scripts/issue.sh create "<title>" \
   --enhancement --priority P2 --label review \
   --body "## 审查发现\n\n<详细描述>"
 ```
@@ -171,7 +177,7 @@ git log --oneline -20 --format="%h %s (%cr)"
 #### 对于已有 Issue 的补充观点 — 添加 Comment
 
 ```bash
-./.trellis/scripts/issue.sh comment <id> "[Review] <审查意见>"
+./.agents/skills/issue-manager/scripts/issue.sh comment <id> "[Review] <审查意见>"
 ```
 
 ### Step 4: GitHub 同步
@@ -270,7 +276,7 @@ gh issue edit <number> --add-label "bug,P0"
 1. **不要修改任何文件** — 包括 Roadmap、Spec、源码、配置文件。如发现需要修改，创建 Issue 描述修改建议。
 2. **避免重复 Issue** — 创建前先搜索是否已有类似 Issue：
    ```bash
-   ./.trellis/scripts/issue.sh search "<关键词>"
+   ./.agents/skills/issue-manager/scripts/issue.sh search "<关键词>"
    ```
 3. **引用要精确** — 提及文件时给出完整路径，提及代码时给出行号。
 4. **建议要可执行** — 不说"应该改进"，而说"建议在 `packages/core/src/manager/` 中添加 XXX"。

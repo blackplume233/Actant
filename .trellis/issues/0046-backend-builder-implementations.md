@@ -19,7 +19,7 @@ relatedFiles:
   - packages/core/src/builder/claude-code-builder.ts
   - packages/core/src/initializer/context/context-materializer.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#99"
 closedAs: completed
 createdAt: "2026-02-21T21:00:00"
 updatedAt: "2026-02-22T07:59:11"

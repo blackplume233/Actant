@@ -135,9 +135,8 @@ function parseYV(s) {
 }
 
 function parseIssueBody(raw) {
-  const m = raw.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n([\s\S*)$/);
+  const m = raw.match(/^---\r?\n[\s\S]*?\r?\n---\r?\n([\s\S]*)$/);
   const body = m ? m[1].trim() : "";
-  // Extract body without comments section
   const commentsIdx = body.indexOf("\n## Comments");
   return commentsIdx >= 0 ? body.slice(0, commentsIdx).trim() : body;
 }
@@ -202,7 +201,7 @@ async function createGhIssue(issue) {
   }
 
   const result = ghJson(
-    `api repos/${REPO}/issues -X POST -f title="${escapeShell(issue.title)}" -f body=@- ${labelArgs}`,
+    `api repos/${REPO}/issues -X POST -f title="${escapeShell(issue.title)}" -F body=@- ${labelArgs}`,
     body
   );
 
@@ -243,7 +242,7 @@ async function updateGhIssue(issue, ghNumber) {
       : "reopened";
 
   gh(
-    `api repos/${REPO}/issues/${ghNumber} -X PATCH -f title="${escapeShell(issue.title)}" -f body=@- -f state=${state} -f state_reason=${stateReason}`,
+    `api repos/${REPO}/issues/${ghNumber} -X PATCH -f title="${escapeShell(issue.title)}" -F body=@- -f state=${state} -f state_reason=${stateReason}`,
     body
   );
 
@@ -260,10 +259,20 @@ function escapeShell(s) {
 }
 
 async function updateLocalFile(issue, ghRef) {
-  const raw = await readFile(issue._path, "utf-8");
-  const data = JSON.parse(raw);
-  data.githubRef = ghRef;
-  await writeFile(issue._path, JSON.stringify(data, null, 2) + "\n", "utf-8");
+  let raw = await readFile(issue._path, "utf-8");
+
+  if (issue._path.endsWith(".md")) {
+    if (raw.match(/^githubRef:/m)) {
+      raw = raw.replace(/^githubRef:.*$/m, `githubRef: "${ghRef}"`);
+    } else {
+      raw = raw.replace(/\n---/, `\ngithubRef: "${ghRef}"\n---`);
+    }
+    await writeFile(issue._path, raw, "utf-8");
+  } else {
+    const data = JSON.parse(raw);
+    data.githubRef = ghRef;
+    await writeFile(issue._path, JSON.stringify(data, null, 2) + "\n", "utf-8");
+  }
 }
 
 async function syncComments(issue, ghNumber) {
@@ -289,7 +298,7 @@ async function syncComments(issue, ghNumber) {
     console.log(`    [comment] Syncing comment from ${c.author || "unknown"}`);
     if (!DRY_RUN) {
       gh(
-        `api repos/${REPO}/issues/${ghNumber}/comments -X POST -f body=@-`,
+        `api repos/${REPO}/issues/${ghNumber}/comments -X POST -F body=@-`,
         commentBody
       );
     }

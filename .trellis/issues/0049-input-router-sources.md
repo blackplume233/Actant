@@ -20,7 +20,7 @@ relatedFiles:
   - packages/core/src/scheduler/inputs/cron-input.ts
   - packages/core/src/scheduler/inputs/hook-input.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#102"
 closedAs: completed
 createdAt: "2026-02-21T21:00:00"
 updatedAt: "2026-02-22T07:59:11"

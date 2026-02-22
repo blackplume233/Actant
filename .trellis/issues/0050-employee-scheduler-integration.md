@@ -21,7 +21,7 @@ relatedFiles:
   - packages/core/src/template/schema/template-schema.ts
   - packages/cli/src/commands/schedule.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#103"
 closedAs: completed
 createdAt: "2026-02-21T21:00:00"
 updatedAt: "2026-02-22T07:59:11"

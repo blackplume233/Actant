@@ -19,7 +19,7 @@ relatedFiles:
   - packages/core/src/template/schema/template-schema.ts
   - packages/api/src/app-context.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#97"
 closedAs: completed
 createdAt: "2026-02-21T21:00:00"
 updatedAt: "2026-02-22T12:00:00"

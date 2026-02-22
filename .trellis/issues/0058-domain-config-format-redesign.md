@@ -33,7 +33,7 @@ relatedFiles:
   - configs/templates/code-review-agent.json
   - docs/stage/v0.1.0/config-schemas.md
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#110"
 closedAs: null
 createdAt: "2026-02-22T18:30:00"
 updatedAt: "2026-02-22T20:00:00"

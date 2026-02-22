@@ -23,7 +23,7 @@ relatedFiles:
   - packages/shared/src/types/template.types.ts
   - packages/core/src/template/registry/template-registry.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#105"
 closedAs: null
 createdAt: "2026-02-21T23:15:00"
 updatedAt: "2026-02-21T23:15:00"

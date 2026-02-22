@@ -15,7 +15,7 @@ relatedIssues:
 relatedFiles:
   - packages/core/src/domain/base-component-manager.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#94"
 closedAs: completed
 createdAt: "2026-02-21T21:00:00"
 updatedAt: "2026-02-22T07:59:11"

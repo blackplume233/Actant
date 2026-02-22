@@ -17,7 +17,7 @@ relatedFiles:
   - packages/acp/src/callback-router.ts
   - docs/design/acp-complete-server-architecture.md
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#95"
 closedAs: null
 createdAt: "2026-02-21T20:05:00"
 updatedAt: "2026-02-21T20:05:00"

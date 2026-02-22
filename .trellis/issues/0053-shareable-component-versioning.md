@@ -24,7 +24,7 @@ relatedFiles:
   - packages/core/src/source/component-source.ts
   - packages/core/src/template/registry/template-registry.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#106"
 closedAs: null
 createdAt: "2026-02-21T23:30:00"
 updatedAt: "2026-02-21T23:30:00"

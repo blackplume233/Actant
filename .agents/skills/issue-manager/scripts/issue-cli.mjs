@@ -880,7 +880,7 @@ async function cmdPromote(args) {
   let taskPath;
   try {
     taskPath = execSync(
-      `"${join(SCRIPT_DIR, "task.sh")}" create "${meta.title}" --slug "${slug}" --priority "${priority}"`,
+      `"${join(REPO_ROOT, ".trellis", "scripts", "task.sh")}" create "${meta.title}" --slug "${slug}" --priority "${priority}"`,
       { encoding: "utf-8", cwd: REPO_ROOT }
     ).trim();
   } catch (e) {

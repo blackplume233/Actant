@@ -85,12 +85,12 @@ closedAt: null
 
 ## CLI 工具
 
-所有操作通过 `.trellis/scripts/issue.sh` 执行（内部委托给 `issue-cli.mjs`）。
+所有操作通过 `.agents/skills/issue-manager/scripts/issue.sh` 执行（内部委托给 `issue-cli.mjs`）。
 
 ### 创建 Issue
 
 ```bash
-./.trellis/scripts/issue.sh create "<标题>" [options]
+./.agents/skills/issue-manager/scripts/issue.sh create "<标题>" [options]
 ```
 
 **类型快捷方式**：`--bug` `--feature` `--enhancement` `--question` `--discussion` `--rfc` `--chore`
@@ -111,78 +111,78 @@ closedAt: null
 
 ```bash
 # 列出所有 open Issue
-./.trellis/scripts/issue.sh list
+./.agents/skills/issue-manager/scripts/issue.sh list
 
 # 按标签过滤
-./.trellis/scripts/issue.sh list --bug
-./.trellis/scripts/issue.sh list --priority P0
+./.agents/skills/issue-manager/scripts/issue.sh list --bug
+./.agents/skills/issue-manager/scripts/issue.sh list --priority P0
 
 # 搜索
-./.trellis/scripts/issue.sh search "<关键词>"
+./.agents/skills/issue-manager/scripts/issue.sh search "<关键词>"
 
 # 查看详情
-./.trellis/scripts/issue.sh show <id>
+./.agents/skills/issue-manager/scripts/issue.sh show <id>
 
 # 统计
-./.trellis/scripts/issue.sh stats
+./.agents/skills/issue-manager/scripts/issue.sh stats
 ```
 
 ### 编辑 Issue
 
 ```bash
-./.trellis/scripts/issue.sh edit <id> --title "<新标题>"
-./.trellis/scripts/issue.sh edit <id> --body "<新正文>"
-./.trellis/scripts/issue.sh edit <id> --milestone mid-term
-./.trellis/scripts/issue.sh edit <id> --add-related 42
-./.trellis/scripts/issue.sh edit <id> --add-file packages/core/src/foo.ts
+./.agents/skills/issue-manager/scripts/issue.sh edit <id> --title "<新标题>"
+./.agents/skills/issue-manager/scripts/issue.sh edit <id> --body "<新正文>"
+./.agents/skills/issue-manager/scripts/issue.sh edit <id> --milestone mid-term
+./.agents/skills/issue-manager/scripts/issue.sh edit <id> --add-related 42
+./.agents/skills/issue-manager/scripts/issue.sh edit <id> --add-file packages/core/src/foo.ts
 ```
 
 ### 添加评论
 
 ```bash
-./.trellis/scripts/issue.sh comment <id> "<评论内容>"
+./.agents/skills/issue-manager/scripts/issue.sh comment <id> "<评论内容>"
 ```
 
 ### 管理标签
 
 ```bash
-./.trellis/scripts/issue.sh label <id> --add blocked
-./.trellis/scripts/issue.sh label <id> --remove wontfix
+./.agents/skills/issue-manager/scripts/issue.sh label <id> --add blocked
+./.agents/skills/issue-manager/scripts/issue.sh label <id> --remove wontfix
 ```
 
 ### 关闭 / 重开
 
 ```bash
 # 关闭（默认 completed）
-./.trellis/scripts/issue.sh close <id>
+./.agents/skills/issue-manager/scripts/issue.sh close <id>
 
 # 关闭为 not-planned
-./.trellis/scripts/issue.sh close <id> --as not-planned --reason "超出当前范围"
+./.agents/skills/issue-manager/scripts/issue.sh close <id> --as not-planned --reason "超出当前范围"
 
 # 关闭为 duplicate
-./.trellis/scripts/issue.sh close <id> --as duplicate --ref 42
+./.agents/skills/issue-manager/scripts/issue.sh close <id> --as duplicate --ref 42
 
 # 重开
-./.trellis/scripts/issue.sh reopen <id>
+./.agents/skills/issue-manager/scripts/issue.sh reopen <id>
 ```
 
 ### 提升为 Task
 
 ```bash
-./.trellis/scripts/issue.sh promote <id>
+./.agents/skills/issue-manager/scripts/issue.sh promote <id>
 ```
 
 ### GitHub 同步
 
 ```bash
 # 导出用于 GitHub 创建
-./.trellis/scripts/issue.sh export <id> --owner blackplume233 --repo Actant
+./.agents/skills/issue-manager/scripts/issue.sh export <id> --owner blackplume233 --repo Actant
 
 # 链接到 GitHub Issue
-./.trellis/scripts/issue.sh link <id> --github blackplume233/Actant#42
+./.agents/skills/issue-manager/scripts/issue.sh link <id> --github blackplume233/Actant#42
 
 # 取消链接
-./.trellis/scripts/issue.sh unlink <id>
+./.agents/skills/issue-manager/scripts/issue.sh unlink <id>
 ```
 
 ---
@@ -196,13 +196,13 @@ closedAt: null
 创建前必须先搜索，避免重复：
 
 ```bash
-./.trellis/scripts/issue.sh search "<关键词>"
+./.agents/skills/issue-manager/scripts/issue.sh search "<关键词>"
 ```
 
 如果找到已有 Issue，改为添加 Comment：
 
 ```bash
-./.trellis/scripts/issue.sh comment <id> "<补充信息>"
+./.agents/skills/issue-manager/scripts/issue.sh comment <id> "<补充信息>"
 ```
 
 #### Step 2: 确定类型和优先级
@@ -287,7 +287,7 @@ Issue body 使用 Markdown 格式，推荐结构：
 #### Step 4: 创建
 
 ```bash
-./.trellis/scripts/issue.sh create "<标题>" \
+./.agents/skills/issue-manager/scripts/issue.sh create "<标题>" \
   --bug --priority P1 --label core \
   --body "## 现象
 
@@ -308,10 +308,10 @@ Issue body 使用 Markdown 格式，推荐结构：
 
 ```bash
 # 导出
-./.trellis/scripts/issue.sh export <id> --owner blackplume233 --repo Actant
+./.agents/skills/issue-manager/scripts/issue.sh export <id> --owner blackplume233 --repo Actant
 # 使用 gh CLI 或 MCP 创建 GitHub Issue
 # 链接
-./.trellis/scripts/issue.sh link <id> --github blackplume233/Actant#<number>
+./.agents/skills/issue-manager/scripts/issue.sh link <id> --github blackplume233/Actant#<number>
 ```
 
 ---
