@@ -26,7 +26,7 @@ relatedFiles:
   - packages/shared/src/types/source.types.ts
   - packages/shared/src/types/domain-component.types.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#111"
 closedAs: null
 createdAt: "2026-02-22T03:45:42"
 updatedAt: "2026-02-22T03:46:35"
