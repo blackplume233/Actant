@@ -44,6 +44,7 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
         const child = fork(daemonScript, [], {
           detached: true,
           stdio: "ignore",
+          env: process.env,
         });
         child.unref();
         printer.log(`${chalk.green("Daemon started.")} PID: ${child.pid}`);
