@@ -23,6 +23,30 @@ export const WorkspacePolicySchema = z.enum(["persistent", "ephemeral"]);
 
 const AgentBackendTypeSchema = z.enum(["cursor", "claude-code", "custom"]);
 
+const PermissionModeSchema = z.enum([
+  "default", "acceptEdits", "plan", "dontAsk", "bypassPermissions",
+]);
+
+const SandboxNetworkConfigSchema = z.object({
+  allowedDomains: z.array(z.string()).optional(),
+  allowLocalBinding: z.boolean().optional(),
+});
+
+const SandboxConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  autoAllowBashIfSandboxed: z.boolean().optional(),
+  network: SandboxNetworkConfigSchema.optional(),
+});
+
+const PermissionsConfigSchema = z.object({
+  allow: z.array(z.string()).optional(),
+  deny: z.array(z.string()).optional(),
+  ask: z.array(z.string()).optional(),
+  defaultMode: PermissionModeSchema.optional(),
+  sandbox: SandboxConfigSchema.optional(),
+  additionalDirectories: z.array(z.string()).optional(),
+});
+
 export const AgentInstanceMetaSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -37,5 +61,6 @@ export const AgentInstanceMetaSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   pid: z.number().int().positive().optional(),
+  effectivePermissions: PermissionsConfigSchema.optional(),
   metadata: z.record(z.string(), z.string()).optional(),
 });

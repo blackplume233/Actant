@@ -1,5 +1,7 @@
 import type { Socket } from "node:net";
 import { createLogger } from "@actant/shared";
+import type { PermissionsConfig } from "@actant/shared";
+import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/core";
 import { AcpConnection, type AcpConnectionOptions, type AcpSessionInfo, type ClientCallbackHandler } from "./connection";
 import { ClientCallbackRouter } from "./callback-router";
 import { AcpGateway } from "./gateway";
@@ -24,14 +26,26 @@ export class AcpConnectionManager {
   private primarySessions = new Map<string, string>();
   private routers = new Map<string, ClientCallbackRouter>();
   private gateways = new Map<string, AcpGateway>();
+  private enforcers = new Map<string, PermissionPolicyEnforcer>();
 
   /**
    * Spawn an ACP agent process, initialize, and create a default session.
    * Uses ClientCallbackRouter so Gateway can later attach an IDE upstream.
+   * When connectionOptions.permissionPolicy is set, creates a PermissionPolicyEnforcer
+   * for Layer 2 ACP Client allowlist enforcement.
    */
   async connect(name: string, options: ConnectOptions): Promise<AcpSessionInfo> {
     if (this.connections.has(name)) {
       throw new Error(`ACP connection for "${name}" already exists`);
+    }
+
+    // Create enforcer if permission policy is provided
+    let enforcer: PermissionPolicyEnforcer | undefined;
+    let auditLogger: PermissionAuditLogger | undefined;
+    if (options.connectionOptions?.permissionPolicy) {
+      enforcer = new PermissionPolicyEnforcer(options.connectionOptions.permissionPolicy);
+      auditLogger = new PermissionAuditLogger(name);
+      this.enforcers.set(name, enforcer);
     }
 
     // Build a local-only AcpConnection first; the router wraps it
@@ -40,7 +54,7 @@ export class AcpConnectionManager {
 
     // Create a router using the connection's built-in local callbacks as fallback.
     // We create a "local handler" that is the default AcpConnection behavior.
-    const localHandler: ClientCallbackHandler = buildLocalHandler(localConn, options.connectionOptions);
+    const localHandler: ClientCallbackHandler = buildLocalHandler(localConn, options.connectionOptions, enforcer, auditLogger);
     const router = new ClientCallbackRouter(localHandler);
 
     // Now create the real connection with the router as callback handler
@@ -120,6 +134,7 @@ export class AcpConnectionManager {
     this.gateways.get(name)?.disconnectUpstream();
     this.gateways.delete(name);
     this.routers.delete(name);
+    this.enforcers.delete(name);
 
     const conn = this.connections.get(name);
     if (!conn) return;
@@ -134,20 +149,55 @@ export class AcpConnectionManager {
     await Promise.allSettled(names.map((n) => this.disconnect(n)));
     logger.info({ count: names.length }, "All ACP connections disposed");
   }
+
+  /**
+   * Update the permission policy for a named connection at runtime.
+   * Propagates to both the AcpConnection and the local handler enforcer.
+   */
+  updatePermissionPolicy(name: string, config: PermissionsConfig): void {
+    const conn = this.connections.get(name);
+    if (conn) {
+      conn.updatePermissionPolicy(config);
+    }
+    const enforcer = this.enforcers.get(name);
+    if (enforcer) {
+      enforcer.updateConfig(config);
+    }
+  }
 }
 
 /**
  * Build a local ClientCallbackHandler from connection defaults.
  * This is the "Mode A" handler used when no IDE is connected.
+ * When a permissionPolicy is provided, uses PermissionPolicyEnforcer for smart decisions.
  */
 function buildLocalHandler(
   _conn: AcpConnection,
   options?: AcpConnectionOptions,
+  enforcer?: PermissionPolicyEnforcer,
+  auditLogger?: PermissionAuditLogger,
 ): ClientCallbackHandler {
   const terminalManager = new LocalTerminalManager();
 
   return {
     requestPermission: async (params) => {
+      // Layer 2: Policy-based enforcement
+      if (enforcer && params.options.length > 0) {
+        const toolInfo = {
+          kind: params.toolCall?.kind ?? undefined,
+          title: params.toolCall?.title ?? undefined,
+          toolCallId: params.toolCall?.toolCallId ?? "unknown",
+        };
+        const decision = enforcer.evaluate(toolInfo);
+        auditLogger?.logEvaluation(toolInfo, decision);
+
+        if (decision.action === "allow" || decision.action === "deny") {
+          const outcome = enforcer.buildOutcome(decision, params.options);
+          return { outcome };
+        }
+      }
+
+      // Fallback: legacy autoApprove
       if (options?.autoApprove && params.options.length > 0) {
         const opt = params.options.find(
           (o) => o.kind === "allow_once" || o.kind === "allow_always",

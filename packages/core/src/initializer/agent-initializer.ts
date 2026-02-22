@@ -1,7 +1,7 @@
 import { mkdir, rm, access, symlink, lstat, unlink, readlink } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, WorkDirConflict } from "@actant/shared";
+import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, WorkDirConflict, PermissionsInput } from "@actant/shared";
 import {
   ActantError,
   ConfigValidationError,
@@ -11,6 +11,7 @@ import {
 } from "@actant/shared";
 import type { TemplateRegistry } from "../template/registry/template-registry";
 import { WorkspaceBuilder, type DomainManagers } from "../builder/workspace-builder";
+import { resolvePermissions } from "../permissions/permission-presets";
 import { readInstanceMeta, writeInstanceMeta } from "../state/index";
 
 const logger = createLogger("agent-initializer");
@@ -27,6 +28,8 @@ export interface InstanceOverrides {
   workDir: string;
   /** Behavior when workDir already exists. Default: "error". */
   workDirConflict: WorkDirConflict;
+  /** Override template permissions at instance level. Completely replaces template.permissions. */
+  permissions: PermissionsInput;
   metadata: Record<string, string>;
 }
 
@@ -94,12 +97,16 @@ export class AgentInitializer {
 
     try {
       await mkdir(workspaceDir, { recursive: true });
+
+      const finalPermissions = overrides?.permissions ?? template.permissions;
       await this.builder.build(
         workspaceDir,
         template.domainContext,
         template.backend.type,
-        template.permissions,
+        finalPermissions,
       );
+
+      const effectivePermissions = resolvePermissions(finalPermissions);
 
       const now = new Date().toISOString();
       const launchMode = overrides?.launchMode ?? this.options?.defaultLaunchMode ?? "direct";
@@ -117,6 +124,7 @@ export class AgentInitializer {
         processOwnership: "managed",
         createdAt: now,
         updatedAt: now,
+        effectivePermissions,
         metadata: overrides?.metadata,
       };
 

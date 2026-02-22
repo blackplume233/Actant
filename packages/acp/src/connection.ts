@@ -28,6 +28,8 @@ import {
   type ReleaseTerminalResponse,
 } from "@agentclientprotocol/sdk";
 import { createLogger } from "@actant/shared";
+import type { PermissionsConfig } from "@actant/shared";
+import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/core";
 import { LocalTerminalManager } from "./terminal-manager";
 
 const logger = createLogger("acp-connection");
@@ -57,8 +59,12 @@ export interface ClientCallbackHandler {
 /* ------------------------------------------------------------------ */
 
 export interface AcpConnectionOptions {
-  /** Auto-approve all tool permission requests. */
+  /** Auto-approve all tool permission requests (fallback when no permissionPolicy). */
   autoApprove?: boolean;
+  /** Permission policy for the ACP Client allowlist (Layer 2 enforcement). */
+  permissionPolicy?: PermissionsConfig;
+  /** Instance name for audit logging. */
+  instanceName?: string;
   /** Global session update listener. */
   onSessionUpdate?: (notification: SessionNotification) => void;
   /** Env vars to pass to the agent subprocess. */
@@ -101,10 +107,26 @@ export class AcpConnection {
   private updateListeners = new Map<string, ((n: SessionNotification) => void)[]>();
   private readonly options: AcpConnectionOptions;
   private readonly terminalManager: LocalTerminalManager;
+  private enforcer: PermissionPolicyEnforcer | null = null;
+  private auditLogger: PermissionAuditLogger;
 
   constructor(options?: AcpConnectionOptions) {
     this.options = options ?? {};
     this.terminalManager = new LocalTerminalManager();
+    this.auditLogger = new PermissionAuditLogger(options?.instanceName);
+    if (options?.permissionPolicy) {
+      this.enforcer = new PermissionPolicyEnforcer(options.permissionPolicy);
+    }
+  }
+
+  /** Update the permission policy at runtime (hot-reload). */
+  updatePermissionPolicy(config: PermissionsConfig): void {
+    if (this.enforcer) {
+      this.enforcer.updateConfig(config);
+    } else {
+      this.enforcer = new PermissionPolicyEnforcer(config);
+    }
+    this.auditLogger.logUpdated("runtime");
   }
 
   get isConnected(): boolean {
@@ -411,6 +433,24 @@ export class AcpConnection {
   private async localRequestPermission(
     params: RequestPermissionRequest,
   ): Promise<RequestPermissionResponse> {
+    // Layer 2: Policy-based enforcement via PermissionPolicyEnforcer
+    if (this.enforcer && params.options.length > 0) {
+      const toolInfo = {
+        kind: params.toolCall?.kind ?? undefined,
+        title: params.toolCall?.title ?? undefined,
+        toolCallId: params.toolCall?.toolCallId ?? "unknown",
+      };
+      const decision = this.enforcer.evaluate(toolInfo);
+      this.auditLogger.logEvaluation(toolInfo, decision);
+
+      if (decision.action === "allow" || decision.action === "deny") {
+        const outcome = this.enforcer.buildOutcome(decision, params.options);
+        return { outcome };
+      }
+      // "ask" decision: fall through to autoApprove or cancelled
+    }
+
+    // Fallback: legacy autoApprove behavior
     if (this.options.autoApprove && params.options.length > 0) {
       const allowOption = params.options.find(
         (o) => o.kind === "allow_once" || o.kind === "allow_always",

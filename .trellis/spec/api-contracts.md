@@ -172,6 +172,7 @@ Actant 的接口架构（两层协议分工）：
 | `agent.destroy` | `{ name }` | `{ success }` | `AGENT_NOT_FOUND`, `INSTANCE_CORRUPTED` |
 | `agent.status` | `{ name }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND` |
 | `agent.list` | `{}` | `AgentInstanceMeta[]` | — |
+| `agent.updatePermissions` | `{ name, permissions }` | `{ effectivePermissions }` | `AGENT_NOT_FOUND` |
 
 #### agent.create 的 overrides 参数
 
@@ -181,7 +182,18 @@ Actant 的接口架构（两层协议分工）：
 | `workspacePolicy` | `WorkspacePolicy` | 覆盖默认 workspace 策略 |
 | `workDir` | `string` | 自定义 workspace 绝对路径（省略则默认 `{instancesDir}/{name}`） |
 | `workDirConflict` | `"error" \| "overwrite" \| "append"` | workDir 已存在时的行为，默认 `"error"` |
+| `permissions` | `PermissionsInput` | 覆盖模板权限配置，完全替代 `template.permissions` |
 | `metadata` | `Record<string, string>` | 额外元数据 |
+
+#### agent.updatePermissions
+
+运行时更新 Agent 实例的工具权限策略。同时刷新双层权限：
+- **Layer 1**：重写后端 settings 文件（`settings.local.json` / `settings.json`）
+- **Layer 2**：热更新 ACP Client 的 `PermissionPolicyEnforcer` allowlist
+
+`permissions` 参数类型为 `PermissionsInput`，可以是预设名（`"permissive"` | `"standard"` | `"restricted"` | `"readonly"`）或完整的 `PermissionsConfig` 对象。
+
+返回值包含解析后的 `effectivePermissions: PermissionsConfig`。
 
 **workDir 机制**：当指定 `workDir` 时，域上下文文件和 `.actant.json` 写入该目录，同时在 `{instancesDir}/{name}` 创建指向它的链接以供 Manager 发现（macOS/Linux 使用 symlink，Windows 使用 junction）。Destroy 时仅移除链接和 `.actant.json`，保留用户目录中的其余文件。
 

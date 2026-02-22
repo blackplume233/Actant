@@ -1,4 +1,4 @@
-import type { AgentBackendType } from "./template.types";
+import type { AgentBackendType, PermissionsConfig } from "./template.types";
 
 /**
  * Agent Instance = a workspace directory.
@@ -23,6 +23,8 @@ export interface AgentInstanceMeta {
   createdAt: string;
   updatedAt: string;
   pid?: number;
+  /** Resolved permissions for this instance (after template + override resolution). */
+  effectivePermissions?: PermissionsConfig;
   metadata?: Record<string, string>;
 }
 

@@ -6,5 +6,6 @@ export * from "./state/index";
 export * from "./manager/index";
 export * from "./domain/index";
 export * from "./communicator/index";
+export * from "./permissions/index";
 export * from "./session/index";
 export * from "./source/index";

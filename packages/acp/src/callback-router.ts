@@ -19,6 +19,7 @@ import type {
   ClientCapabilities,
 } from "@agentclientprotocol/sdk";
 import { createLogger } from "@actant/shared";
+import type { PermissionPolicyEnforcer } from "@actant/core";
 import type { ClientCallbackHandler } from "./connection";
 
 const logger = createLogger("acp-callback-router");
@@ -50,8 +51,14 @@ export interface UpstreamHandler {
 export class ClientCallbackRouter implements ClientCallbackHandler {
   private upstream: UpstreamHandler | null = null;
   private ideCapabilities: ClientCapabilities | null = null;
+  private enforcer: PermissionPolicyEnforcer | null = null;
 
   constructor(private readonly local: ClientCallbackHandler) {}
+
+  /** Attach a PermissionPolicyEnforcer for pre-filtering in lease mode. */
+  setEnforcer(enforcer: PermissionPolicyEnforcer | null): void {
+    this.enforcer = enforcer;
+  }
 
   /**
    * Activate lease-forwarding mode.
@@ -85,6 +92,25 @@ export class ClientCallbackRouter implements ClientCallbackHandler {
   /* ---------------------------------------------------------------- */
 
   async requestPermission(params: RequestPermissionRequest): Promise<RequestPermissionResponse> {
+    // Pre-filter with enforcer: deny/allow decisions bypass IDE forwarding
+    if (this.enforcer && params.options.length > 0) {
+      const toolInfo = {
+        kind: params.toolCall?.kind ?? undefined,
+        title: params.toolCall?.title ?? undefined,
+        toolCallId: params.toolCall?.toolCallId ?? "unknown",
+      };
+      const decision = this.enforcer.evaluate(toolInfo);
+      if (decision.action === "deny") {
+        const outcome = this.enforcer.buildOutcome(decision, params.options);
+        return { outcome };
+      }
+      if (decision.action === "allow") {
+        const outcome = this.enforcer.buildOutcome(decision, params.options);
+        return { outcome };
+      }
+      // "ask" → fall through to upstream IDE or local
+    }
+
     if (this.upstream) {
       try {
         return await this.upstream.requestPermission(params);

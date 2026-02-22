@@ -1,4 +1,4 @@
-import type { AgentTemplate } from "./template.types";
+import type { AgentTemplate, PermissionsInput, PermissionsConfig } from "./template.types";
 import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, DetachResult } from "./agent.types";
 import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "./domain-component.types";
 import type { SourceEntry, SourceConfig, PresetDefinition } from "./source.types";
@@ -107,6 +107,8 @@ export interface AgentCreateParams {
     workDir?: string;
     /** Behavior when workDir already exists. Default: "error". */
     workDirConflict?: WorkDirConflict;
+    /** Override template permissions. Completely replaces template.permissions when set. */
+    permissions?: PermissionsInput;
     metadata?: Record<string, string>;
   };
 }
@@ -142,6 +144,15 @@ export type AgentStatusResult = AgentInstanceMeta;
 export type AgentListParams = Record<string, never>;
 
 export type AgentListResult = AgentInstanceMeta[];
+
+export interface AgentUpdatePermissionsParams {
+  name: string;
+  permissions: PermissionsInput;
+}
+
+export interface AgentUpdatePermissionsResult {
+  effectivePermissions: PermissionsConfig;
+}
 
 export interface AgentAdoptParams {
   path: string;
@@ -533,6 +544,7 @@ export interface RpcMethodMap {
   "agent.destroy": { params: AgentDestroyParams; result: AgentDestroyResult };
   "agent.status": { params: AgentStatusParams; result: AgentStatusResult };
   "agent.list": { params: AgentListParams; result: AgentListResult };
+  "agent.updatePermissions": { params: AgentUpdatePermissionsParams; result: AgentUpdatePermissionsResult };
   "agent.adopt": { params: AgentAdoptParams; result: AgentAdoptResult };
   "agent.resolve": { params: AgentResolveParams; result: AgentResolveResult };
   "agent.attach": { params: AgentAttachParams; result: AgentAttachResult };

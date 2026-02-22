@@ -75,6 +75,8 @@ export {
   type AgentStatusResult,
   type AgentListParams,
   type AgentListResult,
+  type AgentUpdatePermissionsParams,
+  type AgentUpdatePermissionsResult,
   type AgentAdoptParams,
   type AgentAdoptResult,
   type AgentResolveParams,

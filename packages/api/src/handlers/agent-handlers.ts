@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import type {
   AgentCreateParams,
   AgentCreateResult,
@@ -22,8 +23,12 @@ import type {
   AgentRunResult,
   AgentPromptParams,
   AgentPromptResult,
+  AgentUpdatePermissionsParams,
+  AgentUpdatePermissionsResult,
 } from "@actant/shared";
 import { AgentNotFoundError } from "@actant/shared";
+import { resolvePermissionsWithMcp, PermissionAuditLogger } from "@actant/core";
+import { updateInstanceMeta } from "@actant/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 
@@ -40,6 +45,7 @@ export function registerAgentHandlers(registry: HandlerRegistry): void {
   registry.register("agent.detach", handleAgentDetach);
   registry.register("agent.run", handleAgentRun);
   registry.register("agent.prompt", handleAgentPrompt);
+  registry.register("agent.updatePermissions", handleAgentUpdatePermissions);
 }
 
 async function handleAgentCreate(
@@ -156,4 +162,30 @@ async function handleAgentPrompt(
     response: result.text,
     sessionId: result.sessionId ?? "",
   };
+}
+
+async function handleAgentUpdatePermissions(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<AgentUpdatePermissionsResult> {
+  const { name, permissions } = params as unknown as AgentUpdatePermissionsParams;
+  const meta = ctx.agentManager.getAgent(name);
+  if (!meta) throw new AgentNotFoundError(name);
+
+  const workspaceDir = join(ctx.instancesDir, name);
+
+  // Resolve MCP server names from the existing config
+  const mcpServers = ctx.mcpConfigManager.list().map((s) => s.name);
+  const resolved = resolvePermissionsWithMcp(permissions, mcpServers);
+
+  // Update .actant.json
+  await updateInstanceMeta(workspaceDir, { effectivePermissions: resolved });
+
+  // Update ACP Client enforcer if connected
+  ctx.acpConnectionManager.updatePermissionPolicy(name, resolved);
+
+  const auditLogger = new PermissionAuditLogger(name);
+  auditLogger.logUpdated("rpc:agent.updatePermissions");
+
+  return { effectivePermissions: resolved };
 }

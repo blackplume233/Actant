@@ -206,6 +206,7 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 | `createdAt` | `string` | **是** | — | ISO 8601 创建时间 |
 | `updatedAt` | `string` | **是** | — | ISO 8601 更新时间 |
 | `pid` | `number` | 否 | — | 运行时 OS 进程 ID |
+| `effectivePermissions` | `PermissionsConfig` | 否 | — | 解析后的最终生效权限（创建时由 template + override 解析写入，运行时可通过 `agent.updatePermissions` RPC 更新） |
 | `metadata` | `Record<string, string>` | 否 | — | 任意元数据 |
 
 \* Zod Schema 中标记 optional 以兼容旧文件；读取时缺失则默认 `"cursor"`。
