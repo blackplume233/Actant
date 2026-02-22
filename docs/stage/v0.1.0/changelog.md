@@ -7,6 +7,9 @@
 
 ## ✨ 新功能 (Features)
 
+- feat: implement template permissions, component versioning, extensible architecture, and instance registry (#51-#56, #58, #59) (f00dad5)
+- feat(trellis): migrate issue system to Obsidian Markdown format with skill and slash commands (acd9bf3)
+- feat: add version staging system, QA tooling, and CI issue sync (8f6d420)
 - feat: complete Phase 3 -- workspace builder, plugin management, and employee scheduler (4d7373c)
 - feat: unified component management with CRUD, source registry, and presets (#38) (d5675a4)
 - feat(acp): implement complete ACP server architecture with Gateway, terminal callbacks, and callback routing (2c33e4d)
@@ -27,6 +30,8 @@
 
 ## 🐛 修复 (Fixes)
 
+- fix(trellis): full GitHub sync and fix body upload in sync script (e58b2c0)
+- fix: patch remaining AgentCraft references found by QA verification (ab97737)
 - fix: show plugins in template detail and create default AGENTS.md on scaffold (762645f)
 - fix: resolve all ACP lint errors and update spec docs for Phase 3 (6fa2d71)
 - fix(qa): Issue #35 QA fixes, real-env QA default, and /qa-loop command (aa9aca8)
@@ -37,10 +42,13 @@
 
 ## ♻️ 重构 (Refactoring)
 
+- refactor: rename AgentCraft to Actant across entire codebase (e0cc156)
 - refactor(cli): introduce CliPrinter output layer and add unit tests (e26ce70)
 
 ## 📝 文档 (Documentation)
 
+- docs(trellis): add issue #59 -- official default Source repo with Agent Skills compatibility (e539e15)
+- docs: add issues #56-#58, bilibili QA log, and domain context design doc (bc2de57)
 - docs: Phase 3 planning - sub-issues, TODO tracker, and roadmap update (78b185e)
 - docs: add QA round 3 verification report for ACP architecture (cb55aef)
 - docs: require incremental log writing during QA execution (a9b299a)
@@ -67,7 +75,9 @@
 
 ## 🔧 杂项 (Chores)
 
-- chore: add issue #34 (ACTANT_HOME) and QA test scenario (c31bef3)
+- chore: sync issue githubRef links from CI (d000789)
+- chore: close issue #38 after repo rename on GitHub (7551046)
+- chore: add issue #34 (AGENTCRAFT_HOME) and QA test scenario (c31bef3)
 - chore: add incremental test script for faster ship reviews (a595d8c)
 - chore: add ESLint with typescript-eslint flat config and fix all lint errors (c476695)
 - chore: fix trellis script permissions (d81a644)
@@ -78,66 +88,20 @@
 
 ## 📋 Issue 变更
 
-### 已完成的功能 (18)
+### 已完成的功能 (v0.1.0)
 
-- #4 Real Agent Launcher implementation
-- #8 ProcessWatcher：进程退出检测与心跳监控
-- #9 LaunchMode 行为分化
-- #10 one-shot 模式完整实现
-- #11 acp-service 崩溃重启策略
-- #15 agent.resolve / agent.attach / agent.detach API — 外部 Spawn 支持
-- #35 ACP Proxy + Agent Chat — Direct Bridge 与 Session Lease 双模式
-- #38 统一组件管理体系 — Skill / Prompt / Plugin 完整 CRUD
-- #39 Workspace 构造器 — 面向不同 Agent 后端的差异化构建
-- #40 雇员型 Agent 实现 — 内置调度器 + N8N 集成
-- #43 BaseComponentManager CRUD 增强 + 持久化
-- #44 PluginManager + PluginDefinition Schema + 示例配置
-- #45 组件管理 RPC Handlers + CLI 命令扩展
-- #46 BackendBuilder 接口 + CursorBuilder + ClaudeCodeBuilder 实现
-- #47 WorkspaceBuilder Pipeline + AgentInitializer 迁移
-- #48 TaskQueue + TaskDispatcher + ExecutionLog 基础实现
-- #49 InputRouter + InputSources (Heartbeat / Cron / Hook)
-- #50 EmployeeScheduler + AgentManager 集成 + CLI 命令
+- #51 Template Permission Control — 权限预设与沙箱配置
+- #52 Shareable Agent Template via Source — 模板通过 Source 共享
+- #53 Shareable Component Versioning — 组件版本管理
+- #54 Domain Context Extensibility Guide — ComponentTypeHandler 可扩展架构
+- #55 Installation, Help, and Update Mechanism — 安装/帮助/自更新
+- #56 Actant and Instance Working Directory Design — Home 目录与实例注册表
+- #58 Domain Config Format Redesign — VersionedComponent 公共信封
+- #59 Create Official Default Source Repo — actant-hub 示例与 SKILL.md 解析
 
-### 已修复的缺陷 (2)
+### 待处理 (Open Issues)
 
-- #21 issue.sh .counter 自增脱节导致 ID 冲突
-- #34 Daemon 未读取 ACTANT_HOME 环境变量
-
-### 已完成的增强 (6)
-
-- #19 Roadmap 与 Issue 元数据不一致
-- #20 CLI 包测试覆盖率为零 — 需补充单元测试
-- #22 CLI 包 console.log 违反质量规范 — 需引入结构化输出层
-- #25 测试用例实现深度审查 — 类型安全、断言与配对缺口
-- #28 测试中固定 setTimeout 延迟导致潜在 flaky
-- #42 api-contracts.md 文档与实现不一致
-
-### 待处理 (Open Issues — 23)
-
-- #1 Instance Memory Layer (Phase 1) [long-term]
-- #2 Memory Consolidation + Shared Memory (Phase 2) [long-term]
-- #3 Context Layers + ContextBroker (Phase 3) [long-term]
-- #5 Template hot-reload on file change [long-term]
-- #12 ACP 协议集成 — Daemon 侧 ACP Client [mid-term]
-- #13 Plugin 体系设计（heartbeat/scheduler/memory 可插拔）[mid-term]
-- #14 Agent 进程 stdout/stderr 日志收集 [long-term]
-- #16 ACP Proxy — 标准 ACP 协议网关 [mid-term]
-- #17 MCP Server — Agent 间通信能力 [mid-term]
-- #18 ACP-Fleet 扩展协议 [long-term]
-- #32 Initializer: 可扩展的 Agent 初始化流程框架 [mid-term]
-- #33 Template: 耐久测试专用 Agent 配置 [near-term]
-- #36 Agent 工具权限管理机制设计
-- #37 雇员型 Agent — 持续调度与主动行为系统 [mid-term]
-- #38 项目重命名：AgentCraft → Actant [mid-term]
-- #39 Session Lease API 在 mock launcher 模式下无法端到端测试
-- #40 daemon stop 连接失败时未输出消息
-- #41 session.create 缺少参数验证
-- #43 ACP Gateway: Terminal 回调 IDE 转发未实现 [mid-term]
-- #44 E2E CLI 测试: ESM 模块解析失败 [short-term]
-- #51 AgentTemplate 权限控制 [phase-3]
-- #52 AgentTemplate 应当可通过 Source 分享 [phase-3]
-- #53 可共享内容缺少版本控制能力 [phase-3]
+23 个 open issue（包含 Phase 4-6 规划），详见 issue-snapshot.json
 
 ---
 
@@ -145,8 +109,8 @@
 
 | 指标 | 数量 |
 |------|------|
-| 提交总数 | 51 |
-| 变更文件 | 527 |
-| Issue 总数 | 58 |
+| 提交总数 | 61 |
+| 变更文件 | 616 |
 | 已关闭 Issue | 35 |
 | 待处理 Issue | 23 |
+| 测试用例 | 579 (100% pass) |

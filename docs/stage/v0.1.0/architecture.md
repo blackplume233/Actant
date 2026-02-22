@@ -609,6 +609,7 @@ RPC Client ──► Daemon ──► agent-handlers (agent.run)
 ```typescript
 interface AgentTemplate {
   name: string;
+  version?: string;          // semver
   description?: string;
   backend: {
     type: "cursor" | "claude-code" | "custom";
@@ -625,29 +626,85 @@ interface AgentTemplate {
     workspacePolicy?: WorkspacePolicy;
   };
   domainContext?: {
-    skills?: string[];       // 技能名称引用
-    prompts?: string[];      // 提示词名称引用
+    skills?: string[];
+    prompts?: string[];
     mcpServers?: McpServerRef[];
     workflow?: string;
     plugins?: string[];
+    extensions?: Record<string, unknown[]>;  // 可扩展组件类型
   };
   schedule?: {
     heartbeat?: HeartbeatConfig;
     cron?: CronConfig[];
     hooks?: HookConfig[];
   };
-  permissions?: { ... };     // Phase 3 待完善
+  permissions?: PermissionsInput;  // 权限配置或预设名称
 }
 ```
 
-### 9.2 平台 IPC
+### 9.2 权限系统
+
+```typescript
+type PermissionsInput = PermissionPreset | PermissionsConfig;
+type PermissionPreset = "permissive" | "standard" | "restricted" | "readonly";
+
+interface PermissionsConfig {
+  allow?: string[];       // 允许的操作 ("Read", "Edit", "Bash(*)", ...)
+  deny?: string[];        // 拒绝的操作
+  ask?: string[];         // 需要确认的操作
+  defaultMode?: PermissionMode;  // "default" | "plan" | "bypassPermissions" | "dontAsk"
+  sandbox?: SandboxConfig;       // 沙箱配置
+}
+```
+
+| 预设 | 特点 |
+|------|------|
+| `permissive` | 允许所有操作，`bypassPermissions` 模式 |
+| `standard` | 允许读写+受限 Bash，需确认通用 Bash |
+| `restricted` | 仅允许读取和搜索，拒绝 Bash |
+| `readonly` | 仅允许读取，拒绝所有写操作，`plan` 模式 |
+
+### 9.3 VersionedComponent 公共信封
+
+所有领域组件（Skill、Prompt、Workflow、McpServer、Plugin）均继承：
+
+```typescript
+interface VersionedComponent {
+  name: string;
+  version?: string;         // semver
+  $type?: string;           // 组件类型标识
+  $version?: string;        // 信封格式版本
+  origin?: ComponentOrigin; // 来源追踪
+  description?: string;
+  tags?: string[];
+}
+```
+
+### 9.4 实例注册表
+
+```typescript
+interface InstanceRegistryEntry {
+  name: string;
+  template: string;
+  workspacePath: string;
+  location: "builtin" | "external";
+  createdAt: string;
+  status: "stopped" | "running" | "orphaned";
+}
+```
+
+- `adopt(path)`: 读取目录中的 `.actant.json`，将其纳入管理
+- `reconcile()`: 扫描并标记不可达实例为 orphaned，自动采纳未注册的内建实例
+```
+
+### 9.5 平台 IPC
 
 | 平台 | IPC 方式 |
 |------|---------|
 | macOS / Linux | Unix Domain Socket |
 | Windows | Named Pipe |
 
-### 9.3 通信协议
+### 9.6 通信协议
 
 | 协议 | 用途 |
 |------|------|
@@ -662,27 +719,32 @@ interface AgentTemplate {
 ```
 configs/
 ├── skills/
-│   ├── code-review.json           # 代码审查技能
-│   └── typescript-expert.json     # TypeScript 专家技能
+│   ├── code-review.json              # 代码审查技能
+│   ├── code-review/                  # 目录格式技能（manifest.json + content.md）
+│   │   ├── manifest.json
+│   │   └── content.md
+│   └── typescript-expert.json        # TypeScript 专家技能
 ├── prompts/
-│   └── system-code-reviewer.json  # 代码审查系统提示词
+│   └── system-code-reviewer.json     # 代码审查系统提示词
 ├── mcp/
-│   └── filesystem.json            # 文件系统 MCP 服务配置
+│   └── filesystem.json               # 文件系统 MCP 服务配置
 ├── workflows/
-│   └── trellis-standard.json      # Trellis 标准工作流
+│   └── trellis-standard.json         # Trellis 标准工作流
 ├── templates/
-│   └── code-review-agent.json     # 代码审查 Agent 模板
+│   └── code-review-agent.json        # 代码审查 Agent 模板
 └── plugins/
-    ├── github-plugin.json         # GitHub 插件
-    ├── web-search-plugin.json     # Web 搜索插件
-    └── memory-plugin.json         # 记忆插件
+    ├── github-plugin.json            # GitHub 插件
+    ├── web-search-plugin.json        # Web 搜索插件
+    └── memory-plugin.json            # 记忆插件
 ```
+
+此外，`examples/actant-hub/` 提供了官方 Source 仓库示例，包含双格式技能定义（JSON + SKILL.md）、模板、预设等。
 
 ---
 
 ## 11. 当前版本状态总结
 
-### 已完成（Phase 1 – 3 核心）
+### 已完成（Phase 1 – 3）
 
 | 阶段 | 能力 | 状态 |
 |------|------|------|
@@ -692,14 +754,14 @@ configs/
 | **Phase 3b** | BackendBuilder 接口、CursorBuilder、ClaudeCodeBuilder、WorkspaceBuilder 流水线 | ✅ 完成 |
 | **Phase 3c** | TaskQueue、TaskDispatcher、InputRouter（heartbeat/cron/hook）、EmployeeScheduler、RPC/CLI | ✅ 完成 |
 | **Phase 3d** | Component Source（GitHub/Local）、Source CRUD、Preset 系统 | ✅ 完成 |
-
-### 进行中
-
-| Issue | 功能 | 状态 |
-|-------|------|------|
-| #51 | AgentTemplate 权限控制 | 🔄 设计中 |
-| #52 | AgentTemplate 可通过 Source 共享 | 🔄 设计中 |
-| #53 | 可共享组件版本管理 | 🔄 设计中 |
+| **#51** | AgentTemplate 权限控制 — 4 级预设（permissive/standard/restricted/readonly）+ 沙箱配置 | ✅ 完成 |
+| **#52** | AgentTemplate 通过 Source 共享 — SourceManager 注入/移除模板，Preset 引用模板 | ✅ 完成 |
+| **#53** | 可共享组件版本管理 — Semver 引用解析、SyncReport 变更追踪 | ✅ 完成 |
+| **#54** | DomainContext 可扩展性 — ComponentTypeHandler 注册模式、extensions 字段 | ✅ 完成 |
+| **#55** | 安装/帮助/自更新 — install.sh/install.ps1、help 命令、self-update 脚本 | ✅ 完成 |
+| **#56** | Actant Home 目录结构 — InstanceRegistry、adopt/reconcile、外部工作区 | ✅ 完成 |
+| **#58** | VersionedComponent 公共信封 — 所有组件统一版本/来源元数据 | ✅ 完成 |
+| **#59** | actant-hub 示例源 — SKILL.md 解析器、目录格式组件、双格式兼容 | ✅ 完成 |
 
 ### 已知限制
 
@@ -707,17 +769,25 @@ configs/
 |------|------|
 | Scheduler 未自动启动 | AppContext.schedulers 已定义但未在 Agent 启动时自动创建 EmployeeScheduler |
 | MCP Server 骨架阶段 | 仅包含入口文件，Agent-to-Agent 工具调用尚未实现 |
-| 权限系统待设计 | Template 的 permissions 字段和组件权限控制尚未实现 |
+| InstanceRegistry 缺独立单元测试 | 逻辑通过集成测试覆盖，但无专门的 `instance-registry.test.ts` |
 | Web UI 未启动 | 当前仅有 CLI 交互，REST API 和 Web UI 为后续规划 |
 
 ### 后续路线
 
 | 阶段 | 焦点 |
 |------|------|
-| Phase 4 | 插件系统、stdout/stderr 日志捕获 |
-| Phase 5 | 记忆系统（实例记忆、合并、上下文分层） |
+| Phase 4 | 系统插件（heartbeat/scheduler/memory）、stdout/stderr 日志捕获、工具权限 |
+| Phase 5 | 记忆系统（实例记忆、合并、上下文分层、OpenViking） |
 | Phase 6 | ACP-Fleet（多 Agent 集群编排） |
+
+### 测试覆盖
+
+| 指标 | 数量 |
+|------|------|
+| 测试套件 | 51 |
+| 测试用例 | 579 |
+| 通过率 | 100% |
 
 ---
 
-> **文档生成时间**：2026-02-22 &nbsp;|&nbsp; **基于代码状态**：master 分支，Phase 3 收尾
+> **文档生成时间**：2026-02-22 &nbsp;|&nbsp; **基于代码状态**：master 分支 `f00dad5`，v0.1.0
