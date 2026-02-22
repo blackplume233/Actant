@@ -118,8 +118,12 @@ function toAgentTemplate(output: AgentTemplateOutput): AgentTemplate {
       })),
       workflow: output.domainContext.workflow,
       subAgents: output.domainContext.subAgents,
+      plugins: output.domainContext.plugins,
+      extensions: output.domainContext.extensions,
     },
     initializer: output.initializer,
+    permissions: output.permissions,
+    schedule: output.schedule,
     metadata: output.metadata,
   };
 }

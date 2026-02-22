@@ -146,10 +146,11 @@ describe("TemplateRegistry", () => {
     it("should load valid templates from fixture directory", async () => {
       const count = await registry.loadBuiltins(FIXTURES);
 
-      expect(count).toBe(3);
+      expect(count).toBe(4);
       expect(registry.has("code-review-agent")).toBe(true);
       expect(registry.has("minimal-agent")).toBe(true);
       expect(registry.has("game-dev-assistant")).toBe(true);
+      expect(registry.has("scheduled-web-searcher")).toBe(true);
     });
 
     it("should skip duplicate templates when loading builtins", async () => {
@@ -157,8 +158,8 @@ describe("TemplateRegistry", () => {
       const count = await registry.loadBuiltins(FIXTURES);
 
       // code-review-agent already exists, should be skipped
-      expect(count).toBe(2);
-      expect(registry.size).toBe(3);
+      expect(count).toBe(3);
+      expect(registry.size).toBe(4);
     });
   });
 

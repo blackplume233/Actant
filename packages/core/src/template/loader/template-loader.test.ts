@@ -65,6 +65,62 @@ describe("TemplateLoader", () => {
       });
     });
 
+    it("should preserve schedule, permissions, plugins, and extensions fields", async () => {
+      const template = await loader.loadFromFile(join(FIXTURES, "full-featured-template.json"));
+
+      expect(template.name).toBe("scheduled-web-searcher");
+
+      // schedule
+      expect(template.schedule).toBeDefined();
+      expect(template.schedule?.heartbeat?.intervalMs).toBe(20000);
+      expect(template.schedule?.heartbeat?.prompt).toBe("Perform a random web search");
+      expect(template.schedule?.heartbeat?.priority).toBe("normal");
+      expect(template.schedule?.cron).toHaveLength(1);
+      expect(template.schedule?.cron?.[0]?.pattern).toBe("0 */6 * * *");
+      expect(template.schedule?.cron?.[0]?.timezone).toBe("Asia/Shanghai");
+      expect(template.schedule?.hooks).toHaveLength(1);
+      expect(template.schedule?.hooks?.[0]?.eventName).toBe("user:request");
+
+      // permissions
+      expect(template.permissions).toBeDefined();
+      expect(typeof template.permissions).toBe("object");
+      const perms = template.permissions as { allow?: string[]; deny?: string[]; defaultMode?: string; sandbox?: { enabled?: boolean } };
+      expect(perms.allow).toEqual(["WebSearch", "WebFetch", "Read"]);
+      expect(perms.deny).toEqual(["Write"]);
+      expect(perms.defaultMode).toBe("default");
+      expect(perms.sandbox?.enabled).toBe(true);
+
+      // plugins
+      expect(template.domainContext.plugins).toEqual(["rate-limiter", "cache"]);
+
+      // extensions
+      expect(template.domainContext.extensions).toEqual({
+        customSources: ["rss-feed", "api-endpoint"],
+      });
+    });
+
+    it("should default plugins to empty array and omit extensions when absent", async () => {
+      const template = await loader.loadFromFile(join(FIXTURES, "minimal-template.json"));
+
+      expect(template.domainContext.plugins).toEqual([]);
+      expect(template.domainContext.extensions).toBeUndefined();
+      expect(template.permissions).toBeUndefined();
+      expect(template.schedule).toBeUndefined();
+    });
+
+    it("should accept a permission preset string", async () => {
+      const json = JSON.stringify({
+        name: "preset-perms",
+        version: "1.0.0",
+        backend: { type: "cursor" },
+        provider: { type: "openai" },
+        domainContext: {},
+        permissions: "permissive",
+      });
+      const template = await loader.loadFromString(json);
+      expect(template.permissions).toBe("permissive");
+    });
+
     it("should throw ConfigNotFoundError for non-existent file", async () => {
       await expect(
         loader.loadFromFile(join(FIXTURES, "does-not-exist.json")),
@@ -124,12 +180,13 @@ describe("TemplateLoader", () => {
     it("should load all valid templates from a directory", async () => {
       const templates = await loader.loadFromDirectory(FIXTURES);
 
-      expect(templates.length).toBe(3);
+      expect(templates.length).toBe(4);
       const names = templates.map((t) => t.name).sort();
       expect(names).toEqual([
         "code-review-agent",
         "game-dev-assistant",
         "minimal-agent",
+        "scheduled-web-searcher",
       ]);
     });
 
