@@ -9,7 +9,8 @@ labels:
 milestone: mid-term
 author: human
 assignees: []
-relatedIssues: []
+relatedIssues:
+  - 59
 relatedFiles:
   - package.json
   - packages/cli/package.json
@@ -27,10 +28,11 @@ taskRef: null
 githubRef: "blackplume233/Actant#42"
 closedAs: completed
 createdAt: "2026-02-21T14:00:00"
-updatedAt: "2026-02-22T10:00:00"
+updatedAt: "2026-02-22T03:46:39"
 closedAt: "2026-02-22T10:00:00"
 ---
 
+**Related Issues**: [[0059-create-official-default-source-repo-compatible-with-agent-sk]]
 **Related Files**: `package.json`, `packages/cli/package.json`, `packages/core/package.json`, `packages/api/package.json`, `packages/acp/package.json`, `packages/shared/package.json`, `packages/mcp-server/package.json`, `pnpm-lock.yaml`, `AGENTS.md`, `.trellis/roadmap.md`, `.trellis/workflow.md`, `docs/design/architecture-docker-analogy.md`
 
 ---

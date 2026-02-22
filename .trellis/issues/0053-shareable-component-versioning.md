@@ -15,6 +15,7 @@ relatedIssues:
   - 38
   - 49
   - 52
+  - 59
 relatedFiles:
   - packages/shared/src/types/domain-component.types.ts
   - packages/shared/src/types/source.types.ts
@@ -27,11 +28,11 @@ taskRef: null
 githubRef: "blackplume233/Actant#106"
 closedAs: null
 createdAt: "2026-02-21T23:30:00"
-updatedAt: "2026-02-21T23:30:00"
+updatedAt: "2026-02-22T03:46:43"
 closedAt: null
 ---
 
-**Related Issues**: [[0038-rename-agentcraft-to-actant]], [[0049-input-router-sources]], [[0052-shareable-agent-template-source]]
+**Related Issues**: [[0038-rename-agentcraft-to-actant]], [[0049-input-router-sources]], [[0052-shareable-agent-template-source]], [[0059-create-official-default-source-repo-compatible-with-agent-sk]]
 **Related Files**: `packages/shared/src/types/domain-component.types.ts`, `packages/shared/src/types/source.types.ts`, `packages/shared/src/types/domain-context.types.ts`, `packages/core/src/domain/base-component-manager.ts`, `packages/core/src/source/source-manager.ts`, `packages/core/src/source/component-source.ts`, `packages/core/src/template/registry/template-registry.ts`
 
 ---

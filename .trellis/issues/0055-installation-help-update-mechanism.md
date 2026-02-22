@@ -17,6 +17,7 @@ relatedIssues:
   - 15
   - 34
   - 38
+  - 59
 relatedFiles:
   - packages/cli/src/program.ts
   - packages/cli/src/bin/actant.ts
@@ -37,11 +38,11 @@ taskRef: null
 githubRef: "blackplume233/Actant#108"
 closedAs: null
 createdAt: "2026-02-22T12:00:00"
-updatedAt: "2026-02-22T15:00:00"
+updatedAt: "2026-02-22T03:46:41"
 closedAt: null
 ---
 
-**Related Issues**: [[0010-one-shot]], [[0011-acp-service]], [[0015-resolve-attach-detach]], [[0034-daemon-agentcraft-home]], [[0038-rename-agentcraft-to-actant]]
+**Related Issues**: [[0010-one-shot]], [[0011-acp-service]], [[0015-resolve-attach-detach]], [[0034-daemon-agentcraft-home]], [[0038-rename-agentcraft-to-actant]], [[0059-create-official-default-source-repo-compatible-with-agent-sk]]
 **Related Files**: `packages/cli/src/program.ts`, `packages/cli/src/bin/actant.ts`, `scripts/self-update.js`, `scripts/updater-supervisor.js`, `packages/cli/src/commands/help.ts`, `packages/cli/package.json`, `packages/shared/src/platform/platform.ts`, `packages/core/src/manager/agent-manager.ts`, `packages/core/src/manager/launch-mode-handler.ts`, `packages/core/src/state/instance-meta-io.ts`, `packages/api/src/daemon/daemon.ts`, `scripts/install.ps1`, `scripts/install.sh`, `docs/getting-started.md`, `package.json`
 
 ---
@@ -124,7 +125,6 @@ npm install -g actant
 - [ ] `docs/getting-started.md` 包含完整安装指南
 - [ ] `~/.actant/` 目录结构在首次运行时自动创建
 
----
 
 ## 二、Help 指令实现 (Help)
 
@@ -217,7 +217,6 @@ $ actant help agent
 - [ ] help 输出包含 chalk 着色（终端友好）
 - [ ] 在 program.ts 中注册 help 命令
 
----
 
 ## 三、本地部署自更新机制 (Self-Update) — 脚本为骨、Agent 辅助
 
@@ -547,7 +546,6 @@ node scripts/self-update.js --manifest ~/.actant/update-manifest.json --skip-dae
 - [ ] Updater Agent 监控脚本执行并写入 update-result.json
 - [ ] Daemon 启动时检测未完成的 update manifest，提示恢复
 
----
 
 ## 实施优先级
 

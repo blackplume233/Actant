@@ -1,6 +1,6 @@
 ---
 id: 54
-title: "DomainContext 类型扩展缺乏指导文档与框架级支持"
+title: DomainContext 类型扩展缺乏指导文档与框架级支持
 status: open
 labels:
   - enhancement
@@ -14,6 +14,7 @@ assignees: []
 relatedIssues:
   - 52
   - 53
+  - 59
 relatedFiles:
   - packages/shared/src/types/domain-context.types.ts
   - packages/shared/src/types/domain-component.types.ts
@@ -27,12 +28,12 @@ relatedFiles:
 taskRef: null
 githubRef: "blackplume233/Actant#107"
 closedAs: null
-createdAt: 2026-02-22T00:00:00
-updatedAt: 2026-02-22T00:00:00
+createdAt: "2026-02-22T00:00:00"
+updatedAt: "2026-02-22T03:46:40"
 closedAt: null
 ---
 
-**Related Issues**: [[0052-shareable-agent-template-source]], [[0053-shareable-component-versioning]]
+**Related Issues**: [[0052-shareable-agent-template-source]], [[0053-shareable-component-versioning]], [[0059-create-official-default-source-repo-compatible-with-agent-sk]]
 **Related Files**: `packages/shared/src/types/domain-context.types.ts`, `packages/shared/src/types/domain-component.types.ts`, `packages/shared/src/types/index.ts`, `packages/core/src/template/schema/template-schema.ts`, `packages/core/src/builder/workspace-builder.ts`, `packages/core/src/builder/backend-builder.ts`, `packages/core/src/builder/cursor-builder.ts`, `packages/core/src/builder/claude-code-builder.ts`, `packages/core/src/initializer/context/context-materializer.ts`
 
 ---

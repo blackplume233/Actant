@@ -14,6 +14,7 @@ relatedIssues:
   - 38
   - 49
   - 51
+  - 59
 relatedFiles:
   - packages/core/src/source/component-source.ts
   - packages/core/src/source/source-manager.ts
@@ -26,11 +27,11 @@ taskRef: null
 githubRef: "blackplume233/Actant#105"
 closedAs: null
 createdAt: "2026-02-21T23:15:00"
-updatedAt: "2026-02-21T23:15:00"
+updatedAt: "2026-02-22T03:46:42"
 closedAt: null
 ---
 
-**Related Issues**: [[0038-rename-agentcraft-to-actant]], [[0049-input-router-sources]], [[0051-template-permission-control]]
+**Related Issues**: [[0038-rename-agentcraft-to-actant]], [[0049-input-router-sources]], [[0051-template-permission-control]], [[0059-create-official-default-source-repo-compatible-with-agent-sk]]
 **Related Files**: `packages/core/src/source/component-source.ts`, `packages/core/src/source/source-manager.ts`, `packages/core/src/source/local-source.ts`, `packages/core/src/source/github-source.ts`, `packages/shared/src/types/source.types.ts`, `packages/shared/src/types/template.types.ts`, `packages/core/src/template/registry/template-registry.ts`
 
 ---

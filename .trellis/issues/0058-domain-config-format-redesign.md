@@ -13,6 +13,7 @@ assignees: []
 relatedIssues:
   - 56
   - 55
+  - 59
 relatedFiles:
   - docs/design/domain-context-formats.md
   - packages/core/src/domain/base-component-manager.ts
@@ -36,11 +37,11 @@ taskRef: null
 githubRef: "blackplume233/Actant#110"
 closedAs: null
 createdAt: "2026-02-22T18:30:00"
-updatedAt: "2026-02-22T20:00:00"
+updatedAt: "2026-02-22T03:46:44"
 closedAt: null
 ---
 
-**Related Issues**: [[0056-actant-and-instance-working-directory-design]], [[0055-installation-help-update-mechanism]]
+**Related Issues**: [[0056-actant-and-instance-working-directory-design]], [[0055-installation-help-update-mechanism]], [[0059-create-official-default-source-repo-compatible-with-agent-sk]]
 **Related Files**: `docs/design/domain-context-formats.md`, `packages/core/src/domain/base-component-manager.ts`, `packages/core/src/domain/skill/skill-manager.ts`, `packages/core/src/domain/prompt/prompt-manager.ts`, `packages/core/src/domain/workflow/workflow-manager.ts`, `packages/core/src/domain/mcp/mcp-config-manager.ts`, `packages/core/src/domain/plugin/plugin-manager.ts`, `packages/core/src/source/source-manager.ts`, `packages/api/src/services/app-context.ts`, `packages/shared/src/types/domain-component.types.ts`, `packages/shared/src/types/template.types.ts`, `configs/skills/code-review.json`, `configs/prompts/system-code-reviewer.json`, `configs/workflows/trellis-standard.json`, `configs/mcp/filesystem.json`, `configs/plugins/memory-plugin.json`, `configs/templates/code-review-agent.json`, `docs/stage/v0.1.0/config-schemas.md`
 
 ---
@@ -55,7 +56,6 @@ Claude Code 的 Skill 系统是优秀参考：一个 Skill 是一个**目录**�
 
 完整设计文档: `docs/design/domain-context-formats.md`
 
----
 
 ## 设计原则
 
@@ -65,7 +65,6 @@ Claude Code 的 Skill 系统是优秀参考：一个 Skill 是一个**目录**�
 4. **向后兼容**：仍支持单个 `.json` 文件作为简单模式
 5. **公共信封 + 类型特有字段**：所有类型共享一组基础字段（`$type`, `$version`, `name`, `description`, `version`, `tags`, `origin`），各自扩展专属字段
 
----
 
 ## 公共信封（Common Envelope）
 
@@ -85,7 +84,6 @@ Claude Code 的 Skill 系统是优秀参考：一个 Skill 是一个**目录**�
 
 Origin 三种类型：`builtin`（内置）、`source`（Source 同步，含 syncHash/syncedAt/modified）、`local`（用户创建）。
 
----
 
 ## 一、Skill — 技能
 
@@ -120,7 +118,6 @@ skills/code-review/
 | `dependencies` | 依赖的其他 Skill |
 | `files.{templates,examples,scripts,references}` | 子文件引用 |
 
----
 
 ## 二、Prompt — 提示词
 
@@ -153,7 +150,6 @@ prompts/system-code-reviewer/
 | `partials` | 可复用片段，`{{>name}}` 语法引用 |
 | `compose` | 组合其他 Prompt 内容 |
 
----
 
 ## 三、Workflow — 工作流
 
@@ -193,7 +189,6 @@ workflows/trellis-standard/
 
 Checklist items 支持 `auto: true` + `command` 自动执行判定，或 `auto: false` 需人工/Agent 判断。
 
----
 
 ## 四、MCP Server — MCP 服务配置
 
@@ -223,7 +218,6 @@ mcp/filesystem/
 | `connection.{maxRetries,retryDelayMs,idleTimeoutMs}` | 连接管理 |
 | `setup.{script,requiredEnv}` | 首次安装 |
 
----
 
 ## 五、Plugin — 插件
 
@@ -254,7 +248,6 @@ plugins/memory/
 | `lifecycle.{setup,migrate}` | 安装/迁移脚本 |
 | `dependencies` | 依赖的其他插件 |
 
----
 
 ## 六、Template — Agent 模板
 
@@ -287,7 +280,6 @@ templates/code-review-agent/
 
 继承机制：数组字段用 `"...inherit"` 保留父模板内容并追加，不含则直接替换。
 
----
 
 ## 七、未来类型
 
@@ -296,7 +288,6 @@ templates/code-review-agent/
 - **Evaluator** — 评估器：rubric.json + test-cases/，评估 Agent 输出质量
 - **Guardrail** — 安全规则：rules.json + patterns/，行为边界约束
 
----
 
 ## 八、加载机制
 
@@ -307,7 +298,6 @@ templates/code-review-agent/
 
 FQN 解析优先级：本地精确匹配 → `@*/` 搜索 → 多 Source 同名则报错要求 FQN。
 
----
 
 ## 速查表
 
