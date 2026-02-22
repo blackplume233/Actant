@@ -354,46 +354,75 @@ tasks/
 
 See `.trellis/roadmap.md` for structure and maintenance notes.
 
-### 5. Issues - Backlog Tracking
+### 5. Issues - Backlog Tracking (GitHub-first)
 
-Issues are Obsidian-style Markdown files for tracking ideas, bugs, design proposals, and improvements. Each file uses YAML frontmatter for structured metadata, `[[wikilinks]]` for related issue navigation, and rich Markdown body + comments.
+> **核心原则：GitHub Issues 是 Issue 的唯一真相源（Single Source of Truth）。**
+> 本地 `.trellis/issues/` 中的 Markdown 文件是 GitHub Issues 的缓存/镜像，Issue 编号（`id` 字段）**必须**与 GitHub Issue 编号一致。
+
+Issues are Obsidian-style Markdown files mirroring GitHub Issues. Each file uses YAML frontmatter for structured metadata, `[[wikilinks]]` for related issue navigation, and rich Markdown body + comments.
 
 ```
 issues/
-|-- .counter                 # Auto-increment ID
-|-- 0001-add-memory-layer.md
-|-- 0002-fix-socket-timeout.md
-\-- 0003-improve-cli-output.md
+|-- .counter                 # Tracks highest GitHub issue number
+|-- 0022-processwatcher.md   # GitHub #22
+|-- 0043-unified-component-management.md  # GitHub #43
+\-- 0094-base-component-manager-crud.md   # GitHub #94
 ```
+
+**Issue 编号规则**:
+- `id` 字段 = GitHub Issue number（不再使用本地自增序号）
+- 文件名格式: `NNNN-slug.md`，其中 `NNNN` = 零填充的 GitHub Issue number
+- `.counter` 记录当前最大 GitHub Issue number，供新建时参考
+- `githubRef` 字段格式: `"blackplume233/Actant#N"`
 
 **Issue vs Task**:
 
 | Concept | Issue | Task |
 |---------|-------|------|
-| Purpose | Backlog — what needs doing | Active work — what's being done now |
+| Purpose | Backlog — what needs doing (synced with GitHub) | Active work — what's being done now |
 | Lifecycle | open → (promote) → in-progress → closed | planning → in_progress → review → completed |
-| Storage | Single Markdown file per issue | Directory with task.json, prd.md, jsonl contexts |
+| Storage | Single Markdown file per issue (mirrors GitHub) | Directory with task.json, prd.md, jsonl contexts |
 | Transition | `issue.sh promote <id>` creates a Task | `task.sh archive <name>` archives completed Task |
 
-**Workflow**: Issue (idea) → **promote** → Task (active work) → **archive** → Done
+**Workflow**: GitHub Issue (idea) → **local cache** → **promote** → Task (active work) → **archive** → Done
 
-**Commands**:
+**创建 Issue 的标准流程（GitHub-first）**:
 ```bash
-./.trellis/scripts/issue.sh create "<title>" --feature --priority P1 --milestone mid-term
-./.trellis/scripts/issue.sh create "Bug title" --bug --priority P0 --label core
-./.trellis/scripts/issue.sh create "Design question" --discussion --body "Should we..."
+# 1. 在 GitHub 上创建 Issue（推荐使用 gh CLI）
+gh issue create -t "<title>" -b "<body>" -l "feature"
+# → 获得 GitHub Issue #N
+
+# 2. 本地创建对应的缓存文件
+./.trellis/scripts/issue.sh create "<title>" --id N --feature --priority P1
+# 或通过 pull 自动导入
+./.trellis/scripts/issue.sh pull N
+```
+
+**查询与管理（修改操作自动同步到 GitHub）**:
+```bash
 ./.trellis/scripts/issue.sh list [--milestone mid-term] [--priority P1] [--rfc]
 ./.trellis/scripts/issue.sh show <id>
-./.trellis/scripts/issue.sh edit <id> --assign cursor-agent --milestone mid-term
-./.trellis/scripts/issue.sh label <id> --add rfc --remove question
-./.trellis/scripts/issue.sh comment <id> "Design doc completed"
-./.trellis/scripts/issue.sh close <id> --as completed
-./.trellis/scripts/issue.sh close <id> --as duplicate --ref 3
-./.trellis/scripts/issue.sh close <id> --as not-planned --reason "Out of scope"
+./.trellis/scripts/issue.sh edit <id> --assign cursor-agent --milestone mid-term  # ← auto-sync
+./.trellis/scripts/issue.sh label <id> --add rfc --remove question               # ← auto-sync
+./.trellis/scripts/issue.sh comment <id> "Design doc completed"                  # ← auto-sync
+./.trellis/scripts/issue.sh close <id> --as completed                            # ← auto-sync
 ./.trellis/scripts/issue.sh promote <id>       # → Creates Task from Issue
 ./.trellis/scripts/issue.sh search "memory"
 ./.trellis/scripts/issue.sh stats
 ```
+
+**同步与 Dirty 跟踪**:
+```bash
+./.trellis/scripts/issue.sh sync <id>          # 手动推送单个 issue 到 GitHub
+./.trellis/scripts/issue.sh sync --all         # 推送所有 dirty issues
+./.trellis/scripts/issue.sh check-dirty        # 检查是否有未同步的 issue
+./.trellis/scripts/issue.sh check-dirty --strict  # 有 dirty 则 exit 1（用于 commit 前检查）
+./.trellis/scripts/issue.sh pull <number>      # 从 GitHub 拉取到本地
+```
+
+> **Dirty 机制**: 每次修改操作（edit/label/close/reopen/comment）会自动标记为 dirty
+> 并尝试通过 `gh` CLI 推送到 GitHub。若网络不可用，issue 保持 dirty 状态直到手动同步。
+> **commit 前务必运行 `check-dirty`** 确认所有变更已同步。
 
 **Status**: `open` / `closed` (binary, like GitHub)
 **Close reasons**: `completed` / `not-planned` / `duplicate`
@@ -404,63 +433,59 @@ issues/
 - Meta: `duplicate` `wontfix` `blocked` `good-first-issue`
 **Milestones**: `near-term` | `mid-term` | `long-term`
 
-### 6. GitHub Sync (via MCP)
+### 6. GitHub Integration
 
-Local issues can sync with GitHub Issues when a GitHub MCP server is available (e.g., `@modelcontextprotocol/server-github`).
+> **GitHub 是 Issue 的权威来源**。本地 `.trellis/issues/` 文件是 Obsidian 兼容的缓存，便于离线浏览和图谱导航。
 
-**Architecture**: The AI Agent acts as orchestrator — `issue.sh` prepares/receives data, the Agent calls MCP tools for actual GitHub API communication.
-
+**Architecture**:
 ```
-┌─────────────┐     export     ┌───────────┐   mcp__github__   ┌──────────┐
-│ Local Issue  │ ──────────────→│  AI Agent  │ ────────────────→ │  GitHub  │
-│  (.md file)  │ ←──────────────│ (MCP Hub)  │ ←──────────────── │  Issues  │
-└─────────────┘  import-github └───────────┘   create/get/...  └──────────┘
+┌──────────┐   gh CLI / MCP   ┌───────────┐   local cache   ┌─────────────┐
+│  GitHub  │ ←──────────────→ │  AI Agent  │ ──────────────→ │ Local .md   │
+│  Issues  │  (source of truth)│ (Orchestrator) │             │ (mirror)    │
+└──────────┘                  └───────────┘                  └─────────────┘
 ```
 
-**Push to GitHub** (local → remote):
+**从 GitHub 拉取到本地**:
 ```bash
-# 1. Export local issue as MCP-ready JSON
-./.trellis/scripts/issue.sh export <id> --owner <org> --repo <repo>
-# 2. AI Agent calls mcp__github__create_issue with the exported JSON
-# 3. Link local issue to the newly created GitHub issue
-./.trellis/scripts/issue.sh link <id> --github <org>/<repo>#<number>
-# 4. Later, push updates
-./.trellis/scripts/issue.sh export <id> --update
-# AI Agent calls mcp__github__update_issue with the JSON
+./.trellis/scripts/issue.sh pull <number>     # 拉取单个 GitHub Issue → 本地缓存
 ```
 
-**Pull from GitHub** (remote → local):
+**从本地推送到 GitHub（自动或手动）**:
 ```bash
-# 1. AI Agent calls mcp__github__get_issue to fetch GitHub issue data
-# 2. Pipe the JSON into import-github
-echo '<mcp_response_json>' | ./.trellis/scripts/issue.sh import-github
-# Duplicate detection: if owner/repo#number already imported, skips and returns existing ID
+# 修改操作会自动尝试同步，如果失败则标记为 dirty
+./.trellis/scripts/issue.sh sync <id>         # 手动推送单个 issue
+./.trellis/scripts/issue.sh sync --all        # 推送所有 dirty issues
+./.trellis/scripts/issue.sh check-dirty       # 检查未同步的 issue
 ```
 
-**Manual Linking**:
+**Dirty 跟踪流程**:
+```
+┌──────────┐   mutation    ┌──────────┐   auto-sync   ┌──────────┐
+│  Local   │ ────────────→ │  Dirty   │ ────────────→ │  GitHub  │
+│  Edit    │               │  Mark    │  (gh CLI)     │  Updated │
+└──────────┘               └──────────┘               └──────────┘
+                                │ if sync fails            ↑
+                                ▼                          │
+                           ┌──────────┐   manual sync  ────┘
+                           │  Stays   │  (issue sync)
+                           │  Dirty   │
+                           └──────────┘
+```
+
+**Commit 前检查**:
 ```bash
-# Link local issue to existing GitHub issue
-./.trellis/scripts/issue.sh link <id> --github owner/repo#number
-# Or with explicit params
-./.trellis/scripts/issue.sh link <id> --owner <o> --repo <r> --number <n>
-# Remove link
-./.trellis/scripts/issue.sh unlink <id>
+# 在 git commit 之前确保所有 issue 变更已同步
+./.trellis/scripts/issue.sh check-dirty --strict  # 有 dirty → exit 1
+./.trellis/scripts/issue.sh sync --all            # 全部推送
 ```
 
-**MCP Tools Used** (from `@modelcontextprotocol/server-github`):
-
-| Tool | Usage |
-|------|-------|
-| `mcp__github__create_issue` | Push new issue to GitHub |
-| `mcp__github__update_issue` | Update existing linked issue |
-| `mcp__github__get_issue` | Pull single issue from GitHub |
-| `mcp__github__list_issues` | Pull multiple issues from GitHub |
-| `mcp__github__search_issues` | Search GitHub issues |
-| `mcp__github__add_issue_comment` | Sync comments |
-
-**`githubRef` Field** (stored in issue YAML frontmatter):
-```yaml
-githubRef: "myorg/myrepo#42"
+**GitHub CLI 常用命令**:
+```bash
+gh issue list --state open                    # 列出所有 open issues
+gh issue view <number>                        # 查看详情
+gh issue create -t "title" -b "body" -l bug   # 创建新 issue
+gh issue close <number>                       # 关闭 issue
+gh issue comment <number> -b "comment"        # 添加评论
 ```
 
 ---
@@ -527,21 +552,17 @@ git commit -m "type(scope): description"
 ./.trellis/scripts/task.sh list      # List tasks
 ./.trellis/scripts/task.sh create "<title>" # Create task
 
-# Issue management (backlog, discussions, ideas — GitHub-style)
-./.trellis/scripts/issue.sh create "<title>" [options]  # Create issue
-./.trellis/scripts/issue.sh list [filters]              # List open issues
-./.trellis/scripts/issue.sh show <id>                   # Show details + body + comments
-./.trellis/scripts/issue.sh edit <id> [fields]          # Edit fields
-./.trellis/scripts/issue.sh label <id> --add/--remove   # Manage labels
-./.trellis/scripts/issue.sh comment <id> "<text>"       # Add to discussion
-./.trellis/scripts/issue.sh close <id> --as <reason>    # Close (completed/not-planned/duplicate)
+# Issue management (GitHub-first — mutations auto-sync)
+gh issue list --state open                              # List open GitHub issues
+gh issue create -t "<title>" -b "<body>" -l "feature"   # Create on GitHub first
+./.trellis/scripts/issue.sh pull <number>               # Pull GitHub → local cache
+./.trellis/scripts/issue.sh list [filters]              # List local cached issues
+./.trellis/scripts/issue.sh show <id>                   # Show local details
+./.trellis/scripts/issue.sh edit <id> [fields]          # Edit (auto-syncs to GitHub)
+./.trellis/scripts/issue.sh close <id> --as completed   # Close (auto-syncs)
+./.trellis/scripts/issue.sh sync --all                  # Push all dirty issues
+./.trellis/scripts/issue.sh check-dirty --strict        # Pre-commit: ensure all synced
 ./.trellis/scripts/issue.sh promote <id>                # Issue → Task
-./.trellis/scripts/issue.sh search "<query>"            # Full-text search
-./.trellis/scripts/issue.sh stats                       # Statistics
-./.trellis/scripts/issue.sh export <id> [--owner/--repo] # Export for MCP push
-./.trellis/scripts/issue.sh import-github               # Import from MCP pull (stdin)
-./.trellis/scripts/issue.sh link <id> --github o/r#n    # Link to GitHub issue
-./.trellis/scripts/issue.sh unlink <id>                 # Remove GitHub link
 
 # Slash commands
 /trellis:finish-work          # Pre-commit checklist

@@ -1,6 +1,6 @@
 ---
 name: issue-manager
-description: '本地 Issue 管理 SubAgent。创建、查询、编辑、关闭 Issue，使用 Obsidian 风格 Markdown 格式（YAML frontmatter + 双链 + 正文）。触发方式：用户提及 "/issue"、"创建 issue"、"create issue"、"新建问题"、"提 bug" 等关键词时激活。'
+description: 'GitHub-first Issue 管理 SubAgent。Issue 编号和内容以 GitHub Issues 为准，本地 .trellis/issues/ 为 Obsidian 兼容缓存。触发方式：用户提及 "/issue"、"创建 issue"、"create issue"、"新建问题"、"提 bug" 等关键词时激活。'
 license: MIT
 allowed-tools: Shell, Read, Write, Glob, Grep
 ---
@@ -9,20 +9,21 @@ allowed-tools: Shell, Read, Write, Glob, Grep
 
 ## 角色定义
 
-你是 Actant 项目的 **Issue 管理员**。你负责通过本地 `.trellis/issues/` 目录管理所有 Issue，使用 Obsidian 风格的 Markdown 格式。
+你是 Actant 项目的 **Issue 管理员**。你负责管理 GitHub Issues（唯一真相源）并维护本地 `.trellis/issues/` 目录中的 Obsidian 兼容缓存。
 
 ### 核心原则
 
-- **Obsidian 兼容**：Issue 文件采用 YAML frontmatter + Wikilinks 双链 + Markdown 正文格式
-- **重复检查**：创建前必须搜索是否已存在同类 Issue
+- **GitHub-first**：Issue 编号（`id`）= GitHub Issue number，内容以 GitHub 为准
+- **Obsidian 兼容**：本地缓存文件采用 YAML frontmatter + Wikilinks 双链 + Markdown 正文格式
+- **重复检查**：创建前必须在 GitHub 上搜索是否已存在同类 Issue
 - **标签规范**：使用项目约定的标签体系（类型、优先级、区域）
-- **双向链接**：相关 Issue 之间通过 `[[NNNN-slug]]` wikilink 互联
+- **双向链接**：相关 Issue 之间通过 `[[NNNN-slug]]` wikilink 互联（NNNN = GitHub Issue number）
 
 ---
 
 ## Issue 文件格式
 
-每个 Issue 是一个 `.md` 文件，存储在 `.trellis/issues/` 目录下，命名为 `NNNN-slug.md`。
+每个 Issue 是一个 `.md` 文件，存储在 `.trellis/issues/` 目录下，命名为 `NNNN-slug.md`（NNNN = 零填充的 **GitHub Issue number**）。
 
 ### 格式结构
 
@@ -172,37 +173,49 @@ closedAt: null
 ./.agents/skills/issue-manager/scripts/issue.sh promote <id>
 ```
 
-### GitHub 同步
+### GitHub 同步（自动 + 手动）
+
+所有修改操作（edit/label/close/reopen/comment）会自动标记为 dirty 并尝试通过 `gh` CLI 同步到 GitHub。
 
 ```bash
-# 导出用于 GitHub 创建
-./.agents/skills/issue-manager/scripts/issue.sh export <id> --owner blackplume233 --repo Actant
+# 从 GitHub 拉取到本地
+./.agents/skills/issue-manager/scripts/issue.sh pull <number>
 
-# 链接到 GitHub Issue
-./.agents/skills/issue-manager/scripts/issue.sh link <id> --github blackplume233/Actant#42
+# 手动推送到 GitHub
+./.agents/skills/issue-manager/scripts/issue.sh sync <id>        # 推送单个
+./.agents/skills/issue-manager/scripts/issue.sh sync --all       # 推送所有 dirty
 
-# 取消链接
-./.agents/skills/issue-manager/scripts/issue.sh unlink <id>
+# 查看未同步的 issue
+./.agents/skills/issue-manager/scripts/issue.sh check-dirty
+./.agents/skills/issue-manager/scripts/issue.sh check-dirty --strict  # 有 dirty 则 exit 1
+
+# Commit 前检查（推荐）
+./.agents/skills/issue-manager/scripts/issue.sh check-dirty --strict && git commit ...
 ```
+
+> **Dirty 机制说明**：修改操作自动尝试 `gh` CLI 同步。若网络不可用或同步失败，issue 保持
+> dirty 状态（`.trellis/issues/.dirty` 文件，已 gitignore）。commit 前务必运行
+> `check-dirty --strict` 或 `sync --all` 确保一致性。
 
 ---
 
 ## 工作流程
 
-### 创建 Issue 的标准流程
+### 创建 Issue 的标准流程（GitHub-first）
 
-#### Step 1: 搜索去重
+#### Step 0: 搜索去重（GitHub 优先）
 
-创建前必须先搜索，避免重复：
+创建前必须先在 GitHub 上搜索，避免重复：
 
 ```bash
+gh issue list --state open --search "<关键词>"
 ./.agents/skills/issue-manager/scripts/issue.sh search "<关键词>"
 ```
 
 如果找到已有 Issue，改为添加 Comment：
 
 ```bash
-./.agents/skills/issue-manager/scripts/issue.sh comment <id> "<补充信息>"
+gh issue comment <number> -b "<补充信息>"
 ```
 
 #### Step 2: 确定类型和优先级
@@ -284,12 +297,11 @@ Issue body 使用 Markdown 格式，推荐结构：
 <涉及的模块>
 ```
 
-#### Step 4: 创建
+#### Step 4: 在 GitHub 上创建
 
 ```bash
-./.agents/skills/issue-manager/scripts/issue.sh create "<标题>" \
-  --bug --priority P1 --label core \
-  --body "## 现象
+# 先在 GitHub 创建（获得 Issue number）
+gh issue create -t "<标题>" -l "bug" -l "priority:P1" -b "## 现象
 
 <描述>
 
@@ -299,19 +311,22 @@ Issue body 使用 Markdown 格式，推荐结构：
 
 ## 期望行为
 
-<描述>" \
-  --file packages/core/src/manager/agent-manager.ts \
-  --related 38
+<描述>"
+# → 返回 URL 中包含 issue number，例如 #116
 ```
 
-#### Step 5: 可选 — 同步到 GitHub
+#### Step 5: 创建本地缓存文件
 
 ```bash
-# 导出
-./.agents/skills/issue-manager/scripts/issue.sh export <id> --owner blackplume233 --repo Actant
-# 使用 gh CLI 或 MCP 创建 GitHub Issue
-# 链接
-./.agents/skills/issue-manager/scripts/issue.sh link <id> --github blackplume233/Actant#<number>
+# 方式 A：从 GitHub 导入
+gh issue view 116 --json number,title,state,labels,body | \
+  ./.agents/skills/issue-manager/scripts/issue.sh import-github
+
+# 方式 B：手动创建（指定 GitHub issue number）
+./.agents/skills/issue-manager/scripts/issue.sh create "<标题>" \
+  --id 116 --bug --priority P1 --label core \
+  --file packages/core/src/manager/agent-manager.ts \
+  --related 43
 ```
 
 ---
@@ -348,3 +363,5 @@ Issue body 使用 Markdown 格式，推荐结构：
 4. **关联要完整**：`--related` 和 `--file` 参数帮助构建知识图谱。
 5. **Obsidian 兼容**：生成的 `.md` 文件可以直接在 Obsidian 中打开并通过图谱导航。
 6. **编码规范**：Issue 正文中引用代码时使用反引号或代码块，引用文件路径时给完整路径。
+7. **Commit 前同步**：git commit 之前运行 `check-dirty --strict`，确保所有 issue 变更已推送到 GitHub。
+8. **Dirty 即重试**：sync 失败的 issue 保持 dirty，下次操作或手动 `sync --all` 时会重试。

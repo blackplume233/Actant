@@ -51,7 +51,16 @@ BREAKING CHANGE: `extends` key behavior changed
 
 ## Workflow
 
-### 1. Analyze Diff
+### 1. Pre-flight: Check Dirty Issues
+
+```bash
+# Ensure all local issue changes are synced to GitHub before committing
+node .agents/skills/issue-manager/scripts/issue-cli.mjs check-dirty --strict
+# If exit code is non-zero, sync first:
+node .agents/skills/issue-manager/scripts/issue-cli.mjs sync --all
+```
+
+### 2. Analyze Diff
 
 ```bash
 # If files are staged, use staged diff
@@ -64,7 +73,7 @@ git diff
 git status --porcelain
 ```
 
-### 2. Stage Files (if needed)
+### 3. Stage Files (if needed)
 
 If nothing is staged or you want to group changes differently:
 
@@ -82,7 +91,7 @@ git add -p
 
 **Never commit secrets** (.env, credentials.json, private keys).
 
-### 3. Generate Commit Message
+### 4. Generate Commit Message
 
 Analyze the diff to determine:
 
@@ -90,7 +99,7 @@ Analyze the diff to determine:
 - **Scope**: What area/module is affected?
 - **Description**: One-line summary of what changed (present tense, imperative mood, <72 chars)
 
-### 4. Execute Commit
+### 5. Execute Commit
 
 ```bash
 # Single line

@@ -26,3 +26,7 @@ coverage/
 *.log
 data/
 /daemon
+
+# Issue sync temp files
+.trellis/issues/.dirty
+.trellis/_sync_body_*.tmp

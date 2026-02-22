@@ -11,8 +11,9 @@
  * Commands mirror the original issue.sh interface for backward compatibility.
  */
 
-import { readdir, readFile, writeFile, mkdir, access } from "node:fs/promises";
-import { readFileSync, statSync } from "node:fs";
+import { readdir, readFile, writeFile, mkdir, access, unlink as unlinkAsync } from "node:fs/promises";
+import { readFileSync, writeFileSync, unlinkSync, statSync, existsSync } from "node:fs";
+import { execSync } from "node:child_process";
 import { join, basename, dirname } from "node:path";
 
 // ─── Paths ───────────────────────────────────────────────────────────────────
@@ -21,6 +22,9 @@ const SCRIPT_DIR = dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:
 const REPO_ROOT = findRepoRoot(SCRIPT_DIR);
 const ISSUES_DIR = join(REPO_ROOT, ".trellis", "issues");
 const COUNTER_FILE = join(ISSUES_DIR, ".counter");
+const DIRTY_FILE = join(ISSUES_DIR, ".dirty");
+const GH_OWNER = "blackplume233";
+const GH_REPO = "Actant";
 
 function findRepoRoot(from) {
   let dir = from;
@@ -332,6 +336,169 @@ async function writeIssue(filepath, meta, body, allFiles) {
   await writeFile(filepath, content, "utf-8");
 }
 
+// ─── Dirty Tracking ──────────────────────────────────────────────────────────
+
+async function loadDirtySet() {
+  try {
+    const raw = await readFile(DIRTY_FILE, "utf-8");
+    return new Set(raw.split("\n").map(s => s.trim()).filter(Boolean).map(Number));
+  } catch {
+    return new Set();
+  }
+}
+
+async function saveDirtySet(set) {
+  const sorted = [...set].sort((a, b) => a - b);
+  await writeFile(DIRTY_FILE, sorted.join("\n") + "\n", "utf-8");
+}
+
+async function markDirty(id) {
+  const set = await loadDirtySet();
+  set.add(id);
+  await saveDirtySet(set);
+}
+
+async function clearDirty(id) {
+  const set = await loadDirtySet();
+  set.delete(id);
+  if (set.size === 0) {
+    try { const { unlink } = await import("node:fs/promises"); await unlink(DIRTY_FILE); } catch {}
+  } else {
+    await saveDirtySet(set);
+  }
+}
+
+// ─── GitHub Sync via gh CLI ──────────────────────────────────────────────────
+
+function ghAvailable() {
+  try {
+    execSync("gh --version", { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function ghExec(cmd) {
+  try {
+    return execSync(cmd, {
+      encoding: "utf-8",
+      cwd: REPO_ROOT,
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+  } catch (e) {
+    const stderr = e.stderr?.toString() || e.message;
+    throw new Error(`gh: ${stderr}`);
+  }
+}
+
+function extractGhNumber(ref) {
+  if (!ref) return null;
+  const m = String(ref).match(/#(\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
+function escapeSh(s) {
+  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\$/g, "\\$").replace(/`/g, "\\`");
+}
+
+function buildGhBody(meta, body) {
+  let ghBody = body || "";
+  if (meta.relatedFiles?.length) {
+    ghBody += `\n\n---\n**Related Files**: ${meta.relatedFiles.map(f => `\`${f}\``).join(", ")}`;
+  }
+  if (meta.relatedIssues?.length) {
+    ghBody += `\n**Related Issues**: ${meta.relatedIssues.map(i => `#${i}`).join(", ")}`;
+  }
+  return ghBody;
+}
+
+function ghSyncExisting(ghNum, meta, ghBody) {
+  const tmpBody = join(REPO_ROOT, ".trellis", `_sync_body_${ghNum}.tmp`);
+  writeFileSync(tmpBody, ghBody, "utf-8");
+
+  try {
+    ghExec(`gh issue edit ${ghNum} -t "${escapeSh(meta.title)}" -F "${tmpBody}"`);
+
+    if (meta.status === "closed") {
+      try { ghExec(`gh issue close ${ghNum}`); } catch { /* already closed */ }
+    } else {
+      try { ghExec(`gh issue reopen ${ghNum}`); } catch { /* already open */ }
+    }
+  } finally {
+    try { unlinkSync(tmpBody); } catch {}
+  }
+}
+
+function ghCreateNew(meta, ghBody) {
+  const tmpBody = join(REPO_ROOT, ".trellis", "_sync_body_new.tmp");
+  writeFileSync(tmpBody, ghBody, "utf-8");
+
+  try {
+    const labelsArgs = (meta.labels || []).map(l => `-l "${escapeSh(l)}"`).join(" ");
+    const result = ghExec(
+      `gh issue create -t "${escapeSh(meta.title)}" -F "${tmpBody}" ${labelsArgs}`
+    );
+    const numMatch = result.match(/\/issues\/(\d+)/);
+    return numMatch ? Number(numMatch[1]) : null;
+  } finally {
+    try { unlinkSync(tmpBody); } catch {}
+  }
+}
+
+async function syncToGitHub(id, { silent = false } = {}) {
+  const filepath = await findIssueFile(id);
+  if (!filepath) {
+    if (!silent) console.error(C.red(`Sync: issue #${id} not found locally`));
+    return false;
+  }
+
+  const { meta, body } = await readIssue(filepath);
+  const ghNum = extractGhNumber(meta.githubRef);
+  const ghBody = buildGhBody(meta, body);
+
+  try {
+    if (ghNum) {
+      ghSyncExisting(ghNum, meta, ghBody);
+    } else {
+      const newNum = ghCreateNew(meta, ghBody);
+      if (newNum) {
+        meta.githubRef = `${GH_OWNER}/${GH_REPO}#${newNum}`;
+        meta.updatedAt = now();
+        const allFiles = await listIssueFiles();
+        await writeIssue(filepath, meta, body, allFiles);
+      }
+    }
+
+    await clearDirty(id);
+    if (!silent) console.error(C.green(`  ✓ Synced #${id} → GitHub`));
+    return true;
+  } catch (e) {
+    if (!silent) console.error(C.yellow(`  ⚠ Sync failed for #${id}: ${e.message}`));
+    return false;
+  }
+}
+
+async function pullFromGitHub(ghNum) {
+  const json = ghExec(
+    `gh issue view ${ghNum} --json number,title,state,labels,body,assignees,createdAt,updatedAt,closedAt`
+  );
+  return JSON.parse(json);
+}
+
+async function afterMutation(id, { silent = false } = {}) {
+  await markDirty(id);
+
+  if (!ghAvailable()) {
+    if (!silent) console.error(C.gray(`  (marked dirty — gh CLI not available, sync later: issue sync ${id})`));
+    return;
+  }
+
+  await syncToGitHub(id, { silent });
+}
+
+// ─── Author / Time ───────────────────────────────────────────────────────────
+
 function getAuthor() {
   try {
     const devFile = join(REPO_ROOT, ".trellis", ".developer");
@@ -357,11 +524,13 @@ async function cmdCreate(args) {
   let milestone = "";
   const relatedFiles = [];
   const relatedIssues = [];
+  let explicitId = null;
 
   let i = 0;
   while (i < args.length) {
     const arg = args[i];
     switch (arg) {
+      case "--id": explicitId = Number(args[++i]); break;
       case "--label": case "-l": labels.push(args[++i]); break;
       case "--body": case "-b": body = args[++i]; break;
       case "--body-file": bodyFile = args[++i]; break;
@@ -394,6 +563,7 @@ async function cmdCreate(args) {
     console.error(`Body:            --body "<markdown>" | --body-file <path>`);
     console.error(`Milestone:       --milestone near-term|mid-term|long-term`);
     console.error(`Relations:       --file <path>  --related <issue-id>`);
+    console.error(`GitHub-first:    --id <github-issue-number>  (use GitHub issue number)`);
     process.exit(1);
   }
 
@@ -402,7 +572,13 @@ async function cmdCreate(args) {
   }
 
   await ensureDir();
-  const id = await nextId();
+  const id = explicitId || await nextId();
+  if (explicitId) {
+    const counterVal = parseInt(await readFile(COUNTER_FILE, "utf-8"), 10) || 0;
+    if (explicitId > counterVal) {
+      await writeFile(COUNTER_FILE, String(explicitId), "utf-8");
+    }
+  }
   const slug = slugify(title);
   const filename = issueFilenameForSlug(id, slug);
   const filepath = join(ISSUES_DIR, filename);
@@ -421,7 +597,7 @@ async function cmdCreate(args) {
     relatedIssues,
     relatedFiles,
     taskRef: null,
-    githubRef: null,
+    githubRef: explicitId ? `blackplume233/Actant#${id}` : null,
     closedAs: null,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -436,6 +612,8 @@ async function cmdCreate(args) {
     console.error(`  Labels: ${labels.map(colorLabel).join(", ")}`);
   }
   console.log(id);
+
+  await afterMutation(id);
 }
 
 async function cmdList(args) {
@@ -611,6 +789,7 @@ async function cmdEdit(args) {
     meta.updatedAt = timestamp;
     await writeIssue(filepath, meta, body, allFiles);
     console.log(C.green(`Updated #${id}: ${meta.title}`));
+    await afterMutation(id);
   } else {
     console.error("Usage: issue edit <id> [--title <t>] [--body <md>] [--milestone <m>] ...");
   }
@@ -647,6 +826,7 @@ async function cmdLabel(args) {
     meta.updatedAt = now();
     await writeIssue(filepath, meta, body, allFiles);
     console.log(`  Labels: ${meta.labels.map(colorLabel).join(", ")}`);
+    await afterMutation(id);
   }
 }
 
@@ -698,6 +878,8 @@ async function cmdClose(args) {
     : closedAs === "not-planned" ? C.gray("⊘")
     : C.gray("≡");
   console.log(`${icon} Closed #${id}: ${meta.title} ${C.gray(`(${closedAs})`)}`);
+
+  await afterMutation(id);
 }
 
 async function cmdReopen(idStr) {
@@ -719,6 +901,8 @@ async function cmdReopen(idStr) {
 
   await writeIssue(filepath, meta, body, allFiles);
   console.log(C.green(`○ Reopened #${id}: ${meta.title}`));
+
+  await afterMutation(id);
 }
 
 async function cmdComment(idStr, text) {
@@ -740,6 +924,8 @@ async function cmdComment(idStr, text) {
 
   await writeIssue(filepath, meta, body, allFiles);
   console.log(C.green(`Comment added to #${id} (${meta._comments.length} total)`));
+
+  await afterMutation(id);
 }
 
 async function cmdSearch(query) {
@@ -940,6 +1126,8 @@ async function cmdLink(args) {
 
   await writeIssue(filepath, meta, body, allFiles);
   console.log(C.green(`Linked #${id} → ${C.cyan(`https://github.com/${owner}/${repo}/issues/${number}`)}`));
+
+  await afterMutation(id);
 }
 
 async function cmdUnlink(idStr) {
@@ -957,22 +1145,164 @@ async function cmdUnlink(idStr) {
 
   await writeIssue(filepath, meta, body, allFiles);
   console.log(C.green(`Unlinked #${id} from GitHub`));
+
+  await afterMutation(id);
+}
+
+// ─── Sync Commands ───────────────────────────────────────────────────────────
+
+async function cmdSync(args) {
+  const syncAll = args.includes("--all") || args.includes("-a");
+  const dryRun = args.includes("--dry-run") || args.includes("-n");
+
+  if (syncAll) {
+    const dirty = await loadDirtySet();
+    if (dirty.size === 0) {
+      console.log(C.green("  All issues in sync — nothing to push."));
+      return;
+    }
+    console.log(`  Syncing ${dirty.size} dirty issue(s)...`);
+    let ok = 0, fail = 0;
+    for (const id of dirty) {
+      if (dryRun) {
+        console.log(`  [dry-run] would sync #${id}`);
+        ok++;
+        continue;
+      }
+      const success = await syncToGitHub(id);
+      if (success) ok++; else fail++;
+    }
+    console.log(`\n  ${C.green(`✓ ${ok} synced`)}${fail ? `, ${C.yellow(`⚠ ${fail} failed`)}` : ""}`);
+    return;
+  }
+
+  const id = Number(args.find(a => /^\d+$/.test(a)));
+  if (!id) {
+    console.error(C.red("Error: issue ID or --all required"));
+    console.error("Usage: issue sync <id> | issue sync --all");
+    process.exit(1);
+  }
+
+  if (dryRun) {
+    console.log(`  [dry-run] would sync #${id}`);
+    return;
+  }
+
+  const success = await syncToGitHub(id);
+  if (!success) process.exit(1);
+}
+
+async function cmdCheckDirty(args) {
+  const strict = args.includes("--strict") || args.includes("-s");
+  const dirty = await loadDirtySet();
+
+  if (dirty.size === 0) {
+    console.log(C.green("  ✓ No dirty issues — all synced with GitHub."));
+    process.exit(0);
+  }
+
+  console.error(C.yellow(`  ⚠ ${dirty.size} issue(s) have unsynced local changes:`));
+  for (const id of dirty) {
+    const filepath = await findIssueFile(id);
+    const title = filepath ? (await readIssue(filepath)).meta.title : "(file missing)";
+    console.error(`    ${C.bold(`#${id}`)} ${title}`);
+  }
+  console.error("");
+  console.error(`  Run ${C.cyan("issue sync --all")} to push changes to GitHub.`);
+
+  if (strict) {
+    process.exit(1);
+  }
+}
+
+async function cmdPull(args) {
+  const ghNum = Number(args[0]);
+  if (!ghNum) {
+    console.error(C.red("Error: GitHub issue number required"));
+    console.error("Usage: issue pull <github-number>");
+    process.exit(1);
+  }
+
+  console.error(C.blue(`  Pulling #${ghNum} from GitHub...`));
+
+  const gh = await pullFromGitHub(ghNum);
+  const filepath = await findIssueFile(ghNum);
+  const allFiles = await listIssueFiles();
+
+  const ghLabels = (gh.labels || []).map(l => typeof l === "string" ? l : l.name);
+  const ghAssignees = (gh.assignees || []).map(a => typeof a === "string" ? a : a.login);
+
+  if (filepath) {
+    const { meta, body: existingBody } = await readIssue(filepath);
+    meta.title = gh.title;
+    meta.status = gh.state === "OPEN" ? "open" : "closed";
+    meta.labels = ghLabels;
+    meta.assignees = ghAssignees;
+    meta.updatedAt = now();
+    if (gh.closedAt) meta.closedAt = gh.closedAt;
+    await writeIssue(filepath, meta, gh.body || existingBody, allFiles);
+    await clearDirty(ghNum);
+    console.error(C.green(`  ✓ Updated local #${ghNum} from GitHub`));
+  } else {
+    await ensureDir();
+    const slug = slugify(gh.title);
+    const filename = issueFilenameForSlug(ghNum, slug);
+    const newpath = join(ISSUES_DIR, filename);
+    const author = getAuthor();
+    const timestamp = now();
+
+    const meta = {
+      id: ghNum,
+      title: gh.title,
+      status: gh.state === "OPEN" ? "open" : "closed",
+      labels: ghLabels,
+      milestone: null,
+      author,
+      assignees: ghAssignees,
+      relatedIssues: [],
+      relatedFiles: [],
+      taskRef: null,
+      githubRef: `${GH_OWNER}/${GH_REPO}#${ghNum}`,
+      closedAs: gh.state === "OPEN" ? null : "completed",
+      createdAt: gh.createdAt || timestamp,
+      updatedAt: timestamp,
+      closedAt: gh.closedAt || null,
+      _comments: [],
+    };
+
+    const counterVal = parseInt(await readFile(COUNTER_FILE, "utf-8").catch(() => "0"), 10) || 0;
+    if (ghNum > counterVal) {
+      await writeFile(COUNTER_FILE, String(ghNum), "utf-8");
+    }
+
+    await writeIssue(newpath, meta, gh.body || "", allFiles);
+    console.error(C.green(`  ✓ Created local #${ghNum} from GitHub`));
+  }
+}
+
+async function cmdDirtyList() {
+  const dirty = await loadDirtySet();
+  if (dirty.size === 0) {
+    console.log("[]");
+    return;
+  }
+  console.log(JSON.stringify([...dirty]));
 }
 
 // ─── Help ────────────────────────────────────────────────────────────────────
 
 function showUsage() {
-  console.log(`Issue Management — Obsidian Markdown format
+  console.log(`Issue Management — GitHub-first, Obsidian Markdown local cache
 
 Usage:
-  issue create "<title>" [options]                   Create issue
+  issue create "<title>" [options]                   Create issue (auto-syncs to GitHub)
   issue list [filters]                               List open issues
   issue show <id>                                    Show details
-  issue edit <id> [fields]                           Edit fields
-  issue label <id> --add <l> | --remove <l>          Manage labels
-  issue close <id> [--as completed|not-planned|duplicate] [--ref <id>]
-  issue reopen <id>                                  Reopen issue
-  issue comment <id> "<text>"                        Add comment
+  issue edit <id> [fields]                           Edit fields (auto-syncs)
+  issue label <id> --add <l> | --remove <l>          Manage labels (auto-syncs)
+  issue close <id> [--as ...]                        Close issue (auto-syncs)
+  issue reopen <id>                                  Reopen issue (auto-syncs)
+  issue comment <id> "<text>"                        Add comment (auto-syncs)
   issue promote <id> [--slug <name>]                 Issue → Task
   issue search "<query>"                             Full-text search
   issue stats                                        Statistics
@@ -980,7 +1310,17 @@ Usage:
   issue link <id> --github owner/repo#number         Link to GitHub
   issue unlink <id>                                  Remove GitHub link
 
+Sync commands:
+  issue sync <id>                                    Push single issue to GitHub
+  issue sync --all                                   Push all dirty issues
+  issue sync --all --dry-run                         Preview what would sync
+  issue check-dirty                                  List unsynced issues (exit 0 if clean)
+  issue check-dirty --strict                         Exit 1 if any dirty issues exist
+  issue pull <github-number>                         Pull issue from GitHub → local
+  issue dirty-list                                   Output dirty IDs as JSON array
+
 Create options:
+  --id <github-number>         Use specific GitHub issue number
   --bug --feature --enhancement --question --discussion --rfc --chore
   --priority P0|P1|P2|P3       (adds label priority:Pn)
   --label <name>               (repeatable)
@@ -994,6 +1334,12 @@ List filters:
   --label <name>  --bug  --feature  --question  --discussion  --rfc
   --priority P0|P1|P2|P3   --milestone <name>   --assignee <name>
   --closed                  Include closed issues
+
+Dirty tracking:
+  Every mutation (create/edit/label/close/reopen/comment) marks the issue as
+  "dirty" and attempts an automatic sync to GitHub via gh CLI. If sync fails
+  (no network, auth issue, etc.), the issue stays dirty until manually synced.
+  Run "issue check-dirty --strict" before git commit to catch unsynced changes.
 `);
 }
 
@@ -1016,6 +1362,10 @@ switch (cmd) {
   case "export":         await cmdExport(rest); break;
   case "link":           await cmdLink(rest); break;
   case "unlink":         await cmdUnlink(rest[0]); break;
+  case "sync":           await cmdSync(rest); break;
+  case "check-dirty":    await cmdCheckDirty(rest); break;
+  case "pull":           await cmdPull(rest); break;
+  case "dirty-list":     await cmdDirtyList(); break;
   case "-h": case "--help": case "help": showUsage(); break;
   default:               showUsage(); process.exit(1);
 }

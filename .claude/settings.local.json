@@ -43,7 +43,9 @@
       "Bash(export:*)",
       "Bash(timeout 5 node:*)",
       "Bash(node:*)",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "Bash(tree:*)",
+      "mcp__vibe_kanban__list_projects"
     ]
   }
 }
