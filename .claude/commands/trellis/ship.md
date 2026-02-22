@@ -48,7 +48,18 @@ git diff --stat
 git log --oneline -5
 ```
 
-#### 2.2 暂存并提交
+#### 2.2 Issue 同步检查
+
+确保所有本地 Issue 变更已推送到 GitHub，避免提交时本地缓存与远端不一致：
+
+```bash
+./.agents/skills/issue-manager/scripts/issue.sh check-dirty --strict
+```
+
+- 如果有 dirty Issue，先执行 `issue.sh sync --all` 再继续
+- 如果 `gh` CLI 不可用，标记为 "⚠️ 跳过" 并继续
+
+#### 2.3 暂存并提交
 
 ```bash
 git add -A
@@ -59,8 +70,9 @@ Commit message 规则：
 - 使用 **英文**，遵循 Conventional Commits（`feat` / `fix` / `docs` / `refactor` / `test` / `chore`）
 - 简洁描述 "why" 而非 "what"
 - **不要提交** `.env`、`credentials.json` 等敏感文件（发现时警告并排除）
+- 如修复 Issue，在 message 中引用编号（如 `(#118)`），以便 Phase 4 自动关联
 
-#### 2.3 验证
+#### 2.4 验证
 
 ```bash
 git status
@@ -74,7 +86,57 @@ git status
 git push origin <当前分支>
 ```
 
-推送成功后输出最终摘要：
+---
+
+### Phase 4: Issue 状态更新与同步
+
+Push 成功后，根据 commit message 中的 Issue 引用自动更新状态。
+
+#### 4.1 解析 commit message 中的 Issue 引用
+
+从最新 commit message 中提取 Issue 编号：
+- `(#NNN)` — 关联引用（不自动关闭，仅添加评论）
+- `fixes #NNN` / `closes #NNN` / `resolves #NNN` — 自动关闭
+
+#### 4.2 更新 Issue 状态
+
+对于每个引用的 Issue：
+
+```bash
+# 自动关闭类引用（fixes/closes/resolves）
+./.agents/skills/issue-manager/scripts/issue.sh close <id>
+./.agents/skills/issue-manager/scripts/issue.sh comment <id> "Fixed in <commit-hash>."
+
+# 关联类引用（仅 (#NNN)），如果 Issue 确实已修复也关闭
+./.agents/skills/issue-manager/scripts/issue.sh comment <id> "Addressed in <commit-hash>."
+```
+
+**判断规则**：
+- commit message 包含 `fix` 类型且引用了 Issue → 关闭该 Issue
+- commit message 仅括号引用 `(#NNN)` → 根据上下文判断：修复类 commit 则关闭，文档/重构类仅评论
+- 如果 Issue 已关闭，跳过
+
+#### 4.3 同步到 GitHub
+
+```bash
+./.agents/skills/issue-manager/scripts/issue.sh sync --all
+```
+
+确保本地关闭状态同步到 GitHub。如果 `gh` CLI 不可用，标记为 "⚠️ 跳过"。
+
+#### 4.4 输出 Issue 更新报告
+
+```
+## Issue 更新
+
+| Issue | 操作 | 状态 |
+|-------|------|------|
+| #118  | 关闭 + 评论 | ✅ 已同步 / ⚠️ 跳过 |
+```
+
+---
+
+推送和 Issue 更新完成后输出最终摘要：
 
 ```
 ## 完成摘要
@@ -82,6 +144,7 @@ git push origin <当前分支>
 - 提交: <hash> <message>
 - 分支: <branch> → origin/<branch>
 - 变更: N files changed, +insertions, -deletions
+- Issue: #NNN 已关闭 / 无关联 Issue
 ```
 
 ---
@@ -102,15 +165,16 @@ git push origin <当前分支>
 开发流程:
   编写代码 → 测试 → /trellis:ship → /trellis:record-session
                       |
-          ┌───────────┼───────────┐
-          ↓           ↓           ↓
-   /trellis:finish-work  Commit    Push
-    （审查清单）       （提交）   （推送）
+          ┌───────────┼───────────┬──────────┐
+          ↓           ↓           ↓          ↓
+   /trellis:finish-work  Commit    Push    Issue Sync
+    （审查清单）       （提交）   （推送）（状态更新）
 ```
 
 | 命令 | 职责 |
 |------|------|
 | `/trellis:finish-work` | 审查清单（被本命令调用） |
-| `/trellis:ship` | 审查 + 提交 + 推送（本命令） |
+| `/trellis:ship` | 审查 + 提交 + 推送 + Issue 同步（本命令） |
 | `/trellis:record-session` | 记录会话和进度 |
 | `/trellis:update-spec` | 更新规范文档 |
+| `issue.sh` | Issue 管理 CLI（被 Phase 2.2 和 Phase 4 调用） |
