@@ -1,4 +1,9 @@
 export type { ComponentSource, FetchResult } from "./component-source";
 export { GitHubSource } from "./github-source";
 export { LocalSource } from "./local-source";
-export { SourceManager, type SourceManagerDeps } from "./source-manager";
+export {
+  SourceManager,
+  DEFAULT_SOURCE_NAME,
+  DEFAULT_SOURCE_CONFIG,
+  type SourceManagerDeps,
+} from "./source-manager";

@@ -3,13 +3,15 @@ import type { McpServerDefinition } from "@actant/shared";
 import { ConfigValidationError } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
 
-const McpServerDefinitionSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  command: z.string().min(1),
-  args: z.array(z.string()).optional(),
-  env: z.record(z.string(), z.string()).optional(),
-});
+const McpServerDefinitionSchema = z
+  .object({
+    name: z.string().min(1),
+    description: z.string().optional(),
+    command: z.string().min(1),
+    args: z.array(z.string()).optional(),
+    env: z.record(z.string(), z.string()).optional(),
+  })
+  .passthrough();
 
 export class McpConfigManager extends BaseComponentManager<McpServerDefinition> {
   protected readonly componentType = "McpServer";

@@ -94,7 +94,12 @@ export class AgentInitializer {
 
     try {
       await mkdir(workspaceDir, { recursive: true });
-      await this.builder.build(workspaceDir, template.domainContext, template.backend.type);
+      await this.builder.build(
+        workspaceDir,
+        template.domainContext,
+        template.backend.type,
+        template.permissions,
+      );
 
       const now = new Date().toISOString();
       const launchMode = overrides?.launchMode ?? this.options?.defaultLaunchMode ?? "direct";

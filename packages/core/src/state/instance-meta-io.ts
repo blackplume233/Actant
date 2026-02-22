@@ -5,6 +5,7 @@ import type { AgentInstanceMeta } from "@actant/shared";
 import { InstanceCorruptedError } from "@actant/shared";
 import { AgentInstanceMetaSchema } from "./instance-meta-schema";
 import { createLogger } from "@actant/shared";
+import type { InstanceRegistryAdapter } from "./instance-registry-types";
 
 const logger = createLogger("instance-meta-io");
 
@@ -80,22 +81,46 @@ export async function updateInstanceMeta(
 /**
  * Scan `instancesBaseDir` for all valid instance directories.
  * Directories whose `.actant.json` is missing or invalid are logged and skipped.
+ *
+ * When `registry` is provided, also includes instances from the registry (external workspaces)
+ * and deduplicates by name (registry entries take precedence).
  */
 export async function scanInstances(
   instancesBaseDir: string,
+  registry?: InstanceRegistryAdapter,
 ): Promise<{ valid: AgentInstanceMeta[]; corrupted: string[] }> {
+  const valid: AgentInstanceMeta[] = [];
+  const corrupted: string[] = [];
+  const validNames = new Set<string>();
+
+  if (registry) {
+    for (const entry of registry.list()) {
+      if (entry.status === "orphaned") continue;
+      try {
+        const st = await stat(entry.workspacePath);
+        if (!st.isDirectory()) {
+          corrupted.push(entry.name);
+          continue;
+        }
+        const meta = await readInstanceMeta(entry.workspacePath);
+        valid.push(meta);
+        validNames.add(entry.name);
+      } catch (err) {
+        logger.warn({ name: entry.name, path: entry.workspacePath, error: err }, "Registry entry unreachable or corrupted");
+        corrupted.push(entry.name);
+      }
+    }
+  }
+
   let entries: string[];
   try {
     entries = await readdir(instancesBaseDir);
   } catch (err) {
     if (isNodeError(err) && err.code === "ENOENT") {
-      return { valid: [], corrupted: [] };
+      return { valid, corrupted };
     }
     throw err;
   }
-
-  const valid: AgentInstanceMeta[] = [];
-  const corrupted: string[] = [];
 
   for (const entry of entries) {
     if (entry.startsWith(".")) continue;
@@ -105,7 +130,9 @@ export async function scanInstances(
 
     try {
       const meta = await readInstanceMeta(dirPath);
+      if (validNames.has(meta.name)) continue;
       valid.push(meta);
+      validNames.add(meta.name);
     } catch (err) {
       logger.warn({ dir: entry, error: err }, "Corrupted instance directory");
       corrupted.push(entry);

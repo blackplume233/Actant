@@ -5,6 +5,7 @@ import type {
   WorkflowDefinition,
   PresetDefinition,
   PackageManifest,
+  AgentTemplate,
   SourceConfig,
 } from "@actant/shared";
 
@@ -15,6 +16,7 @@ export interface FetchResult {
   mcpServers: McpServerDefinition[];
   workflows: WorkflowDefinition[];
   presets: PresetDefinition[];
+  templates: AgentTemplate[];
 }
 
 /**

@@ -10,11 +10,25 @@ import type {
   WorkflowDefinition,
   AgentTemplate,
 } from "@actant/shared";
+
+export const DEFAULT_SOURCE_NAME = "actant-hub";
+export const DEFAULT_SOURCE_CONFIG: SourceConfig = {
+  type: "github" as const,
+  url: "https://github.com/blackplume233/actant-hub.git",
+  branch: "main",
+};
 import { createLogger } from "@actant/shared";
 import type { ComponentSource, FetchResult } from "./component-source";
 import type { BaseComponentManager, NamedComponent } from "../domain/base-component-manager";
+import type { TemplateRegistry } from "../template/registry/template-registry";
 import { GitHubSource } from "./github-source";
 import { LocalSource } from "./local-source";
+import {
+  createEmptySyncReport,
+  mergeSyncReports,
+  type SyncReport,
+  type ComponentTypeName,
+} from "../version";
 
 const logger = createLogger("source-manager");
 
@@ -23,6 +37,7 @@ export interface SourceManagerDeps {
   promptManager: BaseComponentManager<PromptDefinition>;
   mcpConfigManager: BaseComponentManager<McpServerDefinition>;
   workflowManager: BaseComponentManager<WorkflowDefinition>;
+  templateRegistry?: TemplateRegistry;
 }
 
 /**
@@ -62,23 +77,38 @@ export class SourceManager {
   }
 
   async syncSource(name: string): Promise<FetchResult> {
+    const { fetchResult } = await this.syncSourceWithReport(name);
+    return fetchResult;
+  }
+
+  async syncSourceWithReport(name: string): Promise<{ fetchResult: FetchResult; report: SyncReport }> {
     const source = this.getSourceOrThrow(name);
+    const oldSnapshot = this.snapshotComponents(name);
     this.removeNamespacedComponents(name);
     const result = await source.sync();
     this.injectComponents(name, result);
+    const newSnapshot = this.snapshotComponents(name);
     await this.persistSources();
-    logger.info({ name }, "Source synced");
-    return result;
+    const report = this.buildSyncReport(oldSnapshot, newSnapshot);
+    logger.info({ name, report }, "Source synced");
+    return { fetchResult: result, report };
   }
 
   async syncAll(): Promise<void> {
+    await this.syncAllWithReport();
+  }
+
+  async syncAllWithReport(): Promise<{ report: SyncReport }> {
+    const reports: SyncReport[] = [];
     for (const name of this.sources.keys()) {
       try {
-        await this.syncSource(name);
+        const { report } = await this.syncSourceWithReport(name);
+        reports.push(report);
       } catch (err) {
         logger.warn({ name, error: err }, "Failed to sync source, skipping");
       }
     }
+    return { report: mergeSyncReports(reports) };
   }
 
   async removeSource(name: string): Promise<boolean> {
@@ -160,6 +190,15 @@ export class SourceManager {
         dc.workflow = ns(firstWorkflow);
       }
     }
+    if (preset.templates?.length && this.managers.templateRegistry) {
+      for (const tplName of preset.templates) {
+        const fullName = ns(tplName);
+        const tpl = this.managers.templateRegistry.get(fullName);
+        if (tpl) {
+          this.managers.templateRegistry.register(tpl);
+        }
+      }
+    }
 
     return { ...template, domainContext: dc };
   }
@@ -225,6 +264,12 @@ export class SourceManager {
     for (const preset of result.presets) {
       this.presets.set(`${packageName}@${preset.name}`, preset);
     }
+    if (this.managers.templateRegistry && result.templates.length > 0) {
+      for (const template of result.templates) {
+        const nsTemplate = { ...template, name: `${packageName}@${template.name}` };
+        this.managers.templateRegistry.register(nsTemplate);
+      }
+    }
 
     logger.debug(
       {
@@ -234,6 +279,7 @@ export class SourceManager {
         mcp: result.mcpServers.length,
         workflows: result.workflows.length,
         presets: result.presets.length,
+        templates: result.templates.length,
       },
       "Components injected",
     );
@@ -252,6 +298,13 @@ export class SourceManager {
     removeFrom(this.managers.promptManager);
     removeFrom(this.managers.mcpConfigManager);
     removeFrom(this.managers.workflowManager);
+    if (this.managers.templateRegistry) {
+      for (const t of this.managers.templateRegistry.list()) {
+        if (t.name.startsWith(prefix)) {
+          this.managers.templateRegistry.unregister(t.name);
+        }
+      }
+    }
   }
 
   private removeNamespacedPresets(packageName: string): void {
@@ -279,4 +332,96 @@ export class SourceManager {
     }
     return source;
   }
+
+  private snapshotComponents(packageName: string): Map<string, { type: ComponentTypeName; version?: string }> {
+    const prefix = `${packageName}@`;
+    const snapshot = new Map<string, { type: ComponentTypeName; version?: string }>();
+
+    const addFrom = <T extends { name: string; version?: string }>(
+      mgr: BaseComponentManager<T>,
+      type: ComponentTypeName,
+    ) => {
+      for (const c of mgr.list()) {
+        if (c.name.startsWith(prefix)) {
+          snapshot.set(c.name, { type, version: c.version });
+        }
+      }
+    };
+    addFrom(this.managers.skillManager, "skill");
+    addFrom(this.managers.promptManager, "prompt");
+    addFrom(this.managers.mcpConfigManager, "mcpServer");
+    addFrom(this.managers.workflowManager, "workflow");
+
+    if (this.managers.templateRegistry) {
+      for (const t of this.managers.templateRegistry.list()) {
+        if (t.name.startsWith(prefix)) {
+          snapshot.set(t.name, { type: "template", version: t.version });
+        }
+      }
+    }
+
+    for (const [key, preset] of this.presets) {
+      if (key.startsWith(prefix)) {
+        snapshot.set(key, { type: "preset", version: preset.version });
+      }
+    }
+
+    return snapshot;
+  }
+
+  private buildSyncReport(
+    oldSnapshot: Map<string, { type: ComponentTypeName; version?: string }>,
+    newSnapshot: Map<string, { type: ComponentTypeName; version?: string }>,
+  ): SyncReport {
+    const report = createEmptySyncReport();
+
+    for (const [name, newEntry] of newSnapshot) {
+      const oldEntry = oldSnapshot.get(name);
+      if (!oldEntry) {
+        report.added.push({
+          type: newEntry.type,
+          name,
+          newVersion: newEntry.version,
+        });
+      } else if (oldEntry.version !== newEntry.version) {
+        report.updated.push({
+          type: newEntry.type,
+          name,
+          oldVersion: oldEntry.version,
+          newVersion: newEntry.version,
+        });
+        if (isMajorVersionChange(oldEntry.version, newEntry.version)) {
+          report.hasBreakingChanges = true;
+        }
+      } else {
+        report.unchanged.push(name);
+      }
+    }
+
+    for (const [name, oldEntry] of oldSnapshot) {
+      if (!newSnapshot.has(name)) {
+        report.removed.push({
+          type: oldEntry.type,
+          name,
+          oldVersion: oldEntry.version,
+        });
+      }
+    }
+
+    return report;
+  }
+}
+
+function parseMajor(version?: string): number | undefined {
+  if (!version) return undefined;
+  const m = version.match(/^(\d+)/);
+  const major = m?.[1];
+  return major !== undefined ? parseInt(major, 10) : undefined;
+}
+
+function isMajorVersionChange(oldVersion?: string, newVersion?: string): boolean {
+  const oldMajor = parseMajor(oldVersion);
+  const newMajor = parseMajor(newVersion);
+  if (oldMajor === undefined || newMajor === undefined) return false;
+  return newMajor !== oldMajor;
 }

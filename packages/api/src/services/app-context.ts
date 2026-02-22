@@ -15,6 +15,7 @@ import {
   SourceManager,
   createLauncher,
   EmployeeScheduler,
+  InstanceRegistry,
   type LauncherMode,
 } from "@actant/core";
 import { AcpConnectionManager } from "@actant/acp";
@@ -35,11 +36,15 @@ export interface AppConfig {
 export class AppContext {
   readonly homeDir: string;
   readonly configsDir: string;
+  readonly sourcesDir: string;
   readonly templatesDir: string;
   readonly instancesDir: string;
+  readonly registryPath: string;
+  readonly builtinInstancesDir: string;
   readonly socketPath: string;
   readonly pidFilePath: string;
 
+  readonly instanceRegistry: InstanceRegistry;
   readonly templateLoader: TemplateLoader;
   readonly templateRegistry: TemplateRegistry;
   readonly skillManager: SkillManager;
@@ -60,11 +65,15 @@ export class AppContext {
   constructor(config?: AppConfig) {
     this.homeDir = config?.homeDir ?? process.env.ACTANT_HOME ?? DEFAULT_HOME;
     this.configsDir = config?.configsDir ?? join(this.homeDir, "configs");
+    this.sourcesDir = join(this.homeDir, "sources");
     this.templatesDir = join(this.configsDir, "templates");
     this.instancesDir = join(this.homeDir, "instances");
+    this.registryPath = join(this.homeDir, "instances", "registry.json");
+    this.builtinInstancesDir = join(this.homeDir, "instances");
     this.socketPath = getIpcPath(this.homeDir);
     this.pidFilePath = join(this.homeDir, "daemon.pid");
 
+    this.instanceRegistry = new InstanceRegistry(this.registryPath, this.builtinInstancesDir);
     this.templateLoader = new TemplateLoader();
     this.templateRegistry = new TemplateRegistry({ allowOverwrite: true });
 
@@ -79,6 +88,7 @@ export class AppContext {
       promptManager: this.promptManager,
       mcpConfigManager: this.mcpConfigManager,
       workflowManager: this.workflowManager,
+      templateRegistry: this.templateRegistry,
     });
 
     this.agentInitializer = new AgentInitializer(
@@ -101,7 +111,10 @@ export class AppContext {
       this.agentInitializer,
       createLauncher({ mode: launcherMode }),
       this.instancesDir,
-      { acpManager: launcherMode !== "mock" ? this.acpConnectionManager : undefined },
+      {
+        acpManager: launcherMode !== "mock" ? this.acpConnectionManager : undefined,
+        instanceRegistry: this.instanceRegistry,
+      },
     );
     this.schedulers = new Map();
   }
@@ -112,6 +125,12 @@ export class AppContext {
     await mkdir(this.homeDir, { recursive: true });
     await mkdir(this.templatesDir, { recursive: true });
     await mkdir(this.instancesDir, { recursive: true });
+
+    await this.instanceRegistry.load();
+    const { orphaned, adopted } = await this.instanceRegistry.reconcile();
+    if (orphaned.length > 0 || adopted.length > 0) {
+      logger.info({ orphaned, adopted }, "Instance registry reconciled");
+    }
 
     await this.loadDomainComponents();
     await this.sourceManager.initialize();

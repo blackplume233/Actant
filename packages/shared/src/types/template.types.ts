@@ -1,5 +1,45 @@
 import type { DomainContextConfig } from "./domain-context.types";
 
+// ---------------------------------------------------------------------------
+// Permission types — aligned with Claude Code permissions structure (#51)
+// ---------------------------------------------------------------------------
+
+export type PermissionMode =
+  | "default"
+  | "acceptEdits"
+  | "plan"
+  | "dontAsk"
+  | "bypassPermissions";
+
+export type PermissionPreset = "permissive" | "standard" | "restricted" | "readonly";
+
+export interface SandboxNetworkConfig {
+  allowedDomains?: string[];
+  allowLocalBinding?: boolean;
+}
+
+export interface SandboxConfig {
+  enabled?: boolean;
+  autoAllowBashIfSandboxed?: boolean;
+  network?: SandboxNetworkConfig;
+}
+
+export interface PermissionsConfig {
+  allow?: string[];
+  deny?: string[];
+  ask?: string[];
+  defaultMode?: PermissionMode;
+  sandbox?: SandboxConfig;
+  additionalDirectories?: string[];
+}
+
+/** Permissions field on a template: either a preset name or full config. */
+export type PermissionsInput = PermissionPreset | PermissionsConfig;
+
+// ---------------------------------------------------------------------------
+// Agent Template
+// ---------------------------------------------------------------------------
+
 export interface AgentTemplate {
   name: string;
   version: string;
@@ -7,6 +47,8 @@ export interface AgentTemplate {
   backend: AgentBackendConfig;
   provider: ModelProviderConfig;
   domainContext: DomainContextConfig;
+  /** Tool/file/network permission control, aligned with Claude Code permissions. */
+  permissions?: PermissionsInput;
   initializer?: InitializerConfig;
   schedule?: {
     heartbeat?: { intervalMs: number; prompt: string; priority?: string };

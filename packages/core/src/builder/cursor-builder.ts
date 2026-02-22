@@ -7,9 +7,11 @@ import type {
   McpServerDefinition,
   WorkflowDefinition,
   PluginDefinition,
+  PermissionsInput,
 } from "@actant/shared";
 import { createLogger } from "@actant/shared";
 import type { BackendBuilder, VerifyResult } from "./backend-builder";
+import { resolvePermissionsWithMcp } from "../permissions/permission-presets";
 
 const logger = createLogger("cursor-builder");
 
@@ -102,10 +104,37 @@ export class CursorBuilder implements BackendBuilder {
   }
 
   async injectPermissions(
-    _workspaceDir: string,
-    _servers: McpServerDefinition[],
+    workspaceDir: string,
+    servers: McpServerDefinition[],
+    permissions?: PermissionsInput,
   ): Promise<void> {
-    // Cursor handles permissions via its own UI, no file injection needed
+    // Cursor doesn't have the same permission model as Claude Code.
+    // Best-effort: write .cursor/settings.json with allowed tools if we have permissions.
+    if (!permissions) return;
+
+    const resolved = resolvePermissionsWithMcp(
+      permissions,
+      servers.map((s) => s.name),
+    );
+    if (!resolved.allow?.length) return;
+
+    try {
+      const configDir = join(workspaceDir, ".cursor");
+      await mkdir(configDir, { recursive: true });
+      const settings = {
+        // Cursor may support agent tool allowlist; structure is best-effort
+        agentTools: { allow: resolved.allow },
+      };
+      await writeFile(
+        join(configDir, "settings.json"),
+        JSON.stringify(settings, null, 2) + "\n",
+        "utf-8",
+      );
+    } catch {
+      logger.warn(
+        "Cursor permission model differs from Claude Code; .cursor/settings.json injection skipped",
+      );
+    }
   }
 
   async verify(workspaceDir: string): Promise<VerifyResult> {

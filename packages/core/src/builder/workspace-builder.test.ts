@@ -75,7 +75,26 @@ describe("WorkspaceBuilder", () => {
 
       const settingsRaw = await readFile(join(tmpDir, ".claude", "settings.local.json"), "utf-8");
       const settings = JSON.parse(settingsRaw);
+      // Permissive default (no template.permissions) uses allow: ["*"]
+      expect(settings.permissions.allow).toContain("*");
+    });
+
+    it("writes permission preset to settings when permissions provided", async () => {
+      const builder = new WorkspaceBuilder();
+      const domainContext: DomainContextConfig = {
+        skills: ["review"],
+        mcpServers: [{ name: "m1", command: "cmd", args: [] }],
+      };
+
+      const result = await builder.build(tmpDir, domainContext, "claude-code", "standard");
+
+      expect(result.backendType).toBe("claude-code");
+
+      const settingsRaw = await readFile(join(tmpDir, ".claude", "settings.local.json"), "utf-8");
+      const settings = JSON.parse(settingsRaw);
+      expect(settings.permissions.allow).toContain("Read");
       expect(settings.permissions.allow).toContain("mcp__m1");
+      expect(settings.permissions.ask).toContain("Bash");
     });
   });
 

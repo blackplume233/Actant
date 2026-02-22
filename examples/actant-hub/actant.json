@@ -1,0 +1,13 @@
+{
+  "name": "actant-hub",
+  "version": "0.1.0",
+  "description": "Actant official component repository",
+  "components": {
+    "skills": ["skills/code-review.json", "skills/test-writer.json"],
+    "prompts": ["prompts/system-prompt.json"],
+    "mcp": ["mcp/filesystem.json"],
+    "workflows": ["workflows/tdd-workflow.json"],
+    "templates": ["templates/code-reviewer.json"]
+  },
+  "presets": ["presets/dev-suite.json"]
+}

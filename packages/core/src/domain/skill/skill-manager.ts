@@ -3,12 +3,14 @@ import type { SkillDefinition } from "@actant/shared";
 import { ConfigValidationError } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
 
-const SkillDefinitionSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  content: z.string().min(1),
-  tags: z.array(z.string()).optional(),
-});
+const SkillDefinitionSchema = z
+  .object({
+    name: z.string().min(1),
+    description: z.string().optional(),
+    content: z.string().min(1),
+    tags: z.array(z.string()).optional(),
+  })
+  .passthrough();
 
 export class SkillManager extends BaseComponentManager<SkillDefinition> {
   protected readonly componentType = "Skill";

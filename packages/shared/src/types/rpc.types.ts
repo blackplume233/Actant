@@ -143,6 +143,20 @@ export type AgentListParams = Record<string, never>;
 
 export type AgentListResult = AgentInstanceMeta[];
 
+export interface AgentAdoptParams {
+  path: string;
+  rename?: string;
+}
+
+export interface AgentAdoptResult {
+  name: string;
+  template: string;
+  workspacePath: string;
+  location: "builtin" | "external";
+  createdAt: string;
+  status: "stopped" | "running" | "orphaned";
+}
+
 // agent.resolve / agent.attach / agent.detach (external spawn)
 
 export interface AgentResolveParams {
@@ -475,6 +489,13 @@ export interface SourceSyncParams {
 
 export interface SourceSyncResult {
   synced: string[];
+  /** Sync report summary (aggregated when syncing multiple sources). */
+  report?: {
+    addedCount: number;
+    updatedCount: number;
+    removedCount: number;
+    hasBreakingChanges: boolean;
+  };
 }
 
 export interface PresetListParams {
@@ -512,6 +533,7 @@ export interface RpcMethodMap {
   "agent.destroy": { params: AgentDestroyParams; result: AgentDestroyResult };
   "agent.status": { params: AgentStatusParams; result: AgentStatusResult };
   "agent.list": { params: AgentListParams; result: AgentListResult };
+  "agent.adopt": { params: AgentAdoptParams; result: AgentAdoptResult };
   "agent.resolve": { params: AgentResolveParams; result: AgentResolveResult };
   "agent.attach": { params: AgentAttachParams; result: AgentAttachResult };
   "agent.detach": { params: AgentDetachParams; result: AgentDetachResult };

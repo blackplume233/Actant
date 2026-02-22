@@ -154,8 +154,25 @@ export abstract class BaseComponentManager<T extends NamedComponent> {
   // ---------------------------------------------------------------------------
 
   /**
-   * Load component definitions from JSON files in a directory.
-   * Invalid files are skipped with a warning.
+   * Resolve a content file reference (e.g. "content.md") to its file contents.
+   * Returns null if the ref is inline text (contains newline) or file not found.
+   */
+  protected async resolveContentFile(dirPath: string, contentRef: string): Promise<string | null> {
+    if (!contentRef || contentRef.includes("\n")) return null;
+    if (contentRef.endsWith(".md") || contentRef.endsWith(".txt")) {
+      try {
+        return await readFile(join(dirPath, contentRef), "utf-8");
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Load component definitions from JSON files and directory-based components (manifest.json).
+   * Invalid files/directories are skipped with a warning.
+   * @-prefixed directories are scanned recursively as source namespaces.
    */
   async loadFromDirectory(dirPath: string): Promise<number> {
     let entries: string[];
@@ -168,22 +185,71 @@ export abstract class BaseComponentManager<T extends NamedComponent> {
       throw err;
     }
 
-    const jsonFiles = entries.filter((f) => extname(f) === ".json");
     let count = 0;
 
-    for (const file of jsonFiles) {
-      const fullPath = join(dirPath, file);
-      const fileStat = await stat(fullPath);
-      if (!fileStat.isFile()) continue;
+    for (const entry of entries) {
+      const fullPath = join(dirPath, entry);
+      const entryStat = await stat(fullPath);
 
+      if (entryStat.isFile() && extname(entry) === ".json") {
+        // Existing: load flat JSON file
+        try {
+          const raw = await readFile(fullPath, "utf-8");
+          const parsed = JSON.parse(raw) as unknown;
+          const component = this.validate(parsed, fullPath);
+          this.register(component);
+          count++;
+        } catch (err) {
+          this.logger.warn({ file: entry, error: err }, `Failed to load ${this.componentType}, skipping`);
+        }
+      } else if (entryStat.isDirectory() && !entry.startsWith("_") && !entry.startsWith(".")) {
+        // New: load directory-based component with manifest.json
+        const manifestPath = join(fullPath, "manifest.json");
+        try {
+          const manifestStat = await stat(manifestPath);
+          if (!manifestStat.isFile()) continue;
+
+          const raw = await readFile(manifestPath, "utf-8");
+          const parsed = JSON.parse(raw) as Record<string, unknown>;
+
+          // Resolve content file if applicable
+          if (typeof parsed.content === "string") {
+            const resolved = await this.resolveContentFile(fullPath, parsed.content);
+            if (resolved !== null) {
+              parsed.content = resolved;
+            } else if (
+              !parsed.content.includes("\n") &&
+              (parsed.content.endsWith(".md") || parsed.content.endsWith(".txt"))
+            ) {
+              this.logger.warn({ file: parsed.content, dir: entry }, `Content file not found, using path as-is`);
+            }
+          }
+
+          // Use directory name as component name if not specified
+          if (!parsed.name) {
+            parsed.name = entry;
+          }
+
+          const component = this.validate(parsed, manifestPath);
+          this.register(component);
+          count++;
+        } catch (err) {
+          this.logger.warn({ dir: entry, error: err }, `Failed to load ${this.componentType} from directory, skipping`);
+        }
+      }
+    }
+
+    // Also scan @-prefixed directories (source namespaces) recursively
+    const namespaceDirs = entries.filter((e) => e.startsWith("@"));
+    for (const nsDir of namespaceDirs) {
+      const nsPath = join(dirPath, nsDir);
       try {
-        const raw = await readFile(fullPath, "utf-8");
-        const parsed = JSON.parse(raw) as unknown;
-        const component = this.validate(parsed, fullPath);
-        this.register(component);
-        count++;
-      } catch (err) {
-        this.logger.warn({ file, error: err }, `Failed to load ${this.componentType}, skipping`);
+        const nsStat = await stat(nsPath);
+        if (nsStat.isDirectory()) {
+          count += await this.loadFromDirectory(nsPath);
+        }
+      } catch {
+        // skip
       }
     }
 

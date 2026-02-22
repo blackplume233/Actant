@@ -2,18 +2,26 @@ import { createLogger } from "@actant/shared";
 import type {
   AgentBackendType,
   DomainContextConfig,
-  SkillDefinition,
-  PromptDefinition,
-  WorkflowDefinition,
+  McpServerDefinition,
+  PermissionsInput,
 } from "@actant/shared";
 import type { SkillManager } from "../domain/skill/skill-manager";
 import type { PromptManager } from "../domain/prompt/prompt-manager";
 import type { McpConfigManager } from "../domain/mcp/mcp-config-manager";
 import type { WorkflowManager } from "../domain/workflow/workflow-manager";
 import type { PluginManager } from "../domain/plugin/plugin-manager";
+import type { BaseComponentManager, NamedComponent } from "../domain/base-component-manager";
 import type { BackendBuilder, VerifyResult } from "./backend-builder";
+import type { ComponentTypeHandler } from "./component-type-handler";
 import { CursorBuilder } from "./cursor-builder";
 import { ClaudeCodeBuilder } from "./claude-code-builder";
+import {
+  skillsHandler,
+  promptsHandler,
+  mcpServersHandler,
+  workflowHandler,
+  pluginsHandler,
+} from "./handlers";
 
 const logger = createLogger("workspace-builder");
 
@@ -32,17 +40,35 @@ export interface WorkspaceBuildResult {
 
 export class WorkspaceBuilder {
   private readonly builders: Map<AgentBackendType, BackendBuilder>;
+  private readonly handlers: ComponentTypeHandler[] = [];
 
   constructor(private readonly managers?: DomainManagers) {
     this.builders = new Map<AgentBackendType, BackendBuilder>([
       ["cursor", new CursorBuilder()],
       ["claude-code", new ClaudeCodeBuilder()],
     ]);
+    this.handlers.push(skillsHandler, promptsHandler, mcpServersHandler, workflowHandler, pluginsHandler);
   }
 
   /** Register a custom BackendBuilder (e.g. for "custom" backend type) */
   registerBuilder(builder: BackendBuilder): void {
     this.builders.set(builder.backendType, builder);
+  }
+
+  /** Register a component type handler for custom component types or extensions */
+  registerHandler(handler: ComponentTypeHandler): void {
+    this.handlers.push(handler);
+  }
+
+  private getManager(contextKey: string): BaseComponentManager<NamedComponent> | undefined {
+    const managerMap: Record<string, BaseComponentManager<NamedComponent> | undefined> = {
+      skills: this.managers?.skills,
+      prompts: this.managers?.prompts,
+      mcpServers: this.managers?.mcp,
+      workflow: this.managers?.workflows,
+      plugins: this.managers?.plugins,
+    };
+    return managerMap[contextKey];
   }
 
   /**
@@ -58,6 +84,7 @@ export class WorkspaceBuilder {
     workspaceDir: string,
     domainContext: DomainContextConfig,
     backendType: AgentBackendType = "cursor",
+    permissions?: PermissionsInput,
   ): Promise<WorkspaceBuildResult> {
     // Step 1: Resolve
     let builder = this.builders.get(backendType);
@@ -70,8 +97,6 @@ export class WorkspaceBuilder {
     }
     const activeBuilder = builder;
 
-    const resolved = this.resolveDomainContext(domainContext);
-
     // Step 2: Validate (log warnings for missing references, don't fail)
     // Already handled by resolve — missing managers use placeholders or empty arrays
 
@@ -79,86 +104,49 @@ export class WorkspaceBuilder {
     await activeBuilder.scaffold(workspaceDir);
     logger.debug({ workspaceDir }, "Scaffold complete");
 
-    // Step 4: Materialize
-    const tasks: Promise<void>[] = [];
+    // Step 4: Materialize via registered handlers
+    let resolvedMcpServers: McpServerDefinition[] = [];
 
-    if (resolved.skills.length > 0) {
-      tasks.push(activeBuilder.materializeSkills(workspaceDir, resolved.skills));
-    }
-    if (resolved.prompts.length > 0) {
-      tasks.push(activeBuilder.materializePrompts(workspaceDir, resolved.prompts));
-    }
-    if (resolved.mcpServers.length > 0) {
-      tasks.push(activeBuilder.materializeMcpConfig(workspaceDir, resolved.mcpServers));
-    }
-    if (resolved.plugins.length > 0) {
-      tasks.push(activeBuilder.materializePlugins(workspaceDir, resolved.plugins));
-    }
-    if (resolved.workflow) {
-      tasks.push(activeBuilder.materializeWorkflow(workspaceDir, resolved.workflow));
+    for (const handler of this.handlers) {
+      const refs = domainContext[handler.contextKey as keyof DomainContextConfig];
+      if (refs === undefined || refs === null) continue;
+      if (Array.isArray(refs) && refs.length === 0) continue;
+
+      const manager = this.getManager(handler.contextKey);
+      const definitions = handler.resolve(refs, manager);
+      if (definitions.length > 0) {
+        await handler.materialize(workspaceDir, definitions, backendType, activeBuilder);
+        if (handler.contextKey === "mcpServers") {
+          resolvedMcpServers = definitions as McpServerDefinition[];
+        }
+      }
     }
 
-    await Promise.all(tasks);
+    if (domainContext.extensions) {
+      for (const [key, refs] of Object.entries(domainContext.extensions)) {
+        const handler = this.handlers.find((h) => h.contextKey === key);
+        if (handler && Array.isArray(refs) && refs.length > 0) {
+          const defs = handler.resolve(refs, this.getManager(key));
+          if (defs.length > 0) {
+            await handler.materialize(workspaceDir, defs, backendType, activeBuilder);
+            if (handler.contextKey === "mcpServers") {
+              resolvedMcpServers = [...resolvedMcpServers, ...(defs as McpServerDefinition[])];
+            }
+          }
+        }
+      }
+    }
+
     logger.debug({ workspaceDir }, "Materialize complete");
 
     // Step 5: Inject permissions
-    if (resolved.mcpServers.length > 0) {
-      await activeBuilder.injectPermissions(workspaceDir, resolved.mcpServers);
-      logger.debug({ workspaceDir }, "Permissions injected");
-    }
+    await activeBuilder.injectPermissions(workspaceDir, resolvedMcpServers, permissions);
+    logger.debug({ workspaceDir }, "Permissions injected");
 
     // Step 6: Verify
     const verify = await activeBuilder.verify(workspaceDir);
     logger.info({ workspaceDir, backendType: activeBuilder.backendType, valid: verify.valid }, "Workspace build complete");
 
     return { verify, backendType: activeBuilder.backendType };
-  }
-
-  private resolveDomainContext(domainContext: DomainContextConfig) {
-    // Resolve skills — use manager or placeholder when absent (preserves ContextMaterializer behavior)
-    const skills: SkillDefinition[] =
-      domainContext.skills?.length && this.managers?.skills
-        ? this.managers.skills.resolve(domainContext.skills)
-        : (domainContext.skills ?? []).map((name) => ({
-            name,
-            content: `- ${name}`,
-          }));
-
-    // Resolve prompts
-    const prompts: PromptDefinition[] =
-      domainContext.prompts?.length && this.managers?.prompts
-        ? this.managers.prompts.resolve(domainContext.prompts)
-        : (domainContext.prompts ?? []).map((name) => ({
-            name,
-            content: `- ${name}`,
-          }));
-
-    // MCP servers come as inline configs (McpServerRef), compatible with McpServerDefinition
-    const mcpServers = (domainContext.mcpServers ?? []).map((ref) => ({
-      name: ref.name,
-      command: ref.command,
-      args: ref.args,
-      env: ref.env,
-    }));
-
-    // Resolve workflow
-    let workflow: WorkflowDefinition | undefined;
-    if (domainContext.workflow && this.managers?.workflows) {
-      const resolved = this.managers.workflows.resolve([domainContext.workflow]);
-      workflow = resolved[0];
-    } else if (domainContext.workflow) {
-      workflow = {
-        name: domainContext.workflow,
-        content: `# Workflow: ${domainContext.workflow}\n\n> Workflow "${domainContext.workflow}" referenced by name.\n`,
-      };
-    }
-
-    // Resolve plugins
-    const plugins =
-      domainContext.plugins?.length && this.managers?.plugins
-        ? this.managers.plugins.resolve(domainContext.plugins)
-        : [];
-
-    return { skills, prompts, mcpServers, workflow, plugins };
   }
 }

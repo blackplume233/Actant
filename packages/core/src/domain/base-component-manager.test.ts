@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { join } from "node:path";
-import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, readFile, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { SkillManager } from "./skill/skill-manager";
-import { ComponentReferenceError } from "@actant/shared";
+import { ComponentReferenceError, ConfigNotFoundError } from "@actant/shared";
 import type { SkillDefinition } from "@actant/shared";
 
 function makeSkill(name: string, desc?: string): SkillDefinition {
@@ -170,6 +170,98 @@ describe("BaseComponentManager CRUD", () => {
     mgr.setPersistDir(nestedDir);
     await mgr.add(makeSkill("deep-skill"), true);
     expect(await fileExists(join(nestedDir, "deep-skill.json"))).toBe(true);
+  });
+});
+
+describe("BaseComponentManager loadFromDirectory", () => {
+  let mgr: SkillManager;
+  let tempDir: string;
+
+  beforeEach(async () => {
+    mgr = new SkillManager();
+    tempDir = await mkdtemp(join(tmpdir(), "bcm-load-"));
+  });
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it("loads flat JSON files", async () => {
+    await writeFile(join(tempDir, "flat-skill.json"), JSON.stringify({ name: "flat-skill", content: "Flat content" }));
+    const count = await mgr.loadFromDirectory(tempDir);
+    expect(count).toBe(1);
+    expect(mgr.has("flat-skill")).toBe(true);
+    expect(mgr.get("flat-skill")?.content).toBe("Flat content");
+  });
+
+  it("loads directory-based components with manifest.json", async () => {
+    const dirPath = join(tempDir, "dir-skill");
+    await mkdir(dirPath, { recursive: true });
+    await writeFile(
+      join(dirPath, "manifest.json"),
+      JSON.stringify({ name: "dir-skill", content: "Inline content from manifest" }),
+    );
+    const count = await mgr.loadFromDirectory(tempDir);
+    expect(count).toBe(1);
+    expect(mgr.has("dir-skill")).toBe(true);
+    expect(mgr.get("dir-skill")?.content).toBe("Inline content from manifest");
+  });
+
+  it("resolves content.md file in directory-based component", async () => {
+    const dirPath = join(tempDir, "content-skill");
+    await mkdir(dirPath, { recursive: true });
+    await writeFile(
+      join(dirPath, "manifest.json"),
+      JSON.stringify({ name: "content-skill", content: "content.md" }),
+    );
+    await writeFile(join(dirPath, "content.md"), "# Resolved Content\n\nThis was loaded from content.md");
+    const count = await mgr.loadFromDirectory(tempDir);
+    expect(count).toBe(1);
+    expect(mgr.has("content-skill")).toBe(true);
+    expect(mgr.get("content-skill")?.content).toContain("# Resolved Content");
+    expect(mgr.get("content-skill")?.content).toContain("This was loaded from content.md");
+  });
+
+  it("uses directory name as component name when manifest has no name", async () => {
+    const dirPath = join(tempDir, "unnamed-dir");
+    await mkdir(dirPath, { recursive: true });
+    await writeFile(join(dirPath, "manifest.json"), JSON.stringify({ content: "Rules" }));
+    const count = await mgr.loadFromDirectory(tempDir);
+    expect(count).toBe(1);
+    expect(mgr.has("unnamed-dir")).toBe(true);
+  });
+
+  it("scans @-prefixed namespace directories recursively", async () => {
+    const nsDir = join(tempDir, "@actant-hub");
+    await mkdir(nsDir, { recursive: true });
+    await writeFile(join(nsDir, "ns-skill.json"), JSON.stringify({ name: "ns-skill", content: "From namespace" }));
+    const count = await mgr.loadFromDirectory(tempDir);
+    expect(count).toBe(1);
+    expect(mgr.has("ns-skill")).toBe(true);
+  });
+
+  it("skips directories starting with _ or .", async () => {
+    await mkdir(join(tempDir, "_hidden"), { recursive: true });
+    await writeFile(join(tempDir, "_hidden", "manifest.json"), JSON.stringify({ content: "x" }));
+    await mkdir(join(tempDir, ".hidden"), { recursive: true });
+    await writeFile(join(tempDir, ".hidden", "manifest.json"), JSON.stringify({ content: "x" }));
+    const count = await mgr.loadFromDirectory(tempDir);
+    expect(count).toBe(0);
+  });
+
+  it("throws ConfigNotFoundError when directory does not exist", async () => {
+    await expect(mgr.loadFromDirectory(join(tempDir, "nonexistent"))).rejects.toThrow(ConfigNotFoundError);
+  });
+
+  it("loads both flat JSON and directory-based components", async () => {
+    await writeFile(join(tempDir, "flat.json"), JSON.stringify({ name: "flat", content: "F" }));
+    const dirPath = join(tempDir, "dir-comp");
+    await mkdir(dirPath, { recursive: true });
+    await writeFile(join(dirPath, "manifest.json"), JSON.stringify({ name: "dir-comp", content: "D" }));
+    const count = await mgr.loadFromDirectory(tempDir);
+    expect(count).toBe(2);
+    expect(mgr.has("flat")).toBe(true);
+    expect(mgr.has("dir-comp")).toBe(true);
   });
 });
 

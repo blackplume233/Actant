@@ -10,6 +10,8 @@ import type {
   AgentStatusParams,
   AgentStatusResult,
   AgentListResult,
+  AgentAdoptParams,
+  AgentAdoptResult,
   AgentResolveParams,
   AgentResolveResult,
   AgentAttachParams,
@@ -32,6 +34,7 @@ export function registerAgentHandlers(registry: HandlerRegistry): void {
   registry.register("agent.destroy", handleAgentDestroy);
   registry.register("agent.status", handleAgentStatus);
   registry.register("agent.list", handleAgentList);
+  registry.register("agent.adopt", handleAgentAdopt);
   registry.register("agent.resolve", handleAgentResolve);
   registry.register("agent.attach", handleAgentAttach);
   registry.register("agent.detach", handleAgentDetach);
@@ -93,6 +96,22 @@ async function handleAgentList(
   ctx: AppContext,
 ): Promise<AgentListResult> {
   return ctx.agentManager.listAgents();
+}
+
+async function handleAgentAdopt(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<AgentAdoptResult> {
+  const { path, rename } = params as unknown as AgentAdoptParams;
+  const entry = await ctx.instanceRegistry.adopt(path, rename);
+  return {
+    name: entry.name,
+    template: entry.template,
+    workspacePath: entry.workspacePath,
+    location: entry.location,
+    createdAt: entry.createdAt,
+    status: entry.status,
+  };
 }
 
 async function handleAgentResolve(

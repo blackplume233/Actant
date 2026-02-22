@@ -6,22 +6,13 @@ import type {
   McpServerDefinition,
   WorkflowDefinition,
   PluginDefinition,
+  PermissionsInput,
 } from "@actant/shared";
 import { createLogger } from "@actant/shared";
 import type { BackendBuilder, VerifyResult } from "./backend-builder";
+import { resolvePermissionsWithMcp } from "../permissions/permission-presets";
 
 const logger = createLogger("claude-code-builder");
-
-/** Built-in tools to pre-approve for autonomous operation */
-const BUILTIN_ALLOWED_TOOLS = [
-  "Bash",
-  "Read",
-  "Write",
-  "Edit",
-  "MultiEdit",
-  "WebFetch",
-  "WebSearch",
-];
 
 export class ClaudeCodeBuilder implements BackendBuilder {
   readonly backendType = "claude-code" as const;
@@ -104,21 +95,29 @@ export class ClaudeCodeBuilder implements BackendBuilder {
     await writeFile(join(trellisDir, "workflow.md"), workflow.content + "\n", "utf-8");
   }
 
-  async injectPermissions(workspaceDir: string, servers: McpServerDefinition[]): Promise<void> {
+  async injectPermissions(
+    workspaceDir: string,
+    servers: McpServerDefinition[],
+    permissions?: PermissionsInput,
+  ): Promise<void> {
     const configDir = join(workspaceDir, ".claude");
     await mkdir(configDir, { recursive: true });
 
-    const allowedTools = [...BUILTIN_ALLOWED_TOOLS];
-    for (const server of servers) {
-      allowedTools.push(`mcp__${server.name}`);
-    }
+    const resolved = resolvePermissionsWithMcp(
+      permissions,
+      servers.map((s) => s.name),
+    );
 
-    const settings = {
+    const settings: Record<string, unknown> = {
       permissions: {
-        allow: allowedTools,
-        deny: [],
+        allow: resolved.allow ?? [],
+        deny: resolved.deny ?? [],
+        ask: resolved.ask ?? [],
       },
     };
+    if (resolved.sandbox) {
+      settings.sandbox = resolved.sandbox;
+    }
     await writeFile(
       join(configDir, "settings.local.json"),
       JSON.stringify(settings, null, 2) + "\n",

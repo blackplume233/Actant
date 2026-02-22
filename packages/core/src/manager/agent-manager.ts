@@ -17,6 +17,7 @@ import { getLaunchModeHandler } from "./launch-mode-handler";
 import { RestartTracker, type RestartPolicy } from "./restart-tracker";
 import { delay } from "./launcher/process-utils";
 import { scanInstances, updateInstanceMeta } from "../state/index";
+import type { InstanceRegistryAdapter } from "../state/instance-registry-types";
 import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
 import { createCommunicator } from "../communicator/create-communicator";
 
@@ -58,6 +59,8 @@ export interface ManagerOptions {
   restartPolicy?: Partial<RestartPolicy>;
   /** ACP connection manager for ACP-based backends. */
   acpManager?: AcpConnectionManagerLike;
+  /** Instance registry for discovering external workspaces. */
+  instanceRegistry?: InstanceRegistryAdapter;
 }
 
 export class AgentManager {
@@ -67,6 +70,7 @@ export class AgentManager {
   private readonly watcher: ProcessWatcher;
   private readonly restartTracker: RestartTracker;
   private readonly acpManager?: AcpConnectionManagerLike;
+  private readonly instanceRegistry?: InstanceRegistryAdapter;
 
   constructor(
     private readonly initializer: AgentInitializer,
@@ -75,6 +79,7 @@ export class AgentManager {
     options?: ManagerOptions,
   ) {
     this.corruptedDir = options?.corruptedDir ?? join(instancesBaseDir, ".corrupted");
+    this.instanceRegistry = options?.instanceRegistry;
     this.watcher = new ProcessWatcher(
       (info) => this.handleProcessExit(info),
       { pollIntervalMs: options?.watcherPollIntervalMs },
@@ -88,7 +93,10 @@ export class AgentManager {
    * fix stale running/starting states, and start the process watcher.
    */
   async initialize(): Promise<void> {
-    const { valid, corrupted } = await scanInstances(this.instancesBaseDir);
+    const { valid, corrupted } = await scanInstances(
+      this.instancesBaseDir,
+      this.instanceRegistry,
+    );
 
     this.cache.clear();
     this.processes.clear();

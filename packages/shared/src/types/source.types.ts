@@ -38,6 +38,7 @@ export interface PackageManifest {
     prompts?: string[];
     mcp?: string[];
     workflows?: string[];
+    templates?: string[];
   };
   presets?: string[];
 }
@@ -48,9 +49,11 @@ export interface PackageManifest {
 
 export interface PresetDefinition {
   name: string;
+  version?: string;
   description?: string;
   skills?: string[];
   prompts?: string[];
   mcpServers?: string[];
   workflows?: string[];
+  templates?: string[];
 }

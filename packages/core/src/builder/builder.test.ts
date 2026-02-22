@@ -10,6 +10,10 @@ import type {
   PluginDefinition,
 } from "@actant/shared";
 import { CursorBuilder, ClaudeCodeBuilder } from "./index";
+import {
+  resolvePermissions,
+  resolvePermissionsWithMcp,
+} from "../permissions/permission-presets";
 
 function normalizePath(p: string): string {
   return p.replace(/\\/g, "/");
@@ -240,7 +244,7 @@ describe("ClaudeCodeBuilder", () => {
     expect(entries[0].package).toBe("@anthropic/memory");
   });
 
-  it("injectPermissions creates settings.local.json", async () => {
+  it("injectPermissions creates settings.local.json (permissive default)", async () => {
     const builder = new ClaudeCodeBuilder();
     await builder.injectPermissions(tmpDir, [
       { name: "fs", command: "npx", args: ["mcp-fs"] },
@@ -248,10 +252,24 @@ describe("ClaudeCodeBuilder", () => {
 
     const raw = await readFile(join(tmpDir, ".claude", "settings.local.json"), "utf-8");
     const settings = JSON.parse(raw);
-    expect(settings.permissions.allow).toContain("Bash");
+    expect(settings.permissions.allow).toContain("*");
+    expect(settings.permissions.deny).toEqual([]);
+    expect(settings.permissions.ask).toEqual([]);
+  });
+
+  it("injectPermissions with standard preset includes allow/deny/ask", async () => {
+    const builder = new ClaudeCodeBuilder();
+    await builder.injectPermissions(
+      tmpDir,
+      [{ name: "fs", command: "npx", args: ["mcp-fs"] }],
+      "standard",
+    );
+
+    const raw = await readFile(join(tmpDir, ".claude", "settings.local.json"), "utf-8");
+    const settings = JSON.parse(raw);
     expect(settings.permissions.allow).toContain("Read");
-    expect(settings.permissions.allow).toContain("Write");
     expect(settings.permissions.allow).toContain("mcp__fs");
+    expect(settings.permissions.ask).toContain("Bash");
   });
 
   it("verify returns valid for complete workspace", async () => {
@@ -273,5 +291,55 @@ describe("ClaudeCodeBuilder", () => {
     const result = await builder.verify(tmpDir);
     expect(result.valid).toBe(true);
     expect(result.warnings.some((w) => normalizePath(w).includes("CLAUDE.md"))).toBe(true);
+  });
+});
+
+describe("permission presets", () => {
+  describe("resolvePermissions", () => {
+    it("returns permissive default when undefined", () => {
+      const config = resolvePermissions(undefined);
+      expect(config.allow).toEqual(["*"]);
+      expect(config.defaultMode).toBe("bypassPermissions");
+    });
+
+    it("returns correct config for each preset name", () => {
+      expect(resolvePermissions("permissive").allow).toEqual(["*"]);
+      expect(resolvePermissions("standard").allow).toContain("Read");
+      expect(resolvePermissions("standard").ask).toContain("Bash");
+      expect(resolvePermissions("restricted").deny).toContain("Bash");
+      expect(resolvePermissions("readonly").allow).toContain("Read");
+      expect(resolvePermissions("readonly").deny).toContain("Edit");
+    });
+
+    it("passes through custom object", () => {
+      const custom = {
+        allow: ["Read", "CustomTool"],
+        deny: ["Bash"],
+        ask: [],
+      };
+      const config = resolvePermissions(custom);
+      expect(config.allow).toEqual(["Read", "CustomTool"]);
+      expect(config.deny).toEqual(["Bash"]);
+    });
+
+    it("throws for unknown preset name", () => {
+      expect(() =>
+        resolvePermissions("unknown-preset" as Parameters<typeof resolvePermissions>[0]),
+      ).toThrow("Unknown permission preset: unknown-preset");
+    });
+  });
+
+  describe("resolvePermissionsWithMcp", () => {
+    it("appends MCP server names to allow list", () => {
+      const config = resolvePermissionsWithMcp("standard", ["fs", "github"]);
+      expect(config.allow).toContain("mcp__fs");
+      expect(config.allow).toContain("mcp__github");
+    });
+
+    it("skips append when allow has wildcard", () => {
+      const config = resolvePermissionsWithMcp("permissive", ["fs", "github"]);
+      expect(config.allow).toEqual(["*"]);
+      expect(config.allow).not.toContain("mcp__fs");
+    });
   });
 });

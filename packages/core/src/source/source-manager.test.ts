@@ -6,6 +6,7 @@ import { SkillManager } from "../domain/skill/skill-manager";
 import { PromptManager } from "../domain/prompt/prompt-manager";
 import { McpConfigManager } from "../domain/mcp/mcp-config-manager";
 import { WorkflowManager } from "../domain/workflow/workflow-manager";
+import { TemplateRegistry } from "../template/registry/template-registry";
 import { SourceManager } from "./source-manager";
 
 function createManagers() {
@@ -14,6 +15,7 @@ function createManagers() {
     promptManager: new PromptManager(),
     mcpConfigManager: new McpConfigManager(),
     workflowManager: new WorkflowManager(),
+    templateRegistry: new TemplateRegistry({ allowOverwrite: true }),
   };
 }
 
@@ -21,6 +23,7 @@ async function createLocalPackage(dir: string) {
   await mkdir(join(dir, "skills"), { recursive: true });
   await mkdir(join(dir, "prompts"), { recursive: true });
   await mkdir(join(dir, "presets"), { recursive: true });
+  await mkdir(join(dir, "templates"), { recursive: true });
 
   await writeFile(
     join(dir, "actant.json"),
@@ -28,11 +31,11 @@ async function createLocalPackage(dir: string) {
   );
   await writeFile(
     join(dir, "skills", "test-skill.json"),
-    JSON.stringify({ name: "test-skill", content: "Test skill rules" }),
+    JSON.stringify({ name: "test-skill", version: "1.0.0", content: "Test skill rules" }),
   );
   await writeFile(
     join(dir, "prompts", "test-prompt.json"),
-    JSON.stringify({ name: "test-prompt", content: "You are a test assistant" }),
+    JSON.stringify({ name: "test-prompt", version: "1.0.0", content: "You are a test assistant" }),
   );
   await writeFile(
     join(dir, "presets", "test-bundle.json"),
@@ -41,6 +44,25 @@ async function createLocalPackage(dir: string) {
       description: "Test preset bundle",
       skills: ["test-skill"],
       prompts: ["test-prompt"],
+    }),
+  );
+  await writeFile(
+    join(dir, "presets", "template-preset.json"),
+    JSON.stringify({
+      name: "template-preset",
+      description: "Preset with templates",
+      skills: ["test-skill"],
+      templates: ["test-template"],
+    }),
+  );
+  await writeFile(
+    join(dir, "templates", "test-template.json"),
+    JSON.stringify({
+      name: "test-template",
+      version: "1.0.0",
+      backend: { type: "cursor" },
+      provider: { type: "anthropic" },
+      domainContext: {},
     }),
   );
 }
@@ -69,6 +91,7 @@ describe("SourceManager", () => {
 
     expect(managers.skillManager.has("test@test-skill")).toBe(true);
     expect(managers.promptManager.has("test@test-prompt")).toBe(true);
+    expect(managers.templateRegistry.has("test@test-template")).toBe(true);
     expect(sourceMgr.hasSource("test")).toBe(true);
   });
 
@@ -82,9 +105,11 @@ describe("SourceManager", () => {
   it("removeSource cleans up namespaced components", async () => {
     await sourceMgr.addSource("rm-test", { type: "local", path: pkgDir });
     expect(managers.skillManager.has("rm-test@test-skill")).toBe(true);
+    expect(managers.templateRegistry.has("rm-test@test-template")).toBe(true);
 
     await sourceMgr.removeSource("rm-test");
     expect(managers.skillManager.has("rm-test@test-skill")).toBe(false);
+    expect(managers.templateRegistry.has("rm-test@test-template")).toBe(false);
     expect(sourceMgr.hasSource("rm-test")).toBe(false);
   });
 
@@ -100,6 +125,66 @@ describe("SourceManager", () => {
     await sourceMgr.syncSource("sync-test");
     expect(managers.skillManager.has("sync-test@new-skill")).toBe(true);
     expect(managers.skillManager.has("sync-test@test-skill")).toBe(true);
+  });
+
+  it("syncSourceWithReport returns report with added/updated/removed/unchanged", async () => {
+    await sourceMgr.addSource("report-test", { type: "local", path: pkgDir });
+
+    // Add new skill, update test-skill version, remove test-prompt
+    await writeFile(
+      join(pkgDir, "skills", "test-skill.json"),
+      JSON.stringify({ name: "test-skill", version: "1.1.0", content: "Test skill rules" }),
+    );
+    await writeFile(
+      join(pkgDir, "skills", "extra-skill.json"),
+      JSON.stringify({ name: "extra-skill", version: "1.0.0", content: "Extra" }),
+    );
+    // Remove test-prompt by deleting the file
+    const { unlink } = await import("node:fs/promises");
+    await unlink(join(pkgDir, "prompts", "test-prompt.json"));
+
+    const { fetchResult, report } = await sourceMgr.syncSourceWithReport("report-test");
+
+    expect(report.added).toHaveLength(1);
+    expect(report.added[0]).toMatchObject({ type: "skill", name: "report-test@extra-skill", newVersion: "1.0.0" });
+
+    expect(report.updated).toHaveLength(1);
+    expect(report.updated[0]).toMatchObject({
+      type: "skill",
+      name: "report-test@test-skill",
+      oldVersion: "1.0.0",
+      newVersion: "1.1.0",
+    });
+
+    expect(report.removed).toHaveLength(1);
+    expect(report.removed[0]).toMatchObject({ type: "prompt", name: "report-test@test-prompt", oldVersion: "1.0.0" });
+
+    // template and presets unchanged
+    expect(report.unchanged.length).toBeGreaterThanOrEqual(1);
+    expect(report.unchanged).toContain("report-test@test-template");
+
+    expect(report.hasBreakingChanges).toBe(false);
+    expect(fetchResult.skills).toHaveLength(2);
+  });
+
+  it("syncSourceWithReport sets hasBreakingChanges when major version changes", async () => {
+    await sourceMgr.addSource("breaking-test", { type: "local", path: pkgDir });
+
+    await writeFile(
+      join(pkgDir, "skills", "test-skill.json"),
+      JSON.stringify({ name: "test-skill", version: "2.0.0", content: "Test skill rules" }),
+    );
+
+    const { report } = await sourceMgr.syncSourceWithReport("breaking-test");
+
+    expect(report.updated).toHaveLength(1);
+    expect(report.updated[0]).toMatchObject({
+      type: "skill",
+      name: "breaking-test@test-skill",
+      oldVersion: "1.0.0",
+      newVersion: "2.0.0",
+    });
+    expect(report.hasBreakingChanges).toBe(true);
   });
 
   it("addSource throws for duplicate source name", async () => {
@@ -118,8 +203,9 @@ describe("SourceManager", () => {
     it("listPresets returns presets from sources", async () => {
       await sourceMgr.addSource("p", { type: "local", path: pkgDir });
       const presets = sourceMgr.listPresets();
-      expect(presets).toHaveLength(1);
+      expect(presets).toHaveLength(2);
       expect(presets.map((p) => p.name)).toContain("test-bundle");
+      expect(presets.map((p) => p.name)).toContain("template-preset");
     });
 
     it("getPreset retrieves by qualified name", async () => {
@@ -155,6 +241,56 @@ describe("SourceManager", () => {
       };
       expect(() => sourceMgr.applyPreset("nope@missing", template)).toThrow(/not found/);
     });
+
+    it("applyPreset with templates field works when templateRegistry is present", async () => {
+      await sourceMgr.addSource("p", { type: "local", path: pkgDir });
+      expect(managers.templateRegistry.has("p@test-template")).toBe(true);
+
+      const template = {
+        name: "base-tmpl",
+        version: "1.0.0",
+        backend: { type: "cursor" as const },
+        provider: { type: "anthropic" as const },
+        domainContext: {},
+      };
+      const result = sourceMgr.applyPreset("p@template-preset", template);
+      expect(result.domainContext.skills).toContain("p@test-skill");
+      expect(managers.templateRegistry.get("p@test-template")).toBeDefined();
+    });
+  });
+
+  it("loads SKILL.md from skills subdirectories when scanning", async () => {
+    // Package without explicit components - triggers directory scan
+    await writeFile(
+      join(pkgDir, "actant.json"),
+      JSON.stringify({ name: "skill-md-pkg", version: "1.0.0" }),
+    );
+    await mkdir(join(pkgDir, "skills", "code-review"), { recursive: true });
+    await writeFile(
+      join(pkgDir, "skills", "code-review", "SKILL.md"),
+      `---
+name: code-review
+description: Expert code review skill
+metadata:
+  version: "1.0.0"
+  actant-tags: "review,quality"
+---
+
+# Code Review
+
+You are an expert code reviewer.`,
+    );
+    // Remove the JSON skill so we only get SKILL.md
+    const { unlink } = await import("node:fs/promises");
+    await unlink(join(pkgDir, "skills", "test-skill.json"));
+
+    await sourceMgr.addSource("skill-md", { type: "local", path: pkgDir });
+
+    expect(managers.skillManager.has("skill-md@code-review")).toBe(true);
+    const skill = managers.skillManager.get("skill-md@code-review");
+    expect(skill?.description).toBe("Expert code review skill");
+    expect(skill?.tags).toEqual(["review", "quality"]);
+    expect(skill?.content).toContain("You are an expert code reviewer.");
   });
 
   describe("persistence", () => {
@@ -167,6 +303,7 @@ describe("SourceManager", () => {
 
       expect(sourceMgr2.hasSource("persist-test")).toBe(true);
       expect(mgr2.skillManager.has("persist-test@test-skill")).toBe(true);
+      expect(mgr2.templateRegistry.has("persist-test@test-template")).toBe(true);
     });
   });
 });

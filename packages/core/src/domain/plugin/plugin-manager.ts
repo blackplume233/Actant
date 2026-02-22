@@ -3,14 +3,16 @@ import type { PluginDefinition } from "@actant/shared";
 import { ConfigValidationError } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
 
-const PluginDefinitionSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  type: z.enum(["npm", "file", "config"]),
-  source: z.string().optional(),
-  config: z.record(z.string(), z.unknown()).optional(),
-  enabled: z.boolean().optional().default(true),
-});
+const PluginDefinitionSchema = z
+  .object({
+    name: z.string().min(1),
+    description: z.string().optional(),
+    type: z.enum(["npm", "file", "config"]),
+    source: z.string().optional(),
+    config: z.record(z.string(), z.unknown()).optional(),
+    enabled: z.boolean().optional().default(true),
+  })
+  .passthrough();
 
 export class PluginManager extends BaseComponentManager<PluginDefinition> {
   protected readonly componentType = "Plugin";

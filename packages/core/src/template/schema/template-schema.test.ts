@@ -185,6 +185,37 @@ describe("AgentTemplateSchema", () => {
       expect(result.success).toBe(true);
     }
   });
+
+  // #51: Permission preset validation
+  it("validates template with permissions preset string 'restricted'", () => {
+    const result = AgentTemplateSchema.safeParse({
+      ...MINIMAL_TEMPLATE,
+      permissions: "restricted",
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.permissions).toBe("restricted");
+    }
+  });
+
+  it("validates template with permissions object", () => {
+    const result = AgentTemplateSchema.safeParse({
+      ...MINIMAL_TEMPLATE,
+      permissions: { allow: ["Read"], deny: ["Bash"] },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.permissions).toEqual({ allow: ["Read"], deny: ["Bash"] });
+    }
+  });
+
+  it("rejects template with invalid permissions preset string", () => {
+    const result = AgentTemplateSchema.safeParse({
+      ...MINIMAL_TEMPLATE,
+      permissions: "invalid-preset",
+    });
+    expect(result.success).toBe(false);
+  });
 });
 
 describe("DomainContextSchema", () => {

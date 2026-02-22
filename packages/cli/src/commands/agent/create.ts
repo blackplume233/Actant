@@ -26,6 +26,7 @@ export function createAgentCreateCommand(client: RpcClient, printer: CliPrinter 
     .requiredOption("-t, --template <template>", "Template name to use")
     .option("--launch-mode <mode>", "Launch mode: direct, acp-background, acp-service, one-shot")
     .option("--work-dir <path>", "Custom workspace directory (absolute or relative path)")
+    .option("--workspace <path>", "Same as --work-dir: create instance at external path instead of builtin location")
     .option("--overwrite", "If work-dir exists, remove it and recreate")
     .option("--append", "If work-dir exists, add agent files into it")
     .option("-f, --format <format>", "Output format: table, json, quiet", "table")
@@ -33,6 +34,7 @@ export function createAgentCreateCommand(client: RpcClient, printer: CliPrinter 
       template: string;
       launchMode?: string;
       workDir?: string;
+      workspace?: string;
       overwrite?: boolean;
       append?: boolean;
       format: OutputFormat;
@@ -51,7 +53,8 @@ export function createAgentCreateCommand(client: RpcClient, printer: CliPrinter 
         }
 
         let workDirConflict: WorkDirConflict | undefined;
-        const workDir = opts.workDir ? resolve(opts.workDir) : undefined;
+        const workDirPath = opts.workspace ?? opts.workDir;
+        const workDir = workDirPath ? resolve(workDirPath) : undefined;
 
         if (workDir && existsSync(workDir)) {
           if (opts.overwrite) {

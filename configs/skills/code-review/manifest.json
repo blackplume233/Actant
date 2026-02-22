@@ -1,0 +1,9 @@
+{
+  "$type": "skill",
+  "$version": 1,
+  "name": "code-review-dir",
+  "description": "Code review skill (directory format example)",
+  "version": "1.0.0",
+  "content": "content.md",
+  "tags": ["review", "code-quality"]
+}

@@ -15,12 +15,21 @@ export type {
   ModelProviderType,
   InitializerConfig,
   InitializerStep,
+  PermissionMode,
+  PermissionPreset,
+  SandboxNetworkConfig,
+  SandboxConfig,
+  PermissionsConfig,
+  PermissionsInput,
 } from "./template.types";
 export type {
   DomainContextConfig,
   McpServerRef,
 } from "./domain-context.types";
 export type {
+  VersionedComponent,
+  ComponentOrigin,
+  ComponentOriginType,
   SkillDefinition,
   PromptDefinition,
   WorkflowDefinition,
@@ -66,6 +75,8 @@ export {
   type AgentStatusResult,
   type AgentListParams,
   type AgentListResult,
+  type AgentAdoptParams,
+  type AgentAdoptResult,
   type AgentResolveParams,
   type AgentResolveResult,
   type AgentAttachParams,

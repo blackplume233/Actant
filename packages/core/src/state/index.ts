@@ -6,3 +6,9 @@ export {
   scanInstances,
   metaFilePath,
 } from "./instance-meta-io";
+export {
+  InstanceRegistry,
+  type InstanceRegistryEntry,
+  type InstanceRegistryData,
+} from "./instance-registry";
+export type { InstanceRegistryAdapter } from "./instance-registry-types";

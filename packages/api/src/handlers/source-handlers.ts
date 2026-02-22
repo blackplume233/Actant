@@ -51,12 +51,28 @@ async function handleSourceRemove(
 async function handleSourceSync(
   params: Record<string, unknown>,
   ctx: AppContext,
-): Promise<{ synced: string[] }> {
+): Promise<{ synced: string[]; report?: { addedCount: number; updatedCount: number; removedCount: number; hasBreakingChanges: boolean } }> {
   const { name } = params as unknown as SourceSyncParams;
   if (name) {
-    await ctx.sourceManager.syncSource(name);
-    return { synced: [name] };
+    const { report } = await ctx.sourceManager.syncSourceWithReport(name);
+    return {
+      synced: [name],
+      report: {
+        addedCount: report.added.length,
+        updatedCount: report.updated.length,
+        removedCount: report.removed.length,
+        hasBreakingChanges: report.hasBreakingChanges,
+      },
+    };
   }
-  await ctx.sourceManager.syncAll();
-  return { synced: ctx.sourceManager.listSources().map((s) => s.name) };
+  const { report } = await ctx.sourceManager.syncAllWithReport();
+  return {
+    synced: ctx.sourceManager.listSources().map((s) => s.name),
+    report: {
+      addedCount: report.added.length,
+      updatedCount: report.updated.length,
+      removedCount: report.removed.length,
+      hasBreakingChanges: report.hasBreakingChanges,
+    },
+  };
 }

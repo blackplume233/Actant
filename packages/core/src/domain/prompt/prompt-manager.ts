@@ -3,12 +3,14 @@ import type { PromptDefinition } from "@actant/shared";
 import { ConfigValidationError } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
 
-const PromptDefinitionSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  content: z.string().min(1),
-  variables: z.array(z.string()).optional(),
-});
+const PromptDefinitionSchema = z
+  .object({
+    name: z.string().min(1),
+    description: z.string().optional(),
+    content: z.string().min(1),
+    variables: z.array(z.string()).optional(),
+  })
+  .passthrough();
 
 export class PromptManager extends BaseComponentManager<PromptDefinition> {
   protected readonly componentType = "Prompt";

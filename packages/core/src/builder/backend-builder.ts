@@ -5,6 +5,7 @@ import type {
   WorkflowDefinition,
   PluginDefinition,
   AgentBackendType,
+  PermissionsInput,
 } from "@actant/shared";
 
 export interface VerifyResult {
@@ -35,7 +36,11 @@ export interface BackendBuilder {
   materializeWorkflow(workspaceDir: string, workflow: WorkflowDefinition): Promise<void>;
 
   /** Inject tool permissions for autonomous operation */
-  injectPermissions(workspaceDir: string, servers: McpServerDefinition[]): Promise<void>;
+  injectPermissions(
+    workspaceDir: string,
+    servers: McpServerDefinition[],
+    permissions?: PermissionsInput,
+  ): Promise<void>;
 
   /** Verify the workspace integrity after build */
   verify(workspaceDir: string): Promise<VerifyResult>;
