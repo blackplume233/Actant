@@ -9,7 +9,7 @@
     "priority:P2"
   ],
   "milestone": "long-term",
-  "body": "MemoryConsolidator 和 MemoryPromoter。CLI 增加 agentcraft memory 子命令。依赖 #1 完成。",
+  "body": "MemoryConsolidator 和 MemoryPromoter。CLI 增加 actant memory 子命令。依赖 #1 完成。",
   "author": "cursor-agent",
   "assignees": [],
   "relatedFiles": [
@@ -24,5 +24,5 @@
   "createdAt": "2026-02-20T10:23:05",
   "updatedAt": "2026-02-20T10:23:05",
   "closedAt": null,
-  "githubRef": "blackplume233/AgentCraft#11"
+  "githubRef": "blackplume233/Actant#11"
 }

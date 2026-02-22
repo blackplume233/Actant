@@ -10,7 +10,7 @@ import { readdir, readFile, writeFile } from "node:fs/promises";
 import { join, basename } from "node:path";
 import { execSync } from "node:child_process";
 
-const REPO = "blackplume233/AgentCraft";
+const REPO = "blackplume233/Actant";
 const ISSUES_DIR = join(
   import.meta.dirname,
   "..",

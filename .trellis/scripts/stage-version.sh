@@ -639,7 +639,7 @@ cmd_release() {
 
   # Create release
   gh release create "$version" \
-    --repo "blackplume233/AgentCraft" \
+    --repo "blackplume233/Actant" \
     --title "Actant $version" \
     --notes-file "$notes_file" \
     2>/dev/null && echo -e "${GREEN}✓ GitHub release $version created${NC}" \
@@ -647,7 +647,7 @@ cmd_release() {
 
   # Save GitHub release URL
   local release_url
-  release_url=$(gh release view "$version" --repo "blackplume233/AgentCraft" --json url -q .url 2>/dev/null || echo "")
+  release_url=$(gh release view "$version" --repo "blackplume233/Actant" --json url -q .url 2>/dev/null || echo "")
   if [[ -n "$release_url" ]]; then
     node -e "
       const fs = require('fs');

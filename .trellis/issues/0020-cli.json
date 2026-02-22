@@ -10,13 +10,13 @@
     "review"
   ],
   "milestone": null,
-  "body": "## 审查发现\n\n`packages/cli` 包含 20 个源文件（commands、repl、output、client 等），但除了 1 个 e2e 测试文件（`e2e-cli.test.ts`，12 个测试），没有任何单元测试。\n\n## 证据\n\n### 无单元测试的源文件（20 个）\n\n| 模块 | 文件 |\n|------|------|\n| commands/daemon | start.ts, stop.ts, status.ts |\n| commands/template | validate.ts, show.ts, load.ts, list.ts |\n| commands/agent | start.ts, stop.ts, status.ts, list.ts, create.ts, destroy.ts |\n| repl | repl.ts |\n| output | error-presenter.ts, formatter.ts |\n| client | rpc-client.ts |\n| 其他 | daemon-entry.ts, program.ts, bin/agentcraft.ts |\n\n### 对比其他包\n\n| 包 | 有测试 | 无测试 | 覆盖率 |\n|---|--------|--------|--------|\n| core | 16 | 4 | 80% |\n| shared | 3 | 3 | 50% |\n| api | 3 | 5 | 37.5% |\n| **cli** | **0** | **20** | **0%** |\n\n## 建议\n\n1. 优先为 `rpc-client.ts` 和 `error-presenter.ts` 添加单元测试（核心通信和错误处理逻辑）\n2. 为各 command handler 添加参数解析和逻辑分支的单元测试\n3. 考虑将 command 的业务逻辑从 CLI 框架代码中分离，便于单独测试\n4. 建议在 Roadmap 风险表中增加「CLI 包零测试覆盖」风险项",
+  "body": "## 审查发现\n\n`packages/cli` 包含 20 个源文件（commands、repl、output、client 等），但除了 1 个 e2e 测试文件（`e2e-cli.test.ts`，12 个测试），没有任何单元测试。\n\n## 证据\n\n### 无单元测试的源文件（20 个）\n\n| 模块 | 文件 |\n|------|------|\n| commands/daemon | start.ts, stop.ts, status.ts |\n| commands/template | validate.ts, show.ts, load.ts, list.ts |\n| commands/agent | start.ts, stop.ts, status.ts, list.ts, create.ts, destroy.ts |\n| repl | repl.ts |\n| output | error-presenter.ts, formatter.ts |\n| client | rpc-client.ts |\n| 其他 | daemon-entry.ts, program.ts, bin/actant.ts |\n\n### 对比其他包\n\n| 包 | 有测试 | 无测试 | 覆盖率 |\n|---|--------|--------|--------|\n| core | 16 | 4 | 80% |\n| shared | 3 | 3 | 50% |\n| api | 3 | 5 | 37.5% |\n| **cli** | **0** | **20** | **0%** |\n\n## 建议\n\n1. 优先为 `rpc-client.ts` 和 `error-presenter.ts` 添加单元测试（核心通信和错误处理逻辑）\n2. 为各 command handler 添加参数解析和逻辑分支的单元测试\n3. 考虑将 command 的业务逻辑从 CLI 框架代码中分离，便于单独测试\n4. 建议在 Roadmap 风险表中增加「CLI 包零测试覆盖」风险项",
   "author": "cursor-agent",
   "assignees": [],
   "relatedFiles": [],
   "relatedIssues": [],
   "taskRef": null,
-  "githubRef": "blackplume233/AgentCraft#5",
+  "githubRef": "blackplume233/Actant#5",
   "closedAs": "completed",
   "comments": [
     {

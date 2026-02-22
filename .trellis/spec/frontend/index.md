@@ -1,12 +1,12 @@
 # Frontend Development Guidelines
 
-> Guidelines for AgentCraft's user-facing interfaces.
+> Guidelines for Actant's user-facing interfaces.
 
 ---
 
 ## Overview
 
-AgentCraft follows a **CLI-First** strategy. The primary interface is an interactive command-line environment (similar to Python REPL). A web-based management UI is planned for future phases.
+Actant follows a **CLI-First** strategy. The primary interface is an interactive command-line environment (similar to Python REPL). A web-based management UI is planned for future phases.
 
 ### Interface Layers
 
