@@ -2,6 +2,7 @@ import { Duplex } from "node:stream";
 import type { Socket } from "node:net";
 import {
   AgentSideConnection,
+  TerminalHandle,
   ndJsonStream,
   type Agent,
   type InitializeResponse,
@@ -42,6 +43,16 @@ export class AcpGateway {
   private readonly downstream: AcpConnection;
   private readonly callbackRouter: ClientCallbackRouter;
   private ideCapabilities: ClientCapabilities | null = null;
+  /**
+   * WORKAROUND for SDK API limitation (see #95):
+   * AgentSideConnection exposes flat methods for fs (readTextFile, writeTextFile)
+   * but wraps terminal ops behind TerminalHandle. Ideally the Gateway should be
+   * stateless — the IDE (Client) manages its own terminal state keyed by terminalId.
+   * We maintain this map only because the SDK doesn't expose flat terminalOutput(),
+   * waitForTerminalExit(), killTerminal(), releaseTerminal() on AgentSideConnection.
+   * Remove this once the SDK adds flat terminal methods.
+   */
+  private terminalHandles = new Map<string, TerminalHandle>();
 
   constructor(options: GatewayOptions) {
     this.downstream = options.downstream;
@@ -74,6 +85,10 @@ export class AcpGateway {
 
     this.upstream.signal.addEventListener("abort", () => {
       logger.info("Upstream IDE disconnected from Gateway");
+      for (const handle of this.terminalHandles.values()) {
+        handle.release().catch(() => {});
+      }
+      this.terminalHandles.clear();
       this.callbackRouter.detachUpstream();
       this.ideCapabilities = null;
     });
@@ -85,6 +100,10 @@ export class AcpGateway {
    * Disconnect the upstream IDE.
    */
   disconnectUpstream(): void {
+    for (const handle of this.terminalHandles.values()) {
+      handle.release().catch(() => {});
+    }
+    this.terminalHandles.clear();
     this.callbackRouter.detachUpstream();
     this.upstream = null;
     this.ideCapabilities = null;
@@ -102,49 +121,37 @@ export class AcpGateway {
       sessionUpdate: (p) => conn.sessionUpdate(p),
       readTextFile: (p) => conn.readTextFile(p),
       writeTextFile: (p) => conn.writeTextFile(p),
+      // Terminal forwarding via TerminalHandle map.
+      // SDK limitation: AgentSideConnection doesn't expose flat terminalOutput() etc.
+      // so we store handles from createTerminal and delegate through them.
+      // The IDE (Client) owns the real terminal state; this map is purely an SDK
+      // adapter and should be removed once the SDK exposes flat terminal methods.
       createTerminal: async (p) => {
         const handle = await conn.createTerminal(p);
+        this.terminalHandles.set(handle.id, handle);
         return { terminalId: handle.id };
       },
-      terminalOutput: async (_p) => {
-        // SDK's TerminalHandle wraps this, but we need raw access.
-        // The AgentSideConnection.createTerminal returns a TerminalHandle on the agent side.
-        // For forwarding, we relay the raw request to IDE and get raw response.
-        // Since we're using AgentSideConnection methods which are meant for Agent→Client,
-        // the SDK handles the JSON-RPC routing automatically.
-        // However, terminalOutput/waitForExit/kill/release are separate methods
-        // on the Client interface, not on AgentSideConnection directly.
-        // We need to use the underlying extension mechanism or handle differently.
-        //
-        // Actually, looking at the SDK: AgentSideConnection.createTerminal returns a
-        // TerminalHandle whose methods (currentOutput, waitForExit, kill, release) internally
-        // call the respective terminal/* methods on the Client.
-        // So for the Gateway, we can't directly call terminalOutput on the connection.
-        // Instead, terminal callbacks are handled at the Client level automatically.
-        //
-        // This means: when the downstream Agent creates a terminal, if we're forwarding
-        // createTerminal to the IDE, the SDK on the Agent side will call terminal/output etc
-        // on the Client (us). We need to forward those to the IDE.
-        //
-        // The callback router already handles this at the Client level.
-        // This upstream handler is called BY the router when it decides to forward.
-        // For terminal/* callbacks from the Agent, they go through the Client interface
-        // which is handled by the router.
-        //
-        // So this method on UpstreamHandler is for the router to call when forwarding.
-        // We need a way to forward terminal/output to the IDE.
-        // Since AgentSideConnection doesn't expose terminalOutput directly,
-        // we use extMethod as a workaround, or we need to send the raw JSON-RPC.
-        throw new Error("Terminal output forwarding not yet supported via UpstreamHandler");
+      terminalOutput: async (p) => {
+        const handle = this.terminalHandles.get(p.terminalId);
+        if (!handle) throw new Error(`Terminal "${p.terminalId}" not found in Gateway handle map`);
+        return handle.currentOutput();
       },
-      waitForTerminalExit: async () => {
-        throw new Error("Terminal waitForExit forwarding not yet supported");
+      waitForTerminalExit: async (p) => {
+        const handle = this.terminalHandles.get(p.terminalId);
+        if (!handle) throw new Error(`Terminal "${p.terminalId}" not found in Gateway handle map`);
+        return handle.waitForExit();
       },
-      killTerminal: async () => {
-        throw new Error("Terminal kill forwarding not yet supported");
+      killTerminal: async (p) => {
+        const handle = this.terminalHandles.get(p.terminalId);
+        if (!handle) throw new Error(`Terminal "${p.terminalId}" not found in Gateway handle map`);
+        return handle.kill();
       },
-      releaseTerminal: async () => {
-        throw new Error("Terminal release forwarding not yet supported");
+      releaseTerminal: async (p) => {
+        const handle = this.terminalHandles.get(p.terminalId);
+        if (!handle) return {};
+        const result = await handle.release();
+        this.terminalHandles.delete(p.terminalId);
+        return result ?? {};
       },
     };
 

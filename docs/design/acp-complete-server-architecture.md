@@ -406,15 +406,16 @@ spawn("claude-agent-acp", [], { cwd: workspaceDir, stdio: ["pipe","pipe","pipe"]
 - [x] `ClientCallbackRouter`：根据 IDE 能力路由回调（转发 vs 伪装）
 - [x] 支持租约状态切换（Mode A ↔ Mode B）
 - [x] `AcpConnectionManager` 更新：支持 Gateway 预创建和 lease socket 接入
-- [ ] **已知限制**：`terminal/output`、`terminal/wait_for_exit`、`terminal/kill`、`terminal/release` 4 个回调的 IDE 转发为 stub（#43）。SDK 的 `AgentSideConnection` 不直接暴露这些方法，需通过底层 JSON-RPC 或 extMethod 扩展。当前 fallback 到本地 `LocalTerminalManager` 处理，功能可用但 IDE 终端面板无法集成。
+- [x] **临时方案**（#95）：`terminal/output`、`terminal/wait_for_exit`、`terminal/kill`、`terminal/release` 4 个回调通过 `TerminalHandle` map 适配转发。**根因**：SDK `AgentSideConnection` 对 fs 暴露扁平方法（`readTextFile`/`writeTextFile`），但 terminal 操作封装在 `TerminalHandle` 对象中，不提供扁平方法。Gateway 理应无状态转发（IDE 自管 terminal 状态），handle map 是 SDK API 不对称的权宜之计。长期跟踪见 #116。
 
-### Phase 3: Session Lease Proxy 重写 -- DONE
+### Phase 3: Session Lease Proxy 重写 -- DONE (Daemon handler 缺失)
 
 **文件：** `packages/cli/src/commands/proxy.ts`
 
 - [x] Lease 模式 Proxy 改为 ACP 管道（stdio ↔ socket via gateway.lease RPC）
 - [x] 保留 Legacy RPC 翻译层作为降级回退
 - [x] 新增 `gateway.lease` RPC 类型定义（`rpc.types.ts`）
+- [ ] **阻塞**：`gateway.lease` RPC 的 Daemon 端 handler 未实现（#117）。Proxy 永远 fallback 到 Legacy RPC 翻译。类型定义和客户端调用就绪，需在 `packages/api/src/handlers/` 新增 `gateway-handlers.ts`。
 
 ### Phase 4: Bug 修复 -- DONE
 

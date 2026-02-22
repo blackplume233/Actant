@@ -12,6 +12,8 @@ author: qa-agent
 assignees: []
 relatedIssues:
   - 18
+  - 116
+  - 117
 relatedFiles:
   - packages/acp/src/gateway.ts
   - packages/acp/src/callback-router.ts
@@ -64,19 +66,33 @@ closedAt: null
 
 ## 根因分析
 
-gateway.ts 注释说明了原因：`AgentSideConnection` 不直接暴露 `terminalOutput`、`waitForTerminalExit`、`killTerminal`、`releaseTerminal` 方法。SDK 的设计是通过 `createTerminal` 返回 `TerminalHandle`，后续操作走 TerminalHandle 内部的 JSON-RPC。
+**核心问题：SDK API 不对称。**
 
-要实现转发，需要：
-1. 扩展 SDK 的底层 JSON-RPC 接口，或
-2. 使用 `extMethod` 机制，或
-3. 在 Gateway 层维护 terminalId 映射，将 downstream 的 terminal 回调重映射到 upstream
+`@agentclientprotocol/sdk` v0.14.1 的 `AgentSideConnection` 对 fs 和 terminal 的 API 设计不对称：
+- fs 操作暴露扁平方法（`readTextFile`/`writeTextFile`）→ Gateway 可一行代码无状态转发
+- terminal 操作封装在 `TerminalHandle` 对象中 → 后续 4 个方法没有扁平接口
 
-## 文档一致性问题
+**架构上的正确模型**：Gateway 伪装 Server，IDE (Client) 自管 terminal 状态（terminalId → 进程映射）。Gateway 应该是无状态转发层，但 SDK 不暴露扁平 terminal 方法，迫使 Gateway 维护 handle map。
 
-设计文档 §6 Phase 2 标记为 `-- DONE`，但 4 个 terminal 方法仍为 stub。建议在文档中注明此限制。
+## 临时方案（已实现）
+
+采用 `Map<string, TerminalHandle>` 适配：
+- `createTerminal` 时保存 handle 到 map
+- 后续 4 个方法通过 handle 委托（`handle.currentOutput()` 等）
+- IDE 断连时释放所有 handles
+
+代码注释明确标注为 SDK 限制导致的权宜之计。
+
+## 长期方案
+
+跟踪 #116 — 等待 SDK 在 `AgentSideConnection` 上暴露扁平 terminal 方法后移除 handle map。
+
+## 相关阻塞
+
+此修复仅解决 Gateway 层的转发能力。Session Lease Gateway 模式整体可用还依赖 #117（`gateway.lease` RPC handler 缺失）。
 
 ## 影响范围
 
-- Session Lease 模式下，IDE 的 terminal 面板无法展示 Agent 创建的终端
+- Session Lease 模式下，IDE 的 terminal 面板无法展示 Agent 创建的终端 → **临时修复后理论可用**（仍依赖 #117）
 - Direct Bridge 模式不受影响（Agent 直连 IDE，terminal 回调直达 IDE）
 - Self-managed 模式不受影响（无 IDE 参与）
