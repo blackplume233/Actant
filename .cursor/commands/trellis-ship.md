@@ -1,6 +1,6 @@
-# Ship - 审查、提交、推送一站式流程
+# Ship - 审查、提交、推送、同步 Issue 一站式流程
 
-编排 `/trellis-finish-work` 的审查清单，并追加 Commit 和 Push 操作，一次完成交付。
+编排 `/trellis-finish-work` 的审查清单，并追加 Commit、Push、Issue 同步操作，一次完成交付。
 
 **时机**: 代码编写完成后，准备交付时执行。
 
@@ -74,7 +74,61 @@ git status
 git push origin <当前分支>
 ```
 
-推送成功后输出最终摘要：
+---
+
+### Phase 4: Issue Sync（同步相关 Issue）
+
+推送成功后，检查本次变更是否关联 Issue，并自动同步状态。
+
+#### 4.1 识别关联 Issue
+
+从以下来源识别本次变更关联的 Issue：
+
+1. **Commit message** — 解析 `#N` 引用（如 `fix(acp): ... (#95)`）
+2. **变更文件** — 检查 `.trellis/issues/` 目录下是否有新建或修改的 issue 文件
+3. **代码注释** — 检查变更代码中引用的 `#N`（如 `// see #116`）
+
+#### 4.2 更新 Issue 状态
+
+对识别到的每个 Issue，根据变更性质执行对应操作：
+
+| 变更性质 | Issue 操作 |
+|----------|-----------|
+| commit message 含 `fixes #N` / `closes #N` | `gh issue close N --comment "Closed by <commit-hash>"` |
+| commit message 含 `#N`（非 close 关键字） | `gh issue comment N --body "Progress: <commit-hash> — <简述变更>"` |
+| 新建了 `.trellis/issues/NNNN-*.md` | 确认 GitHub Issue 已创建（如未创建则提示） |
+| 修改了 `.trellis/issues/NNNN-*.md` | 检查本地与 GitHub 是否同步（如有 dirty 则提示） |
+
+#### 4.3 检查 Dirty Issue
+
+```bash
+./.trellis/scripts/issue.sh check-dirty
+```
+
+如有未同步的 Issue，输出提醒：
+
+```
+⚠️ 以下 Issue 有本地修改未同步到 GitHub:
+  - #95: ACP Gateway Terminal ...
+  - #116: Long-term SDK ...
+运行 `./.trellis/scripts/issue.sh sync --all` 同步。
+```
+
+#### 4.4 输出 Issue 同步报告
+
+```
+## Issue 同步报告
+
+| Issue | 操作 | 状态 |
+|-------|------|------|
+| #95 | 添加评论 (progress) | ✅ 已同步 |
+| #116 | 确认 GitHub 已创建 | ✅ |
+| #117 | 确认 GitHub 已创建 | ✅ |
+```
+
+---
+
+推送和 Issue 同步完成后输出最终摘要：
 
 ```
 ## 完成摘要
@@ -82,6 +136,7 @@ git push origin <当前分支>
 - 提交: <hash> <message>
 - 分支: <branch> → origin/<branch>
 - 变更: N files changed, +insertions, -deletions
+- Issue: N 个 Issue 已同步
 ```
 
 ---
@@ -102,15 +157,15 @@ git push origin <当前分支>
 开发流程:
   编写代码 → 测试 → /trellis-ship → /trellis-record-session
                       |
-          ┌───────────┼───────────┐
-          ↓           ↓           ↓
-   /trellis-finish-work  Commit    Push
-    （审查清单）      （提交）   （推送）
+          ┌───────────┼───────────┬────────────┐
+          ↓           ↓           ↓            ↓
+   /trellis-finish-work  Commit    Push     Issue Sync
+    （审查清单）      （提交）   （推送）  （同步 Issue）
 ```
 
 | 命令 | 职责 |
 |------|------|
 | `/trellis-finish-work` | 审查清单（被本命令调用） |
-| `/trellis-ship` | 审查 + 提交 + 推送（本命令） |
+| `/trellis-ship` | 审查 + 提交 + 推送 + Issue 同步（本命令） |
 | `/trellis-record-session` | 记录会话和进度 |
 | `/trellis-update-spec` | 更新规范文档 |
