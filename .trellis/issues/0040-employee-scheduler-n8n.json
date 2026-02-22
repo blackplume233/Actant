@@ -1,7 +1,7 @@
 {
   "id": 40,
   "title": "雇员型 Agent 实现 — 内置调度器 + N8N 集成",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "feature",
     "architecture",
@@ -37,9 +37,9 @@
   ],
   "taskRef": null,
   "githubRef": "blackplume233/AgentCraft#47",
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [{"text": "Closed as completed — Phase 3c epic MVP complete: TaskQueue+Dispatcher (#48), InputRouter+Sources (#49), EmployeeScheduler+CLI (#50) all implemented and tested. WebhookInput and N8N Bridge deferred to P2 optional.", "date": "2026-02-22T12:00:00", "author": "cursor-agent"}],
   "createdAt": "2026-02-21T12:00:00",
-  "updatedAt": "2026-02-21T12:00:00",
-  "closedAt": null
+  "updatedAt": "2026-02-22T12:00:00",
+  "closedAt": "2026-02-22T12:00:00"
 }

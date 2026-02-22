@@ -37,8 +37,8 @@
   "taskRef": null,
   "githubRef": "blackplume233/AgentCraft#41",
   "closedAs": null,
-  "comments": [],
+  "comments": [{"text": "Phase 3c MVP completed: TaskQueue + TaskDispatcher (#48), InputRouter + HeartbeatInput/CronInput/HookInput (#49), EmployeeScheduler + CLI integration (#50). 51/51 scheduler tests passing. Remaining P2 optional items: WebhookInput + HMAC, N8N Bridge, agent watch command. Keeping open as reference design doc for future enhancements.", "date": "2026-02-22T12:00:00", "author": "cursor-agent"}],
   "createdAt": "2026-02-21T06:00:00",
-  "updatedAt": "2026-02-21T06:00:00",
+  "updatedAt": "2026-02-22T12:00:00",
   "closedAt": null
 }

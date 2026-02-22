@@ -70,8 +70,8 @@
 
 - [x] lint + typecheck 通过
 - [x] test:changed 通过（457/458, 1 个无关 E2E flaky）
-- [ ] spec/api-contracts.md 更新
-- [ ] spec/config-spec.md 更新
+- [x] spec/api-contracts.md 更新（§3.5 组件 CRUD、§4.4 Domain CLI 命令）
+- [x] spec/config-spec.md 更新（PluginDefinition、DomainContextConfig.plugins）
 
 ---
 
@@ -151,7 +151,7 @@
 
 - [x] lint + typecheck 通过
 - [x] test:changed 通过（51/51 scheduler tests）
-- [ ] spec/api-contracts.md 更新
+- [x] spec/api-contracts.md 更新（§3.8 调度器管理、§4.5 调度器 CLI）
 
 ---
 

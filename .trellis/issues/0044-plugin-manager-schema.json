@@ -1,7 +1,7 @@
 {
   "id": 44,
   "title": "PluginManager + PluginDefinition Schema + 示例配置",
-  "status": "open",
+  "status": "closed",
   "labels": ["feature", "domain", "priority:P0", "phase3a"],
   "milestone": "mid-term",
   "body": "## 目标\n\n创建 PluginManager（extends BaseComponentManager），定义 PluginDefinition Zod schema，提供示例 Plugin 配置。\n\n## Plugin 概念\n\nPlugin 指 Agent 侧能力扩展（Cloud Code Plugin / Cursor Extension / Custom tool），不同于 AgentCraft 系统级插件（#13）。\n\n## 交付物\n\n1. **PluginDefinition schema** — `packages/shared/src/types/domain-component.types.ts` 追加\n2. **PluginManager** — `packages/core/src/domain/plugin/plugin-manager.ts`\n3. **示例配置** — `configs/plugins/` 目录：\n   - `memory-plugin.json` — Claude Code memory plugin\n   - `web-search-plugin.json` — Web search plugin\n   - `github-plugin.json` — GitHub integration\n4. **AppContext 注入** — pluginManager 创建 + configs/plugins/ 自动加载\n5. **模板扩展** — domainContext 新增 `plugins: string[]` 字段\n\n## 验收标准\n\n- [ ] PluginDefinition Zod schema 定义完整（name/type/install/permissions/env/tags）\n- [ ] PluginManager extends BaseComponentManager，validate 方法实现\n- [ ] configs/plugins/ 至少 3 个示例\n- [ ] AppContext 启动时加载 plugins\n- [ ] template schema 支持 plugins 字段",
@@ -16,9 +16,9 @@
   "relatedIssues": [38, 43],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [{"text": "Closed as completed — Phase 3a implementation complete, all tests passing", "date": "2026-02-22T12:00:00", "author": "cursor-agent"}],
   "createdAt": "2026-02-21T21:00:00",
-  "updatedAt": "2026-02-21T21:00:00",
-  "closedAt": null
+  "updatedAt": "2026-02-22T12:00:00",
+  "closedAt": "2026-02-22T12:00:00"
 }

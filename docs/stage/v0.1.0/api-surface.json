@@ -1,0 +1,2518 @@
+{
+  "version": "v0.1.0",
+  "date": "2026-02-22T00:22:08.415Z",
+  "rpc": {
+    "protocol": "JSON-RPC 2.0",
+    "methodCount": 73,
+    "methods": [
+      {
+        "method": "template.list",
+        "paramsType": "TemplateListParams",
+        "resultType": "TemplateListResult"
+      },
+      {
+        "method": "template.get",
+        "paramsType": "TemplateGetParams",
+        "resultType": "TemplateGetResult"
+      },
+      {
+        "method": "template.load",
+        "paramsType": "TemplateLoadParams",
+        "resultType": "TemplateLoadResult"
+      },
+      {
+        "method": "template.unload",
+        "paramsType": "TemplateUnloadParams",
+        "resultType": "TemplateUnloadResult"
+      },
+      {
+        "method": "template.validate",
+        "paramsType": "TemplateValidateParams",
+        "resultType": "TemplateValidateResult"
+      },
+      {
+        "method": "agent.create",
+        "paramsType": "AgentCreateParams",
+        "resultType": "AgentCreateResult"
+      },
+      {
+        "method": "agent.start",
+        "paramsType": "AgentStartParams",
+        "resultType": "AgentStartResult"
+      },
+      {
+        "method": "agent.stop",
+        "paramsType": "AgentStopParams",
+        "resultType": "AgentStopResult"
+      },
+      {
+        "method": "agent.destroy",
+        "paramsType": "AgentDestroyParams",
+        "resultType": "AgentDestroyResult"
+      },
+      {
+        "method": "agent.status",
+        "paramsType": "AgentStatusParams",
+        "resultType": "AgentStatusResult"
+      },
+      {
+        "method": "agent.list",
+        "paramsType": "AgentListParams",
+        "resultType": "AgentListResult"
+      },
+      {
+        "method": "agent.resolve",
+        "paramsType": "AgentResolveParams",
+        "resultType": "AgentResolveResult"
+      },
+      {
+        "method": "agent.attach",
+        "paramsType": "AgentAttachParams",
+        "resultType": "AgentAttachResult"
+      },
+      {
+        "method": "agent.detach",
+        "paramsType": "AgentDetachParams",
+        "resultType": "AgentDetachResult"
+      },
+      {
+        "method": "agent.run",
+        "paramsType": "AgentRunParams",
+        "resultType": "AgentRunResult"
+      },
+      {
+        "method": "agent.prompt",
+        "paramsType": "AgentPromptParams",
+        "resultType": "AgentPromptResult"
+      },
+      {
+        "method": "agent.dispatch",
+        "paramsType": "AgentDispatchParams",
+        "resultType": "AgentDispatchResult"
+      },
+      {
+        "method": "agent.tasks",
+        "paramsType": "AgentTasksParams",
+        "resultType": "AgentTasksResult"
+      },
+      {
+        "method": "agent.logs",
+        "paramsType": "AgentLogsParams",
+        "resultType": "AgentLogsResult"
+      },
+      {
+        "method": "schedule.list",
+        "paramsType": "ScheduleListParams",
+        "resultType": "ScheduleListResult"
+      },
+      {
+        "method": "session.create",
+        "paramsType": "SessionCreateParams",
+        "resultType": "SessionCreateResult"
+      },
+      {
+        "method": "session.prompt",
+        "paramsType": "SessionPromptParams",
+        "resultType": "SessionPromptResult"
+      },
+      {
+        "method": "session.cancel",
+        "paramsType": "SessionCancelParams",
+        "resultType": "SessionCancelResult"
+      },
+      {
+        "method": "session.close",
+        "paramsType": "SessionCloseParams",
+        "resultType": "SessionCloseResult"
+      },
+      {
+        "method": "session.list",
+        "paramsType": "SessionListParams",
+        "resultType": "SessionListResult"
+      },
+      {
+        "method": "proxy.connect",
+        "paramsType": "ProxyConnectParams",
+        "resultType": "ProxyConnectResult"
+      },
+      {
+        "method": "proxy.disconnect",
+        "paramsType": "ProxyDisconnectParams",
+        "resultType": "ProxyDisconnectResult"
+      },
+      {
+        "method": "proxy.forward",
+        "paramsType": "ProxyForwardParams",
+        "resultType": "ProxyForwardResult"
+      },
+      {
+        "method": "skill.list",
+        "paramsType": "SkillListParams",
+        "resultType": "SkillListResult"
+      },
+      {
+        "method": "skill.get",
+        "paramsType": "SkillGetParams",
+        "resultType": "SkillGetResult"
+      },
+      {
+        "method": "skill.add",
+        "paramsType": "ComponentAddParams",
+        "resultType": "ComponentAddResult"
+      },
+      {
+        "method": "skill.update",
+        "paramsType": "ComponentUpdateParams",
+        "resultType": "ComponentUpdateResult"
+      },
+      {
+        "method": "skill.remove",
+        "paramsType": "ComponentRemoveParams",
+        "resultType": "ComponentRemoveResult"
+      },
+      {
+        "method": "skill.import",
+        "paramsType": "ComponentImportParams",
+        "resultType": "ComponentImportResult"
+      },
+      {
+        "method": "skill.export",
+        "paramsType": "ComponentExportParams",
+        "resultType": "ComponentExportResult"
+      },
+      {
+        "method": "prompt.list",
+        "paramsType": "PromptListParams",
+        "resultType": "PromptListResult"
+      },
+      {
+        "method": "prompt.get",
+        "paramsType": "PromptGetParams",
+        "resultType": "PromptGetResult"
+      },
+      {
+        "method": "prompt.add",
+        "paramsType": "ComponentAddParams",
+        "resultType": "ComponentAddResult"
+      },
+      {
+        "method": "prompt.update",
+        "paramsType": "ComponentUpdateParams",
+        "resultType": "ComponentUpdateResult"
+      },
+      {
+        "method": "prompt.remove",
+        "paramsType": "ComponentRemoveParams",
+        "resultType": "ComponentRemoveResult"
+      },
+      {
+        "method": "prompt.import",
+        "paramsType": "ComponentImportParams",
+        "resultType": "ComponentImportResult"
+      },
+      {
+        "method": "prompt.export",
+        "paramsType": "ComponentExportParams",
+        "resultType": "ComponentExportResult"
+      },
+      {
+        "method": "mcp.list",
+        "paramsType": "McpListParams",
+        "resultType": "McpListResult"
+      },
+      {
+        "method": "mcp.get",
+        "paramsType": "McpGetParams",
+        "resultType": "McpGetResult"
+      },
+      {
+        "method": "mcp.add",
+        "paramsType": "ComponentAddParams",
+        "resultType": "ComponentAddResult"
+      },
+      {
+        "method": "mcp.update",
+        "paramsType": "ComponentUpdateParams",
+        "resultType": "ComponentUpdateResult"
+      },
+      {
+        "method": "mcp.remove",
+        "paramsType": "ComponentRemoveParams",
+        "resultType": "ComponentRemoveResult"
+      },
+      {
+        "method": "mcp.import",
+        "paramsType": "ComponentImportParams",
+        "resultType": "ComponentImportResult"
+      },
+      {
+        "method": "mcp.export",
+        "paramsType": "ComponentExportParams",
+        "resultType": "ComponentExportResult"
+      },
+      {
+        "method": "workflow.list",
+        "paramsType": "WorkflowListParams",
+        "resultType": "WorkflowListResult"
+      },
+      {
+        "method": "workflow.get",
+        "paramsType": "WorkflowGetParams",
+        "resultType": "WorkflowGetResult"
+      },
+      {
+        "method": "workflow.add",
+        "paramsType": "ComponentAddParams",
+        "resultType": "ComponentAddResult"
+      },
+      {
+        "method": "workflow.update",
+        "paramsType": "ComponentUpdateParams",
+        "resultType": "ComponentUpdateResult"
+      },
+      {
+        "method": "workflow.remove",
+        "paramsType": "ComponentRemoveParams",
+        "resultType": "ComponentRemoveResult"
+      },
+      {
+        "method": "workflow.import",
+        "paramsType": "ComponentImportParams",
+        "resultType": "ComponentImportResult"
+      },
+      {
+        "method": "workflow.export",
+        "paramsType": "ComponentExportParams",
+        "resultType": "ComponentExportResult"
+      },
+      {
+        "method": "plugin.list",
+        "paramsType": "PluginListParams",
+        "resultType": "PluginListResult"
+      },
+      {
+        "method": "plugin.get",
+        "paramsType": "PluginGetParams",
+        "resultType": "PluginGetResult"
+      },
+      {
+        "method": "plugin.add",
+        "paramsType": "ComponentAddParams",
+        "resultType": "ComponentAddResult"
+      },
+      {
+        "method": "plugin.update",
+        "paramsType": "ComponentUpdateParams",
+        "resultType": "ComponentUpdateResult"
+      },
+      {
+        "method": "plugin.remove",
+        "paramsType": "ComponentRemoveParams",
+        "resultType": "ComponentRemoveResult"
+      },
+      {
+        "method": "plugin.import",
+        "paramsType": "ComponentImportParams",
+        "resultType": "ComponentImportResult"
+      },
+      {
+        "method": "plugin.export",
+        "paramsType": "ComponentExportParams",
+        "resultType": "ComponentExportResult"
+      },
+      {
+        "method": "source.list",
+        "paramsType": "SourceListParams",
+        "resultType": "SourceListResult"
+      },
+      {
+        "method": "source.add",
+        "paramsType": "SourceAddParams",
+        "resultType": "SourceAddResult"
+      },
+      {
+        "method": "source.remove",
+        "paramsType": "SourceRemoveParams",
+        "resultType": "SourceRemoveResult"
+      },
+      {
+        "method": "source.sync",
+        "paramsType": "SourceSyncParams",
+        "resultType": "SourceSyncResult"
+      },
+      {
+        "method": "preset.list",
+        "paramsType": "PresetListParams",
+        "resultType": "PresetListResult"
+      },
+      {
+        "method": "preset.show",
+        "paramsType": "PresetShowParams",
+        "resultType": "PresetShowResult"
+      },
+      {
+        "method": "preset.apply",
+        "paramsType": "PresetApplyParams",
+        "resultType": "PresetApplyResult"
+      },
+      {
+        "method": "daemon.ping",
+        "paramsType": "DaemonPingParams",
+        "resultType": "DaemonPingResult"
+      },
+      {
+        "method": "daemon.shutdown",
+        "paramsType": "DaemonShutdownParams",
+        "resultType": "DaemonShutdownResult"
+      },
+      {
+        "method": "gateway.lease",
+        "paramsType": "GatewayLeaseParams",
+        "resultType": "GatewayLeaseResult"
+      }
+    ],
+    "errorCodes": [
+      {
+        "name": "PARSE_ERROR",
+        "code": -32700
+      },
+      {
+        "name": "INVALID_REQUEST",
+        "code": -32600
+      },
+      {
+        "name": "METHOD_NOT_FOUND",
+        "code": -32601
+      },
+      {
+        "name": "INVALID_PARAMS",
+        "code": -32602
+      },
+      {
+        "name": "INTERNAL_ERROR",
+        "code": -32603
+      },
+      {
+        "name": "TEMPLATE_NOT_FOUND",
+        "code": -32001
+      },
+      {
+        "name": "CONFIG_VALIDATION",
+        "code": -32002
+      },
+      {
+        "name": "AGENT_NOT_FOUND",
+        "code": -32003
+      },
+      {
+        "name": "AGENT_ALREADY_RUNNING",
+        "code": -32004
+      },
+      {
+        "name": "WORKSPACE_INIT",
+        "code": -32005
+      },
+      {
+        "name": "COMPONENT_REFERENCE",
+        "code": -32006
+      },
+      {
+        "name": "INSTANCE_CORRUPTED",
+        "code": -32007
+      },
+      {
+        "name": "AGENT_LAUNCH",
+        "code": -32008
+      },
+      {
+        "name": "AGENT_ALREADY_ATTACHED",
+        "code": -32009
+      },
+      {
+        "name": "AGENT_NOT_ATTACHED",
+        "code": -32010
+      },
+      {
+        "name": "GENERIC_BUSINESS",
+        "code": -32000
+      }
+    ]
+  },
+  "cli": {
+    "binary": "agentcraft",
+    "groupCount": 11,
+    "standaloneCount": 1,
+    "totalSubcommands": 56,
+    "commands": [
+      {
+        "name": "agent",
+        "alias": null,
+        "subcommands": [
+          {
+            "name": "attach",
+            "alias": null,
+            "description": "Attach an externally-spawned process to an agent",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent instance name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "--metadata <json>",
+                "description": "Additional metadata as JSON object"
+              },
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              },
+              {
+                "flags": "--pid <pid>",
+                "description": "Process ID of the externally-spawned agent",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "chat",
+            "alias": null,
+            "description": "Start an interactive chat session with an agent",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-t, --template <template>",
+                "description": "Template name (auto-creates instance if not found)"
+              }
+            ]
+          },
+          {
+            "name": "create",
+            "alias": null,
+            "description": "Create a new agent from a template",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent instance name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "--launch-mode <mode>",
+                "description": "Launch mode: direct, acp-background, acp-service, one-shot"
+              },
+              {
+                "flags": "--work-dir <path>",
+                "description": "Custom workspace directory (absolute or relative path)"
+              },
+              {
+                "flags": "--overwrite",
+                "description": "If work-dir exists, remove it and recreate"
+              },
+              {
+                "flags": "--append",
+                "description": "If work-dir exists, add agent files into it"
+              },
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              },
+              {
+                "flags": "-t, --template <template>",
+                "description": "Template name to use",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "destroy",
+            "alias": "rm",
+            "description": "Destroy an agent (removes workspace directory)",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "--force",
+                "description": "Skip confirmation"
+              }
+            ]
+          },
+          {
+            "name": "detach",
+            "alias": null,
+            "description": "Detach an externally-managed process from an agent",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent instance name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "--cleanup",
+                "description": "Clean up ephemeral workspace after detach"
+              }
+            ]
+          },
+          {
+            "name": "dispatch",
+            "alias": null,
+            "description": "",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-p, --priority <priority>",
+                "description": "Task priority: low, normal, high, critical"
+              },
+              {
+                "flags": "-m, --message <message>",
+                "description": "The prompt/message to dispatch",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "list",
+            "alias": "ls",
+            "description": "List all agents",
+            "arguments": [],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "logs",
+            "alias": null,
+            "description": "",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "--limit <n>",
+                "description": "Maximum number of records to show"
+              },
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json"
+              }
+            ]
+          },
+          {
+            "name": "prompt",
+            "alias": null,
+            "description": "",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent name (must be started with `agent start`)"
+              }
+            ],
+            "options": [
+              {
+                "flags": "--session-id <id>",
+                "description": "Specific ACP session ID (uses primary session if omitted)"
+              },
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: text, json"
+              },
+              {
+                "flags": "-m, --message <message>",
+                "description": "The message to send",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "resolve",
+            "alias": null,
+            "description": "Resolve spawn info for an agent (external spawn support)",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent instance name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-t, --template <template>",
+                "description": "Template name (auto-creates instance if not found)"
+              },
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "run",
+            "alias": null,
+            "description": "Send a prompt to an agent and get the response",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "--model <model>",
+                "description": "Model to use (e.g. sonnet, opus)"
+              },
+              {
+                "flags": "--max-turns <turns>",
+                "description": "Maximum agentic turns"
+              },
+              {
+                "flags": "--timeout <ms>",
+                "description": "Timeout in milliseconds"
+              },
+              {
+                "flags": "--session-id <id>",
+                "description": "Resume a specific session"
+              },
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: text, json"
+              },
+              {
+                "flags": "--prompt <prompt>",
+                "description": "The prompt to send",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "start",
+            "alias": null,
+            "description": "Start an agent",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent name"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "status",
+            "alias": null,
+            "description": "Show agent status (all agents if no name given)",
+            "arguments": [
+              {
+                "syntax": "[name]",
+                "description": "Agent name (optional)"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "stop",
+            "alias": null,
+            "description": "Stop a running agent",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent name"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "tasks",
+            "alias": null,
+            "description": "",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "daemon",
+        "alias": null,
+        "subcommands": [
+          {
+            "name": "start",
+            "alias": null,
+            "description": "Start the AgentCraft daemon",
+            "arguments": [],
+            "options": [
+              {
+                "flags": "--foreground",
+                "description": "Run in foreground (don"
+              }
+            ]
+          },
+          {
+            "name": "status",
+            "alias": null,
+            "description": "Check if the daemon is running",
+            "arguments": [],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "stop",
+            "alias": null,
+            "description": "Stop the AgentCraft daemon",
+            "arguments": [],
+            "options": []
+          }
+        ]
+      },
+      {
+        "name": "mcp",
+        "alias": null,
+        "subcommands": [
+          {
+            "name": "add",
+            "alias": null,
+            "description": "Add an MCP server config from a JSON file",
+            "arguments": [
+              {
+                "syntax": "<file>",
+                "description": "Path to MCP server definition JSON file"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "export",
+            "alias": null,
+            "description": "Export an MCP server config to a JSON file",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "MCP server name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-o, --out <file>",
+                "description": "Output file path"
+              }
+            ]
+          },
+          {
+            "name": "list",
+            "alias": "ls",
+            "description": "List all loaded MCP server configs",
+            "arguments": [],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "remove",
+            "alias": "rm",
+            "description": "Remove a loaded MCP server config",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "MCP server name"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "show",
+            "alias": null,
+            "description": "Show MCP server config details",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "MCP server name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "plugin",
+        "alias": null,
+        "subcommands": [
+          {
+            "name": "add",
+            "alias": null,
+            "description": "Add a plugin from a JSON file",
+            "arguments": [
+              {
+                "syntax": "<file>",
+                "description": "Path to plugin definition JSON file"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "export",
+            "alias": null,
+            "description": "Export a plugin to a JSON file",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Plugin name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-o, --out <file>",
+                "description": "Output file path"
+              }
+            ]
+          },
+          {
+            "name": "list",
+            "alias": "ls",
+            "description": "List all plugins",
+            "arguments": [],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "remove",
+            "alias": "rm",
+            "description": "Remove a loaded plugin",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Plugin name"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "show",
+            "alias": null,
+            "description": "Show plugin details",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Plugin name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "preset",
+        "alias": null,
+        "subcommands": [
+          {
+            "name": "apply",
+            "alias": null,
+            "description": "Apply a preset to a template (adds all preset components)",
+            "arguments": [
+              {
+                "syntax": "<qualified-name>",
+                "description": "Preset qualified name (package@preset)"
+              },
+              {
+                "syntax": "<template>",
+                "description": "Template name to apply to"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "list",
+            "alias": "ls",
+            "description": "List available presets from registered sources",
+            "arguments": [
+              {
+                "syntax": "[package]",
+                "description": "Filter by source package name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "show",
+            "alias": null,
+            "description": "Show preset details",
+            "arguments": [
+              {
+                "syntax": "<qualified-name>",
+                "description": "Preset qualified name (package@preset)"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "prompt",
+        "alias": null,
+        "subcommands": [
+          {
+            "name": "add",
+            "alias": null,
+            "description": "Add a prompt from a JSON file",
+            "arguments": [
+              {
+                "syntax": "<file>",
+                "description": "Path to prompt definition JSON file"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "export",
+            "alias": null,
+            "description": "Export a prompt to a JSON file",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Prompt name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-o, --out <file>",
+                "description": "Output file path"
+              }
+            ]
+          },
+          {
+            "name": "list",
+            "alias": "ls",
+            "description": "List all loaded prompts",
+            "arguments": [],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "remove",
+            "alias": "rm",
+            "description": "Remove a loaded prompt",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Prompt name"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "show",
+            "alias": null,
+            "description": "Show prompt details",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Prompt name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "proxy",
+        "alias": null,
+        "subcommands": [],
+        "standalone": true,
+        "description": "Run an ACP proxy for an agent (stdin/stdout ACP protocol)",
+        "arguments": [
+          {
+            "syntax": "<name>",
+            "description": "Agent name to proxy"
+          }
+        ],
+        "options": [
+          {
+            "flags": "--lease",
+            "description": "Use Session Lease mode (requires running agent)"
+          },
+          {
+            "flags": "-t, --template <template>",
+            "description": "Template name (auto-creates instance if not found)"
+          }
+        ]
+      },
+      {
+        "name": "schedule",
+        "alias": null,
+        "subcommands": [
+          {
+            "name": "list",
+            "alias": "ls",
+            "description": "List schedule sources for an agent",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Agent name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "skill",
+        "alias": null,
+        "subcommands": [
+          {
+            "name": "add",
+            "alias": null,
+            "description": "Add a skill from a JSON file",
+            "arguments": [
+              {
+                "syntax": "<file>",
+                "description": "Path to skill definition JSON file"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "export",
+            "alias": null,
+            "description": "Export a skill to a JSON file",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Skill name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-o, --out <file>",
+                "description": "Output file path"
+              }
+            ]
+          },
+          {
+            "name": "list",
+            "alias": "ls",
+            "description": "List all loaded skills",
+            "arguments": [],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "remove",
+            "alias": "rm",
+            "description": "Remove a loaded skill",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Skill name"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "show",
+            "alias": null,
+            "description": "Show skill details",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Skill name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "source",
+        "alias": null,
+        "subcommands": [
+          {
+            "name": "add",
+            "alias": null,
+            "description": "Register a component source",
+            "arguments": [
+              {
+                "syntax": "<url-or-path>",
+                "description": "GitHub URL or local directory path"
+              }
+            ],
+            "options": [
+              {
+                "flags": "--type <type>",
+                "description": "Source type: github, local"
+              },
+              {
+                "flags": "--branch <branch>",
+                "description": "Git branch (for github type)"
+              },
+              {
+                "flags": "--name <name>",
+                "description": "Package name (namespace prefix)",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "list",
+            "alias": "ls",
+            "description": "List registered component sources",
+            "arguments": [],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "remove",
+            "alias": "rm",
+            "description": "Remove a registered source",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Source name"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "sync",
+            "alias": null,
+            "description": "Sync component source(s)",
+            "arguments": [
+              {
+                "syntax": "[name]",
+                "description": "Source name (syncs all if omitted)"
+              }
+            ],
+            "options": []
+          }
+        ]
+      },
+      {
+        "name": "template",
+        "alias": "tpl",
+        "subcommands": [
+          {
+            "name": "list",
+            "alias": "ls",
+            "description": "List all registered templates",
+            "arguments": [],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "load",
+            "alias": null,
+            "description": "Load a template from a JSON file into the registry",
+            "arguments": [
+              {
+                "syntax": "<file>",
+                "description": "Path to template JSON file"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "show",
+            "alias": null,
+            "description": "Show template details",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Template name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "validate",
+            "alias": null,
+            "description": "Validate a template JSON file",
+            "arguments": [
+              {
+                "syntax": "<file>",
+                "description": "Path to template JSON file"
+              }
+            ],
+            "options": []
+          }
+        ]
+      },
+      {
+        "name": "workflow",
+        "alias": null,
+        "subcommands": [
+          {
+            "name": "add",
+            "alias": null,
+            "description": "Add a workflow from a JSON file",
+            "arguments": [
+              {
+                "syntax": "<file>",
+                "description": "Path to workflow definition JSON file"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "export",
+            "alias": null,
+            "description": "Export a workflow to a JSON file",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Workflow name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-o, --out <file>",
+                "description": "Output file path"
+              }
+            ]
+          },
+          {
+            "name": "list",
+            "alias": "ls",
+            "description": "List all loaded workflows",
+            "arguments": [],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          },
+          {
+            "name": "remove",
+            "alias": "rm",
+            "description": "Remove a loaded workflow",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Workflow name"
+              }
+            ],
+            "options": []
+          },
+          {
+            "name": "show",
+            "alias": null,
+            "description": "Show workflow details",
+            "arguments": [
+              {
+                "syntax": "<name>",
+                "description": "Workflow name"
+              }
+            ],
+            "options": [
+              {
+                "flags": "-f, --format <format>",
+                "description": "Output format: table, json, quiet"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "paramTypes": [
+    {
+      "name": "TemplateListParams",
+      "fields": []
+    },
+    {
+      "name": "TemplateGetParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "TemplateLoadParams",
+      "fields": [
+        {
+          "name": "filePath",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "TemplateUnloadParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "TemplateValidateParams",
+      "fields": [
+        {
+          "name": "filePath",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AgentCreateParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "template",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "overrides",
+          "optional": true,
+          "type": "{ launchMode?: LaunchMode"
+        },
+        {
+          "name": "workspacePolicy",
+          "optional": true,
+          "type": "WorkspacePolicy"
+        }
+      ]
+    },
+    {
+      "name": "AgentStartParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AgentStopParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AgentDestroyParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AgentStatusParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AgentListParams",
+      "fields": []
+    },
+    {
+      "name": "AgentResolveParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "template",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "overrides",
+          "optional": true,
+          "type": "{ launchMode?: LaunchMode"
+        },
+        {
+          "name": "workspacePolicy",
+          "optional": true,
+          "type": "WorkspacePolicy"
+        },
+        {
+          "name": "metadata",
+          "optional": true,
+          "type": "Record<string, string>"
+        }
+      ]
+    },
+    {
+      "name": "AgentAttachParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "pid",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "metadata",
+          "optional": true,
+          "type": "Record<string, string>"
+        }
+      ]
+    },
+    {
+      "name": "AgentDetachParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "cleanup",
+          "optional": true,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "AgentRunParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "prompt",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "options",
+          "optional": true,
+          "type": "{ systemPromptFile?: string"
+        },
+        {
+          "name": "appendSystemPrompt",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "sessionId",
+          "optional": true,
+          "type": "string"
+        },
+        {
+          "name": "timeoutMs",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "maxTurns",
+          "optional": true,
+          "type": "number"
+        },
+        {
+          "name": "model",
+          "optional": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AgentDispatchParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "prompt",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "priority",
+          "optional": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AgentTasksParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AgentLogsParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "limit",
+          "optional": true,
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "name": "ScheduleListParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AgentPromptParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "message",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "sessionId",
+          "optional": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "SessionCreateParams",
+      "fields": [
+        {
+          "name": "agentName",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "clientId",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "idleTtlMs",
+          "optional": true,
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "name": "SessionPromptParams",
+      "fields": [
+        {
+          "name": "sessionId",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "text",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "SessionCancelParams",
+      "fields": [
+        {
+          "name": "sessionId",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "SessionCloseParams",
+      "fields": [
+        {
+          "name": "sessionId",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "SessionListParams",
+      "fields": [
+        {
+          "name": "agentName",
+          "optional": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ProxyConnectParams",
+      "fields": [
+        {
+          "name": "agentName",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "envPassthrough",
+          "optional": true,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "ProxyDisconnectParams",
+      "fields": [
+        {
+          "name": "sessionId",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ProxyForwardParams",
+      "fields": [
+        {
+          "name": "sessionId",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "acpMessage",
+          "optional": false,
+          "type": "Record<string, unknown>"
+        }
+      ]
+    },
+    {
+      "name": "SkillListParams",
+      "fields": []
+    },
+    {
+      "name": "SkillGetParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "PromptListParams",
+      "fields": []
+    },
+    {
+      "name": "PromptGetParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "McpListParams",
+      "fields": []
+    },
+    {
+      "name": "McpGetParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "WorkflowListParams",
+      "fields": []
+    },
+    {
+      "name": "WorkflowGetParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "PluginListParams",
+      "fields": []
+    },
+    {
+      "name": "PluginGetParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "DaemonPingParams",
+      "fields": []
+    },
+    {
+      "name": "DaemonShutdownParams",
+      "fields": []
+    },
+    {
+      "name": "GatewayLeaseParams",
+      "fields": [
+        {
+          "name": "agentName",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ComponentAddParams",
+      "fields": [
+        {
+          "name": "component",
+          "optional": false,
+          "type": "Record<string, unknown>"
+        }
+      ]
+    },
+    {
+      "name": "ComponentUpdateParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "patch",
+          "optional": false,
+          "type": "Record<string, unknown>"
+        }
+      ]
+    },
+    {
+      "name": "ComponentRemoveParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ComponentImportParams",
+      "fields": [
+        {
+          "name": "filePath",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ComponentExportParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "filePath",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "SourceListParams",
+      "fields": []
+    },
+    {
+      "name": "SourceAddParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "config",
+          "optional": false,
+          "type": "SourceConfig"
+        }
+      ]
+    },
+    {
+      "name": "SourceRemoveParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "SourceSyncParams",
+      "fields": [
+        {
+          "name": "name",
+          "optional": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "PresetListParams",
+      "fields": [
+        {
+          "name": "packageName",
+          "optional": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "PresetShowParams",
+      "fields": [
+        {
+          "name": "qualifiedName",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "PresetApplyParams",
+      "fields": [
+        {
+          "name": "qualifiedName",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "templateName",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "resultTypes": [
+    {
+      "name": "TemplateListResult",
+      "fields": []
+    },
+    {
+      "name": "TemplateGetResult",
+      "fields": []
+    },
+    {
+      "name": "TemplateLoadResult",
+      "fields": []
+    },
+    {
+      "name": "TemplateUnloadResult",
+      "fields": [
+        {
+          "name": "success",
+          "optional": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "TemplateValidateResult",
+      "fields": [
+        {
+          "name": "valid",
+          "optional": false,
+          "type": "boolean"
+        },
+        {
+          "name": "template",
+          "optional": true,
+          "type": "AgentTemplate"
+        },
+        {
+          "name": "errors",
+          "optional": true,
+          "type": "Array<{ path: string"
+        },
+        {
+          "name": "message",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AgentCreateResult",
+      "fields": []
+    },
+    {
+      "name": "AgentStartResult",
+      "fields": []
+    },
+    {
+      "name": "AgentStopResult",
+      "fields": []
+    },
+    {
+      "name": "AgentDestroyResult",
+      "fields": [
+        {
+          "name": "success",
+          "optional": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "AgentStatusResult",
+      "fields": []
+    },
+    {
+      "name": "AgentListResult",
+      "fields": []
+    },
+    {
+      "name": "AgentResolveResult",
+      "fields": []
+    },
+    {
+      "name": "AgentAttachResult",
+      "fields": []
+    },
+    {
+      "name": "AgentDetachResult",
+      "fields": []
+    },
+    {
+      "name": "AgentRunResult",
+      "fields": [
+        {
+          "name": "text",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "sessionId",
+          "optional": true,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "AgentDispatchResult",
+      "fields": [
+        {
+          "name": "queued",
+          "optional": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "AgentTasksResult",
+      "fields": [
+        {
+          "name": "queued",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "processing",
+          "optional": false,
+          "type": "boolean"
+        },
+        {
+          "name": "tasks",
+          "optional": false,
+          "type": "unknown[]"
+        }
+      ]
+    },
+    {
+      "name": "AgentLogsResult",
+      "fields": []
+    },
+    {
+      "name": "ScheduleListResult",
+      "fields": [
+        {
+          "name": "sources",
+          "optional": false,
+          "type": "Array<{ id: string"
+        },
+        {
+          "name": "type",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "active",
+          "optional": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "AgentPromptResult",
+      "fields": [
+        {
+          "name": "response",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "sessionId",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "SessionLeaseInfo",
+      "fields": [
+        {
+          "name": "sessionId",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "agentName",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "clientId",
+          "optional": false,
+          "type": "string | null"
+        },
+        {
+          "name": "state",
+          "optional": false,
+          "type": "\"active\" | \"idle\" | \"expired\""
+        },
+        {
+          "name": "createdAt",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "lastActivityAt",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "idleTtlMs",
+          "optional": false,
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "name": "SessionCreateResult",
+      "fields": []
+    },
+    {
+      "name": "SessionPromptResult",
+      "fields": [
+        {
+          "name": "stopReason",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "text",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "SessionCancelResult",
+      "fields": [
+        {
+          "name": "ok",
+          "optional": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "SessionCloseResult",
+      "fields": [
+        {
+          "name": "ok",
+          "optional": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "SessionListResult",
+      "fields": []
+    },
+    {
+      "name": "ProxyConnectResult",
+      "fields": []
+    },
+    {
+      "name": "ProxyDisconnectResult",
+      "fields": [
+        {
+          "name": "ok",
+          "optional": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "ProxyForwardResult",
+      "fields": []
+    },
+    {
+      "name": "SkillListResult",
+      "fields": []
+    },
+    {
+      "name": "SkillGetResult",
+      "fields": []
+    },
+    {
+      "name": "PromptListResult",
+      "fields": []
+    },
+    {
+      "name": "PromptGetResult",
+      "fields": []
+    },
+    {
+      "name": "McpListResult",
+      "fields": []
+    },
+    {
+      "name": "McpGetResult",
+      "fields": []
+    },
+    {
+      "name": "WorkflowListResult",
+      "fields": []
+    },
+    {
+      "name": "WorkflowGetResult",
+      "fields": []
+    },
+    {
+      "name": "PluginListResult",
+      "fields": []
+    },
+    {
+      "name": "PluginGetResult",
+      "fields": []
+    },
+    {
+      "name": "DaemonPingResult",
+      "fields": [
+        {
+          "name": "version",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "uptime",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "agents",
+          "optional": false,
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "name": "DaemonShutdownResult",
+      "fields": [
+        {
+          "name": "success",
+          "optional": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "GatewayLeaseResult",
+      "fields": [
+        {
+          "name": "socketPath",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ComponentAddResult",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ComponentUpdateResult",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ComponentRemoveResult",
+      "fields": [
+        {
+          "name": "success",
+          "optional": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "ComponentImportResult",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "ComponentExportResult",
+      "fields": [
+        {
+          "name": "success",
+          "optional": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "SourceListResult",
+      "fields": []
+    },
+    {
+      "name": "SourceAddResult",
+      "fields": [
+        {
+          "name": "name",
+          "optional": false,
+          "type": "string"
+        },
+        {
+          "name": "components",
+          "optional": false,
+          "type": "{ skills: number"
+        },
+        {
+          "name": "prompts",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "mcp",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "workflows",
+          "optional": false,
+          "type": "number"
+        },
+        {
+          "name": "presets",
+          "optional": false,
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "name": "SourceRemoveResult",
+      "fields": [
+        {
+          "name": "success",
+          "optional": false,
+          "type": "boolean"
+        }
+      ]
+    },
+    {
+      "name": "SourceSyncResult",
+      "fields": [
+        {
+          "name": "synced",
+          "optional": false,
+          "type": "string[]"
+        }
+      ]
+    },
+    {
+      "name": "PresetListResult",
+      "fields": []
+    },
+    {
+      "name": "PresetShowResult",
+      "fields": []
+    },
+    {
+      "name": "PresetApplyResult",
+      "fields": []
+    }
+  ]
+}

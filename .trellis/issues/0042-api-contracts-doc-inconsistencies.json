@@ -1,7 +1,7 @@
 {
   "id": 42,
   "title": "api-contracts.md 文档与实现不一致（envCallback / env-passthrough / ResolveResult）",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "enhancement",
     "qa",
@@ -17,10 +17,10 @@
     "packages/api/src/handlers/proxy-handlers.ts",
     "packages/cli/src/commands/proxy.ts"
   ],
-  "comments": [],
+  "comments": [{"text": "Closed as completed — All 5 inconsistencies resolved: (1,2) envCallback and env-passthrough correctly marked as not-yet-implemented, (3) ResolveResult uses instanceName consistently, (4) overrides documented, (5) proxy behavior documented in Section 7 Direct Bridge + Session Lease architecture.", "date": "2026-02-22T12:00:00", "author": "cursor-agent"}],
   "createdAt": "2026-02-21T10:20:00.000Z",
-  "updatedAt": "2026-02-21T10:20:00.000Z",
-  "closedAt": null,
-  "closedAs": null,
+  "updatedAt": "2026-02-22T12:00:00",
+  "closedAt": "2026-02-22T12:00:00",
+  "closedAs": "completed",
   "githubRef": "blackplume233/AgentCraft#49"
 }

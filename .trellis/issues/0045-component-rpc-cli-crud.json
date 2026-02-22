@@ -1,8 +1,14 @@
 {
   "id": 45,
   "title": "组件管理 RPC Handlers + CLI 命令扩展",
-  "status": "open",
-  "labels": ["feature", "cli", "api", "priority:P0", "phase3a"],
+  "status": "closed",
+  "labels": [
+    "feature",
+    "cli",
+    "api",
+    "priority:P0",
+    "phase3a"
+  ],
   "milestone": "mid-term",
   "body": "## 目标\n\n为 Skill/Prompt/Plugin 新增完整 CRUD 的 RPC handlers 和 CLI 命令。\n\n## 依赖\n\n- #43 BaseComponentManager CRUD\n- #44 PluginManager\n\n## RPC Handlers\n\n```\ndomain.skill.add / domain.skill.update / domain.skill.remove / domain.skill.import\ndomain.prompt.add / domain.prompt.update / domain.prompt.remove\ndomain.plugin.list / domain.plugin.show / domain.plugin.add / domain.plugin.remove / domain.plugin.install\n```\n\n修改文件: `packages/api/src/handlers/domain-handlers.ts`\n新增 RPC 类型: `packages/shared/src/types/rpc.types.ts`\n\n## CLI 命令\n\n**skill** (修改 `packages/cli/src/commands/skill.ts`):\n- `skill add <file>` / `skill remove <name>` / `skill export <name>`\n\n**prompt** (修改 `packages/cli/src/commands/prompt.ts`):\n- `prompt add <file>` / `prompt remove <name>` / `prompt export <name>`\n\n**plugin** (新建 `packages/cli/src/commands/plugin.ts`):\n- `plugin list` / `plugin show` / `plugin add` / `plugin remove` / `plugin install <name> <agent>`\n\n## 验收标准\n\n- [ ] 全部 RPC handlers 注册 + 实现\n- [ ] CLI skill/prompt CRUD 命令可用\n- [ ] CLI plugin 全套命令可用\n- [ ] RPC 类型定义完整\n- [ ] 集成测试覆盖",
   "author": "cursor-agent",
@@ -14,12 +20,22 @@
     "packages/cli/src/commands/prompt.ts",
     "packages/cli/src/commands/plugin.ts"
   ],
-  "relatedIssues": [38, 43, 44],
+  "relatedIssues": [
+    38,
+    43,
+    44
+  ],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-22T07:59:11",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-21T21:00:00",
-  "updatedAt": "2026-02-21T21:00:00",
-  "closedAt": null
+  "updatedAt": "2026-02-22T07:59:11",
+  "closedAt": "2026-02-22T07:59:11"
 }

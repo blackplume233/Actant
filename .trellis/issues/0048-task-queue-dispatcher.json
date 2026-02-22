@@ -1,8 +1,13 @@
 {
   "id": 48,
   "title": "TaskQueue + TaskDispatcher + ExecutionLog 基础实现",
-  "status": "open",
-  "labels": ["feature", "scheduler", "priority:P0", "phase3c"],
+  "status": "closed",
+  "labels": [
+    "feature",
+    "scheduler",
+    "priority:P0",
+    "phase3c"
+  ],
   "milestone": "mid-term",
   "body": "## 目标\n\n实现调度器核心：任务队列、任务派发、执行日志。\n\n## 交付物\n\n### 1. 类型定义\n\n```typescript\ninterface AgentTask {\n  id: string;\n  agentName: string;\n  source: InputSourceType;\n  sourceId: string;\n  prompt: string;\n  priority: number;  // 0 = 最高\n  createdAt: string;\n  metadata?: Record<string, unknown>;\n}\n\ninterface ExecutionRecord {\n  taskId: string;\n  agentName: string;\n  source: string;\n  prompt: string;\n  startedAt: string;\n  completedAt?: string;\n  status: 'running' | 'completed' | 'failed' | 'cancelled';\n  responseText?: string;\n  durationMs?: number;\n  error?: string;\n}\n```\n\n### 2. TaskQueue\n\n- per-agent 串行队列\n- priority-sorted（低数值高优先级）\n- enqueue / dequeue / peek / size\n- 串行保证：同一 agent 同时只执行一个任务\n\n### 3. TaskDispatcher\n\n- dequeue → AgentManager.promptAgent() → record\n- 自动循环处理队列\n- 错误处理 + 重试策略\n\n### 4. ExecutionLog\n\n- 内存存储 + 可选文件持久化\n- getByAgent / getRecent / getByTask 查询\n\n## 文件路径\n\n```\npackages/core/src/scheduler/\n  ├── types.ts\n  ├── task-queue.ts\n  ├── task-dispatcher.ts\n  ├── execution-log.ts\n  └── index.ts\n```\n\n## 验收标准\n\n- [ ] TaskQueue 串行 + 优先级排序\n- [ ] TaskDispatcher 自动处理队列\n- [ ] ExecutionLog 记录 + 查询\n- [ ] 单元测试覆盖",
   "author": "cursor-agent",
@@ -12,12 +17,21 @@
     "packages/core/src/scheduler/task-dispatcher.ts",
     "packages/core/src/scheduler/execution-log.ts"
   ],
-  "relatedIssues": [40, 37],
+  "relatedIssues": [
+    40,
+    37
+  ],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-22T07:59:11",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-21T21:00:00",
-  "updatedAt": "2026-02-21T21:00:00",
-  "closedAt": null
+  "updatedAt": "2026-02-22T07:59:11",
+  "closedAt": "2026-02-22T07:59:11"
 }

@@ -32,7 +32,13 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(npx pnpm run build:*)",
-      "*"
+      "*",
+      "Bash(AGENTCRAFT_HOME=\"/tmp/ac-qa-OAEVyz\" AGENTCRAFT_SOCKET=\"/tmp/ac-qa-OAEVyz/agentcraft.sock\" node:*)",
+      "Bash(timeout 5 AGENTCRAFT_HOME=\"/tmp/ac-qa-OAEVyz\" AGENTCRAFT_SOCKET=\"/tmp/ac-qa-OAEVyz/agentcraft.sock\" node:*)",
+      "Bash(echo:*)",
+      "Bash(export:*)",
+      "Bash(timeout 5 node:*)",
+      "Bash(node:*)"
     ]
   }
 }

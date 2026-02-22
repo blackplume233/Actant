@@ -1,8 +1,13 @@
 {
   "id": 49,
   "title": "InputRouter + InputSources (Heartbeat / Cron / Hook)",
-  "status": "open",
-  "labels": ["feature", "scheduler", "priority:P0", "phase3c"],
+  "status": "closed",
+  "labels": [
+    "feature",
+    "scheduler",
+    "priority:P0",
+    "phase3c"
+  ],
   "milestone": "mid-term",
   "body": "## 目标\n\n实现输入路由器和三种内置输入源，将外部事件转化为 AgentTask 入队。\n\n## 依赖\n\n- #48 TaskQueue\n\n## 交付物\n\n### 1. InputSource 接口\n\n```typescript\ninterface InputSource {\n  readonly id: string;\n  readonly type: 'heartbeat' | 'cron' | 'hook' | 'webhook' | 'n8n';\n  start(): void;\n  stop(): void;\n  onTask: (task: AgentTask) => void;\n}\n```\n\n### 2. InputRouter\n\n- register/unregister InputSource\n- 统一分发到 TaskQueue\n- 启动/停止所有 sources\n\n### 3. HeartbeatInput\n\n- setInterval 定时触发\n- 可配置间隔 (intervalMs)\n- suppressNoAction 选项\n\n### 4. CronInput\n\n- croner 库解析 cron 表达式\n- 时区支持\n- 支持多个 cron job\n\n### 5. HookInput\n\n- EventEmitter 模式\n- 事件: agent:started, agent:recovered, task:completed, task:failed, agent:idle\n- AgentManager 在关键生命周期点 emit\n\n## 新依赖\n\n- `croner` — 零依赖 Cron 库，ESM + 时区原生支持\n\n## 文件路径\n\n```\npackages/core/src/scheduler/inputs/\n  ├── input-source.ts\n  ├── input-router.ts\n  ├── heartbeat-input.ts\n  ├── cron-input.ts\n  ├── hook-input.ts\n  └── index.ts\n```\n\n## 验收标准\n\n- [ ] InputRouter 正确注册/分发\n- [ ] HeartbeatInput 按间隔触发\n- [ ] CronInput 按表达式触发\n- [ ] HookInput 响应内部事件\n- [ ] 单元测试覆盖",
   "author": "cursor-agent",
@@ -14,12 +19,21 @@
     "packages/core/src/scheduler/inputs/cron-input.ts",
     "packages/core/src/scheduler/inputs/hook-input.ts"
   ],
-  "relatedIssues": [40, 48],
+  "relatedIssues": [
+    40,
+    48
+  ],
   "taskRef": null,
   "githubRef": null,
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [
+    {
+      "text": "Closed as completed",
+      "date": "2026-02-22T07:59:11",
+      "author": "cursor-agent"
+    }
+  ],
   "createdAt": "2026-02-21T21:00:00",
-  "updatedAt": "2026-02-21T21:00:00",
-  "closedAt": null
+  "updatedAt": "2026-02-22T07:59:11",
+  "closedAt": "2026-02-22T07:59:11"
 }

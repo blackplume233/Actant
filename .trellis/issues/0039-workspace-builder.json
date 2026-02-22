@@ -1,7 +1,7 @@
 {
   "id": 39,
   "title": "Workspace 构造器 — 面向不同 Agent 后端的差异化构建",
-  "status": "open",
+  "status": "closed",
   "labels": [
     "feature",
     "architecture",
@@ -25,9 +25,9 @@
   ],
   "taskRef": null,
   "githubRef": "blackplume233/AgentCraft#45",
-  "closedAs": null,
-  "comments": [],
+  "closedAs": "completed",
+  "comments": [{"text": "Closed as completed — Phase 3b epic complete: BackendBuilder (#46), WorkspaceBuilder Pipeline + migration (#47) all implemented and tested", "date": "2026-02-22T12:00:00", "author": "cursor-agent"}],
   "createdAt": "2026-02-21T12:00:00",
-  "updatedAt": "2026-02-21T12:00:00",
-  "closedAt": null
+  "updatedAt": "2026-02-22T12:00:00",
+  "closedAt": "2026-02-22T12:00:00"
 }
