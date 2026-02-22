@@ -1,12 +1,12 @@
-# AgentCraft 项目分析报告
+# Actant 项目分析报告
 
 ## 1. 项目概述
 
 ### 1.1 项目定位
-**AgentCraft** 是一个 AI Agent 的构建、管理和编排平台，目标是让用户能够快速组装、复用和部署针对复杂业务领域的智能体。
+**Actant** 是一个 AI Agent 的构建、管理和编排平台，目标是让用户能够快速组装、复用和部署针对复杂业务领域的智能体。
 
 ### 1.2 核心差异化
-与传统 AI 助手不同，AgentCraft 强调：
+与传统 AI 助手不同，Actant 强调：
 - **组合性** - 通过模板将 Skills、Prompts、MCP Tools 等组件像积木一样组合
 - **可复用性** - Domain Context 组件通过名称引用，可在多个模板间共享
 - **多模式运行** - 同时支持 One-shot、Direct、ACP-Service 三种启动模式
@@ -123,8 +123,8 @@ import { SkillManager } from "../domain/skill/index.js";
 
 #### 问题 3: 错误处理一致性
 ```typescript
-// 部分代码抛出原始错误，未包装为 AgentCraftError
-if (err instanceof AgentCraftError) {
+// 部分代码抛出原始错误，未包装为 ActantError
+if (err instanceof ActantError) {
   throw err;
 }
 throw new WorkspaceInitError(...); // 其他错误被包装

@@ -1,5 +1,5 @@
 import type { Readable, Writable } from "node:stream";
-import type { AgentInstanceMeta } from "@agentcraft/shared";
+import type { AgentInstanceMeta } from "@actant/shared";
 
 export interface AgentProcess {
   pid: number;

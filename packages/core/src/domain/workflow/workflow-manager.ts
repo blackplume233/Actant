@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
-import type { WorkflowDefinition } from "@agentcraft/shared";
-import { ConfigValidationError } from "@agentcraft/shared";
+import type { WorkflowDefinition } from "@actant/shared";
+import { ConfigValidationError } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
 
 const WorkflowDefinitionSchema = z.object({

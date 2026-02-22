@@ -644,7 +644,7 @@
 
 ## 4. CLI 命令 (56 个)
 
-二进制入口: `agentcraft`
+二进制入口: `actant`
 
 ### agent
 
@@ -670,9 +670,9 @@
 
 | 子命令 | 别名 | 说明 | 参数 | 选项 |
 |--------|------|------|------|------|
-| `start` | — | Start the AgentCraft daemon | — | `--foreground` |
+| `start` | — | Start the Actant daemon | — | `--foreground` |
 | `status` | — | Check if the daemon is running | — | `-f, --format <format>` |
-| `stop` | — | Stop the AgentCraft daemon | — | — |
+| `stop` | — | Stop the Actant daemon | — | — |
 
 ### mcp
 

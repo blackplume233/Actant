@@ -439,7 +439,7 @@
     ]
   },
   "cli": {
-    "binary": "agentcraft",
+    "binary": "actant",
     "groupCount": 11,
     "standaloneCount": 1,
     "totalSubcommands": 56,
@@ -770,7 +770,7 @@
           {
             "name": "start",
             "alias": null,
-            "description": "Start the AgentCraft daemon",
+            "description": "Start the Actant daemon",
             "arguments": [],
             "options": [
               {
@@ -794,7 +794,7 @@
           {
             "name": "stop",
             "alias": null,
-            "description": "Stop the AgentCraft daemon",
+            "description": "Stop the Actant daemon",
             "arguments": [],
             "options": []
           }

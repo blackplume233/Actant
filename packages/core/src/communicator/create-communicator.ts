@@ -1,4 +1,4 @@
-import type { AgentBackendType } from "@agentcraft/shared";
+import type { AgentBackendType } from "@actant/shared";
 import type { AgentCommunicator } from "./agent-communicator";
 import { ClaudeCodeCommunicator } from "./claude-code-communicator";
 import { CursorCommunicator } from "./cursor-communicator";

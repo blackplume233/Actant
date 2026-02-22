@@ -1,14 +1,14 @@
 import { mkdir, rm, access, symlink, lstat, unlink, readlink } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, WorkDirConflict } from "@agentcraft/shared";
+import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, WorkDirConflict } from "@actant/shared";
 import {
-  AgentCraftError,
+  ActantError,
   ConfigValidationError,
   InstanceCorruptedError,
   WorkspaceInitError,
   createLogger,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 import type { TemplateRegistry } from "../template/registry/template-registry";
 import { WorkspaceBuilder, type DomainManagers } from "../builder/workspace-builder";
 import { readInstanceMeta, writeInstanceMeta } from "../state/index";
@@ -46,7 +46,7 @@ export class AgentInitializer {
    * 1. Resolve template from registry
    * 2. Create workspace directory {instancesBaseDir}/{name}/
    * 3. Materialize Domain Context files
-   * 4. Write .agentcraft.json metadata
+   * 4. Write .actant.json metadata
    *
    * @throws {TemplateNotFoundError} if template is not in registry
    * @throws {ConfigValidationError} if name conflicts with existing directory
@@ -129,7 +129,7 @@ export class AgentInitializer {
         await rm(workspaceDir, { recursive: true, force: true }).catch(() => {});
         logger.debug({ workspaceDir }, "Cleaned up workspace after failed creation");
       }
-      if (err instanceof AgentCraftError) {
+      if (err instanceof ActantError) {
         throw err;
       }
       throw new WorkspaceInitError(workspaceDir, err instanceof Error ? err : new Error(String(err)));
@@ -138,7 +138,7 @@ export class AgentInitializer {
 
   /**
    * Find an existing instance or create a new one (idempotent).
-   * - Directory exists + valid .agentcraft.json → return existing
+   * - Directory exists + valid .actant.json → return existing
    * - Directory does not exist → create new instance
    * - Directory exists but corrupted → throw InstanceCorruptedError
    */
@@ -168,7 +168,7 @@ export class AgentInitializer {
 
   /**
    * Destroy an instance by removing its workspace directory.
-   * For symlinked instances (custom workDir): removes the symlink and `.agentcraft.json`
+   * For symlinked instances (custom workDir): removes the symlink and `.actant.json`
    * from the target, but preserves the rest of the user's directory.
    * For normal instances: removes the entire workspace directory.
    */
@@ -182,9 +182,9 @@ export class AgentInitializer {
     if (await isSymlink(entryPath)) {
       const targetDir = await readlink(entryPath);
       try {
-        await unlink(join(targetDir, ".agentcraft.json"));
+        await unlink(join(targetDir, ".actant.json"));
       } catch {
-        // .agentcraft.json may have been removed already
+        // .actant.json may have been removed already
       }
       await rm(entryPath, { recursive: true, force: true });
       logger.info({ name, targetDir }, "Symlinked agent instance unregistered");

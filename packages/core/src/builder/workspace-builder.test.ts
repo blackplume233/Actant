@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { DomainContextConfig } from "@agentcraft/shared";
+import type { DomainContextConfig } from "@actant/shared";
 import {
   SkillManager,
   PromptManager,
@@ -15,7 +15,7 @@ describe("WorkspaceBuilder", () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "agentcraft-workspace-builder-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-workspace-builder-"));
   });
 
   afterEach(async () => {

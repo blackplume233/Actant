@@ -43,7 +43,7 @@
       "id": "help-check",
       "description": "确认帮助信息",
       "command": "--help",
-      "expect": "输出包含 AgentCraft、template、agent、daemon 等关键词的帮助信息"
+      "expect": "输出包含 Actant、template、agent、daemon 等关键词的帮助信息"
     },
     {
       "id": "daemon-ping-via-agent",

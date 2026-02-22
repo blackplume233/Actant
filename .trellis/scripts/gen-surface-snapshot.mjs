@@ -323,7 +323,7 @@ async function main() {
       errorCodes,
     },
     cli: {
-      binary: "agentcraft",
+      binary: "actant",
       groupCount: cliCommands.filter(c => !c.standalone).length,
       standaloneCount: cliCommands.filter(c => c.standalone).length,
       totalSubcommands: cliCommands.reduce((n, g) => n + (g.subcommands?.length || (g.standalone ? 1 : 0)), 0),

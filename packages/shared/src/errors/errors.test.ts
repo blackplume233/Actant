@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  AgentCraftError,
+  ActantError,
   ConfigNotFoundError,
   ConfigValidationError,
   TemplateNotFoundError,
@@ -13,10 +13,10 @@ import {
   WorkspaceInitError,
 } from "./index";
 
-describe("AgentCraftError hierarchy", () => {
+describe("ActantError hierarchy", () => {
   it("ConfigNotFoundError has correct code and category", () => {
     const err = new ConfigNotFoundError("/path/to/config.json");
-    expect(err).toBeInstanceOf(AgentCraftError);
+    expect(err).toBeInstanceOf(ActantError);
     expect(err).toBeInstanceOf(Error);
     expect(err.code).toBe("CONFIG_NOT_FOUND");
     expect(err.category).toBe("configuration");
@@ -84,13 +84,13 @@ describe("AgentCraftError hierarchy", () => {
   });
 
   it("InstanceCorruptedError includes reason", () => {
-    const err = new InstanceCorruptedError("broken-agent", ".agentcraft.json missing");
+    const err = new InstanceCorruptedError("broken-agent", ".actant.json missing");
     expect(err.code).toBe("INSTANCE_CORRUPTED");
     expect(err.message).toContain("broken-agent");
-    expect(err.message).toContain(".agentcraft.json missing");
+    expect(err.message).toContain(".actant.json missing");
     expect(err.context).toEqual({
       instanceName: "broken-agent",
-      reason: ".agentcraft.json missing",
+      reason: ".actant.json missing",
     });
   });
 
@@ -102,7 +102,7 @@ describe("AgentCraftError hierarchy", () => {
     expect(err.cause).toBe(cause);
   });
 
-  it("all errors extend AgentCraftError", () => {
+  it("all errors extend ActantError", () => {
     const errors = [
       new ConfigNotFoundError("path"),
       new ConfigValidationError("msg", []),
@@ -116,7 +116,7 @@ describe("AgentCraftError hierarchy", () => {
       new WorkspaceInitError("path"),
     ];
     for (const err of errors) {
-      expect(err).toBeInstanceOf(AgentCraftError);
+      expect(err).toBeInstanceOf(ActantError);
       expect(typeof err.code).toBe("string");
       expect(typeof err.category).toBe("string");
     }

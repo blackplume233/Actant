@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { mkdtemp, rm, readFile, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { PluginManager } from "./plugin-manager";
-import type { PluginDefinition } from "@agentcraft/shared";
+import type { PluginDefinition } from "@actant/shared";
 
 function makePlugin(name: string, overrides?: Partial<PluginDefinition>): PluginDefinition {
   return { name, type: "npm", source: `@test/${name}`, enabled: true, ...overrides };

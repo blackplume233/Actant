@@ -1,5 +1,5 @@
 import { createConnection } from "node:net";
-import type { RpcRequest, RpcResponse, RpcMethodMap, RpcMethod } from "@agentcraft/shared";
+import type { RpcRequest, RpcResponse, RpcMethodMap, RpcMethod } from "@actant/shared";
 
 let requestId = 0;
 
@@ -40,7 +40,7 @@ export class RpcClient {
 
   private send(request: RpcRequest, timeoutMs?: number): Promise<RpcResponse> {
     const effectiveTimeout = timeoutMs
-      ?? (process.env["AGENTCRAFT_RPC_TIMEOUT_MS"] ? Number(process.env["AGENTCRAFT_RPC_TIMEOUT_MS"]) : 10_000);
+      ?? (process.env["ACTANT_RPC_TIMEOUT_MS"] ? Number(process.env["ACTANT_RPC_TIMEOUT_MS"]) : 10_000);
 
     return new Promise((resolve, reject) => {
       const socket = createConnection(this.socketPath, () => {
@@ -94,7 +94,7 @@ export class ConnectionError extends Error {
     readonly socketPath: string,
     readonly cause: Error,
   ) {
-    super(`Cannot connect to daemon at ${socketPath}. Is it running? Start with: agentcraft daemon start`);
+    super(`Cannot connect to daemon at ${socketPath}. Is it running? Start with: actant daemon start`);
     this.name = "ConnectionError";
   }
 }

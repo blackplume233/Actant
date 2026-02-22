@@ -5,7 +5,7 @@ import type {
   WorkflowDefinition,
   PluginDefinition,
   AgentBackendType,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 
 export interface VerifyResult {
   valid: boolean;

@@ -1,6 +1,6 @@
 import Table from "cli-table3";
 import chalk from "chalk";
-import type { AgentTemplate, AgentInstanceMeta, SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "@agentcraft/shared";
+import type { AgentTemplate, AgentInstanceMeta, SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "@actant/shared";
 
 export type OutputFormat = "table" | "json" | "quiet";
 

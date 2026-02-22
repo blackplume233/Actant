@@ -3,7 +3,7 @@ import { resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { Command } from "commander";
 import chalk from "chalk";
-import type { LaunchMode, WorkDirConflict } from "@agentcraft/shared";
+import type { LaunchMode, WorkDirConflict } from "@actant/shared";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, formatAgentDetail, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
 

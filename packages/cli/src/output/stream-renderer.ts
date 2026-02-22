@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import type { StreamChunk } from "@agentcraft/core";
+import type { StreamChunk } from "@actant/core";
 
 export interface StreamRendererOptions {
   output?: NodeJS.WritableStream;

@@ -6,18 +6,18 @@ const IS_WINDOWS = process.platform === "win32";
 /**
  * Returns the platform-appropriate IPC path for daemon communication.
  *
- * - macOS/Linux: Unix domain socket at `~/.agentcraft/agentcraft.sock`
- * - Windows: Named pipe at `\\.\pipe\agentcraft`
+ * - macOS/Linux: Unix domain socket at `~/.actant/actant.sock`
+ * - Windows: Named pipe at `\\.\pipe\actant`
  *
  * Named pipes are the standard Windows IPC mechanism and work with
  * Node.js `net.createServer` / `net.createConnection` transparently.
  */
 export function getDefaultIpcPath(homeDir?: string): string {
   if (IS_WINDOWS) {
-    return "\\\\.\\pipe\\agentcraft";
+    return "\\\\.\\pipe\\actant";
   }
-  const base = homeDir ?? join(homedir(), ".agentcraft");
-  return join(base, "agentcraft.sock");
+  const base = homeDir ?? join(homedir(), ".actant");
+  return join(base, "actant.sock");
 }
 
 /**
@@ -27,9 +27,9 @@ export function getDefaultIpcPath(homeDir?: string): string {
 export function getIpcPath(homeDir: string): string {
   if (IS_WINDOWS) {
     const safeName = homeDir.replace(/[^a-zA-Z0-9._-]/g, "_");
-    return `\\\\.\\pipe\\agentcraft-${safeName}`;
+    return `\\\\.\\pipe\\actant-${safeName}`;
   }
-  return join(homeDir, "agentcraft.sock");
+  return join(homeDir, "actant.sock");
 }
 
 /**

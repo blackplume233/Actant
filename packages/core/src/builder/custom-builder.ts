@@ -1,4 +1,4 @@
-import type { AgentBackendType } from "@agentcraft/shared";
+import type { AgentBackendType } from "@actant/shared";
 import { CursorBuilder } from "./cursor-builder";
 
 export interface CustomBuilderConfig {

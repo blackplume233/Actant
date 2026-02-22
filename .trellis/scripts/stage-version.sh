@@ -463,9 +463,9 @@ cmd_changelog() {
         console.log('- #' + d.id + ' ' + d.title + (d.milestone ? ' [' + d.milestone + ']' : ''));
       }
     " 2>/dev/null
-  done > /tmp/agentcraft_open_issues.tmp
-  open_issues=$(cat /tmp/agentcraft_open_issues.tmp 2>/dev/null || echo "")
-  rm -f /tmp/agentcraft_open_issues.tmp
+  done > /tmp/actant_open_issues.tmp
+  open_issues=$(cat /tmp/actant_open_issues.tmp 2>/dev/null || echo "")
+  rm -f /tmp/actant_open_issues.tmp
 
   # Write changelog
   {
@@ -640,7 +640,7 @@ cmd_release() {
   # Create release
   gh release create "$version" \
     --repo "blackplume233/AgentCraft" \
-    --title "AgentCraft $version" \
+    --title "Actant $version" \
     --notes-file "$notes_file" \
     2>/dev/null && echo -e "${GREEN}✓ GitHub release $version created${NC}" \
     || echo -e "${YELLOW}⚠ Release creation failed (may already exist)${NC}"

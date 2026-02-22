@@ -1,4 +1,4 @@
-export { AgentCraftError, type ErrorCategory } from "./base-error";
+export { ActantError, type ErrorCategory } from "./base-error";
 export {
   ConfigNotFoundError,
   ConfigValidationError,

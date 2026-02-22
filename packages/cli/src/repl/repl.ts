@@ -14,19 +14,19 @@ export async function startRepl(
   const alive = await client.ping();
   if (!alive) {
     printer.errorStyled("Cannot connect to daemon.");
-    printer.errorDim("Start with: agentcraft daemon start");
+    printer.errorDim("Start with: actant daemon start");
     process.exitCode = 1;
     return;
   }
 
   const ping = await client.call("daemon.ping", {});
-  output.write(chalk.bold(`AgentCraft v${ping.version}`) + ` (${ping.agents} agents)\n`);
+  output.write(chalk.bold(`Actant v${ping.version}`) + ` (${ping.agents} agents)\n`);
   output.write(chalk.dim('Type "help" for commands, "exit" to quit.\n\n'));
 
   const rl: Interface = createInterface({
     input,
     output,
-    prompt: chalk.cyan("agentcraft> "),
+    prompt: chalk.cyan("actant> "),
     terminal: input === process.stdin,
   });
 
@@ -60,7 +60,7 @@ export async function startRepl(
         writeErr: (str: string) => output.write(str),
       });
 
-      const argv = ["node", "agentcraft", ...parseArgs(trimmed)];
+      const argv = ["node", "actant", ...parseArgs(trimmed)];
       await program.parseAsync(argv);
     } catch (err) {
       if (err instanceof Error && "code" in err) {

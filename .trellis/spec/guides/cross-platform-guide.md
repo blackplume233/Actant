@@ -1,6 +1,6 @@
 # Cross-Platform Compatibility Guide
 
-> **Goal**: AgentCraft must run on Linux, macOS, and Windows. Every feature must work on all three platforms.
+> **Goal**: Actant must run on Linux, macOS, and Windows. Every feature must work on all three platforms.
 
 ---
 
@@ -24,8 +24,8 @@ All platform-specific logic is centralized in `packages/shared/src/platform/plat
 
 | Platform | IPC Mechanism | Path Format |
 |----------|--------------|-------------|
-| macOS/Linux | Unix domain socket | `~/.agentcraft/agentcraft.sock` |
-| Windows | Named pipe | `\\.\pipe\agentcraft` |
+| macOS/Linux | Unix domain socket | `~/.actant/actant.sock` |
+| Windows | Named pipe | `\\.\pipe\actant` |
 
 Node.js `net.createServer` and `net.createConnection` handle both transparently — the only difference is the path string.
 
@@ -106,7 +106,7 @@ The `.trellis/scripts/*.sh` files are Bash scripts for the development workflow 
 **Windows requirements**:
 - **Git Bash** (included with Git for Windows) — recommended
 - **WSL** (Windows Subsystem for Linux) — also works
-- These scripts are not needed for running AgentCraft itself, only for the Trellis development workflow
+- These scripts are not needed for running Actant itself, only for the Trellis development workflow
 
 ---
 

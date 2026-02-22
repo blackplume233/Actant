@@ -1,20 +1,20 @@
 import { readFile, writeFile, rename, readdir, stat, mkdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { AgentInstanceMeta } from "@agentcraft/shared";
-import { InstanceCorruptedError } from "@agentcraft/shared";
+import type { AgentInstanceMeta } from "@actant/shared";
+import { InstanceCorruptedError } from "@actant/shared";
 import { AgentInstanceMetaSchema } from "./instance-meta-schema";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 
 const logger = createLogger("instance-meta-io");
 
-const META_FILENAME = ".agentcraft.json";
+const META_FILENAME = ".actant.json";
 
 export function metaFilePath(workspaceDir: string): string {
   return join(workspaceDir, META_FILENAME);
 }
 
-/** Read and validate `.agentcraft.json` from a workspace directory. */
+/** Read and validate `.actant.json` from a workspace directory. */
 export async function readInstanceMeta(workspaceDir: string): Promise<AgentInstanceMeta> {
   const filePath = metaFilePath(workspaceDir);
   let raw: string;
@@ -62,7 +62,7 @@ export async function writeInstanceMeta(
   await rename(tmpPath, filePath);
 }
 
-/** Partially update `.agentcraft.json` — read, merge, write. */
+/** Partially update `.actant.json` — read, merge, write. */
 export async function updateInstanceMeta(
   workspaceDir: string,
   patch: Partial<AgentInstanceMeta>,
@@ -79,7 +79,7 @@ export async function updateInstanceMeta(
 
 /**
  * Scan `instancesBaseDir` for all valid instance directories.
- * Directories whose `.agentcraft.json` is missing or invalid are logged and skipped.
+ * Directories whose `.actant.json` is missing or invalid are logged and skipped.
  */
 export async function scanInstances(
   instancesBaseDir: string,

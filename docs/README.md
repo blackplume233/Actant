@@ -1,4 +1,4 @@
-# AgentCraft Documentation
+# Actant Documentation
 
 This directory contains all project documentation, organized by authorship and purpose.
 

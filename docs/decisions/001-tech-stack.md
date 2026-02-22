@@ -10,7 +10,7 @@
 
 ## Context
 
-AgentCraft is a platform for building, managing, and composing AI agents. It requires:
+Actant is a platform for building, managing, and composing AI agents. It requires:
 
 - CLI-first interactive REPL as the primary interface
 - MCP/ACP protocol integration (both as server)

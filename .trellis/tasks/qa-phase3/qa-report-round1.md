@@ -69,7 +69,7 @@
 - **验证**: builder.test.ts 18/18 通过（含新增的 `scaffold creates default AGENTS.md` 测试）
 
 ### NOT-A-BUG: daemon status FAIL
-- **原因**: 测试环境中 `AGENTCRAFT_SOCKET` 与 daemon 实际使用的 IPC 路径不一致（daemon 从 AGENTCRAFT_HOME 推导）
+- **原因**: 测试环境中 `ACTANT_SOCKET` 与 daemon 实际使用的 IPC 路径不一致（daemon 从 ACTANT_HOME 推导）
 - **评定**: 按设计工作，是测试配置问题而非代码 bug
 
 ## 回归验证

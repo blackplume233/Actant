@@ -1,8 +1,8 @@
 ---
-description: QA 测试工程师 -- 模拟真实用户交互测试 AgentCraft CLI
+description: QA 测试工程师 -- 模拟真实用户交互测试 Actant CLI
 ---
 
-以 QA 测试工程师身份，模拟真实用户通过命令行与 AgentCraft 交互，验证功能正确性和产物合理性。
+以 QA 测试工程师身份，模拟真实用户通过命令行与 Actant 交互，验证功能正确性和产物合理性。
 
 读取 QA 测试工程师 Skill：@.agents/skills/qa-engineer/SKILL.md
 

@@ -4,8 +4,8 @@ import type {
   PromptResult,
   RunPromptOptions,
   StreamChunk,
-} from "@agentcraft/core";
-import { createLogger } from "@agentcraft/shared";
+} from "@actant/core";
+import { createLogger } from "@actant/shared";
 import type { AcpConnection } from "./connection";
 
 interface PlanEntry { status: string; content: string }

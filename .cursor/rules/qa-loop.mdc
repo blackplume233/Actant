@@ -41,7 +41,7 @@ alwaysApply: false
 4. **创建隔离环境**
    - 临时目录
    - 环境变量（默认真实模式，除非指定 `--mock`）
-   - 在 Windows 上使用命名管道路径作为 `AGENTCRAFT_SOCKET`
+   - 在 Windows 上使用命名管道路径作为 `ACTANT_SOCKET`
 5. **启动 Daemon**
 
 ### Phase 1: 随机漫步测试（增量日志模式）
@@ -142,9 +142,9 @@ alwaysApply: false
 
 ## 注意事项
 
-1. **真实环境优先** — 默认不设置 `AGENTCRAFT_LAUNCHER_MODE`，使用真实 launcher
+1. **真实环境优先** — 默认不设置 `ACTANT_LAUNCHER_MODE`，使用真实 launcher
 2. **完整回归** — 每轮回归必须重新执行全部测试，不可只跑失败项
 3. **收敛保障** — 如果连续 3 轮通过率无提升，主动分析瓶颈并报告
 4. **环境隔离** — 所有测试在临时目录中执行，不影响用户环境
-5. **Windows 兼容** — `AGENTCRAFT_SOCKET` 使用命名管道，RPC 参数用 Base64 编码避免 PowerShell 转义问题
+5. **Windows 兼容** — `ACTANT_SOCKET` 使用命名管道，RPC 参数用 Base64 编码避免 PowerShell 转义问题
 6. **每步即时写入日志** — 每执行一步（Shell 命令、Read 文件、Grep 搜索、SubAgent 调用等）都必须在执行完毕后立即将原始输入、原始输出、判断追加到 `qa-log-roundN.md`。严禁积攒到执行结束后再回忆填写。日志是给人类审查用的第一手证据链，事后重建的日志不可信。

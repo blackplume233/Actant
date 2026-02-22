@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { mkdtemp, rm, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { SkillManager } from "./skill/skill-manager";
-import { ComponentReferenceError } from "@agentcraft/shared";
-import type { SkillDefinition } from "@agentcraft/shared";
+import { ComponentReferenceError } from "@actant/shared";
+import type { SkillDefinition } from "@actant/shared";
 
 function makeSkill(name: string, desc?: string): SkillDefinition {
   return { name, content: `Rules for ${name}`, description: desc };

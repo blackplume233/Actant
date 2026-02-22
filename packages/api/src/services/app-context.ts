@@ -16,19 +16,19 @@ import {
   createLauncher,
   EmployeeScheduler,
   type LauncherMode,
-} from "@agentcraft/core";
-import { AcpConnectionManager } from "@agentcraft/acp";
-import { createLogger, getIpcPath } from "@agentcraft/shared";
+} from "@actant/core";
+import { AcpConnectionManager } from "@actant/acp";
+import { createLogger, getIpcPath } from "@actant/shared";
 
 const logger = createLogger("app-context");
 
-const DEFAULT_HOME = join(homedir(), ".agentcraft");
+const DEFAULT_HOME = join(homedir(), ".actant");
 
 export interface AppConfig {
   homeDir?: string;
   /** Override configs directory. Default: `{homeDir}/configs/` or `./configs/` fallback. */
   configsDir?: string;
-  /** "mock" for testing, "real" for production. Default: auto-detect from AGENTCRAFT_LAUNCHER_MODE env. */
+  /** "mock" for testing, "real" for production. Default: auto-detect from ACTANT_LAUNCHER_MODE env. */
   launcherMode?: LauncherMode;
 }
 
@@ -58,7 +58,7 @@ export class AppContext {
   private startTime = Date.now();
 
   constructor(config?: AppConfig) {
-    this.homeDir = config?.homeDir ?? process.env.AGENTCRAFT_HOME ?? DEFAULT_HOME;
+    this.homeDir = config?.homeDir ?? process.env.ACTANT_HOME ?? DEFAULT_HOME;
     this.configsDir = config?.configsDir ?? join(this.homeDir, "configs");
     this.templatesDir = join(this.configsDir, "templates");
     this.instancesDir = join(this.homeDir, "instances");
@@ -96,7 +96,7 @@ export class AppContext {
     this.acpConnectionManager = new AcpConnectionManager();
     this.sessionRegistry = new SessionRegistry();
     const launcherMode = config?.launcherMode
-      ?? (process.env["AGENTCRAFT_LAUNCHER_MODE"] as LauncherMode | undefined);
+      ?? (process.env["ACTANT_LAUNCHER_MODE"] as LauncherMode | undefined);
     this.agentManager = new AgentManager(
       this.agentInitializer,
       createLauncher({ mode: launcherMode }),

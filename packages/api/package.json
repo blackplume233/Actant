@@ -1,5 +1,5 @@
 {
-  "name": "@agentcraft/api",
+  "name": "@actant/api",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,8 +13,8 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@agentcraft/acp": "workspace:*",
-    "@agentcraft/core": "workspace:*",
-    "@agentcraft/shared": "workspace:*"
+    "@actant/acp": "workspace:*",
+    "@actant/core": "workspace:*",
+    "@actant/shared": "workspace:*"
   }
 }

@@ -37,7 +37,7 @@ const VALID_TEMPLATE = {
     ],
   },
   metadata: {
-    author: "AgentCraft Team",
+    author: "Actant Team",
     tags: "code-review,typescript",
   },
 };

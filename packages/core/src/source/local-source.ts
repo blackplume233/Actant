@@ -8,8 +8,8 @@ import type {
   PromptDefinition,
   McpServerDefinition,
   WorkflowDefinition,
-} from "@agentcraft/shared";
-import { createLogger } from "@agentcraft/shared";
+} from "@actant/shared";
+import { createLogger } from "@actant/shared";
 import type { ComponentSource, FetchResult } from "./component-source";
 
 const logger = createLogger("local-source");
@@ -53,12 +53,12 @@ export class LocalSource implements ComponentSource {
   }
 
   private async loadManifest(rootDir: string): Promise<PackageManifest> {
-    const manifestPath = join(rootDir, "agentcraft.json");
+    const manifestPath = join(rootDir, "actant.json");
     try {
       const raw = await readFile(manifestPath, "utf-8");
       return JSON.parse(raw) as PackageManifest;
     } catch {
-      logger.debug({ rootDir }, "No agentcraft.json found, scanning directories");
+      logger.debug({ rootDir }, "No actant.json found, scanning directories");
       return { name: this.packageName };
     }
   }

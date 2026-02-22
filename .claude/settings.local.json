@@ -33,12 +33,13 @@
       "Bash(git push:*)",
       "Bash(npx pnpm run build:*)",
       "*",
-      "Bash(AGENTCRAFT_HOME=\"/tmp/ac-qa-OAEVyz\" AGENTCRAFT_SOCKET=\"/tmp/ac-qa-OAEVyz/agentcraft.sock\" node:*)",
-      "Bash(timeout 5 AGENTCRAFT_HOME=\"/tmp/ac-qa-OAEVyz\" AGENTCRAFT_SOCKET=\"/tmp/ac-qa-OAEVyz/agentcraft.sock\" node:*)",
+      "Bash(ACTANT_HOME=\"/tmp/ac-qa-OAEVyz\" ACTANT_SOCKET=\"/tmp/ac-qa-OAEVyz/actant.sock\" node:*)",
+      "Bash(timeout 5 ACTANT_HOME=\"/tmp/ac-qa-OAEVyz\" ACTANT_SOCKET=\"/tmp/ac-qa-OAEVyz/actant.sock\" node:*)",
       "Bash(echo:*)",
       "Bash(export:*)",
       "Bash(timeout 5 node:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(tasklist:*)"
     ]
   }
 }

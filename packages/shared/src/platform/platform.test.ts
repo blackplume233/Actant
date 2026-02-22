@@ -17,7 +17,7 @@ describe("platform utilities", () => {
     if (!isWindows()) {
       const path = getDefaultIpcPath("/custom/home");
       expect(path).toContain("/custom/home");
-      expect(path).toContain("agentcraft.sock");
+      expect(path).toContain("actant.sock");
     }
   });
 

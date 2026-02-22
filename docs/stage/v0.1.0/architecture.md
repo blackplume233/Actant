@@ -1,4 +1,4 @@
-# AgentCraft v0.1.0 架构文档
+# Actant v0.1.0 架构文档
 
 > **版本**: 0.1.0 &nbsp;|&nbsp; **日期**: 2026-02-22 &nbsp;|&nbsp; **阶段**: Phase 3 收尾  
 > 本文档是当前版本的架构总结，涵盖模块划分、核心设计、依赖关系与全部 CLI 命令。
@@ -12,12 +12,12 @@
 3. [Monorepo 结构](#3-monorepo-结构)
 4. [包依赖关系](#4-包依赖关系)
 5. [模块架构详解](#5-模块架构详解)
-   - 5.1 [@agentcraft/shared](#51-agentcraftshared--共享层)
-   - 5.2 [@agentcraft/core](#52-agentcraftcore--核心层)
-   - 5.3 [@agentcraft/api](#53-agentcraftapi--服务层)
-   - 5.4 [@agentcraft/acp](#54-agentcraftacp--协议层)
-   - 5.5 [@agentcraft/cli](#55-agentcraftcli--交互层)
-   - 5.6 [@agentcraft/mcp-server](#56-agentcraftmcp-server--mcp-服务)
+   - 5.1 [@actant/shared](#51-actantshared--共享层)
+   - 5.2 [@actant/core](#52-actantcore--核心层)
+   - 5.3 [@actant/api](#53-actantapi--服务层)
+   - 5.4 [@actant/acp](#54-actantacp--协议层)
+   - 5.5 [@actant/cli](#55-actantcli--交互层)
+   - 5.6 [@actant/mcp-server](#56-actantmcp-server--mcp-服务)
 6. [核心数据流](#6-核心数据流)
 7. [Agent 生命周期](#7-agent-生命周期)
 8. [CLI 命令全览](#8-cli-命令全览)
@@ -29,15 +29,15 @@
 
 ## 1. 项目概览
 
-AgentCraft 是一个用于 **构建、管理和编排 AI Agent** 的平台。它借鉴了 Docker 的核心理念：
+Actant 是一个用于 **构建、管理和编排 AI Agent** 的平台。它借鉴了 Docker 的核心理念：
 
-| Docker 概念 | AgentCraft 对应 |
+| Docker 概念 | Actant 对应 |
 |-------------|----------------|
 | Dockerfile | AgentTemplate（模板） |
 | Image | 解析后的模板 + 领域组件 |
 | Container | Agent 实例（有进程、有工作区） |
-| Docker Daemon | AgentCraft Daemon（后台守护进程） |
-| docker CLI | `agentcraft` CLI |
+| Docker Daemon | Actant Daemon（后台守护进程） |
+| docker CLI | `actant` CLI |
 | Registry | Component Source（组件源） |
 
 **核心流程**：`Template → Create（组装工作区）→ Start（启动进程）→ Chat/Run（交互）→ Stop → Destroy`
@@ -65,14 +65,14 @@ AgentCraft 是一个用于 **构建、管理和编排 AI Agent** 的平台。它
 ## 3. Monorepo 结构
 
 ```
-AgentCraft/
+Actant/
 ├── packages/                   # 源码（pnpm workspace）
-│   ├── shared/                 # @agentcraft/shared — 类型、错误、日志、平台
-│   ├── core/                   # @agentcraft/core — 核心业务逻辑
-│   ├── api/                    # @agentcraft/api — Daemon 与 RPC 处理器
-│   ├── acp/                    # @agentcraft/acp — ACP 协议集成
-│   ├── cli/                    # @agentcraft/cli — CLI 与 REPL
-│   └── mcp-server/             # @agentcraft/mcp-server — MCP 服务器
+│   ├── shared/                 # @actant/shared — 类型、错误、日志、平台
+│   ├── core/                   # @actant/core — 核心业务逻辑
+│   ├── api/                    # @actant/api — Daemon 与 RPC 处理器
+│   ├── acp/                    # @actant/acp — ACP 协议集成
+│   ├── cli/                    # @actant/cli — CLI 与 REPL
+│   └── mcp-server/             # @actant/mcp-server — MCP 服务器
 ├── configs/                    # 内置配置（技能、提示词、MCP、模板、工作流、插件）
 ├── docs/                       # 项目文档
 │   ├── decisions/              # ADR（架构决策记录）
@@ -92,23 +92,23 @@ AgentCraft/
 
 ```
                     ┌──────────────────────────┐
-                    │    @agentcraft/shared     │
+                    │    @actant/shared     │
                     │  类型 · 错误 · 日志 · 平台  │
                     └─────────┬────────────────┘
                               │
                     ┌─────────▼────────────────┐
-                    │     @agentcraft/core      │
+                    │     @actant/core      │
                     │ 模板 · 构建器 · 调度器 · 管理器 │
                     └──┬──────┬──────┬──────┬──┘
                        │      │      │      │
             ┌──────────▼┐  ┌──▼──────▼┐  ┌──▼──────────┐
-            │  @agentcraft│  │ @agentcraft│  │ @agentcraft  │
+            │  @actant│  │ @actant│  │ @actant  │
             │    /acp    │  │   /api   │  │ /mcp-server │
             │  ACP 协议   │  │ Daemon/RPC│  │  MCP 服务   │
             └──────┬─────┘  └────┬─────┘  └─────────────┘
                    │             │
             ┌──────▼─────────────▼─────┐
-            │     @agentcraft/cli      │
+            │     @actant/cli      │
             │     CLI · REPL · 输出     │
             └──────────────────────────┘
 ```
@@ -119,7 +119,7 @@ AgentCraft/
 
 ## 5. 模块架构详解
 
-### 5.1 @agentcraft/shared — 共享层
+### 5.1 @actant/shared — 共享层
 
 为所有包提供基础类型定义、错误体系、日志和平台抽象。
 
@@ -133,7 +133,7 @@ shared/src/
 │   ├── source.types.ts          # SourceConfig, PackageManifest, PresetDefinition
 │   └── rpc.types.ts             # JSON-RPC 类型, RpcMethodMap（所有 RPC 方法签名）
 ├── errors/
-│   ├── base-error.ts            # AgentCraftError 基类
+│   ├── base-error.ts            # ActantError 基类
 │   ├── config-errors.ts         # 配置相关错误
 │   └── lifecycle-errors.ts      # 生命周期相关错误
 ├── logger/
@@ -156,7 +156,7 @@ shared/src/
 
 ---
 
-### 5.2 @agentcraft/core — 核心层
+### 5.2 @actant/core — 核心层
 
 承载全部业务逻辑，分为 10 个子模块：
 
@@ -302,7 +302,7 @@ InputSource(s)           TaskQueue            TaskDispatcher
 
 ---
 
-### 5.3 @agentcraft/api — 服务层
+### 5.3 @actant/api — 服务层
 
 Daemon 进程及 JSON-RPC 请求处理。
 
@@ -338,7 +338,7 @@ api/src/
 
 ---
 
-### 5.4 @agentcraft/acp — 协议层
+### 5.4 @actant/acp — 协议层
 
 ACP（Agent Client Protocol）集成，支持 Agent 与外部系统的双向通信。
 
@@ -358,11 +358,11 @@ acp/src/
 
 ---
 
-### 5.5 @agentcraft/cli — 交互层
+### 5.5 @actant/cli — 交互层
 
 ```
 cli/src/
-├── bin/agentcraft.ts      # 入口文件（#!/usr/bin/env node）
+├── bin/actant.ts      # 入口文件（#!/usr/bin/env node）
 ├── program.ts             # Commander 主程序（注册所有命令组）
 ├── daemon-entry.ts        # Daemon 入口
 ├── client/
@@ -379,9 +379,9 @@ cli/src/
 
 ---
 
-### 5.6 @agentcraft/mcp-server — MCP 服务
+### 5.6 @actant/mcp-server — MCP 服务
 
-MCP（Model Context Protocol）服务器，允许其他 Agent 通过 MCP 工具调用 AgentCraft 管理的 Agent。
+MCP（Model Context Protocol）服务器，允许其他 Agent 通过 MCP 工具调用 Actant 管理的 Agent。
 
 > 当前处于基础骨架阶段，仅包含入口文件。
 
@@ -392,7 +392,7 @@ MCP（Model Context Protocol）服务器，允许其他 Agent 通过 MCP 工具�
 ### 6.1 Agent 创建流程
 
 ```
-CLI: agentcraft agent create myagent -t code-review
+CLI: actant agent create myagent -t code-review
   │
   ▼
 RPC Client ──► Daemon (socket) ──► agent-handlers.ts
@@ -417,7 +417,7 @@ CLI Output ◄── RPC Response ◄── AgentInstanceMeta（已持久化）
 ### 6.2 Agent 交互流程
 
 ```
-CLI: agentcraft agent run myagent --prompt "Review this code"
+CLI: actant agent run myagent --prompt "Review this code"
   │
   ▼
 RPC Client ──► Daemon ──► agent-handlers (agent.run)
@@ -472,7 +472,7 @@ RPC Client ──► Daemon ──► agent-handlers (agent.run)
 
 ## 8. CLI 命令全览
 
-> 二进制入口：`agentcraft`（无子命令时进入 REPL）  
+> 二进制入口：`actant`（无子命令时进入 REPL）  
 > 全局选项：`-h, --help` / `-V, --version`  
 > 通用输出格式：`-f, --format <table|json|quiet>`
 

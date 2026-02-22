@@ -1,12 +1,12 @@
-# AgentCraft 架构 — Docker 类比
+# Actant 架构 — Docker 类比
 
-> AgentCraft 对 AI Agent 做的事，等同于 Docker 对进程做的事。
+> Actant 对 AI Agent 做的事，等同于 Docker 对进程做的事。
 
 ---
 
 ## 一、核心概念映射
 
-| Docker | AgentCraft | 本质 |
+| Docker | Actant | 本质 |
 |--------|-----------|------|
 | **Dockerfile** | **Agent Template (JSON)** | 声明式定义"这个东西是什么" |
 | **docker build** | **template validate + load** | 把声明构建为可用的镜像/模板 |
@@ -24,10 +24,10 @@
 | **docker commit** | **Memory Promotion → Shared Pool** | 将实例经验提升为可共享知识 |
 | **Network** | **MCP / ACP** | 实例间及外部的通信通道 |
 | **Container Runtime (containerd)** | **Agent Launcher (Cursor/Claude Code)** | 真正执行工作的引擎 |
-| **dockerd (daemon)** | **AgentCraft Daemon** | 持久进程，管理一切 |
-| **docker CLI** | **agentcraft CLI** | 薄客户端，与 daemon 交互 |
-| **Docker REST API** | **AgentCraft RPC/API** | daemon 对外暴露的编程接口 |
-| **/var/run/docker.sock** | **~/.agentcraft/agentcraft.sock** | IPC 通道 |
+| **dockerd (daemon)** | **Actant Daemon** | 持久进程，管理一切 |
+| **docker CLI** | **actant CLI** | 薄客户端，与 daemon 交互 |
+| **Docker REST API** | **Actant RPC/API** | daemon 对外暴露的编程接口 |
+| **/var/run/docker.sock** | **~/.actant/actant.sock** | IPC 通道 |
 | **Health Check** | **Agent 心跳** | 存活检测 |
 | **Restart Policy** | **Agent 重启策略** | 崩溃恢复 |
 | **docker-compose** | **Workflow + SubAgents** | 多实例编排 |
@@ -44,10 +44,10 @@ docker CLI ──(REST/socket)──▶ dockerd ──▶ containerd ──▶ r
    薄客户端                      守护进程       容器运行时      实际执行
 ```
 
-### AgentCraft 的分层
+### Actant 的分层
 
 ```
-agentcraft CLI ──(JSON-RPC/socket)──▶ AgentCraft Daemon ──▶ Agent Launcher ──▶ Cursor/Claude Code
+actant CLI ──(JSON-RPC/socket)──▶ Actant Daemon ──▶ Agent Launcher ──▶ Cursor/Claude Code
     薄客户端                              守护进程                启动器           实际执行的 AI Agent
 ```
 
@@ -62,9 +62,9 @@ agentcraft CLI ──(JSON-RPC/socket)──▶ AgentCraft Daemon ──▶ Agen
 docker ps
 docker run -d --name web nginx
 
-# AgentCraft
-agentcraft agent list
-agentcraft agent create reviewer -t code-review-agent
+# Actant
+actant agent list
+actant agent create reviewer -t code-review-agent
 ```
 
 两者行为一致：CLI 进程启动 → 连接 daemon socket → 发送请求 → 接收响应 → 格式化输出 → 退出。
@@ -75,8 +75,8 @@ agentcraft agent create reviewer -t code-review-agent
 # Docker (attach to container)
 docker exec -it web bash
 
-# AgentCraft (REPL mode)
-agentcraft
+# Actant (REPL mode)
+actant
 > agent list
 > agent create reviewer -t code-review-agent
 > agent start reviewer
@@ -90,10 +90,10 @@ agentcraft
 systemctl start docker     # 启动 daemon
 systemctl status docker    # 查看状态
 
-# AgentCraft
-agentcraft daemon start    # 启动 daemon
-agentcraft daemon status   # 查看状态
-agentcraft daemon stop     # 停止 daemon（会先优雅停止所有 Agent）
+# Actant
+actant daemon start    # 启动 daemon
+actant daemon status   # 查看状态
+actant daemon stop     # 停止 daemon（会先优雅停止所有 Agent）
 ```
 
 ---
@@ -104,7 +104,7 @@ agentcraft daemon stop     # 停止 daemon（会先优雅停止所有 Agent）
 
 ### 1. CLI 不含业务逻辑
 
-就像 `docker` 二进制文件不包含容器管理逻辑一样，`agentcraft` CLI 只做：
+就像 `docker` 二进制文件不包含容器管理逻辑一样，`actant` CLI 只做：
 - 解析命令行参数
 - 序列化为 RPC 请求
 - 发送到 daemon
@@ -118,7 +118,7 @@ CLI 是无状态的 — 每次调用都是一次独立的 RPC 请求。
 
 ### 3. Socket 文件 = 服务发现
 
-`~/.agentcraft/agentcraft.sock` 的存在即表示 daemon 正在运行。
+`~/.actant/actant.sock` 的存在即表示 daemon 正在运行。
 CLI 尝试连接 → 成功则发命令 → 失败则提示 "daemon not running"。
 
 ### 4. Daemon 可以做 CLI 做不到的事
@@ -132,8 +132,8 @@ CLI 尝试连接 → 成功则发命令 → 失败则提示 "daemon not running"
 ### 5. 多接口共享同一 Daemon
 
 ```
-agentcraft CLI ──(Unix Socket)──┐
-                                ├──▶ AgentCraft Daemon (Core Services)
+actant CLI ──(Unix Socket)──┐
+                                ├──▶ Actant Daemon (Core Services)
 REST Client    ──(HTTP)─────────┤
                                 │
 ACP Client     ──(ACP)─────────┘
@@ -147,14 +147,14 @@ ACP Client     ──(ACP)─────────┘
 
 | 概念 | 当前实现 | 目标 |
 |------|---------|------|
-| Template (Dockerfile) | `@agentcraft/core` template/ | ✅ 已完成 |
+| Template (Dockerfile) | `@actant/core` template/ | ✅ 已完成 |
 | Image (built template) | `TemplateRegistry` | ✅ 已完成 |
 | Container (instance) | `AgentInitializer` + workspace dir | ✅ 已完成 |
 | Volume (domain context) | `ContextMaterializer` + Domain Managers | ✅ 已完成 |
 | Container writable layer (memory) | **不存在** | 中期实现：`.memory/` + re-materialize（[设计文档](./memory-layer-agent-evolution.md)） |
 | Union FS (Template ∪ Memory) | **不存在** | 中期实现：ContextBroker 合并物化 |
 | Container Runtime | `AgentLauncher` interface + `MockLauncher` | 接口已定义，真实实现待做 |
-| dockerd | **不存在** | 需要实现：`@agentcraft/api` 作为 daemon |
-| docker CLI | `@agentcraft/cli`（当前是 one-shot 直接调用 core） | 需要重构为 RPC client |
+| dockerd | **不存在** | 需要实现：`@actant/api` 作为 daemon |
+| docker CLI | `@actant/cli`（当前是 one-shot 直接调用 core） | 需要重构为 RPC client |
 | Docker API | **不存在** | 需要实现：JSON-RPC over Unix Socket |
-| docker.sock | **不存在** | `~/.agentcraft/agentcraft.sock` |
+| docker.sock | **不存在** | `~/.actant/actant.sock` |

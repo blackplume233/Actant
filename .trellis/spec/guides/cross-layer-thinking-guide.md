@@ -1,6 +1,6 @@
 # Cross-Layer Thinking Guide
 
-> **Purpose**: Think through data flow across AgentCraft's layers before implementing.
+> **Purpose**: Think through data flow across Actant's layers before implementing.
 
 ---
 
@@ -8,7 +8,7 @@
 
 **Most bugs happen at layer boundaries**, not within layers.
 
-In AgentCraft, there are more boundaries than a typical web app:
+In Actant, there are more boundaries than a typical web app:
 
 ```
 User ↔ CLI ↔ Core ↔ Agent Process ↔ Model Provider
@@ -23,7 +23,7 @@ Every arrow is a potential source of bugs.
 
 ---
 
-## AgentCraft Layer Map
+## Actant Layer Map
 
 | Layer | Responsibility | Communication |
 |-------|---------------|---------------|
@@ -42,7 +42,7 @@ Every arrow is a potential source of bugs.
 
 ### Step 1: Map the Data Flow
 
-Draw out how data moves through AgentCraft's specific layers:
+Draw out how data moves through Actant's specific layers:
 
 ```
 Example: "User creates an agent from template"
@@ -66,7 +66,7 @@ For each arrow, ask:
 - What could go wrong?
 - Who validates the data?
 
-### Step 2: Identify AgentCraft-Specific Boundaries
+### Step 2: Identify Actant-Specific Boundaries
 
 | Boundary | Common Issues |
 |----------|---------------|
@@ -89,7 +89,7 @@ For each boundary:
 
 ---
 
-## Common Cross-Layer Mistakes in AgentCraft
+## Common Cross-Layer Mistakes in Actant
 
 ### Mistake 1: Config Reference Resolution Timing
 
@@ -133,7 +133,7 @@ For each boundary:
 
 ---
 
-## AgentCraft Cross-Layer Checklist
+## Actant Cross-Layer Checklist
 
 ### Before Implementation
 

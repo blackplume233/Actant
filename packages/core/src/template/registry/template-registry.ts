@@ -1,7 +1,7 @@
-import type { AgentTemplate } from "@agentcraft/shared";
-import { TemplateNotFoundError, ConfigValidationError } from "@agentcraft/shared";
+import type { AgentTemplate } from "@actant/shared";
+import { TemplateNotFoundError, ConfigValidationError } from "@actant/shared";
 import { TemplateLoader } from "../loader/template-loader";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 
 const logger = createLogger("template-registry");
 

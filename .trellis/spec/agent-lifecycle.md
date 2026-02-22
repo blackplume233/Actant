@@ -1,14 +1,14 @@
 # Agent 生命周期与使用模式
 
-> 本文档定义 AgentCraft 中 Agent 的完整生命周期模型、运行模式和外部接入方式。
-> 这是理解"AgentCraft 能做什么、怎么用"的核心文档。
+> 本文档定义 Actant 中 Agent 的完整生命周期模型、运行模式和外部接入方式。
+> 这是理解"Actant 能做什么、怎么用"的核心文档。
 > **若代码行为与本文档不一致，以本文档为准。**
 
 ---
 
 ## 1. 核心概念：两个独立的生命周期
 
-AgentCraft 中的 Agent 有**两个解耦的生命周期**：
+Actant 中的 Agent 有**两个解耦的生命周期**：
 
 ```
 Workspace 生命周期                Process 生命周期
@@ -23,7 +23,7 @@ Workspace 生命周期                Process 生命周期
 
 | 维度 | Workspace | Process |
 |------|-----------|---------|
-| 实体 | 目录 + `.agentcraft.json` + 领域上下文文件 | OS 进程 (PID) |
+| 实体 | 目录 + `.actant.json` + 领域上下文文件 | OS 进程 (PID) |
 | 创建 | `agent.create` / `agent.resolve` | `agent.start` / 外部 spawn |
 | 销毁 | `agent.destroy` / `detach --cleanup` | `agent.stop` / 进程退出 / kill |
 | 持久性 | 可持久（persistent）或临时（ephemeral） | 总是临时的 |
@@ -69,7 +69,7 @@ LaunchMode 定义 Agent 进程的**启动方式**和**生命周期语义**。
 Agent 进程 (IDE / TUI)
  │
  ▼
-AgentCraft workspace
+Actant workspace
 ```
 
 | 属性 | 值 |
@@ -77,7 +77,7 @@ AgentCraft workspace
 | 生命周期所有者 | **用户** |
 | 进程形态 | 有 UI（IDE 窗口 / 终端 TUI） |
 | 典型 WorkspacePolicy | persistent |
-| AgentCraft 角色 | 准备 workspace + 启动进程，之后用户接管 |
+| Actant 角色 | 准备 workspace + 启动进程，之后用户接管 |
 
 **场景**：
 - 开发者打开 Cursor IDE 在 Agent workspace 中工作
@@ -85,11 +85,11 @@ AgentCraft workspace
 
 **典型流程**：
 ```
-agentcraft agent create dev-agent -t cursor-dev
-agentcraft agent start dev-agent          # 打开 Cursor 窗口
+actant agent create dev-agent -t cursor-dev
+actant agent start dev-agent          # 打开 Cursor 窗口
 # 用户在 Cursor 中工作...
 # 用户关闭 Cursor
-agentcraft agent stop dev-agent           # 或自动检测进程退出
+actant agent stop dev-agent           # 或自动检测进程退出
 ```
 
 ---
@@ -98,23 +98,23 @@ agentcraft agent stop dev-agent           # 或自动检测进程退出
 
 ```
 外部客户端 (IDE 插件 / Unreal / 脚本)
- │  ACP 或 AgentCraft API
+ │  ACP 或 Actant API
  ▼
-AgentCraft Daemon
+Actant Daemon
  │  ACP / stdio
  ▼
 Agent 进程 (headless)
  │
  ▼
-AgentCraft workspace
+Actant workspace
 ```
 
 | 属性 | 值 |
 |------|-----|
-| 生命周期所有者 | **调用方**（通过 AgentCraft API 控制） |
+| 生命周期所有者 | **调用方**（通过 Actant API 控制） |
 | 进程形态 | 无头（headless），通过 ACP 通信 |
 | 典型 WorkspacePolicy | persistent 或 ephemeral |
-| AgentCraft 角色 | spawn + 持有 ACP 连接 + 转发消息 |
+| Actant 角色 | spawn + 持有 ACP 连接 + 转发消息 |
 
 **场景**：
 - Unreal 通过 ACP Proxy 使用一个代码审查 Agent
@@ -124,13 +124,13 @@ AgentCraft workspace
 **典型流程**：
 ```
 # 通过 ACP Proxy
-agentcraft proxy review-agent              # 外部客户端 spawn 这个
+actant proxy review-agent              # 外部客户端 spawn 这个
 
 # 或通过 API
-agentcraft agent create review-agent -t code-review
-agentcraft agent start review-agent
+actant agent create review-agent -t code-review
+actant agent start review-agent
 # agent.prompt("review-agent", "审查这段代码...")
-agentcraft agent stop review-agent
+actant agent stop review-agent
 ```
 
 ---
@@ -138,21 +138,21 @@ agentcraft agent stop review-agent
 ### 3.3 acp-service — 持久服务模式
 
 ```
-AgentCraft Daemon (守护者)
+Actant Daemon (守护者)
  │  监控 + 心跳 + 崩溃重启
  ▼
 Agent 进程 (headless, long-running)
  │
  ▼
-AgentCraft workspace (persistent)
+Actant workspace (persistent)
 ```
 
 | 属性 | 值 |
 |------|-----|
-| 生命周期所有者 | **AgentCraft**（像 systemd 管理服务一样） |
+| 生命周期所有者 | **Actant**（像 systemd 管理服务一样） |
 | 进程形态 | 无头，长期运行 |
 | 典型 WorkspacePolicy | **persistent**（必须） |
-| AgentCraft 角色 | spawn + 心跳监控 + 崩溃自动重启 + 接受外部 prompt |
+| Actant 角色 | spawn + 心跳监控 + 崩溃自动重启 + 接受外部 prompt |
 
 **场景**：
 - 7×24 运行的"员工 Agent"——持续监控代码仓库、自动审查 PR
@@ -161,10 +161,10 @@ AgentCraft workspace (persistent)
 
 **典型流程**：
 ```
-agentcraft agent create pr-reviewer -t pr-review --launch-mode acp-service
-agentcraft agent start pr-reviewer
+actant agent create pr-reviewer -t pr-review --launch-mode acp-service
+actant agent start pr-reviewer
 # Agent 持续运行...
-# 崩溃？AgentCraft 自动重启（指数退避）
+# 崩溃？Actant 自动重启（指数退避）
 # 多个客户端可以 agent.prompt 向它发任务
 ```
 
@@ -172,7 +172,7 @@ agentcraft agent start pr-reviewer
 
 | 维度 | acp-background | acp-service |
 |------|---------------|-------------|
-| 谁决定何时终止 | 调用方 | AgentCraft（或管理员手动） |
+| 谁决定何时终止 | 调用方 | Actant（或管理员手动） |
 | 崩溃处理 | 标记 error/crashed，不自动重启 | **自动重启**（指数退避） |
 | 心跳监控 | ProcessWatcher 基础监控 | ProcessWatcher + **心跳插件** |
 | Workspace | 可以是 ephemeral | **必须 persistent** |
@@ -186,7 +186,7 @@ agentcraft agent start pr-reviewer
 调用方
  │  agent.run / agent.start
  ▼
-AgentCraft Daemon
+Actant Daemon
  │  spawn + 等待退出
  ▼
 Agent 进程 (短期)
@@ -197,10 +197,10 @@ Agent 进程 (短期)
 
 | 属性 | 值 |
 |------|-----|
-| 生命周期所有者 | **AgentCraft**（自动管理全流程） |
+| 生命周期所有者 | **Actant**（自动管理全流程） |
 | 进程形态 | 短期运行，执行完毕自动退出 |
 | 典型 WorkspacePolicy | **ephemeral** |
-| AgentCraft 角色 | create → spawn → 等待完成 → 收集结果 → 清理 |
+| Actant 角色 | create → spawn → 等待完成 → 收集结果 → 清理 |
 
 **场景**：
 - Unreal 实时创建一个 Agent 完成单次代码生成任务
@@ -214,10 +214,10 @@ result = agent.run({ template: "code-gen", prompt: "生成一个排序算法" })
 # workspace 自动清理
 
 # 分步骤
-agentcraft agent create task-123 -t code-gen --launch-mode one-shot
-agentcraft agent start task-123
+actant agent create task-123 -t code-gen --launch-mode one-shot
+actant agent start task-123
 # 等待进程退出...
-# AgentCraft 自动：status → stopped，可选清理 workspace
+# Actant 自动：status → stopped，可选清理 workspace
 ```
 
 ---
@@ -227,7 +227,7 @@ agentcraft agent start task-123
 | 维度 | direct | acp-background | acp-service | one-shot |
 |------|--------|---------------|-------------|----------|
 | 进程形态 | 有 UI | headless | headless | headless |
-| 生命周期所有者 | 用户 | 调用方 | AgentCraft | AgentCraft |
+| 生命周期所有者 | 用户 | 调用方 | Actant | Actant |
 | 进程存续 | 用户关闭 | 调用方决定 | 长期运行 | 任务完成退出 |
 | 崩溃处理 | 通知 | 通知 | **自动重启** | 标记失败 |
 | 典型 workspace | persistent | 均可 | persistent | ephemeral |
@@ -267,12 +267,12 @@ one-shot   Daemon spawn + 等待退出       (不适用: 一次性任务由 Daem
 
 ## 5. 四种外部接入模式
 
-外部系统与 AgentCraft 交互的四种方式，按**AgentCraft 控制程度**从高到低排列。
+外部系统与 Actant 交互的四种方式，按**Actant 控制程度**从高到低排列。
 
 ### 5.1 agent.run — 全托管
 
 ```
-调用方 ──→ AgentCraft API ──→ Agent
+调用方 ──→ Actant API ──→ Agent
 调用方 ←── 结果             ←── Agent
 ```
 
@@ -281,8 +281,8 @@ one-shot   Daemon spawn + 等待退出       (不适用: 一次性任务由 Daem
 | 协议 | JSON-RPC（CLI / API） |
 | 谁 spawn | Daemon |
 | 谁拥有 ACP | Daemon |
-| AgentCraft 感知 | **完全** |
-| 环境能力 | AgentCraft workspace |
+| Actant 感知 | **完全** |
+| 环境能力 | Actant workspace |
 | 适合 | 纯任务委托、不关心 Agent 细节 |
 
 **调用方只需一行**：
@@ -295,7 +295,7 @@ result = agent.run({ template: "reviewer", prompt: "审查这个 PR" })
 ### 5.2 ACP Proxy — 标准协议接入
 
 ```
-调用方 ──ACP/stdio──→ agentcraft proxy ──RPC──→ Daemon ──ACP──→ Agent
+调用方 ──ACP/stdio──→ actant proxy ──RPC──→ Daemon ──ACP──→ Agent
 ```
 
 | 属性 | 值 |
@@ -303,7 +303,7 @@ result = agent.run({ template: "reviewer", prompt: "审查这个 PR" })
 | 协议 | **标准 ACP / stdio** |
 | 谁 spawn Agent | Daemon |
 | 谁拥有 Agent ACP | Daemon（Proxy 转发） |
-| AgentCraft 感知 | **完全** |
+| Actant 感知 | **完全** |
 | 环境能力 | workspace 隔离 或 环境穿透 |
 | 适合 | IDE 集成、需要标准协议互操作 |
 
@@ -311,20 +311,20 @@ result = agent.run({ template: "reviewer", prompt: "审查这个 PR" })
 ```json
 {
   "agent": {
-    "command": "agentcraft",
+    "command": "actant",
     "args": ["proxy", "--agent", "my-agent"],
     "protocol": "acp/stdio"
   }
 }
 ```
 
-**核心价值**：调用方无需了解 AgentCraft，以标准 ACP 即可使用。和接入 Claude Code / Cursor Agent 的代码路径完全一致，**零供应商锁定**。
+**核心价值**：调用方无需了解 Actant，以标准 ACP 即可使用。和接入 Claude Code / Cursor Agent 的代码路径完全一致，**零供应商锁定**。
 
 **两种子模式**：
 
 | 模式 | 标志 | Agent 的 fs/read 去哪 | 场景 |
 |------|------|---------------------|------|
-| Workspace 隔离 | *(默认)* | AgentCraft workspace | 任务委托 |
+| Workspace 隔离 | *(默认)* | Actant workspace | 任务委托 |
 | 环境穿透 | `--env-passthrough` | 穿透回调用方 | Agent 操作调用方的文件 |
 
 ---
@@ -332,9 +332,9 @@ result = agent.run({ template: "reviewer", prompt: "审查这个 PR" })
 ### 5.3 Self-spawn + Attach — 自主管理
 
 ```
-调用方 ──resolve──→ AgentCraft ──→ workspace 信息
+调用方 ──resolve──→ Actant ──→ workspace 信息
 调用方 ──spawn────→ Agent 进程
-调用方 ──attach───→ AgentCraft (注册 PID)
+调用方 ──attach───→ Actant (注册 PID)
 调用方 ←──ACP────→ Agent 进程 (直接通信)
 ```
 
@@ -343,7 +343,7 @@ result = agent.run({ template: "reviewer", prompt: "审查这个 PR" })
 | 协议 | JSON-RPC（resolve/attach/detach）+ 调用方自选 ACP |
 | 谁 spawn Agent | **调用方** |
 | 谁拥有 ACP | **调用方** |
-| AgentCraft 感知 | 通过 attach 注册（PID 监控 + 状态追踪） |
+| Actant 感知 | 通过 attach 注册（PID 监控 + 状态追踪） |
 | 环境能力 | 调用方自己提供 |
 | 适合 | 需要完全控制进程和 ACP 的场景 |
 
@@ -351,15 +351,15 @@ result = agent.run({ template: "reviewer", prompt: "审查这个 PR" })
 ```
 1. info = agent.resolve("my-agent", { template: "..." })
 2. process = spawn(info.command, info.args)          // 调用方自己 spawn
-3. agent.attach("my-agent", { pid: process.pid })    // 注册到 AgentCraft
+3. agent.attach("my-agent", { pid: process.pid })    // 注册到 Actant
 4. // 调用方直接和 Agent ACP 通信
 5. process.terminate()
-6. agent.detach("my-agent", { cleanup: true })       // 通知 AgentCraft
+6. agent.detach("my-agent", { cleanup: true })       // 通知 Actant
 ```
 
 **只需两行额外代码**（attach + detach），调用方就从"完全独立"变成了"可观测 + 可协调"。
 
-**AgentCraft 对 attached 进程的能力**：
+**Actant 对 attached 进程的能力**：
 
 | 能力 | managed | external (attached) |
 |------|---------|-------------------|
@@ -375,7 +375,7 @@ result = agent.run({ template: "reviewer", prompt: "审查这个 PR" })
 ### 5.4 MCP Server — Agent 间通信
 
 ```
-Agent A ──MCP tool call──→ AgentCraft MCP Server ──RPC──→ Daemon ──ACP──→ Agent B
+Agent A ──MCP tool call──→ Actant MCP Server ──RPC──→ Daemon ──ACP──→ Agent B
 ```
 
 | 属性 | 值 |
@@ -383,19 +383,19 @@ Agent A ──MCP tool call──→ AgentCraft MCP Server ──RPC──→ Da
 | 协议 | **标准 MCP / stdio** |
 | 谁 spawn Agent B | Daemon |
 | 谁拥有 Agent B ACP | Daemon |
-| AgentCraft 感知 | **完全** |
-| 环境能力 | AgentCraft workspace |
+| Actant 感知 | **完全** |
+| 环境能力 | Actant workspace |
 | 适合 | Agent 委托子任务给另一个 Agent |
 
 **为什么不用 ACP**：Agent A 自身就是被管理的 Agent，它没有能力扮演 ACP Client（无法提供文件系统、终端、权限）。MCP 是 Agent 的原生工具调用协议。
 
 **MCP Tools**：
 ```
-agentcraft_run_agent      — 创建 ephemeral Agent 执行任务
-agentcraft_prompt_agent   — 向持久 Agent 发送消息
-agentcraft_agent_status   — 查询 Agent 状态
-agentcraft_create_agent   — 创建实例
-agentcraft_list_agents    — 列出所有 Agent
+actant_run_agent      — 创建 ephemeral Agent 执行任务
+actant_prompt_agent   — 向持久 Agent 发送消息
+actant_agent_status   — 查询 Agent 状态
+actant_create_agent   — 创建实例
+actant_list_agents    — 列出所有 Agent
 ```
 
 ---
@@ -414,7 +414,7 @@ agentcraft_list_agents    — 列出所有 Agent
 | 标准协议互操作 | ❌ | ✅(**ACP**) | ❌ | ✅(**MCP**) |
 
 ```
-AgentCraft 控制程度
+Actant 控制程度
 高 ◄───────────────────────────────────────────────► 低
 
  agent.run      ACP Proxy      MCP Server     Self-spawn+Attach
@@ -440,16 +440,16 @@ AgentCraft 控制程度
 
 ```
 // agent.run 方式（最简）
-result = agentcraft.run({ template: "ue-codegen", prompt: "生成排序蓝图" })
+result = actant.run({ template: "ue-codegen", prompt: "生成排序蓝图" })
 use(result.response)
 
 // Self-spawn 方式（需要控制 ACP）
-info = agentcraft.resolve("task-123", { template: "ue-codegen" })
+info = actant.resolve("task-123", { template: "ue-codegen" })
 proc = spawn(info.command, info.args)
-agentcraft.attach("task-123", { pid: proc.pid })
+actant.attach("task-123", { pid: proc.pid })
 response = acp_prompt(proc, "生成排序蓝图")  // 直接 ACP
 proc.terminate()
-agentcraft.detach("task-123", { cleanup: true })
+actant.detach("task-123", { cleanup: true })
 ```
 
 #### 场景 B：持久化代码审查 Agent
@@ -464,20 +464,20 @@ agentcraft.detach("task-123", { cleanup: true })
 
 ```
 // 一次性设置
-agentcraft agent create team-reviewer -t code-review --launch-mode acp-service
-agentcraft agent start team-reviewer
+actant agent create team-reviewer -t code-review --launch-mode acp-service
+actant agent start team-reviewer
 // Agent 持续运行，崩溃自动重启
 
 // 团队成员使用（通过 ACP Proxy）
-// 在各自 IDE 中配置：agentcraft proxy team-reviewer
+// 在各自 IDE 中配置：actant proxy team-reviewer
 
 // 或通过 API
-agentcraft.prompt("team-reviewer", "审查 PR #42")
+actant.prompt("team-reviewer", "审查 PR #42")
 ```
 
 #### 场景 C：Unreal 自主管理 Agent 进程
 
-> Unreal 需要完全控制 Agent 进程（自定义 spawn 参数、资源限制、进程组管理），但希望 AgentCraft 追踪状态。
+> Unreal 需要完全控制 Agent 进程（自定义 spawn 参数、资源限制、进程组管理），但希望 Actant 追踪状态。
 
 | 选择 | 推荐 |
 |------|------|
@@ -487,12 +487,12 @@ agentcraft.prompt("team-reviewer", "审查 PR #42")
 
 ```cpp
 // Unreal C++
-auto Info = AgentCraft->Resolve("ue-helper", "ue-template");
+auto Info = Actant->Resolve("ue-helper", "ue-template");
 auto Proc = FPlatformProcess::CreateProc(Info.Command, Info.Args, ...);
-AgentCraft->Attach("ue-helper", Proc.GetProcessId());
+Actant->Attach("ue-helper", Proc.GetProcessId());
 // Unreal 直接 ACP 通信...
 Proc.Terminate();
-AgentCraft->Detach("ue-helper");
+Actant->Detach("ue-helper");
 ```
 
 ---
@@ -501,7 +501,7 @@ AgentCraft->Detach("ue-helper");
 
 #### 场景 D：VSCode 插件接入专业 Agent
 
-> VSCode 插件想使用一个 AgentCraft 管理的安全审计 Agent。
+> VSCode 插件想使用一个 Actant 管理的安全审计 Agent。
 
 | 选择 | 推荐 |
 |------|------|
@@ -510,9 +510,9 @@ AgentCraft->Detach("ue-helper");
 ```json
 // VSCode settings.json
 {
-  "agentcraft.agents": {
+  "actant.agents": {
     "security-auditor": {
-      "command": "agentcraft",
+      "command": "actant",
       "args": ["proxy", "--agent", "security-auditor", "--env-passthrough"],
       "protocol": "acp/stdio"
     }
@@ -536,17 +536,17 @@ AgentCraft->Detach("ue-helper");
 | Agent B LaunchMode | `one-shot`（单次任务）或 `acp-service`（持久可复用） |
 
 ```
-// Agent A 的 MCP 配置中包含 AgentCraft MCP Server
+// Agent A 的 MCP 配置中包含 Actant MCP Server
 // Agent A 在执行过程中：
 
-result = mcp.call("agentcraft_run_agent", {
+result = mcp.call("actant_run_agent", {
   template: "coding-expert",
   prompt: "实现以下接口：..."
 })
 // Agent B 被创建、执行、返回结果、清理
 
 // 或者复用持久 Agent：
-result = mcp.call("agentcraft_prompt_agent", {
+result = mcp.call("actant_prompt_agent", {
   name: "team-coder",
   message: "实现以下接口：..."
 })
@@ -569,7 +569,7 @@ result = mcp.call("agentcraft_prompt_agent", {
 ```bash
 #!/bin/bash
 for file in $(git diff --name-only HEAD~1); do
-  result=$(agentcraft agent run -t code-review -p "审查文件: $file")
+  result=$(actant agent run -t code-review -p "审查文件: $file")
   echo "$result" >> review-report.md
 done
 ```
@@ -589,7 +589,7 @@ done
 ```typescript
 // Express route handler
 app.post("/api/generate", async (req, res) => {
-  const result = await agentcraft.run({
+  const result = await actant.run({
     template: "content-writer",
     prompt: req.body.prompt,
   });

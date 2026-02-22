@@ -10,7 +10,7 @@
 
 ## Context
 
-AgentCraft is developed collaboratively by human developers and AI agents. The project needs:
+Actant is developed collaboratively by human developers and AI agents. The project needs:
 
 1. A clear monorepo structure for 5+ packages
 2. Extensive documentation that grows over time
@@ -22,7 +22,7 @@ AgentCraft is developed collaboratively by human developers and AI agents. The p
 ### Complete Directory Structure
 
 ```
-AgentCraft/
+Actant/
 │
 ├── .trellis/                         # [Trellis] AI development framework (gitignored internals)
 │
@@ -59,7 +59,7 @@ AgentCraft/
 │
 ├── packages/                         # Source code (pnpm workspace)
 │   │
-│   ├── shared/                       # @agentcraft/shared — Shared utilities
+│   ├── shared/                       # @actant/shared — Shared utilities
 │   │   ├── src/
 │   │   │   ├── types/                # Shared type definitions
 │   │   │   │   ├── agent.types.ts
@@ -83,7 +83,7 @@ AgentCraft/
 │   │   ├── tsconfig.json
 │   │   └── vitest.config.ts
 │   │
-│   ├── core/                         # @agentcraft/core — Core business logic
+│   ├── core/                         # @actant/core — Core business logic
 │   │   ├── src/
 │   │   │   ├── template/             # Agent Template management
 │   │   │   │   ├── schema/
@@ -112,7 +112,7 @@ AgentCraft/
 │   │   ├── tsconfig.json
 │   │   └── vitest.config.ts
 │   │
-│   ├── cli/                          # @agentcraft/cli — CLI frontend
+│   ├── cli/                          # @actant/cli — CLI frontend
 │   │   ├── src/
 │   │   │   ├── commands/             # Command implementations
 │   │   │   │   ├── agent/
@@ -125,12 +125,12 @@ AgentCraft/
 │   │   │   ├── errors/               # CLI error presentation
 │   │   │   └── index.ts
 │   │   ├── bin/
-│   │   │   └── agentcraft.ts         # CLI entry point
+│   │   │   └── actant.ts         # CLI entry point
 │   │   ├── package.json
 │   │   ├── tsconfig.json
 │   │   └── vitest.config.ts
 │   │
-│   ├── api/                          # @agentcraft/api — RESTful API
+│   ├── api/                          # @actant/api — RESTful API
 │   │   ├── src/
 │   │   │   ├── routes/
 │   │   │   ├── middleware/
@@ -140,7 +140,7 @@ AgentCraft/
 │   │   ├── tsconfig.json
 │   │   └── vitest.config.ts
 │   │
-│   ├── acp/                          # @agentcraft/acp — ACP server
+│   ├── acp/                          # @actant/acp — ACP server
 │   │   ├── src/
 │   │   │   ├── server/
 │   │   │   ├── routing/
@@ -150,7 +150,7 @@ AgentCraft/
 │   │   ├── tsconfig.json
 │   │   └── vitest.config.ts
 │   │
-│   └── mcp-server/                   # @agentcraft/mcp-server — MCP server
+│   └── mcp-server/                   # @actant/mcp-server — MCP server
 │       ├── src/
 │       │   ├── tools/
 │       │   ├── resources/
@@ -246,7 +246,7 @@ docs/
 
 ### 4. configs/ — Product Configuration Defaults
 
-Separate from source code. These are the built-in configurations shipped with AgentCraft.
+Separate from source code. These are the built-in configurations shipped with Actant.
 
 - Version-controlled alongside code
 - Serve as both product defaults and documentation-by-example

@@ -29,7 +29,7 @@
 **原计划 Gateway 架构的问题**：
 
 1. **CWD 分裂**：
-   - Agent 子进程由 Daemon 启动，cwd = agent workspace（如 `~/.agentcraft/instances/my-agent/`）
+   - Agent 子进程由 Daemon 启动，cwd = agent workspace（如 `~/.actant/instances/my-agent/`）
    - IDE 通过 `session/new { cwd }` 传递自己的项目目录（如 `/Users/foo/project/`）
    - Domain context（AGENTS.md、prompts/）物化在 agent workspace，用户代码在 IDE 项目
    - 如果用 IDE 的 cwd，Agent 看不到 domain context；如果用 agent workspace，Agent 看不到用户代码
@@ -77,7 +77,7 @@
 
 ### 提出
 
-> **"考虑雇员型的 agent，AgentCraft 需要有能力持续调度这种 agent。"**
+> **"考虑雇员型的 agent，Actant 需要有能力持续调度这种 agent。"**
 
 ### 两种 Agent 原型
 
@@ -110,7 +110,7 @@
 ### 决策：1 Instance : 1 Process（严格）
 
 - 需要并发时创建多个 Instance（从同一 Template instantiate）
-- 保持 `.agentcraft.json` 简单
+- 保持 `.actant.json` 简单
 - 避免文件锁、数组 pid 追踪等复杂度
 
 ## 5. 冷启动与快速释放问题

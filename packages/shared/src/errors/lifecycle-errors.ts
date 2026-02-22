@@ -1,6 +1,6 @@
-import { AgentCraftError, type ErrorCategory } from "./base-error";
+import { ActantError, type ErrorCategory } from "./base-error";
 
-export class AgentLaunchError extends AgentCraftError {
+export class AgentLaunchError extends ActantError {
   readonly code = "AGENT_LAUNCH_ERROR";
   readonly category: ErrorCategory = "lifecycle";
 
@@ -13,7 +13,7 @@ export class AgentLaunchError extends AgentCraftError {
   }
 }
 
-export class AgentNotFoundError extends AgentCraftError {
+export class AgentNotFoundError extends ActantError {
   readonly code = "AGENT_NOT_FOUND";
   readonly category: ErrorCategory = "lifecycle";
 
@@ -22,7 +22,7 @@ export class AgentNotFoundError extends AgentCraftError {
   }
 }
 
-export class AgentAlreadyRunningError extends AgentCraftError {
+export class AgentAlreadyRunningError extends ActantError {
   readonly code = "AGENT_ALREADY_RUNNING";
   readonly category: ErrorCategory = "lifecycle";
 
@@ -31,7 +31,7 @@ export class AgentAlreadyRunningError extends AgentCraftError {
   }
 }
 
-export class AgentAlreadyAttachedError extends AgentCraftError {
+export class AgentAlreadyAttachedError extends ActantError {
   readonly code = "AGENT_ALREADY_ATTACHED";
   readonly category: ErrorCategory = "lifecycle";
 
@@ -40,7 +40,7 @@ export class AgentAlreadyAttachedError extends AgentCraftError {
   }
 }
 
-export class AgentNotAttachedError extends AgentCraftError {
+export class AgentNotAttachedError extends ActantError {
   readonly code = "AGENT_NOT_ATTACHED";
   readonly category: ErrorCategory = "lifecycle";
 
@@ -49,7 +49,7 @@ export class AgentNotAttachedError extends AgentCraftError {
   }
 }
 
-export class InstanceCorruptedError extends AgentCraftError {
+export class InstanceCorruptedError extends ActantError {
   readonly code = "INSTANCE_CORRUPTED";
   readonly category: ErrorCategory = "lifecycle";
 
@@ -61,7 +61,7 @@ export class InstanceCorruptedError extends AgentCraftError {
   }
 }
 
-export class WorkspaceInitError extends AgentCraftError {
+export class WorkspaceInitError extends ActantError {
   readonly code = "WORKSPACE_INIT_ERROR";
   readonly category: ErrorCategory = "lifecycle";
 

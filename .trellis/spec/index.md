@@ -1,4 +1,4 @@
-# AgentCraft Specifications
+# Actant Specifications
 
 > **核心原则**：协议和配置结构是项目的主要产出，代码是对它们的实现。
 

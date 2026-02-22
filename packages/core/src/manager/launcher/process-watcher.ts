@@ -1,4 +1,4 @@
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 import { isProcessAlive } from "./process-utils";
 
 const logger = createLogger("process-watcher");

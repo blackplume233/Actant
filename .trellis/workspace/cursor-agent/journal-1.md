@@ -22,7 +22,7 @@
 | 阶段 | 交付物 | 说明 |
 |------|--------|------|
 | Phase 0 | 构建基础设施 | vitest, tsup, zod v4, pino v10; 所有 6 包配置完成 |
-| Phase 1 | 共享类型与错误体系 | AgentCraftError 层级 (10 错误类), 核心类型 (Agent/Template/DomainContext), Logger |
+| Phase 1 | 共享类型与错误体系 | ActantError 层级 (10 错误类), 核心类型 (Agent/Template/DomainContext), Logger |
 | Phase 2 | Agent Template Schema | Zod v4 完整 schema, 21 个验证测试 + 6 个类型对齐测试 |
 
 ## 里程碑
@@ -94,7 +94,7 @@
 
 ## 架构决策
 
-- **Daemon + Thin Client**: CLI 不直接依赖 @agentcraft/core，通过 @agentcraft/api daemon 中转
+- **Daemon + Thin Client**: CLI 不直接依赖 @actant/core，通过 @actant/api daemon 中转
 - **JSON-RPC 2.0 over Unix Socket**: 进程间通信协议，NDJSON 分帧
 - **Docker 类比**: Template=Dockerfile, Instance=Container, Daemon=dockerd, CLI=docker
 - **Import 规范**: 无 .js 扩展名 + 仅保留有意义的聚合 barrel
@@ -155,7 +155,7 @@
 
 ## Key Decisions
 
-- Windows IPC uses named pipes (`\\.\pipe\agentcraft`) instead of Unix sockets
+- Windows IPC uses named pipes (`\\.\pipe\actant`) instead of Unix sockets
 - `onShutdownSignal()` listens SIGINT+SIGTERM on Unix, SIGINT+SIGBREAK on Windows
 - Shell scripts (.trellis/scripts/) remain bash-only; Windows users use Git Bash or WSL
 
@@ -265,7 +265,7 @@
 - `packages/core/src/initializer/context/context-materializer.ts` — 后端感知目录路由
 - `packages/core/src/manager/index.ts` — 导出新模块
 - `packages/api/src/services/app-context.ts` — 使用 createLauncher 工厂
-- `vitest.config.ts` — 添加 @agentcraft/* 路径别名避免构建依赖
+- `vitest.config.ts` — 添加 @actant/* 路径别名避免构建依赖
 - 多个测试文件更新以适配新字段
 
 ### Git Commits
@@ -348,17 +348,17 @@
 
 ## 设计讨论与规范产出
 
-本次会话围绕 AgentCraft 的通信架构进行了深入设计讨论，产出完整规范文档。
+本次会话围绕 Actant 的通信架构进行了深入设计讨论，产出完整规范文档。
 
 ### 核心设计决策
 
 | 决策 | 结论 |
 |------|------|
 | Agent 能否用 ACP 直连托管 Agent | **不能** — ACP 连接被 Daemon 独占，Agent 无法扮演 ACP Client |
-| Agent-to-Agent 的正确路径 | **MCP** — Agent 调用 AgentCraft MCP Server tools |
-| 外部应用如何标准化接入 | **ACP Proxy** — agentcraft proxy 暴露标准 ACP/stdio 接口 |
+| Agent-to-Agent 的正确路径 | **MCP** — Agent 调用 Actant MCP Server tools |
+| 外部应用如何标准化接入 | **ACP Proxy** — actant proxy 暴露标准 ACP/stdio 接口 |
 | 外部客户端自管 Agent 进程 | **Self-spawn + Attach** — resolve 获取信息，attach/detach 注册状态 |
-| AgentCraft API 是否对齐 ACP | **长期愿景 (#18)** — ACP-Fleet 扩展协议，Daemon 升级为 ACP Server |
+| Actant API 是否对齐 ACP | **长期愿景 (#18)** — ACP-Fleet 扩展协议，Daemon 升级为 ACP Server |
 
 ### 新增/更新文档
 
@@ -383,7 +383,7 @@
 ```
 ACP:  人/应用 ↔ Agent（交互协议）
 MCP:  Agent ↔ 工具/服务（能力协议）
-AgentCraft 同时扮演：ACP Client + MCP Server + ACP Proxy
+Actant 同时扮演：ACP Client + MCP Server + ACP Proxy
 ```
 
 ### Git Commits
@@ -820,7 +820,7 @@ Phase 3: Session Lease + Proxy ACP 适配器
 
 | Feature | Description |
 |---------|-------------|
-| **协议分析文档** | 逐行对比 ACP 规范 vs AgentCraft 实现，列出所有缺失项 |
+| **协议分析文档** | 逐行对比 ACP 规范 vs Actant 实现，列出所有缺失项 |
 | **架构设计文档** | Direct Bridge (透明转发) + Session Lease (Gateway + 回调路由 + 本地伪装) |
 | **LocalTerminalManager** | 完整 ACP terminal/* 回调实现 (create/output/wait_for_exit/kill/release) |
 | **ClientCallbackRouter** | 根据 IDE capabilities 智能路由回调：转发给 IDE 或本地伪装处理 |
@@ -932,3 +932,59 @@ Implemented Phase 3a unified component management system: enhanced `BaseComponen
 - Integration tests for source sync (GitHub clone, local scan end-to-end)
 - Update `.trellis/spec/` documentation to reflect new component management APIs
 - Wire up `preset.apply` to actually modify AgentTemplate files on disk
+
+---
+
+## Session 2026-02-22 — Version staging system, CI issue sync, and full commit
+
+**Developer**: cursor-agent
+**Date**: 2026-02-22
+**Commit**: `8f6d420`
+
+### Summary
+
+Built complete version staging toolchain and added CI workflow for auto-syncing local issues to GitHub on push.
+
+### Changes
+
+| Area | Description |
+|------|-------------|
+| Version Staging | `stage-version.sh` with full lifecycle: init, changelog, snapshot, metrics, test-report, diff, bump, unstage, latest, tag, release |
+| API Surface Snapshot | `gen-surface-snapshot.mjs` — extracts RPC methods, CLI commands, error codes, Zod schemas, TS interfaces |
+| Cross-version Diff | `diff-versions.mjs` — compares API surface + config schemas between staged versions with breaking change detection |
+| Code Metrics | `gen-metrics-snapshot.mjs` — LOC, file counts, exports, dependencies per package |
+| Issue Snapshot | `gen-issue-snapshot.mjs` — structured JSON snapshot of all local issues |
+| v0.1.0 Stage | Generated 9 artifacts: architecture, changelog, api-surface, config-schemas, metrics, dependencies, issue-snapshot, metadata |
+| AI Commands | Cursor + Claude command docs for guided staging workflow |
+| QA Tooling | Random-walk comprehensive test scenario and logs |
+| CI Workflow | `.github/workflows/sync-issues.yml` — auto-sync `.trellis/issues/` to GitHub Issues on push to master |
+| Issue Updates | Phase 3 issue metadata (status, labels, milestones) for 14 issues |
+
+### Key Files
+
+- `.trellis/scripts/stage-version.sh` — main staging orchestrator
+- `.trellis/scripts/gen-surface-snapshot.mjs` — API + config schema extractor
+- `.trellis/scripts/diff-versions.mjs` — cross-version diff
+- `.trellis/scripts/gen-metrics-snapshot.mjs` — code metrics collector
+- `.trellis/scripts/gen-issue-snapshot.mjs` — issue snapshot generator
+- `.github/workflows/sync-issues.yml` — CI issue sync workflow
+- `docs/stage/v0.1.0/` — all v0.1.0 staged artifacts
+- `.cursor/commands/trellis-stage-version.md` — Cursor staging command
+- `.claude/commands/trellis/stage-version.md` — Claude staging command
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8f6d420` | feat: add version staging system, QA tooling, and CI issue sync |
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Generate `test-report.json` for v0.1.0 (pending test execution)
+- Create git tag `v0.1.0` and GitHub release
+- Verify CI issue sync workflow triggers correctly on push
+- Use `stage-version.sh diff` after next version to validate cross-version comparison

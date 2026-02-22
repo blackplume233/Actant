@@ -28,7 +28,7 @@ export interface RpcError {
 }
 
 // ---------------------------------------------------------------------------
-// Error codes — maps AgentCraftError codes to JSON-RPC error codes
+// Error codes — maps ActantError codes to JSON-RPC error codes
 // ---------------------------------------------------------------------------
 
 export const RPC_ERROR_CODES = {

@@ -33,7 +33,7 @@ These guides help you **ask the right questions before coding**.
 
 ---
 
-## AgentCraft-Specific Thinking Triggers
+## Actant-Specific Thinking Triggers
 
 ### When to Think About Agent Lifecycle
 

@@ -1,5 +1,5 @@
 import type { Socket } from "node:net";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 import { AcpConnection, type AcpConnectionOptions, type AcpSessionInfo, type ClientCallbackHandler } from "./connection";
 import { ClientCallbackRouter } from "./callback-router";
 import { AcpGateway } from "./gateway";

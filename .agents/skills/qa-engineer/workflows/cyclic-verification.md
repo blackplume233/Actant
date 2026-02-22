@@ -19,8 +19,8 @@
 1. **环境准备**
    - `pnpm build` 构建项目
    - 创建隔离临时目录（`mktemp -d`）
-   - 设置环境变量：`AGENTCRAFT_HOME`, `AGENTCRAFT_SOCKET`, `AGENTCRAFT_LAUNCHER_MODE=mock`
-   - 在 Windows 上，`AGENTCRAFT_SOCKET` 需设为命名管道路径（`getIpcPath(homeDir)` 的返回值）
+   - 设置环境变量：`ACTANT_HOME`, `ACTANT_SOCKET`, `ACTANT_LAUNCHER_MODE=mock`
+   - 在 Windows 上，`ACTANT_SOCKET` 需设为命名管道路径（`getIpcPath(homeDir)` 的返回值）
    - 启动 Daemon（`daemon start --foreground`）
 
 2. **执行测试场景组**
@@ -105,7 +105,7 @@
 - Issue #39 (mock 模式限制): 架构性问题，推荐添加 session-handlers.test.ts
 
 **关键发现**:
-1. Windows 环境下 `AGENTCRAFT_SOCKET` 需要使用命名管道路径
+1. Windows 环境下 `ACTANT_SOCKET` 需要使用命名管道路径
 2. Mock launcher 的假 PID 会被 ProcessWatcher 检测为死亡
 3. Session Lease API 需要真实 ACP 连接（claude-code 后端）
 4. PowerShell 写入 JSON 文件会添加 BOM，需用 `[System.IO.File]::WriteAllText`
@@ -131,7 +131,7 @@
 // 用法: node qa-rpc.cjs <method> <base64-encoded-params>
 // 示例: node qa-rpc.cjs "session.create" "eyJhZ2VudE5hbWUiOiJ0ZXN0In0="
 const net = require("net");
-const sock = process.env.AGENTCRAFT_SOCKET;
+const sock = process.env.ACTANT_SOCKET;
 const method = process.argv[2];
 const params = JSON.parse(Buffer.from(process.argv[3] || "e30=", "base64").toString("utf8"));
 const request = JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method, params }) + "\n";

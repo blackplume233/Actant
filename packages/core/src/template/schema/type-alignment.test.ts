@@ -6,7 +6,7 @@ import type {
   DomainContextConfig,
   McpServerRef,
   InitializerConfig,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 import type { AgentTemplateOutput } from "./template-schema";
 
 /**

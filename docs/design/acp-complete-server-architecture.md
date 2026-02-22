@@ -1,15 +1,15 @@
 # ACP Complete Server Architecture Design
 
-> AgentCraft 作为完备 ACP Server 的架构设计
-> 目标：外部 ACP Client 连接到 AgentCraft 的 Agent 后，等价于连接到一个完备的 ACP Server
+> Actant 作为完备 ACP Server 的架构设计
+> 目标：外部 ACP Client 连接到 Actant 的 Agent 后，等价于连接到一个完备的 ACP Server
 
 ---
 
 ## 1. 核心问题
 
-外部 ACP Client（IDE）通过 `agentcraft proxy <name>` 连接到 Agent。
+外部 ACP Client（IDE）通过 `actant proxy <name>` 连接到 Agent。
 Agent 进程（如 `claude-agent-acp`）自身已经是一个完备的 ACP Server。
-**AgentCraft 的职责是确保这个连接路径上不丢失任何 ACP 能力。**
+**Actant 的职责是确保这个连接路径上不丢失任何 ACP 能力。**
 
 ---
 
@@ -21,7 +21,7 @@ Agent 进程（如 `claude-agent-acp`）自身已经是一个完备的 ACP Serve
 IDE (ACP Client)
     │ ACP / stdio
     ▼
-agentcraft proxy <name>     ← 纯字节流网关
+actant proxy <name>     ← 纯字节流网关
     │ ACP / stdio (pipe)
     ▼
 Agent Process (ACP Server)  ← 已是完备 ACP Server
@@ -34,9 +34,9 @@ Agent Process (ACP Server)  ← 已是完备 ACP Server
 - `requestPermission` → IDE 直接处理
 - `fs/*`、`terminal/*` → IDE 直接处理
 - `session/update` → IDE 直接接收
-- 无需 AgentCraft 做任何 ACP 解析
+- 无需 Actant 做任何 ACP 解析
 
-**AgentCraft 仅负责生命周期：**
+**Actant 仅负责生命周期：**
 1. `agent.resolve` → 获取 spawn 信息
 2. spawn Agent 进程
 3. `agent.attach` → 注册到 Daemon
@@ -55,7 +55,7 @@ Agent Process (ACP Server)  ← 已是完备 ACP Server
 #### 状态 A：无活跃租约（Self-managed）
 
 ```
-agentcraft agent start <name>
+actant agent start <name>
     ↓
 Daemon ──── AcpConnection (ClientSideConnection) ──── Agent
              │
@@ -67,7 +67,7 @@ Daemon ──── AcpConnection (ClientSideConnection) ──── Agent
                  └── terminal/* → Node.js child_process.spawn
 ```
 
-AgentCraft 自己是 ACP Client，需要**完整实现**所有 Client 回调。
+Actant 自己是 ACP Client，需要**完整实现**所有 Client 回调。
 
 **使用者：** `agent.run`、`agent.prompt`、`agent chat`（daemon-managed 模式）、MCP Server
 
@@ -77,7 +77,7 @@ AgentCraft 自己是 ACP Client，需要**完整实现**所有 Client 回调。
 IDE (ACP Client)
     │ ACP / stdio
     ▼
-agentcraft proxy <name> --lease
+actant proxy <name> --lease
     │ ACP / Unix socket (双向)
     ▼
 Daemon (ACP Gateway)
@@ -195,7 +195,7 @@ Session Lease 模式的 Proxy 变成一个**极薄的 ACP 管道**：
 
 ```typescript
 // Proxy 核心逻辑（伪代码）
-const daemonSocket = connectToSocket(AGENTCRAFT_SOCKET);
+const daemonSocket = connectToSocket(ACTANT_SOCKET);
 const daemonStream = ndJsonStream(daemonSocket);
 
 // IDE stdin → Daemon socket
@@ -339,7 +339,7 @@ requestPermission(params: RequestPermissionRequest): RequestPermissionResponse {
 ```json
 {
   "instanceName": "my-agent",
-  "workspaceDir": "/home/user/.agentcraft/instances/my-agent",
+  "workspaceDir": "/home/user/.actant/instances/my-agent",
   "backendType": "claude-code",
   "command": "claude-agent-acp",
   "args": [],
@@ -360,7 +360,7 @@ requestPermission(params: RequestPermissionRequest): RequestPermissionResponse {
 
 ```bash
 # 1. Resolve 获取启动信息
-$ agentcraft agent resolve my-agent -t claude-code-template -f json
+$ actant agent resolve my-agent -t claude-code-template -f json
 # → { command: "claude-agent-acp", args: [], workspaceDir: "..." }
 
 # 2. IDE/客户端 spawn 进程
@@ -373,9 +373,9 @@ spawn("claude-agent-acp", [], { cwd: workspaceDir, stdio: ["pipe","pipe","pipe"]
 或使用 Direct Bridge（推荐）：
 
 ```bash
-# IDE 配置 agentcraft proxy 作为 Agent 可执行文件
+# IDE 配置 actant proxy 作为 Agent 可执行文件
 {
-  "command": "agentcraft",
+  "command": "actant",
   "args": ["proxy", "my-agent", "-t", "claude-code-template"]
 }
 # Proxy 自动处理 resolve → spawn → attach → bridge → detach

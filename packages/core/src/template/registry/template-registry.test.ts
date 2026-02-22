@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { join } from "node:path";
 import { TemplateRegistry } from "./template-registry";
-import type { AgentTemplate } from "@agentcraft/shared";
+import type { AgentTemplate } from "@actant/shared";
 import {
   TemplateNotFoundError,
   ConfigValidationError,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 
 const FIXTURES = join(import.meta.dirname, "../loader/__fixtures__");
 

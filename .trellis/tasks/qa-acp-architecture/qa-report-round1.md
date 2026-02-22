@@ -108,16 +108,16 @@ $ Read docs/design/acp-complete-server-architecture.md
 ```
 # ACP Complete Server Architecture Design
 
-> AgentCraft 作为完备 ACP Server 的架构设计
-> 目标：外部 ACP Client 连接到 AgentCraft 的 Agent 后，等价于连接到一个完备的 ACP Server
+> Actant 作为完备 ACP Server 的架构设计
+> 目标：外部 ACP Client 连接到 Actant 的 Agent 后，等价于连接到一个完备的 ACP Server
 
 ---
 
 ## 1. 核心问题
 
-外部 ACP Client（IDE）通过 `agentcraft proxy <name>` 连接到 Agent。
+外部 ACP Client（IDE）通过 `actant proxy <name>` 连接到 Agent。
 Agent 进程（如 `claude-agent-acp`）自身已经是一个完备的 ACP Server。
-**AgentCraft 的职责是确保这个连接路径上不丢失任何 ACP 能力。**
+**Actant 的职责是确保这个连接路径上不丢失任何 ACP 能力。**
 
 [... 省略中间内容，共 460 行 ...]
 
@@ -370,8 +370,8 @@ index.ts (全文):
       terminal: true,
     },
     clientInfo: {
-      name: "agentcraft",
-      title: "AgentCraft Daemon",
+      name: "actant",
+      title: "Actant Daemon",
       version: "0.1.0",
     },
   });
@@ -525,13 +525,13 @@ export class ClientCallbackRouter implements ClientCallbackHandler {
 
 ```
 $ npx vitest --reporter=verbose
-  working_directory: g:\Workspace\AgentWorkSpace\AgentCraft
+  working_directory: g:\Workspace\AgentWorkSpace\Actant
 ```
 
 --- 输出 ---
 
 ```
- RUN  v4.0.18 G:/Workspace/AgentWorkSpace/AgentCraft
+ RUN  v4.0.18 G:/Workspace/AgentWorkSpace/Actant
 
  ✓ packages/cli/src/client/__tests__/rpc-client.test.ts (6 tests) 3ms
  ✓ packages/cli/src/output/__tests__/formatter.test.ts (15 tests) 20ms
@@ -550,8 +550,8 @@ $ npx vitest --reporter=verbose
  FAIL  ... (共 12 个 E2E 测试失败)
 
  Error [ERR_MODULE_NOT_FOUND]: Cannot find module
- 'G:\Workspace\AgentWorkSpace\AgentCraft\packages\shared\dist\types\index'
- imported from G:\Workspace\AgentWorkSpace\AgentCraft\packages\shared\dist\index.js
+ 'G:\Workspace\AgentWorkSpace\Actant\packages\shared\dist\types\index'
+ imported from G:\Workspace\AgentWorkSpace\Actant\packages\shared\dist\index.js
 
  Test Files  1 failed | 40 passed (41)
       Tests  12 failed | 400 passed (412)
@@ -585,7 +585,7 @@ $ ls packages/cli/dist/bin
 --- 输出 ---
 
 ```
-agentcraft.d.ts    agentcraft.js    agentcraft.js.map
+actant.d.ts    actant.js    actant.js.map
 ```
 
 **判断**: `shared/dist/types/` 下存在散文件（`index.js` 等），这是 tsc 的产物而非 tsup。tsup 应打包为单个 `dist/index.js`。散文件中的 `export * from "./types/index"` 缺少 `.js` 扩展名，导致 ESM 解析失败。
@@ -620,7 +620,7 @@ $ Read packages/shared/package.json
 
 ```
 {
-  "name": "@agentcraft/shared",
+  "name": "@actant/shared",
   "version": "0.1.0",
   "private": true,
   "type": "module",

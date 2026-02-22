@@ -1,4 +1,4 @@
-# AgentCraft Core Agent 配置系统 — 完成度报告
+# Actant Core Agent 配置系统 — 完成度报告
 
 > 截至 2026-02-19，Phase 0-7 全部完成，M1-M4 四个里程碑已达成。
 
@@ -8,7 +8,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                        @agentcraft/core                         │
+│                        @actant/core                         │
 │                                                                 │
 │  ┌──────────┐  ┌───────────┐  ┌─────────┐  ┌────────────────┐  │
 │  │ template/ │→│initializer/│→│ manager/ │  │    domain/     │  │
@@ -20,12 +20,12 @@
 │        ↑              ↑                     └───────┬────────┘  │
 │        │              └─────────────────────────────┘           │
 │  ┌─────────┐                                                    │
-│  │ state/  │  instance-meta-io (读写 .agentcraft.json)          │
+│  │ state/  │  instance-meta-io (读写 .actant.json)          │
 │  └─────────┘                                                    │
 └─────────────────────────────────────────────────────────────────┘
                             ↓ depends on
 ┌─────────────────────────────────────────────────────────────────┐
-│                       @agentcraft/shared                        │
+│                       @actant/shared                        │
 │                                                                 │
 │  types/          errors/              logger/                   │
 │  ├ agent.types   ├ base-error         └ pino logger factory     │
@@ -67,12 +67,12 @@
          │     │    ├→ WorkflowManager.resolve()→ .trellis/workflow.md
          │     │    └→ MCP configs (inline)    → .cursor/mcp.json
          │     │                      │
-         │     └→ writeInstanceMeta() │  → .agentcraft.json
+         │     └→ writeInstanceMeta() │  → .actant.json
          └─────────────┬─────────────┘
                        │
               Instance 工作目录:
               my-agent/
-              ├── .agentcraft.json     ← 元数据
+              ├── .actant.json     ← 元数据
               ├── AGENTS.md            ← 物化的 Skills
               ├── .cursor/mcp.json     ← 物化的 MCP 配置
               ├── .trellis/workflow.md  ← 物化的 Workflow
@@ -93,7 +93,7 @@
 
 ## 三、各模块详细说明
 
-### 3.1 `@agentcraft/shared` — 共享基础设施
+### 3.1 `@actant/shared` — 共享基础设施
 
 #### 类型体系
 
@@ -113,7 +113,7 @@
 #### 错误层级
 
 ```
-AgentCraftError (abstract base)
+ActantError (abstract base)
 ├── configuration 类
 │   ├── ConfigNotFoundError       — 配置文件不存在
 │   ├── ConfigValidationError     — Schema 验证失败 (带 validationErrors[])
@@ -125,7 +125,7 @@ AgentCraftError (abstract base)
     ├── AgentLaunchError          — 启动失败
     ├── AgentNotFoundError        — 实例不存在
     ├── AgentAlreadyRunningError  — 重复启动
-    ├── InstanceCorruptedError    — .agentcraft.json 损坏
+    ├── InstanceCorruptedError    — .actant.json 损坏
     └── WorkspaceInitError        — 工作目录初始化失败
 ```
 
@@ -135,7 +135,7 @@ AgentCraftError (abstract base)
 
 ---
 
-### 3.2 `@agentcraft/core` — 核心业务逻辑
+### 3.2 `@actant/core` — 核心业务逻辑
 
 #### 3.2.1 template/schema — Zod Schema 验证
 
@@ -187,12 +187,12 @@ AgentTemplateSchema
 
 | 函数 | 说明 |
 |------|------|
-| `readInstanceMeta(dir)` | 读取 `.agentcraft.json`，Zod 验证 |
+| `readInstanceMeta(dir)` | 读取 `.actant.json`，Zod 验证 |
 | `writeInstanceMeta(dir, meta)` | 原子写入（write-tmp + rename） |
 | `updateInstanceMeta(dir, patch)` | 部分更新（read → merge → write） |
 | `scanInstances(baseDir)` | 扫描所有子目录，返回 `{ valid, corrupted }` |
 
-`AgentInstanceMetaSchema` — 独立的 Zod schema，用于运行时验证 `.agentcraft.json` 内容。
+`AgentInstanceMetaSchema` — 独立的 Zod schema，用于运行时验证 `.actant.json` 内容。
 
 #### 3.2.5 initializer/ — Instance 创建
 
@@ -217,7 +217,7 @@ AgentTemplateSchema
 | prompts[] | `prompts/system.md` | PromptManager.resolve() → renderPrompts() |
 | workflow | `.trellis/workflow.md` | WorkflowManager.resolve() → renderWorkflow() |
 | mcpServers[] | `.cursor/mcp.json` | 直接从 Template 内联配置物化（不经 Manager） |
-| subAgents[] | 不物化 | 记录在 `.agentcraft.json` 中，运行时解析 |
+| subAgents[] | 不物化 | 记录在 `.actant.json` 中，运行时解析 |
 
 #### 3.2.6 manager/ — 生命周期管理
 
@@ -250,7 +250,7 @@ interface AgentLauncher {
 **核心设计决策**：
 - 不维护独立数据库 — 扫描目录即可恢复所有状态
 - 内存缓存 `Map<name, meta>` 作为单一查询点
-- 原子写入 `.agentcraft.json` 防止状态数据竞争
+- 原子写入 `.actant.json` 防止状态数据竞争
 
 #### 3.2.7 domain/ — Domain Context 组件管理器
 
@@ -284,14 +284,14 @@ abstract class BaseComponentManager<T extends { name: string }> {
 
 **共 15 个测试文件，161 个测试用例，全部通过。**
 
-### `@agentcraft/shared` (13 tests)
+### `@actant/shared` (13 tests)
 
 | 文件 | 数量 | 覆盖点 |
 |------|------|--------|
 | `errors.test.ts` | 11 | 各错误类实例化、code/category 正确、继承链、context 传递 |
 | `logger.test.ts` | 2 | Logger 创建、模块名设置 |
 
-### `@agentcraft/core` — template (58 tests)
+### `@actant/core` — template (58 tests)
 
 | 文件 | 数量 | 覆盖点 |
 |------|------|--------|
@@ -300,26 +300,26 @@ abstract class BaseComponentManager<T extends { name: string }> {
 | `template-loader.test.ts` | 13 | loadFromFile(有效/最小/复杂模板)、不存在文件、非JSON、缺失字段、无效版本、loadFromString(正常/无效JSON/无效模板)、loadFromDirectory(批量加载/跳过无效/不存在目录) |
 | `template-registry.test.ts` | 18 | register(正常/重复拒绝/allowOverwrite/多模板)、unregister、get/getOrThrow、has、list、clear、loadBuiltins(正常/跳过重复)、register+unregister+re-register 组合 |
 
-### `@agentcraft/core` — state (11 tests)
+### `@actant/core` — state (11 tests)
 
 | 文件 | 数量 | 覆盖点 |
 |------|------|--------|
 | `instance-meta-io.test.ts` | 11 | write+read 往返、JSON 内容验证、可选字段、缺失文件→错误、无效JSON→错误、无效Schema→错误、部分更新、scan(有效+损坏/不存在/跳过dot/多实例) |
 
-### `@agentcraft/core` — initializer (21 tests)
+### `@actant/core` — initializer (21 tests)
 
 | 文件 | 数量 | 覆盖点 |
 |------|------|--------|
 | `context-materializer.test.ts` | 8 | 空context、skills→AGENTS.md、mcpServers→mcp.json(含env/不含env)、workflow、prompts、全组件同时、subAgents不物化 |
 | `agent-initializer.test.ts` | 13 | createInstance(正常/物化验证/模板不存在/名称冲突/覆盖项)、findOrCreate(新建/已存在/损坏)、destroy(正常/不存在) |
 
-### `@agentcraft/core` — manager (19 tests)
+### `@actant/core` — manager (19 tests)
 
 | 文件 | 数量 | 覆盖点 |
 |------|------|--------|
 | `agent-manager.test.ts` | 19 | create+query、list、lifecycle(start/stop/双重start/restart)、错误处理(未知agent)、getOrCreate(新/缓存)、destroy(正常/运行中)、重启恢复(stale running/starting/corrupted)、E2E全链路 |
 
-### `@agentcraft/core` — domain (39 tests)
+### `@actant/core` — domain (39 tests)
 
 | 文件 | 数量 | 覆盖点 |
 |------|------|--------|
@@ -349,17 +349,17 @@ abstract class BaseComponentManager<T extends { name: string }> {
 ### 生产代码 (30 文件)
 
 ```
-@agentcraft/shared (8 文件)
+@actant/shared (8 文件)
 ├── types/agent.types.ts              AgentInstanceMeta, AgentStatus, LaunchMode
 ├── types/template.types.ts           AgentTemplate, AgentBackendConfig, ModelProviderConfig
 ├── types/domain-context.types.ts     DomainContextConfig, McpServerRef
 ├── types/domain-component.types.ts   SkillDefinition, PromptDefinition, WorkflowDefinition, McpServerDefinition
-├── errors/base-error.ts              AgentCraftError 抽象基类
+├── errors/base-error.ts              ActantError 抽象基类
 ├── errors/config-errors.ts           5 个配置类错误
 ├── errors/lifecycle-errors.ts        5 个生命周期类错误
 └── logger/logger.ts                  pino Logger 工厂
 
-@agentcraft/core (22 文件)
+@actant/core (22 文件)
 ├── template/schema/template-schema.ts   Zod schema 定义
 ├── template/loader/template-loader.ts   JSON 加载 + 验证
 ├── template/registry/template-registry.ts  注册表 CRUD
@@ -398,12 +398,12 @@ domain/workflow/__fixtures__/   trellis-standard.json, minimal-workflow.json
 | # | 决策 | 理由 |
 |---|------|------|
 | 1 | **Instance = 工作目录** | Agent Backend (Cursor/Claude Code) 直接指向目录即可工作，无需额外配置 |
-| 2 | **无独立数据库** | `.agentcraft.json` 作为唯一状态源，扫描目录即可恢复——简单且可靠 |
-| 3 | **原子写入** (write-tmp + rename) | 防止进程崩溃导致 `.agentcraft.json` 部分写入 |
+| 2 | **无独立数据库** | `.actant.json` 作为唯一状态源，扫描目录即可恢复——简单且可靠 |
+| 3 | **原子写入** (write-tmp + rename) | 防止进程崩溃导致 `.actant.json` 部分写入 |
 | 4 | **引用式组合** | Template 中 skills/prompts/workflow 按名称引用，不嵌入完整内容——支持复用和独立管理 |
 | 5 | **ContextMaterializer 双模式** | 无 Manager 时降级为占位内容，有 Manager 时全量解析——渐进式集成 |
 | 6 | **Launcher 策略接口** | 启动进程的逻辑与 Manager 解耦，当前用 Mock，未来可插入 Cursor/Claude Code 真实启动器 |
-| 7 | **损坏目录自动隔离** | `.agentcraft.json` 损坏时移至 `.corrupted/` 而非删除——可恢复，不阻塞其他 Instance |
+| 7 | **损坏目录自动隔离** | `.actant.json` 损坏时移至 `.corrupted/` 而非删除——可恢复，不阻塞其他 Instance |
 | 8 | **BaseComponentManager 泛型** | 4 个 Domain Manager 共享注册/解析/加载逻辑，避免重复代码，子类只需实现 `validate()` |
 
 ---
@@ -412,7 +412,7 @@ domain/workflow/__fixtures__/   trellis-standard.json, minimal-workflow.json
 
 | 项 | 说明 |
 |---|------|
-| Phase 8: CLI 集成 | 将 core 能力暴露为 `agentcraft template list`、`agentcraft agent create` 等命令 |
+| Phase 8: CLI 集成 | 将 core 能力暴露为 `actant template list`、`actant agent create` 等命令 |
 | 真实 AgentLauncher | 实际启动 Cursor / Claude Code 进程的 Launcher 实现 |
 | Employee 持久化 Agent | 心跳、崩溃重启、定时任务、IM 接入（作为 Manager 高级模式） |
 | 变量插值集成 | Prompt 的 `{{variable}}` 在物化时按实例参数替换 |

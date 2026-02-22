@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentTemplate } from "@agentcraft/shared";
-import { ComponentReferenceError } from "@agentcraft/shared";
+import type { AgentTemplate } from "@actant/shared";
+import { ComponentReferenceError } from "@actant/shared";
 import { TemplateRegistry } from "../template/registry/template-registry";
 import { AgentInitializer } from "../initializer/agent-initializer";
 import { SkillManager } from "./skill/skill-manager";
@@ -34,7 +34,7 @@ describe("Domain Context Resolution Integration", () => {
   let workflowMgr: WorkflowManager;
 
   beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "agentcraft-integration-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-integration-"));
     registry = new TemplateRegistry();
     registry.register(makeTemplate());
 

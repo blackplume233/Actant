@@ -1,13 +1,13 @@
 import { join } from "node:path";
 import { rename, mkdir } from "node:fs/promises";
-import type { AgentInstanceMeta, AgentStatus, ResolveResult, DetachResult } from "@agentcraft/shared";
+import type { AgentInstanceMeta, AgentStatus, ResolveResult, DetachResult } from "@actant/shared";
 import {
   AgentNotFoundError,
   AgentAlreadyRunningError,
   AgentAlreadyAttachedError,
   AgentNotAttachedError,
   createLogger,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
@@ -24,7 +24,7 @@ const logger = createLogger("agent-manager");
 
 /**
  * Minimal ACP connection manager interface.
- * The real implementation lives in @agentcraft/acp; this avoids a circular dependency.
+ * The real implementation lives in @actant/acp; this avoids a circular dependency.
  */
 export interface AcpConnectionManagerLike {
   connect(name: string, options: {

@@ -1,12 +1,12 @@
 # Database Guidelines
 
-> Persistence patterns and conventions for AgentCraft.
+> Persistence patterns and conventions for Actant.
 
 ---
 
 ## Overview
 
-AgentCraft needs to persist agent configurations, instance states, and operational metadata. The persistence layer must support both local (single-user CLI) and server (multi-user API/Docker) deployment modes.
+Actant needs to persist agent configurations, instance states, and operational metadata. The persistence layer must support both local (single-user CLI) and server (multi-user API/Docker) deployment modes.
 
 ---
 
@@ -49,7 +49,7 @@ configs/
 
 ### Runtime State: Workspace-as-Storage
 
-Agent Instance = a workspace directory. Runtime state lives **inside** the workspace as `.agentcraft.json`.
+Agent Instance = a workspace directory. Runtime state lives **inside** the workspace as `.actant.json`.
 
 **No separate database or state store.** The `AgentManager` discovers instances by scanning workspace directories.
 
@@ -57,22 +57,22 @@ Agent Instance = a workspace directory. Runtime state lives **inside** the works
 ```
 {instancesBaseDir}/
 ├── my-reviewer/                 # Instance name = directory name
-│   ├── .agentcraft.json         # Instance metadata (id, status, template, timestamps)
+│   ├── .actant.json         # Instance metadata (id, status, template, timestamps)
 │   ├── AGENTS.md                # Materialized skills/rules
 │   ├── .cursor/mcp.json         # Materialized MCP config
 │   └── ...                      # Other materialized Domain Context files
 ├── ci-bot/
-│   └── .agentcraft.json
+│   └── .actant.json
 └── .corrupted/                  # Damaged instance dirs moved here on recovery
 ```
 
 **Design**:
 - Each Instance is a **directory**, not a database row or standalone JSON file
-- `.agentcraft.json` is the only metadata; other files are materialized Domain Context
-- On startup, `AgentManager.initialize()` scans all subdirectories and reads `.agentcraft.json`
-- **Atomic writes**: write to `.agentcraft.json.tmp`, then `rename` to `.agentcraft.json`
+- `.actant.json` is the only metadata; other files are materialized Domain Context
+- On startup, `AgentManager.initialize()` scans all subdirectories and reads `.actant.json`
+- **Atomic writes**: write to `.actant.json.tmp`, then `rename` to `.actant.json`
 - **Startup recovery**: stale `running`/`starting` states corrected to `stopped` (process lost)
-- Corrupted directories (missing or invalid `.agentcraft.json`) moved to `.corrupted/`
+- Corrupted directories (missing or invalid `.actant.json`) moved to `.corrupted/`
 
 **Requirements**:
 - Survives process restart (scan directories to recover)

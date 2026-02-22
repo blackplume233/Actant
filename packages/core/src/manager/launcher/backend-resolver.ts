@@ -1,4 +1,4 @@
-import type { AgentBackendType } from "@agentcraft/shared";
+import type { AgentBackendType } from "@actant/shared";
 
 const IS_WINDOWS = process.platform === "win32";
 

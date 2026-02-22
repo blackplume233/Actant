@@ -30,7 +30,7 @@
       "description": "创建 Agent 实例",
       "command": "agent create test-agent -t lifecycle-tpl -f json",
       "expect": "成功返回 JSON，包含 name=test-agent，status=created，templateName=lifecycle-tpl",
-      "artifacts": "workspace 目录应已创建在 $AGENTCRAFT_HOME 下，包含初始化文件"
+      "artifacts": "workspace 目录应已创建在 $ACTANT_HOME 下，包含初始化文件"
     },
     {
       "id": "list-after-create",

@@ -1,5 +1,5 @@
 {
-  "name": "@agentcraft/mcp-server",
+  "name": "@actant/mcp-server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -13,7 +13,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@agentcraft/core": "workspace:*",
-    "@agentcraft/shared": "workspace:*"
+    "@actant/core": "workspace:*",
+    "@actant/shared": "workspace:*"
   }
 }

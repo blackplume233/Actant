@@ -1,4 +1,4 @@
-import { ConfigNotFoundError } from "@agentcraft/shared";
+import { ConfigNotFoundError } from "@actant/shared";
 import type {
   SkillGetParams,
   PromptGetParams,
@@ -15,8 +15,8 @@ import type {
   PromptDefinition,
   McpServerDefinition,
   WorkflowDefinition,
-} from "@agentcraft/shared";
-import type { BaseComponentManager, NamedComponent } from "@agentcraft/core";
+} from "@actant/shared";
+import type { BaseComponentManager, NamedComponent } from "@actant/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry, RpcHandler } from "./handler-registry";
 

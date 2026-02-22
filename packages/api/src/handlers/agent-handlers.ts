@@ -20,8 +20,8 @@ import type {
   AgentRunResult,
   AgentPromptParams,
   AgentPromptResult,
-} from "@agentcraft/shared";
-import { AgentNotFoundError } from "@agentcraft/shared";
+} from "@actant/shared";
+import { AgentNotFoundError } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

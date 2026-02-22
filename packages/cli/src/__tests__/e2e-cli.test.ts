@@ -3,16 +3,16 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { Daemon } from "@agentcraft/api";
+import { Daemon } from "@actant/api";
 
-const CLI_BIN = join(import.meta.dirname, "..", "..", "dist", "bin", "agentcraft.js");
+const CLI_BIN = join(import.meta.dirname, "..", "..", "dist", "bin", "actant.js");
 
 function runCli(args: string[], socketPath: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve) => {
     const child: ChildProcess = spawn("node", [CLI_BIN, ...args], {
       env: {
         ...process.env,
-        AGENTCRAFT_SOCKET: socketPath,
+        ACTANT_SOCKET: socketPath,
         LOG_LEVEL: "silent",
       },
     });
@@ -66,7 +66,7 @@ describe("CLI E2E (stdio)", () => {
   it("--help shows usage", async () => {
     const { stdout, exitCode } = await runCli(["--help"], socketPath);
     expect(exitCode).toBe(0);
-    expect(stdout).toContain("AgentCraft");
+    expect(stdout).toContain("Actant");
     expect(stdout).toContain("template");
     expect(stdout).toContain("agent");
     expect(stdout).toContain("daemon");

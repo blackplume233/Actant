@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 16
-- **Last Active**: 2026-02-21
+- **Total Sessions**: 17
+- **Last Active**: 2026-02-22
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~930 | Active |
+| `journal-1.md` | ~985 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 17 | 2026-02-22 | Version staging system, CI issue sync, and full commit | `8f6d420` |
 | 16 | 2026-02-21 | Unified Component Management — CRUD, Source Registry & Presets (#38) | `d5675a4` |
 | 15 | 2026-02-21 | ACP Complete Server Architecture — 设计 + 全量实现 | `44e58f8`, `2c33e4d` |
 | 14 | 2026-02-21 | Issue #35 QA 修复 + QA Agent 真实环境默认 + /qa-loop 命令 | `aa9aca8` |

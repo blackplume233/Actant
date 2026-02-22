@@ -1,6 +1,6 @@
 # CLI + Daemon 重构方案
 
-> 将 AgentCraft 从 one-shot CLI 重构为 Daemon + Thin Client 架构。
+> 将 Actant 从 one-shot CLI 重构为 Daemon + Thin Client 架构。
 
 ---
 
@@ -15,14 +15,14 @@
 
 ```
 ┌──────────────────┐
-│ agentcraft CLI   │  薄客户端：解析参数 → RPC → 格式化输出
-│ @agentcraft/cli  │
+│ actant CLI   │  薄客户端：解析参数 → RPC → 格式化输出
+│ @actant/cli  │
 └────────┬─────────┘
          │ JSON-RPC over Unix Socket
-         │ (~/.agentcraft/agentcraft.sock)
+         │ (~/.actant/actant.sock)
 ┌────────▼──────────────────────────────────────────┐
-│              AgentCraft Daemon                      │
-│              @agentcraft/api                        │
+│              Actant Daemon                      │
+│              @actant/api                        │
 │                                                     │
 │  ┌─────────────────────────────────────────────┐   │
 │  │ RPC Server (net.Server on Unix Socket)      │   │
@@ -38,7 +38,7 @@
 │  └──────────────────────────────────────────────┘   │
 │                 │                                    │
 │  ┌──────────────▼──────────────────────────────┐   │
-│  │ @agentcraft/core (纯业务逻辑，无变化)         │   │
+│  │ @actant/core (纯业务逻辑，无变化)         │   │
 │  └──────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────┘
 ```
@@ -50,14 +50,14 @@
 选 JSON-RPC 2.0 的理由：
 - 标准协议，定义清晰（request/response/error/notification）
 - 支持 batch 调用
-- 错误码体系与 AgentCraftError 自然映射
+- 错误码体系与 ActantError 自然映射
 - 未来可无缝升级为 HTTP JSON-RPC（Web UI 用）
 
 传输层：Unix Domain Socket + Newline-Delimited JSON (NDJSON)
 - 每条消息以 `\n` 分隔
 - 纯文本，可 telnet 调试
 
-### 协议类型定义 (`@agentcraft/shared`)
+### 协议类型定义 (`@actant/shared`)
 
 ```typescript
 // JSON-RPC 2.0 基础类型
@@ -114,7 +114,7 @@ interface RpcError {
 
 ### 错误码映射
 
-| AgentCraft Error | JSON-RPC code | 说明 |
+| Actant Error | JSON-RPC code | 说明 |
 |-----------------|---------------|------|
 | `TemplateNotFoundError` | `-32001` | 模板不存在 |
 | `ConfigValidationError` | `-32002` | 验证失败 |
@@ -122,14 +122,14 @@ interface RpcError {
 | `AgentAlreadyRunningError` | `-32004` | 重复启动 |
 | `WorkspaceInitError` | `-32005` | 工作目录初始化失败 |
 | `ComponentReferenceError` | `-32006` | 组件引用解析失败 |
-| 其他 AgentCraftError | `-32000` | 通用业务错误 |
+| 其他 ActantError | `-32000` | 通用业务错误 |
 | 未知错误 | `-32603` | 内部错误 |
 
 ---
 
 ## 实现分阶段
 
-### Phase 8.1: 协议层 (`@agentcraft/shared`)
+### Phase 8.1: 协议层 (`@actant/shared`)
 
 **新增文件**: `types/rpc.types.ts`
 
@@ -139,7 +139,7 @@ interface RpcError {
 
 **预计**: ~1 个文件，纯类型
 
-### Phase 8.2: Daemon 实现 (`@agentcraft/api`)
+### Phase 8.2: Daemon 实现 (`@actant/api`)
 
 **核心模块**:
 
@@ -147,7 +147,7 @@ interface RpcError {
 packages/api/src/
 ├── daemon/
 │   ├── daemon.ts              # Daemon 主类（启动/关闭/状态）
-│   ├── pid-file.ts            # PID 文件管理（~/.agentcraft/daemon.pid）
+│   ├── pid-file.ts            # PID 文件管理（~/.actant/daemon.pid）
 │   └── socket-server.ts       # Unix Socket JSON-RPC server
 ├── handlers/
 │   ├── template-handlers.ts   # template.* 方法处理
@@ -169,13 +169,13 @@ packages/api/src/
 - Handler 单元测试（不涉及 socket，纯 request → response）
 - Socket server 集成测试（in-process 创建 server + client）
 
-### Phase 8.3: CLI 重构为 Thin Client (`@agentcraft/cli`)
+### Phase 8.3: CLI 重构为 Thin Client (`@actant/cli`)
 
 **核心变更**:
 
 ```
 packages/cli/src/
-├── bin/agentcraft.ts           # 入口不变
+├── bin/actant.ts           # 入口不变
 ├── program.ts                  # Commander 配置
 ├── client/
 │   ├── rpc-client.ts           # Unix Socket JSON-RPC client
@@ -191,15 +191,15 @@ packages/cli/src/
 ```
 
 **关键变更**:
-- 移除对 `@agentcraft/core` 的直接依赖
+- 移除对 `@actant/core` 的直接依赖
 - 所有命令改为: 构造 RPC request → 通过 client 发送 → 拿到 result → 用 formatter 展示
-- `AppContext` 移到 `@agentcraft/api`
+- `AppContext` 移到 `@actant/api`
 - 新增 daemon 子命令
 
 **Daemon 检测策略** (类似 docker):
-1. 检查 `~/.agentcraft/agentcraft.sock` 是否存在
+1. 检查 `~/.actant/actant.sock` 是否存在
 2. 尝试发送 `daemon.ping`
-3. 若失败 → 提示 "daemon is not running, start with: agentcraft daemon start"
+3. 若失败 → 提示 "daemon is not running, start with: actant daemon start"
 
 **测试**:
 - 客户端单元测试：mock socket，验证请求序列化和响应反序列化
@@ -208,11 +208,11 @@ packages/cli/src/
 
 ### Phase 8.4: REPL 模式
 
-**触发方式**: `agentcraft` 无参数 或 `agentcraft repl`
+**触发方式**: `actant` 无参数 或 `actant repl`
 
 **行为**:
 - 建立到 daemon 的持久连接
-- 显示 prompt (`agentcraft> `)
+- 显示 prompt (`actant> `)
 - 读取用户输入 → 解析为命令 → RPC 调用 → 输出
 - 支持 readline（历史、补全）
 - Ctrl+C 退出 REPL（不影响 daemon）
@@ -241,7 +241,7 @@ import { spawn } from "node:child_process";
 test("agent list shows table", async () => {
   // daemon 已启动（beforeAll）
 
-  const cli = spawn("node", ["dist/bin/agentcraft.js", "agent", "list"]);
+  const cli = spawn("node", ["dist/bin/actant.js", "agent", "list"]);
   const stdout = await collectStream(cli.stdout);
   const exitCode = await waitForExit(cli);
 
@@ -250,7 +250,7 @@ test("agent list shows table", async () => {
 });
 
 test("REPL session", async () => {
-  const cli = spawn("node", ["dist/bin/agentcraft.js", "repl"]);
+  const cli = spawn("node", ["dist/bin/actant.js", "repl"]);
 
   cli.stdin.write("agent list\n");
   const output1 = await readUntilPrompt(cli.stdout);
@@ -275,20 +275,20 @@ test("REPL session", async () => {
   api → core → shared           (daemon 依赖 core)
 ```
 
-`@agentcraft/cli` 的 package.json 将移除 `@agentcraft/core` 依赖。
+`@actant/cli` 的 package.json 将移除 `@actant/core` 依赖。
 
 ---
 
 ## 文件系统布局
 
 ```
-~/.agentcraft/
-├── agentcraft.sock        # Unix Domain Socket (daemon 监听)
+~/.actant/
+├── actant.sock        # Unix Domain Socket (daemon 监听)
 ├── daemon.pid             # Daemon PID 文件
 ├── templates/             # 持久化的模板 JSON 文件
 ├── instances/             # Agent 实例工作目录
 │   ├── my-reviewer/
-│   │   ├── .agentcraft.json
+│   │   ├── .actant.json
 │   │   ├── AGENTS.md
 │   │   └── ...
 │   └── my-writer/

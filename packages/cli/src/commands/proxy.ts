@@ -6,7 +6,7 @@ import { presentError, type CliPrinter, defaultPrinter } from "../output/index";
 import { defaultSocketPath } from "../program";
 
 /**
- * `agentcraft proxy <name>` — acts as a transparent ACP bridge on stdin/stdout.
+ * `actant proxy <name>` — acts as a transparent ACP bridge on stdin/stdout.
  *
  * **Direct Bridge (default):** Proxy spawns the Agent subprocess directly,
  * pipes IDE stdio ↔ Agent stdio, registers lifecycle with Daemon via
@@ -72,7 +72,7 @@ async function runDirectBridge(
   try {
     const alive = await client.ping();
     if (!alive) {
-      printer.error("Daemon is not running. Start it with: agentcraft daemon start");
+      printer.error("Daemon is not running. Start it with: actant daemon start");
       process.exitCode = 1;
       return;
     }
@@ -245,7 +245,7 @@ async function runSessionLease(
   try {
     const alive = await rpcClient.ping();
     if (!alive) {
-      printer.error("Daemon is not running. Start it with: agentcraft daemon start");
+      printer.error("Daemon is not running. Start it with: actant daemon start");
       process.exitCode = 1;
       return;
     }
@@ -254,7 +254,7 @@ async function runSessionLease(
     if (meta.status !== "running") {
       printer.error(
         `Agent "${agentName}" is not running (status: ${meta.status}). ` +
-        `Session Lease requires a running agent. Start with: agentcraft agent start ${agentName}`,
+        `Session Lease requires a running agent. Start with: actant agent start ${agentName}`,
       );
       process.exitCode = 1;
       return;
@@ -385,7 +385,7 @@ async function handleLegacyMessage(
     case "initialize":
       writeAcpResponse(msg.id, {
         protocolVersion: 1,
-        agentInfo: { name: "agentcraft-proxy", title: `AgentCraft Proxy: ${agentName} (lease)`, version: "0.1.0" },
+        agentInfo: { name: "actant-proxy", title: `Actant Proxy: ${agentName} (lease)`, version: "0.1.0" },
         agentCapabilities: {},
       });
       break;

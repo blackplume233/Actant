@@ -1,6 +1,6 @@
-import { AgentCraftError, type ErrorCategory } from "./base-error";
+import { ActantError, type ErrorCategory } from "./base-error";
 
-export class ConfigNotFoundError extends AgentCraftError {
+export class ConfigNotFoundError extends ActantError {
   readonly code = "CONFIG_NOT_FOUND";
   readonly category: ErrorCategory = "configuration";
 
@@ -9,7 +9,7 @@ export class ConfigNotFoundError extends AgentCraftError {
   }
 }
 
-export class ConfigValidationError extends AgentCraftError {
+export class ConfigValidationError extends ActantError {
   readonly code = "CONFIG_VALIDATION_ERROR";
   readonly category: ErrorCategory = "configuration";
 
@@ -24,7 +24,7 @@ export class ConfigValidationError extends AgentCraftError {
   }
 }
 
-export class TemplateNotFoundError extends AgentCraftError {
+export class TemplateNotFoundError extends ActantError {
   readonly code = "TEMPLATE_NOT_FOUND";
   readonly category: ErrorCategory = "configuration";
 
@@ -35,7 +35,7 @@ export class TemplateNotFoundError extends AgentCraftError {
   }
 }
 
-export class SkillReferenceError extends AgentCraftError {
+export class SkillReferenceError extends ActantError {
   readonly code = "SKILL_REFERENCE_ERROR";
   readonly category: ErrorCategory = "configuration";
 
@@ -44,7 +44,7 @@ export class SkillReferenceError extends AgentCraftError {
   }
 }
 
-export class ComponentReferenceError extends AgentCraftError {
+export class ComponentReferenceError extends ActantError {
   readonly code = "COMPONENT_REFERENCE_ERROR";
   readonly category: ErrorCategory = "configuration";
 
@@ -56,7 +56,7 @@ export class ComponentReferenceError extends AgentCraftError {
   }
 }
 
-export class CircularReferenceError extends AgentCraftError {
+export class CircularReferenceError extends ActantError {
   readonly code = "CIRCULAR_REFERENCE";
   readonly category: ErrorCategory = "configuration";
 

@@ -67,7 +67,7 @@
 
 ## 🔧 杂项 (Chores)
 
-- chore: add issue #34 (AGENTCRAFT_HOME) and QA test scenario (c31bef3)
+- chore: add issue #34 (ACTANT_HOME) and QA test scenario (c31bef3)
 - chore: add incremental test script for faster ship reviews (a595d8c)
 - chore: add ESLint with typescript-eslint flat config and fix all lint errors (c476695)
 - chore: fix trellis script permissions (d81a644)
@@ -102,7 +102,7 @@
 ### 已修复的缺陷 (2)
 
 - #21 issue.sh .counter 自增脱节导致 ID 冲突
-- #34 Daemon 未读取 AGENTCRAFT_HOME 环境变量
+- #34 Daemon 未读取 ACTANT_HOME 环境变量
 
 ### 已完成的增强 (6)
 

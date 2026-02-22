@@ -3,8 +3,8 @@ import { createConnection, type Socket } from "node:net";
 import { mkdtemp, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { RpcRequest, RpcResponse } from "@agentcraft/shared";
-import { RPC_ERROR_CODES, getIpcPath } from "@agentcraft/shared";
+import type { RpcRequest, RpcResponse } from "@actant/shared";
+import { RPC_ERROR_CODES, getIpcPath } from "@actant/shared";
 import { AppContext } from "../../services/app-context";
 import { SocketServer } from "../socket-server";
 import {

@@ -1,7 +1,7 @@
 import { readFile, writeFile, readdir, stat, unlink, mkdir } from "node:fs/promises";
 import { join, extname, resolve } from "node:path";
-import { ComponentReferenceError, ConfigNotFoundError, createLogger } from "@agentcraft/shared";
-import type { Logger } from "@agentcraft/shared";
+import { ComponentReferenceError, ConfigNotFoundError, createLogger } from "@actant/shared";
+import type { Logger } from "@actant/shared";
 
 export interface NamedComponent {
   name: string;

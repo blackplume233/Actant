@@ -1,12 +1,12 @@
 {
-  "name": "agentcraft",
+  "name": "actant",
   "version": "0.1.0",
   "private": true,
   "description": "A platform for building, managing, and composing AI agents",
   "type": "module",
   "scripts": {
     "build": "pnpm -r run build",
-    "dev": "pnpm --filter @agentcraft/cli run dev",
+    "dev": "pnpm --filter @actant/cli run dev",
     "test": "vitest run",
     "test:changed": "vitest run --changed",
     "test:endurance": "vitest run --config vitest.endurance.config.ts",

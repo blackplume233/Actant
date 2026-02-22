@@ -8,7 +8,7 @@ export function createDaemonStopCommand(
   client?: RpcClient,
 ): Command {
   return new Command("stop")
-    .description("Stop the AgentCraft daemon")
+    .description("Stop the Actant daemon")
     .action(async () => {
       const rpc = client ?? new RpcClient(defaultSocketPath());
 

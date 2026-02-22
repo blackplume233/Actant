@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import chalk from "chalk";
-import { AgentCraftError } from "@agentcraft/shared";
+import { ActantError } from "@actant/shared";
 import { RpcCallError, ConnectionError } from "../../client/rpc-client";
 import { presentError } from "../error-presenter";
 
@@ -16,7 +16,7 @@ function createMockPrinter() {
   };
 }
 
-class TestAgentCraftError extends AgentCraftError {
+class TestActantError extends ActantError {
   readonly code = "TEST_CODE";
   readonly category = "cli" as const;
   constructor(message: string, context?: Record<string, unknown>) {
@@ -37,7 +37,7 @@ describe("presentError", () => {
     expect(printer.errorStyled).toHaveBeenCalledTimes(1);
     expect(printer.errorStyled).toHaveBeenCalledWith("Cannot connect to daemon.");
     expect(printer.errorDim).toHaveBeenCalledTimes(1);
-    expect(printer.errorDim).toHaveBeenCalledWith("Start with: agentcraft daemon start");
+    expect(printer.errorDim).toHaveBeenCalledWith("Start with: actant daemon start");
     expect(printer.error).not.toHaveBeenCalled();
   });
 
@@ -64,8 +64,8 @@ describe("presentError", () => {
     );
   });
 
-  it("AgentCraftError without context calls error with code and message", () => {
-    const err = new TestAgentCraftError("Something went wrong");
+  it("ActantError without context calls error with code and message", () => {
+    const err = new TestActantError("Something went wrong");
     presentError(err, printer as never);
     expect(printer.error).toHaveBeenCalledTimes(1);
     expect(printer.error).toHaveBeenCalledWith(
@@ -73,8 +73,8 @@ describe("presentError", () => {
     );
   });
 
-  it("AgentCraftError with context calls error twice", () => {
-    const err = new TestAgentCraftError("Something went wrong", { key: "value" });
+  it("ActantError with context calls error twice", () => {
+    const err = new TestActantError("Something went wrong", { key: "value" });
     presentError(err, printer as never);
     expect(printer.error).toHaveBeenCalledTimes(2);
     expect(printer.error).toHaveBeenNthCalledWith(
@@ -109,7 +109,7 @@ describe("presentError", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     presentError(err);
     expect(errorSpy).toHaveBeenCalledWith(chalk.red("Cannot connect to daemon."));
-    expect(errorSpy).toHaveBeenCalledWith(chalk.dim("Start with: agentcraft daemon start"));
+    expect(errorSpy).toHaveBeenCalledWith(chalk.dim("Start with: actant daemon start"));
     errorSpy.mockRestore();
   });
 });

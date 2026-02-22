@@ -210,7 +210,7 @@ async function main() {
       hasChanges = true;
       w("### 新增命令");
       w("");
-      for (const c of cliDiff.added) w(`- \`agentcraft ${c.fullName}\` — ${c.description || ""}`);
+      for (const c of cliDiff.added) w(`- \`actant ${c.fullName}\` — ${c.description || ""}`);
       w("");
     }
 
@@ -218,7 +218,7 @@ async function main() {
       hasChanges = true;
       w("### ⚠️ 移除命令 (Breaking Change)");
       w("");
-      for (const c of cliDiff.removed) w(`- ~~\`agentcraft ${c.fullName}\`~~`);
+      for (const c of cliDiff.removed) w(`- ~~\`actant ${c.fullName}\`~~`);
       w("");
     }
 
@@ -227,7 +227,7 @@ async function main() {
       w("### 命令签名变更");
       w("");
       for (const m of cliDiff.modified) {
-        w(`- \`agentcraft ${m.key}\``);
+        w(`- \`actant ${m.key}\``);
         const oldOpts = new Set((m.old.options || []).map(o => o.flags));
         const newOpts = new Set((m.new.options || []).map(o => o.flags));
         for (const o of m.new.options || []) {

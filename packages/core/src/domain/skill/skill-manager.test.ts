@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { join } from "node:path";
 import { SkillManager } from "./skill-manager";
-import { ComponentReferenceError, ConfigNotFoundError } from "@agentcraft/shared";
-import type { SkillDefinition } from "@agentcraft/shared";
+import { ComponentReferenceError, ConfigNotFoundError } from "@actant/shared";
+import type { SkillDefinition } from "@actant/shared";
 
 const FIXTURES = join(import.meta.dirname, "__fixtures__");
 

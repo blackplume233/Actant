@@ -1,7 +1,7 @@
-# AgentCraft Landing Page — Content Blueprint
+# Actant Landing Page — Content Blueprint
 
 > 核心叙事：
-> 1. **Docker 思维** — AgentCraft 对 AI Agent 做的事 = Docker 对进程做的事
+> 1. **Docker 思维** — Actant 对 AI Agent 做的事 = Docker 对进程做的事
 > 2. **共享 & 嵌入愿景** — Agent 能进化、能共享、能零成本嵌入工作流
 
 ---
@@ -16,7 +16,7 @@ Build once, run anywhere. 像管理容器一样管理 AI Agent —
 从 Template 定义到 Instance 运行，从单次任务到持久化虚拟雇员。
 
 ### Supporting Copy
-AgentCraft 是 AI Agent 的运行时平台。用声明式 Template 定义 Agent 的能力，
+Actant 是 AI Agent 的运行时平台。用声明式 Template 定义 Agent 的能力，
 一条命令创建隔离的运行实例，通过标准协议无缝嵌入你的工作流。
 
 ### Hero Badge
@@ -27,7 +27,7 @@ Open Source — 面向复杂业务场景的 Agent 编排框架
 ## Section 2: Docker Analogy (核心叙事 #1)
 
 ### Section Title
-If you understand Docker, you understand AgentCraft
+If you understand Docker, you understand Actant
 
 ### Tagline
 同样的分层思维，同样的声明式定义，同样的 CLI/Daemon 架构。
@@ -35,7 +35,7 @@ If you understand Docker, you understand AgentCraft
 
 ### Analogy Table (视觉化对照)
 
-| Docker | AgentCraft | 本质 |
+| Docker | Actant | 本质 |
 |--------|-----------|------|
 | Dockerfile | Agent Template (JSON) | 声明式定义"这个 Agent 是什么" |
 | Image | Registry 中的 Template | 已验证、可复用、可分发的定义 |
@@ -48,8 +48,8 @@ If you understand Docker, you understand AgentCraft
 | Union FS | Template ∪ Memory 合并物化 | 只读模板层 + 可写记忆层的叠加 |
 | docker commit | Memory → Shared Pool | 实例经验提升为可共享知识 |
 | Network | ACP / MCP 协议 | 实例间及外部的通信通道 |
-| dockerd | AgentCraft Daemon | 守护进程，管理一切 |
-| docker CLI | agentcraft CLI | 薄客户端，与 daemon 交互 |
+| dockerd | Actant Daemon | 守护进程，管理一切 |
+| docker CLI | actant CLI | 薄客户端，与 daemon 交互 |
 
 ### Architecture Comparison (并排)
 
@@ -57,8 +57,8 @@ If you understand Docker, you understand AgentCraft
 Docker:
 docker CLI ──(REST/socket)──▶ dockerd ──▶ containerd ──▶ runc
 
-AgentCraft:
-agentcraft CLI ──(JSON-RPC/socket)──▶ Daemon ──▶ Launcher ──▶ Claude/Cursor
+Actant:
+actant CLI ──(JSON-RPC/socket)──▶ Daemon ──▶ Launcher ──▶ Claude/Cursor
 ```
 
 ---
@@ -69,7 +69,7 @@ agentcraft CLI ──(JSON-RPC/socket)──▶ Daemon ──▶ Launcher ──
 Agents that learn, share, and embed into your workflow
 
 ### Vision Statement
-Agent 不应该每次启动都失忆。AgentCraft 让 Agent 在每次会话中积累经验，
+Agent 不应该每次启动都失忆。Actant 让 Agent 在每次会话中积累经验，
 跨实例共享知识，最终零成本嵌入你的开发、测试、运维工作流。
 
 ### 三层进化架构 (可视化)
@@ -119,7 +119,7 @@ Agent 不是孤岛，是工作流中的一个节点。
 ### 思维: Template → Instance → Session → Memory → Evolution
 
 1. **Define** — 用 JSON Template 声明 Agent 的 Skills、Prompts、MCP 工具
-2. **Create** — AgentCraft 将 Template 物化为隔离的 Instance Workspace
+2. **Create** — Actant 将 Template 物化为隔离的 Instance Workspace
 3. **Run** — 通过 CLI 或 ACP 启动 Agent，选择合适的 LaunchMode
 4. **Interact** — 发送任务、对话交互，Agent 在 workspace 内完成工作
 5. **Evolve** — Session 结束后提取经验，下次启动时 Memory 自动注入
@@ -131,26 +131,26 @@ Agent 不是孤岛，是工作流中的一个节点。
 ```bash
 # 像 Docker 一样管理 Agent
 
-$ agentcraft daemon start
+$ actant daemon start
 ✓ Daemon started (pid: 42851)
 
-$ agentcraft template list                    # ≈ docker images
+$ actant template list                    # ≈ docker images
   code-review-agent    Code review + security audit
   bilibili-analyzer    Video content analysis
 
-$ agentcraft agent create reviewer \
+$ actant agent create reviewer \
     --template code-review-agent              # ≈ docker run
 ✓ Agent created: reviewer
   Skills → AGENTS.md | Prompts → system.md | MCP → mcp.json
 
-$ agentcraft agent run reviewer \
+$ actant agent run reviewer \
     --prompt "Review error handling in src/"   # ≈ docker exec
 Analyzing... Found 3 issues.
 
-$ agentcraft agent stop reviewer              # ≈ docker stop
+$ actant agent stop reviewer              # ≈ docker stop
 ✓ Memory extracted: 2 error patterns, 1 best practice
 
-$ agentcraft agent start reviewer             # 再次启动时自动注入 Memory
+$ actant agent start reviewer             # 再次启动时自动注入 Memory
 ✓ Re-materialized with 3 memory insights
 ```
 

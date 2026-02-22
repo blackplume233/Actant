@@ -4,9 +4,9 @@ import { resolve } from "node:path";
 export default defineConfig({
   resolve: {
     alias: {
-      "@agentcraft/core": resolve(__dirname, "packages/core/src/index.ts"),
-      "@agentcraft/shared": resolve(__dirname, "packages/shared/src/index.ts"),
-      "@agentcraft/api": resolve(__dirname, "packages/api/src/index.ts"),
+      "@actant/core": resolve(__dirname, "packages/core/src/index.ts"),
+      "@actant/shared": resolve(__dirname, "packages/shared/src/index.ts"),
+      "@actant/api": resolve(__dirname, "packages/api/src/index.ts"),
     },
   },
   test: {

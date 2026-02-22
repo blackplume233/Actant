@@ -1,4 +1,4 @@
-import type { AgentInstanceMeta } from "@agentcraft/shared";
+import type { AgentInstanceMeta } from "@actant/shared";
 import type { AgentLauncher, AgentProcess } from "./agent-launcher";
 
 let nextPid = 10000;

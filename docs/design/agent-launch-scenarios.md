@@ -1,6 +1,6 @@
 # Agent 连接架构与启动场景
 
-> 定义 AgentCraft 中 Agent 的连接模式、启动场景和数据流。
+> 定义 Actant 中 Agent 的连接模式、启动场景和数据流。
 > **本文档是 [Agent 生命周期](../../.trellis/spec/agent-lifecycle.md) 和 [接口契约](../../.trellis/spec/api-contracts.md) 的补充设计文档。**
 >
 > 设计演进记录见 [ACP 架构讨论](./acp-gateway-deprecation-discussion.md)
@@ -20,7 +20,7 @@ AgentTemplate ──1:N──→ AgentInstance ──1:1──→ Process ──
 ```
 
 - **AgentTemplate**：可复用的配置蓝图（skills、prompts、MCP servers、backend 等）
-- **AgentInstance**：一个具体的工作空间目录 + `.agentcraft.json` 元数据
+- **AgentInstance**：一个具体的工作空间目录 + `.actant.json` 元数据
 - **Process**：一个 OS 进程（pid），与 Instance **严格 1:1**
 - **Session**：ACP 协议级的会话，一个 Process 可以承载多个 Session
 
@@ -43,10 +43,10 @@ Instance:Process 严格 1:1 不变，但系统提供两种方式处理多客户�
 
 ```
 手动创建:
-  agentcraft agent create my-agent -t code-review    →  持久 Instance
+  actant agent create my-agent -t code-review    →  持久 Instance
 
 自动实例化:
-  agentcraft proxy my-agent --direct                 →  Daemon 检测到 my-agent 已占用
+  actant proxy my-agent --direct                 →  Daemon 检测到 my-agent 已占用
                                                      →  自动创建 my-agent-ephemeral-<id>
                                                      →  spawn 独立进程，客户端断开后销毁
 ```
@@ -55,7 +55,7 @@ Instance:Process 严格 1:1 不变，但系统提供两种方式处理多客户�
 
 ## 三种连接模式
 
-AgentCraft 支持三种连接模式，适用于不同场景。
+Actant 支持三种连接模式，适用于不同场景。
 
 ### 模式 A：Direct Bridge（直连桥接）⭐ 默认
 
@@ -94,8 +94,8 @@ AgentCraft 支持三种连接模式，适用于不同场景。
 **CLI 命令**：
 
 ```bash
-agentcraft proxy my-agent              # 默认即 Direct Bridge
-agentcraft proxy my-agent --direct     # 显式指定（等同上面）
+actant proxy my-agent              # 默认即 Direct Bridge
+actant proxy my-agent --direct     # 显式指定（等同上面）
 ```
 
 **并发行为**：
@@ -165,9 +165,9 @@ Client B 断开
 **CLI 命令**：
 
 ```bash
-agentcraft agent start my-agent       # 先启动 Agent（Daemon 管理）
-agentcraft proxy my-agent --lease     # IDE 通过 Session Lease 接入
-agentcraft agent chat my-agent        # Chat 自动走 Session Lease（agent 已运行时）
+actant agent start my-agent       # 先启动 Agent（Daemon 管理）
+actant proxy my-agent --lease     # IDE 通过 Session Lease 接入
+actant agent chat my-agent        # Chat 自动走 Session Lease（agent 已运行时）
 ```
 
 **IDE 通过 ACP 协议接入（Proxy ACP 适配器）**：
@@ -290,7 +290,7 @@ Agent 已通过 agent start 运行，需要 session 恢复或避免冷启动？
 ### 场景 1: One-shot 任务
 
 ```bash
-agentcraft agent run my-agent --prompt "review this PR"
+actant agent run my-agent --prompt "review this PR"
 ```
 
 Daemon spawn → prompt → 收集结果 → 终止进程。内部使用模式 C 的简化版。
@@ -306,8 +306,8 @@ Daemon spawn → prompt → 收集结果 → 终止进程。内部使用模式 C
 ### 场景 2: IDE / CLI 直连（默认）
 
 ```bash
-agentcraft proxy my-agent              # IDE 通过 Direct Bridge 连接（默认）
-agentcraft agent chat my-agent         # Agent 未运行时也走 Direct Bridge
+actant proxy my-agent              # IDE 通过 Direct Bridge 连接（默认）
+actant agent chat my-agent         # Agent 未运行时也走 Direct Bridge
 ```
 
 Proxy 自己 spawn Agent 进程，端到端 ACP。IDE 断开时进程终止。
@@ -323,10 +323,10 @@ Proxy 自己 spawn Agent 进程，端到端 ACP。IDE 断开时进程终止。
 ### 场景 3: 长驻服务 + Session Lease
 
 ```bash
-agentcraft agent start my-agent           # Daemon 启动，进程 warm
-agentcraft agent chat my-agent            # Agent 已运行 → 自动走 Session Lease
-agentcraft proxy my-agent --lease         # IDE 显式走 Session Lease
-agentcraft agent prompt my-agent "hello"  # 单次 prompt（使用 primary session）
+actant agent start my-agent           # Daemon 启动，进程 warm
+actant agent chat my-agent            # Agent 已运行 → 自动走 Session Lease
+actant proxy my-agent --lease         # IDE 显式走 Session Lease
+actant agent prompt my-agent "hello"  # 单次 prompt（使用 primary session）
 ```
 
 Agent 进程由 Daemon 管理，多个客户端通过 Session Lease 交互。IDE 通过 Proxy ACP 适配器接入。
@@ -342,7 +342,7 @@ Agent 进程由 Daemon 管理，多个客户端通过 Session Lease 交互。IDE
 ### 场景 4: IDE 直连 + Direct Bridge（显式）
 
 ```bash
-agentcraft proxy my-agent --direct     # 即使 agent 已通过 start 运行，仍走 Direct Bridge
+actant proxy my-agent --direct     # 即使 agent 已通过 start 运行，仍走 Direct Bridge
 ```
 
 显式使用 Direct Bridge，即使 Agent 已通过 `agent start` 运行。会自动实例化一个临时 Instance。
@@ -357,8 +357,8 @@ agentcraft proxy my-agent --direct     # 即使 agent 已通过 start 运行，�
 ### 场景 5: 雇员型 Agent
 
 ```bash
-agentcraft agent create pr-reviewer -t pr-review --launch-mode acp-service
-agentcraft agent start pr-reviewer
+actant agent create pr-reviewer -t pr-review --launch-mode acp-service
+actant agent start pr-reviewer
 # Agent 持续运行，Daemon 按 Heartbeat/Cron/Webhook 调度任务
 ```
 
@@ -373,7 +373,7 @@ agentcraft agent start pr-reviewer
 ### 场景 6: Direct 模式（打开 IDE，无 ACP）
 
 ```bash
-agentcraft agent start my-agent   # template backendType: "cursor"
+actant agent start my-agent   # template backendType: "cursor"
 ```
 
 Daemon 打开 Cursor IDE 窗口，仅做进程监控。无 ACP 连接。
@@ -434,7 +434,7 @@ Docker 容器中运行 Daemon + Agent，外部 IM 通过 HTTP Webhook 接入。�
 ### 控制权谱系
 
 ```
-AgentCraft 全权 ◄─────────────────────────────────────────► 调用方全权
+Actant 全权 ◄─────────────────────────────────────────► 调用方全权
 
   agent.run       Session Lease     Direct Bridge    Self-spawn+Attach
   Daemon Managed  (Daemon管进程,     (Client管进程,    (调用方管全部,
@@ -448,7 +448,7 @@ AgentCraft 全权 ◄───────────────────�
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     Client 层                                │
-│  agentcraft CLI / IDE Proxy / Web UI / IM Adapter           │
+│  actant CLI / IDE Proxy / Web UI / IM Adapter           │
 └───────────────┬──────────────────────┬──────────────────────┘
                 │                      │
          管理操作(RPC)            实时交互(Streaming)

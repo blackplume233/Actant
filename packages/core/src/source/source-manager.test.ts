@@ -23,7 +23,7 @@ async function createLocalPackage(dir: string) {
   await mkdir(join(dir, "presets"), { recursive: true });
 
   await writeFile(
-    join(dir, "agentcraft.json"),
+    join(dir, "actant.json"),
     JSON.stringify({ name: "test-pkg", version: "1.0.0" }),
   );
   await writeFile(

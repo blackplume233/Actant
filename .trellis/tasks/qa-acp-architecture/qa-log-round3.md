@@ -201,7 +201,7 @@ Read packages/acp/src/connection.ts offset=155 limit=270
     fs: { readTextFile: true, writeTextFile: true },
     terminal: true,
   }
-  clientInfo: { name: "agentcraft", title: "AgentCraft Daemon", version: "0.1.0" }
+  clientInfo: { name: "actant", title: "Actant Daemon", version: "0.1.0" }
 → 与设计文档 §2.2 能力协商策略完全一致
 
 session 方法:
@@ -321,12 +321,12 @@ L397:
 #### 输入
 ```
 npx vitest run
-  working_directory: g:\Workspace\AgentWorkSpace\AgentCraft
+  working_directory: g:\Workspace\AgentWorkSpace\Actant
 ```
 
 #### 输出
 ```
- RUN  v4.0.18 G:/Workspace/AgentWorkSpace/AgentCraft
+ RUN  v4.0.18 G:/Workspace/AgentWorkSpace/Actant
 
  ✓ packages/cli/src/client/__tests__/rpc-client.test.ts (6 tests) 68ms
  ✓ packages/cli/src/output/__tests__/formatter.test.ts (15 tests) 25ms

@@ -1,11 +1,11 @@
-import { ConfigNotFoundError } from "@agentcraft/shared";
+import { ConfigNotFoundError } from "@actant/shared";
 import type {
   PresetListParams,
   PresetShowParams,
   PresetApplyParams,
   PresetDefinition,
   AgentTemplate,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

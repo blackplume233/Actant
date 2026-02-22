@@ -1,8 +1,8 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import type { DomainContextConfig, McpServerRef } from "@agentcraft/shared";
-import type { AgentBackendType } from "@agentcraft/shared";
-import { createLogger } from "@agentcraft/shared";
+import type { DomainContextConfig, McpServerRef } from "@actant/shared";
+import type { AgentBackendType } from "@actant/shared";
+import { createLogger } from "@actant/shared";
 import type { SkillManager } from "../../domain/skill/skill-manager";
 import type { PromptManager } from "../../domain/prompt/prompt-manager";
 import type { McpConfigManager } from "../../domain/mcp/mcp-config-manager";
@@ -38,7 +38,7 @@ export interface DomainManagers {
  *   mcpServers  → {backendConfigDir}/mcp.json (e.g. .cursor/mcp.json or .claude/mcp.json)
  *   workflow    → .trellis/workflow.md
  *   prompts     → prompts/system.md
- *   subAgents   → recorded in .agentcraft.json (not materialized as files)
+ *   subAgents   → recorded in .actant.json (not materialized as files)
  *
  * @deprecated Use WorkspaceBuilder + BackendBuilder instead (Phase 3b).
  * Kept for backward compatibility; will be removed in a future version.

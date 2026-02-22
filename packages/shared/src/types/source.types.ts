@@ -26,7 +26,7 @@ export interface SourceEntry {
 }
 
 // ---------------------------------------------------------------------------
-// Package Manifest — agentcraft.json at the root of a component package
+// Package Manifest — actant.json at the root of a component package
 // ---------------------------------------------------------------------------
 
 export interface PackageManifest {

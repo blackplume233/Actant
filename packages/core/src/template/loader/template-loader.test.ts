@@ -4,7 +4,7 @@ import { TemplateLoader } from "./template-loader";
 import {
   ConfigNotFoundError,
   ConfigValidationError,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 
 const FIXTURES = join(import.meta.dirname, "__fixtures__");
 
@@ -29,7 +29,7 @@ describe("TemplateLoader", () => {
       expect(template.domainContext.mcpServers?.[0]?.name).toBe("filesystem");
       expect(template.initializer?.steps).toHaveLength(3);
       expect(template.metadata).toEqual({
-        author: "AgentCraft Team",
+        author: "Actant Team",
         tags: "code-review,typescript",
       });
     });
@@ -141,7 +141,7 @@ describe("TemplateLoader", () => {
 
     it("should throw ConfigNotFoundError for non-existent directory", async () => {
       await expect(
-        loader.loadFromDirectory("/tmp/agentcraft-nonexistent-dir-test"),
+        loader.loadFromDirectory("/tmp/actant-nonexistent-dir-test"),
       ).rejects.toThrow(ConfigNotFoundError);
     });
   });

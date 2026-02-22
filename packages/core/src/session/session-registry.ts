@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 
 const logger = createLogger("session-registry");
 

@@ -2,7 +2,7 @@
   "date": "2026-02-22T00:27:11.544Z",
   "packages": {
     "shared": {
-      "name": "@agentcraft/shared",
+      "name": "@actant/shared",
       "version": "0.1.0",
       "dependencies": {
         "pino": "^10.3.1"
@@ -13,10 +13,10 @@
       "peerDependencies": {}
     },
     "core": {
-      "name": "@agentcraft/core",
+      "name": "@actant/core",
       "version": "0.1.0",
       "dependencies": {
-        "@agentcraft/shared": "workspace:*",
+        "@actant/shared": "workspace:*",
         "croner": "^9.0.0",
         "zod": "^4.3.6"
       },
@@ -24,13 +24,13 @@
       "peerDependencies": {}
     },
     "cli": {
-      "name": "@agentcraft/cli",
+      "name": "@actant/cli",
       "version": "0.1.0",
       "dependencies": {
-        "@agentcraft/acp": "workspace:*",
-        "@agentcraft/api": "workspace:*",
-        "@agentcraft/core": "workspace:*",
-        "@agentcraft/shared": "workspace:*",
+        "@actant/acp": "workspace:*",
+        "@actant/api": "workspace:*",
+        "@actant/core": "workspace:*",
+        "@actant/shared": "workspace:*",
         "chalk": "^5.6.2",
         "cli-table3": "^0.6.5",
         "commander": "^14.0.3"
@@ -39,33 +39,33 @@
       "peerDependencies": {}
     },
     "api": {
-      "name": "@agentcraft/api",
+      "name": "@actant/api",
       "version": "0.1.0",
       "dependencies": {
-        "@agentcraft/acp": "workspace:*",
-        "@agentcraft/core": "workspace:*",
-        "@agentcraft/shared": "workspace:*"
+        "@actant/acp": "workspace:*",
+        "@actant/core": "workspace:*",
+        "@actant/shared": "workspace:*"
       },
       "devDependencies": {},
       "peerDependencies": {}
     },
     "acp": {
-      "name": "@agentcraft/acp",
+      "name": "@actant/acp",
       "version": "0.1.0",
       "dependencies": {
         "@agentclientprotocol/sdk": "^0.14.1",
-        "@agentcraft/core": "workspace:*",
-        "@agentcraft/shared": "workspace:*"
+        "@actant/core": "workspace:*",
+        "@actant/shared": "workspace:*"
       },
       "devDependencies": {},
       "peerDependencies": {}
     },
     "mcp-server": {
-      "name": "@agentcraft/mcp-server",
+      "name": "@actant/mcp-server",
       "version": "0.1.0",
       "dependencies": {
-        "@agentcraft/core": "workspace:*",
-        "@agentcraft/shared": "workspace:*"
+        "@actant/core": "workspace:*",
+        "@actant/shared": "workspace:*"
       },
       "devDependencies": {},
       "peerDependencies": {}

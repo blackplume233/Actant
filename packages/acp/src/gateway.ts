@@ -10,7 +10,7 @@ import {
   type LoadSessionResponse,
   type SetSessionConfigOptionResponse,
 } from "@agentclientprotocol/sdk";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 import type { AcpConnection } from "./connection";
 import { ClientCallbackRouter, type UpstreamHandler } from "./callback-router";
 
@@ -165,7 +165,7 @@ export class AcpGateway {
         return {
           protocolVersion: 1,
           agentCapabilities: {},
-          agentInfo: { name: "agentcraft-gateway", version: "0.1.0" },
+          agentInfo: { name: "actant-gateway", version: "0.1.0" },
         } as InitializeResponse;
       },
 

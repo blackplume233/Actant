@@ -1,7 +1,7 @@
 # ACP 协议功能点完整性对比
 
 > 基于 [Agent Client Protocol v1](https://agentclientprotocol.com) 官方规范
-> 对比 AgentCraft `@agentcraft/acp` 包 (`packages/acp/`) 及 CLI Proxy 实现
+> 对比 Actant `@actant/acp` 包 (`packages/acp/`) 及 CLI Proxy 实现
 > 生成日期: 2026-02-21
 
 ---
@@ -22,7 +22,7 @@
 ## A. 传输层 (Transports)
 
 
-| #   | 协议要求                                   | 状态  | AgentCraft 实现                                               |
+| #   | 协议要求                                   | 状态  | Actant 实现                                               |
 | --- | -------------------------------------- | --- | ----------------------------------------------------------- |
 | A1  | stdio 传输 (JSON-RPC, newline-delimited) | ✅   | `connection.ts` → `ndJsonStream` over `child_process` stdio |
 | A2  | Streamable HTTP 传输                     | ➖   | 协议草案中，尚未正式化                                                 |
@@ -32,14 +32,14 @@
 ## B. 初始化 (Initialization — `initialize`)
 
 
-| #   | 协议要求                                                  | 状态  | AgentCraft 实现                |
+| #   | 协议要求                                                  | 状态  | Actant 实现                |
 | --- | ----------------------------------------------------- | --- | ---------------------------- |
 | B1  | 调用 `initialize` 方法                                    | ✅   | `AcpConnection.initialize()` |
 | B2  | 协议版本协商 `protocolVersion`                              | ✅   | 固定发 `protocolVersion: 1`     |
 | B3  | 声明 `clientCapabilities.fs.readTextFile`               | ✅   | `{ readTextFile: true }`     |
 | B4  | 声明 `clientCapabilities.fs.writeTextFile`              | ✅   | `{ writeTextFile: true }`    |
 | B5  | 声明 `clientCapabilities.terminal`                      | ⚠️  | 声明 `terminal: true` 但无回调实现   |
-| B6  | 提供 `clientInfo` (name, title, version)                | ✅   | `name: "agentcraft"`         |
+| B6  | 提供 `clientInfo` (name, title, version)                | ✅   | `name: "actant"`         |
 | B7  | 接收并存储 `agentCapabilities`                             | ⚠️  | 存储 `initResponse` 但不根据能力做分支  |
 | B8  | 检测 `loadSession` 能力                                   | ❌   | 不检查                          |
 | B9  | 检测 `promptCapabilities` (image/audio/embeddedContext) | ❌   | 不检查                          |
@@ -51,7 +51,7 @@
 ## C. 认证 (Authentication — `authenticate`)
 
 
-| #   | 协议要求                    | 状态  | AgentCraft 实现 |
+| #   | 协议要求                    | 状态  | Actant 实现 |
 | --- | ----------------------- | --- | ------------- |
 | C1  | 调用 `authenticate` 方法    | ❌   | 完全缺失          |
 | C2  | 根据 `authMethods` 选择认证方式 | ❌   | —             |
@@ -60,7 +60,7 @@
 ## D. Session 管理 (Session Setup)
 
 
-| #   | 协议要求                                | 状态  | AgentCraft 实现                |
+| #   | 协议要求                                | 状态  | Actant 实现                |
 | --- | ----------------------------------- | --- | ---------------------------- |
 | D1  | `session/new` 创建会话                  | ✅   | `AcpConnection.newSession()` |
 | D2  | 传递 `cwd` 参数                         | ✅   |                              |
@@ -77,7 +77,7 @@
 ## E. Prompt Turn (`session/prompt`)
 
 
-| #   | 协议要求                               | 状态  | AgentCraft 实现            |
+| #   | 协议要求                               | 状态  | Actant 实现            |
 | --- | ---------------------------------- | --- | ------------------------ |
 | E1  | 发送 `session/prompt`                | ✅   | `AcpConnection.prompt()` |
 | E2  | 发送 `ContentBlock::Text`            | ✅   | 仅此类型                     |
@@ -97,7 +97,7 @@
 ## F. Session Update 通知 (`session/update`)
 
 
-| #   | 协议要求                                         | 状态  | AgentCraft 实现                 |
+| #   | 协议要求                                         | 状态  | Actant 实现                 |
 | --- | -------------------------------------------- | --- | ----------------------------- |
 | F1  | `agent_message_chunk` — text                 | ✅   | `prompt()` + `streamPrompt()` |
 | F2  | `agent_message_chunk` — 其他内容类型               | ❌   | 仅处理 text                      |
@@ -114,7 +114,7 @@
 ## G. 取消 (`session/cancel`)
 
 
-| #   | 协议要求                                           | 状态  | AgentCraft 实现            |
+| #   | 协议要求                                           | 状态  | Actant 实现            |
 | --- | ---------------------------------------------- | --- | ------------------------ |
 | G1  | 发送 `session/cancel` 通知                         | ✅   | `AcpConnection.cancel()` |
 | G2  | 取消时回复 pending `request_permission` 为 cancelled | ❌   |                          |
@@ -125,7 +125,7 @@
 ## H. 权限请求 (`session/request_permission`)
 
 
-| #   | 协议要求                       | 状态  | AgentCraft 实现 |
+| #   | 协议要求                       | 状态  | Actant 实现 |
 | --- | -------------------------- | --- | ------------- |
 | H1  | `requestPermission` 回调     | ✅   | Client impl   |
 | H2  | Auto-approve 模式            | ✅   | 选择第一个 option  |
@@ -137,7 +137,7 @@
 ## I. 文件系统回调 (Client → Agent)
 
 
-| #   | 协议要求                      | 状态  | AgentCraft 实现            |
+| #   | 协议要求                      | 状态  | Actant 实现            |
 | --- | ------------------------- | --- | ------------------------ |
 | I1  | `fs/read_text_file` 读取文件  | ✅   | `readTextFile` callback  |
 | I2  | `line` 参数 (起始行号, 1-based) | ❌   | 读取整文件                    |
@@ -149,7 +149,7 @@
 ## J. Terminal 回调 (Client → Agent)
 
 
-| #   | 协议要求                                   | 状态  | AgentCraft 实现 |
+| #   | 协议要求                                   | 状态  | Actant 实现 |
 | --- | -------------------------------------- | --- | ------------- |
 | J1  | `terminal/create` 创建终端                 | ❌   | 声明能力但无回调      |
 | J2  | `command`, `args`, `env`, `cwd` 参数     | ❌   |               |
@@ -166,7 +166,7 @@
 ## K. Session Modes
 
 
-| #   | 协议要求                        | 状态  | AgentCraft 实现          |
+| #   | 协议要求                        | 状态  | Actant 实现          |
 | --- | --------------------------- | --- | ---------------------- |
 | K1  | 接收 modes 初始状态               | ✅   | `AcpSessionInfo.modes` |
 | K2  | `session/set_mode` 方法       | ❌   |                        |
@@ -176,7 +176,7 @@
 ## L. Session Config Options
 
 
-| #   | 协议要求                           | 状态  | AgentCraft 实现 |
+| #   | 协议要求                           | 状态  | Actant 实现 |
 | --- | ------------------------------ | --- | ------------- |
 | L1  | 接收 `configOptions` 初始状态        | ❌   |               |
 | L2  | `session/set_config_option` 方法 | ❌   |               |
@@ -186,7 +186,7 @@
 ## M. Slash Commands
 
 
-| #   | 协议要求                              | 状态  | AgentCraft 实现 |
+| #   | 协议要求                              | 状态  | Actant 实现 |
 | --- | --------------------------------- | --- | ------------- |
 | M1  | 处理 `available_commands_update` 通知 | ❌   |               |
 | M2  | 在 prompt 中包含命令文本                  | ❌   |               |
@@ -195,7 +195,7 @@
 ## N. Agent Plan
 
 
-| #   | 协议要求                                     | 状态  | AgentCraft 实现 |
+| #   | 协议要求                                     | 状态  | Actant 实现 |
 | --- | ---------------------------------------- | --- | ------------- |
 | N1  | 处理 `plan` 通知                             | ❌   |               |
 | N2  | Plan entries (content, priority, status) | ❌   |               |
@@ -205,7 +205,7 @@
 ## O. Tool Call 展示
 
 
-| #   | 协议要求                                                           | 状态  | AgentCraft 实现          |
+| #   | 协议要求                                                           | 状态  | Actant 实现          |
 | --- | -------------------------------------------------------------- | --- | ---------------------- |
 | O1  | 接收 `tool_call`                                                 | ⚠️  | streamPrompt yield 不解析 |
 | O2  | 接收 `tool_call_update`                                          | ⚠️  | 同上                     |
@@ -221,7 +221,7 @@
 ## P. Content Types
 
 
-| #   | 协议要求                                    | 状态  | AgentCraft 实现 |
+| #   | 协议要求                                    | 状态  | Actant 实现 |
 | --- | --------------------------------------- | --- | ------------- |
 | P1  | Text (`type: "text"`)                   | ✅   |               |
 | P2  | Image (`type: "image"`, base64)         | ❌   |               |
@@ -234,7 +234,7 @@
 ## Q. 扩展性 (Extensibility)
 
 
-| #   | 协议要求                                       | 状态  | AgentCraft 实现 |
+| #   | 协议要求                                       | 状态  | Actant 实现 |
 | --- | ------------------------------------------ | --- | ------------- |
 | Q1  | `_meta` 字段支持                               | ❌   |               |
 | Q2  | 自定义方法 (`_` 前缀)                             | ❌   |               |
@@ -245,7 +245,7 @@
 ## R. 错误处理
 
 
-| #   | 协议要求                      | 状态  | AgentCraft 实现      |
+| #   | 协议要求                      | 状态  | Actant 实现      |
 | --- | ------------------------- | --- | ------------------ |
 | R1  | JSON-RPC 2.0 错误响应         | ✅   | `writeAcpError()`  |
 | R2  | Method not found (-32601) | ✅   | proxy default case |

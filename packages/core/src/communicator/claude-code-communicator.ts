@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 import type {
   AgentCommunicator,
   PromptResult,

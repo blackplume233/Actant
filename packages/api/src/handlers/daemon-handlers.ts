@@ -1,7 +1,7 @@
 import type {
   DaemonPingResult,
   DaemonShutdownResult,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

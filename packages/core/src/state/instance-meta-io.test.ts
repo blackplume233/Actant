@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentInstanceMeta } from "@agentcraft/shared";
-import { InstanceCorruptedError } from "@agentcraft/shared";
+import type { AgentInstanceMeta } from "@actant/shared";
+import { InstanceCorruptedError } from "@actant/shared";
 import {
   readInstanceMeta,
   writeInstanceMeta,
@@ -33,7 +33,7 @@ describe("instance-meta-io", () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "agentcraft-meta-test-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-meta-test-"));
   });
 
   afterEach(async () => {
@@ -55,7 +55,7 @@ describe("instance-meta-io", () => {
     it("should write valid JSON to disk", async () => {
       const meta = makeMeta();
       await writeInstanceMeta(tmpDir, meta);
-      const raw = await readFile(join(tmpDir, ".agentcraft.json"), "utf-8");
+      const raw = await readFile(join(tmpDir, ".actant.json"), "utf-8");
       const parsed = JSON.parse(raw);
       expect(parsed.name).toBe("test-agent");
     });
@@ -73,7 +73,7 @@ describe("instance-meta-io", () => {
       const legacy = makeMeta();
       const { backendType: _, backendConfig: __, ...legacyWithoutBackend } = legacy;
       await writeFile(
-        join(tmpDir, ".agentcraft.json"),
+        join(tmpDir, ".actant.json"),
         JSON.stringify(legacyWithoutBackend, null, 2),
         "utf-8",
       );
@@ -85,7 +85,7 @@ describe("instance-meta-io", () => {
       const legacy = makeMeta();
       const { workspacePolicy: _, ...legacyWithoutPolicy } = legacy;
       await writeFile(
-        join(tmpDir, ".agentcraft.json"),
+        join(tmpDir, ".actant.json"),
         JSON.stringify(legacyWithoutPolicy, null, 2),
         "utf-8",
       );
@@ -97,7 +97,7 @@ describe("instance-meta-io", () => {
       const legacy = makeMeta({ launchMode: "one-shot" });
       const { workspacePolicy: _, ...legacyWithoutPolicy } = legacy;
       await writeFile(
-        join(tmpDir, ".agentcraft.json"),
+        join(tmpDir, ".actant.json"),
         JSON.stringify(legacyWithoutPolicy, null, 2),
         "utf-8",
       );
@@ -115,13 +115,13 @@ describe("instance-meta-io", () => {
     });
 
     it("should throw InstanceCorruptedError for invalid JSON", async () => {
-      await writeFile(join(tmpDir, ".agentcraft.json"), "not json{{{", "utf-8");
+      await writeFile(join(tmpDir, ".actant.json"), "not json{{{", "utf-8");
       await expect(readInstanceMeta(tmpDir)).rejects.toThrow(InstanceCorruptedError);
     });
 
     it("should throw InstanceCorruptedError for invalid schema", async () => {
       await writeFile(
-        join(tmpDir, ".agentcraft.json"),
+        join(tmpDir, ".actant.json"),
         JSON.stringify({ foo: "bar" }),
         "utf-8",
       );
@@ -151,7 +151,7 @@ describe("instance-meta-io", () => {
       await mkdir(corruptedDir);
 
       await writeInstanceMeta(validDir, makeMeta({ name: "valid-agent" }));
-      await writeFile(join(corruptedDir, ".agentcraft.json"), "broken", "utf-8");
+      await writeFile(join(corruptedDir, ".actant.json"), "broken", "utf-8");
 
       const { valid, corrupted } = await scanInstances(tmpDir);
 
@@ -161,7 +161,7 @@ describe("instance-meta-io", () => {
     });
 
     it("should return empty for non-existent directory", async () => {
-      const { valid, corrupted } = await scanInstances("/tmp/nonexistent-agentcraft-test");
+      const { valid, corrupted } = await scanInstances("/tmp/nonexistent-actant-test");
       expect(valid).toEqual([]);
       expect(corrupted).toEqual([]);
     });

@@ -1,11 +1,11 @@
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 import type {
   AgentBackendType,
   DomainContextConfig,
   SkillDefinition,
   PromptDefinition,
   WorkflowDefinition,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 import type { SkillManager } from "../domain/skill/skill-manager";
 import type { PromptManager } from "../domain/prompt/prompt-manager";
 import type { McpConfigManager } from "../domain/mcp/mcp-config-manager";

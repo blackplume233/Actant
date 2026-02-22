@@ -2,8 +2,8 @@ import { join } from "node:path";
 import { mkdir, rm } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type { GitHubSourceConfig } from "@agentcraft/shared";
-import { createLogger } from "@agentcraft/shared";
+import type { GitHubSourceConfig } from "@actant/shared";
+import { createLogger } from "@actant/shared";
 import type { ComponentSource, FetchResult } from "./component-source";
 import { LocalSource } from "./local-source";
 

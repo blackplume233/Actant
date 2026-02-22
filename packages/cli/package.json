@@ -1,10 +1,10 @@
 {
-  "name": "@agentcraft/cli",
+  "name": "@actant/cli",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "bin": {
-    "agentcraft": "./dist/bin/agentcraft.js"
+    "actant": "./dist/bin/actant.js"
   },
   "scripts": {
     "build": "tsup",
@@ -14,10 +14,10 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@agentcraft/acp": "workspace:*",
-    "@agentcraft/api": "workspace:*",
-    "@agentcraft/core": "workspace:*",
-    "@agentcraft/shared": "workspace:*",
+    "@actant/acp": "workspace:*",
+    "@actant/api": "workspace:*",
+    "@actant/core": "workspace:*",
+    "@actant/shared": "workspace:*",
     "chalk": "^5.6.2",
     "cli-table3": "^0.6.5",
     "commander": "^14.0.3"

@@ -1,4 +1,4 @@
-# AgentCraft
+# Actant
 
 一个用于构建、管理和编排 AI Agent 的平台。面向游戏开发等复杂业务场景，让用户能够快速拼装、复用合适的 Agent，零成本地将 AI 嵌入工作流。
 
@@ -49,8 +49,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/blackplume233/AgentCraft.git
-cd AgentCraft
+git clone https://github.com/blackplume233/Actant.git
+cd Actant
 
 # 安装依赖
 pnpm install
@@ -63,36 +63,36 @@ pnpm build
 
 ```bash
 # 1. 启动 Daemon（后台进程管理器）
-agentcraft daemon start
+actant daemon start
 
 # 2. 查看可用模板和组件
-agentcraft template list
-agentcraft skill list
-agentcraft prompt list
+actant template list
+actant skill list
+actant prompt list
 
 # 3. 从模板创建 Agent（技能和提示词会自动物化到 workspace）
-agentcraft agent create my-agent --template code-review-agent
+actant agent create my-agent --template code-review-agent
 
 # 4. 查看 Agent 状态
-agentcraft agent status my-agent
+actant agent status my-agent
 
 # 5. 以 Service 模式启动 Agent
-agentcraft agent start my-agent
+actant agent start my-agent
 
 # 6. 向 Agent 发送单次任务
-agentcraft agent run my-agent --prompt "Review the error handling in src/index.ts"
+actant agent run my-agent --prompt "Review the error handling in src/index.ts"
 
 # 7. 进入交互式对话模式
-agentcraft agent chat my-agent
+actant agent chat my-agent
 
 # 8. 停止 Agent
-agentcraft agent stop my-agent
+actant agent stop my-agent
 
 # 9. 销毁 Agent（删除 workspace）
-agentcraft agent destroy my-agent --force
+actant agent destroy my-agent --force
 
 # 10. 关闭 Daemon
-agentcraft daemon stop
+actant daemon stop
 ```
 
 > **`agent run/chat` 与 `agent start` 的关系**
@@ -103,10 +103,10 @@ agentcraft daemon stop
 
 ### 自定义组件
 
-将组件定义文件放入 `~/.agentcraft/configs/` 目录：
+将组件定义文件放入 `~/.actant/configs/` 目录：
 
 ```
-~/.agentcraft/configs/
+~/.actant/configs/
 ├── skills/          # 技能定义 (JSON)
 ├── prompts/         # 提示词定义 (JSON)
 ├── mcp/             # MCP Server 配置 (JSON)
@@ -136,13 +136,13 @@ agentcraft daemon stop
 ### 模块结构
 
 ```
-AgentCraft
-├── @agentcraft/shared       公共类型、错误、配置、日志、工具
-├── @agentcraft/core         模板、初始化器、管理器、领域上下文
-├── @agentcraft/cli          交互式 CLI（REPL）— 主要操作界面
-├── @agentcraft/api          RESTful API（Hono）— 支持 Docker 部署
-├── @agentcraft/acp          Agent Client Protocol 服务端
-└── @agentcraft/mcp-server   Model Context Protocol 服务端
+Actant
+├── @actant/shared       公共类型、错误、配置、日志、工具
+├── @actant/core         模板、初始化器、管理器、领域上下文
+├── @actant/cli          交互式 CLI（REPL）— 主要操作界面
+├── @actant/api          RESTful API（Hono）— 支持 Docker 部署
+├── @actant/acp          Agent Client Protocol 服务端
+└── @actant/mcp-server   Model Context Protocol 服务端
 ```
 
 ### 依赖关系
@@ -179,7 +179,7 @@ shared ← core ← cli
 ## 项目结构
 
 ```
-AgentCraft/
+Actant/
 ├── packages/              源码（pnpm workspace）
 │   ├── shared/            公共类型、错误、工具
 │   ├── core/              核心业务逻辑
@@ -220,8 +220,8 @@ AgentCraft/
 |------|---------------|---------|
 | Direct | 用户 | 直接打开 IDE / TUI |
 | ACP Background | 调用方 | 第三方 Client 通过 ACP 管理 |
-| ACP Service | AgentCraft | 持久化雇员 Agent |
-| One-Shot | AgentCraft | 执行任务后自动终止 |
+| ACP Service | Actant | 持久化雇员 Agent |
+| One-Shot | Actant | 执行任务后自动终止 |
 
 ---
 
@@ -246,7 +246,7 @@ AgentCraft/
 | [ACP](https://agentclientprotocol.com/) | Agent Client Protocol 框架 |
 | [n8n](https://n8n.io/) | 工作流自动化模式 |
 | [Trellis](https://github.com/mindfold-ai/Trellis) | 工程初始化及 Workflow 设计 |
-| [UnrealFairy](https://github.com/blackplume233/UnrealFairy) | 关联项目 — AgentCraft 将取代其 Agent 子系统 |
+| [UnrealFairy](https://github.com/blackplume233/UnrealFairy) | 关联项目 — Actant 将取代其 Agent 子系统 |
 
 ## License
 

@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 import { TaskQueue } from "./task-queue";
 import { TaskDispatcher, type PromptAgentFn } from "./task-dispatcher";
 import { ExecutionLog } from "./execution-log";

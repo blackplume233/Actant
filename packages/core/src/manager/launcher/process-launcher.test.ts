@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentInstanceMeta } from "@agentcraft/shared";
+import type { AgentInstanceMeta } from "@actant/shared";
 import { ProcessLauncher } from "./process-launcher";
 import { isProcessAlive } from "./process-utils";
 import { spawn } from "node:child_process";
@@ -53,7 +53,7 @@ describe("ProcessLauncher", () => {
   let launcher: ProcessLauncher;
 
   beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "agentcraft-launcher-test-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-launcher-test-"));
     launcher = new ProcessLauncher({
       spawnVerifyDelayMs: 300,
       terminateTimeoutMs: 2000,

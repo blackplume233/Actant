@@ -33,8 +33,8 @@ Agent Template (JSON) → 加载/验证 → 注册表 → 创建 Instance → �
 
 | 包 | 职责 |
 |----|------|
-| `@agentcraft/shared` | 共享类型、错误层级、日志、工具函数 |
-| `@agentcraft/core` | Template/Initializer/Manager/Domain 全部业务逻辑 |
+| `@actant/shared` | 共享类型、错误层级、日志、工具函数 |
+| `@actant/core` | Template/Initializer/Manager/Domain 全部业务逻辑 |
 
 ### 核心交付物
 
@@ -108,20 +108,20 @@ Phase 8 ─── CLI 集成 ─────────────────
 
 ```typescript
 // base-error.ts
-abstract class AgentCraftError extends Error {
+abstract class ActantError extends Error {
   abstract readonly code: string;
 }
 
 // config-errors.ts
-class ConfigNotFoundError extends AgentCraftError { ... }
-class ConfigValidationError extends AgentCraftError { ... }
-class TemplateNotFoundError extends AgentCraftError { ... }
+class ConfigNotFoundError extends ActantError { ... }
+class ConfigValidationError extends ActantError { ... }
+class TemplateNotFoundError extends ActantError { ... }
 
 // lifecycle-errors.ts
-class AgentLaunchError extends AgentCraftError { ... }
-class AgentNotFoundError extends AgentCraftError { ... }
-class AgentAlreadyRunningError extends AgentCraftError { ... }
-class InstanceCorruptedError extends AgentCraftError { ... }
+class AgentLaunchError extends ActantError { ... }
+class AgentNotFoundError extends ActantError { ... }
+class AgentAlreadyRunningError extends ActantError { ... }
+class InstanceCorruptedError extends ActantError { ... }
 ```
 
 #### 1.2 核心类型 (`shared/src/types/`)
@@ -132,7 +132,7 @@ class InstanceCorruptedError extends AgentCraftError { ... }
 // 核心概念：Agent Instance 的实体是一个工作目录。
 // 工作目录中包含物化后的 Domain Context 文件（AGENTS.md、mcp.json 等），
 // Agent Backend（Cursor / Claude Code）直接指向此目录即可工作。
-// 下面的 interface 是工作目录中 .agentcraft.json 的结构，
+// 下面的 interface 是工作目录中 .actant.json 的结构，
 // 是对工作目录的元数据描述，不是 Instance 本身。
 
 interface AgentInstanceMeta {
@@ -174,7 +174,7 @@ interface DomainContextConfig {
 ```
 
 > **关键区分**：
-> - `AgentInstanceMeta` 是元数据（`.agentcraft.json` 的内容），描述"这个工作目录是什么"
+> - `AgentInstanceMeta` 是元数据（`.actant.json` 的内容），描述"这个工作目录是什么"
 > - 工作目录本身才是 Instance 的实体，包含物化后的所有 Domain Context 文件
 > - `name` 即工作目录名，全局唯一
 
@@ -310,7 +310,7 @@ export class TemplateRegistry {
 ```
 {instancesBaseDir}/
 └── my-reviewer/                        ← name 即目录名，全局唯一
-    ├── .agentcraft.json                ← Instance 元数据（AgentInstanceMeta）
+    ├── .actant.json                ← Instance 元数据（AgentInstanceMeta）
     ├── AGENTS.md                       ← 物化的 Skills/Rules
     ├── .cursor/
     │   └── mcp.json                    ← 物化的 MCP Server 配置
@@ -321,7 +321,7 @@ export class TemplateRegistry {
     └── ...                             ← 其他物化的 Domain Context 文件
 ```
 
-> `.agentcraft.json` 是唯一的元数据文件。其他文件都是 Domain Context 的物化产物，
+> `.actant.json` 是唯一的元数据文件。其他文件都是 Domain Context 的物化产物，
 > 由 Initializer 从 Template 引用的组件解析并写入。
 
 #### 接口设计
@@ -340,7 +340,7 @@ export class AgentInitializer {
    * 1. 从 Registry 获取 Template
    * 2. 创建 {instancesBaseDir}/{name}/ 目录
    * 3. 解析 Domain Context 引用，物化为文件
-   * 4. 写入 .agentcraft.json 元数据
+   * 4. 写入 .actant.json 元数据
    */
   async createInstance(
     name: string,
@@ -350,7 +350,7 @@ export class AgentInitializer {
 
   /**
    * 查找已有 Instance 或创建新 Instance（幂等操作）
-   * - 目录 {instancesBaseDir}/{name}/ 存在且 .agentcraft.json 有效 → 返回已有
+   * - 目录 {instancesBaseDir}/{name}/ 存在且 .actant.json 有效 → 返回已有
    * - 目录不存在 → 创建新 Instance
    */
   async findOrCreateInstance(
@@ -387,21 +387,21 @@ export class ContextMaterializer {
 | `mcpServers` | `.cursor/mcp.json` | Cursor/Claude Code 标准 MCP 配置路径 |
 | `workflow` | `.trellis/` 目录 | Workflow 模板整体复制 |
 | `prompts` | `prompts/system.md` | 系统提示词合并写入 |
-| `subAgents` | `.agentcraft.json` 中记录引用 | 子 Agent 不物化，运行时解析 |
+| `subAgents` | `.actant.json` 中记录引用 | 子 Agent 不物化，运行时解析 |
 
 #### FindOrCreate 行为
 
 | 场景 | 判断条件 | 行为 |
 |------|---------|------|
 | Instance 不存在 | `{name}/` 目录不存在 | 创建新目录 + 物化 + 写元数据 |
-| Instance 存在且有效 | 目录存在，`.agentcraft.json` 合法 | 读取元数据返回 |
-| Instance 存在但损坏 | 目录存在，`.agentcraft.json` 缺失或非法 | 抛出 `InstanceCorruptedError` |
+| Instance 存在且有效 | 目录存在，`.actant.json` 合法 | 读取元数据返回 |
+| Instance 存在但损坏 | 目录存在，`.actant.json` 缺失或非法 | 抛出 `InstanceCorruptedError` |
 
 > `name` 全局唯一（即目录名唯一），不再需要 `templateName + name` 组合作为唯一键。
 > `templateName` 仅作为元数据记录来源。
 
 **测试要点**：
-- **创建 Instance** → 目录存在、`.agentcraft.json` 内容正确、Domain Context 文件已物化
+- **创建 Instance** → 目录存在、`.actant.json` 内容正确、Domain Context 文件已物化
 - Template 不存在 → `TemplateNotFoundError`
 - `name` 冲突（目录已存在）→ 明确错误
 - 物化验证：skills → AGENTS.md 内容正确
@@ -425,7 +425,7 @@ export class ContextMaterializer {
 
 **目标**：管理 Agent Instance 的生命周期 — 启动、停止、状态查询、重启恢复。
 
-> **核心理念**：Instance 的元数据（`.agentcraft.json`）就在工作目录中。
+> **核心理念**：Instance 的元数据（`.actant.json`）就在工作目录中。
 > 不需要独立的数据库或外部 JSON 存储——扫描 Instance 目录就能恢复全部状态。
 
 **位置**：`packages/core/src/manager/`
@@ -437,9 +437,9 @@ export class ContextMaterializer {
 ```
 {instancesBaseDir}/
 ├── my-reviewer/
-│   └── .agentcraft.json     ← 读取此文件 = 获得这个 Instance 的所有元数据
+│   └── .actant.json     ← 读取此文件 = 获得这个 Instance 的所有元数据
 ├── ci-bot/
-│   └── .agentcraft.json
+│   └── .actant.json
 └── .corrupted/               ← 损坏的 Instance 目录移到这里
 ```
 
@@ -448,12 +448,12 @@ export class ContextMaterializer {
   │
   ├─ 扫描 {instancesBaseDir}/ 下所有子目录
   │
-  ├─ 对每个子目录读取 .agentcraft.json
+  ├─ 对每个子目录读取 .actant.json
   │   ├─ Zod 验证通过 → 加入内存缓存
   │   └─ 验证失败 → 记录日志，移至 .corrupted/
   │
   └─ 状态修正（重启恢复）：
-      ├─ running / starting → 改为 stopped（进程已丢失），回写 .agentcraft.json
+      ├─ running / starting → 改为 stopped（进程已丢失），回写 .actant.json
       └─ stopping → 改为 stopped
 ```
 
@@ -518,18 +518,18 @@ interface AgentProcess {
 
 #### 元数据读写
 
-Manager 对 `.agentcraft.json` 的操作封装为工具函数：
+Manager 对 `.actant.json` 的操作封装为工具函数：
 
 ```typescript
 // state/instance-meta-io.ts
 
-/** 从工作目录读取 .agentcraft.json */
+/** 从工作目录读取 .actant.json */
 async function readInstanceMeta(workspaceDir: string): Promise<AgentInstanceMeta> { ... }
 
-/** 原子写入 .agentcraft.json（write-tmp + rename） */
+/** 原子写入 .actant.json（write-tmp + rename） */
 async function writeInstanceMeta(workspaceDir: string, meta: AgentInstanceMeta): Promise<void> { ... }
 
-/** 更新 .agentcraft.json 的部分字段 */
+/** 更新 .actant.json 的部分字段 */
 async function updateInstanceMeta(
   workspaceDir: string,
   patch: Partial<AgentInstanceMeta>,
@@ -542,7 +542,7 @@ async function scanInstances(instancesBaseDir: string): Promise<AgentInstanceMet
 #### 状态流转
 
 ```
-createAgent()        → status: created    → 写入 .agentcraft.json
+createAgent()        → status: created    → 写入 .actant.json
 startAgent()         → status: starting   → 启动进程 → status: running
                                                         ↓ (进程退出)
                                                      status: stopped
@@ -561,7 +561,7 @@ destroyAgent()       → 删除整个工作目录
 - **listAgents**：列出所有实例，状态正确
 - **重启恢复**：创建实例 → 新建 Manager → initialize → 实例恢复
 - **遗留状态修正**：手动写入 `status: running` → initialize 后变为 `stopped`
-- **损坏目录处理**：`.agentcraft.json` 缺失或非法 → 移至 `.corrupted/`
+- **损坏目录处理**：`.actant.json` 缺失或非法 → 移至 `.corrupted/`
 - **元数据 I/O**：原子写入验证、并发安全
 - **E2E 测试**：Template → Registry → Initializer → Manager → 重启恢复 全链路
 
@@ -615,17 +615,17 @@ export class SkillManager {
 Phase 8 不在本次 Roadmap 核心范围内，但列出接口以确保 Phase 1-7 的设计预留 CLI 适配能力。
 
 ```
-agentcraft template create <name>        # 创建模板
-agentcraft template list                 # 列表模板
-agentcraft template show <name>          # 查看模板详情
-agentcraft template validate <file>      # 验证模板文件
+actant template create <name>        # 创建模板
+actant template list                 # 列表模板
+actant template show <name>          # 查看模板详情
+actant template validate <file>      # 验证模板文件
 
-agentcraft agent create <name> --template <template>  # 从模板创建 Agent
-agentcraft agent start <name>            # 启动 Agent
-agentcraft agent stop <name>             # 停止 Agent
-agentcraft agent status [name]           # 查看状态
-agentcraft agent list                    # 列出所有 Agent
-agentcraft agent destroy <name>          # 销毁 Agent（删除工作目录）
+actant agent create <name> --template <template>  # 从模板创建 Agent
+actant agent start <name>            # 启动 Agent
+actant agent stop <name>             # 停止 Agent
+actant agent status [name]           # 查看状态
+actant agent list                    # 列出所有 Agent
+actant agent destroy <name>          # 销毁 Agent（删除工作目录）
 ```
 
 ---
@@ -700,9 +700,9 @@ packages/core/src/template/loader/__fixtures__/
 | Schema 设计过早定型 | Template 格式后期需大改 | Schema 分层设计，核心字段先定，扩展字段用 `metadata` |
 | 进程管理跨平台差异 | Windows/Linux 行为不一致 | Phase 6 先用 mock launcher，真实进程管理单独迭代 |
 | Domain Context 引用循环 | SubAgent 引用形成环 | 引用解析时做循环检测 |
-| 工作目录损坏 | `.agentcraft.json` 丢失或非法 | 启动时自动隔离到 `.corrupted/`，不阻塞其他 Instance |
+| 工作目录损坏 | `.actant.json` 丢失或非法 | 启动时自动隔离到 `.corrupted/`，不阻塞其他 Instance |
 | 物化文件与 Template 不同步 | Template 更新后已有 Instance 的物化文件过时 | 提供 `reinitialize` 操作重新物化，不影响元数据 |
-| 并发写 `.agentcraft.json` | 状态数据竞争 | 原子写入（write-tmp + rename），内存缓存为单一写入点 |
+| 并发写 `.actant.json` | 状态数据竞争 | 原子写入（write-tmp + rename），内存缓存为单一写入点 |
 
 ---
 
@@ -742,7 +742,7 @@ Session 6: Phase 7                     → Domain Context 测试全绿 (M4)
 
 **Employee 相对常规 Agent 的增量能力**：
 
-- `launchMode: 'acp-service'` — AgentCraft 全权管理生命周期
+- `launchMode: 'acp-service'` — Actant 全权管理生命周期
 - 崩溃自动重启 + 心跳健康检查
 - 长期记忆（memory plugin）
 - 定时任务（scheduler plugin）
@@ -758,7 +758,7 @@ Session 6: Phase 7                     → Domain Context 测试全绿 (M4)
 
 ```json
 {
-  "$schema": "https://agentcraft.dev/schemas/agent-template.json",
+  "$schema": "https://actant.dev/schemas/agent-template.json",
   "name": "code-review-agent",
   "version": "1.0.0",
   "description": "A code review agent powered by Claude",
@@ -799,7 +799,7 @@ Session 6: Phase 7                     → Domain Context 测试全绿 (M4)
   },
 
   "metadata": {
-    "author": "AgentCraft Team",
+    "author": "Actant Team",
     "tags": ["code-review", "typescript"]
   }
 }

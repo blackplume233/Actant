@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
-import type { PromptDefinition } from "@agentcraft/shared";
-import { ConfigValidationError } from "@agentcraft/shared";
+import type { PromptDefinition } from "@actant/shared";
+import { ConfigValidationError } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
 
 const PromptDefinitionSchema = z.object({

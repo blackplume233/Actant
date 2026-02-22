@@ -8,7 +8,7 @@ import type {
   McpServerDefinition,
   WorkflowDefinition,
   PluginDefinition,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 import { CursorBuilder, ClaudeCodeBuilder } from "./index";
 
 function normalizePath(p: string): string {
@@ -19,7 +19,7 @@ describe("CursorBuilder", () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "agentcraft-cursor-builder-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-cursor-builder-"));
   });
 
   afterEach(async () => {
@@ -179,7 +179,7 @@ describe("ClaudeCodeBuilder", () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "agentcraft-claude-builder-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-claude-builder-"));
   });
 
   afterEach(async () => {

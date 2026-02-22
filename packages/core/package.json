@@ -1,5 +1,5 @@
 {
-  "name": "@agentcraft/core",
+  "name": "@actant/core",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -19,7 +19,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@agentcraft/shared": "workspace:*",
+    "@actant/shared": "workspace:*",
     "croner": "^9.0.0",
     "zod": "^4.3.6"
   }

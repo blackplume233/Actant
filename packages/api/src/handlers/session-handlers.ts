@@ -10,9 +10,9 @@ import type {
   SessionListParams,
   SessionListResult,
   SessionLeaseInfo,
-} from "@agentcraft/shared";
-import { createLogger } from "@agentcraft/shared";
-import type { SessionLease } from "@agentcraft/core";
+} from "@actant/shared";
+import { createLogger } from "@actant/shared";
+import type { SessionLease } from "@actant/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 
@@ -44,7 +44,7 @@ async function handleSessionCreate(
     throw new Error(`Agent "${agentName}" not found`);
   }
   if (meta.status !== "running") {
-    throw new Error(`Agent "${agentName}" is not running (status: ${meta.status}). Start it with: agentcraft agent start ${agentName}`);
+    throw new Error(`Agent "${agentName}" is not running (status: ${meta.status}). Start it with: actant agent start ${agentName}`);
   }
   if (!ctx.agentManager.hasAcpConnection(agentName)) {
     throw new Error(`Agent "${agentName}" has no ACP connection`);

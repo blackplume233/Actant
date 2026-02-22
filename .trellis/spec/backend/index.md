@@ -1,12 +1,12 @@
 # Backend Development Guidelines
 
-> Best practices for backend development in AgentCraft.
+> Best practices for backend development in Actant.
 
 ---
 
 ## Project Overview
 
-**AgentCraft** is a platform for building, managing, and composing AI agents. It targets complex business domains (e.g. game development) where users need to rapidly assemble, reuse, and deploy agents with zero friction.
+**Actant** is a platform for building, managing, and composing AI agents. It targets complex business domains (e.g. game development) where users need to rapidly assemble, reuse, and deploy agents with zero friction.
 
 ### Core Scenarios
 
@@ -48,25 +48,25 @@
 ## Module Architecture
 
 ```
-AgentCraft
-├── AgentCraftCore          # Core functionality
+Actant
+├── ActantCore          # Core functionality
 │   ├── CLI Module          # Interactive command-line interface (Python REPL-like)
 │   ├── Template Module     # Agent Template configuration and management
 │   ├── Initializer Module  # Construct Agent Instance from Template
 │   └── Manager Module      # Lifecycle management of all Agent Instances
 │
-├── AgentCraft ACP          # Agent Client Protocol server
+├── Actant ACP          # Agent Client Protocol server
 │                           # External Agent Clients communicate via ACP
 │
-├── AgentCraft MCP          # MCP server for agent-to-AgentCraft access
+├── Actant MCP          # MCP server for agent-to-Actant access
 │                           # Agents can invoke other agents, control services
 │
-└── AgentCraft API          # RESTful API layer
+└── Actant API          # RESTful API layer
                             # All CLI commands exposed as HTTP endpoints
                             # Enables Docker deployment
 ```
 
-### AgentCraftCore Details
+### ActantCore Details
 
 **CLI Module**: Interactive command-line environment. Users execute commands sequentially (similar to Python REPL). All core functionality must be accessible via CLI.
 
@@ -81,7 +81,7 @@ AgentCraft
 - Optionally starts the agent for service mode
 
 **Manager Module**: Manages all Agent Instance lifecycles.
-- Launch modes: direct (open Cursor/Claude Code), ACP background (caller-managed lifecycle), ACP service (AgentCraft-managed), one-shot (execute and terminate)
+- Launch modes: direct (open Cursor/Claude Code), ACP background (caller-managed lifecycle), ACP service (Actant-managed), one-shot (execute and terminate)
 - Provides start, stop, monitor, status capabilities
 
 ---
@@ -140,8 +140,8 @@ Agent Instances support multiple launch patterns:
 |------|----------------|----------|
 | Direct | User | Open IDE / TUI directly |
 | ACP Background | Caller | Third-party client manages via ACP |
-| ACP Service | AgentCraft | Persistent employee agent |
-| One-Shot | AgentCraft | Execute task and auto-terminate |
+| ACP Service | Actant | Persistent employee agent |
+| One-Shot | Actant | Execute task and auto-terminate |
 
 ---
 
@@ -154,7 +154,7 @@ Agent Instances support multiple launch patterns:
 | [ACP](https://agentclientprotocol.com/) | Agent Client Protocol framework |
 | [n8n](https://n8n.io/) | Workflow automation patterns |
 | [Trellis](https://github.com/mindfold-ai/Trellis) | Engineering initialization and workflow |
-| [UnrealFairy](https://github.com/blackplume233/UnrealFairy) | Related project — AgentCraft will replace its agent subsystem |
+| [UnrealFairy](https://github.com/blackplume233/UnrealFairy) | Related project — Actant will replace its agent subsystem |
 
 ---
 

@@ -3,8 +3,8 @@ import { Command } from "commander";
 import chalk from "chalk";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, renderStream, type CliPrinter, defaultPrinter } from "../../output/index";
-import { AcpConnection, type AcpSessionInfo, type SessionNotification } from "@agentcraft/acp";
-import type { StreamChunk } from "@agentcraft/core";
+import { AcpConnection, type AcpSessionInfo, type SessionNotification } from "@actant/acp";
+import type { StreamChunk } from "@actant/core";
 
 export function createAgentChatCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("chat")
@@ -29,7 +29,7 @@ async function runChat(
 ): Promise<void> {
   const alive = await client.ping();
   if (!alive) {
-    printer.error("Daemon is not running. Start it with: agentcraft daemon start");
+    printer.error("Daemon is not running. Start it with: actant daemon start");
     process.exitCode = 1;
     return;
   }

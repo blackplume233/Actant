@@ -137,7 +137,7 @@ describe("MVP E2E Integration", () => {
     expect(mcpConfig.mcpServers.fs).toBeDefined();
     expect(mcpConfig.mcpServers.fs.command).toBe("npx");
 
-    const metaRaw = await readFile(join(instanceDir, ".agentcraft.json"), "utf-8");
+    const metaRaw = await readFile(join(instanceDir, ".actant.json"), "utf-8");
     const meta = JSON.parse(metaRaw);
     expect(meta.backendType).toBe("claude-code");
     expect(meta.templateName).toBe("test-review-agent");

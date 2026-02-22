@@ -98,7 +98,7 @@ exit_code: 全部 0
 
 agent create: 成功创建 workspace
 agent status: status=created
-workspace artifacts: .cursor/, .cursor/rules/, prompts/, .agentcraft.json
+workspace artifacts: .cursor/, .cursor/rules/, prompts/, .actant.json
   AGENTS.md: 缺失（仅 scaffold，无 skills）
 agent start (mock): status=running, pid=10000
 agent stop: status=stopped

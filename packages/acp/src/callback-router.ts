@@ -18,7 +18,7 @@ import type {
   ReleaseTerminalResponse,
   ClientCapabilities,
 } from "@agentclientprotocol/sdk";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 import type { ClientCallbackHandler } from "./connection";
 
 const logger = createLogger("acp-callback-router");

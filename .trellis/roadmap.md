@@ -23,7 +23,7 @@
 ACP:  人/应用 ←→ Agent     （交互协议：提问、回答、授权）
 MCP:  Agent ←→ 工具/服务    （能力协议：调用工具、获取资源）
 
-AgentCraft 同时扮演：
+Actant 同时扮演：
   • ACP Client（管理旗下 Agent）
   • MCP Server（向其他 Agent 暴露自身能力）
   • ACP Proxy（让外部客户端以标准 ACP 使用托管 Agent）
@@ -33,15 +33,15 @@ AgentCraft 同时扮演：
 
 ## MVP 目标
 
-> **一句话**：用户通过 AgentCraft CLI 快速拼装一个包含 Skills、Prompts、MCP 的 Agent，激活为 Service Agent，并通过 CLI 与其交互。
+> **一句话**：用户通过 Actant CLI 快速拼装一个包含 Skills、Prompts、MCP 的 Agent，激活为 Service Agent，并通过 CLI 与其交互。
 
 **MVP 验收场景（端到端）：**
 ```
 1. 用户编写/选择 agent template（引用 skills + prompts + MCP servers）
-2. agentcraft agent create my-agent --template code-review-agent  → 创建 workspace，完整物化 domain context
-3. agentcraft agent start my-agent                          → 以 service 模式启动 agent 后端
-4. agentcraft agent chat my-agent                           → 进入 CLI 交互，发送 prompt 获取回复
-5. agentcraft agent stop my-agent                           → 停止 agent
+2. actant agent create my-agent --template code-review-agent  → 创建 workspace，完整物化 domain context
+3. actant agent start my-agent                          → 以 service 模式启动 agent 后端
+4. actant agent chat my-agent                           → 进入 CLI 交互，发送 prompt 获取回复
+5. actant agent stop my-agent                           → 停止 agent
 ```
 
 **MVP 排除项（Post-MVP）：**
@@ -132,7 +132,7 @@ AgentCraft 同时扮演：
 - [x] 示例模板：`configs/templates/code-review-agent.json`（引用真实 skills/prompts/MCP）
 - [x] Quick-start 文档更新（README 中添加 MVP 使用流程）
 - [x] 端到端测试：template load → agent create → verify workspace → agent start → agent run → agent stop
-- ~~`agentcraft init` 快速引导命令~~ → 移至长期目标（Phase 6+）
+- ~~`actant init` 快速引导命令~~ → 移至长期目标（Phase 6+）
 
 **Phase 2 依赖关系:**
 ```
@@ -177,13 +177,13 @@ Phase 1 (已完成)
 
 #### #16 ACP Proxy — 标准 ACP 协议网关（基础版） ✅ 完成
 > **实现内容**：
-> - `@agentcraft/acp` 包：`AcpConnection`（封装 `@agentclientprotocol/sdk` ClientSideConnection + 子进程管理），`AcpConnectionManager`（连接池管理），`AcpCommunicator`（AgentCommunicator 适配）
+> - `@actant/acp` 包：`AcpConnection`（封装 `@agentclientprotocol/sdk` ClientSideConnection + 子进程管理），`AcpConnectionManager`（连接池管理），`AcpCommunicator`（AgentCommunicator 适配）
 > - `claude-code` 后端从 `claude --project-dir` 改为 `claude-agent-acp`（ACP stdio 通信）
 > - `ProcessLauncher` 支持 ACP backends 保持 stdio pipes
 > - `AgentManager` 集成 ACP：`startAgent` 建立连接，`stopAgent` 断开，`runPrompt` 优先 ACP，新增 `promptAgent`
 > - `agent.prompt` RPC handler + CLI 命令
 > - `proxy.connect/disconnect/forward` RPC handlers
-> - `agentcraft proxy <name>` CLI 命令：对外 ACP Agent 接口，对内 RPC 转发
+> - `actant proxy <name>` CLI 命令：对外 ACP Agent 接口，对内 RPC 转发
 
 #### #35 ACP Proxy + Chat — Direct Bridge 与 Session Lease 双模式
 > **架构决策**：废弃 ACP Gateway，支持两种连接模式。
@@ -219,7 +219,7 @@ Phase 1 (已完成)
 >
 > - 内置调度器：InputRouter → TaskQueue → TaskDispatcher
 > - InputSources：Heartbeat / Cron（croner 库）/ Hook / Webhook
-> - N8N 集成三模式：N8N→AgentCraft（Webhook）、AgentCraft→N8N（MCP）、双向
+> - N8N 集成三模式：N8N→Actant（Webhook）、Actant→N8N（MCP）、双向
 > - CLI：agent dispatch / agent tasks / agent logs / agent watch
 > - 模板支持 `schedule` + `schedule.n8n` 配置字段
 
@@ -286,16 +286,16 @@ Phase 2 (已完成)
 ### Phase 4: 扩展体系 (Extensibility)
 **目标**: 可插拔的系统级插件架构，将调度组件 Plugin 化；权限管理
 **时间**: Phase 3 完成后
-**成功标准**: AgentCraft 系统级 Plugin 接口清晰，#40 的 Input 系统可重构为 Plugin 形态
+**成功标准**: Actant 系统级 Plugin 接口清晰，#40 的 Input 系统可重构为 Plugin 形态
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
-| #13 | AgentCraft 系统级 Plugin 体系（heartbeat/scheduler/memory 可插拔） | P2 | #8, #40 | 待开始 |
+| #13 | Actant 系统级 Plugin 体系（heartbeat/scheduler/memory 可插拔） | P2 | #8, #40 | 待开始 |
 | #14 | Agent 进程 stdout/stderr 日志收集 | P3 | - | 待开始 |
 | #36 | Agent 工具权限管理机制设计 | P2 | - | 待开始 |
 
 **Phase 4 关键设计:**
-- AgentCraft 系统级 Plugin 接口（生命周期钩子、配置解析）— 区别于 #38 的 Agent 侧 Plugin
+- Actant 系统级 Plugin 接口（生命周期钩子、配置解析）— 区别于 #38 的 Agent 侧 Plugin
 - #40 的 HeartbeatInput / CronInput / HookInput 重构为 Plugin 形态
 - 插件加载器（本地文件 / 远程 registry）
 
@@ -305,8 +305,8 @@ Agent-side Plugin (#38, Phase 3):
   Agent workspace 中的能力扩展（Claude Code plugin、Cursor Extension 等）
   由 PluginManager 管理，通过 BackendBuilder 物化到 workspace
 
-AgentCraft-side Plugin (#13, Phase 4):
-  AgentCraft Daemon 的系统级扩展（HeartbeatMonitor、Scheduler、MemoryLayer 等）
+Actant-side Plugin (#13, Phase 4):
+  Actant Daemon 的系统级扩展（HeartbeatMonitor、Scheduler、MemoryLayer 等）
   由 Plugin 接口定义生命周期钩子
 ```
 
@@ -379,7 +379,7 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。当前�
 
 | 子阶段 | 功能 | 实现内容 |
 |--------|------|---------|
-| 协议线 | ACP 包 (`@agentcraft/acp`) | `AcpConnection`、`AcpConnectionManager`、`AcpCommunicator`、Proxy + Chat 双模式 |
+| 协议线 | ACP 包 (`@actant/acp`) | `AcpConnection`、`AcpConnectionManager`、`AcpCommunicator`、Proxy + Chat 双模式 |
 | 3a 管理 | 统一组件管理体系 | `BaseComponentManager` CRUD 增强 + `PluginManager` + Plugin RPC/CLI 全套命令 |
 | 3b 构造 | Workspace 构造器 | `BackendBuilder` 接口 + `CursorBuilder` + `ClaudeCodeBuilder` + `WorkspaceBuilder` Pipeline + `AgentInitializer` 迁移 |
 | 3c 调度 | 雇员型 Agent 调度器 | `TaskQueue` + `TaskDispatcher` + `ExecutionLog` + `InputRouter` (Heartbeat/Cron/Hook) + `EmployeeScheduler` + Schedule RPC/CLI |
@@ -426,7 +426,7 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。当前�
 | 11 | **#51** | **AgentTemplate 权限控制** | #39, #46 | 对齐 Claude Code permissions + sandbox，动态生成后端配置 |
 | 12 | **#52** | **AgentTemplate 可通过 Source 分享** | #38 | Source/Preset 支持 Template，TemplateRegistry 注入 |
 | 13 | **#53** | **可共享内容版本控制** | #38, #52 | 组件 version 字段 + SyncReport + 版本约束语法 |
-| 14 | **#17** | MCP Server — Agent 间通信能力 | #12 | 暴露 agentcraft_run_agent 等 MCP tools |
+| 14 | **#17** | MCP Server — Agent 间通信能力 | #12 | 暴露 actant_run_agent 等 MCP tools |
 | 15 | #5 | Template hot-reload on file change | 无 | Daemon 监听 template 变更自动 reload |
 
 ### P2 — Phase 4 扩展
@@ -556,7 +556,7 @@ Phase 1 ──→ #12 Daemon ↔ Agent 通信 (P0) ✅
 ═══════════════════════════════════════════════════════════════
 
 #8 ProcessWatcher (来自 Phase 1)
- └──→ #13 AgentCraft 系统级 Plugin 体系 (P2)
+ └──→ #13 Actant 系统级 Plugin 体系 (P2)
        ├──→ #40 Input 系统 Plugin 化 (重构)
        ├──→ memory 插件 (连接 Phase 5)
        └──→ 自定义插件加载器
@@ -593,7 +593,7 @@ Phase 1 ──→ #12 Daemon ↔ Agent 通信 (P0) ✅
 
 ```
 控制权谱系：
-AgentCraft 全权 ◄──────────────────────────────────► 调用方全权
+Actant 全权 ◄──────────────────────────────────► 调用方全权
 
  agent.run       ACP Proxy      Self-spawn+Attach    纯 resolve
  (#12)           (#16)          (#15)                (#15)

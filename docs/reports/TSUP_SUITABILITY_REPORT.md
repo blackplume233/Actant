@@ -9,7 +9,7 @@
 | 应用包 (api/cli/mcp-server) | ❌ 不适合 | 🔴 高 |
 | 长期可维护性 | ⚠️ 需要调整 | 🟡 中 |
 
-**核心结论**: tsup 是优秀的库构建工具，但 AgentCraft 包含多个应用包，继续使用 tsup 会在发布和部署阶段产生问题。建议 **库保持 tsup，应用迁移到 tsc**。
+**核心结论**: tsup 是优秀的库构建工具，但 Actant 包含多个应用包，继续使用 tsup 会在发布和部署阶段产生问题。建议 **库保持 tsup，应用迁移到 tsc**。
 
 ---
 
@@ -117,7 +117,7 @@ export default defineConfig({
 #### 当前配置
 ```typescript
 export default defineConfig({
-  entry: ["src/index.ts", "src/bin/agentcraft.ts", "src/daemon-entry.ts"],
+  entry: ["src/index.ts", "src/bin/actant.ts", "src/daemon-entry.ts"],
   format: ["esm"],
   dts: true,  // ❌ CLI 不需要类型声明
 });
@@ -139,7 +139,7 @@ dist/
 
 | 问题 | 影响 | 严重程度 |
 |------|------|----------|
-| **缺少 shebang** | `./dist/bin/agentcraft.js` 无法直接执行 | 🔴 高 |
+| **缺少 shebang** | `./dist/bin/actant.js` 无法直接执行 | 🔴 高 |
 | **代码分割** | 启动时需要加载多个 chunk，延迟增加 | 🟡 中 |
 | **生成 .d.ts** | 产物臃肿，无意义 | 🟢 低 |
 | **多入口管理** | 产物分散，需要手动处理 bin 链接 | 🟡 中 |
@@ -147,8 +147,8 @@ dist/
 #### 验证 shebang 问题
 ```bash
 # 构建后尝试直接运行
-./packages/cli/dist/bin/agentcraft.js
-# 结果: 失败，缺少 shebang，需要 node ./packages/cli/dist/bin/agentcraft.js
+./packages/cli/dist/bin/actant.js
+# 结果: 失败，缺少 shebang，需要 node ./packages/cli/dist/bin/actant.js
 ```
 
 #### CLI 的特殊要求
@@ -157,7 +157,7 @@ dist/
 // package.json 期望
 {
   "bin": {
-    "agentcraft": "./dist/bin/agentcraft.js"
+    "actant": "./dist/bin/actant.js"
   }
 }
 
@@ -217,7 +217,7 @@ tsup 设计目标:
 ├─ 支持 ESM/CJS 双模式
 └─ 自动生成类型声明
 
-AgentCraft 应用包需求:
+Actant 应用包需求:
 ├─ CLI: 可执行文件 + shebang
 ├─ API: 服务端运行 + 无类型声明
 ├─ MCP: 服务端运行 + 可能 Docker 部署
@@ -351,10 +351,10 @@ export default defineConfig({
 {
   "scripts": {
     "build": "tsc -p tsconfig.build.json && npm run fix-shebang",
-    "fix-shebang": "echo '#!/usr/bin/env node' | cat - dist/bin/agentcraft.js > temp.js && mv temp.js dist/bin/agentcraft.js && chmod +x dist/bin/agentcraft.js"
+    "fix-shebang": "echo '#!/usr/bin/env node' | cat - dist/bin/actant.js > temp.js && mv temp.js dist/bin/actant.js && chmod +x dist/bin/actant.js"
   },
   "bin": {
-    "agentcraft": "./dist/bin/agentcraft.js"
+    "actant": "./dist/bin/actant.js"
   }
 }
 ```
@@ -378,13 +378,13 @@ export default defineConfig({
 npm run build
 
 # CLI 测试
-./packages/cli/dist/bin/agentcraft.js --version  # 应可直接执行
+./packages/cli/dist/bin/actant.js --version  # 应可直接执行
 
 # API 测试
 node packages/api/dist/index.js  # 应能正常启动
 
 # Docker 构建测试
-docker build -t agentcraft-api packages/api
+docker build -t actant-api packages/api
 ```
 
 ---
@@ -416,7 +416,7 @@ docker build -t agentcraft-api packages/api
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  tsup 是优秀的库构建工具，但不是万能工具                  │
-│  AgentCraft 的混合形态（库+应用）需要分层构建策略        │
+│  Actant 的混合形态（库+应用）需要分层构建策略        │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -438,7 +438,7 @@ docker build -t agentcraft-api packages/api
 3. **添加构建产物验证 CI 步骤**
    ```yaml
    - name: Verify CLI executable
-     run: ./packages/cli/dist/bin/agentcraft.js --version
+     run: ./packages/cli/dist/bin/actant.js --version
    ```
 
 #### 中期考虑（3 个月内）

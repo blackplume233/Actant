@@ -42,7 +42,7 @@ export interface McpServerDefinition {
 /**
  * A Plugin = an agent-side capability extension.
  * Examples: Claude Code plugins, Cursor extensions, custom tool integrations.
- * Distinct from AgentCraft system-level plugins (Phase 4 #13).
+ * Distinct from Actant system-level plugins (Phase 4 #13).
  */
 export interface PluginDefinition {
   name: string;

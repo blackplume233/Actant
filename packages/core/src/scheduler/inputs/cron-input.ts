@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Cron } from "croner";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 import type { InputSource, TaskCallback } from "./input-source";
 
 const logger = createLogger("cron-input");

@@ -2,14 +2,14 @@ import { Command } from "commander";
 import { join } from "node:path";
 import { fork } from "node:child_process";
 import chalk from "chalk";
-import { onShutdownSignal } from "@agentcraft/shared";
+import { onShutdownSignal } from "@actant/shared";
 import { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 import { defaultSocketPath } from "../../program";
 
 export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): Command {
   return new Command("start")
-    .description("Start the AgentCraft daemon")
+    .description("Start the Actant daemon")
     .option("--foreground", "Run in foreground (don't daemonize)", false)
     .action(async (opts: { foreground: boolean }) => {
       const client = new RpcClient(defaultSocketPath());
@@ -22,7 +22,7 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
 
       if (opts.foreground) {
         try {
-          const { Daemon } = await import("@agentcraft/api");
+          const { Daemon } = await import("@actant/api");
           const daemon = new Daemon();
 
           onShutdownSignal(async () => {

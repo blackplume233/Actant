@@ -2,7 +2,7 @@ import type { AgentBackendType } from "./template.types";
 
 /**
  * Agent Instance = a workspace directory.
- * `.agentcraft.json` is the metadata descriptor of that directory.
+ * `.actant.json` is the metadata descriptor of that directory.
  * The directory itself IS the instance — containing materialized Domain Context files.
  */
 export interface AgentInstanceMeta {
@@ -18,7 +18,7 @@ export interface AgentInstanceMeta {
   launchMode: LaunchMode;
   /** Workspace lifecycle policy. "persistent" survives across spawns; "ephemeral" can be cleaned up after task. */
   workspacePolicy: WorkspacePolicy;
-  /** Who owns/manages the agent process. "managed" = AgentCraft, "external" = caller. */
+  /** Who owns/manages the agent process. "managed" = Actant, "external" = caller. */
   processOwnership: ProcessOwnership;
   createdAt: string;
   updatedAt: string;

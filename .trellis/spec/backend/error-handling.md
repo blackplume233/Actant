@@ -1,12 +1,12 @@
 # Error Handling
 
-> How errors are handled in AgentCraft.
+> How errors are handled in Actant.
 
 ---
 
 ## Overview
 
-AgentCraft manages multiple agent lifecycles concurrently, each involving process management, network communication, and file system operations. Error handling must be robust, recoverable, and informative across all these layers.
+Actant manages multiple agent lifecycles concurrently, each involving process management, network communication, and file system operations. Error handling must be robust, recoverable, and informative across all these layers.
 
 ---
 
@@ -61,17 +61,17 @@ Errors in command-line interaction.
 
 ### Pattern: Typed Error Classes
 
-All errors extend a base `AgentCraftError` with structured metadata.
+All errors extend a base `ActantError` with structured metadata.
 
 ```typescript
-abstract class AgentCraftError extends Error {
+abstract class ActantError extends Error {
   abstract readonly code: string;
   abstract readonly category: ErrorCategory;
   readonly timestamp: Date;
   readonly context?: Record<string, unknown>;
 }
 
-class TemplateNotFoundError extends AgentCraftError {
+class TemplateNotFoundError extends ActantError {
   readonly code = "TEMPLATE_NOT_FOUND";
   readonly category = "configuration";
 
@@ -107,7 +107,7 @@ Each module (Core, ACP, MCP, API) catches and translates errors at its boundary.
 ```typescript
 // API layer catches core errors and translates to HTTP responses
 app.use((error, req, res, next) => {
-  if (error instanceof AgentCraftError) {
+  if (error instanceof ActantError) {
     res.status(errorToHttpStatus(error.category)).json({
       error: error.code,
       message: error.message,

@@ -1,20 +1,20 @@
 # 配置规范 (Configuration Specification)
 
-> 本文档定义 AgentCraft 中所有配置结构、Schema 和环境变量。
+> 本文档定义 Actant 中所有配置结构、Schema 和环境变量。
 > **代码必须符合此规范。若代码与此文档冲突，以本文档为准。**
 
 ---
 
 ## 概述
 
-AgentCraft 的配置体系分为三层：
+Actant 的配置体系分为三层：
 
 ```
 AgentTemplate          用户编写的模板文件，定义 Agent 的组成
     │
     │  validate + create
     ▼
-AgentInstanceMeta      运行时实例的持久化状态（.agentcraft.json）
+AgentInstanceMeta      运行时实例的持久化状态（.actant.json）
     │
     │  resolve
     ▼
@@ -187,7 +187,7 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 
 ## 2. AgentInstanceMeta — 实例元数据
 
-实例创建后持久化为 `{instanceDir}/.agentcraft.json`，记录实例的完整运行时状态。
+实例创建后持久化为 `{instanceDir}/.actant.json`，记录实例的完整运行时状态。
 
 > 实现参考：`packages/shared/src/types/agent.types.ts`, `packages/core/src/state/instance-meta-schema.ts`
 
@@ -222,7 +222,7 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 | `"error"` | 异常终止（启动/终止阶段失败） | → `starting` |
 | `"crashed"` | 进程意外死亡（ProcessWatcher 检测到） | → `starting` |
 
-**`error` vs `crashed` 的区别**：`error` 发生在 AgentCraft 主动操作（start/stop）过程中；`crashed` 发生在 Agent 正常运行期间，由 ProcessWatcher 通过 PID 监控发现。对于 `processOwnership: "external"` 的 Agent，若 ProcessWatcher 发现 PID 不存在但客户端未 detach，状态变为 `crashed`。
+**`error` vs `crashed` 的区别**：`error` 发生在 Actant 主动操作（start/stop）过程中；`crashed` 发生在 Agent 正常运行期间，由 ProcessWatcher 通过 PID 监控发现。对于 `processOwnership: "external"` 的 Agent，若 ProcessWatcher 发现 PID 不存在但客户端未 detach，状态变为 `crashed`。
 
 ### LaunchMode
 
@@ -232,8 +232,8 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 |----|--------------|------|
 | `"direct"` | 用户 | 直接打开 IDE / TUI |
 | `"acp-background"` | 调用方 | 外部客户端通过 ACP 管理 |
-| `"acp-service"` | AgentCraft | 持久化员工 Agent，崩溃自动重启 |
-| `"one-shot"` | AgentCraft | 执行后自动终止，可选自动清理 workspace |
+| `"acp-service"` | Actant | 持久化员工 Agent，崩溃自动重启 |
+| `"one-shot"` | Actant | 执行后自动终止，可选自动清理 workspace |
 
 ### WorkspacePolicy
 
@@ -248,9 +248,9 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 
 运行时字段，标识当前进程由谁管理。仅在 `status` 为 `running` / `crashed` 时有值。
 
-| 值 | 说明 | 谁 spawn 的 | AgentCraft 能做什么 |
+| 值 | 说明 | 谁 spawn 的 | Actant 能做什么 |
 |----|------|-----------|-------------------|
-| `"managed"` | AgentCraft Daemon spawn 的 | Daemon | 发 ACP 消息、重启、终止 |
+| `"managed"` | Actant Daemon spawn 的 | Daemon | 发 ACP 消息、重启、终止 |
 | `"external"` | 外部客户端 spawn 的（通过 `agent.attach` 注册） | 外部客户端 | PID 监控、状态追踪，**不能**发 ACP 消息 |
 
 ---
@@ -310,7 +310,7 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 | `config` | `Record<string, unknown>` | 否 | 插件特定配置 |
 | `enabled` | `boolean` | 否 | 是否启用（默认 `true`） |
 
-> 注意：这是 Agent 侧 Plugin（Phase 3a），不同于 AgentCraft 系统级 Plugin（Phase 4 #13）。
+> 注意：这是 Agent 侧 Plugin（Phase 3a），不同于 Actant 系统级 Plugin（Phase 4 #13）。
 
 > 实现参考：`packages/core/src/domain/plugin/plugin-manager.ts`，类型定义见 `packages/shared/src/types/domain-component.types.ts`
 
@@ -326,7 +326,7 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 
 | 字段 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `homeDir` | `string` | `~/.agentcraft` | 数据根目录 |
+| `homeDir` | `string` | `~/.actant` | 数据根目录 |
 | `launcherMode` | `"mock" \| "real"` | `"real"` | Launcher 模式 |
 
 ### 派生路径
@@ -353,8 +353,8 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 
 | 平台 | 默认路径 | 自定义 homeDir |
 |------|---------|---------------|
-| macOS / Linux | `~/.agentcraft/agentcraft.sock` | `{homeDir}/agentcraft.sock` |
-| Windows | `\\.\pipe\agentcraft` | `\\.\pipe\agentcraft-{safeName}` |
+| macOS / Linux | `~/.actant/actant.sock` | `{homeDir}/actant.sock` |
+| Windows | `\\.\pipe\actant` | `\\.\pipe\actant-{safeName}` |
 
 ### 平台工具函数
 
@@ -427,9 +427,9 @@ Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
 
 | 变量 | 作用 | 默认值 |
 |------|------|--------|
-| `AGENTCRAFT_HOME` | 覆盖数据根目录（homeDir） | `~/.agentcraft` |
-| `AGENTCRAFT_SOCKET` | 覆盖 IPC Socket 路径 | 平台默认 |
-| `AGENTCRAFT_LAUNCHER_MODE` | 设定 Launcher 模式（`"mock"` / `"real"`） | `"real"` |
+| `ACTANT_HOME` | 覆盖数据根目录（homeDir） | `~/.actant` |
+| `ACTANT_SOCKET` | 覆盖 IPC Socket 路径 | 平台默认 |
+| `ACTANT_LAUNCHER_MODE` | 设定 Launcher 模式（`"mock"` / `"real"`） | `"real"` |
 | `ANTHROPIC_API_KEY` | Anthropic API 密钥，`claude-agent-acp` 需要此变量 | 无（必须设置才能使用 ACP） |
 | `LOG_LEVEL` | Pino 日志级别 | `"info"`（CLI 中未设置时为 `"silent"`） |
 

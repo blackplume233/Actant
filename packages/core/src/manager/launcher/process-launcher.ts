@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import type { AgentInstanceMeta } from "@agentcraft/shared";
-import { AgentLaunchError, createLogger } from "@agentcraft/shared";
+import type { AgentInstanceMeta } from "@actant/shared";
+import { AgentLaunchError, createLogger } from "@actant/shared";
 import type { AgentLauncher, AgentProcess } from "./agent-launcher";
 import { resolveBackend, isAcpBackend } from "./backend-resolver";
 import { isProcessAlive, sendSignal, delay } from "./process-utils";

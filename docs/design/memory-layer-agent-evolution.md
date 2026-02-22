@@ -78,7 +78,7 @@ Agent Session (Cursor/Claude Code 在 workspace 内工作)
 
 ### 3.1 基因-表观遗传类比
 
-| 生物学 | AgentCraft | 说明 |
+| 生物学 | Actant | 说明 |
 |--------|-----------|------|
 | 基因组 (Genome) | AgentTemplate | 不可变蓝图，定义种族共性 |
 | 表观遗传 (Epigenome) | Memory Layer | 后天获得的表达调控，实例独有 |
@@ -92,7 +92,7 @@ Agent Session (Cursor/Claude Code 在 workspace 内工作)
 
 延续 `architecture-docker-analogy.md` 的映射：
 
-| Docker | AgentCraft (当前) | AgentCraft (+ Memory) |
+| Docker | Actant (当前) | Actant (+ Memory) |
 |--------|-------------------|----------------------|
 | Image Layer (只读) | Template 物化 | Template 物化（不变） |
 | Container Layer (可写) | (不存在) | **Memory Layer (.memory/)** |
@@ -102,7 +102,7 @@ Agent Session (Cursor/Claude Code 在 workspace 内工作)
 
 ### 3.3 三层上下文 (受 OpenViking 启发)
 
-OpenViking 将所有上下文分为 L0/L1/L2 三个粒度层。AgentCraft 采纳此理念，但用**规则生成**替代 VLM 自动生成：
+OpenViking 将所有上下文分为 L0/L1/L2 三个粒度层。Actant 采纳此理念，但用**规则生成**替代 VLM 自动生成：
 
 | 层级 | Token 预算 | 内容 | 用途 |
 |------|-----------|------|------|
@@ -131,7 +131,7 @@ OpenViking 将所有上下文分为 L0/L1/L2 三个粒度层。AgentCraft 采纳
 │                                                      │
 │  Layer 2: Shared Memory (跨实例共享记忆)              │
 │  ┌──────────────────┴──────────────────────┐         │
-│  │ ~/.agentcraft/memory/                   │         │
+│  │ ~/.actant/memory/                   │         │
 │  │  ├── user/coding-style.json             │         │
 │  │  ├── user/project-conventions.json      │         │
 │  │  └── learnings/common-errors.json       │         │
@@ -171,7 +171,7 @@ instances/{name}/
 │   ├── task-history.jsonl     # 任务执行日志（append-only）
 │   ├── error-patterns.json    # 错误模式库（merge-on-write）
 │   └── insights.md            # 凝练后的高价值经验（由 consolidator 生成）
-└── .agentcraft.json           ← 增加 memory 相关字段
+└── .actant.json           ← 增加 memory 相关字段
 ```
 
 ### 4.3 数据流
@@ -521,7 +521,7 @@ export interface ConsolidateResult {
 ### 8.1 Shared Memory Pool
 
 ```
-~/.agentcraft/memory/
+~/.actant/memory/
 ├── user/                      # 用户偏好（最高优先级）
 │   ├── coding-style.json
 │   └── project-conventions.json
@@ -612,13 +612,13 @@ Shared Memory                    Template Registry
 
 | 任务 | 涉及包 | 改动量 |
 |------|--------|--------|
-| 定义 Memory 类型 | `@agentcraft/shared` | 新文件 |
-| 实现 InstanceMemoryStore (读写 .memory/) | `@agentcraft/core` | 新文件 |
-| 实现 RuleBasedExtractor | `@agentcraft/core` | 新文件 |
-| ContextMaterializer 增加 memory 参数 | `@agentcraft/core` | 改动现有 |
-| AgentManager.startAgent 增加 re-materialize | `@agentcraft/core` | 改动现有 |
-| AgentManager.stopAgent 增加 extraction | `@agentcraft/core` | 改动现有 |
-| AgentInstanceMeta 增加 memory 字段 | `@agentcraft/shared` | 改动现有 |
+| 定义 Memory 类型 | `@actant/shared` | 新文件 |
+| 实现 InstanceMemoryStore (读写 .memory/) | `@actant/core` | 新文件 |
+| 实现 RuleBasedExtractor | `@actant/core` | 新文件 |
+| ContextMaterializer 增加 memory 参数 | `@actant/core` | 改动现有 |
+| AgentManager.startAgent 增加 re-materialize | `@actant/core` | 改动现有 |
+| AgentManager.stopAgent 增加 extraction | `@actant/core` | 改动现有 |
+| AgentInstanceMeta 增加 memory 字段 | `@actant/shared` | 改动现有 |
 
 **验收标准**：
 - Agent 实例第二次启动时，AGENTS.md 包含第一次 session 的 insights
@@ -630,11 +630,11 @@ Shared Memory                    Template Registry
 
 | 任务 | 涉及包 |
 |------|--------|
-| 实现 MemoryConsolidator | `@agentcraft/core` |
-| 实现 MemoryPromoter | `@agentcraft/core` |
-| Shared Memory 目录管理 | `@agentcraft/core` |
-| CLI: `agentcraft memory list/consolidate/promote` | `@agentcraft/cli` |
-| RPC: memory.* handlers | `@agentcraft/api` |
+| 实现 MemoryConsolidator | `@actant/core` |
+| 实现 MemoryPromoter | `@actant/core` |
+| Shared Memory 目录管理 | `@actant/core` |
+| CLI: `actant memory list/consolidate/promote` | `@actant/cli` |
+| RPC: memory.* handlers | `@actant/api` |
 
 ### Phase 3: Context Layers + Evolution Advisor
 
@@ -642,11 +642,11 @@ Shared Memory                    Template Registry
 
 | 任务 | 涉及包 |
 |------|--------|
-| ContextL0/L1/L2 类型和自动派生 | `@agentcraft/shared`, `@agentcraft/core` |
-| ContextBroker 替代 ContextMaterializer | `@agentcraft/core` |
-| LLM-assisted Extractor（可选） | `@agentcraft/core` |
-| EvolutionAdvisor | `@agentcraft/core` |
-| CLI: `agentcraft template suggest-upgrade` | `@agentcraft/cli` |
+| ContextL0/L1/L2 类型和自动派生 | `@actant/shared`, `@actant/core` |
+| ContextBroker 替代 ContextMaterializer | `@actant/core` |
+| LLM-assisted Extractor（可选） | `@actant/core` |
+| EvolutionAdvisor | `@actant/core` |
+| CLI: `actant template suggest-upgrade` | `@actant/cli` |
 
 ---
 
@@ -692,7 +692,7 @@ Phase 3 (Context Layers + ContextBroker):
 
 | 约束 | 理由 |
 |------|------|
-| 零外部依赖 | AgentCraft 是轻量编排框架，不应强制引入向量数据库 |
+| 零外部依赖 | Actant 是轻量编排框架，不应强制引入向量数据库 |
 | Template 不可变 | 保持可分享、可版本控制、可复现的纯净性 |
 | Memory 是增量的 | 只添加不删除 Template 原有内容，Memory 是补充层 |
 | Template 进化需人工审核 | AI 经验不一定正确，防止幻觉污染公共模板 |

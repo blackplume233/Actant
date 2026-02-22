@@ -1,6 +1,6 @@
 {
   "name": "bilibili-video-analysis",
-  "description": "构建一个视频分析 Agent，对 Bilibili 视频 BV12mZtBTEJB（极客湾手机游戏性能大横评）进行分析，产出一份结构化的分析报告文件。验证 AgentCraft 全链路：Agent 创建、域上下文物化、任务执行、产物生成、生命周期管理。",
+  "description": "构建一个视频分析 Agent，对 Bilibili 视频 BV12mZtBTEJB（极客湾手机游戏性能大横评）进行分析，产出一份结构化的分析报告文件。验证 Actant 全链路：Agent 创建、域上下文物化、任务执行、产物生成、生命周期管理。",
   "tags": ["agent-lifecycle", "task-execution", "domain-context", "video-analysis", "e2e", "real-mode", "report-generation"],
   "setup": {
     "daemon": true,
@@ -81,7 +81,7 @@
             ]
           },
           "metadata": {
-            "author": "AgentCraft QA",
+            "author": "Actant QA",
             "tags": "video-analysis,bilibili,report-generation"
           }
         }
@@ -100,7 +100,7 @@
       "description": "使用 video-analyzer 模板创建 Agent 实例",
       "command": "agent create bilibili-analyzer -t video-analyzer -f json",
       "expect": "成功返回 JSON，包含 name=bilibili-analyzer，status=created",
-      "artifacts": "$AGENTCRAFT_HOME/instances/bilibili-analyzer/ 目录应已创建"
+      "artifacts": "$ACTANT_HOME/instances/bilibili-analyzer/ 目录应已创建"
     },
     {
       "id": "workspace-verify",

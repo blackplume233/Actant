@@ -1,6 +1,6 @@
-import { createLogger } from "@agentcraft/shared";
-import type { SessionRegistry, SessionLease } from "@agentcraft/core";
-import type { AgentManager } from "@agentcraft/core";
+import { createLogger } from "@actant/shared";
+import type { SessionRegistry, SessionLease } from "@actant/core";
+import type { AgentManager } from "@actant/core";
 
 const logger = createLogger("acp-relay");
 

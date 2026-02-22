@@ -282,7 +282,7 @@
     },
     {
       "id": 18,
-      "title": "ACP-Fleet 扩展协议 — AgentCraft API 对齐 ACP 标准",
+      "title": "ACP-Fleet 扩展协议 — Actant API 对齐 ACP 标准",
       "status": "open",
       "labels": [
         "acp",
@@ -488,7 +488,7 @@
     },
     {
       "id": 34,
-      "title": "Daemon 未读取 AGENTCRAFT_HOME 环境变量",
+      "title": "Daemon 未读取 ACTANT_HOME 环境变量",
       "status": "closed",
       "labels": [
         "bug",
@@ -539,7 +539,7 @@
     },
     {
       "id": 38,
-      "title": "项目重命名：AgentCraft → Actant",
+      "title": "项目重命名：Actant → Actant",
       "status": "open",
       "labels": [
         "refactor",

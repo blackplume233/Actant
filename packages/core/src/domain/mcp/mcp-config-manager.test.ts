@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { join } from "node:path";
 import { McpConfigManager } from "./mcp-config-manager";
-import { ComponentReferenceError } from "@agentcraft/shared";
-import type { McpServerDefinition } from "@agentcraft/shared";
+import { ComponentReferenceError } from "@actant/shared";
+import type { McpServerDefinition } from "@actant/shared";
 
 const FIXTURES = join(import.meta.dirname, "__fixtures__");
 

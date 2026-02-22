@@ -6,7 +6,7 @@ import { createDaemonStatusCommand } from "./status";
 
 export function createDaemonCommand(printer?: CliPrinter): Command {
   const cmd = new Command("daemon")
-    .description("Manage the AgentCraft daemon");
+    .description("Manage the Actant daemon");
 
   cmd.addCommand(createDaemonStartCommand(printer));
   cmd.addCommand(createDaemonStopCommand(printer));

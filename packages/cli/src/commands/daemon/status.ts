@@ -31,7 +31,7 @@ export function createDaemonStatusCommand(printer: CliPrinter = defaultPrinter):
           printer.log("stopped");
         } else {
           printer.log(chalk.red("Daemon is not running."));
-          printer.dim("Start with: agentcraft daemon start");
+          printer.dim("Start with: actant daemon start");
         }
         process.exitCode = 1;
       }

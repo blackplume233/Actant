@@ -18,7 +18,7 @@ export interface LauncherConfig {
  * Default: "real" in production, can be overridden by config or env.
  */
 export function createLauncher(config?: Partial<LauncherConfig>): AgentLauncher {
-  const mode = config?.mode ?? (process.env.AGENTCRAFT_LAUNCHER_MODE === "mock" ? "mock" : "real");
+  const mode = config?.mode ?? (process.env.ACTANT_LAUNCHER_MODE === "mock" ? "mock" : "real");
 
   switch (mode) {
     case "mock":

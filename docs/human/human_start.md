@@ -1,4 +1,4 @@
-# Agent Craft Human Start
+# Actant Human Start
 
 ## 项目说明
 
@@ -25,7 +25,7 @@
    4. Skill(Rules)
    5. 可用的SubAgent（和其他Agent嵌套）
       （虽然并非业界标准，但为了方便沟通，下文中会广泛使用以上术语
-5. Agent Template：一个Agent的配置文件，包含什么样的Domain Context，Agent的初始化过程等。Agent Craft应当可以通过一个Agent Template 结合用户的诉求来一次性的构建一个Agent Instance
+5. Agent Template：一个Agent的配置文件，包含什么样的Domain Context，Agent的初始化过程等。Actant应当可以通过一个Agent Template 结合用户的诉求来一次性的构建一个Agent Instance
 6. Agent Instance: 一个真正可以运行的Agent，包含使用什么样的Provider， Backend，自身的Domain Context，特定的在执行的Hook，自动化流程，插件等。Agent Instance可以用来进行一次性的任务处理，也可以作为一个服务器持续长期执行
 7. Employee:一个持续运行的Agent
 
@@ -40,9 +40,9 @@
 
 模块设计仅为初期参考，后续需要根据开发进度动态调整
 
-1. AgentCraftCore：核心的功能模块
+1. ActantCore：核心的功能模块
 
-   1. 基于命令行的功能交互模块：Agent Craft启动后可以连续的以命令行交互的形式执行指令，参考Python的交互式环境
+   1. 基于命令行的功能交互模块：Actant启动后可以连续的以命令行交互的形式执行指令，参考Python的交互式环境
    2. Agent Template配置模块：
       1. 要能支持配置一个Agent Template模板，主要包括各类Domain Context
          1. 配置Skill，应当有中心的Skill管理器，此处只引用Skill
@@ -60,22 +60,22 @@
    4. Agent 管理器：负责持续管理所有现存的Agent Instance，维护他们的状态，提供开启，关闭，监控等功能。需要注意到一个Agent Instance可如果不是服务型则可能同时存在多个Session
       1. Agent的启动包含多种方式：
          1. 直接正常启动对应的Agent，如直接开启一个Claude Code界面，直接打开Cursor等
-         2. 通过ACP形式启动对应Agent，交互过程由AgentCraft管理，一般运行在后台
+         2. 通过ACP形式启动对应Agent，交互过程由Actant管理，一般运行在后台
             1. 后台启动一个Agent，Agent生命周期由调用方管理，第三方Agent Client可以通过ACP协议直接和这个Agent互动
-            2. 后台启动一个Agent，作为持续服务，第三方AgentClient通过和AgentCraft互动来控制Agent
+            2. 后台启动一个Agent，作为持续服务，第三方AgentClient通过和Actant互动来控制Agent
             3. 后台启动一个Agent并完成任务，执行完成后自动关闭
 
-2. Agent Craft ACP：对于由Agent Manager控制的Agent，让外部AgentClient可以通过ACP协议来和对应的Agent交互，但要考虑到Agent Craft可以提供的是一个Agent集群，所以要判断是否要对协议进行改造，或是做特定实现
+2. Actant ACP：对于由Agent Manager控制的Agent，让外部AgentClient可以通过ACP协议来和对应的Agent交互，但要考虑到Actant可以提供的是一个Agent集群，所以要判断是否要对协议进行改造，或是做特定实现
 
-3. Agent Craft MCP：让Agent可以通过MCP来访问Agent Craft
+3. Actant MCP：让Agent可以通过MCP来访问Actant
 
    1. 可以调用其他的Agent执行一次性任务
    2. 可以控制Service类型的Agent启动或停止
    3. 访问其他必要信息
 
-4. Agent Craft API：针对所有的Command操作提供标准的Restful API，以使得Agent Craft本身可以作为一个服务以Docker的形式部署
+4. Actant API：针对所有的Command操作提供标准的Restful API，以使得Actant本身可以作为一个服务以Docker的形式部署
 
-5. Agent Craft GUI : 提供方便的UI操作
+5. Actant GUI : 提供方便的UI操作
 
    
 
@@ -92,4 +92,4 @@
    1. [Get Started - MuleRun Docs](https://mule.mintlify.app/creator-guide/quickstart/get-started)
    2. [EvoMap - AI Self-Evolution Infrastructure](https://evomap.ai/)
 7. 关联项目：
-   1. [blackplume233/UnrealFairy](https://github.com/blackplume233/UnrealFairy)希望该项目能取代此项目中AgentCraft的部分
+   1. [blackplume233/UnrealFairy](https://github.com/blackplume233/UnrealFairy)希望该项目能取代此项目中Actant的部分

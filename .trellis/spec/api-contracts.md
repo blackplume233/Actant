@@ -1,18 +1,18 @@
 # 接口契约 (API Contracts)
 
-> 本文档定义 AgentCraft 的所有对外接口：IPC 协议、RPC 方法、CLI 命令、ACP Proxy 协议和 MCP Server 能力。
+> 本文档定义 Actant 的所有对外接口：IPC 协议、RPC 方法、CLI 命令、ACP Proxy 协议和 MCP Server 能力。
 > **代码必须符合此契约。若代码行为与此文档不一致，以本文档为准。**
 
 ---
 
 ## 概述
 
-AgentCraft 的接口架构（两层协议分工）：
+Actant 的接口架构（两层协议分工）：
 
 ```
      管理操作 (RPC)                          实时交互 (ACP)
 
-  CLI (agentcraft)                 外部 ACP Client (IDE/Desktop)
+  CLI (actant)                 外部 ACP Client (IDE/Desktop)
         │                                    │
   RpcClient (JSON-RPC 2.0)             ACP / stdio
         │                                    │
@@ -27,7 +27,7 @@ AgentCraft 的接口架构（两层协议分工）：
         └────────────────┬───────────────────┘
                          │
               ┌──────────▼──────────────────────┐
-              │       AgentCraft Core (Daemon)    │
+              │       Actant Core (Daemon)    │
               │                                   │
               │  RPC: HandlerRegistry             │
               │   ├─ Agent/Template/Domain/Daemon │
@@ -63,11 +63,11 @@ AgentCraft 的接口架构（两层协议分工）：
 | **ACP Proxy** | ACP / stdio → ACP Gateway | IDE / 应用接入托管 Agent | §7 |
 | **agent chat** | ACP / Unix socket → ACP Gateway | 终端交互式聊天（流式） | §4.2, §7 |
 | **MCP Server** | MCP / stdio | Agent-to-Agent 通信 | §8 |
-| **Self-spawn + Attach** | JSON-RPC via Socket | 外部客户端自己 spawn Agent，注册到 AgentCraft | §3.3 |
+| **Self-spawn + Attach** | JSON-RPC via Socket | 外部客户端自己 spawn Agent，注册到 Actant | §3.3 |
 
 - **传输层**：JSON-RPC 2.0，换行分隔，通过 Unix Socket（Windows Named Pipe）
 - **客户端超时**：10 秒
-- **Socket 路径**：`AGENTCRAFT_SOCKET` 环境变量或平台默认值（详见 [配置规范](./config-spec.md#5-平台与-ipc)）
+- **Socket 路径**：`ACTANT_SOCKET` 环境变量或平台默认值（详见 [配置规范](./config-spec.md#5-平台与-ipc)）
 
 ---
 
@@ -111,7 +111,7 @@ AgentCraft 的接口架构（两层协议分工）：
 }
 ```
 
-`error.data.errorCode` 对应 `AgentCraftError.code`，`error.data.context` 携带结构化调试信息。
+`error.data.errorCode` 对应 `ActantError.code`，`error.data.context` 携带结构化调试信息。
 
 ---
 
@@ -144,7 +144,7 @@ AgentCraft 的接口架构（两层协议分工）：
 | `AGENT_NOT_ATTACHED` | -32010 | 实例未被 attach（detach 时） |
 | `PROXY_SESSION_CONFLICT` | -32011 | Proxy session 冲突（同名 Agent 已有活跃 Proxy） |
 
-**映射规则**：`AgentCraftError` 子类在 Socket Server 边界处映射为对应 RPC 错误码；未映射的异常一律返回 `INTERNAL_ERROR`。
+**映射规则**：`ActantError` 子类在 Socket Server 边界处映射为对应 RPC 错误码；未映射的异常一律返回 `INTERNAL_ERROR`。
 
 > 实现参考：`packages/shared/src/types/rpc.types.ts`
 
@@ -183,11 +183,11 @@ AgentCraft 的接口架构（两层协议分工）：
 | `workDirConflict` | `"error" \| "overwrite" \| "append"` | workDir 已存在时的行为，默认 `"error"` |
 | `metadata` | `Record<string, string>` | 额外元数据 |
 
-**workDir 机制**：当指定 `workDir` 时，域上下文文件和 `.agentcraft.json` 写入该目录，同时在 `{instancesDir}/{name}` 创建指向它的链接以供 Manager 发现（macOS/Linux 使用 symlink，Windows 使用 junction）。Destroy 时仅移除链接和 `.agentcraft.json`，保留用户目录中的其余文件。
+**workDir 机制**：当指定 `workDir` 时，域上下文文件和 `.actant.json` 写入该目录，同时在 `{instancesDir}/{name}` 创建指向它的链接以供 Manager 发现（macOS/Linux 使用 symlink，Windows 使用 junction）。Destroy 时仅移除链接和 `.actant.json`，保留用户目录中的其余文件。
 
 ### 3.3 外部 Spawn 支持
 
-供外部客户端（Unreal/Unity 等）自行 spawn Agent 进程，同时将状态注册到 AgentCraft 进行跟踪。
+供外部客户端（Unreal/Unity 等）自行 spawn Agent 进程，同时将状态注册到 Actant 进行跟踪。
 
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
@@ -231,7 +231,7 @@ AgentCraft 的接口架构（两层协议分工）：
 
 ```
 Client → agent.resolve({ name: "reviewer", template: "code-review" })
-       ← { workspaceDir: "/.../.agentcraft/instances/reviewer",
+       ← { workspaceDir: "/.../.actant/instances/reviewer",
             command: "claude", args: ["--workspace", "..."], ... }
 Client → 自行 spawn(command, args)
 Client → agent.attach({ name: "reviewer", pid: 12345 })
@@ -239,7 +239,7 @@ Client → agent.attach({ name: "reviewer", pid: 12345 })
 
 #### agent.attach
 
-告知 AgentCraft 某个实例的进程已由外部客户端启动。AgentCraft 将更新实例状态为 `running`，记录 PID，并开始 ProcessWatcher 监控。
+告知 Actant 某个实例的进程已由外部客户端启动。Actant 将更新实例状态为 `running`，记录 PID，并开始 ProcessWatcher 监控。
 
 **参数：**
 
@@ -256,7 +256,7 @@ Client → agent.attach({ name: "reviewer", pid: 12345 })
 
 #### agent.detach
 
-告知 AgentCraft 外部客户端已停止某个实例的进程。
+告知 Actant 外部客户端已停止某个实例的进程。
 
 **参数：**
 
@@ -423,7 +423,7 @@ interface PluginDefinition {
 
 > 状态：**已实现**（Phase 3 — ACP 集成）
 
-供 ACP Proxy 或 MCP Server 向 AgentCraft 管理的 Agent 发送任务。**依赖 Daemon 与 Agent 间的 ACP 连接**（即 `processOwnership: "managed"`）。`agent.prompt` 通过 Daemon 持有的 ACP 连接与已启动的 Agent 通信。`agent.run` 对已启动的 ACP Agent 优先使用 ACP 连接，对未启动的 Agent 仍回退到 CLI pipe 模式。
+供 ACP Proxy 或 MCP Server 向 Actant 管理的 Agent 发送任务。**依赖 Daemon 与 Agent 间的 ACP 连接**（即 `processOwnership: "managed"`）。`agent.prompt` 通过 Daemon 持有的 ACP 连接与已启动的 Agent 通信。`agent.run` 对已启动的 ACP Agent 优先使用 ACP 连接，对未启动的 Agent 仍回退到 CLI pipe 模式。
 
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
@@ -557,7 +557,7 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 
 无子命令时进入交互式 **REPL**。
 
-### 4.1 模板命令 (`agentcraft template` / `agentcraft tpl`)
+### 4.1 模板命令 (`actant template` / `actant tpl`)
 
 | 命令 | 参数 | 选项 | 对应 RPC |
 |------|------|------|---------|
@@ -568,7 +568,7 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 
 > `template.unload` 无 CLI 对应，仅通过 RPC 可用。
 
-### 4.2 Agent 命令 (`agentcraft agent`)
+### 4.2 Agent 命令 (`actant agent`)
 
 #### 生命周期管理
 
@@ -629,10 +629,10 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | `plugin remove <name>` | `name` | — | `plugin.remove` |
 | `plugin export <name>` | `name` | `-o, --output <file>` | `plugin.export` |
 
-组件定义文件从 `~/.agentcraft/configs/` 目录加载（可通过 `--configs-dir` 覆盖）：
+组件定义文件从 `~/.actant/configs/` 目录加载（可通过 `--configs-dir` 覆盖）：
 
 ```
-~/.agentcraft/configs/
+~/.actant/configs/
 ├── skills/          # SkillDefinition JSON
 ├── prompts/         # PromptDefinition JSON
 ├── mcp/             # McpServerDefinition JSON
@@ -665,18 +665,18 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 |------|------|------|------|
 | `proxy <name>` | Agent 实例名 | `--lease`, `-t, --template` | 启动 ACP Proxy 进程（详见 §7） |
 
-**用法：** 外部 ACP Client 将 `agentcraft proxy <name>` 作为 Agent 可执行文件 spawn。
+**用法：** 外部 ACP Client 将 `actant proxy <name>` 作为 Agent 可执行文件 spawn。
 
 ```bash
 # 外部客户端配置示例
-agentcraft proxy my-agent                    # Direct Bridge 模式（默认）
-agentcraft proxy my-agent --lease            # Session Lease 模式（需预启动 Agent）
-agentcraft proxy my-agent -t review-template # 不存在则自动创建
+actant proxy my-agent                    # Direct Bridge 模式（默认）
+actant proxy my-agent --lease            # Session Lease 模式（需预启动 Agent）
+actant proxy my-agent -t review-template # 不存在则自动创建
 ```
 
 > `--env-passthrough` 选项 *(not yet implemented)*
 
-### 4.6 守护进程命令 (`agentcraft daemon`)
+### 4.6 守护进程命令 (`actant daemon`)
 
 | 命令 | 选项 | 行为 |
 |------|------|------|
@@ -720,7 +720,7 @@ interface AgentLauncher {
 | `MockLauncher` | `"mock"` | 返回假 PID，terminate 无操作。用于测试。 |
 | `ProcessLauncher` | `"real"` | `child_process.spawn` 启动真实进程。SIGTERM → 超时 → SIGKILL。 |
 
-工厂函数 `createLauncher(config?)` 根据 `config.mode` 或 `AGENTCRAFT_LAUNCHER_MODE` 选择实现。
+工厂函数 `createLauncher(config?)` 根据 `config.mode` 或 `ACTANT_LAUNCHER_MODE` 选择实现。
 
 ### 5.2 HandlerRegistry
 
@@ -798,7 +798,7 @@ CLI 层按以下优先级处理错误：
 
 1. `ConnectionError` → 提示 Daemon 未运行
 2. `RpcCallError` → 显示错误码和消息
-3. `AgentCraftError` → 显示 code、message、context
+3. `ActantError` → 显示 code、message、context
 4. 通用 `Error` → 显示 message
 
 ---
@@ -828,7 +828,7 @@ Issue #35 经过多轮演进，最终采用双模式架构：
 **流程**：Proxy 自行 spawn Agent，建立 stdio 桥接，Daemon 仅做生命周期管理。
 
 ```
-IDE → agentcraft proxy my-agent
+IDE → actant proxy my-agent
      → Daemon.resolve(name) → workspace + command
      → 如果 Instance 已被占用 → 自动从 Template 创建 ephemeral Instance
      → Proxy spawn Agent（cwd = instance workspace）
@@ -847,8 +847,8 @@ IDE → agentcraft proxy my-agent
 **流程**：Daemon 持有 Agent 进程和 AcpConnection，客户端租借 Session。
 
 ```
-agentcraft agent start my-agent       # Daemon 启动 Agent（warm）
-agentcraft proxy my-agent --lease     # IDE 通过 Session Lease 接入
+actant agent start my-agent       # Daemon 启动 Agent（warm）
+actant proxy my-agent --lease     # IDE 通过 Session Lease 接入
   → Daemon 调用 newSession(agentWorkspace) → sessionId
   → 建立 streaming relay：Client ←→ Daemon ←→ Agent
   → 断开时：session 进入 idle，Agent 保持运行
@@ -900,7 +900,7 @@ IDE 只会说 ACP 协议，Proxy 在 Session Lease 模式下做协议翻译：
 
 ### 7.6 agent chat 实现
 
-`agentcraft agent chat <name>` 根据 Agent 状态自动选择模式：
+`actant agent chat <name>` 根据 Agent 状态自动选择模式：
 
 1. **Agent 未运行** → Direct Bridge 模式
    - 自行 spawn Agent
@@ -918,7 +918,7 @@ IDE 只会说 ACP 协议，Proxy 在 Session Lease 模式下做协议翻译：
 ```json
 {
   "agent": {
-    "command": "agentcraft",
+    "command": "actant",
     "args": ["proxy", "my-agent"],
     "protocol": "acp/stdio"
   }
@@ -928,9 +928,9 @@ IDE 只会说 ACP 协议，Proxy 在 Session Lease 模式下做协议翻译：
 **Session Lease 模式**（需要预启动 Agent）：
 
 ```bash
-agentcraft agent start my-agent
+actant agent start my-agent
 # 然后
-agentcraft proxy my-agent --lease
+actant proxy my-agent --lease
 ```
 
 ### 7.8 Legacy Proxy（已废弃）
@@ -943,7 +943,7 @@ agentcraft proxy my-agent --lease
 
 > 状态：**规范已定义，未实现**
 
-AgentCraft MCP Server 向其他 Agent 暴露 Agent 管理能力。Agent A 通过 MCP tool call 即可创建、调用、查询 AgentCraft 管理的 Agent。
+Actant MCP Server 向其他 Agent 暴露 Agent 管理能力。Agent A 通过 MCP tool call 即可创建、调用、查询 Actant 管理的 Agent。
 
 ### 8.1 协议栈
 
@@ -952,28 +952,28 @@ Agent A (在 IDE 中运行)
     │
     │  MCP tool call
     ▼
-AgentCraft MCP Server (packages/mcp-server)
+Actant MCP Server (packages/mcp-server)
     │
-    │  AgentCraft API (JSON-RPC / Unix Socket)
+    │  Actant API (JSON-RPC / Unix Socket)
     ▼
-AgentCraft Daemon
+Actant Daemon
     │
     │  ACP / stdio
     ▼
-Agent B (headless, 被 AgentCraft 管理)
+Agent B (headless, 被 Actant 管理)
 ```
 
-**Agent A 不直接用 ACP 和 Agent B 通信**。ACP 连接被 AgentCraft Daemon 独占（Daemon 是 Agent B 的 ACP Client）。Agent A 通过 MCP 工具调用间接操作。
+**Agent A 不直接用 ACP 和 Agent B 通信**。ACP 连接被 Actant Daemon 独占（Daemon 是 Agent B 的 ACP Client）。Agent A 通过 MCP 工具调用间接操作。
 
 ### 8.2 MCP Tools
 
 | Tool 名称 | 参数 | 返回 | 说明 |
 |-----------|------|------|------|
-| `agentcraft_run_agent` | `{ template, prompt }` | `{ response, artifacts? }` | 创建 ephemeral Agent 执行任务后返回 |
-| `agentcraft_prompt_agent` | `{ name, message, sessionId? }` | `{ response, sessionId }` | 向持久 Agent 发送消息 |
-| `agentcraft_agent_status` | `{ name }` | `AgentInstanceMeta` | 查询 Agent 状态 |
-| `agentcraft_create_agent` | `{ name, template }` | `{ name, workspaceDir, status }` | 创建实例（不启动） |
-| `agentcraft_list_agents` | `{}` | `AgentInstanceMeta[]` | 列出所有 Agent |
+| `actant_run_agent` | `{ template, prompt }` | `{ response, artifacts? }` | 创建 ephemeral Agent 执行任务后返回 |
+| `actant_prompt_agent` | `{ name, message, sessionId? }` | `{ response, sessionId }` | 向持久 Agent 发送消息 |
+| `actant_agent_status` | `{ name }` | `AgentInstanceMeta` | 查询 Agent 状态 |
+| `actant_create_agent` | `{ name, template }` | `{ name, workspaceDir, status }` | 创建实例（不启动） |
+| `actant_list_agents` | `{}` | `AgentInstanceMeta[]` | 列出所有 Agent |
 
 ### 8.3 为什么 Agent-to-Agent 用 MCP 而非 ACP
 
@@ -994,13 +994,13 @@ Agent B (headless, 被 AgentCraft 管理)
 | **协议** | JSON-RPC | ACP / stdio | MCP / stdio | JSON-RPC |
 | **谁 spawn Agent** | Daemon | Daemon | Daemon | **调用方自己** |
 | **谁拥有 ACP** | Daemon | Daemon (Proxy转发) | Daemon | **调用方** |
-| **AgentCraft 感知** | 完全 | 完全 | 完全 | 通过 attach 注册 |
+| **Actant 感知** | 完全 | 完全 | 完全 | 通过 attach 注册 |
 | **环境穿透** | N/A | 可选 | 不支持 | 调用方自己处理 |
 | **调用方灵活度** | 低 | 中 | 中 | **高** |
 
 ```
 控制权谱系：
-AgentCraft 全权 ◄──────────────────────────────────► 调用方全权
+Actant 全权 ◄──────────────────────────────────► 调用方全权
 
  agent.run     ACP Proxy      Self-spawn+Attach    纯 resolve
  (Daemon管)    (Daemon管,      (调用方管进程,       (只要workspace,

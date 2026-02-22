@@ -25,7 +25,7 @@ Phase 1–2 MVP 和 Phase 3 前半段（ACP Proxy）已完成。当前系统能�
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      AgentCraft Daemon                          │
+│                      Actant Daemon                          │
 │                                                                 │
 │  ┌─── Component Registry ──────────────────────────────────────┐│
 │  │  SkillManager · PromptManager · PluginManager               ││
@@ -53,7 +53,7 @@ Phase 1–2 MVP 和 Phase 3 前半段（ACP Proxy）已完成。当前系统能�
 │  │                                                              ││
 │  │  ┌── N8N Bridge (可选) ──────────────────────────────────┐  ││
 │  │  │  N8N Webhook → InputRouter                            │  ││
-│  │  │  AgentCraft MCP → N8N (N8N 作为 MCP client 调用)      │  ││
+│  │  │  Actant MCP → N8N (N8N 作为 MCP client 调用)      │  ││
 │  │  └───────────────────────────────────────────────────────┘  ││
 │  └─────────────────────────────────────────────────────────────┘│
 └─────────────────────────────────────────────────────────────────┘
@@ -69,7 +69,7 @@ Phase 1–2 MVP 和 Phase 3 前半段（ACP Proxy）已完成。当前系统能�
 
 ### A.2 Plugin 概念定义
 
-**Plugin** 在此上下文中指 **Cloud Code Plugin**——即安装到 Agent workspace 中用于扩展 Agent 能力的插件包。不同于 AgentCraft 自身的可插拔扩展（Phase 4 #13），这里的 Plugin 是 **Agent 侧的能力扩展**。
+**Plugin** 在此上下文中指 **Cloud Code Plugin**——即安装到 Agent workspace 中用于扩展 Agent 能力的插件包。不同于 Actant 自身的可插拔扩展（Phase 4 #13），这里的 Plugin 是 **Agent 侧的能力扩展**。
 
 ```
 Plugin 类型对照：
@@ -79,7 +79,7 @@ Agent-side Plugin (本 Issue):
   - Cursor Extension（如 GitHub Copilot、ESLint）
   - Custom tool packages
 
-AgentCraft-side Plugin (#13 Phase 4):
+Actant-side Plugin (#13 Phase 4):
   - HeartbeatMonitor、CronScheduler、MemoryLayer
   - 系统级可插拔扩展
 ```
@@ -159,28 +159,28 @@ abstract class BaseComponentManager<T extends NamedComponent> {
 
 ```
 # Skill 管理
-agentcraft skill list                    # 现有
-agentcraft skill show <name>             # 现有
-agentcraft skill add <file|url>          # 新增：导入 skill
-agentcraft skill create                  # 新增：交互式创建
-agentcraft skill remove <name>           # 新增：删除
-agentcraft skill export <name> [--out]   # 新增：导出
+actant skill list                    # 现有
+actant skill show <name>             # 现有
+actant skill add <file|url>          # 新增：导入 skill
+actant skill create                  # 新增：交互式创建
+actant skill remove <name>           # 新增：删除
+actant skill export <name> [--out]   # 新增：导出
 
 # Prompt 管理
-agentcraft prompt list                   # 现有
-agentcraft prompt show <name>            # 现有
-agentcraft prompt add <file|url>         # 新增
-agentcraft prompt create                 # 新增
-agentcraft prompt remove <name>          # 新增
-agentcraft prompt export <name> [--out]  # 新增
+actant prompt list                   # 现有
+actant prompt show <name>            # 现有
+actant prompt add <file|url>         # 新增
+actant prompt create                 # 新增
+actant prompt remove <name>          # 新增
+actant prompt export <name> [--out]  # 新增
 
 # Plugin 管理（新增）
-agentcraft plugin list                   # 列出所有已注册插件
-agentcraft plugin show <name>            # 查看插件详情
-agentcraft plugin add <file|url>         # 导入插件定义
-agentcraft plugin create                 # 交互式创建
-agentcraft plugin remove <name>          # 删除
-agentcraft plugin install <name> <agent> # 安装到指定 agent workspace
+actant plugin list                   # 列出所有已注册插件
+actant plugin show <name>            # 查看插件详情
+actant plugin add <file|url>         # 导入插件定义
+actant plugin create                 # 交互式创建
+actant plugin remove <name>          # 删除
+actant plugin install <name> <agent> # 安装到指定 agent workspace
 ```
 
 ### A.6 RPC 方法扩展
@@ -273,7 +273,7 @@ CursorBuilder:
     AGENTS.md                → 聚合 skill 概述
     prompts/system.md        → system prompt
     .gitignore
-    .agentcraft.json         → 实例元数据
+    .actant.json         → 实例元数据
 
 ClaudeCodeBuilder:
   scaffold:
@@ -285,7 +285,7 @@ ClaudeCodeBuilder:
     AGENTS.md                → Agent Skills 声明
     prompts/system.md        → system prompt
     .gitignore
-    .agentcraft.json
+    .actant.json
 
 CustomBuilder:
   通过 template.backend.config.builderConfig 自定义：
@@ -402,7 +402,7 @@ Phase 2:
 
 ### C.1 设计原则
 
-- **内置简单调度器**：Heartbeat + Cron + Hook 由 AgentCraft 内置，零依赖
+- **内置简单调度器**：Heartbeat + Cron + Hook 由 Actant 内置，零依赖
 - **N8N 作为可选增强**：复杂调度 / 外部事件编排交给 N8N，通过 Webhook + MCP 双向集成
 - **渐进式**：先实现内置调度器，再接入 N8N
 
@@ -506,11 +506,11 @@ interface ScheduleConfig {
 
 ### C.4 N8N 集成方案
 
-N8N 是一个流行的工作流自动化工具，有强大的调度和事件编排能力。与 AgentCraft 有两种集成模式：
+N8N 是一个流行的工作流自动化工具，有强大的调度和事件编排能力。与 Actant 有两种集成模式：
 
-#### 模式 1：N8N → AgentCraft (N8N 作为调度器)
+#### 模式 1：N8N → Actant (N8N 作为调度器)
 
-N8N workflow 通过 Webhook 触发 AgentCraft 的雇员 Agent：
+N8N workflow 通过 Webhook 触发 Actant 的雇员 Agent：
 
 ```
 N8N Workflow:
@@ -520,7 +520,7 @@ N8N Workflow:
     → body: { "prompt": "...", "metadata": {...} }
 ```
 
-AgentCraft 侧：
+Actant 侧：
 - `WebhookReceiver` 接收 N8N 的 HTTP 请求
 - 路由到对应 Agent 的 TaskQueue
 - Agent 执行 → 结果通过 callback URL 返回 N8N
@@ -534,7 +534,7 @@ interface N8nWebhookPayload {
 }
 ```
 
-#### 模式 2：AgentCraft → N8N (Agent 使用 N8N 能力)
+#### 模式 2：Actant → N8N (Agent 使用 N8N 能力)
 
 Agent 通过 MCP Server 调用 N8N 的 API：
 
@@ -544,7 +544,7 @@ Agent 通过 MCP Server 调用 N8N 的 API：
   "name": "n8n",
   "description": "N8N workflow automation integration",
   "command": "npx",
-  "args": ["-y", "@agentcraft/mcp-n8n"],
+  "args": ["-y", "@actant/mcp-n8n"],
   "env": {
     "N8N_API_URL": "http://localhost:5678",
     "N8N_API_KEY": "${N8N_API_KEY}"
@@ -569,7 +569,7 @@ MCP Tools exposed:
           │ Webhook       │ MCP Client   │
           ▼              ▼              │
   ┌───────────────────────────────┐     │
-  │     AgentCraft Daemon         │     │
+  │     Actant Daemon         │     │
   │  WebhookReceiver ←─── N8N    │     │
   │  MCP Server     ───→ N8N     │◄────┘
   │                               │
@@ -578,11 +578,11 @@ MCP Tools exposed:
   └───────────────────────────────┘
 
 N8N 侧：
-  - Cron Trigger → webhook AgentCraft → Agent 执行任务
-  - GitHub Trigger → webhook AgentCraft → Agent code review
+  - Cron Trigger → webhook Actant → Agent 执行任务
+  - GitHub Trigger → webhook Actant → Agent code review
   - Agent 完成 → callback → N8N 继续后续流程（通知 Slack 等）
 
-AgentCraft 侧：
+Actant 侧：
   - 简单的 Heartbeat/Hook 内置处理
   - 复杂调度委托 N8N（通过 MCP 或 Webhook）
 ```
@@ -657,15 +657,15 @@ const AgentTemplateSchema = z.object({
 
 ```bash
 # 雇员管理
-agentcraft agent dispatch <name> "<prompt>"   # 手动派发任务
-agentcraft agent tasks <name>                 # 查看任务队列
-agentcraft agent logs <name>                  # 查看执行日志
-agentcraft agent watch <name>                 # 实时观察输出
+actant agent dispatch <name> "<prompt>"   # 手动派发任务
+actant agent tasks <name>                 # 查看任务队列
+actant agent logs <name>                  # 查看执行日志
+actant agent watch <name>                 # 实时观察输出
 
 # 调度管理
-agentcraft schedule list <name>               # 查看 agent 的调度配置
-agentcraft schedule pause <name>              # 暂停调度
-agentcraft schedule resume <name>             # 恢复调度
+actant schedule list <name>               # 查看 agent 的调度配置
+actant schedule pause <name>              # 暂停调度
+actant schedule resume <name>             # 恢复调度
 ```
 
 ### C.8 实现分阶段

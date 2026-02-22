@@ -27,7 +27,7 @@ import {
   type ReleaseTerminalRequest,
   type ReleaseTerminalResponse,
 } from "@agentclientprotocol/sdk";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 import { LocalTerminalManager } from "./terminal-manager";
 
 const logger = createLogger("acp-connection");
@@ -170,8 +170,8 @@ export class AcpConnection {
         terminal: true,
       },
       clientInfo: {
-        name: "agentcraft",
-        title: "AgentCraft Daemon",
+        name: "actant",
+        title: "Actant Daemon",
         version: "0.1.0",
       },
     });

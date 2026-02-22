@@ -9,8 +9,8 @@ import type {
   McpServerDefinition,
   WorkflowDefinition,
   AgentTemplate,
-} from "@agentcraft/shared";
-import { createLogger } from "@agentcraft/shared";
+} from "@actant/shared";
+import { createLogger } from "@actant/shared";
 import type { ComponentSource, FetchResult } from "./component-source";
 import type { BaseComponentManager, NamedComponent } from "../domain/base-component-manager";
 import { GitHubSource } from "./github-source";

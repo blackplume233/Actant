@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, readFile, access } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { DomainContextConfig } from "@agentcraft/shared";
+import type { DomainContextConfig } from "@actant/shared";
 import { ContextMaterializer } from "./context-materializer";
 
 describe("ContextMaterializer", () => {
@@ -11,7 +11,7 @@ describe("ContextMaterializer", () => {
 
   beforeEach(async () => {
     materializer = new ContextMaterializer();
-    tmpDir = await mkdtemp(join(tmpdir(), "agentcraft-materializer-test-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-materializer-test-"));
   });
 
   afterEach(async () => {

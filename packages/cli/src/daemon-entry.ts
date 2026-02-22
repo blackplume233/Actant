@@ -1,5 +1,5 @@
-import { Daemon } from "@agentcraft/api";
-import { onShutdownSignal } from "@agentcraft/shared";
+import { Daemon } from "@actant/api";
+import { onShutdownSignal } from "@actant/shared";
 
 const daemon = new Daemon();
 

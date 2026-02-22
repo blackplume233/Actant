@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
-import type { McpServerDefinition } from "@agentcraft/shared";
-import { ConfigValidationError } from "@agentcraft/shared";
+import type { McpServerDefinition } from "@actant/shared";
+import { ConfigValidationError } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
 
 const McpServerDefinitionSchema = z.object({

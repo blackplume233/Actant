@@ -3,7 +3,7 @@ import { createServer, type Server } from "node:net";
 import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { RpcRequest, RpcResponse } from "@agentcraft/shared";
+import type { RpcRequest, RpcResponse } from "@actant/shared";
 import { RpcClient, RpcCallError, ConnectionError } from "../rpc-client";
 
 describe("RpcCallError", () => {

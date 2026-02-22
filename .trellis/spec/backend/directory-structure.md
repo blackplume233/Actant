@@ -1,6 +1,6 @@
 # Directory Structure
 
-> How backend code is organized in AgentCraft.
+> How backend code is organized in Actant.
 >
 > **Canonical reference**: See [ADR-002](../../../docs/decisions/002-directory-structure.md) for the full project directory structure and rationale.
 
@@ -8,7 +8,7 @@
 
 ## Overview
 
-AgentCraft follows a **pnpm monorepo** structure with 6 packages. Business logic lives in `core`, presentation layers (`cli`, `api`, `acp`, `mcp-server`) are thin adapters, and `shared` provides common types and utilities.
+Actant follows a **pnpm monorepo** structure with 6 packages. Business logic lives in `core`, presentation layers (`cli`, `api`, `acp`, `mcp-server`) are thin adapters, and `shared` provides common types and utilities.
 
 ---
 
@@ -16,12 +16,12 @@ AgentCraft follows a **pnpm monorepo** structure with 6 packages. Business logic
 
 ```
 packages/
-├── shared/          # @agentcraft/shared — Types, errors, config, logger, utils
-├── core/            # @agentcraft/core  — Template, Initializer, Manager, Domain
-├── cli/             # @agentcraft/cli   — CLI REPL and commands
-├── api/             # @agentcraft/api   — RESTful API (Hono)
-├── acp/             # @agentcraft/acp   — ACP protocol server
-└── mcp-server/      # @agentcraft/mcp-server — MCP protocol server
+├── shared/          # @actant/shared — Types, errors, config, logger, utils
+├── core/            # @actant/core  — Template, Initializer, Manager, Domain
+├── cli/             # @actant/cli   — CLI REPL and commands
+├── api/             # @actant/api   — RESTful API (Hono)
+├── acp/             # @actant/acp   — ACP protocol server
+└── mcp-server/      # @actant/mcp-server — MCP protocol server
 ```
 
 ## Module Dependency Graph
@@ -118,7 +118,7 @@ tests/
 | Constants | SCREAMING_SNAKE_CASE | `MAX_HEARTBEAT_INTERVAL` |
 | Classes | PascalCase | `AgentManager`, `TemplateRegistry` |
 | Functions | camelCase | `createInstance()`, `loadTemplate()` |
-| Package names | `@agentcraft/{name}` | `@agentcraft/core` |
+| Package names | `@actant/{name}` | `@actant/core` |
 
 ---
 

@@ -2,19 +2,19 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentTemplate } from "@agentcraft/shared";
+import type { AgentTemplate } from "@actant/shared";
 import {
   AgentNotFoundError,
   AgentAlreadyRunningError,
   AgentAlreadyAttachedError,
   AgentNotAttachedError,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 import { TemplateRegistry } from "../template/registry/template-registry";
 import { AgentInitializer } from "../initializer/agent-initializer";
 import { AgentManager } from "./agent-manager";
 import { MockLauncher } from "./launcher/mock-launcher";
 import { writeInstanceMeta, readInstanceMeta } from "../state/instance-meta-io";
-import type { AgentInstanceMeta } from "@agentcraft/shared";
+import type { AgentInstanceMeta } from "@actant/shared";
 
 function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
   return {
@@ -53,7 +53,7 @@ describe("AgentManager", () => {
   let manager: AgentManager;
 
   beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "agentcraft-manager-test-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-manager-test-"));
     registry = new TemplateRegistry();
     registry.register(makeTemplate());
     initializer = new AgentInitializer(registry, tmpDir);
@@ -218,7 +218,7 @@ describe("AgentManager", () => {
     it("should move corrupted instances to .corrupted/", async () => {
       const dir = join(tmpDir, "broken-agent");
       await mkdir(dir);
-      await writeFile(join(dir, ".agentcraft.json"), "not json", "utf-8");
+      await writeFile(join(dir, ".actant.json"), "not json", "utf-8");
 
       const newManager = new AgentManager(initializer, launcher, tmpDir);
       await newManager.initialize();

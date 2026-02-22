@@ -31,7 +31,7 @@
 
 - 根据实例的 **backend 类型**（来自 template：`cursor` | `claude-code`）决定启动哪个可执行程序。
 - 启动时传入 **工作目录**（即 `workspaceDir`），使 IDE 在该目录下打开项目/会话。
-- 返回真实的 **PID** 与 `AgentProcess`，供 Manager 写入 `.agentcraft.json` 与内存缓存。
+- 返回真实的 **PID** 与 `AgentProcess`，供 Manager 写入 `.actant.json` 与内存缓存。
 
 ### 2.2 心跳与存活
 

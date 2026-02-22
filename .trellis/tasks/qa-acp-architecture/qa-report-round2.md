@@ -157,12 +157,12 @@ $ npx tsup
 --- 输出 ---
 
 ```
-CLI Building entry: src/daemon-entry.ts, src/index.ts, src/bin/agentcraft.ts
+CLI Building entry: src/daemon-entry.ts, src/index.ts, src/bin/actant.ts
 CLI tsup v8.5.1
 CLI Target: es2022
 CLI Cleaning output folder
 ESM Build start
-ESM dist\bin\agentcraft.js       219.00 B
+ESM dist\bin\actant.js       219.00 B
 ESM dist\index.js                212.00 B
 ESM dist\repl-6BMYQBPH.js        2.60 KB
 ESM dist\daemon-entry.js         286.00 B
@@ -173,7 +173,7 @@ DTS Build start
 DTS ⚡️ Build success in 1980ms
 DTS dist\daemon-entry.d.ts   13.00 B
 DTS dist\index.d.ts          1.43 KB
-DTS dist\bin\agentcraft.d.ts 20.00 B
+DTS dist\bin\actant.d.ts 20.00 B
 ```
 
 ---

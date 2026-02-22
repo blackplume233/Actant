@@ -1,12 +1,12 @@
 # Quality Guidelines
 
-> Code quality standards for AgentCraft backend development.
+> Code quality standards for Actant backend development.
 
 ---
 
 ## Overview
 
-AgentCraft follows a **test-driven, review-enforced** quality model. Every feature exposed as CLI operation or configuration must have comprehensive tests. Code quality and extensibility are verified through dedicated review before merge.
+Actant follows a **test-driven, review-enforced** quality model. Every feature exposed as CLI operation or configuration must have comprehensive tests. Code quality and extensibility are verified through dedicated review before merge.
 
 ---
 
@@ -34,7 +34,7 @@ Design → Confirm → Implement → Test → Review → Commit
 import { AgentState } from '../../core/manager/state/internal-state';
 
 // Good — API module uses core's public API
-import { getAgentState } from '@agentcraft/core';
+import { getAgentState } from '@actant/core';
 ```
 
 **Why**: Modules must communicate through public interfaces. Internal details change frequently.
@@ -81,7 +81,7 @@ function processConfig(config: any) { ... }
 function processConfig(config: AgentTemplateConfig) { ... }
 ```
 
-**Why**: AgentCraft composes many dynamic components. Type safety is the primary guard against misconfiguration.
+**Why**: Actant composes many dynamic components. Type safety is the primary guard against misconfiguration.
 
 ### Don't: `console.log`
 

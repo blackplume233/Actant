@@ -1,5 +1,5 @@
 import { spawn, type ChildProcess } from "node:child_process";
-import { createLogger } from "@agentcraft/shared";
+import { createLogger } from "@actant/shared";
 import type {
   CreateTerminalRequest,
   CreateTerminalResponse,

@@ -6,7 +6,7 @@ import type {
   PresetDefinition,
   PackageManifest,
   SourceConfig,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 
 export interface FetchResult {
   manifest: PackageManifest;

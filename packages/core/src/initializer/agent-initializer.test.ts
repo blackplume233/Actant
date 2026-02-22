@@ -2,12 +2,12 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, readFile, access, mkdir, writeFile, lstat, readlink } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentTemplate } from "@agentcraft/shared";
+import type { AgentTemplate } from "@actant/shared";
 import {
   TemplateNotFoundError,
   ConfigValidationError,
   InstanceCorruptedError,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 import { TemplateRegistry } from "../template/registry/template-registry";
 import { AgentInitializer } from "./agent-initializer";
 
@@ -35,7 +35,7 @@ describe("AgentInitializer", () => {
   let initializer: AgentInitializer;
 
   beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "agentcraft-init-test-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-init-test-"));
     registry = new TemplateRegistry();
     registry.register(makeTemplate());
     initializer = new AgentInitializer(registry, tmpDir);
@@ -46,7 +46,7 @@ describe("AgentInitializer", () => {
   });
 
   describe("createInstance", () => {
-    it("should create instance directory with .agentcraft.json", async () => {
+    it("should create instance directory with .actant.json", async () => {
       const meta = await initializer.createInstance("my-agent", "test-template");
 
       expect(meta.name).toBe("my-agent");
@@ -57,7 +57,7 @@ describe("AgentInitializer", () => {
       expect(meta.launchMode).toBe("direct");
       expect(meta.id).toBeTruthy();
 
-      const metaRaw = await readFile(join(tmpDir, "my-agent", ".agentcraft.json"), "utf-8");
+      const metaRaw = await readFile(join(tmpDir, "my-agent", ".actant.json"), "utf-8");
       const metaParsed = JSON.parse(metaRaw);
       expect(metaParsed.name).toBe("my-agent");
     });
@@ -160,7 +160,7 @@ describe("AgentInitializer", () => {
       const meta = await initializer.createInstance("minimal-agent", "minimal");
 
       expect(meta.name).toBe("minimal-agent");
-      await expect(access(join(tmpDir, "minimal-agent", ".agentcraft.json"))).resolves.toBeUndefined();
+      await expect(access(join(tmpDir, "minimal-agent", ".actant.json"))).resolves.toBeUndefined();
     });
   });
 
@@ -191,7 +191,7 @@ describe("AgentInitializer", () => {
     it("should throw InstanceCorruptedError for corrupted directory", async () => {
       const corruptedDir = join(tmpDir, "corrupted");
       await mkdir(corruptedDir);
-      await writeFile(join(corruptedDir, ".agentcraft.json"), "invalid", "utf-8");
+      await writeFile(join(corruptedDir, ".actant.json"), "invalid", "utf-8");
 
       await expect(
         initializer.findOrCreateInstance("corrupted", "test-template"),
@@ -203,7 +203,7 @@ describe("AgentInitializer", () => {
     let customDir: string;
 
     beforeEach(async () => {
-      customDir = await mkdtemp(join(tmpdir(), "agentcraft-workdir-test-"));
+      customDir = await mkdtemp(join(tmpdir(), "actant-workdir-test-"));
     });
 
     afterEach(async () => {
@@ -218,7 +218,7 @@ describe("AgentInitializer", () => {
 
       expect(meta.name).toBe("custom-agent");
 
-      const metaRaw = await readFile(join(targetDir, ".agentcraft.json"), "utf-8");
+      const metaRaw = await readFile(join(targetDir, ".actant.json"), "utf-8");
       expect(JSON.parse(metaRaw).name).toBe("custom-agent");
 
       const linkStat = await lstat(join(tmpDir, "custom-agent"));
@@ -259,7 +259,7 @@ describe("AgentInitializer", () => {
 
       expect(meta.name).toBe("overwrite-agent");
       await expect(access(join(target, "old-file.txt"))).rejects.toThrow();
-      await expect(access(join(target, ".agentcraft.json"))).resolves.toBeUndefined();
+      await expect(access(join(target, ".actant.json"))).resolves.toBeUndefined();
     });
 
     it("should append to existing directory when workDirConflict is 'append'", async () => {
@@ -275,7 +275,7 @@ describe("AgentInitializer", () => {
       expect(meta.name).toBe("append-agent");
       const kept = await readFile(join(target, "existing-file.txt"), "utf-8");
       expect(kept).toBe("keep me");
-      await expect(access(join(target, ".agentcraft.json"))).resolves.toBeUndefined();
+      await expect(access(join(target, ".actant.json"))).resolves.toBeUndefined();
     });
 
     it("should error when instance name already registered in instancesBaseDir", async () => {
@@ -303,7 +303,7 @@ describe("AgentInitializer", () => {
     });
 
     it("should remove symlink but preserve custom workDir content", async () => {
-      const customDir = await mkdtemp(join(tmpdir(), "agentcraft-destroy-test-"));
+      const customDir = await mkdtemp(join(tmpdir(), "actant-destroy-test-"));
       try {
         const targetDir = join(customDir, "user-project");
         await mkdir(targetDir, { recursive: true });
@@ -319,7 +319,7 @@ describe("AgentInitializer", () => {
         await expect(access(join(tmpDir, "linked-agent"))).rejects.toThrow();
         const readme = await readFile(join(targetDir, "readme.md"), "utf-8");
         expect(readme).toBe("My project");
-        await expect(access(join(targetDir, ".agentcraft.json"))).rejects.toThrow();
+        await expect(access(join(targetDir, ".actant.json"))).rejects.toThrow();
       } finally {
         await rm(customDir, { recursive: true, force: true });
       }

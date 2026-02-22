@@ -26,7 +26,7 @@
       "description": "加载模板",
       "command": "template load $TEMPLATE_FILE",
       "expect": "输出 Loaded，退出码 0",
-      "artifacts": "模板应持久化到 $AGENTCRAFT_HOME 的配置目录中"
+      "artifacts": "模板应持久化到 $ACTANT_HOME 的配置目录中"
     },
     {
       "id": "list-after-load",

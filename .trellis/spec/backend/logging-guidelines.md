@@ -1,12 +1,12 @@
 # Logging Guidelines
 
-> How logging is done in AgentCraft.
+> How logging is done in Actant.
 
 ---
 
 ## Overview
 
-AgentCraft manages multiple concurrent agent lifecycles. Structured logging is essential for debugging, monitoring, and auditing agent behavior across the CLI, Core, ACP, MCP, and API layers.
+Actant manages multiple concurrent agent lifecycles. Structured logging is essential for debugging, monitoring, and auditing agent behavior across the CLI, Core, ACP, MCP, and API layers.
 
 ---
 

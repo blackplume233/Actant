@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
-import type { SourceEntry } from "@agentcraft/shared";
+import type { SourceEntry } from "@actant/shared";
 
 export function createSourceListCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("list")

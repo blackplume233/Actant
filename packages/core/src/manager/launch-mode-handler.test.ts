@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { AgentInstanceMeta } from "@agentcraft/shared";
+import type { AgentInstanceMeta } from "@actant/shared";
 import { getLaunchModeHandler } from "./launch-mode-handler";
 
 function makeMeta(overrides?: Partial<AgentInstanceMeta>): AgentInstanceMeta {

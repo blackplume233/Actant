@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { join } from "node:path";
 import { PromptManager } from "./prompt-manager";
-import { ComponentReferenceError } from "@agentcraft/shared";
-import type { PromptDefinition } from "@agentcraft/shared";
+import { ComponentReferenceError } from "@actant/shared";
+import type { PromptDefinition } from "@actant/shared";
 
 const FIXTURES = join(import.meta.dirname, "__fixtures__");
 
@@ -47,8 +47,8 @@ describe("PromptManager", () => {
       content: "Hello {{name}}, welcome to {{project}}!",
       variables: ["name", "project"],
     };
-    const rendered = mgr.renderPrompt(prompt, { name: "Alice", project: "AgentCraft" });
-    expect(rendered).toBe("Hello Alice, welcome to AgentCraft!");
+    const rendered = mgr.renderPrompt(prompt, { name: "Alice", project: "Actant" });
+    expect(rendered).toBe("Hello Alice, welcome to Actant!");
   });
 
   it("should preserve unresolved variables when value not provided", () => {

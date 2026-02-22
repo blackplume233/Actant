@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { getDefaultIpcPath } from "@agentcraft/shared";
+import { getDefaultIpcPath } from "@actant/shared";
 import { RpcClient } from "./client/rpc-client";
 import {
   createTemplateCommand,
@@ -18,16 +18,16 @@ import {
 import { presentError, type CliPrinter } from "./output/index";
 
 export function defaultSocketPath(): string {
-  return process.env["AGENTCRAFT_SOCKET"] ?? getDefaultIpcPath();
+  return process.env["ACTANT_SOCKET"] ?? getDefaultIpcPath();
 }
 
 export function createProgram(socketPath?: string, printer?: CliPrinter): Command {
   const sock = socketPath ?? defaultSocketPath();
   const client = new RpcClient(sock);
 
-  const program = new Command("agentcraft")
+  const program = new Command("actant")
     .version("0.1.0")
-    .description("AgentCraft — Build, manage, and compose AI agents");
+    .description("Actant — Build, manage, and compose AI agents");
 
   program.addCommand(createTemplateCommand(client, printer));
   program.addCommand(createAgentCommand(client, printer));

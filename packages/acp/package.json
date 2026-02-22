@@ -1,5 +1,5 @@
 {
-  "name": "@agentcraft/acp",
+  "name": "@actant/acp",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^0.14.1",
-    "@agentcraft/core": "workspace:*",
-    "@agentcraft/shared": "workspace:*"
+    "@actant/core": "workspace:*",
+    "@actant/shared": "workspace:*"
   }
 }

@@ -4,7 +4,7 @@ export type ErrorCategory =
   | "communication"
   | "cli";
 
-export abstract class AgentCraftError extends Error {
+export abstract class ActantError extends Error {
   abstract readonly code: string;
   abstract readonly category: ErrorCategory;
   readonly timestamp: Date;

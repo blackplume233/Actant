@@ -1,11 +1,11 @@
 import { createServer, type Server, type Socket } from "node:net";
 import {
   createLogger,
-  AgentCraftError,
+  ActantError,
   RPC_ERROR_CODES,
   type RpcRequest,
   type RpcResponse,
-} from "@agentcraft/shared";
+} from "@actant/shared";
 import type { HandlerRegistry } from "../handlers/index";
 import type { AppContext } from "../services/app-context";
 
@@ -24,7 +24,7 @@ const ERROR_CODE_MAP: Record<string, number> = {
   AGENT_NOT_ATTACHED: RPC_ERROR_CODES.AGENT_NOT_ATTACHED,
 };
 
-function mapErrorCode(err: AgentCraftError): number {
+function mapErrorCode(err: ActantError): number {
   return ERROR_CODE_MAP[err.code] ?? RPC_ERROR_CODES.GENERIC_BUSINESS;
 }
 
@@ -139,7 +139,7 @@ export class SocketServer {
         });
       })
       .catch((err: unknown) => {
-        if (err instanceof AgentCraftError) {
+        if (err instanceof ActantError) {
           this.sendResponse(socket, {
             jsonrpc: "2.0",
             id: request.id,

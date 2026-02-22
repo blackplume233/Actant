@@ -7,8 +7,8 @@ import type {
   McpServerDefinition,
   WorkflowDefinition,
   PluginDefinition,
-} from "@agentcraft/shared";
-import { createLogger } from "@agentcraft/shared";
+} from "@actant/shared";
+import { createLogger } from "@actant/shared";
 import type { BackendBuilder, VerifyResult } from "./backend-builder";
 
 const logger = createLogger("cursor-builder");

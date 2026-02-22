@@ -7,8 +7,8 @@ import type {
   ProxyForwardParams,
   ProxyForwardResult,
   ProxySession,
-} from "@agentcraft/shared";
-import { createLogger } from "@agentcraft/shared";
+} from "@actant/shared";
+import { createLogger } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

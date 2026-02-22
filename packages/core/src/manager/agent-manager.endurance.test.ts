@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, readdir, access } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentTemplate, AgentStatus } from "@agentcraft/shared";
+import type { AgentTemplate, AgentStatus } from "@actant/shared";
 import { TemplateRegistry } from "../template/registry/template-registry";
 import { AgentInitializer } from "../initializer/agent-initializer";
 import { AgentManager, type ManagerOptions } from "./agent-manager";
@@ -126,7 +126,7 @@ describe("Endurance tests — Phase 1", () => {
   let launcher: MockLauncher;
 
   beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "agentcraft-endurance-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-endurance-"));
     registry = new TemplateRegistry();
     registry.register(makeTemplate());
     initializer = new AgentInitializer(registry, tmpDir);

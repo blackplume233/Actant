@@ -1,12 +1,12 @@
 import chalk from "chalk";
-import { AgentCraftError } from "@agentcraft/shared";
+import { ActantError } from "@actant/shared";
 import { RpcCallError, ConnectionError } from "../client/rpc-client";
 import { type CliPrinter, defaultPrinter } from "./printer";
 
 export function presentError(err: unknown, printer: CliPrinter = defaultPrinter): void {
   if (err instanceof ConnectionError) {
     printer.errorStyled("Cannot connect to daemon.");
-    printer.errorDim("Start with: agentcraft daemon start");
+    printer.errorDim("Start with: actant daemon start");
     return;
   }
 
@@ -21,7 +21,7 @@ export function presentError(err: unknown, printer: CliPrinter = defaultPrinter)
     return;
   }
 
-  if (err instanceof AgentCraftError) {
+  if (err instanceof ActantError) {
     printer.error(`${chalk.red(`[${err.code}]`)} ${err.message}`);
     if (err.context && Object.keys(err.context).length > 0) {
       printer.error(`${chalk.dim("  Context:")} ${JSON.stringify(err.context)}`);

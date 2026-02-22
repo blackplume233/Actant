@@ -1,4 +1,4 @@
-import type { AgentBackendType } from "@agentcraft/shared";
+import type { AgentBackendType } from "@actant/shared";
 
 export interface PromptResult {
   text: string;

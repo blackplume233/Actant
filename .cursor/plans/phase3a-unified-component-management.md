@@ -15,7 +15,7 @@ todos:
     content: "P0: SourceManager — 注册/同步/卸载源，组件自动注入各 Manager"
     status: pending
   - id: package-manifest
-    content: "P0: 包清单 agentcraft.json schema + 解析"
+    content: "P0: 包清单 actant.json schema + 解析"
     status: pending
   - id: plugin-schema
     content: "P0: PluginDefinition — 命名组合预设 schema + 模板一键添加"
@@ -71,7 +71,7 @@ isProject: false
 │    workflows: ["internal@trellis-standard"]                 │
 │                                                             │
 │  # 或通过 Plugin 一键添加:                                    │
-│  # agentcraft plugin apply community@review-bundle my-tmpl  │
+│  # actant plugin apply community@review-bundle my-tmpl  │
 │  # → 自动展开为上述多个组件引用                                │
 └──────────────────────────┬──────────────────────────────────┘
                            │ resolve("package@name")
@@ -106,7 +106,7 @@ isProject: false
 ┌─────────────────────────────────────────────────────────────┐
 │              Remote Package (GitHub repo / local dir)        │
 │                                                             │
-│  agentcraft.json  ← 包清单                                   │
+│  actant.json  ← 包清单                                   │
 │  skills/          ← SkillDefinition JSON 文件               │
 │  prompts/         ← PromptDefinition JSON 文件              │
 │  mcp/             ← McpServerDefinition JSON 文件 (配置)     │
@@ -144,7 +144,7 @@ interface ComponentSource {
 
 **Source 配置存储**：
 ```json
-// ~/.agentcraft/sources.json
+// ~/.actant/sources.json
 {
   "sources": {
     "community": {
@@ -163,7 +163,7 @@ interface ComponentSource {
 
 ### 2. Package Manifest（包清单）
 
-每个组件包根目录的 `agentcraft.json`：
+每个组件包根目录的 `actant.json`：
 
 ```json
 {
@@ -180,7 +180,7 @@ interface ComponentSource {
 }
 ```
 
-如果没有 `agentcraft.json`，SourceManager 自动扫描 `skills/`、`prompts/`、`mcp/`、`workflows/`、`plugins/` 目录（约定优于配置）。
+如果没有 `actant.json`，SourceManager 自动扫描 `skills/`、`prompts/`、`mcp/`、`workflows/`、`plugins/` 目录（约定优于配置）。
 
 ### 3. Plugin（命名组合预设）
 
@@ -203,13 +203,13 @@ Plugin 是一个**命名的组件组合**，一次操作把多个组件添加到
 使用方式：
 ```bash
 # 一键应用 plugin 到模板
-agentcraft plugin apply community@review-bundle my-template
+actant plugin apply community@review-bundle my-template
 
 # 等价于手动添加:
-# agentcraft template edit my-template --add-skill community@code-review
-# agentcraft template edit my-template --add-skill community@typescript-expert
-# agentcraft template edit my-template --add-prompt community@system-reviewer
-# agentcraft template edit my-template --add-mcp community@filesystem
+# actant template edit my-template --add-skill community@code-review
+# actant template edit my-template --add-skill community@typescript-expert
+# actant template edit my-template --add-prompt community@system-reviewer
+# actant template edit my-template --add-mcp community@filesystem
 ```
 
 **PluginDefinition schema**：
@@ -340,7 +340,7 @@ export interface SourceEntry {
   syncedAt?: string;          // ISO timestamp
 }
 
-/** 包清单 (agentcraft.json) */
+/** 包清单 (actant.json) */
 export interface PackageManifest {
   name: string;
   version?: string;
@@ -494,23 +494,23 @@ packages/cli/src/output/formatter.ts            ← source/plugin 格式化
 
 ```bash
 # ---- 组件 CRUD (skill/prompt/mcp/workflow 统一模式) ----
-agentcraft skill list                    # 列出全部 (含 source 来源)
-agentcraft skill show <name>             # 详情
-agentcraft skill add <file>              # 从 JSON 文件添加本地组件
-agentcraft skill remove <name>           # 移除
-agentcraft skill export <name> [--out]   # 导出为 JSON 文件
+actant skill list                    # 列出全部 (含 source 来源)
+actant skill show <name>             # 详情
+actant skill add <file>              # 从 JSON 文件添加本地组件
+actant skill remove <name>           # 移除
+actant skill export <name> [--out]   # 导出为 JSON 文件
 # prompt/mcp/workflow 同理
 
 # ---- Source 管理 ----
-agentcraft source list                   # 列出已注册源
-agentcraft source add <url> --name <pkg> [--type github|local]
-agentcraft source remove <pkg>
-agentcraft source sync [<pkg>]           # 同步指定源或全部
+actant source list                   # 列出已注册源
+actant source add <url> --name <pkg> [--type github|local]
+actant source remove <pkg>
+actant source sync [<pkg>]           # 同步指定源或全部
 
 # ---- Plugin (组合预设) ----
-agentcraft plugin list [<pkg>]           # 列出可用 plugin
-agentcraft plugin show <pkg@name>        # 查看 plugin 包含的组件
-agentcraft plugin apply <pkg@name> <template>  # 一键应用到模板
+actant plugin list [<pkg>]           # 列出可用 plugin
+actant plugin show <pkg@name>        # 查看 plugin 包含的组件
+actant plugin apply <pkg@name> <template>  # 一键应用到模板
 ```
 
 ### RPC 方法
@@ -554,7 +554,7 @@ plugin.list / plugin.show / plugin.apply
 |------|------|------|
 | HttpSource | 从 HTTP URL 下载 tarball | Phase 3a 后 |
 | NpmSource | 从 npm registry 获取 | 长期 |
-| RegistrySource | 自建 AgentCraft registry | 长期 |
+| RegistrySource | 自建 Actant registry | 长期 |
 | Plugin 版本管理 | `package@plugin:1.2.0` | 长期 |
 | Plugin 依赖解析 | Plugin A depends on Plugin B | 长期 |
 | Security scan | 参考 skill-install 的安全扫描 | Phase 3a 后 |

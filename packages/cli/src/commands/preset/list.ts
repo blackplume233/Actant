@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
-import type { PresetDefinition } from "@agentcraft/shared";
+import type { PresetDefinition } from "@actant/shared";
 
 export function createPresetListCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("list")

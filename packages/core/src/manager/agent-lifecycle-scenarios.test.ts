@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, access } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentTemplate } from "@agentcraft/shared";
+import type { AgentTemplate } from "@actant/shared";
 import { TemplateRegistry } from "../template/registry/template-registry";
 import { AgentInitializer } from "../initializer/agent-initializer";
 import { AgentManager } from "./agent-manager";
@@ -82,7 +82,7 @@ describe("Agent lifecycle scenarios", () => {
   let launcher: MockLauncher;
 
   beforeEach(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "agentcraft-scenario-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-scenario-"));
     registry = new TemplateRegistry();
     registry.register(makeTemplate());
     initializer = new AgentInitializer(registry, tmpDir);

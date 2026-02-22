@@ -47,13 +47,13 @@
 
 ```bash
 # 启动 Daemon
-agentcraft daemon start
+actant daemon start
 
 # 加载模板
-agentcraft template load configs/templates/bilibili-analyzer.json
+actant template load configs/templates/bilibili-analyzer.json
 
 # 创建 Agent 实例
-agentcraft agent create bv-analyzer -t bilibili-analyzer
+actant agent create bv-analyzer -t bilibili-analyzer
 ```
 
 ---
@@ -73,7 +73,7 @@ agentcraft agent create bv-analyzer -t bilibili-analyzer
 
 ```bash
 # 1. 在终端 A 启动 Proxy（Direct Bridge 模式）
-agentcraft proxy bv-analyzer
+actant proxy bv-analyzer
 
 # 2. 在另一个终端发送 ACP 消息
 # 模拟 IDE 发送 initialize
@@ -106,13 +106,13 @@ agentcraft proxy bv-analyzer
 
 ```bash
 # 1. 先启动 Agent（Daemon 管理）
-agentcraft agent start bv-analyzer
+actant agent start bv-analyzer
 
 # 2. 获取 Agent 状态，确认 running
-agentcraft agent status bv-analyzer
+actant agent status bv-analyzer
 
 # 3. 在终端 A 使用 Session Lease 模式启动 Proxy
-agentcraft proxy bv-analyzer --lease
+actant proxy bv-analyzer --lease
 
 # 4. 发送 ACP 消息进行视频分析
 {"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}
@@ -122,10 +122,10 @@ agentcraft proxy bv-analyzer --lease
 # 5. 断开 Proxy（Ctrl+C 或关闭终端）
 
 # 6. 检查 Agent 状态，确认仍在运行
-agentcraft agent status bv-analyzer
+actant agent status bv-analyzer
 
 # 7. 重新连接 Proxy
-agentcraft proxy bv-analyzer --lease
+actant proxy bv-analyzer --lease
 ```
 
 **预期结果**:
@@ -143,43 +143,43 @@ agentcraft proxy bv-analyzer --lease
 
 **前置条件**:
 - Daemon 正在运行
-- bv-analyzer Agent 已启动 (`agentcraft agent start bv-analyzer`)
+- bv-analyzer Agent 已启动 (`actant agent start bv-analyzer`)
 
 **测试步骤**:
 
 ```bash
 # 1. 创建 Session
-curl -X POST unix://$AGENTCRAFT_SOCKET \
+curl -X POST unix://$ACTANT_SOCKET \
   -d '{"jsonrpc":"2.0","id":1,"method":"session.create","params":{"agentName":"bv-analyzer","clientId":"client-1"}}'
 
 # 预期: 返回 sessionId, agentName, state: "active"
 
 # 2. 列出 Session
-curl -X POST unix://$AGENTCRAFT_SOCKET \
+curl -X POST unix://$ACTANT_SOCKET \
   -d '{"jsonrpc":"2.0","id":2,"method":"session.list","params":{"agentName":"bv-analyzer"}}'
 
 # 预期: 返回 session 列表，包含刚创建的 session
 
 # 3. 发送 Prompt（同步）
-curl -X POST unix://$AGENTCRAFT_SOCKET \
+curl -X POST unix://$ACTANT_SOCKET \
   -d '{"jsonrpc":"2.0","id":3,"method":"session.prompt","params":{"sessionId":"<session-id>","text":"分析 BV1xx411c7mD"}}'
 
 # 预期: 返回 stopReason 和 text
 
 # 4. 取消 Session
-curl -X POST unix://$AGENTCRAFT_SOCKET \
+curl -X POST unix://$ACTANT_SOCKET \
   -d '{"jsonrpc":"2.0","id":4,"method":"session.cancel","params":{"sessionId":"<session-id>"}}'
 
 # 预期: 返回 { ok: true }
 
 # 5. 关闭 Session
-curl -X POST unix://$AGENTCRAFT_SOCKET \
+curl -X POST unix://$ACTANT_SOCKET \
   -d '{"jsonrpc":"2.0","id":5,"method":"session.close","params":{"sessionId":"<session-id>"}}'
 
 # 预期: 返回 { ok: true }
 
 # 6. 再次列出 Session，确认已关闭
-curl -X POST unix://$AGENTCRAFT_SOCKET \
+curl -X POST unix://$ACTANT_SOCKET \
   -d '{"jsonrpc":"2.0","id":6,"method":"session.list","params":{"agentName":"bv-analyzer"}}'
 
 # 预期: session 列表为空或不包含已关闭的 session
@@ -206,11 +206,11 @@ curl -X POST unix://$AGENTCRAFT_SOCKET \
 
 ```bash
 # 1. 在终端 A 启动第一个 Proxy
-agentcraft proxy bv-analyzer
+actant proxy bv-analyzer
 # 保持运行
 
 # 2. 在终端 B 同时启动第二个 Proxy
-agentcraft proxy bv-analyzer
+actant proxy bv-analyzer
 
 # 3. 观察终端 B 的输出
 ```
@@ -226,7 +226,7 @@ agentcraft proxy bv-analyzer
 
 ```bash
 # 列出所有 agent，应该看到 ephemeral 实例
-agentcraft agent list
+actant agent list
 
 # 预期: 看到 bv-analyzer-proxy-1234567890 状态为 running
 ```
@@ -247,10 +247,10 @@ agentcraft agent list
 
 ```bash
 # 1. 确保 Agent 未运行
-agentcraft agent stop bv-analyzer
+actant agent stop bv-analyzer
 
 # 2. 启动 chat
-agentcraft agent chat bv-analyzer
+actant agent chat bv-analyzer
 
 # 3. 输入视频分析请求
 you> 分析 BV1xx411c7mD
@@ -267,10 +267,10 @@ you> 分析 BV1xx411c7mD
 
 ```bash
 # 1. 启动 Agent
-agentcraft agent start bv-analyzer
+actant agent start bv-analyzer
 
 # 2. 启动 chat
-agentcraft agent chat bv-analyzer
+actant agent chat bv-analyzer
 
 # 3. 输入视频分析请求
 you> 分析 BV1xx411c7mD
@@ -310,7 +310,7 @@ you> 这个视频的时长是多少？
 # 这需要直接调用 RPC，因为 CLI 不支持指定 TTL
 
 # 2. 使用 Proxy --lease 模式连接
-agentcraft proxy bv-analyzer --lease
+actant proxy bv-analyzer --lease
 
 # 3. 创建 Session
 {"jsonrpc":"2.0","id":1,"method":"session/new","params":{}}
@@ -321,7 +321,7 @@ agentcraft proxy bv-analyzer --lease
 # 5. 等待 30 分钟（或修改代码使用短 TTL 测试）
 
 # 6. 重新连接 Proxy，尝试恢复 Session
-agentcraft proxy bv-analyzer --lease
+actant proxy bv-analyzer --lease
 {"jsonrpc":"2.0","id":1,"method":"session/new","params":{"resumeSessionId":"<old-session-id>"}}
 ```
 
@@ -355,13 +355,13 @@ const registry = new SessionRegistry({
 
 ```bash
 # 1. 客户端 A 连接
-agentcraft proxy bv-analyzer --lease
+actant proxy bv-analyzer --lease
 {"jsonrpc":"2.0","id":1,"method":"session/new","params":{}}
 # 假设返回 sessionId: "session-a"
 {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"session-a","prompt":[{"type":"text","text":"记住：我在分析 BV1xx411c7mD"}]}}
 
 # 2. 客户端 B 同时连接
-agentcraft proxy bv-analyzer --lease
+actant proxy bv-analyzer --lease
 {"jsonrpc":"2.0","id":1,"method":"session/new","params":{}}
 # 假设返回 sessionId: "session-b"
 {"jsonrpc":"2.0","id":2,"method":"session/prompt","params":{"sessionId":"session-b","prompt":[{"type":"text","text":"记住：我在分析 BV1yy411c7mE"}]}}
@@ -415,28 +415,28 @@ set -e
 echo "=== Issue #35 E2E Test ==="
 
 # Setup
-agentcraft daemon start
-agentcraft template load configs/templates/bilibili-analyzer.json
-agentcraft agent create test-bv -t bilibili-analyzer
+actant daemon start
+actant template load configs/templates/bilibili-analyzer.json
+actant agent create test-bv -t bilibili-analyzer
 
 # Test Direct Bridge
 echo "Test 1: Direct Bridge mode"
-agentcraft proxy test-bv &
+actant proxy test-bv &
 PROXY_PID=$!
 sleep 2
 kill $PROXY_PID
 
 # Test Session Lease
 echo "Test 2: Session Lease mode"
-agentcraft agent start test-bv
-agentcraft proxy test-bv --lease &
+actant agent start test-bv
+actant proxy test-bv --lease &
 PROXY_PID=$!
 sleep 2
 kill $PROXY_PID
-agentcraft agent stop test-bv
+actant agent stop test-bv
 
 # Cleanup
-agentcraft agent destroy test-bv
+actant agent destroy test-bv
 
 echo "=== All tests passed ==="
 ```
