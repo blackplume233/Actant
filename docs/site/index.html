@@ -228,7 +228,7 @@ body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:
     <h1 class="reveal d1">The <span class="hl-docker">Docker</span> for<br><span class="hl-agent">AI Agents</span></h1>
     <p class="hero-desc reveal d2">像管理容器一样管理 AI Agent — 声明式 Template 定义能力，一条命令创建隔离实例，通过标准协议零成本嵌入你的工作流。</p>
     <div class="hero-install reveal d2" onclick="copyCmd(this)">
-      <span class="ps1">$</span> git clone https://github.com/blackplume233/Actant.git
+      <span class="ps1">$</span> npm install -g @actant/cli
       <svg class="copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
     </div>
     <div class="hero-btns reveal d3">
@@ -439,7 +439,7 @@ body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:
 
 <script>
 function copyCmd(el){
-  navigator.clipboard.writeText('git clone https://github.com/blackplume233/Actant.git').then(()=>{
+  navigator.clipboard.writeText('npm install -g @actant/cli').then(()=>{
     const c=el.querySelector('.copy');c.style.color='var(--green)';setTimeout(()=>c.style.color='',1500);
   });
 }

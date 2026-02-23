@@ -1,0 +1,67 @@
+name: Build Standalone Binaries
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: actant-linux-x64
+            binary: actant
+          - os: macos-latest
+            artifact: actant-darwin-arm64
+            binary: actant
+          - os: windows-latest
+            artifact: actant-win-x64
+            binary: actant.exe
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: node scripts/build-standalone.mjs
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist-standalone/${{ matrix.binary }}
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p release
+          cp artifacts/actant-linux-x64/actant release/actant-linux-x64
+          cp artifacts/actant-darwin-arm64/actant release/actant-darwin-arm64
+          cp artifacts/actant-win-x64/actant.exe release/actant-win-x64.exe
+          chmod +x release/actant-linux-x64 release/actant-darwin-arm64
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release/*

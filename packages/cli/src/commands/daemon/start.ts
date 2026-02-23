@@ -2,10 +2,43 @@ import { Command } from "commander";
 import { join } from "node:path";
 import { fork, spawn } from "node:child_process";
 import chalk from "chalk";
-import { onShutdownSignal, isWindows } from "@actant/shared";
+import { onShutdownSignal, isWindows, isSingleExecutable } from "@actant/shared";
 import { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 import { defaultSocketPath } from "../../program";
+
+/**
+ * Internal flag used by SEA binary to re-exec itself in daemon mode.
+ * When the binary is a single executable, there's no separate daemon-entry.js
+ * to fork — instead we spawn ourselves with this flag.
+ */
+export const SEA_DAEMON_FLAG = "--__actant-daemon";
+
+function spawnDaemonChild() {
+  if (isSingleExecutable()) {
+    return spawn(process.execPath, [SEA_DAEMON_FLAG], {
+      detached: true,
+      stdio: ["ignore", "ignore", "pipe"],
+      env: process.env,
+    });
+  }
+
+  const daemonScript = join(import.meta.dirname, "daemon-entry.js");
+
+  // Windows: fork() + detached doesn't truly detach due to IPC channel
+  // keeping parent-child bound together (Node.js #36808).
+  return isWindows()
+    ? spawn(process.execPath, [daemonScript], {
+        detached: true,
+        stdio: ["ignore", "ignore", "pipe"],
+        env: process.env,
+      })
+    : fork(daemonScript, [], {
+        detached: true,
+        stdio: ["ignore", "ignore", "pipe", "ipc"],
+        env: process.env,
+      });
+}
 
 export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): Command {
   return new Command("start")
@@ -40,22 +73,7 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
           process.exitCode = 1;
         }
       } else {
-        const daemonScript = join(import.meta.dirname, "daemon-entry.js");
-
-        // Windows: fork() + detached doesn't truly detach due to IPC channel
-        // keeping parent-child bound together (Node.js #36808).
-        // Use spawn(process.execPath, ...) which has no IPC and detaches cleanly.
-        const child = isWindows()
-          ? spawn(process.execPath, [daemonScript], {
-              detached: true,
-              stdio: ["ignore", "ignore", "pipe"],
-              env: process.env,
-            })
-          : fork(daemonScript, [], {
-              detached: true,
-              stdio: ["ignore", "ignore", "pipe", "ipc"],
-              env: process.env,
-            });
+        const child = spawnDaemonChild();
 
         const stderrChunks: Buffer[] = [];
         child.stderr?.on("data", (chunk: Buffer) => {

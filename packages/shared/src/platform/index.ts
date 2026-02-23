@@ -4,4 +4,5 @@ export {
   ipcRequiresFileCleanup,
   onShutdownSignal,
   isWindows,
+  isSingleExecutable,
 } from "./platform";

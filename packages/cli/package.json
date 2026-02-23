@@ -1,8 +1,22 @@
 {
   "name": "@actant/cli",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.2",
+  "description": "CLI for the Actant AI agent platform — build, manage, and compose AI agents",
   "type": "module",
+  "license": "MIT",
+  "author": "blackplume <blackplume233@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blackplume233/Actant.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/blackplume233/Actant#readme",
+  "bugs": "https://github.com/blackplume233/Actant/issues",
+  "keywords": ["actant", "ai-agent", "cli", "agent-platform"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": ["dist", "scripts/postinstall.mjs"],
   "bin": {
     "actant": "./dist/bin/actant.js"
   },
@@ -11,7 +25,9 @@
     "dev": "tsx src/index.ts",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "postinstall": "node scripts/postinstall.mjs",
+    "prepublishOnly": "tsup"
   },
   "dependencies": {
     "@actant/acp": "workspace:*",

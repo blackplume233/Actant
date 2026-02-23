@@ -66,3 +66,23 @@ export function onShutdownSignal(handler: () => void | Promise<void>): void {
 export function isWindows(): boolean {
   return IS_WINDOWS;
 }
+
+let _isSea = false;
+let _isSeaChecked = false;
+
+/**
+ * Detects if the process is running as a Node.js Single Executable Application.
+ * Uses `node:sea` module (Node 20+) with a fallback heuristic.
+ */
+export function isSingleExecutable(): boolean {
+  if (_isSeaChecked) return _isSea;
+  _isSeaChecked = true;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const sea = require("node:sea");
+    _isSea = typeof sea.isSea === "function" ? sea.isSea() : false;
+  } catch {
+    _isSea = false;
+  }
+  return _isSea;
+}
