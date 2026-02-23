@@ -1,3 +1,5 @@
+import { join } from "node:path";
+import { homedir } from "node:os";
 import { describe, it, expect } from "vitest";
 import { getDefaultIpcPath, getIpcPath, ipcRequiresFileCleanup, isWindows } from "./platform";
 
@@ -38,5 +40,15 @@ describe("platform utilities", () => {
     const path1 = getIpcPath("/home/a");
     const path2 = getIpcPath("/home/b");
     expect(path1).not.toBe(path2);
+  });
+
+  it("getDefaultIpcPath and getIpcPath resolve to the same path for the same homeDir", () => {
+    const homeDir = "/tmp/actant-test";
+    expect(getDefaultIpcPath(homeDir)).toBe(getIpcPath(homeDir));
+  });
+
+  it("getDefaultIpcPath without args matches getIpcPath with default home", () => {
+    const defaultHome = join(homedir(), ".actant");
+    expect(getDefaultIpcPath()).toBe(getIpcPath(defaultHome));
   });
 });

@@ -7,17 +7,14 @@ const IS_WINDOWS = process.platform === "win32";
  * Returns the platform-appropriate IPC path for daemon communication.
  *
  * - macOS/Linux: Unix domain socket at `~/.actant/actant.sock`
- * - Windows: Named pipe at `\\.\pipe\actant`
+ * - Windows: Named pipe derived from homeDir (e.g. `\\.\pipe\actant-...`)
  *
- * Named pipes are the standard Windows IPC mechanism and work with
- * Node.js `net.createServer` / `net.createConnection` transparently.
+ * Delegates to {@link getIpcPath} to ensure CLI and daemon always
+ * resolve to the same path for a given homeDir.
  */
 export function getDefaultIpcPath(homeDir?: string): string {
-  if (IS_WINDOWS) {
-    return "\\\\.\\pipe\\actant";
-  }
   const base = homeDir ?? join(homedir(), ".actant");
-  return join(base, "actant.sock");
+  return getIpcPath(base);
 }
 
 /**

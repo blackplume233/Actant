@@ -20,7 +20,8 @@ import {
 import { presentError, type CliPrinter } from "./output/index";
 
 export function defaultSocketPath(): string {
-  return process.env["ACTANT_SOCKET"] ?? getDefaultIpcPath();
+  const home = process.env["ACTANT_HOME"];
+  return process.env["ACTANT_SOCKET"] ?? getDefaultIpcPath(home);
 }
 
 export function createProgram(socketPath?: string, printer?: CliPrinter): Command {
