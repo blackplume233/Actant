@@ -619,6 +619,9 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | `template show <name>` | `name` | `-f, --format` | `template.get` |
 | `template validate <file>` | `file` | — | `template.validate` |
 | `template load <file>` | `file` | — | `template.load` |
+| `template install <spec>` | `spec` | — | `source.sync` + `template.get` |
+
+`template install` 接受 `source@name` 格式（如 `actant-hub@code-reviewer`）。省略 `source@` 前缀时默认使用 `actant-hub`。命令先同步指定源，再验证模板可用性。
 
 > `template.unload` 无 CLI 对应，仅通过 RPC 可用。
 
@@ -816,6 +819,14 @@ abstract class BaseComponentManager<T extends NamedComponent> {
 | `TemplateRegistry` | `AgentTemplate` | 继承 BaseComponentManager；自定义 `loadFromDirectory()`（使用 TemplateLoader）和重复检查逻辑 |
 
 > 实现参考：`packages/core/src/domain/base-component-manager.ts`, `packages/core/src/template/registry/template-registry.ts`
+
+### 5.2b SourceManager（默认源自动注册）
+
+管理组件源（GitHub 仓库、本地目录）。通过 `package@name` 命名空间将远程组件注入到各 domain manager。
+
+**默认源行为**: `SourceManager.initialize()` 在启动时自动注册 `actant-hub`（`https://github.com/blackplume233/actant-hub.git`）为默认源。若网络不可用或仓库无法访问，静默跳过。该行为可通过构造时 `{ skipDefaultSource: true }` 禁用（测试场景下 `launcherMode === "mock"` 自动禁用）。
+
+> 实现参考：`packages/core/src/source/source-manager.ts`
 
 ### 5.3 HandlerRegistry
 

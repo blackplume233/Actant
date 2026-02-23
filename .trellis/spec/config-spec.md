@@ -95,12 +95,14 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 
 通过名称引用组合 Agent 的领域上下文。所有字段均为**引用**，不内嵌完整配置。
 
+> **概念说明**: "DomainContext" 是 skills、prompts、mcp、templates、presets 等组件的统称，不是独立的组件类型。不存在 `DomainContextDefinition`。`DomainContextConfig` 仅是 AgentTemplate 中的一个配置字段，用于按名称引用和组合各类组件。
+
 | 字段 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
 | `skills` | `string[]` | `[]` | Skill 名称列表 |
 | `prompts` | `string[]` | `[]` | Prompt 名称列表 |
 | `mcpServers` | [`McpServerRef[]`](#mcpserverref) | `[]` | MCP 服务器引用 |
-| `workflow` | `string` | — | Workflow 名称 |
+| `workflow` | `string` | — | Workflow 名称（**deprecated** — 将归并为 skill, #132） |
 | `plugins` | `string[]` | `[]` | Plugin 名称列表（Phase 3a 新增） |
 | `subAgents` | `string[]` | `[]` | 子 Agent 模板名称 |
 
@@ -391,6 +393,8 @@ VersionedComponent           ← 基类
 | `variables` | `string[]` | 否 | 声明的变量名 |
 
 ### WorkflowDefinition
+
+> **Deprecated**: 将废弃并归并为 SkillDefinition（#132）。WorkflowDefinition 与 SkillDefinition 数据结构完全相同（`name + content`），唯一区别是物化路径（`.trellis/workflow.md` vs `AGENTS.md`），不值得维护独立的类型/管理器/处理器。actant-hub 官方组件仓库不再包含 `workflows/` 目录。
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
