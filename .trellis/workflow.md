@@ -352,7 +352,7 @@ tasks/
 - [OK] When reprioritizing or closing issues
 - [OK] When planning a release or milestone
 
-See `.trellis/roadmap.md` for structure and maintenance notes.
+See `docs/planning/roadmap.md` for structure and maintenance notes.
 
 ### 5. Issues - Backlog Tracking (GitHub-first)
 
@@ -364,9 +364,12 @@ Issues are Obsidian-style Markdown files mirroring GitHub Issues. Each file uses
 ```
 issues/
 |-- .counter                 # Tracks highest GitHub issue number
-|-- 0022-processwatcher.md   # GitHub #22
-|-- 0043-unified-component-management.md  # GitHub #43
-\-- 0094-base-component-manager-crud.md   # GitHub #94
+|-- 0120-windows-daemon...   # Open issue — GitHub #120
+|-- 0121-pi-agent...         # Open issue — GitHub #121
+\-- archive/                 # Closed issues (auto-archived on close)
+    |-- 0022-processwatcher.md
+    |-- 0043-unified-component-management.md
+    \-- ...
 ```
 
 **Issue 编号规则**:
@@ -375,16 +378,28 @@ issues/
 - `.counter` 记录当前最大 GitHub Issue number，供新建时参考
 - `githubRef` 字段格式: `"blackplume233/Actant#N"`
 
+**归档机制（Archive）**:
+
+> **已关闭的 issue 自动归档到 `issues/archive/`，避免污染 AI Agent 的上下文窗口。**
+
+- `issue close <id>` 关闭后**自动**将文件移至 `issues/archive/`
+- `issue close <id> --no-archive` 关闭但保留在 issues 根目录（少见场景）
+- `issue reopen <id>` 会自动从 archive 恢复到 issues 根目录
+- `issue archive --all` 批量归档所有已关闭 issue
+- `issue archive <id>` 手动归档单个已关闭 issue
+- `issue show <id>` / `issue search` 仍可查阅归档 issue（自动跨目录搜索）
+- **归档不影响 GitHub**：归档仅是本地文件位置变化，GitHub Issue 状态不变
+
 **Issue vs Task**:
 
 | Concept | Issue | Task |
 |---------|-------|------|
 | Purpose | Backlog — what needs doing (synced with GitHub) | Active work — what's being done now |
-| Lifecycle | open → (promote) → in-progress → closed | planning → in_progress → review → completed |
+| Lifecycle | open → (promote) → in-progress → closed → **archived** | planning → in_progress → review → completed |
 | Storage | Single Markdown file per issue (mirrors GitHub) | Directory with task.json, prd.md, jsonl contexts |
 | Transition | `issue.sh promote <id>` creates a Task | `task.sh archive <name>` archives completed Task |
 
-**Workflow**: GitHub Issue (idea) → **local cache** → **promote** → Task (active work) → **archive** → Done
+**Workflow**: GitHub Issue (idea) → **local cache** → **promote** → Task (active work) → **close** → **archive** → Done
 
 **创建 Issue 的标准流程（GitHub-first）**:
 ```bash
@@ -405,7 +420,9 @@ gh issue create -t "<title>" -b "<body>" -l "feature"
 ./.trellis/scripts/issue.sh edit <id> --assign cursor-agent --milestone mid-term  # ← auto-sync
 ./.trellis/scripts/issue.sh label <id> --add rfc --remove question               # ← auto-sync
 ./.trellis/scripts/issue.sh comment <id> "Design doc completed"                  # ← auto-sync
-./.trellis/scripts/issue.sh close <id> --as completed                            # ← auto-sync
+./.trellis/scripts/issue.sh close <id> --as completed                            # ← auto-sync + auto-archive
+./.trellis/scripts/issue.sh reopen <id>                                          # ← auto-restore from archive
+./.trellis/scripts/issue.sh archive --all                                        # Archive all closed issues
 ./.trellis/scripts/issue.sh promote <id>       # → Creates Task from Issue
 ./.trellis/scripts/issue.sh search "memory"
 ./.trellis/scripts/issue.sh stats

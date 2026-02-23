@@ -50,7 +50,7 @@ bash .trellis/scripts/stage-version.sh init <version>
    - Agent 生命周期和状态流转
    - 配置体系（Template / DomainContext / Schedule）
    - 调度器、构建器、通信器架构
-   - 当前版本完成状态（roadmap.md + phase-todo.md + issues）
+   - 当前版本完成状态（docs/planning/roadmap.md + docs/planning/phase3-todo.md + issues）
 
 2. 生成 `docs/stage/<version>/architecture.md`，包含以下章节：
    - 项目概览（Docker 类比）

@@ -229,10 +229,10 @@ Actant/
 ├── examples/              示例（actant-hub 组件源仓库）
 ├── scripts/               安装脚本 + 自更新脚本
 ├── docs/                  项目文档
-│   ├── decisions/         架构决策记录（ADR）
+│   ├── guides/            使用教程与操作指南
 │   ├── design/            功能设计文档
-│   ├── stage/             版本快照存档
-│   └── getting-started.md 入门指南
+│   ├── decisions/         架构决策记录（ADR）
+│   └── stage/             版本快照存档
 └── .trellis/              AI 开发框架（Issue、Roadmap、Spec）
 ```
 
@@ -265,7 +265,7 @@ actant self-update --dry-run    # 模拟执行
 
 | 文档 | 说明 |
 |------|------|
-| [入门指南](docs/getting-started.md) | 安装、配置、第一个 Agent |
+| [入门指南](docs/guides/getting-started.md) | 安装、配置、第一个 Agent |
 | [v0.1.0 架构文档](docs/stage/v0.1.0/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
 | [v0.1.0 API 接口](docs/stage/v0.1.0/api-surface.md) | 73 个 RPC 方法 + 全部 CLI 命令 |
 | [DomainContext 扩展指南](docs/design/domain-context-extension-guide.md) | 如何添加自定义组件类型 |

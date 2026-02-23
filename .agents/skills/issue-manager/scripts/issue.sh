@@ -11,6 +11,7 @@
 #   issue.sh edit <id> [fields]
 #   issue.sh close <id> [--as completed|not-planned|duplicate] [--ref <id>]
 #   issue.sh reopen <id>
+#   issue.sh archive <id> | --all
 #   issue.sh comment <id> "<text>"
 #   issue.sh label <id> --add <l> | --remove <l>
 #   issue.sh promote <id> [--slug <name>]

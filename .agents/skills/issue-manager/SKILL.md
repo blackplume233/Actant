@@ -23,7 +23,10 @@ allowed-tools: Shell, Read, Write, Glob, Grep
 
 ## Issue 文件格式
 
-每个 Issue 是一个 `.md` 文件，存储在 `.trellis/issues/` 目录下，命名为 `NNNN-slug.md`（NNNN = 零填充的 **GitHub Issue number**）。
+每个 Issue 是一个 `.md` 文件，命名为 `NNNN-slug.md`（NNNN = 零填充的 **GitHub Issue number**）。
+
+- **Open Issue** → `.trellis/issues/NNNN-slug.md`
+- **Closed Issue** → `.trellis/issues/archive/NNNN-slug.md`（关闭时自动归档）
 
 ### 格式结构
 
@@ -154,7 +157,7 @@ closedAt: null
 ### 关闭 / 重开
 
 ```bash
-# 关闭（默认 completed）
+# 关闭（默认 completed，自动归档到 archive/）
 ./.agents/skills/issue-manager/scripts/issue.sh close <id>
 
 # 关闭为 not-planned
@@ -163,9 +166,26 @@ closedAt: null
 # 关闭为 duplicate
 ./.agents/skills/issue-manager/scripts/issue.sh close <id> --as duplicate --ref 42
 
-# 重开
+# 关闭但不归档（少见）
+./.agents/skills/issue-manager/scripts/issue.sh close <id> --no-archive
+
+# 重开（自动从 archive 恢复）
 ./.agents/skills/issue-manager/scripts/issue.sh reopen <id>
 ```
+
+### 归档
+
+```bash
+# 手动归档单个已关闭 Issue
+./.agents/skills/issue-manager/scripts/issue.sh archive <id>
+
+# 批量归档所有已关闭 Issue
+./.agents/skills/issue-manager/scripts/issue.sh archive --all
+```
+
+> **归档策略**：已关闭的 Issue 自动移入 `issues/archive/`，仅保留 open Issue 在根目录。
+> 这样 AI Agent 读取 issue 列表时只看到活跃工作，不被历史 Issue 污染上下文窗口。
+> 归档仅影响本地文件位置，不影响 GitHub Issue 状态。`show`/`search` 命令仍可跨目录访问。
 
 ### 提升为 Task
 

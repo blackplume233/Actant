@@ -40,7 +40,18 @@ export class ExecStep extends InitializerStepExecutor {
 
     context.logger.debug({ command, args, cwd: workDir }, "Executing command");
 
-    const { exitCode, stdout, stderr } = await runCommand(command, args, workDir, env);
+    let exitCode: number;
+    let stdout: string;
+    let stderr: string;
+    try {
+      ({ exitCode, stdout, stderr } = await runCommand(command, args, workDir, env));
+    } catch (err) {
+      return {
+        success: false,
+        output: { exitCode: 1, stdout: "", stderr: (err as Error).message },
+        message: `Command "${command}" failed to start: ${(err as Error).message}`,
+      };
+    }
 
     if (exitCode !== 0) {
       return {

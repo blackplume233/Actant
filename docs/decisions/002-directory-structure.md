@@ -277,3 +277,50 @@ All go through core.
 - New developers can find design context in `docs/human/` and `docs/decisions/`
 - AI agents can generate analysis reports without polluting human documentation
 - ADR numbering enforces chronological decision tracking
+
+---
+
+## Addendum: docs/ Structure Evolution (2026-02-23)
+
+`docs/` 目录在实际使用中演进，新增了以下子目录。完整规范见 `docs/README.md`。
+
+### 新增目录
+
+```
+docs/
+├── guides/           使用教程与操作指南（面向用户和 AI Agent）
+├── planning/         产品规划（Roadmap、Phase TODO、执行计划）
+│   └── archive/      已完成阶段的计划存档
+├── design/           功能设计文档（活文档）
+├── decisions/        架构决策记录 ADR
+├── stage/            版本快照存档（脚本 + AI 生成，只读）
+│   └── v<x.y.z>/    每个版本的完整快照
+├── reports/          技术报告与分析
+├── human/            人类手写笔记（AI 禁止写入）
+├── agent/            AI Agent 生成的分析报告（需人类验证）
+└── site/             GitHub Pages 静态站点源码
+```
+
+### 变更说明
+
+| 变更 | 原位置 | 新位置 | 原因 |
+|------|-------|-------|------|
+| `planning/` 新增 | `.trellis/roadmap.md` | `docs/planning/roadmap.md` | 规划文档属于项目文档，应统一管理 |
+| `stage/` 新增 | — | `docs/stage/v<x.y.z>/` | 版本快照存档，由 stage-version 命令生成 |
+| `reports/` 新增 | — | `docs/reports/` | 独立技术分析报告 |
+| `site/` 新增 | — | `docs/site/` | GitHub Pages 源码 |
+| `human/roadmap.md` 移除 | `docs/human/` | `docs/planning/` | Roadmap 属于规划类文档 |
+
+### 写入权限矩阵
+
+| 目录 | 人类 | AI | 修改限制 |
+|------|------|-----|---------|
+| `guides/` | 可写 | 可写 | 无 |
+| `planning/` | 可写 | 可写 | Roadmap 变更需与 Issues 同步 |
+| `design/` | 可写 | 可写 | 结构性变更需人类审阅 |
+| `decisions/` | 可写 | 可提议 | Status 变更仅限人类 |
+| `stage/` | — | 脚本生成 | 只读，不手动修改 |
+| `reports/` | 可写 | 可写 | 无 |
+| `human/` | 可写 | **禁止** | AI 不得写入 |
+| `agent/` | — | 可写 | 内容需人类验证 |
+| `site/` | 可写 | 可写 | 推送后自动部署 |

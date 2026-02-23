@@ -43,7 +43,7 @@ dependencies:
 
 ```bash
 # Roadmap
-cat .trellis/roadmap.md
+cat docs/planning/roadmap.md
 
 # 活跃任务（直接读取 .trellis/tasks/ 目录）
 ls .trellis/tasks/ 2>/dev/null | head -20
@@ -110,7 +110,7 @@ git log --oneline -20
 
 ```bash
 # Roadmap
-cat .trellis/roadmap.md
+cat docs/planning/roadmap.md
 
 # 所有 Issue
 ./.agents/skills/issue-manager/scripts/issue.sh list
@@ -137,7 +137,7 @@ git log --oneline -10 --format="%h %s (%cr)"
 git branch --show-current
 
 # 获取 Roadmap
-cat .trellis/roadmap.md
+cat docs/planning/roadmap.md
 
 # 获取 Issue 统计
 ./.agents/skills/issue-manager/scripts/issue.sh stats

@@ -11,7 +11,7 @@
  * Commands mirror the original issue.sh interface for backward compatibility.
  */
 
-import { readdir, readFile, writeFile, mkdir, access, unlink as unlinkAsync } from "node:fs/promises";
+import { readdir, readFile, writeFile, mkdir, access, unlink as unlinkAsync, rename } from "node:fs/promises";
 import { readFileSync, writeFileSync, unlinkSync, statSync, existsSync } from "node:fs";
 import { execSync } from "node:child_process";
 import { join, basename, dirname } from "node:path";
@@ -21,6 +21,7 @@ import { join, basename, dirname } from "node:path";
 const SCRIPT_DIR = dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"));
 const REPO_ROOT = findRepoRoot(SCRIPT_DIR);
 const ISSUES_DIR = join(REPO_ROOT, ".trellis", "issues");
+const ARCHIVE_DIR = join(ISSUES_DIR, "archive");
 const COUNTER_FILE = join(ISSUES_DIR, ".counter");
 const DIRTY_FILE = join(ISSUES_DIR, ".dirty");
 const GH_OWNER = "blackplume233";
@@ -323,7 +324,37 @@ async function listIssueFiles() {
 async function findIssueFile(id) {
   const padded = String(id).padStart(4, "0");
   const files = await listIssueFiles();
-  return files.find(f => basename(f).startsWith(padded + "-"));
+  const found = files.find(f => basename(f).startsWith(padded + "-"));
+  if (found) return found;
+  const archived = await listArchivedFiles();
+  return archived.find(f => basename(f).startsWith(padded + "-"));
+}
+
+async function listArchivedFiles() {
+  try {
+    const entries = await readdir(ARCHIVE_DIR);
+    return entries
+      .filter(f => /^\d{4}-.*\.md$/.test(f))
+      .map(f => join(ARCHIVE_DIR, f))
+      .sort();
+  } catch {
+    return [];
+  }
+}
+
+async function archiveIssue(filepath) {
+  await mkdir(ARCHIVE_DIR, { recursive: true });
+  const filename = basename(filepath);
+  const dest = join(ARCHIVE_DIR, filename);
+  await rename(filepath, dest);
+  return dest;
+}
+
+async function unarchiveIssue(filepath) {
+  const filename = basename(filepath);
+  const dest = join(ISSUES_DIR, filename);
+  await rename(filepath, dest);
+  return dest;
 }
 
 async function readIssue(filepath) {
@@ -880,14 +911,66 @@ async function cmdClose(args) {
   console.log(`${icon} Closed #${id}: ${meta.title} ${C.gray(`(${closedAs})`)}`);
 
   await afterMutation(id);
+
+  if (!args.includes("--no-archive")) {
+    await archiveIssue(filepath);
+    console.log(`  ${C.gray("→ archived")}`);
+  }
+}
+
+async function cmdArchive(args) {
+  if (args.includes("--all")) {
+    const files = await listIssueFiles();
+    let count = 0;
+    for (const f of files) {
+      const { meta } = await readIssue(f);
+      if (meta.status === "closed") {
+        await archiveIssue(f);
+        count++;
+        console.log(`  ${C.gray("●")} Archived #${meta.id}: ${meta.title}`);
+      }
+    }
+    console.log(`\n  ${count} issue(s) archived`);
+    return;
+  }
+
+  const id = Number(args[0]);
+  if (!id) {
+    console.error(C.red("Error: issue ID or --all required"));
+    console.error("Usage: issue archive <id> | issue archive --all");
+    process.exit(1);
+  }
+
+  const files = await listIssueFiles();
+  const padded = String(id).padStart(4, "0");
+  const filepath = files.find(f => basename(f).startsWith(padded + "-"));
+  if (!filepath) {
+    console.error(C.red(`Error: issue #${id} not found in active issues (may already be archived)`));
+    process.exit(1);
+  }
+
+  const { meta } = await readIssue(filepath);
+  if (meta.status !== "closed") {
+    console.error(C.red(`Error: issue #${id} is still open — close it first`));
+    process.exit(1);
+  }
+
+  await archiveIssue(filepath);
+  console.log(`  ${C.gray("●")} Archived #${id}: ${meta.title}`);
 }
 
 async function cmdReopen(idStr) {
   if (!idStr) { console.error(C.red("Error: issue ID required")); process.exit(1); }
   const id = Number(idStr);
 
-  const filepath = await findIssueFile(id);
+  let filepath = await findIssueFile(id);
   if (!filepath) { console.error(C.red(`Error: issue #${id} not found`)); process.exit(1); }
+
+  const isArchived = filepath.startsWith(ARCHIVE_DIR);
+  if (isArchived) {
+    filepath = await unarchiveIssue(filepath);
+    console.log(`  ${C.gray("← restored from archive")}`);
+  }
 
   const { meta, body } = await readIssue(filepath);
   const allFiles = await listIssueFiles();
@@ -931,7 +1014,9 @@ async function cmdComment(idStr, text) {
 async function cmdSearch(query) {
   if (!query) { console.error(C.red("Error: search query required")); process.exit(1); }
 
-  const files = await listIssueFiles();
+  const active = await listIssueFiles();
+  const archived = await listArchivedFiles();
+  const files = [...active, ...archived];
   const queryLower = query.toLowerCase();
   let count = 0;
 
@@ -950,7 +1035,9 @@ async function cmdSearch(query) {
 }
 
 async function cmdStats() {
-  const files = await listIssueFiles();
+  const active = await listIssueFiles();
+  const archived = await listArchivedFiles();
+  const files = [...active, ...archived];
   let total = 0, open = 0, closed = 0;
   let completed = 0, notPlanned = 0, dup = 0;
   const labelCounts = {};
@@ -975,8 +1062,8 @@ async function cmdStats() {
 
   console.log(C.bold("Issue Statistics"));
   console.log("────────────────────────────────");
-  console.log(`\n  ${C.green("○ Open")}      ${open}`);
-  console.log(`  ${C.magenta("● Closed")}    ${closed}`);
+  console.log(`\n  ${C.green("○ Open")}      ${open}  (active)`);
+  console.log(`  ${C.magenta("● Closed")}    ${closed}  (${archived.length} archived)`);
   if (closed > 0) {
     console.log(`    completed:   ${completed}`);
     console.log(`    not planned: ${notPlanned}`);
@@ -1300,8 +1387,11 @@ Usage:
   issue show <id>                                    Show details
   issue edit <id> [fields]                           Edit fields (auto-syncs)
   issue label <id> --add <l> | --remove <l>          Manage labels (auto-syncs)
-  issue close <id> [--as ...]                        Close issue (auto-syncs)
-  issue reopen <id>                                  Reopen issue (auto-syncs)
+  issue close <id> [--as ...]                        Close issue (auto-syncs, auto-archives)
+  issue close <id> --no-archive                      Close without archiving
+  issue reopen <id>                                  Reopen issue (auto-restores from archive)
+  issue archive <id>                                 Archive a closed issue manually
+  issue archive --all                                Archive all closed issues
   issue comment <id> "<text>"                        Add comment (auto-syncs)
   issue promote <id> [--slug <name>]                 Issue → Task
   issue search "<query>"                             Full-text search
@@ -1350,6 +1440,7 @@ const [cmd, ...rest] = process.argv.slice(2);
 switch (cmd) {
   case "create":         await cmdCreate(rest); break;
   case "list": case "ls": await cmdList(rest); break;
+  case "archive":        await cmdArchive(rest); break;
   case "show":           await cmdShow(rest[0]); break;
   case "edit":           await cmdEdit(rest); break;
   case "label":          await cmdLabel(rest); break;

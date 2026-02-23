@@ -130,3 +130,38 @@ tests/
 4. **Co-locate tests** — unit tests next to source (`*.test.ts`)
 5. **Export through index** — expose public API via barrel `index.ts`
 6. **Update design doc** — add or update `docs/design/{feature}.md` if non-trivial
+7. **Update roadmap** — if feature relates to Phase milestone, update `docs/planning/roadmap.md`
+
+## Documentation Directories
+
+项目文档统一存放在 `docs/` 下，按用途分目录。完整规范见 `docs/README.md`。
+
+| 目录 | 用途 | 何时使用 |
+|------|------|---------|
+| `docs/guides/` | 使用教程和操作指南 | 添加面向用户的 how-to 文档 |
+| `docs/planning/` | Roadmap 和阶段计划 | 里程碑变更、新 Phase 计划 |
+| `docs/design/` | 功能设计文档 | 非trivial 功能的设计方案 |
+| `docs/decisions/` | 架构决策记录 (ADR) | 重要技术选型 |
+| `docs/stage/` | 版本快照 | 由 stage-version 命令自动生成，不手动编辑 |
+
+## Issue 存储与归档
+
+`.trellis/issues/` 存放 GitHub Issue 的本地缓存。为避免已关闭 Issue 污染 AI 上下文窗口，采用归档策略：
+
+```
+.trellis/issues/
+├── 0120-windows-daemon...     # Open — 活跃 Issue
+├── 0121-pi-agent...           # Open — 活跃 Issue
+└── archive/                   # Closed — 自动归档
+    ├── 0022-processwatcher.md
+    └── ...
+```
+
+| 操作 | 文件位置变化 |
+|------|-------------|
+| `issue close <id>` | `issues/` → `issues/archive/` (自动) |
+| `issue reopen <id>` | `issues/archive/` → `issues/` (自动) |
+| `issue archive --all` | 批量迁移所有 closed → `archive/` |
+| `issue show/search` | 跨两个目录搜索 |
+
+> **Pattern**: 关闭即归档，重开即恢复。`list` 只显示活跃 Issue，`show`/`search`/`stats` 跨目录访问。
