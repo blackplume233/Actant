@@ -36,7 +36,8 @@ function parseYamlFrontmatter(frontmatter: string): Record<string, string> {
   let inMetadata = false;
 
   while (i < lines.length) {
-    const line = lines[i]!;
+    const line = lines[i];
+    if (line === undefined) break;
     const trimmed = line.trim();
 
     if (trimmed === "metadata:") {
@@ -50,7 +51,7 @@ function parseYamlFrontmatter(frontmatter: string): Record<string, string> {
 
     const blockMatch = trimmed.match(/^(\w[\w-]*)\s*:\s*(\||>)\s*$/);
     if (blockMatch) {
-      const key = keyPrefix + blockMatch[1]!;
+      const key = keyPrefix + (blockMatch[1] ?? "");
       if (!isNested) inMetadata = false;
 
       const keyLineIndent = line.search(/\S/);
@@ -59,7 +60,8 @@ function parseYamlFrontmatter(frontmatter: string): Record<string, string> {
       i++;
 
       while (i < lines.length) {
-        const nextLine = lines[i]!;
+        const nextLine = lines[i];
+        if (nextLine === undefined) break;
         const nextIndent = nextLine.search(/\S/);
         const isEmpty = nextLine.trim() === "";
 
@@ -90,12 +92,12 @@ function parseYamlFrontmatter(frontmatter: string): Record<string, string> {
 
     const quotedMatch = trimmed.match(/^(\w[\w-]*)\s*:\s*"((?:[^"\\]|\\.)*)"\s*$/);
     if (quotedMatch) {
-      const key = keyPrefix + quotedMatch[1]!;
+      const key = keyPrefix + (quotedMatch[1] ?? "");
       if (!isNested) inMetadata = false;
       try {
-        meta[key] = JSON.parse(`"${quotedMatch[2]!.replace(/\\/g, "\\\\")}"`);
+        meta[key] = JSON.parse(`"${(quotedMatch[2] ?? "").replace(/\\/g, "\\\\")}"`);
       } catch {
-        meta[key] = quotedMatch[2]!.replace(/\\"/g, '"');
+        meta[key] = (quotedMatch[2] ?? "").replace(/\\"/g, '"');
       }
       i++;
       continue;

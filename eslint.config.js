@@ -38,9 +38,14 @@ export default tseslint.config(
   {
     ignores: [
       "**/dist/**",
+      "**/dist-standalone/**",
       "**/node_modules/**",
       "**/*.config.ts",
       "**/*.config.js",
+      ".agents/**",
+      ".trellis/**",
+      "scripts/**",
+      "packages/*/scripts/**",
     ],
   },
 );

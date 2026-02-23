@@ -68,7 +68,8 @@ export class InitializationPipeline {
     logger.info({ stepsCount: steps.length }, "Starting initialization pipeline");
 
     for (let i = 0; i < steps.length; i++) {
-      const step = steps[i]!;
+      const step = steps[i];
+      if (!step) continue;
 
       if (Date.now() - pipelineStart > this.totalTimeoutMs) {
         const err = new Error(`Pipeline total timeout exceeded (${this.totalTimeoutMs}ms)`);
@@ -143,7 +144,8 @@ export class InitializationPipeline {
     logger.info({ stepsToRollback: executed.length }, "Rolling back executed steps");
 
     for (let i = executed.length - 1; i >= 0; i--) {
-      const entry = executed[i]!;
+      const entry = executed[i];
+      if (!entry) continue;
       const { executor, config, index } = entry;
       if (!executor.rollback) continue;
 
