@@ -224,7 +224,7 @@ body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:
 <section class="hero">
   <div class="hero-glow"></div>
   <div class="container">
-    <div class="hero-pill reveal"><span class="dot"></span> Open Source &middot; Agent Runtime Platform</div>
+    <div class="hero-pill reveal"><span class="dot"></span> v0.1.2 &middot; Open Source &middot; Agent Runtime Platform</div>
     <h1 class="reveal d1">The <span class="hl-docker">Docker</span> for<br><span class="hl-agent">AI Agents</span></h1>
     <p class="hero-desc reveal d2">像管理容器一样管理 AI Agent — 声明式 Template 定义能力，一条命令创建隔离实例，通过标准协议零成本嵌入你的工作流。</p>
     <div class="hero-install reveal d2" onclick="copyCmd(this)">
@@ -234,6 +234,7 @@ body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:
     <div class="hero-btns reveal d3">
       <a href="https://github.com/blackplume233/Actant" class="btn btn-accent">Get Started <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14m-7-7l7 7-7 7"/></svg></a>
       <a href="https://github.com/blackplume233/Actant#readme" class="btn btn-outline">Documentation</a>
+      <a href="https://github.com/blackplume233/Actant/releases/tag/v0.1.2" class="btn btn-outline">v0.1.2 Release Notes</a>
     </div>
   </div>
 </section>
@@ -380,10 +381,36 @@ body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:
     <div class="rm-grid reveal">
       <div class="rm-card"><div class="rm-top"><h4>Phase 1 · Runtime</h4><span class="rm-tag done">Done</span></div><p>进程管理、LaunchMode 分化、崩溃重启</p><div class="rm-docker">≈ containerd + runc</div></div>
       <div class="rm-card"><div class="rm-top"><h4>Phase 2 · Assemble</h4><span class="rm-tag done">Done</span></div><p>Domain Context 物化、CLI 交互</p><div class="rm-docker">≈ docker build + exec</div></div>
-      <div class="rm-card"><div class="rm-top"><h4>Phase 3 · Connect</h4><span class="rm-tag active">Active</span></div><p>ACP Proxy ✓ · MCP Server 开发中</p><div class="rm-docker">≈ docker network</div></div>
-      <div class="rm-card"><div class="rm-top"><h4>Phase 4 · Extend</h4><span class="rm-tag planned">Planned</span></div><p>Plugin 架构 · Heartbeat · Scheduler</p><div class="rm-docker">≈ docker-compose</div></div>
+      <div class="rm-card"><div class="rm-top"><h4>Phase 3 · Connect</h4><span class="rm-tag done">Done</span></div><p>ACP Proxy · 组件 CRUD · Workspace Builder · Scheduler</p><div class="rm-docker">≈ docker network + compose</div></div>
+      <div class="rm-card"><div class="rm-top"><h4>Phase 4 · Extend</h4><span class="rm-tag active">Active</span></div><p>Plugin 架构 · stdout/stderr 日志 · 工具权限</p><div class="rm-docker">≈ docker plugins</div></div>
       <div class="rm-card"><div class="rm-top"><h4>Phase 5 · Memory</h4><span class="rm-tag planned">Planned</span></div><p>Memory Layer · 共享知识池 · 进化</p><div class="rm-docker">≈ union fs + commit</div></div>
       <div class="rm-card"><div class="rm-top"><h4>Phase 6 · Fleet</h4><span class="rm-tag vision">Vision</span></div><p>Daemon → ACP Server · 标准化</p><div class="rm-docker">≈ docker swarm</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<section class="sec" id="stats">
+  <div class="container sec-center">
+    <p class="sec-label reveal">v0.1.2 Stats</p>
+    <h2 class="sec-heading reveal">Built with precision</h2>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:720px;margin:40px auto 0" class="reveal">
+      <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-xl);text-align:center">
+        <div style="font-family:var(--heading);font-size:32px;font-weight:800;color:var(--accent)">23K+</div>
+        <div style="font-size:13px;color:var(--text-3);margin-top:4px">Lines of Code</div>
+      </div>
+      <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-xl);text-align:center">
+        <div style="font-family:var(--heading);font-size:32px;font-weight:800;color:var(--teal)">611</div>
+        <div style="font-size:13px;color:var(--text-3);margin-top:4px">Tests (100% pass)</div>
+      </div>
+      <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-xl);text-align:center">
+        <div style="font-family:var(--heading);font-size:32px;font-weight:800;color:var(--blue)">74</div>
+        <div style="font-size:13px;color:var(--text-3);margin-top:4px">RPC Methods</div>
+      </div>
+      <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-xl);text-align:center">
+        <div style="font-family:var(--heading);font-size:32px;font-weight:800;color:var(--green)">61</div>
+        <div style="font-size:13px;color:var(--text-3);margin-top:4px">CLI Commands</div>
+      </div>
     </div>
   </div>
 </section>
