@@ -13,7 +13,7 @@
 
 import { readdir, readFile, writeFile, mkdir, access, unlink as unlinkAsync, rename } from "node:fs/promises";
 import { readFileSync, writeFileSync, unlinkSync, statSync, existsSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import { join, basename, dirname } from "node:path";
 
 // ─── Paths ───────────────────────────────────────────────────────────────────
@@ -403,34 +403,35 @@ async function clearDirty(id) {
 
 function ghAvailable() {
   try {
-    execSync("gh --version", { stdio: "ignore" });
-    return true;
+    const r = spawnSync("gh", ["--version"], { stdio: "ignore" });
+    return r.status === 0;
   } catch {
     return false;
   }
 }
 
-function ghExec(cmd) {
-  try {
-    return execSync(cmd, {
-      encoding: "utf-8",
-      cwd: REPO_ROOT,
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
-  } catch (e) {
-    const stderr = e.stderr?.toString() || e.message;
+/**
+ * Execute `gh` CLI with an args array via spawnSync.
+ * Bypasses the system shell entirely, avoiding Windows codepage encoding issues
+ * that corrupt non-ASCII (e.g. CJK) characters in command-line arguments.
+ */
+function ghSpawn(args) {
+  const result = spawnSync("gh", args, {
+    encoding: "utf-8",
+    cwd: REPO_ROOT,
+    stdio: ["pipe", "pipe", "pipe"],
+  });
+  if (result.status !== 0) {
+    const stderr = result.stderr || result.error?.message || "unknown error";
     throw new Error(`gh: ${stderr}`);
   }
+  return (result.stdout || "").trim();
 }
 
 function extractGhNumber(ref) {
   if (!ref) return null;
   const m = String(ref).match(/#(\d+)/);
   return m ? Number(m[1]) : null;
-}
-
-function escapeSh(s) {
-  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\$/g, "\\$").replace(/`/g, "\\`");
 }
 
 function buildGhBody(meta, body) {
@@ -449,12 +450,12 @@ function ghSyncExisting(ghNum, meta, ghBody) {
   writeFileSync(tmpBody, ghBody, "utf-8");
 
   try {
-    ghExec(`gh issue edit ${ghNum} -t "${escapeSh(meta.title)}" -F "${tmpBody}"`);
+    ghSpawn(["issue", "edit", String(ghNum), "-t", meta.title, "-F", tmpBody]);
 
     if (meta.status === "closed") {
-      try { ghExec(`gh issue close ${ghNum}`); } catch { /* already closed */ }
+      try { ghSpawn(["issue", "close", String(ghNum)]); } catch { /* already closed */ }
     } else {
-      try { ghExec(`gh issue reopen ${ghNum}`); } catch { /* already open */ }
+      try { ghSpawn(["issue", "reopen", String(ghNum)]); } catch { /* already open */ }
     }
   } finally {
     try { unlinkSync(tmpBody); } catch {}
@@ -466,10 +467,11 @@ function ghCreateNew(meta, ghBody) {
   writeFileSync(tmpBody, ghBody, "utf-8");
 
   try {
-    const labelsArgs = (meta.labels || []).map(l => `-l "${escapeSh(l)}"`).join(" ");
-    const result = ghExec(
-      `gh issue create -t "${escapeSh(meta.title)}" -F "${tmpBody}" ${labelsArgs}`
-    );
+    const args = ["issue", "create", "-t", meta.title, "-F", tmpBody];
+    for (const l of (meta.labels || [])) {
+      args.push("-l", l);
+    }
+    const result = ghSpawn(args);
     const numMatch = result.match(/\/issues\/(\d+)/);
     return numMatch ? Number(numMatch[1]) : null;
   } finally {
@@ -511,9 +513,10 @@ async function syncToGitHub(id, { silent = false } = {}) {
 }
 
 async function pullFromGitHub(ghNum) {
-  const json = ghExec(
-    `gh issue view ${ghNum} --json number,title,state,labels,body,assignees,createdAt,updatedAt,closedAt`
-  );
+  const json = ghSpawn([
+    "issue", "view", String(ghNum),
+    "--json", "number,title,state,labels,body,assignees,createdAt,updatedAt,closedAt",
+  ]);
   return JSON.parse(json);
 }
 
@@ -1147,15 +1150,16 @@ async function cmdPromote(args) {
     if (meta.labels?.includes(`priority:${p}`)) { priority = p; break; }
   }
 
-  const { execSync } = await import("node:child_process");
   console.error(C.blue(`Promoting #${id} → Task...`));
 
   let taskPath;
   try {
-    taskPath = execSync(
-      `"${join(REPO_ROOT, ".trellis", "scripts", "task.sh")}" create "${meta.title}" --slug "${slug}" --priority "${priority}"`,
-      { encoding: "utf-8", cwd: REPO_ROOT }
-    ).trim();
+    const taskScript = join(REPO_ROOT, ".trellis", "scripts", "task.sh");
+    const result = spawnSync(taskScript, [
+      "create", meta.title, "--slug", slug, "--priority", priority,
+    ], { encoding: "utf-8", cwd: REPO_ROOT, stdio: ["pipe", "pipe", "pipe"] });
+    if (result.status !== 0) throw new Error(result.stderr || "task create failed");
+    taskPath = (result.stdout || "").trim();
   } catch (e) {
     console.error(C.red("Error: failed to create task"));
     process.exit(1);
