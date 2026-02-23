@@ -1108,3 +1108,56 @@ Deep audit of code quality across the entire codebase. Fixed ESLint configuratio
 ### Status
 
 [COMMITTED] **Completed** — pushed to master, CI green
+
+---
+
+## Session 17 — QA full install flow: download, setup, daemon, agent, update, cleanup
+
+**Date**: 2026-02-23
+**Commit**: `3dccd7d`
+**Task**: 02-23-qa-full-install-flow
+
+### Summary
+
+QA Round 2 对 Actant CLI 0.1.3 的完整安装流程进行真实环境黑盒测试，覆盖 6 个阶段。
+
+| Phase | 测试项 | 结果 |
+|-------|--------|------|
+| P0 | 环境清理 + 前置条件 | PASS |
+| P1 | install.ps1 + 本地构建 0.1.3 安装 | PASS (修复 3 个 bug) |
+| P2 | actant setup --skip-home | PASS (修复 1 个 bug) |
+| P3 | daemon start/status/stop | PASS (需替换全局依赖) |
+| P4 | template CRUD + agent 生命周期 | PASS |
+| P5 | self-update --check/--dry-run | PASS |
+| P6 | 完整清理 | PASS |
+
+### Bugs Fixed (5)
+
+1. `install.ps1` param() 前置语句 — 脚本完全不可执行
+2. `install.ps1` LASTEXITCODE 未检查 — npm 失败但报成功
+3. `install.ps1/sh` npm bin -g 已弃用 — npm 11 不支持
+4. `program.ts` 版本号硬编码 — actant --version 输出错误版本
+5. `setup.ts` skip-home 未创建目录结构 — CI 场景下目录为空
+
+### Issues Created (4)
+
+- #129 All @actant/* packages must be published as 0.1.3 (P1)
+- #127 install.ps1 Read-Host hangs in non-interactive terminals (P2)
+- #128 agent start spawn EINVAL error UX (P2)
+- #126 daemon.ping hardcoded version (P3)
+
+### Updated Files
+
+- `scripts/install.ps1` — param ordering + exit code + npm bin
+- `scripts/install.sh` — npm bin deprecation
+- `packages/cli/src/program.ts` — dynamic version from package.json
+- `packages/cli/src/commands/setup/setup.ts` — skip-home directory creation
+- `packages/cli/src/commands/setup/steps/choose-home.ts` — export ensureDirectoryStructure
+- `packages/cli/src/commands/setup/steps/index.ts` — re-export
+- `packages/api/src/services/app-context.ts` — ACTANT_SOCKET env support
+- `packages/cli/package.json` — version 0.1.3
+- `packages/cli/src/__tests__/e2e-cli.test.ts` — version assertion fix
+
+### Status
+
+[COMMITTED] **Completed** — pushed to master, 613/613 tests pass
