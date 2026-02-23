@@ -1161,3 +1161,43 @@ QA Round 2 对 Actant CLI 0.1.3 的完整安装流程进行真实环境黑盒测
 ### Status
 
 [COMMITTED] **Completed** — pushed to master, 613/613 tests pass
+
+---
+
+## Session 18 — Pi Backend Integration, Backend Open Mode Registry, Spec Updates (#121)
+
+**Date**: 2026-02-23
+**Commits**: `34b2e35`, `8bfb4d0`
+
+### Summary
+
+Implemented Pi Agent as a built-in zero-external-dependency backend for Actant, introduced an extensible Backend Open Mode Registry architecture, added `cursor-agent` backend type, and ran 5 rounds of comprehensive QA. Updated all spec docs to capture new architecture knowledge.
+
+### Key Changes
+
+| Area | Description |
+|------|-------------|
+| **BackendRegistry** | New extensible registry replacing hardcoded if/else backend logic. Each backend declares supported open modes (resolve/open/acp) via `BackendDescriptor`. |
+| **Backend Open Mode** | Three modes: `resolve` (external spawn), `open` (native UI), `acp` (Actant-managed). Registered per-backend, validated by `requireMode()`. |
+| **cursor-agent** | New backend type supporting all three modes (resolve + open + acp). |
+| **Pi ACP Bridge** | Fixed env vars (`ACTANT_*` prefix), `SessionNotification` format, `PromptRequest.prompt` field, duplicate output. |
+| **agent open** | New RPC method + CLI command for opening backend native UI via detached process. |
+| **Spec Updates** | `agent-lifecycle.md` (new §5 Backend Open Mode), `api-contracts.md` (agent.open), `config-spec.md` (cursor-agent + ACTANT_* env), `cross-platform-guide.md` (pnpm EINVAL + ACP SDK gotchas). |
+| **QA** | 5 rounds of pi-backend-comprehensive scenario: 24 PASS / 0 WARN / 0 FAIL. |
+
+### Key Gotchas Discovered
+
+1. **pnpm bin link EINVAL on Windows** — `.cmd` shims fail with `spawn EINVAL`. Fix: use `process.execPath` + absolute `.js` path via `acpResolver`.
+2. **ACP SDK PromptRequest** — User prompt in `params.prompt` (not `.content`).
+3. **ACP SDK SessionNotification** — Must use nested `{ sessionId, update: { sessionUpdate, content } }` format.
+
+### Updated Files (47 files, +3736/-278)
+
+**New files**: `backend-registry.ts`, `builtin-backends.ts`, `agent/open.ts`, `pi-backend-comprehensive.json`
+**Core changes**: `template.types.ts`, `rpc.types.ts`, `backend-resolver.ts`, `agent-manager.ts`, `app-context.ts`, `acp-bridge.ts`, `create-communicator.ts`
+**Specs**: `agent-lifecycle.md`, `api-contracts.md`, `config-spec.md`, `cross-platform-guide.md`
+**Tests**: 7 test files updated to use `claude-code` backend for ACP tests (since `cursor` no longer supports ACP mode)
+
+### Status
+
+[COMMITTED] **Completed** — pushed to master, 540/540 tests pass

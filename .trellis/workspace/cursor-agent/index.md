@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 19
+- **Total Sessions**: 20
 - **Last Active**: 2026-02-23
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1080 | Active |
+| `journal-1.md` | ~1200 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 20 | 2026-02-23 | Pi Backend, Backend Open Mode Registry, Spec Updates (#121) | `34b2e35`, `8bfb4d0` |
 | 19 | 2026-02-23 | Deep Code Quality Review | uncommitted |
 | 18 | 2026-02-23 | Issue archive mechanism + docs reorganization | `b67b01a` |
 | 17 | 2026-02-22 | Version staging system, CI issue sync, and full commit | `8f6d420` |
