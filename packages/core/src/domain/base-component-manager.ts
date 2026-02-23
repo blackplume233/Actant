@@ -1,7 +1,7 @@
 import { readFile, writeFile, readdir, stat, unlink, mkdir } from "node:fs/promises";
 import { join, extname, resolve } from "node:path";
-import { ComponentReferenceError, ConfigNotFoundError, createLogger } from "@actant/shared";
-import type { Logger } from "@actant/shared";
+import { ComponentReferenceError, ConfigNotFoundError, ConfigValidationError, createLogger } from "@actant/shared";
+import type { Logger, ConfigValidationResult } from "@actant/shared";
 
 export interface NamedComponent {
   name: string;
@@ -78,7 +78,7 @@ export abstract class BaseComponentManager<T extends NamedComponent> {
   // ---------------------------------------------------------------------------
 
   async add(component: T, persist = false): Promise<void> {
-    const validated = this.validate(component, "add");
+    const validated = this.validateOrThrow(component, "add");
     this.register(validated);
     if (persist && this.persistDir) {
       await this.writeComponent(validated);
@@ -91,7 +91,7 @@ export abstract class BaseComponentManager<T extends NamedComponent> {
       throw new ComponentReferenceError(this.componentType, name);
     }
     const merged = { ...existing, ...patch, name } as unknown;
-    const validated = this.validate(merged, "update");
+    const validated = this.validateOrThrow(merged, "update");
     this.register(validated);
     if (persist && this.persistDir) {
       await this.writeComponent(validated);
@@ -115,7 +115,7 @@ export abstract class BaseComponentManager<T extends NamedComponent> {
     const absPath = resolve(filePath);
     const raw = await readFile(absPath, "utf-8");
     const parsed = JSON.parse(raw) as unknown;
-    const component = this.validate(parsed, absPath);
+    const component = this.validateOrThrow(parsed, absPath);
     this.register(component);
     this.logger.info({ name: component.name, filePath: absPath }, `${this.componentType} imported`);
     return component;
@@ -196,7 +196,7 @@ export abstract class BaseComponentManager<T extends NamedComponent> {
         try {
           const raw = await readFile(fullPath, "utf-8");
           const parsed = JSON.parse(raw) as unknown;
-          const component = this.validate(parsed, fullPath);
+          const component = this.validateOrThrow(parsed, fullPath);
           this.register(component);
           count++;
         } catch (err) {
@@ -230,7 +230,7 @@ export abstract class BaseComponentManager<T extends NamedComponent> {
             parsed.name = entry;
           }
 
-          const component = this.validate(parsed, manifestPath);
+          const component = this.validateOrThrow(parsed, manifestPath);
           this.register(component);
           count++;
         } catch (err) {
@@ -258,10 +258,30 @@ export abstract class BaseComponentManager<T extends NamedComponent> {
   }
 
   // ---------------------------------------------------------------------------
-  // Validation (public so RPC handlers can pre-validate external input)
+  // Validation (#119) — public returns ConfigValidationResult, internal throws
   // ---------------------------------------------------------------------------
 
-  abstract validate(data: unknown, source: string): T;
+  /**
+   * Validate raw data against the component schema.
+   * Returns a structured ConfigValidationResult with errors and warnings.
+   */
+  abstract validate(data: unknown, source: string): ConfigValidationResult<T>;
+
+  /**
+   * Validate and unwrap — throws ConfigValidationError on failure.
+   * Used internally by CRUD and loading operations.
+   */
+  protected validateOrThrow(data: unknown, source: string): T {
+    const result = this.validate(data, source);
+    if (!result.valid || !result.data) {
+      throw new ConfigValidationError(
+        `Validation failed for ${this.componentType} in ${source}`,
+        result.errors.map((e) => ({ path: e.path, message: e.message })),
+        result.errors,
+      );
+    }
+    return result.data;
+  }
 
   // ---------------------------------------------------------------------------
   // Persistence helpers

@@ -1,6 +1,5 @@
 import { z } from "zod/v4";
-import type { PromptDefinition } from "@actant/shared";
-import { ConfigValidationError } from "@actant/shared";
+import type { ConfigValidationResult, PromptDefinition } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
 
 const PromptDefinitionSchema = z
@@ -42,14 +41,19 @@ export class PromptManager extends BaseComponentManager<PromptDefinition> {
     return `# System Prompts\n\n${sections.join("\n\n---\n\n")}\n`;
   }
 
-  validate(data: unknown, source: string): PromptDefinition {
+  validate(data: unknown, _source: string): ConfigValidationResult<PromptDefinition> {
     const result = PromptDefinitionSchema.safeParse(data);
     if (!result.success) {
-      throw new ConfigValidationError(
-        `Invalid prompt definition in ${source}`,
-        result.error.issues.map((i) => ({ path: i.path.map(String).join("."), message: i.message })),
-      );
+      return {
+        valid: false,
+        errors: result.error.issues.map((i) => ({
+          path: i.path.map(String).join("."),
+          message: i.message,
+          severity: "error" as const,
+        })),
+        warnings: [],
+      };
     }
-    return result.data;
+    return { valid: true, data: result.data, errors: [], warnings: [] };
   }
 }

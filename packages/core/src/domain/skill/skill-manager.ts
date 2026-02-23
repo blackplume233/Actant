@@ -1,6 +1,5 @@
 import { z } from "zod/v4";
-import type { SkillDefinition } from "@actant/shared";
-import { ConfigValidationError } from "@actant/shared";
+import type { ConfigValidationResult, SkillDefinition } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
 
 const SkillDefinitionSchema = z
@@ -29,14 +28,19 @@ export class SkillManager extends BaseComponentManager<SkillDefinition> {
     return `# Agent Skills\n\n${sections.join("\n\n---\n\n")}\n`;
   }
 
-  validate(data: unknown, source: string): SkillDefinition {
+  validate(data: unknown, _source: string): ConfigValidationResult<SkillDefinition> {
     const result = SkillDefinitionSchema.safeParse(data);
     if (!result.success) {
-      throw new ConfigValidationError(
-        `Invalid skill definition in ${source}`,
-        result.error.issues.map((i) => ({ path: i.path.map(String).join("."), message: i.message })),
-      );
+      return {
+        valid: false,
+        errors: result.error.issues.map((i) => ({
+          path: i.path.map(String).join("."),
+          message: i.message,
+          severity: "error" as const,
+        })),
+        warnings: [],
+      };
     }
-    return result.data;
+    return { valid: true, data: result.data, errors: [], warnings: [] };
   }
 }

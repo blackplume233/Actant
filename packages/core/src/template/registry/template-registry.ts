@@ -1,60 +1,50 @@
-import { writeFile, mkdir } from "node:fs/promises";
+import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import type { AgentTemplate } from "@actant/shared";
+import type { AgentTemplate, ConfigValidationResult } from "@actant/shared";
 import { TemplateNotFoundError, ConfigValidationError } from "@actant/shared";
-import { TemplateLoader } from "../loader/template-loader";
-import { createLogger } from "@actant/shared";
-
-const logger = createLogger("template-registry");
+import { BaseComponentManager } from "../../domain/base-component-manager";
+import { TemplateLoader, toAgentTemplate } from "../loader/template-loader";
+import { AgentTemplateSchema } from "../schema/template-schema";
 
 export interface RegistryOptions {
   /** If true, re-registering the same name overwrites the existing entry. Default: false */
   allowOverwrite?: boolean;
 }
 
-export class TemplateRegistry {
-  private readonly templates = new Map<string, AgentTemplate>();
+/**
+ * Template registry that extends BaseComponentManager (#119).
+ * Inherits CRUD, search/filter, import/export from the base class.
+ * Adds template-specific overrides: duplicate checking, TemplateLoader-based directory loading.
+ */
+export class TemplateRegistry extends BaseComponentManager<AgentTemplate> {
+  protected readonly componentType = "template";
   private readonly loader = new TemplateLoader();
   private readonly allowOverwrite: boolean;
-  private persistDir?: string;
 
   constructor(options?: RegistryOptions) {
+    super("template-registry");
     this.allowOverwrite = options?.allowOverwrite ?? false;
-  }
-
-  setPersistDir(dir: string): void {
-    this.persistDir = dir;
   }
 
   /**
    * Register a template. Throws if a template with the same name already exists
    * (unless allowOverwrite is enabled).
    */
-  register(template: AgentTemplate): void {
+  override register(template: AgentTemplate): void {
     if (!template.name) {
       throw new ConfigValidationError("Template name is required", [
         { path: "name", message: "name must be a non-empty string" },
       ]);
     }
 
-    if (this.templates.has(template.name) && !this.allowOverwrite) {
+    if (this.components.has(template.name) && !this.allowOverwrite) {
       throw new ConfigValidationError(
         `Template "${template.name}" is already registered`,
         [{ path: "name", message: `Duplicate template name: ${template.name}` }],
       );
     }
 
-    this.templates.set(template.name, template);
-    logger.debug({ templateName: template.name }, "Template registered");
-  }
-
-  /** Remove a template by name. Returns true if a template was removed. */
-  unregister(name: string): boolean {
-    const deleted = this.templates.delete(name);
-    if (deleted) {
-      logger.debug({ templateName: name }, "Template unregistered");
-    }
-    return deleted;
+    super.register(template);
   }
 
   /**
@@ -62,45 +52,18 @@ export class TemplateRegistry {
    * @throws {TemplateNotFoundError} if not found
    */
   getOrThrow(name: string): AgentTemplate {
-    const template = this.templates.get(name);
+    const template = this.components.get(name);
     if (!template) {
       throw new TemplateNotFoundError(name);
     }
     return template;
   }
 
-  /** Get a template by name, returns undefined if not found. */
-  get(name: string): AgentTemplate | undefined {
-    return this.templates.get(name);
-  }
-
-  /** Check if a template with the given name is registered. */
-  has(name: string): boolean {
-    return this.templates.has(name);
-  }
-
-  /** List all registered templates. */
-  list(): AgentTemplate[] {
-    return Array.from(this.templates.values());
-  }
-
-  /** Get the count of registered templates. */
-  get size(): number {
-    return this.templates.size;
-  }
-
-  /** Remove all registered templates. */
-  clear(): void {
-    this.templates.clear();
-    logger.debug("All templates cleared");
-  }
-
   /**
-   * Load templates from a directory. Matches the BaseComponentManager interface
-   * so TemplateRegistry can participate in the unified loadDomainComponents flow.
+   * Load templates from a directory using TemplateLoader (JSON + Zod validation).
    * Invalid files are skipped with a warning log.
    */
-  async loadFromDirectory(dirPath: string): Promise<number> {
+  override async loadFromDirectory(dirPath: string): Promise<number> {
     const templates = await this.loader.loadFromDirectory(dirPath);
     let count = 0;
     for (const tpl of templates) {
@@ -108,13 +71,13 @@ export class TemplateRegistry {
         this.register(tpl);
         count++;
       } catch (err) {
-        logger.warn(
+        this.logger.warn(
           { templateName: tpl.name, error: err },
           "Failed to register template, skipping",
         );
       }
     }
-    logger.info({ count, dirPath }, "Templates loaded from directory");
+    this.logger.info({ count, dirPath }, "Templates loaded from directory");
     return count;
   }
 
@@ -123,11 +86,32 @@ export class TemplateRegistry {
     return this.loadFromDirectory(configDir);
   }
 
+  /**
+   * Validate raw data as an AgentTemplate using the Zod schema.
+   * Returns structured ConfigValidationResult (#119).
+   */
+  validate(data: unknown, _source: string): ConfigValidationResult<AgentTemplate> {
+    const result = AgentTemplateSchema.safeParse(data);
+    if (!result.success) {
+      return {
+        valid: false,
+        errors: result.error.issues.map((issue) => ({
+          path: issue.path.map(String).join("."),
+          message: issue.message,
+          severity: "error" as const,
+        })),
+        warnings: [],
+      };
+    }
+    return { valid: true, data: toAgentTemplate(result.data), errors: [], warnings: [] };
+  }
+
   async persist(template: AgentTemplate): Promise<void> {
     if (!this.persistDir) return;
     await mkdir(this.persistDir, { recursive: true });
     const filePath = join(this.persistDir, `${template.name}.json`);
+    const { writeFile } = await import("node:fs/promises");
     await writeFile(filePath, JSON.stringify(template, null, 2) + "\n", "utf-8");
-    logger.debug({ templateName: template.name, filePath }, "Template persisted");
+    this.logger.debug({ templateName: template.name, filePath }, "Template persisted");
   }
 }

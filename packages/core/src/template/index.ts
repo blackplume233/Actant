@@ -1,13 +1,25 @@
 export {
   AgentTemplateSchema,
+  ComponentOriginSchema,
   DomainContextSchema,
   AgentBackendSchema,
   ModelProviderSchema,
   InitializerSchema,
   InitializerStepSchema,
   McpServerRefSchema,
+  PermissionsInputSchema,
+  PermissionsObjectSchema,
+  PermissionPresetSchema,
   type AgentTemplateInput,
   type AgentTemplateOutput,
 } from "./schema/template-schema";
-export { TemplateLoader } from "./loader/template-loader";
+export {
+  validateBackendConfig,
+  validateProviderConfig,
+  validatePermissionsConfig,
+  validateScheduleConfig,
+  validateDomainContextConfig,
+  validateTemplate,
+} from "./schema/config-validators";
+export { TemplateLoader, toAgentTemplate } from "./loader/template-loader";
 export { TemplateRegistry, type RegistryOptions } from "./registry/template-registry";

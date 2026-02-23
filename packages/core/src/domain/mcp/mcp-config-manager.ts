@@ -1,6 +1,5 @@
 import { z } from "zod/v4";
-import type { McpServerDefinition } from "@actant/shared";
-import { ConfigValidationError } from "@actant/shared";
+import type { ConfigValidationResult, McpServerDefinition } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
 
 const McpServerDefinitionSchema = z
@@ -36,14 +35,19 @@ export class McpConfigManager extends BaseComponentManager<McpServerDefinition> 
     return { mcpServers };
   }
 
-  validate(data: unknown, source: string): McpServerDefinition {
+  validate(data: unknown, _source: string): ConfigValidationResult<McpServerDefinition> {
     const result = McpServerDefinitionSchema.safeParse(data);
     if (!result.success) {
-      throw new ConfigValidationError(
-        `Invalid MCP server definition in ${source}`,
-        result.error.issues.map((i) => ({ path: i.path.map(String).join("."), message: i.message })),
-      );
+      return {
+        valid: false,
+        errors: result.error.issues.map((i) => ({
+          path: i.path.map(String).join("."),
+          message: i.message,
+          severity: "error" as const,
+        })),
+        warnings: [],
+      };
     }
-    return result.data;
+    return { valid: true, data: result.data, errors: [], warnings: [] };
   }
 }

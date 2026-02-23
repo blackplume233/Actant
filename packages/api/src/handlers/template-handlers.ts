@@ -63,7 +63,13 @@ async function handleTemplateValidate(
   const { filePath } = params as unknown as TemplateValidateParams;
   try {
     const template = await ctx.templateLoader.loadFromFile(filePath);
-    return { valid: true, template };
+    const { validateTemplate } = await import("@actant/core");
+    const deep = validateTemplate(template);
+    return {
+      valid: true,
+      template,
+      warnings: deep.warnings.map((w) => ({ path: w.path, message: w.message })),
+    };
   } catch (err) {
     const validationErrors = (err as { validationErrors?: Array<{ path: string; message: string }> }).validationErrors;
     return {

@@ -1,4 +1,5 @@
 import type { DomainContextConfig } from "./domain-context.types";
+import type { VersionedComponent } from "./domain-component.types";
 
 // ---------------------------------------------------------------------------
 // Permission types — aligned with Claude Code permissions structure (#51)
@@ -37,13 +38,12 @@ export interface PermissionsConfig {
 export type PermissionsInput = PermissionPreset | PermissionsConfig;
 
 // ---------------------------------------------------------------------------
-// Agent Template
+// Agent Template — extends VersionedComponent (#119)
 // ---------------------------------------------------------------------------
 
-export interface AgentTemplate {
-  name: string;
+export interface AgentTemplate extends VersionedComponent {
+  /** Required override: templates must have an explicit semver version. */
   version: string;
-  description?: string;
   backend: AgentBackendConfig;
   provider: ModelProviderConfig;
   domainContext: DomainContextConfig;

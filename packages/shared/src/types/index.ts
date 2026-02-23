@@ -37,6 +37,11 @@ export type {
   PluginDefinition,
 } from "./domain-component.types";
 export type {
+  ValidationSeverity,
+  ValidationIssue,
+  ConfigValidationResult,
+} from "./validation.types";
+export type {
   SourceConfig,
   GitHubSourceConfig,
   LocalSourceConfig,

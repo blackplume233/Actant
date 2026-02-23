@@ -83,13 +83,29 @@ export const PermissionsInputSchema = z.union([
 ]);
 
 // ---------------------------------------------------------------------------
-// Agent Template schema
+// Component origin schema — shared VersionedComponent envelope fields (#119)
+// ---------------------------------------------------------------------------
+
+export const ComponentOriginSchema = z.object({
+  type: z.enum(["builtin", "source", "local"]),
+  sourceName: z.string().optional(),
+  syncHash: z.string().optional(),
+  syncedAt: z.string().optional(),
+  modified: z.boolean().optional(),
+});
+
+// ---------------------------------------------------------------------------
+// Agent Template schema — includes VersionedComponent fields (#119)
 // ---------------------------------------------------------------------------
 
 export const AgentTemplateSchema = z.object({
   name: z.string().min(1).max(100),
   version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be semver format (e.g. 1.0.0)"),
   description: z.string().optional(),
+  $type: z.string().optional(),
+  $version: z.number().optional(),
+  origin: ComponentOriginSchema.optional(),
+  tags: z.array(z.string()).optional(),
   backend: AgentBackendSchema,
   provider: ModelProviderSchema,
   domainContext: DomainContextSchema,

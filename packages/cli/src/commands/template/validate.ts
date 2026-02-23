@@ -13,6 +13,12 @@ export function createTemplateValidateCommand(client: RpcClient, printer: CliPri
         const result = await client.call("template.validate", { filePath: resolve(file) });
         if (result.valid && result.template) {
           printer.log(`${chalk.green("Valid")} — ${result.template.name}@${result.template.version}`);
+          if (result.warnings?.length) {
+            printer.log(chalk.yellow(`  ${result.warnings.length} warning(s):`));
+            for (const w of result.warnings) {
+              printer.log(chalk.yellow(`  - ${w.path}: ${w.message}`));
+            }
+          }
         } else {
           printer.error(chalk.red("Invalid template"));
           if (result.errors) {

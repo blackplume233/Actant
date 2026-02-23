@@ -1,4 +1,5 @@
 import { ActantError, type ErrorCategory } from "./base-error";
+import type { ValidationIssue } from "../types/validation.types";
 
 export class ConfigNotFoundError extends ActantError {
   readonly code = "CONFIG_NOT_FOUND";
@@ -19,6 +20,8 @@ export class ConfigValidationError extends ActantError {
       path: string;
       message: string;
     }>,
+    /** Structured validation issues with severity (#119) */
+    public readonly issues?: ValidationIssue[],
   ) {
     super(message, { validationErrors });
   }

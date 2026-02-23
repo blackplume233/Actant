@@ -39,9 +39,8 @@ function createCrudHandlers<T extends NamedComponent>(
     add: async (params: Record<string, unknown>, ctx: AppContext) => {
       const { component } = params as unknown as ComponentAddParams;
       const mgr = getManager(ctx);
-      const validated = mgr.validate(component, "rpc-add");
-      await mgr.add(validated, true);
-      return { name: validated.name };
+      await mgr.add(component as T, true);
+      return { name: (component as { name: string }).name };
     },
     update: async (params: Record<string, unknown>, ctx: AppContext) => {
       const { name, patch } = params as unknown as ComponentUpdateParams;

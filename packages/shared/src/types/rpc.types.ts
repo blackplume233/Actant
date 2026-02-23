@@ -91,6 +91,8 @@ export interface TemplateValidateResult {
   valid: boolean;
   template?: AgentTemplate;
   errors?: Array<{ path: string; message: string }>;
+  /** Warnings that don't prevent loading but indicate potential issues (#119) */
+  warnings?: Array<{ path: string; message: string }>;
 }
 
 // agent.*

@@ -100,11 +100,15 @@ export class TemplateLoader {
  * Map Zod's output (with defaults applied) to the shared AgentTemplate type.
  * This ensures the return type satisfies the interface contract exactly.
  */
-function toAgentTemplate(output: AgentTemplateOutput): AgentTemplate {
+export function toAgentTemplate(output: AgentTemplateOutput): AgentTemplate {
   return {
     name: output.name,
     version: output.version,
     description: output.description,
+    $type: output.$type,
+    $version: output.$version,
+    origin: output.origin,
+    tags: output.tags,
     backend: output.backend,
     provider: output.provider,
     domainContext: {
