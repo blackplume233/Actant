@@ -24,7 +24,9 @@ export const AgentBackendSchema = z.object({
 });
 
 export const ModelProviderSchema = z.object({
-  type: z.enum(["anthropic", "openai", "custom"]),
+  type: z.enum(["anthropic", "openai", "openai-compatible", "custom"]),
+  protocol: z.enum(["http", "websocket", "grpc"]).optional().default("http"),
+  baseUrl: z.string().optional(),
   config: z.record(z.string(), z.unknown()).optional(),
 });
 

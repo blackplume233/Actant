@@ -44,8 +44,37 @@ jobs:
           name: ${{ matrix.artifact }}
           path: dist-standalone/${{ matrix.binary }}
 
+  pack:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm build
+
+      - name: Pack CLI tarball
+        run: |
+          cd packages/cli
+          pnpm pack --pack-destination ../../dist-pack/
+
+      - name: Rename to stable filename
+        run: mv dist-pack/actant-cli-*.tgz dist-pack/actant-cli.tgz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: actant-cli-tarball
+          path: dist-pack/actant-cli.tgz
+
   release:
-    needs: build
+    needs: [build, pack]
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
@@ -59,6 +88,7 @@ jobs:
           cp artifacts/actant-linux-x64/actant release/actant-linux-x64
           cp artifacts/actant-darwin-arm64/actant release/actant-darwin-arm64
           cp artifacts/actant-win-x64/actant.exe release/actant-win-x64.exe
+          cp artifacts/actant-cli-tarball/actant-cli.tgz release/actant-cli.tgz
           chmod +x release/actant-linux-x64 release/actant-darwin-arm64
 
       - name: Upload to GitHub Release

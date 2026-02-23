@@ -12,3 +12,4 @@ export { createScheduleCommand } from "./schedule/index";
 export { createDaemonCommand } from "./daemon/index";
 export { createProxyCommand } from "./proxy";
 export { createSelfUpdateCommand } from "./self-update";
+export { createSetupCommand } from "./setup/setup";

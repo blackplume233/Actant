@@ -68,10 +68,12 @@ export type AgentBackendType = "cursor" | "claude-code" | "custom";
 
 export interface ModelProviderConfig {
   type: ModelProviderType;
+  protocol?: "http" | "websocket" | "grpc";
+  baseUrl?: string;
   config?: Record<string, unknown>;
 }
 
-export type ModelProviderType = "anthropic" | "openai" | "custom";
+export type ModelProviderType = "anthropic" | "openai" | "openai-compatible" | "custom";
 
 export interface InitializerConfig {
   steps: InitializerStep[];

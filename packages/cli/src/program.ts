@@ -16,6 +16,7 @@ import {
   createProxyCommand,
   createHelpCommand,
   createSelfUpdateCommand,
+  createSetupCommand,
 } from "./commands/index";
 import { presentError, type CliPrinter } from "./output/index";
 
@@ -46,6 +47,7 @@ export function createProgram(socketPath?: string, printer?: CliPrinter): Comman
   program.addCommand(createProxyCommand(printer));
   program.addCommand(createHelpCommand());
   program.addCommand(createSelfUpdateCommand());
+  program.addCommand(createSetupCommand(printer));
 
   program.exitOverride();
 
