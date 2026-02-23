@@ -1,7 +1,7 @@
 ---
 id: 119
 title: "统一配置抽象：AgentTemplate 继承 VersionedComponent + 全局配置校验体系"
-status: open
+status: closed
 labels:
   - architecture
   - enhancement
@@ -29,7 +29,7 @@ githubRef: "blackplume233/Actant#119"
 closedAs: null
 createdAt: 2026-02-23
 updatedAt: 2026-02-23
-closedAt: null
+closedAt: 2026-02-23
 ---
 
 **Related Issues**: [[0106-shareable-component-versioning]]

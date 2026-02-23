@@ -14,11 +14,47 @@
 
 1. **代码质量** — 运行 `pnpm lint`、`pnpm type-check`、`pnpm test`
 2. **代码模式扫描** — 检查 `console.log`、`any` 类型、非空断言
-3. **文档同步** — 判断 `.trellis/spec/` 是否需要更新
+3. **Spec 文档同步** — **必须检查**，按下方规则判断是否需要更新
 4. **API / 数据库 / 跨层变更** — 按变更范围检查对应项
 
 如果命令因依赖未安装而失败，标记为 "⚠️ 跳过" 并继续。
 如果有实质性错误（❌），**停止流程**，先修复再重新执行。
+
+#### 1.3 Spec 文档同步检查（强制）
+
+Spec 文档同步是 **必选项**（❌ 级别），不通过则阻止提交。
+
+**检测方法**：分析本次变更涉及的文件和代码，判断是否命中以下触发条件。
+
+| 触发条件 | 需更新的 Spec 文档 |
+|---------|------------------|
+| `packages/shared/src/types/` 下类型定义变更（新增/删除/改签名） | `config-spec.md` |
+| `packages/core/src/template/schema/` 下 Zod schema 变更 | `config-spec.md` |
+| 环境变量增删改 | `config-spec.md` |
+| `packages/shared/src/types/rpc.types.ts` 中 RPC 方法/参数/返回变更 | `api-contracts.md` |
+| `packages/api/src/handlers/` 中 handler 行为变更 | `api-contracts.md` |
+| `packages/cli/src/commands/` 中命令签名/选项变更 | `api-contracts.md` |
+| 错误码增删改 | `api-contracts.md` |
+| 内部契约接口（Launcher/Manager/Communicator）签名变更 | `api-contracts.md` |
+
+**判断流程**：
+1. 运行 `git diff --name-only` 获取变更文件列表
+2. 匹配上述触发路径
+3. 若命中，检查对应 spec 文档是否也在变更列表中
+4. 若 spec 文档未更新，标记为 **❌ spec 未同步**，列出需要更新的文档和触发原因
+5. **立即中止 ship 流程**，不进入 Phase 2
+
+**重要：ship 不负责修改 spec 文件。** 检测到不同步时，输出诊断信息后终止，要求用户先通过 `/trellis-update-spec` 或手动更新 spec 文档，然后重新执行 `/trellis-ship`。
+
+**输出格式（中止时）**：
+```
+spec 文档同步检查：
+  - config-spec.md: ❌ 需更新（检测到 packages/shared/src/types/ 变更）
+  - api-contracts.md: ✅ 已同步
+
+❌ Ship 已中止：spec 文档未同步。
+请先更新以上标记为 ❌ 的 spec 文档，然后重新执行 /trellis-ship。
+```
 
 #### 输出审查报告
 
@@ -33,7 +69,8 @@
 | console.log | ✅ 无 / ❌ 发现 N 处 |
 | any 类型 | ✅ 无 / ❌ 发现 N 处 |
 | 非空断言 | ✅ 无 / ❌ 发现 N 处 |
-| spec 文档同步 | ✅ 已同步 / ⚠️ 建议更新 |
+| spec/config-spec.md | ✅ 已同步 / ❌ 需更新 / — 无关 |
+| spec/api-contracts.md | ✅ 已同步 / ❌ 需更新 / — 无关 |
 ```
 
 ---
@@ -157,15 +194,19 @@ git push origin <当前分支>
 开发流程:
   编写代码 → 测试 → /trellis-ship → /trellis-record-session
                       |
-          ┌───────────┼───────────┬────────────┐
-          ↓           ↓           ↓            ↓
-   /trellis-finish-work  Commit    Push     Issue Sync
-    （审查清单）      （提交）   （推送）  （同步 Issue）
+          ┌───────────┼──────────────┬────────────┐
+          ↓           ↓              ↓            ↓
+   Phase 1: Review    Phase 2:     Phase 3:    Phase 4:
+   ├─ 代码质量        Commit       Push        Issue Sync
+   ├─ 模式扫描
+   └─ Spec 同步 (❌ 阻断)
+       ├─ config-spec.md
+       └─ api-contracts.md
 ```
 
 | 命令 | 职责 |
 |------|------|
 | `/trellis-finish-work` | 审查清单（被本命令调用） |
-| `/trellis-ship` | 审查 + 提交 + 推送 + Issue 同步（本命令） |
+| `/trellis-ship` | 审查 + Spec 同步 + 提交 + 推送 + Issue 同步（本命令） |
 | `/trellis-record-session` | 记录会话和进度 |
 | `/trellis-update-spec` | 更新规范文档 |

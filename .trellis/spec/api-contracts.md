@@ -160,7 +160,28 @@ Actant 的接口架构（两层协议分工）：
 | `template.get` | `{ name }` | `AgentTemplate` | `TEMPLATE_NOT_FOUND` |
 | `template.load` | `{ filePath }` | `AgentTemplate` | `CONFIG_VALIDATION` |
 | `template.unload` | `{ name }` | `{ success }` | — |
-| `template.validate` | `{ filePath }` | `{ valid, template?, errors? }` | — |
+| `template.validate` | `{ filePath }` | `{ valid, template?, errors?, warnings? }` | — |
+
+#### template.validate 返回值（#119 增强）
+
+除 `valid`、`template`、`errors` 外，新增 `warnings` 字段。执行两层校验：
+1. **Schema 校验** — Zod 结构验证，失败时 `valid: false` + `errors`
+2. **语义校验** — 通过 `validateTemplate()` 执行跨字段检查，结果写入 `warnings`
+
+```typescript
+interface TemplateValidateResult {
+  valid: boolean;
+  template?: AgentTemplate;
+  errors?: Array<{ path: string; message: string }>;
+  warnings?: Array<{ path: string; message: string }>;
+}
+```
+
+CLI `template validate <file>` 输出格式：
+- 校验通过时：`Valid — <name>@<version>`，有警告时逐条输出
+- 校验失败时：显示错误列表
+
+> 实现参考：`packages/api/src/handlers/template-handlers.ts`，`packages/cli/src/commands/template/validate.ts`
 
 ### 3.2 Agent 生命周期
 
@@ -384,7 +405,7 @@ Daemon → AgentManager.runPrompt()
 | `plugin.import` | `{ filePath }` | `{ name, success }` | `CONFIG_VALIDATION` |
 | `plugin.export` | `{ name, filePath }` | `{ filePath, success }` | `CONFIG_NOT_FOUND` |
 
-> `createCrudHandlers` 工厂函数为每种组件类型生成统一的 CRUD handlers。
+> `createCrudHandlers` 工厂函数为每种组件类型生成统一的 CRUD handlers。校验由 `BaseComponentManager.add()` 内部调用 `validateOrThrow()` 完成，失败时抛出 `ConfigValidationError`。
 
 #### 组件类型定义
 
@@ -734,7 +755,48 @@ interface AgentLauncher {
 
 工厂函数 `createLauncher(config?)` 根据 `config.mode` 或 `ACTANT_LAUNCHER_MODE` 选择实现。
 
-### 5.2 HandlerRegistry
+### 5.2 BaseComponentManager（#119 重构）
+
+所有领域组件 Manager（SkillManager、PromptManager、WorkflowManager、McpConfigManager、PluginManager）和 TemplateRegistry 的公共基类。提供 CRUD、持久化、目录加载等通用操作。
+
+```typescript
+abstract class BaseComponentManager<T extends NamedComponent> {
+  abstract validate(data: unknown, source: string): ConfigValidationResult<T>;
+  protected validateOrThrow(data: unknown, source: string): T;
+
+  register(component: T): void;
+  unregister(name: string): boolean;
+  get(name: string): T | undefined;
+  has(name: string): boolean;
+  resolve(names: string[]): T[];
+  list(): T[];
+
+  async add(component: T, persist?: boolean): Promise<void>;
+  async update(name: string, patch: Partial<T>, persist?: boolean): Promise<T>;
+  async remove(name: string, persist?: boolean): Promise<boolean>;
+
+  async importFromFile(filePath: string): Promise<T>;
+  async exportToFile(name: string, filePath: string): Promise<void>;
+  async loadFromDirectory(dirPath: string): Promise<number>;
+}
+```
+
+**校验机制**（#119）：
+- `validate()` — 公共方法，返回 `ConfigValidationResult<T>`，包含结构化的 errors 和 warnings
+- `validateOrThrow()` — 内部方法，校验失败时抛出 `ConfigValidationError`；被 `add()`、`update()`、`importFromFile()`、`loadFromDirectory()` 使用
+
+| 实现 | 管理对象 | 说明 |
+|------|---------|------|
+| `SkillManager` | `SkillDefinition` | — |
+| `PromptManager` | `PromptDefinition` | — |
+| `WorkflowManager` | `WorkflowDefinition` | — |
+| `McpConfigManager` | `McpServerDefinition` | — |
+| `PluginManager` | `PluginDefinition` | — |
+| `TemplateRegistry` | `AgentTemplate` | 继承 BaseComponentManager；自定义 `loadFromDirectory()`（使用 TemplateLoader）和重复检查逻辑 |
+
+> 实现参考：`packages/core/src/domain/base-component-manager.ts`, `packages/core/src/template/registry/template-registry.ts`
+
+### 5.3 HandlerRegistry
 
 RPC 方法与处理函数的注册表。
 
@@ -749,7 +811,7 @@ interface HandlerRegistry {
 }
 ```
 
-### 5.3 RpcClient
+### 5.4 RpcClient
 
 CLI 端的 RPC 客户端。
 
@@ -764,7 +826,7 @@ interface RpcClient {
 - `RpcCallError` — RPC 返回错误：`{ message, code, data? }`
 - `ConnectionError` — Socket 连接失败：`{ socketPath, cause }`
 
-### 5.4 AgentCommunicator
+### 5.5 AgentCommunicator
 
 Agent 后端通信的抽象接口。不同 backend（claude-code、cursor）实现各自的通信协议。
 
@@ -804,7 +866,7 @@ interface RunPromptOptions {
 
 > 实现参考：`packages/core/src/communicator/`，`packages/acp/src/communicator.ts`
 
-### 5.5 CLI 错误展示
+### 5.6 CLI 错误展示
 
 CLI 层按以下优先级处理错误：
 

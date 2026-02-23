@@ -10,24 +10,34 @@
 Actant 的配置体系分为三层：
 
 ```
-AgentTemplate          用户编写的模板文件，定义 Agent 的组成
+VersionedComponent     所有可共享组件的基类（#119）
     │
-    │  validate + create
-    ▼
-AgentInstanceMeta      运行时实例的持久化状态（.actant.json）
+    ├── AgentTemplate          用户编写的模板文件，定义 Agent 的组成
+    │       │
+    │       │  validate + create
+    │       ▼
+    │   AgentInstanceMeta      运行时实例的持久化状态（.actant.json）
+    │       │
+    │       │  resolve
+    │       ▼
+    │   AppConfig              守护进程的运行时配置（路径、环境变量）
     │
-    │  resolve
-    ▼
-AppConfig              守护进程的运行时配置（路径、环境变量）
+    ├── SkillDefinition
+    ├── PromptDefinition
+    ├── WorkflowDefinition
+    ├── McpServerDefinition
+    └── PluginDefinition
 ```
 
-所有配置在入口处使用 **Zod** 进行运行时校验。TypeScript 类型从 Zod Schema 推导或手动对齐。
+所有配置在入口处使用 **Zod** 进行运行时校验。校验结果统一返回 [`ConfigValidationResult`](#4-configvalidationresult--统一校验结果119)，包含结构化的错误和警告。TypeScript 类型从 Zod Schema 推导或手动对齐。
 
 ---
 
 ## 1. AgentTemplate — 模板配置
 
 模板是用户定义 Agent 组成的核心配置文件。JSON 格式，通过 CLI 加载。
+
+AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），与所有领域组件共享版本跟踪和来源元数据的基础字段。
 
 > 实现参考：`packages/shared/src/types/template.types.ts`, `packages/core/src/template/schema/template-schema.ts`
 
@@ -36,11 +46,16 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `name` | `string` | **是** | 模板唯一名称（1–100 字符） |
-| `version` | `string` | **是** | 语义化版本号（`x.y.z`） |
+| `version` | `string` | **是** | 语义化版本号（`x.y.z`）；覆盖 VersionedComponent 的可选 version |
 | `description` | `string` | 否 | 人类可读描述 |
+| `$type` | `string` | 否 | 组件类型标识符（继承自 VersionedComponent） |
+| `$version` | `number` | 否 | 清单 schema 版本号（继承自 VersionedComponent） |
+| `origin` | [`ComponentOrigin`](#componentorigin) | 否 | 组件来源跟踪（继承自 VersionedComponent） |
+| `tags` | `string[]` | 否 | 分类标签（继承自 VersionedComponent） |
 | `backend` | [`AgentBackendConfig`](#agentbackendconfig) | **是** | Agent 后端运行时 |
 | `provider` | [`ModelProviderConfig`](#modelproviderconfig) | **是** | 模型提供商 |
 | `domainContext` | [`DomainContextConfig`](#domaincontextconfig) | **是** | 领域上下文组合 |
+| `permissions` | [`PermissionsInput`](#permissionsinput) | 否 | 工具/文件/网络权限控制 |
 | `initializer` | [`InitializerConfig`](#initializerconfig) | 否 | 自定义初始化流程 |
 | `schedule` | [`ScheduleConfig`](#scheduleconfig) | 否 | 雇员型调度配置（Phase 3c 新增） |
 | `metadata` | `Record<string, string>` | 否 | 任意键值元数据 |
@@ -155,6 +170,7 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
   "name": "code-review-agent",
   "version": "1.0.0",
   "description": "Code review specialist",
+  "tags": ["review", "quality"],
   "backend": {
     "type": "cursor",
     "config": {}
@@ -256,27 +272,121 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 
 ---
 
-## 3. Domain Context 组件定义
+## 3. VersionedComponent — 组件基类（#119）
 
-领域上下文由四类组件组成，通过名称引用、由 Manager 统一管理。
+所有可共享组件的公共基类接口。AgentTemplate 和全部领域组件（Skill、Prompt、Workflow、McpServer、Plugin）都继承自此接口，共享版本跟踪和来源元数据。
+
+> 实现参考：`packages/shared/src/types/domain-component.types.ts`
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | `string` | **是** | 组件唯一名称 |
+| `version` | `string` | 否 | 语义化版本号；未设则默认 `"0.0.0"` |
+| `description` | `string` | 否 | 人类可读描述 |
+| `$type` | `string` | 否 | 组件类型标识符（用于 manifest.json 信封，#58） |
+| `$version` | `number` | 否 | 清单 Schema 版本号（#58） |
+| `origin` | [`ComponentOrigin`](#componentorigin) | 否 | 组件来源跟踪 |
+| `tags` | `string[]` | 否 | 分类标签 |
+
+### ComponentOrigin
+
+记录组件的来源信息，用于 Source Registry 同步和版本追踪。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `type` | `"builtin" \| "source" \| "local"` | **是** | 来源类型 |
+| `sourceName` | `string` | 否 | Source 包名（`type: "source"` 时） |
+| `syncHash` | `string` | 否 | 上次同步时的内容 hash |
+| `syncedAt` | `string` | 否 | ISO 8601 同步时间 |
+| `modified` | `boolean` | 否 | 用户是否本地修改过同步副本 |
+
+### 继承关系
+
+```
+VersionedComponent           ← 基类
+  ├── AgentTemplate          ← version 字段必填（覆盖基类的可选）
+  ├── SkillDefinition        ← + content
+  ├── PromptDefinition       ← + content, variables
+  ├── WorkflowDefinition     ← + content
+  ├── McpServerDefinition    ← + command, args, env
+  └── PluginDefinition       ← + type, source, config, enabled
+```
+
+---
+
+## 4. ConfigValidationResult — 统一校验结果（#119）
+
+所有配置校验（模板、领域组件、子配置）均返回此统一结构，包含结构化的错误和警告。
+
+> 实现参考：`packages/shared/src/types/validation.types.ts`
+
+### ConfigValidationResult\<T\>
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `valid` | `boolean` | 校验是否通过 |
+| `data` | `T` | 校验通过时的有效数据 |
+| `errors` | `ValidationIssue[]` | 致命错误列表（`valid = false` 时非空） |
+| `warnings` | `ValidationIssue[]` | 非致命警告列表（不阻止加载） |
+
+### ValidationIssue
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `path` | `string` | **是** | 问题字段的点分路径（如 `"domainContext.skills"`） |
+| `message` | `string` | **是** | 人类可读描述 |
+| `severity` | `"error" \| "warning" \| "info"` | **是** | 严重程度 |
+| `code` | `string` | 否 | 机器可读代码（如 `"PERMISSION_OVERLAP"`） |
+
+### 内置语义警告代码
+
+以下是 `validateTemplate()` 和各子配置校验器可能返回的语义警告：
+
+| 代码 | 路径 | 含义 |
+|------|------|------|
+| `PERMISSION_OVERLAP` | `permissions` | allow 和 deny 中存在重复规则 |
+| `SHORT_HEARTBEAT_INTERVAL` | `schedule.heartbeat.intervalMs` | 心跳间隔 < 5000ms，可能导致过多 API 调用 |
+| `EMPTY_DOMAIN_WITH_SUBAGENTS` | `domainContext` | 定义了 subAgents 但无 skills/prompts |
+| `CUSTOM_BACKEND_NO_CONFIG` | `backend.config` | 自定义后端类型但未提供 config |
+| `CUSTOM_PROVIDER_NO_CONFIG` | `provider.config` | 自定义提供商但未提供 config |
+
+### 独立子配置校验器
+
+可单独校验模板的各子配置块：
+
+| 函数 | 校验目标 | 返回类型 |
+|------|---------|---------|
+| `validateBackendConfig(data)` | `AgentBackendConfig` | `ConfigValidationResult<AgentBackendConfig>` |
+| `validateProviderConfig(data)` | `ModelProviderConfig` | `ConfigValidationResult<ModelProviderConfig>` |
+| `validatePermissionsConfig(data)` | `PermissionsInput` | `ConfigValidationResult<PermissionsInput>` |
+| `validateScheduleConfig(data)` | `ScheduleConfig` | `ConfigValidationResult<ScheduleConfig>` |
+| `validateDomainContextConfig(data)` | `DomainContextConfig` | `ConfigValidationResult<DomainContextConfig>` |
+| `validateTemplate(data)` | `AgentTemplate` | `ConfigValidationResult<AgentTemplate>` |
+
+> 实现参考：`packages/core/src/template/schema/config-validators.ts`
+
+---
+
+## 5. Domain Context 组件定义
+
+领域上下文由五类组件组成，通过名称引用、由 Manager 统一管理。所有组件类型均继承自 [`VersionedComponent`](#3-versionedcomponent--组件基类119)，共享 `name`、`version`、`description`、`origin`、`tags` 等字段。
 
 > 实现参考：`packages/shared/src/types/domain-component.types.ts`, `packages/core/src/domain/`
+
+以下仅列出各类型**自有字段**（继承字段见 VersionedComponent）。
 
 ### SkillDefinition
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `name` | `string` | **是** | 唯一名称 |
-| `description` | `string` | 否 | 描述 |
+| *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
 | `content` | `string` | **是** | 规则/知识内容 |
-| `tags` | `string[]` | 否 | 分类标签 |
 
 ### PromptDefinition
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `name` | `string` | **是** | 唯一名称 |
-| `description` | `string` | 否 | 描述 |
+| *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
 | `content` | `string` | **是** | 提示词文本（支持 `{{variable}}` 插值） |
 | `variables` | `string[]` | 否 | 声明的变量名 |
 
@@ -284,16 +394,14 @@ AppConfig              守护进程的运行时配置（路径、环境变量）
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `name` | `string` | **是** | 唯一名称 |
-| `description` | `string` | 否 | 描述 |
+| *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
 | `content` | `string` | **是** | 工作流内容 |
 
 ### McpServerDefinition
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `name` | `string` | **是** | 服务器标识符 |
-| `description` | `string` | 否 | 描述 |
+| *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
 | `command` | `string` | **是** | 可执行命令 |
 | `args` | `string[]` | 否 | 命令参数 |
 | `env` | `Record<string, string>` | 否 | 环境变量 |
@@ -304,8 +412,7 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `name` | `string` | **是** | 唯一名称 |
-| `description` | `string` | 否 | 描述 |
+| *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
 | `type` | `"npm" \| "file" \| "config"` | **是** | 安装方式 |
 | `source` | `string` | 否 | npm 包名 / 文件路径 / 配置 ID |
 | `config` | `Record<string, unknown>` | 否 | 插件特定配置 |
@@ -317,7 +424,7 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 
 ---
 
-## 4. AppConfig — 应用运行时配置
+## 6. AppConfig — 应用运行时配置
 
 守护进程启动时的配置项，决定数据存储位置和运行模式。
 
@@ -348,7 +455,7 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 
 ---
 
-## 5. 平台与 IPC
+## 7. 平台与 IPC
 
 ### Socket 路径规则
 
@@ -371,7 +478,7 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 
 ---
 
-## 6. 后端解析规则
+## 8. 后端解析规则
 
 根据 `backendType` 确定可执行命令和启动参数。
 
@@ -393,7 +500,7 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 
 ---
 
-## 7. EnvChannel — 环境请求路由
+## 9. EnvChannel — 环境请求路由
 
 Daemon 内部配置，决定 Agent 的环境请求（`fs/readTextFile` 等 ACP 回调）如何处理。
 
@@ -410,7 +517,7 @@ type EnvChannel =
 
 ---
 
-## 8. ProxySession — Proxy 会话状态
+## 10. ProxySession — Proxy 会话状态
 
 Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
 
@@ -424,7 +531,7 @@ Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
 
 ---
 
-## 9. 环境变量
+## 11. 环境变量
 
 | 变量 | 作用 | 默认值 |
 |------|------|--------|
