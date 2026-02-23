@@ -64,7 +64,7 @@ export interface AgentBackendConfig {
   config?: Record<string, unknown>;
 }
 
-export type AgentBackendType = "cursor" | "claude-code" | "custom";
+export type AgentBackendType = "cursor" | "claude-code" | "custom" | "pi";
 
 export interface ModelProviderConfig {
   type: ModelProviderType;

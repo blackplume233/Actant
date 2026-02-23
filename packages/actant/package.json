@@ -1,0 +1,79 @@
+{
+  "name": "actant",
+  "version": "0.1.3",
+  "description": "A platform for building, managing, and composing AI agents",
+  "type": "module",
+  "license": "MIT",
+  "author": "blackplume <blackplume233@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blackplume233/Actant.git"
+  },
+  "homepage": "https://github.com/blackplume233/Actant#readme",
+  "bugs": "https://github.com/blackplume233/Actant/issues",
+  "keywords": [
+    "actant",
+    "ai-agent",
+    "agent-platform",
+    "cli"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "scripts/postinstall.mjs"
+  ],
+  "bin": {
+    "actant": "./bin/actant.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./core": {
+      "import": "./dist/core.js",
+      "types": "./dist/core.d.ts"
+    },
+    "./shared": {
+      "import": "./dist/shared.js",
+      "types": "./dist/shared.d.ts"
+    },
+    "./acp": {
+      "import": "./dist/acp.js",
+      "types": "./dist/acp.d.ts"
+    },
+    "./mcp": {
+      "import": "./dist/mcp.js",
+      "types": "./dist/mcp.d.ts"
+    },
+    "./pi": {
+      "import": "./dist/pi.js",
+      "types": "./dist/pi.d.ts"
+    },
+    "./cli": {
+      "import": "./dist/cli.js",
+      "types": "./dist/cli.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf dist",
+    "postinstall": "node scripts/postinstall.mjs",
+    "prepublishOnly": "tsup"
+  },
+  "dependencies": {
+    "@actant/cli": "workspace:*",
+    "@actant/core": "workspace:*",
+    "@actant/shared": "workspace:*",
+    "@actant/api": "workspace:*",
+    "@actant/acp": "workspace:*",
+    "@actant/mcp-server": "workspace:*",
+    "@actant/pi": "workspace:*"
+  }
+}

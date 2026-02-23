@@ -48,6 +48,7 @@ if $UNINSTALL; then
   systemctl --user disable actant-daemon 2>/dev/null || true
   rm -f ~/Library/LaunchAgents/com.actant.daemon.plist 2>/dev/null
   launchctl unload ~/Library/LaunchAgents/com.actant.daemon.plist 2>/dev/null || true
+  npm uninstall -g actant 2>/dev/null || true
   npm uninstall -g @actant/cli 2>/dev/null || true
   echo -e "${GREEN}✓ Actant has been uninstalled.${NC}"
   echo -e "${DIM}  Data directory (~/.actant) was kept. Remove manually if needed.${NC}"
@@ -56,7 +57,7 @@ fi
 
 # ── Install from GitHub Release ──────────────────────────────────
 install_from_github() {
-  echo -e "${CYAN}Installing @actant/cli from GitHub Release...${NC}"
+  echo -e "${CYAN}Installing actant from GitHub Release...${NC}"
   echo -e "${DIM}  $GITHUB_RELEASE_URL${NC}"
   npm install -g "$GITHUB_RELEASE_URL"
   echo -e "${GREEN}✓ Actant installed from GitHub Release${NC}"
@@ -79,8 +80,8 @@ if command -v actant &>/dev/null; then
   case "${choice,,}" in
     u)
       echo ""
-      echo -e "${CYAN}Updating @actant/cli from npm...${NC}"
-      npm install -g @actant/cli
+      echo -e "${CYAN}Updating actant from npm...${NC}"
+      npm install -g actant
       echo ""
       NEW_VERSION=$(actant --version 2>/dev/null || echo "unknown")
       echo -e "${GREEN}✓ Actant updated to ${NEW_VERSION}${NC}"
@@ -124,6 +125,7 @@ if command -v actant &>/dev/null; then
         echo -e "${GREEN}✓ 已删除 ${ACTANT_DIR}${NC}"
       fi
 
+      npm uninstall -g actant 2>/dev/null || true
       npm uninstall -g @actant/cli 2>/dev/null || true
       echo -e "${GREEN}✓ Actant 已卸载${NC}"
       ;;
@@ -152,8 +154,8 @@ else
     install_from_github
   else
     echo ""
-    echo -e "${CYAN}Installing @actant/cli from npm...${NC}"
-    npm install -g @actant/cli
+    echo -e "${CYAN}Installing actant from npm...${NC}"
+    npm install -g actant
   fi
 fi
 

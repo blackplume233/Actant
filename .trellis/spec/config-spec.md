@@ -71,11 +71,14 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 
 #### AgentBackendType
 
-| 值 | 说明 |
-|----|------|
-| `"cursor"` | Cursor IDE |
-| `"claude-code"` | Claude Code CLI |
-| `"custom"` | 用户自定义可执行程序 |
+| 值 | 说明 | ACP 通信 |
+|----|------|---------|
+| `"cursor"` | Cursor IDE | 否 |
+| `"claude-code"` | Claude Code CLI | 是 |
+| `"pi"` | Pi Agent（基于 pi-agent-core） | 是（ACP-only） |
+| `"custom"` | 用户自定义可执行程序 | 否 |
+
+> **ACP-only 后端**：`pi` 后端不通过 `ProcessLauncher.launch()` 启动，而是完全由 `AcpConnectionManager` spawn 进程。详见 [api-contracts.md §5.1](./api-contracts.md#51-agentlauncher)。
 
 #### config 可用字段
 
@@ -227,7 +230,7 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 | `effectivePermissions` | `PermissionsConfig` | 否 | — | 解析后的最终生效权限（创建时由 template + override 解析写入，运行时可通过 `agent.updatePermissions` RPC 更新） |
 | `metadata` | `Record<string, string>` | 否 | — | 任意元数据 |
 
-\* Zod Schema 中标记 optional 以兼容旧文件；读取时缺失则默认 `"cursor"`。
+\* Zod Schema 中标记 optional 以兼容旧文件；读取时缺失则默认 `"cursor"`。`"pi"` 类型实例的 `processOwnership` 始终为 `"managed"`。
 
 ### AgentStatus
 
@@ -491,14 +494,16 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 | backendType | macOS / Linux | Windows |
 |-------------|--------------|---------|
 | `cursor` | `cursor` | `cursor.cmd` |
-| `claude-code` | `claude` | `claude.cmd` |
+| `claude-code` | `claude-agent-acp` | `claude-agent-acp.cmd` |
+| `pi` | `pi-acp-bridge` | `pi-acp-bridge.cmd` |
 | `custom` | 必须通过 `backendConfig.executablePath` 指定 | 同左 |
 
 ### 覆盖机制
 
 - `backendConfig.executablePath` → 覆盖平台默认命令
 - `backendConfig.args`（仅 `custom`）→ 自定义启动参数；未设则默认 `[workspaceDir]`
-- `cursor` / `claude-code` 默认参数为 `["--workspace", workspaceDir]`
+- `cursor` 默认参数为 `[workspaceDir]`
+- `claude-code` / `pi` 默认参数为 `[]`（ACP session 的 `cwd` 参数处理 workspace）
 
 > 实现参考：`packages/core/src/manager/launcher/backend-resolver.ts`
 

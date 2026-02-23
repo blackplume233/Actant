@@ -2,7 +2,7 @@
 
 一个用于构建、管理和编排 AI Agent 的平台。面向游戏开发等复杂业务场景，让用户能够快速拼装、复用合适的 Agent，零成本地将 AI 嵌入工作流。
 
-> **当前版本**: [v0.1.0](https://github.com/blackplume233/Actant/releases/tag/v0.1.0) — Phase 3 完成，核心功能可用
+> **当前版本**: [v0.1.3](https://github.com/blackplume233/Actant/releases/tag/v0.1.3) — Phase 3 完成，核心功能可用
 
 ---
 
@@ -36,27 +36,28 @@
 ### 环境要求
 
 - [Node.js](https://nodejs.org/) >= 22.0.0
-- [pnpm](https://pnpm.io/) >= 9.0.0
 - [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 或 [Cursor](https://cursor.com/) (Agent Backend)
 
-### 一键安装
+### 安装
+
+安装脚本会自动检测环境、安装 `actant` npm 包并运行配置向导：
 
 ```bash
 # Linux / macOS
-git clone https://github.com/blackplume233/Actant.git && cd Actant
-bash scripts/install.sh
+curl -fsSL https://raw.githubusercontent.com/blackplume233/Actant/master/scripts/install.sh | bash
 
 # Windows (PowerShell)
-git clone https://github.com/blackplume233/Actant.git; cd Actant
-powershell -ExecutionPolicy Bypass -File scripts/install.ps1
+irm https://raw.githubusercontent.com/blackplume233/Actant/master/scripts/install.ps1 | iex
 ```
 
-### 手动安装
+> **Note**: `scripts/install.sh` 和 `scripts/install.ps1` 会随每次版本发布（stage）自动更新，始终指向最新版本。
+
+### 从源码开发
 
 ```bash
 git clone https://github.com/blackplume233/Actant.git
 cd Actant
-pnpm install
+pnpm install    # 需要 pnpm >= 9.0.0
 pnpm build
 pnpm link --global
 ```
@@ -134,8 +135,10 @@ actant agent list
 
 ```
 Actant
+├── actant               统一入口（门面包，re-export 所有子包 + CLI bin）
 ├── @actant/shared       公共类型、错误、日志、平台
 ├── @actant/core         模板、构建器、管理器、调度器、领域组件、Source、版本
+├── @actant/pi           Pi Agent 后端（pi-agent-core、pi-ai）
 ├── @actant/api          Daemon 服务层、RPC Handlers、AppContext
 ├── @actant/acp          ACP 协议集成（连接、网关、回调路由）
 ├── @actant/cli          CLI 前端（55+ 命令、REPL、流式输出）
@@ -145,9 +148,10 @@ Actant
 ### 依赖关系
 
 ```
-shared ← core ← api ← cli
+shared ← core ← pi
               ← acp
               ← mcp-server
+              ← api ← cli ← actant (facade)
 ```
 
 ### 技术栈
@@ -158,7 +162,7 @@ shared ← core ← api ← cli
 | 语言 | TypeScript 5.9+（strict） |
 | 包管理 | pnpm 9+（workspace monorepo） |
 | 构建 | tsup |
-| 测试 | Vitest 4（579 tests, 51 suites） |
+| 测试 | Vitest 4（627 tests, 55 suites） |
 | Schema 校验 | Zod |
 | CLI 框架 | Commander.js v14 |
 | 日志 | pino |
@@ -221,10 +225,12 @@ Actant/
 │   │   ├── permissions/   权限预设解析
 │   │   ├── version/       ComponentRef + SyncReport
 │   │   └── template/      TemplateRegistry + TemplateLoader + Zod Schema
+│   ├── pi/                Pi Agent 后端
 │   ├── api/               Daemon + RPC Handlers + AppContext
 │   ├── acp/               ACP 协议（Connection/Gateway/Callback）
 │   ├── cli/               CLI 命令（12 组 55+ 子命令）
-│   └── mcp-server/        MCP 服务端（骨架）
+│   ├── mcp-server/        MCP 服务端（骨架）
+│   └── actant/            统一入口门面包（npm: actant）
 ├── configs/               内置配置（模板、技能、提示词、工作流、插件、MCP）
 ├── examples/              示例（actant-hub 组件源仓库）
 ├── scripts/               安装脚本 + 自更新脚本
@@ -244,11 +250,11 @@ Actant/
 |------|------|
 | `pnpm dev` | 开发模式启动 CLI |
 | `pnpm build` | 构建所有包 |
-| `pnpm test` | 运行全部测试（579 tests） |
+| `pnpm test` | 运行全部测试（627 tests） |
 | `pnpm test:changed` | 仅运行受变更影响的测试 |
 | `pnpm test:watch` | 测试监听模式 |
 | `pnpm lint` | ESLint 代码检查 |
-| `pnpm type-check` | TypeScript 类型检查（6 packages） |
+| `pnpm type-check` | TypeScript 类型检查（8 packages） |
 | `pnpm clean` | 清理构建产物 |
 
 ### 自更新

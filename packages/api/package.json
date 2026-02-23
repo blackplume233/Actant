@@ -1,6 +1,6 @@
 {
   "name": "@actant/api",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "High-level API for the Actant AI agent platform",
   "type": "module",
   "license": "MIT",
@@ -36,6 +36,7 @@
   "dependencies": {
     "@actant/acp": "workspace:*",
     "@actant/core": "workspace:*",
+    "@actant/pi": "workspace:*",
     "@actant/shared": "workspace:*"
   }
 }

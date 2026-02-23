@@ -7,4 +7,4 @@ export type {
 } from "./agent-communicator";
 export { ClaudeCodeCommunicator } from "./claude-code-communicator";
 export { CursorCommunicator } from "./cursor-communicator";
-export { createCommunicator } from "./create-communicator";
+export { createCommunicator, registerCommunicator } from "./create-communicator";

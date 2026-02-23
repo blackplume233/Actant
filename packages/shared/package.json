@@ -1,6 +1,6 @@
 {
   "name": "@actant/shared",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Shared utilities and types for the Actant AI agent platform",
   "type": "module",
   "license": "MIT",

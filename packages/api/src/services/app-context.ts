@@ -22,6 +22,7 @@ import {
   type LauncherMode,
 } from "@actant/core";
 import { AcpConnectionManager } from "@actant/acp";
+import { PiBuilder, PiCommunicator } from "@actant/pi";
 import { createLogger, getIpcPath } from "@actant/shared";
 
 const logger = createLogger("app-context");
@@ -140,7 +141,7 @@ export class AppContext {
     }
 
     await this.loadDomainComponents();
-    await this.registerPiBackend();
+    this.registerPiBackend();
     await this.sourceManager.initialize();
 
     await this.agentManager.initialize();
@@ -154,15 +155,10 @@ export class AppContext {
     return Math.floor((Date.now() - this.startTime) / 1000);
   }
 
-  private async registerPiBackend(): Promise<void> {
-    try {
-      const { PiBuilder, PiCommunicator } = await import("@actant/pi");
-      this.agentInitializer.workspaceBuilder.registerBuilder(new PiBuilder());
-      registerCommunicator("pi", () => new PiCommunicator());
-      logger.info("Pi backend registered");
-    } catch {
-      logger.debug("@actant/pi not available, Pi backend disabled");
-    }
+  private registerPiBackend(): void {
+    this.agentInitializer.workspaceBuilder.registerBuilder(new PiBuilder());
+    registerCommunicator("pi", () => new PiCommunicator());
+    logger.info("Pi backend registered");
   }
 
   private async loadDomainComponents(): Promise<void> {

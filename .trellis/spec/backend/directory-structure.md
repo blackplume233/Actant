@@ -8,7 +8,7 @@
 
 ## Overview
 
-Actant follows a **pnpm monorepo** structure with 6 packages. Business logic lives in `core`, presentation layers (`cli`, `api`, `acp`, `mcp-server`) are thin adapters, and `shared` provides common types and utilities.
+Actant follows a **pnpm monorepo** structure with 8 packages plus a facade. Business logic lives in `core`, presentation layers (`cli`, `api`, `acp`, `mcp-server`) are thin adapters, `shared` provides common types and utilities, `pi` provides the Pi Agent backend, and `actant` is the unified npm entry point.
 
 ---
 
@@ -16,22 +16,33 @@ Actant follows a **pnpm monorepo** structure with 6 packages. Business logic liv
 
 ```
 packages/
-├── shared/          # @actant/shared — Types, errors, config, logger, utils
-├── core/            # @actant/core  — Template, Initializer, Manager, Domain
-├── cli/             # @actant/cli   — CLI REPL and commands
-├── api/             # @actant/api   — RESTful API (Hono)
-├── acp/             # @actant/acp   — ACP protocol server
-└── mcp-server/      # @actant/mcp-server — MCP protocol server
+├── shared/          # @actant/shared     — Types, errors, config, logger, utils
+├── core/            # @actant/core       — Template, Initializer, Manager, Domain
+├── pi/              # @actant/pi         — Pi Agent backend (pi-agent-core, pi-ai)
+├── acp/             # @actant/acp        — ACP protocol server
+├── mcp-server/      # @actant/mcp-server — MCP protocol server
+├── api/             # @actant/api        — RESTful API daemon
+├── cli/             # @actant/cli        — CLI REPL and commands
+└── actant/          # actant             — Facade: re-exports all sub-packages + CLI bin
 ```
 
 ## Module Dependency Graph
 
 ```
-shared ← core ← cli
-              ← api
+shared ← core ← pi
               ← acp
               ← mcp-server
+              ← api ← cli ← actant (facade)
 ```
+
+### `actant` Facade Package
+
+`actant`（无 scope）是面向用户的统一入口：
+
+- **npm 安装**：`npm i -g actant`（CLI）或 `npm i actant`（库）
+- **Sub-path exports**：`actant/core`、`actant/shared`、`actant/acp`、`actant/mcp`、`actant/pi`、`actant/cli`
+- **依赖关系**：facade 依赖所有 `@actant/*` 子包，通过 `workspace:*` 链接
+- **子包仍可独立安装**：`npm i @actant/core` 用于只需部分功能的场景
 
 > **Rule**: `cli`, `api`, `acp`, `mcp-server` must NEVER depend on each other. All go through `core`.
 
@@ -118,7 +129,7 @@ tests/
 | Constants | SCREAMING_SNAKE_CASE | `MAX_HEARTBEAT_INTERVAL` |
 | Classes | PascalCase | `AgentManager`, `TemplateRegistry` |
 | Functions | camelCase | `createInstance()`, `loadTemplate()` |
-| Package names | `@actant/{name}` | `@actant/core` |
+| Package names | `@actant/{name}` (facade: `actant`) | `@actant/core`, `actant` |
 
 ---
 

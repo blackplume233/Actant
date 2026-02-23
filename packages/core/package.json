@@ -1,6 +1,6 @@
 {
   "name": "@actant/core",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Core runtime engine for the Actant AI agent platform",
   "type": "module",
   "license": "MIT",

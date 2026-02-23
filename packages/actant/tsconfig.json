@@ -1,0 +1,18 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../shared" },
+    { "path": "../core" },
+    { "path": "../acp" },
+    { "path": "../api" },
+    { "path": "../mcp-server" },
+    { "path": "../pi" },
+    { "path": "../cli" }
+  ]
+}

@@ -11,7 +11,7 @@ import {
 import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
-import { resolveBackend, isAcpBackend } from "./launcher/backend-resolver";
+import { resolveBackend, isAcpBackend, isAcpOnlyBackend } from "./launcher/backend-resolver";
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
 import { RestartTracker, type RestartPolicy } from "./restart-tracker";
@@ -192,25 +192,38 @@ export class AgentManager {
     this.cache.set(name, starting);
 
     try {
-      const proc = await this.launcher.launch(dir, starting);
-      this.processes.set(name, proc);
+      const acpOnly = isAcpOnlyBackend(meta.backendType);
+      let pid: number | undefined;
+
+      if (!acpOnly) {
+        const proc = await this.launcher.launch(dir, starting);
+        this.processes.set(name, proc);
+        pid = proc.pid;
+      }
 
       if (isAcpBackend(meta.backendType) && this.acpManager) {
         const { command, args } = resolveBackend(meta.backendType, dir, meta.backendConfig);
-        await this.acpManager.connect(name, {
+        const connResult = await this.acpManager.connect(name, {
           command,
           args,
           cwd: dir,
           connectionOptions: { autoApprove: true },
         });
-        logger.info({ name }, "ACP connection established");
+        logger.info({ name, acpOnly }, "ACP connection established");
+
+        if (acpOnly && "pid" in connResult && typeof connResult.pid === "number") {
+          pid = connResult.pid;
+          this.processes.set(name, { pid, workspaceDir: dir, instanceName: name });
+        }
       }
 
-      const running = await updateInstanceMeta(dir, { status: "running", pid: proc.pid });
+      const running = await updateInstanceMeta(dir, { status: "running", pid });
       this.cache.set(name, running);
-      this.watcher.watch(name, proc.pid);
+      if (pid) {
+        this.watcher.watch(name, pid);
+      }
       this.restartTracker.recordStart(name);
-      logger.info({ name, pid: proc.pid, launchMode: starting.launchMode, acp: isAcpBackend(meta.backendType) }, "Agent started");
+      logger.info({ name, pid, launchMode: starting.launchMode, acp: isAcpBackend(meta.backendType) }, "Agent started");
     } catch (err) {
       if (this.acpManager?.has(name)) {
         await this.acpManager.disconnect(name).catch(() => {});
@@ -423,7 +436,7 @@ export class AgentManager {
 
   /**
    * Send a prompt to an agent and stream the response.
-   * Uses ACP connection if available, otherwise falls back to CLI pipe mode.
+   * Uses ACP connection if available, otherwise falls back to communicator.
    */
   streamPrompt(
     name: string,
@@ -431,9 +444,49 @@ export class AgentManager {
     options?: RunPromptOptions,
   ): AsyncIterable<StreamChunk> {
     const meta = this.requireAgent(name);
+
+    if (this.acpManager?.has(name)) {
+      const conn = this.acpManager.getConnection(name);
+      const sessionId = this.acpManager.getPrimarySessionId(name);
+      if (conn && sessionId) {
+        logger.debug({ name, sessionId }, "Streaming prompt via ACP");
+        return this.streamFromAcp(conn, sessionId, prompt);
+      }
+    }
+
     const dir = join(this.instancesBaseDir, name);
     const communicator = createCommunicator(meta.backendType);
     return communicator.streamPrompt(dir, prompt, options);
+  }
+
+  private async *streamFromAcp(
+    conn: AcpConnectionLike,
+    sessionId: string,
+    prompt: string,
+  ): AsyncIterable<StreamChunk> {
+    try {
+      for await (const event of conn.streamPrompt(sessionId, prompt)) {
+        const record = event as Record<string, unknown>;
+        const type = record["type"] as string | undefined;
+
+        if (type === "text" || type === "assistant") {
+          const content = (record["content"] as string) ?? (record["message"] as string) ?? "";
+          yield { type: "text", content };
+        } else if (type === "tool_use") {
+          const toolName = record["name"] as string | undefined;
+          yield { type: "tool_use", content: toolName ? `[Tool: ${toolName}]` : "" };
+        } else if (type === "result") {
+          yield { type: "result", content: (record["result"] as string) ?? "" };
+        } else if (type === "error") {
+          const errMsg = (record["error"] as Record<string, unknown>)?.["message"] as string | undefined;
+          yield { type: "error", content: errMsg ?? "Unknown error" };
+        } else if (typeof record["content"] === "string") {
+          yield { type: "text", content: record["content"] };
+        }
+      }
+    } catch (err) {
+      yield { type: "error", content: err instanceof Error ? err.message : String(err) };
+    }
   }
 
   /**

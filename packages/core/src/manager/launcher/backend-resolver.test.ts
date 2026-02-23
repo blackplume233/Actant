@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { resolveBackend, isAcpBackend } from "./backend-resolver";
+import { resolveBackend, isAcpBackend, isAcpOnlyBackend } from "./backend-resolver";
 
 describe("resolveBackend", () => {
   it("should use executablePath from backendConfig when provided", () => {
@@ -44,6 +44,18 @@ describe("resolveBackend", () => {
     expect(result.command).toBe("node");
     expect(result.args).toEqual(["-e", "console.log('hello')"]);
   });
+
+  it("should resolve pi to pi-acp-bridge with no args", () => {
+    const result = resolveBackend("pi", "/workspace");
+    expect(result.command).toMatch(/pi-acp-bridge/);
+    expect(result.args).toEqual([]);
+  });
+
+  it("should use executablePath override for pi", () => {
+    const result = resolveBackend("pi", "/workspace", { executablePath: "/custom/pi-bridge" });
+    expect(result.command).toBe("/custom/pi-bridge");
+    expect(result.args).toEqual([]);
+  });
 });
 
 describe("isAcpBackend", () => {
@@ -57,5 +69,23 @@ describe("isAcpBackend", () => {
 
   it("should return false for custom", () => {
     expect(isAcpBackend("custom")).toBe(false);
+  });
+
+  it("should return true for pi", () => {
+    expect(isAcpBackend("pi")).toBe(true);
+  });
+});
+
+describe("isAcpOnlyBackend", () => {
+  it("should return true for pi", () => {
+    expect(isAcpOnlyBackend("pi")).toBe(true);
+  });
+
+  it("should return false for claude-code", () => {
+    expect(isAcpOnlyBackend("claude-code")).toBe(false);
+  });
+
+  it("should return false for cursor", () => {
+    expect(isAcpOnlyBackend("cursor")).toBe(false);
   });
 });

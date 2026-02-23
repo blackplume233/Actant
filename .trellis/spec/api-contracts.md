@@ -779,6 +779,20 @@ interface AgentLauncher {
 
 工厂函数 `createLauncher(config?)` 根据 `config.mode` 或 `ACTANT_LAUNCHER_MODE` 选择实现。
 
+#### ACP-only 后端
+
+部分后端类型（`pi`）不使用 `AgentLauncher`，而由 `AcpConnectionManager` 通过 `BackendResolver.resolve()` 获取命令后自行 spawn 进程。`isAcpOnlyBackend(type)` 函数判断一个后端类型是否为 ACP-only。
+
+**ACP-only 启动流程**：
+```
+AgentManager.startAgent()
+  → isAcpOnlyBackend(backendType)?
+    → true: AcpConnectionManager.spawnAndConnect(resolve(...))
+    → false: ProcessLauncher.launch() + optional AcpConnectionManager
+```
+
+> 实现参考：`packages/core/src/manager/launcher/backend-resolver.ts`，`packages/core/src/manager/agent-manager.ts`
+
 ### 5.2 BaseComponentManager（#119 重构）
 
 所有领域组件 Manager（SkillManager、PromptManager、WorkflowManager、McpConfigManager、PluginManager）和 TemplateRegistry 的公共基类。提供 CRUD、持久化、目录加载等通用操作。
@@ -892,11 +906,12 @@ interface RunPromptOptions {
 |------|---------|------|
 | `ClaudeCodeCommunicator` | `claude-code` | `claude -p --output-format json\|stream-json`，stdin/stdout 通信（fallback） |
 | `AcpCommunicator` | `claude-code` (ACP) | 通过 ACP session 发送 prompt，用于已 start 的 Agent |
+| `PiCommunicator` | `pi` | 通过 pi-agent-core SDK 发送 prompt；由 `@actant/pi` 包提供 |
 | `CursorCommunicator` | `cursor` | Stub — Cursor CLI 尚不支持 pipe 模式，调用时抛出错误 |
 
-工厂函数 `createCommunicator(backendType)` 根据 `AgentBackendType` 选择实现。`AgentManager` 对已启动的 ACP Agent 优先使用 `AcpCommunicator`。
+工厂函数 `createCommunicator(backendType)` 根据 `AgentBackendType` 选择实现。外部包可通过 `registerCommunicator(type, factory)` 注册自定义通信器（如 `@actant/pi` 在 AppContext 初始化时注册 `PiCommunicator`）。`AgentManager` 对已启动的 ACP Agent 优先使用 `AcpCommunicator`。
 
-> 实现参考：`packages/core/src/communicator/`，`packages/acp/src/communicator.ts`
+> 实现参考：`packages/core/src/communicator/`，`packages/acp/src/communicator.ts`，`packages/pi/src/pi-communicator.ts`
 
 ### 5.6 CLI 错误展示
 

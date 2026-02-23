@@ -61,6 +61,9 @@ Actant
 ├── Actant MCP          # MCP server for agent-to-Actant access
 │                           # Agents can invoke other agents, control services
 │
+├── Actant Pi           # Pi Agent backend integration (optional)
+│                           # PiBuilder, PiCommunicator via pi-agent-core
+│
 └── Actant API          # RESTful API layer
                             # All CLI commands exposed as HTTP endpoints
                             # Enables Docker deployment
@@ -111,7 +114,7 @@ Actant
 | [Directory Structure](./directory-structure.md) | Module organization and file layout | Initial |
 | [Database Guidelines](./database-guidelines.md) | Persistence patterns for agent state | Initial |
 | [Error Handling](./error-handling.md) | Error types and handling strategies | Initial |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards, testing, review | Initial |
+| [Quality Guidelines](./quality-guidelines.md) | Code standards, testing, review, monorepo publishing | Updated |
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging for agent lifecycle | Initial |
 
 ---

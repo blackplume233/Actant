@@ -6,5 +6,5 @@
     "rootDir": "./src"
   },
   "include": ["src"],
-  "references": [{ "path": "../shared" }, { "path": "../core" }, { "path": "../acp" }]
+  "references": [{ "path": "../shared" }, { "path": "../core" }, { "path": "../acp" }, { "path": "../pi" }]
 }

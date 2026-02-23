@@ -194,6 +194,50 @@ Before approving any feature:
 
 ---
 
+## Monorepo 发布规范
+
+### 版本同步
+
+所有子包必须始终保持与根 `package.json` 一致的版本号。
+
+```bash
+# 同步版本：读取根 package.json 的 version，写入所有子包
+pnpm run version:sync    # → node scripts/version-sync.mjs
+```
+
+> **Gotcha**: CI publish workflow 会在 `pnpm build` 前自动运行 `version:sync`。但本地手动发布（`pnpm publish:all`）前也必须先运行此脚本，否则已经在 npm 上的版本号会被跳过。
+
+### Common Mistake: 子包版本未同步导致发布跳过
+
+**症状**: `pnpm -r publish` 成功完成，但某些包的新版本没有出现在 npm 上。
+
+**原因**: 子包的 `package.json` 版本仍是旧值（如 0.1.2），与 npm 上已有版本相同，npm 会静默跳过。
+
+**修复**: 发版前始终运行 `pnpm run version:sync`。CI workflow 已包含此步骤。
+
+**预防**: 不要手动编辑子包版本，只编辑根 `package.json` 的 `version` 字段，然后通过 `version:sync` 同步。
+
+### DTS 生成注意事项
+
+- **Facade 包**（纯 re-export）：不使用 tsup 的 DTS 生成（会触发传递性类型错误），改为在 `onSuccess` 钩子中将 `.ts` 源文件复制为 `.d.ts`
+- **包含 bin 脚本的包**：如果 bin 入口有类型错误但库入口正常，使用 `dts: { entry: { index: "src/index.ts" } }` 限定 DTS 生成范围
+- **跨包 import 的 DTS 依赖**：如果包 A 中有 `import("@actant/b")`，即使是动态导入，TypeScript DTS 生成也需要 `@actant/b` 在包 A 的 `dependencies` 中声明（pnpm workspace 不自动链接未声明的依赖）
+
+### Don't: ESM 项目中使用 require()
+
+```typescript
+// Bad — ESM 项目（"type": "module"）中使用 require
+const pkg = require('./package.json');
+
+// Good — 使用 readFileSync + JSON.parse
+import { readFileSync } from 'node:fs';
+const pkg = JSON.parse(readFileSync('./package.json', 'utf8'));
+```
+
+**Why**: 根 `package.json` 声明了 `"type": "module"`，所有 `.js` / `.mjs` 文件默认走 ESM，`require()` 不可用。
+
+---
+
 ## Language Conventions
 
 The project owner's preferred language is **Chinese (中文)**. Apply the following rules:

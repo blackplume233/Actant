@@ -32,6 +32,7 @@ if ($Uninstall) {
   Write-Host "Uninstalling Actant..." -ForegroundColor Yellow
   try { actant daemon stop 2>$null } catch {}
   try { schtasks /Delete /TN "ActantDaemon" /F 2>$null } catch {}
+  npm uninstall -g actant 2>$null
   npm uninstall -g @actant/cli 2>$null
   Write-Host "✓ Actant has been uninstalled." -ForegroundColor Green
   Write-Host "  Data directory (~/.actant) was kept. Remove manually if needed." -ForegroundColor Gray
@@ -40,7 +41,7 @@ if ($Uninstall) {
 
 # ── Install from GitHub Release ──────────────────────────────────
 function Install-FromGitHub {
-  Write-Host "Installing @actant/cli from GitHub Release..." -ForegroundColor Cyan
+  Write-Host "Installing actant from GitHub Release..." -ForegroundColor Cyan
   Write-Host "  $GitHubReleaseUrl" -ForegroundColor Gray
   npm install -g $GitHubReleaseUrl
   if ($LASTEXITCODE -ne 0) {
@@ -70,8 +71,8 @@ if ($existingActant) {
   switch ($choice.ToUpper()) {
     "U" {
       Write-Host ""
-      Write-Host "Updating @actant/cli from npm..." -ForegroundColor Cyan
-      npm install -g @actant/cli
+      Write-Host "Updating actant from npm..." -ForegroundColor Cyan
+      npm install -g actant
       if ($LASTEXITCODE -ne 0) {
         Write-Host "Error: npm install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
         exit 1
@@ -118,6 +119,7 @@ if ($existingActant) {
         }
       }
 
+      npm uninstall -g actant 2>$null
       npm uninstall -g @actant/cli 2>$null
       Write-Host "✓ Actant 已卸载" -ForegroundColor Green
     }
@@ -146,8 +148,8 @@ if ($FromGitHub) {
     Install-FromGitHub
   } else {
     Write-Host ""
-    Write-Host "Installing @actant/cli from npm..." -ForegroundColor Cyan
-    npm install -g @actant/cli
+    Write-Host "Installing actant from npm..." -ForegroundColor Cyan
+    npm install -g actant
     if ($LASTEXITCODE -ne 0) {
       Write-Host "Error: npm install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
       exit 1

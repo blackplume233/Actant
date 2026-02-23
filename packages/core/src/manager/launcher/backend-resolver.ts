@@ -11,10 +11,12 @@ export interface ResolvedBackend {
  * Default CLI commands per backend type and platform.
  * - claude-code uses `claude-agent-acp` for ACP-based communication
  * - cursor / custom use their native CLIs
+ * - pi uses `pi-acp-bridge` for ACP-based communication (from @actant/pi)
  */
 const DEFAULT_COMMANDS: Record<AgentBackendType, () => string> = {
   cursor: () => (IS_WINDOWS ? "cursor.cmd" : "cursor"),
   "claude-code": () => (IS_WINDOWS ? "claude-agent-acp.cmd" : "claude-agent-acp"),
+  pi: () => (IS_WINDOWS ? "pi-acp-bridge.cmd" : "pi-acp-bridge"),
   custom: () => {
     throw new Error("Custom backend requires explicit executablePath in backend config");
   },
@@ -22,13 +24,24 @@ const DEFAULT_COMMANDS: Record<AgentBackendType, () => string> = {
 
 /** Whether a backend type uses the ACP stdio protocol for communication. */
 export function isAcpBackend(backendType: AgentBackendType): boolean {
-  return backendType === "claude-code";
+  return backendType === "claude-code" || backendType === "pi";
+}
+
+/**
+ * Whether a backend type is ACP-only — the ACP connection IS the agent process.
+ * For these backends, ProcessLauncher.launch() is skipped; only AcpConnectionManager
+ * spawns the process. This avoids the double-spawn problem where an unused process
+ * hangs waiting for ACP input that never arrives.
+ */
+export function isAcpOnlyBackend(backendType: AgentBackendType): boolean {
+  return backendType === "pi";
 }
 
 /**
  * Build the launch arguments.
  * - cursor: `cursor <dir>` (opens Cursor IDE at that folder)
  * - claude-code: no args needed (ACP session's `cwd` parameter handles workspace)
+ * - pi: no args needed (ACP session's `cwd` parameter handles workspace)
  * - custom: uses `args` from backendConfig if provided, otherwise `[workspaceDir]`
  */
 function buildArgs(
@@ -40,6 +53,7 @@ function buildArgs(
     case "cursor":
       return [workspaceDir];
     case "claude-code":
+    case "pi":
       return [];
     case "custom": {
       const configArgs = backendConfig?.args;

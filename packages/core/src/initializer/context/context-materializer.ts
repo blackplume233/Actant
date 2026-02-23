@@ -14,6 +14,7 @@ const logger = createLogger("context-materializer");
 const BACKEND_CONFIG_DIR: Record<AgentBackendType, string> = {
   cursor: ".cursor",
   "claude-code": ".claude",
+  pi: ".pi",
   custom: ".cursor",
 };
 

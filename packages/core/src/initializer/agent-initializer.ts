@@ -53,6 +53,10 @@ export class AgentInitializer {
     }
   }
 
+  get workspaceBuilder(): WorkspaceBuilder {
+    return this.builder;
+  }
+
   /**
    * Create a new Agent Instance.
    * 1. Resolve template from registry
