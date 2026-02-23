@@ -137,29 +137,39 @@ Push 成功后，根据 commit message 中的 Issue 引用自动更新状态。
 
 #### 4.2 更新 Issue 状态
 
+**必须直接使用 `gh` CLI 操作 GitHub（权威源），再更新本地缓存。** 不依赖 `issue.sh` 的 bash 脚本（在 Windows 环境下不可靠）。
+
 对于每个引用的 Issue：
 
 ```bash
-# 自动关闭类引用（fixes/closes/resolves）
-./.agents/skills/issue-manager/scripts/issue.sh close <id>
-./.agents/skills/issue-manager/scripts/issue.sh comment <id> "Fixed in <commit-hash>."
+# 1. 先确认 GitHub 上的实际状态
+gh issue view <N> --json state
 
-# 关联类引用（仅 (#NNN)），如果 Issue 确实已修复也关闭
-./.agents/skills/issue-manager/scripts/issue.sh comment <id> "Addressed in <commit-hash>."
+# 2a. 需要关闭的 Issue（fixes/closes/resolves 引用，或 fix 类型 commit 的括号引用）
+gh issue close <N> -c "Completed in <commit-hash>."
+
+# 2b. 仅需添加评论的 Issue（docs/refactor 类型的括号引用）
+gh issue comment <N> -b "Progress: addressed in <commit-hash>."
+
+# 3. 更新本地缓存文件（如存在）
+#    修改 .trellis/issues/NNNN-*.md 中的 status/closedAt 字段
 ```
 
 **判断规则**：
 - commit message 包含 `fix` 类型且引用了 Issue → 关闭该 Issue
 - commit message 仅括号引用 `(#NNN)` → 根据上下文判断：修复类 commit 则关闭，文档/重构类仅评论
-- 如果 Issue 已关闭，跳过
+- 如果 GitHub 上 Issue 已关闭，跳过
 
-#### 4.3 同步到 GitHub
+#### 4.3 验证同步
+
+操作完成后，验证 GitHub 状态与本地缓存一致：
 
 ```bash
-./.agents/skills/issue-manager/scripts/issue.sh sync --all
+# 验证 GitHub 实际状态
+gh issue view <N> --json state,closedAt
 ```
 
-确保本地关闭状态同步到 GitHub。如果 `gh` CLI 不可用，标记为 "⚠️ 跳过"。
+如果 `gh` CLI 不可用，标记为 "⚠️ 跳过" 并在报告中提醒手动操作。
 
 #### 4.4 输出 Issue 更新报告
 
