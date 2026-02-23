@@ -80,7 +80,7 @@ function runCommand(
       cwd,
       env: env ? { ...process.env, ...env } : process.env,
       stdio: ["ignore", "pipe", "pipe"],
-      shell: process.platform === "win32",
+      shell: true,
     });
 
     const stdoutChunks: Buffer[] = [];

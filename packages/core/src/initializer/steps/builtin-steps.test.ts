@@ -83,9 +83,7 @@ describe("ExecStep", () => {
   });
 
   it("should execute a command successfully", async () => {
-    const cmd = process.platform === "win32" ? "cmd" : "echo";
-    const args = process.platform === "win32" ? ["/c", "echo", "hello"] : ["hello"];
-    const result = await step.execute(makeContext(tmpDir), { command: cmd, args });
+    const result = await step.execute(makeContext(tmpDir), { command: "echo", args: ["hello"] });
     expect(result.success).toBe(true);
     expect((result.output as Record<string, unknown>).exitCode).toBe(0);
   });
