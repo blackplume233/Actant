@@ -2,7 +2,7 @@
 
 对当前代码库进行版本快照，在 `docs/stage/<version>/` 下生成完整的版本存档。
 
-**输入**: `$ARGUMENTS` — 版本号（如 `0.1.0`），留空则从 `package.json` 读取
+**输入**: `` — 版本号（如 `0.1.0`），留空则从 `package.json` 读取
 
 ---
 
@@ -108,11 +108,15 @@ bash .trellis/scripts/stage-version.sh test-report <version>
 
 运行 `pnpm test` 并将结果（通过/失败/跳过数量、各测试套件状态）保存到 `test-report.json`。
 
+> **Windows 回退**: 如果脚本失败，在 PowerShell 中运行 `npx pnpm test`，然后手动创建 `test-report.json`（参考已有版本的格式）。
+
 ### Step 8: 同步 Issue 快照
 
 ```bash
 bash .trellis/scripts/stage-version.sh sync-issues <version>
 ```
+
+> **Windows 回退**: `node .trellis/scripts/gen-issue-snapshot.mjs v<version>`（注意：接收版本号而非路径）
 
 ### Step 9: 版本间对比（如有上一版本）
 
@@ -132,6 +136,16 @@ AI 应审查 diff 报告中的 ⚠️ Breaking Change 标记，确认是否为�
 bash .trellis/scripts/stage-version.sh tag <version>
 ```
 
+**手动方式**（PowerShell 安全写法）：
+```powershell
+git add <staged-files>
+# 在 PowerShell 中不要用 heredoc/&&，把多行消息写入临时文件
+# 用 Write tool 写入 .git/COMMIT_MSG_TEMP，然后：
+git commit -F .git/COMMIT_MSG_TEMP
+git tag -a v<version> -m "Release v<version> - <summary>"
+git push origin master --tags
+```
+
 ### Step 11: 创建 GitHub Release（需确认）
 
 向用户确认是否创建 GitHub release：
@@ -140,7 +154,38 @@ bash .trellis/scripts/stage-version.sh tag <version>
 bash .trellis/scripts/stage-version.sh release <version>
 ```
 
-### Step 12: 验证
+**手动方式**（需要 `gh` CLI）：
+```powershell
+# 将 release notes 写入临时文件，然后：
+gh release create v<version> --title "v<version> - <title>" --notes-file .git/RELEASE_NOTES_TEMP.md
+```
+
+### Step 12: 更新 GitHub Pages [可选]
+
+Landing Page 源文件在 `docs/site/`，通过 GitHub Actions workflow (`.github/workflows/deploy-site.yml`) 自动部署到 GitHub Pages。
+
+**更新内容**：
+
+1. 编辑 `docs/site/index.html`：
+   - 更新 hero 区域的版本号（如 `v0.1.2`）
+   - 更新 Roadmap 区域的 Phase 状态（Done / Active / Planned）
+   - 更新 Stats 区域的统计数字（LOC、Tests、RPC methods、CLI commands）
+   - 更新 Release Notes 按钮链接
+2. 提交并推送到 master
+3. GitHub Actions 自动部署（触发条件: `docs/site/**` 变更）
+
+**验证**：
+
+```bash
+# 查看 Pages 状态
+gh api repos/<owner>/<repo>/pages
+# 查看最新部署
+gh api repos/<owner>/<repo>/pages/deployments --jq '.[0].status'
+```
+
+> **部署架构**：Pages 使用 Actions workflow 模式（非 legacy 模式），通过 `deploy-site.yml` 部署 `docs/site/` 目录内容。不受 GitHub Pages 路径限制（legacy 只支持 `/` 或 `/docs`）。
+
+### Step 13: 验证
 
 ```bash
 bash .trellis/scripts/stage-version.sh status <version>

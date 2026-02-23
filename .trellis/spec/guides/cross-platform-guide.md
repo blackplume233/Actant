@@ -108,6 +108,31 @@ The `.trellis/scripts/*.sh` files are Bash scripts for the development workflow 
 - **WSL** (Windows Subsystem for Linux) — also works
 - These scripts are not needed for running Actant itself, only for the Trellis development workflow
 
+### Common Mistake: pnpm/node not found in Git Bash
+
+**Symptom**: `stage-version.sh` commands fail with `pnpm: command not found` or `node: command not found`
+
+**Cause**: Git Bash has an isolated PATH that doesn't include Windows-installed tools like pnpm (installed via npm/corepack) or sometimes node.
+
+**Fix**: Run the corresponding `.mjs` scripts directly in PowerShell using `node`:
+
+```powershell
+node .trellis/scripts/gen-surface-snapshot.mjs docs/stage/v0.1.2
+node .trellis/scripts/gen-metrics-snapshot.mjs docs/stage/v0.1.2
+node .trellis/scripts/gen-issue-snapshot.mjs v0.1.2
+```
+
+For pnpm commands, use `npx pnpm <cmd>` in PowerShell.
+
+### Common Mistake: PowerShell syntax limitations
+
+**Symptom**: `&&` chains, heredoc (`<<'EOF'`), or `<` in strings cause parse errors.
+
+**Fix**:
+- Replace `&&` with `;` or separate commands
+- Write multi-line content to a temp file, then `git commit -F <file>`
+- Avoid `<` in inline strings (e.g. email addresses in git trailers)
+
 ---
 
 ## Checklist for New Features
