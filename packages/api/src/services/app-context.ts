@@ -123,7 +123,6 @@ export class AppContext {
     if (this.initialized) return;
 
     await mkdir(this.homeDir, { recursive: true });
-    await mkdir(this.templatesDir, { recursive: true });
     await mkdir(this.instancesDir, { recursive: true });
 
     await this.instanceRegistry.load();
@@ -134,12 +133,6 @@ export class AppContext {
 
     await this.loadDomainComponents();
     await this.sourceManager.initialize();
-
-    try {
-      await this.templateRegistry.loadBuiltins(this.templatesDir);
-    } catch {
-      logger.debug("No built-in templates found (templates dir may be empty)");
-    }
 
     await this.agentManager.initialize();
     this.initialized = true;
@@ -152,13 +145,14 @@ export class AppContext {
   }
 
   private async loadDomainComponents(): Promise<void> {
-    const dirs = [
+    const dirs: { manager: { setPersistDir(dir: string): void; loadFromDirectory(dirPath: string): Promise<number> }; sub: string }[] = [
       { manager: this.skillManager, sub: "skills" },
       { manager: this.promptManager, sub: "prompts" },
       { manager: this.mcpConfigManager, sub: "mcp" },
       { manager: this.workflowManager, sub: "workflows" },
       { manager: this.pluginManager, sub: "plugins" },
-    ] as const;
+      { manager: this.templateRegistry, sub: "templates" },
+    ];
 
     for (const { manager, sub } of dirs) {
       const dirPath = join(this.configsDir, sub);

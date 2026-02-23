@@ -1,0 +1,117 @@
+{
+  "name": "web-search-long-loop",
+  "description": "Long-duration web search loop: 60s intervals, 12 rounds with diverse topics and boundary queries",
+  "tags": ["web-search", "scheduled", "long-loop", "boundary"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "real",
+    "templates": [
+      {
+        "name": "qa-web-searcher",
+        "inline": {
+          "name": "qa-web-searcher",
+          "version": "1.1.0",
+          "backend": { "type": "claude-code" },
+          "provider": { "type": "anthropic" },
+          "domainContext": {},
+          "permissions": {
+            "allow": ["Read", "WebSearch", "WebFetch", "Bash"],
+            "deny": [],
+            "defaultMode": "bypassPermissions"
+          },
+          "schedule": {
+            "heartbeat": {
+              "intervalMs": 60000,
+              "prompt": "Perform a random web search on a trending topic and return a 2-3 sentence summary",
+              "priority": "normal"
+            }
+          }
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "create-agent",
+      "description": "Create web search agent from template",
+      "command": "agent create qa-web-searcher -t qa-web-searcher -f json",
+      "expect": "Agent created with WebSearch/WebFetch permissions"
+    },
+    {
+      "id": "round-01-sports",
+      "description": "Search: 2026 FIFA World Cup qualifiers",
+      "command": "agent run qa-web-searcher --prompt \"Search the web for: 2026 FIFA World Cup qualifiers latest results. Give a 2-3 sentence summary.\" --max-turns 5 --timeout 120000",
+      "expect": "Agent attempts WebSearch and produces a response (may fall back to training data)"
+    },
+    {
+      "id": "round-02-finance",
+      "description": "Search: global stock market 2026 trends",
+      "command": "agent run qa-web-searcher --prompt \"Search the web for: global stock market trends February 2026. Give a 2-3 sentence summary.\" --max-turns 5 --timeout 120000",
+      "expect": "Response about financial markets"
+    },
+    {
+      "id": "round-03-medical",
+      "description": "Search: mRNA vaccine developments",
+      "command": "agent run qa-web-searcher --prompt \"Search the web for: mRNA vaccine developments beyond COVID 2026. Give a 2-3 sentence summary.\" --max-turns 5 --timeout 120000",
+      "expect": "Response about mRNA technology"
+    },
+    {
+      "id": "round-04-environment",
+      "description": "Search: carbon capture technology",
+      "command": "agent run qa-web-searcher --prompt \"Search the web for: carbon capture technology breakthroughs 2026. Give a 2-3 sentence summary.\" --max-turns 5 --timeout 120000",
+      "expect": "Response about carbon capture"
+    },
+    {
+      "id": "round-05-space",
+      "description": "Search: James Webb telescope discoveries",
+      "command": "agent run qa-web-searcher --prompt \"Search the web for: James Webb Space Telescope latest discoveries 2026. Give a 2-3 sentence summary.\" --max-turns 5 --timeout 120000",
+      "expect": "Response about JWST discoveries"
+    },
+    {
+      "id": "round-06-boundary-empty",
+      "description": "Boundary: empty search query",
+      "command": "agent run qa-web-searcher --prompt \"Search the web for: . Give a 2-3 sentence summary.\" --max-turns 3 --timeout 60000",
+      "expect": "Agent handles gracefully, may ask for clarification or provide generic response"
+    },
+    {
+      "id": "round-07-boundary-chinese",
+      "description": "Boundary: Chinese language query",
+      "command": "agent run qa-web-searcher --prompt \"搜索网络: 2026年中国人工智能产业发展趋势。用2-3句话总结。\" --max-turns 5 --timeout 120000",
+      "expect": "Agent handles non-English query, responds in Chinese or English"
+    },
+    {
+      "id": "round-08-boundary-long",
+      "description": "Boundary: very long query",
+      "command": "agent run qa-web-searcher --prompt \"Search the web for: What are the latest developments in artificial general intelligence research including new architectures beyond transformers novel training paradigms emergent capabilities scaling laws and safety alignment techniques being developed by major AI labs like Anthropic OpenAI Google DeepMind and Meta AI in 2026. Give a 2-3 sentence summary.\" --max-turns 5 --timeout 120000",
+      "expect": "Agent handles long query, may truncate or focus on key terms"
+    },
+    {
+      "id": "round-09-robotics",
+      "description": "Search: humanoid robotics progress",
+      "command": "agent run qa-web-searcher --prompt \"Search the web for: humanoid robot progress Tesla Optimus Figure 2026. Give a 2-3 sentence summary.\" --max-turns 5 --timeout 120000",
+      "expect": "Response about humanoid robotics"
+    },
+    {
+      "id": "round-10-energy",
+      "description": "Search: solid state battery commercialization",
+      "command": "agent run qa-web-searcher --prompt \"Search the web for: solid state battery commercialization timeline Toyota Samsung 2026. Give a 2-3 sentence summary.\" --max-turns 5 --timeout 120000",
+      "expect": "Response about solid state batteries"
+    },
+    {
+      "id": "round-11-boundary-emoji",
+      "description": "Boundary: emoji in query",
+      "command": "agent run qa-web-searcher --prompt \"Search the web for: 🚀 rocket launches 2026 🌙 moon missions. Give a 2-3 sentence summary.\" --max-turns 5 --timeout 120000",
+      "expect": "Agent handles emoji gracefully"
+    },
+    {
+      "id": "round-12-bci",
+      "description": "Search: brain-computer interface consumer products",
+      "command": "agent run qa-web-searcher --prompt \"Search the web for: brain computer interface consumer products Neuralink 2026. Give a 2-3 sentence summary.\" --max-turns 5 --timeout 120000",
+      "expect": "Response about BCI products"
+    }
+  ],
+  "cleanup": [
+    "agent destroy qa-web-searcher",
+    "daemon stop"
+  ]
+}

@@ -1,3 +1,5 @@
+import { writeFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
 import type { AgentTemplate } from "@actant/shared";
 import { TemplateNotFoundError, ConfigValidationError } from "@actant/shared";
 import { TemplateLoader } from "../loader/template-loader";
@@ -14,9 +16,14 @@ export class TemplateRegistry {
   private readonly templates = new Map<string, AgentTemplate>();
   private readonly loader = new TemplateLoader();
   private readonly allowOverwrite: boolean;
+  private persistDir?: string;
 
   constructor(options?: RegistryOptions) {
     this.allowOverwrite = options?.allowOverwrite ?? false;
+  }
+
+  setPersistDir(dir: string): void {
+    this.persistDir = dir;
   }
 
   /**
@@ -89,11 +96,12 @@ export class TemplateRegistry {
   }
 
   /**
-   * Load built-in templates from a directory (e.g. `configs/templates/`).
+   * Load templates from a directory. Matches the BaseComponentManager interface
+   * so TemplateRegistry can participate in the unified loadDomainComponents flow.
    * Invalid files are skipped with a warning log.
    */
-  async loadBuiltins(configDir: string): Promise<number> {
-    const templates = await this.loader.loadFromDirectory(configDir);
+  async loadFromDirectory(dirPath: string): Promise<number> {
+    const templates = await this.loader.loadFromDirectory(dirPath);
     let count = 0;
     for (const tpl of templates) {
       try {
@@ -102,11 +110,24 @@ export class TemplateRegistry {
       } catch (err) {
         logger.warn(
           { templateName: tpl.name, error: err },
-          "Failed to register built-in template, skipping",
+          "Failed to register template, skipping",
         );
       }
     }
-    logger.info({ count, configDir }, "Built-in templates loaded");
+    logger.info({ count, dirPath }, "Templates loaded from directory");
     return count;
+  }
+
+  /** @deprecated Use loadFromDirectory instead. */
+  async loadBuiltins(configDir: string): Promise<number> {
+    return this.loadFromDirectory(configDir);
+  }
+
+  async persist(template: AgentTemplate): Promise<void> {
+    if (!this.persistDir) return;
+    await mkdir(this.persistDir, { recursive: true });
+    const filePath = join(this.persistDir, `${template.name}.json`);
+    await writeFile(filePath, JSON.stringify(template, null, 2) + "\n", "utf-8");
+    logger.debug({ templateName: template.name, filePath }, "Template persisted");
   }
 }

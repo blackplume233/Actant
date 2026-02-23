@@ -1,5 +1,4 @@
-import { copyFile } from "node:fs/promises";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import type {
   TemplateListResult,
   TemplateGetParams,
@@ -42,10 +41,9 @@ async function handleTemplateLoad(
   ctx: AppContext,
 ): Promise<TemplateLoadResult> {
   const { filePath } = params as unknown as TemplateLoadParams;
-  const template = await ctx.templateLoader.loadFromFile(filePath);
-  const destFile = join(ctx.templatesDir, `${template.name}.json`);
-  await copyFile(resolve(filePath), destFile);
+  const template = await ctx.templateLoader.loadFromFile(resolve(filePath));
   ctx.templateRegistry.register(template);
+  await ctx.templateRegistry.persist(template);
   return template;
 }
 
