@@ -1,8 +1,8 @@
 import { Command } from "commander";
 import { join } from "node:path";
-import { fork } from "node:child_process";
+import { fork, spawn } from "node:child_process";
 import chalk from "chalk";
-import { onShutdownSignal } from "@actant/shared";
+import { onShutdownSignal, isWindows } from "@actant/shared";
 import { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 import { defaultSocketPath } from "../../program";
@@ -42,13 +42,22 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
       } else {
         const daemonScript = join(import.meta.dirname, "daemon-entry.js");
 
-        const stderrChunks: Buffer[] = [];
-        const child = fork(daemonScript, [], {
-          detached: true,
-          stdio: ["ignore", "ignore", "pipe", "ipc"],
-          env: process.env,
-        });
+        // Windows: fork() + detached doesn't truly detach due to IPC channel
+        // keeping parent-child bound together (Node.js #36808).
+        // Use spawn(process.execPath, ...) which has no IPC and detaches cleanly.
+        const child = isWindows()
+          ? spawn(process.execPath, [daemonScript], {
+              detached: true,
+              stdio: ["ignore", "ignore", "pipe"],
+              env: process.env,
+            })
+          : fork(daemonScript, [], {
+              detached: true,
+              stdio: ["ignore", "ignore", "pipe", "ipc"],
+              env: process.env,
+            });
 
+        const stderrChunks: Buffer[] = [];
         child.stderr?.on("data", (chunk: Buffer) => {
           stderrChunks.push(chunk);
         });
@@ -78,7 +87,7 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
         }
 
         child.stderr?.destroy();
-        if (child.connected) child.disconnect();
+        if ("connected" in child && child.connected) child.disconnect();
         child.unref();
 
         if (healthy) {
