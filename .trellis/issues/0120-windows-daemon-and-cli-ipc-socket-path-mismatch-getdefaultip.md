@@ -1,7 +1,8 @@
 ---
 id: 120
 title: "Windows: Daemon and CLI IPC socket path mismatch - getDefaultIpcPath vs getIpcPath"
-status: open
+status: closed
+closedAt: "2026-02-23"
 labels:
   - bug
   - cli

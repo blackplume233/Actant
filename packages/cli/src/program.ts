@@ -1,4 +1,6 @@
 import { Command } from "commander";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { getDefaultIpcPath } from "@actant/shared";
 import { RpcClient } from "./client/rpc-client";
 import {
@@ -29,8 +31,11 @@ export function createProgram(socketPath?: string, printer?: CliPrinter): Comman
   const sock = socketPath ?? defaultSocketPath();
   const client = new RpcClient(sock);
 
+  const pkgPath = join(import.meta.dirname, "..", "package.json");
+  const { version } = JSON.parse(readFileSync(pkgPath, "utf-8"));
+
   const program = new Command("actant")
-    .version("0.1.0")
+    .version(version)
     .description("Actant — Build, manage, and compose AI agents");
 
   program.addCommand(createTemplateCommand(client, printer));

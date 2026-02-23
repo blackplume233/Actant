@@ -5,6 +5,7 @@ import { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 import {
   chooseHome,
+  ensureDirectoryStructure,
   configureProvider,
   configureSource,
   materializeAgent,
@@ -40,7 +41,16 @@ export function createSetupCommand(printer: CliPrinter = defaultPrinter): Comman
         if (opts.skipHome) {
           const { homedir } = await import("node:os");
           const { join } = await import("node:path");
+          const { existsSync, writeFileSync } = await import("node:fs");
           actantHome = process.env["ACTANT_HOME"] || join(homedir(), ".actant");
+          ensureDirectoryStructure(actantHome);
+          const configFile = join(actantHome, "config.json");
+          if (!existsSync(configFile)) {
+            writeFileSync(configFile, JSON.stringify({
+              devSourcePath: "",
+              update: { maxBackups: 3, preUpdateTestCommand: "pnpm test:changed", autoRestartAgents: true },
+            }, null, 2) + "\n");
+          }
           printer.dim(`  使用默认工作目录: ${actantHome}`);
         } else {
           actantHome = await chooseHome(printer);

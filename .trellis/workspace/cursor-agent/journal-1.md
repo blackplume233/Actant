@@ -1081,3 +1081,30 @@ Deep audit of code quality across the entire codebase. Fixed ESLint configuratio
 ### Status
 
 [UNCOMMITTED] **Completed** — awaiting commit
+
+---
+
+## Session 2026-02-23T20:10 — Fix publish-npm CI flaky test
+
+**Commit**: `f28635c` fix(ci): disable ProcessWatcher polling in mock launcher mode
+
+### Summary
+
+修复 `Publish to npm` CI workflow 的非确定性失败。
+
+**根因**: `MockLauncher` 返回假 PID（10000+），`ProcessWatcher` 每 5 秒轮询 `isProcessAlive()` 检测到假 PID 无对应进程，将 agent 状态从 `running` 改为 `stopped`。当轮询恰好在 E2E 测试的 `agent start` 与 `agent status` 之间触发时，断言 `expected 'stopped' to be 'running'` 失败。
+
+**修复**: 在 `AppContext` 中，当 `launcherMode === "mock"` 时将 `watcherPollIntervalMs` 设为 `2_147_483_647`（INT32_MAX），实质禁用 mock 模式下的进程存活轮询。
+
+**验证**:
+- 本地 E2E 测试: 12/12 passed
+- 本地 API 测试: 57/57 passed
+- CI Publish to npm (v0.1.3 tag): conclusion **success**
+
+### Updated Files
+
+- `packages/api/src/services/app-context.ts` (+1 line)
+
+### Status
+
+[COMMITTED] **Completed** — pushed to master, CI green

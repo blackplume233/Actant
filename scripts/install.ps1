@@ -1,11 +1,10 @@
 #Requires -Version 5.1
-$ErrorActionPreference = "Stop"
-
 param(
   [switch]$SkipSetup,
   [switch]$Uninstall,
   [switch]$FromGitHub
 )
+$ErrorActionPreference = "Stop"
 
 $GitHubReleaseUrl = "https://github.com/blackplume233/Actant/releases/latest/download/actant-cli.tgz"
 
@@ -44,6 +43,10 @@ function Install-FromGitHub {
   Write-Host "Installing @actant/cli from GitHub Release..." -ForegroundColor Cyan
   Write-Host "  $GitHubReleaseUrl" -ForegroundColor Gray
   npm install -g $GitHubReleaseUrl
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host "Error: npm install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
+    exit 1
+  }
   Write-Host "✓ Actant installed from GitHub Release" -ForegroundColor Green
 }
 
@@ -69,6 +72,10 @@ if ($existingActant) {
       Write-Host ""
       Write-Host "Updating @actant/cli from npm..." -ForegroundColor Cyan
       npm install -g @actant/cli
+      if ($LASTEXITCODE -ne 0) {
+        Write-Host "Error: npm install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
+        exit 1
+      }
       Write-Host ""
       $newVersion = "unknown"
       try { $newVersion = actant --version 2>$null } catch {}
@@ -141,6 +148,10 @@ if ($FromGitHub) {
     Write-Host ""
     Write-Host "Installing @actant/cli from npm..." -ForegroundColor Cyan
     npm install -g @actant/cli
+    if ($LASTEXITCODE -ne 0) {
+      Write-Host "Error: npm install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
+      exit 1
+    }
   }
 }
 
@@ -151,9 +162,9 @@ try {
   Write-Host "✓ actant $versionOutput" -ForegroundColor Green
 } catch {
   Write-Host "Error: actant command not found after install." -ForegroundColor Red
-  $globalBin = npm bin -g 2>$null
-  if ($globalBin) {
-    Write-Host "  Try adding to PATH: $globalBin" -ForegroundColor Gray
+  $npmPrefix = npm config get prefix 2>$null
+  if ($npmPrefix) {
+    Write-Host "  Try adding to PATH: $npmPrefix" -ForegroundColor Gray
   }
   exit 1
 }

@@ -75,7 +75,7 @@ describe("CLI E2E (stdio)", () => {
   it("--version shows version", async () => {
     const { stdout, exitCode } = await runCli(["--version"], socketPath);
     expect(exitCode).toBe(0);
-    expect(stdout.trim()).toBe("0.1.0");
+    expect(stdout.trim()).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
   it("daemon status shows running", async () => {

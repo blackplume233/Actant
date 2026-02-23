@@ -73,7 +73,7 @@ export class AppContext {
     this.instancesDir = join(this.homeDir, "instances");
     this.registryPath = join(this.homeDir, "instances", "registry.json");
     this.builtinInstancesDir = join(this.homeDir, "instances");
-    this.socketPath = getIpcPath(this.homeDir);
+    this.socketPath = process.env.ACTANT_SOCKET ?? getIpcPath(this.homeDir);
     this.pidFilePath = join(this.homeDir, "daemon.pid");
 
     this.instanceRegistry = new InstanceRegistry(this.registryPath, this.builtinInstancesDir);

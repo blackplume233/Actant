@@ -163,7 +163,7 @@ if actant --version &>/dev/null; then
   echo -e "${GREEN}✓ actant $(actant --version)${NC}"
 else
   echo -e "${RED}Error: actant command not found after install.${NC}"
-  echo -e "  Try running: ${YELLOW}npm bin -g${NC} to find global bin path"
+  echo -e "  Try running: ${YELLOW}npm config get prefix${NC} to find global bin path"
   echo -e "  Then add it to your PATH."
   exit 1
 fi

@@ -1,4 +1,4 @@
-export { chooseHome } from "./choose-home";
+export { chooseHome, ensureDirectoryStructure } from "./choose-home";
 export { configureProvider } from "./configure-provider";
 export { configureSource } from "./configure-source";
 export { materializeAgent } from "./materialize-agent";

@@ -74,7 +74,7 @@ export async function chooseHome(printer: CliPrinter): Promise<string> {
   return actantHome;
 }
 
-function ensureDirectoryStructure(base: string): void {
+export function ensureDirectoryStructure(base: string): void {
   for (const dir of SUBDIRS) {
     mkdirSync(join(base, dir), { recursive: true });
   }
