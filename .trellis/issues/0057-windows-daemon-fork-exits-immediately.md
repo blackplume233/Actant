@@ -1,7 +1,9 @@
 ---
 id: 57
 title: Windows 平台 daemon start（非 foreground）fork 后立即退出
-status: open
+status: closed
+closedAs: completed
+closedAt: 2026-02-23T16:10:00
 labels:
   - bug
   - "platform:windows"
