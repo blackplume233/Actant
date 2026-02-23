@@ -4,6 +4,7 @@ import { AgentLaunchError, createLogger } from "@actant/shared";
 import type { AgentLauncher, AgentProcess } from "./agent-launcher";
 import { resolveBackend, isAcpBackend } from "./backend-resolver";
 import { isProcessAlive, sendSignal, delay } from "./process-utils";
+import { ProcessLogWriter, type ProcessLogWriterOptions } from "./process-log-writer";
 
 const logger = createLogger("process-launcher");
 
@@ -12,6 +13,10 @@ export interface ProcessLauncherOptions {
   terminateTimeoutMs?: number;
   /** Milliseconds to wait after spawn to verify the process is still alive. Default: 500 */
   spawnVerifyDelayMs?: number;
+  /** Enable process log capture for non-ACP backends. Default: true. */
+  enableProcessLogs?: boolean;
+  /** Options for process log file writer. */
+  logWriterOptions?: ProcessLogWriterOptions;
 }
 
 const DEFAULT_TERMINATE_TIMEOUT = 5_000;
@@ -27,10 +32,15 @@ const DEFAULT_SPAWN_VERIFY_DELAY = 500;
 export class ProcessLauncher implements AgentLauncher {
   private readonly terminateTimeoutMs: number;
   private readonly spawnVerifyDelayMs: number;
+  private readonly enableProcessLogs: boolean;
+  private readonly logWriterOptions?: ProcessLogWriterOptions;
+  private readonly logWriters = new Map<string, ProcessLogWriter>();
 
   constructor(options?: ProcessLauncherOptions) {
     this.terminateTimeoutMs = options?.terminateTimeoutMs ?? DEFAULT_TERMINATE_TIMEOUT;
     this.spawnVerifyDelayMs = options?.spawnVerifyDelayMs ?? DEFAULT_SPAWN_VERIFY_DELAY;
+    this.enableProcessLogs = options?.enableProcessLogs ?? true;
+    this.logWriterOptions = options?.logWriterOptions;
   }
 
   async launch(workspaceDir: string, meta: AgentInstanceMeta): Promise<AgentProcess> {
@@ -44,10 +54,21 @@ export class ProcessLauncher implements AgentLauncher {
 
     logger.info({ name: meta.name, command, args, backendType: meta.backendType, acp: useAcp }, "Spawning backend process");
 
+    const captureNonAcpLogs = !useAcp && this.enableProcessLogs;
+
+    let stdio: import("node:child_process").StdioOptions;
+    if (useAcp) {
+      stdio = ["pipe", "pipe", "pipe"];
+    } else if (captureNonAcpLogs) {
+      stdio = ["ignore", "pipe", "pipe"];
+    } else {
+      stdio = "ignore";
+    }
+
     const child = spawn(command, args, {
       cwd: workspaceDir,
       detached: !useAcp,
-      stdio: useAcp ? ["pipe", "pipe", "pipe"] : "ignore",
+      stdio,
     });
 
     const spawnResult = await new Promise<{ pid: number } | { error: Error }>((resolve) => {
@@ -98,6 +119,18 @@ export class ProcessLauncher implements AgentLauncher {
 
     logger.info({ name: meta.name, pid, command, acp: useAcp }, "Backend process spawned");
 
+    if (captureNonAcpLogs && child.stdout && child.stderr) {
+      const logWriter = new ProcessLogWriter(workspaceDir, this.logWriterOptions);
+      try {
+        await logWriter.initialize();
+        logWriter.attach(child.stdout, child.stderr);
+        this.logWriters.set(meta.name, logWriter);
+        logger.debug({ name: meta.name }, "Process log capture enabled");
+      } catch (err) {
+        logger.warn({ name: meta.name, error: err }, "Failed to initialize log writer, continuing without log capture");
+      }
+    }
+
     const result: AgentProcess = {
       pid,
       workspaceDir,
@@ -115,8 +148,18 @@ export class ProcessLauncher implements AgentLauncher {
     return result;
   }
 
+  getLogWriter(instanceName: string): ProcessLogWriter | undefined {
+    return this.logWriters.get(instanceName);
+  }
+
   async terminate(agentProcess: AgentProcess): Promise<void> {
     const { pid, instanceName } = agentProcess;
+
+    const logWriter = this.logWriters.get(instanceName);
+    if (logWriter) {
+      await logWriter.close().catch(() => {});
+      this.logWriters.delete(instanceName);
+    }
 
     if (!isProcessAlive(pid)) {
       logger.info({ instanceName, pid }, "Process already exited");

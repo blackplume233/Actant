@@ -4,6 +4,7 @@ import { mkdir } from "node:fs/promises";
 import {
   TemplateRegistry,
   TemplateLoader,
+  TemplateFileWatcher,
   AgentInitializer,
   AgentManager,
   SessionRegistry,
@@ -16,6 +17,7 @@ import {
   createLauncher,
   EmployeeScheduler,
   InstanceRegistry,
+  createDefaultStepRegistry,
   type LauncherMode,
 } from "@actant/core";
 import { AcpConnectionManager } from "@actant/acp";
@@ -57,6 +59,7 @@ export class AppContext {
   readonly agentManager: AgentManager;
   readonly sessionRegistry: SessionRegistry;
   readonly sourceManager: SourceManager;
+  readonly templateWatcher: TemplateFileWatcher;
   readonly schedulers: Map<string, EmployeeScheduler>;
 
   private initialized = false;
@@ -101,6 +104,7 @@ export class AppContext {
           mcp: this.mcpConfigManager,
           workflows: this.workflowManager,
         },
+        stepRegistry: createDefaultStepRegistry(),
       },
     );
     this.acpConnectionManager = new AcpConnectionManager();
@@ -116,6 +120,7 @@ export class AppContext {
         instanceRegistry: this.instanceRegistry,
       },
     );
+    this.templateWatcher = new TemplateFileWatcher(this.templatesDir, this.templateRegistry);
     this.schedulers = new Map();
   }
 
@@ -135,6 +140,7 @@ export class AppContext {
     await this.sourceManager.initialize();
 
     await this.agentManager.initialize();
+    this.templateWatcher.start();
     this.initialized = true;
     this.startTime = Date.now();
     logger.info("AppContext initialized");

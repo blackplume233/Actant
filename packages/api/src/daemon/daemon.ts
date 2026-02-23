@@ -90,6 +90,7 @@ export class Daemon {
       }
     }
 
+    this.ctx.templateWatcher.stop();
     await this.server.close();
     await removePidFile(this.ctx.pidFilePath);
 

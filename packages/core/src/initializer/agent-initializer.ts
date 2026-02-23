@@ -13,12 +13,17 @@ import type { TemplateRegistry } from "../template/registry/template-registry";
 import { WorkspaceBuilder, type DomainManagers } from "../builder/workspace-builder";
 import { resolvePermissions } from "../permissions/permission-presets";
 import { readInstanceMeta, writeInstanceMeta } from "../state/index";
+import { InitializationPipeline } from "./pipeline/initialization-pipeline";
+import type { StepRegistry } from "./pipeline/step-registry";
+import type { StepContext } from "./pipeline/types";
 
 const logger = createLogger("agent-initializer");
 
 export interface InitializerOptions {
   defaultLaunchMode?: LaunchMode;
   domainManagers?: DomainManagers;
+  /** Step registry for InitializerConfig pipeline execution. When provided, template.initializer.steps will be executed during createInstance(). */
+  stepRegistry?: StepRegistry;
 }
 
 export interface InstanceOverrides {
@@ -35,6 +40,7 @@ export interface InstanceOverrides {
 
 export class AgentInitializer {
   private readonly builder: WorkspaceBuilder;
+  private readonly pipeline?: InitializationPipeline;
 
   constructor(
     private readonly templateRegistry: TemplateRegistry,
@@ -42,6 +48,9 @@ export class AgentInitializer {
     private readonly options?: InitializerOptions,
   ) {
     this.builder = new WorkspaceBuilder(options?.domainManagers);
+    if (options?.stepRegistry) {
+      this.pipeline = new InitializationPipeline(options.stepRegistry);
+    }
   }
 
   /**
@@ -105,6 +114,24 @@ export class AgentInitializer {
         template.backend.type,
         finalPermissions,
       );
+
+      if (this.pipeline && template.initializer?.steps?.length) {
+        const stepContext: StepContext = {
+          workspaceDir,
+          instanceMeta: { name, templateName: template.name },
+          template,
+          logger,
+          state: new Map(),
+        };
+        const pipelineResult = await this.pipeline.run(template.initializer.steps, stepContext);
+        if (!pipelineResult.success) {
+          const firstError = pipelineResult.errors[0];
+          throw new WorkspaceInitError(
+            workspaceDir,
+            firstError?.error ?? new Error("Initializer pipeline failed"),
+          );
+        }
+      }
 
       const effectivePermissions = resolvePermissions(finalPermissions);
 

@@ -526,6 +526,7 @@ ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调
 | `agent.dispatch` | `{ name, prompt, priority? }` | `{ queued }` | `AGENT_NOT_FOUND` |
 | `agent.tasks` | `{ name }` | `{ queued, processing, tasks }` | `AGENT_NOT_FOUND` |
 | `agent.logs` | `{ name, limit? }` | `ExecutionRecord[]` | `AGENT_NOT_FOUND` |
+| `agent.processLogs` | `{ name, stream?, lines? }` | `{ lines, stream, logDir }` | `AGENT_NOT_FOUND` |
 | `schedule.list` | `{ name }` | `{ sources, running }` | `AGENT_NOT_FOUND` |
 
 #### agent.dispatch
@@ -556,6 +557,26 @@ ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调
 |------|------|------|------|
 | `name` | `string` | **是** | Agent 实例名 |
 | `limit` | `number` | 否 | 返回最近 N 条记录 |
+
+#### agent.processLogs
+
+查看 Agent 后端进程的 stdout/stderr 日志文件。日志文件位于 `{instanceDir}/logs/`。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | `string` | **是** | Agent 实例名 |
+| `stream` | `"stdout" \| "stderr"` | 否 | 日志流类型，默认 `"stdout"` |
+| `lines` | `number` | 否 | 返回最近 N 行，默认 50 |
+
+**返回**:
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `lines` | `string[]` | 日志行内容 |
+| `stream` | `string` | 实际查询的流类型 |
+| `logDir` | `string` | 日志目录路径 |
+
+> 实现参考：`packages/api/src/handlers/agent-handlers.ts`，`packages/core/src/manager/launcher/process-log-writer.ts`
 
 #### schedule.list
 

@@ -23,3 +23,4 @@ export {
   type ProcessExitInfo,
   type ProcessExitHandler,
 } from "./launcher/process-watcher";
+export { ProcessLogWriter, type ProcessLogWriterOptions } from "./launcher/process-log-writer";

@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import { readFile } from "node:fs/promises";
 import type {
   AgentCreateParams,
   AgentCreateResult,
@@ -46,6 +47,7 @@ export function registerAgentHandlers(registry: HandlerRegistry): void {
   registry.register("agent.run", handleAgentRun);
   registry.register("agent.prompt", handleAgentPrompt);
   registry.register("agent.updatePermissions", handleAgentUpdatePermissions);
+  registry.register("agent.processLogs", handleAgentProcessLogs);
 }
 
 async function handleAgentCreate(
@@ -188,4 +190,42 @@ async function handleAgentUpdatePermissions(
   auditLogger.logUpdated("rpc:agent.updatePermissions");
 
   return { effectivePermissions: resolved };
+}
+
+interface AgentProcessLogsParams {
+  name: string;
+  stream?: "stdout" | "stderr";
+  lines?: number;
+}
+
+interface AgentProcessLogsResult {
+  lines: string[];
+  stream: string;
+  logDir: string;
+}
+
+async function handleAgentProcessLogs(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<AgentProcessLogsResult> {
+  const { name, stream = "stdout", lines = 50 } = params as unknown as AgentProcessLogsParams;
+  const meta = ctx.agentManager.getAgent(name);
+  if (!meta) throw new AgentNotFoundError(name);
+
+  const logDir = join(ctx.instancesDir, name, "logs");
+  const logFile = join(logDir, `${stream}.log`);
+
+  let content: string;
+  try {
+    content = await readFile(logFile, "utf-8");
+  } catch {
+    return { lines: [], stream, logDir };
+  }
+
+  const allLines = content.split("\n").filter(Boolean);
+  return {
+    lines: allLines.slice(-lines),
+    stream,
+    logDir,
+  };
 }

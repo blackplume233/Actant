@@ -23,3 +23,4 @@ export {
 } from "./schema/config-validators";
 export { TemplateLoader, toAgentTemplate } from "./loader/template-loader";
 export { TemplateRegistry, type RegistryOptions } from "./registry/template-registry";
+export { TemplateFileWatcher, type TemplateFileWatcherOptions } from "./watcher/index";
