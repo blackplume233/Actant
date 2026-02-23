@@ -118,6 +118,7 @@ export class AppContext {
       {
         acpManager: launcherMode !== "mock" ? this.acpConnectionManager : undefined,
         instanceRegistry: this.instanceRegistry,
+        watcherPollIntervalMs: launcherMode === "mock" ? 2_147_483_647 : undefined,
       },
     );
     this.templateWatcher = new TemplateFileWatcher(this.templatesDir, this.templateRegistry);
