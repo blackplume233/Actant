@@ -7,40 +7,41 @@
 
 ## 概述
 
-Actant 的接口架构（两层协议分工）：
+Actant 的接口架构（三层协议分工）：
 
 ```
-     管理操作 (RPC)                          实时交互 (ACP)
+     管理操作 (RPC)             Agent-to-Agent (Email)       实时交互 (ACP)
 
-  CLI (actant)                 外部 ACP Client (IDE/Desktop)
-        │                                    │
-  RpcClient (JSON-RPC 2.0)             ACP / stdio
-        │                                    │
-  Unix Socket / Named Pipe          ACP Proxy (薄层 stdio↔socket)
-        │                                    │
-        │                             ACP / Unix socket
-        │                                    │
-        │                         agent chat (内置 ACP Client)
-        │                                    │
-        │                             ACP / Unix socket
-        │                                    │
-        └────────────────┬───────────────────┘
-                         │
-              ┌──────────▼──────────────────────┐
-              │       Actant Core (Daemon)    │
-              │                                   │
-              │  RPC: HandlerRegistry             │
-              │   ├─ Agent/Template/Domain/Daemon │
-              │   └─ Proxy(legacy) handlers       │
-              │                                   │
-              │  ACP Gateway: Session 多路复用     │
-              │   ├─ AgentSideConnection (面向上游)│
+  CLI (actant)              CLI (actant email)      外部 ACP Client (IDE/Desktop)
+        │                         │                            │
+  RpcClient (JSON-RPC 2.0)  RpcClient (email.*)          ACP / stdio
+        │                         │                            │
+  Unix Socket / Named Pipe   Unix Socket              ACP Proxy (薄层 stdio↔socket)
+        │                         │                            │
+        │                         │                      ACP / Unix socket
+        │                         │                            │
+        │                         │                  agent chat (内置 ACP Client)
+        │                         │                            │
+        └─────────────────┬───────┴────────────────────────────┘
+                          │
+              ┌───────────▼───────────────────────┐
+              │        Actant Core (Daemon)        │
+              │                                    │
+              │  RPC: HandlerRegistry              │
+              │   ├─ Agent/Template/Domain/Daemon  │
+              │   ├─ Email handlers (#136)         │
+              │   └─ Proxy(legacy) handlers        │
+              │                                    │
+              │  Email Hub: 路由 + 投递 + 持久化    │
+              │                                    │
+              │  ACP Gateway: Session 多路复用      │
+              │   ├─ AgentSideConnection (面向上游) │
               │   └─ ClientSideConnection (面向下游)│
-              └──────────────┬────────────────────┘
-                             │ ACP / stdio (唯一连接)
-                             ▼
-                      Agent 子进程
-                      (claude-agent-acp)
+              └───────────────┬────────────────────┘
+                              │ ACP / stdio (唯一连接)
+                              ▼
+                       Agent 子进程
+                       (claude-agent-acp)
 ```
 
 > 详细场景分析参见 [Agent 启动场景与 ACP 架构](../../docs/design/agent-launch-scenarios.md)
@@ -51,7 +52,8 @@ Actant 的接口架构（两层协议分工）：
 |--------|------|------|------|
 | **JSON-RPC 2.0** | Unix socket, request/response | 管理操作：create/start/stop/list/resolve/attach/detach | 所有场景 |
 | **ACP** | Unix socket (上游) / stdio (下游), streaming | 实时交互：prompt/stream/cancel/notifications | Agent start + chat/proxy |
-| **MCP / stdio** | stdio | Agent-to-Agent 通信 | 外部 Agent 调用 |
+| **Email (JSON-RPC)** | Unix socket, async | Agent-to-Agent 异步通信（#136, P1 通道） | Agent 协作、任务委派 |
+| **MCP / stdio** | stdio | Agent-to-Agent 通信（#16, P4 可选） | IDE 内 Agent 调用 |
 
 **核心原则**：RPC 层处理管理操作，ACP Gateway 层处理实时交互。不存在"用 RPC 传 ACP 消息"的错位。
 
@@ -62,7 +64,8 @@ Actant 的接口架构（两层协议分工）：
 | **CLI** | JSON-RPC via Socket | 开发者 / 脚本自动化 | §4 |
 | **ACP Proxy** | ACP / stdio → ACP Gateway | IDE / 应用接入托管 Agent | §7 |
 | **agent chat** | ACP / Unix socket → ACP Gateway | 终端交互式聊天（流式） | §4.2, §7 |
-| **MCP Server** | MCP / stdio | Agent-to-Agent 通信 | §8 |
+| **Email (Agent-to-Agent)** | JSON-RPC (email.*) | Agent 间异步 Email 通信（#136） | §8 |
+| **MCP Server (P4)** | MCP / stdio | 可选 MCP 接入（#16） | §8.6 |
 | **Self-spawn + Attach** | JSON-RPC via Socket | 外部客户端自己 spawn Agent，注册到 Actant | §3.3 |
 
 - **传输层**：JSON-RPC 2.0，换行分隔，通过 Unix Socket（Windows Named Pipe）
@@ -225,6 +228,7 @@ CLI `template validate <file>` 输出格式：
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
 | `agent.resolve` | `{ name, template? }` | `ResolveResult` | `AGENT_NOT_FOUND`, `TEMPLATE_NOT_FOUND`, `WORKSPACE_INIT` |
+| `agent.open` | `{ name }` | `AgentOpenResult` | `AGENT_NOT_FOUND`, `AGENT_LAUNCH` |
 | `agent.attach` | `{ name, pid, metadata? }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND`, `AGENT_ALREADY_RUNNING`, `AGENT_ALREADY_ATTACHED` |
 | `agent.detach` | `{ name, cleanup? }` | `DetachResult` | `AGENT_NOT_FOUND`, `AGENT_NOT_ATTACHED` |
 
@@ -308,6 +312,37 @@ Client → agent.attach({ name: "reviewer", pid: 12345 })
 **行为：**
 - 清除 `processOwnership`、`pid`，状态变为 `"stopped"`
 - 若 `cleanup: true` 且 `workspacePolicy: "ephemeral"`，删除 workspace 目录并销毁实例
+
+#### agent.open
+
+打开 Agent 后端的原生 TUI / UI，通过 detached 子进程启动。要求后端支持 `open` mode（参见 [agent-lifecycle.md §5](./agent-lifecycle.md#5-backend-open-mode--后端打开方式)）。
+
+**参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | `string` | **是** | Agent 实例名 |
+
+**返回 `AgentOpenResult`：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `command` | `string` | 实际执行的命令 |
+| `args` | `string[]` | 命令参数 |
+
+**行为：**
+- 从 BackendRegistry 获取后端描述符，通过 `requireMode(type, "open")` 验证支持 `open` mode
+- 使用描述符的 `openCommand` 解析为平台命令
+- 在 CLI 侧通过 `child_process.spawn(command, args, { detached: true, stdio: "ignore" })` 启动 GUI 进程并立即 `unref()`
+- 后端不支持 `open` mode 时抛出 `AGENT_LAUNCH` 错误
+
+**典型流程：**
+
+```
+Client → agent.open({ name: "my-editor" })
+       ← { command: "cursor", args: ["/path/to/workspace"] }
+CLI 侧 → spawn("cursor", ["/path/to/workspace"], { detached: true })
+```
 
 ### 3.4 Agent 通信（MVP — print 模式） ✅ 已实现
 
@@ -659,6 +694,7 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | 命令 | 参数 | 选项 | 对应 RPC |
 |------|------|------|---------|
 | `agent resolve <name>` | `name` | `-t, --template`, `-f, --format` | `agent.resolve` |
+| `agent open <name>` | `name` | — | `agent.open` |
 | `agent attach <name>` | `name` | `--pid`（必填）, `--metadata` | `agent.attach` |
 | `agent detach <name>` | `name` | `--cleanup` | `agent.detach` |
 
@@ -1060,72 +1096,160 @@ actant proxy my-agent --lease
 
 ---
 
-## 8. MCP Server — Agent 间通信能力
+## 8. Agent-to-Agent 通信 — Email 范式（#136）
 
 > 状态：**规范已定义，未实现**
 
-Actant MCP Server 向其他 Agent 暴露 Agent 管理能力。Agent A 通过 MCP tool call 即可创建、调用、查询 Actant 管理的 Agent。
+Agent 间通信采用异步 **Email 范式**，通过 CLI / JSON-RPC API 作为主要通道。
 
-### 8.1 协议栈
+### 8.1 通信通道优先级
+
+| 优先级 | 通道 | 协议 | 使用者 |
+|--------|------|------|--------|
+| **P1** | CLI | `actant email send/inbox/reply/threads` | 人、Agent（通过 shell 调用）、脚本 |
+| **P1** | JSON-RPC | `email.send` / `email.inbox` / `email.reply` | Agent 进程、外部应用 |
+| P4 | MCP (可选) | `actant_send_email` 等 (#16) | Agent 从 IDE 内部通过 MCP tool call |
+
+### 8.2 协议栈
 
 ```
-Agent A (在 IDE 中运行)
+人 / Agent / 外部应用
     │
-    │  MCP tool call
-    ▼
-Actant MCP Server (packages/mcp-server)
+    ├── CLI:  actant email send --to agent-b --subject "..." --body "..."
+    ├── RPC:  email.send { to: ["agent-b"], subject: "...", body: "..." }
     │
-    │  Actant API (JSON-RPC / Unix Socket)
     ▼
 Actant Daemon
     │
-    │  ACP / stdio
-    ▼
-Agent B (headless, 被 Actant 管理)
+    ├── Email Hub（路由 + 投递 + 持久化 + 状态追踪）
+    │     ├── 收件人解析 → Agent Instance
+    │     ├── CC/群发路由
+    │     ├── 排队（Agent 未运行时）
+    │     └── Email 记录持久化
+    │
+    ├── 雇员 Agent → EmailInput → TaskQueue → 主 Session 处理
+    └── 普通 Agent → 启动新进程/Session → 处理 → 自动回复
 ```
 
-**Agent A 不直接用 ACP 和 Agent B 通信**。ACP 连接被 Actant Daemon 独占（Daemon 是 Agent B 的 ACP Client）。Agent A 通过 MCP 工具调用间接操作。
+### 8.3 Email RPC Methods（规划）
 
-### 8.2 MCP Tools
+| 方法 | 参数 | 返回 | 说明 |
+|------|------|------|------|
+| `email.send` | `{ to, cc?, subject, body, sourceType, replyTo?, inReplyTo?, priority?, callback? }` | `{ emailId, status }` | 发送 Email |
+| `email.inbox` | `{ agentName, status?, limit? }` | `AgentEmail[]` | 查看收件箱 |
+| `email.reply` | `{ emailId, body }` | `{ emailId, status }` | 回复 Email |
+| `email.fork` | `{ forkFrom, reason, compressedContext, body }` | `{ emailId, obsoleted }` | 时间线分叉（见 §8.7） |
+| `email.threads` | `{ agentName?, threadId? }` | `EmailThread[]` | 列出 threads（含分叉） |
+| `email.status` | `{ emailId }` | `AgentEmail` | 查询单封 Email 状态 |
 
-| Tool 名称 | 参数 | 返回 | 说明 |
-|-----------|------|------|------|
-| `actant_run_agent` | `{ template, prompt }` | `{ response, artifacts? }` | 创建 ephemeral Agent 执行任务后返回 |
-| `actant_prompt_agent` | `{ name, message, sessionId? }` | `{ response, sessionId }` | 向持久 Agent 发送消息 |
-| `actant_agent_status` | `{ name }` | `AgentInstanceMeta` | 查询 Agent 状态 |
-| `actant_create_agent` | `{ name, template }` | `{ name, workspaceDir, status }` | 创建实例（不启动） |
-| `actant_list_agents` | `{}` | `AgentInstanceMeta[]` | 列出所有 Agent |
+### 8.4 Email CLI Commands（规划）
 
-### 8.3 为什么 Agent-to-Agent 用 MCP 而非 ACP
+```bash
+actant email send --to <agent> [--cc <agent>...] --subject "..." --body "..." [--reply-to <target>] [--callback <endpoint>]
+actant email inbox <agent-name> [--status pending|delivered|replied]
+actant email reply <email-id> --body "..."
+actant email fork --from <email-id> --reason context-compression|direction-change --context "..." --body "..."
+actant email threads [<agent-name>] [--show-forks]
+actant email show <email-id>
+```
 
-| 维度 | ACP | MCP |
-|------|-----|-----|
-| 设计用途 | Client ↔ Agent（不对称） | Agent ↔ Tools/Services |
-| Client 角色 | 提供环境（文件系统、终端、权限） | 调用工具 |
-| Agent 能当 Client 吗 | 不能（自身不拥有环境能力） | 能（工具调用是 Agent 的核心能力） |
-| 连接占用 | Agent stdio 被 ACP Client 独占 | MCP 是无状态工具调用 |
+### 8.5 来源与回复路由
+
+`sourceType` 为必填字段，Email Hub 据此决定回复投递策略：
+
+| sourceType | 回复行为 |
+|-----------|---------|
+| `agent` | 回复投递到发送方 Agent 收件箱 |
+| `human` | 回复标记为已完成，人通过 `actant email inbox` 查看 |
+| `system` | 回复投递到 system inbox（hook/cron 触发的自动 Email） |
+| `external` | 回复投递 + 触发 `callback` 通知外部应用 |
+
+- **`replyTo`**：覆盖回复投递目标。缺省时回复发往 `from`。
+- **`callback`**：`{ type: 'webhook' | 'rpc', endpoint: string, headers?: Record<string, string> }`。Email Hub 投递回复后额外触发通知。
+
+### 8.6 为什么 CLI/API 优先而非 MCP
+
+| 维度 | CLI / JSON-RPC | MCP |
+|------|----------------|-----|
+| 基础设施 | 已存在（Daemon RPC + CLI 框架） | 需要新建 packages/mcp-server |
+| 使用门槛 | Agent 可直接 `actant email send`（shell） | 需要 MCP Server 配置 |
+| 适用范围 | 人 + Agent + 脚本 + 外部应用 | 仅限 IDE 内 Agent |
+| 依赖关系 | 无额外依赖 | 依赖 MCP SDK + Server 进程 |
+| 实现成本 | 低（复用现有 RPC handler 注册模式） | 中（新包 + 新进程） |
+
+### 8.7 时间线分叉 — "发往过去的 Email"
+
+Email 链形成因果时间线（DAG）。特异能力：Agent 或人可以**向过去的某个节点发送 Email，创建新分叉**。
+
+**语义**：新分叉从过去节点开始，但携带了未来的压缩知识（带记忆的 time travel）。原时间线中被分叉覆盖的后续 Email 标记为 `obsolete`。
+
+**两种分叉原因**：
+
+| forkReason | 语义 | 压缩内容 |
+|------------|------|---------|
+| `context-compression` | 方向正确，但上下文消耗过多 | 压缩后的正确结论，跳过中间推导 |
+| `direction-change` | 方向错误，需要换方案 | 压缩后的失败教训 + "换方案"指令 |
+
+**触发方式**：
+- **人为指定**：`actant email fork --from <emailId> --reason direction-change --context "方案A失败因为..." --body "请尝试方案B"`
+- **Agent 自发**：Agent 在处理过程中检测到上下文浪费或方向错误，调用 `email.fork` RPC
+
+**`email.fork` 行为**：
+1. 找到 `forkFrom` 指向的目标 Email
+2. 将目标 Email 之后的同一 thread 中的后续 Email 标记为 `obsolete`
+3. 创建新 Email，`inReplyTo` 设为 `forkFrom`，携带 `compressedContext`
+4. 新 Email 投递给目标 Email 的收件人，开启新分叉时间线
+5. 返回 `{ emailId, obsoleted: string[] }`
+
+**时间线 DAG 示例**：
+```
+E1[需求] → E2[方案A] → E3[实现] → E4[产出] → E5[发现问题]
+                │                                     │
+                │         fork(reason=direction-change)│
+                │◄────────────────────────────────────┘
+                │
+                └→ E2'[换方案B + 失败教训] → E3'[方案B实现] → ...
+                   (E3,E4,E5 marked obsolete)
+```
+
+### 8.8 MCP Server（#16, P4 可选扩展）
+
+> 长期保留，当前阶段不实现。
+
+当 Agent 需要从 IDE 内部通过 MCP tool call 发送 Email 时，可通过 #16 MCP Server 暴露：
+
+| Tool 名称 | 说明 |
+|-----------|------|
+| `actant_send_email` | 发送 Email |
+| `actant_check_inbox` | 查看收件箱 |
+| `actant_reply_email` | 回复 Email |
+| `actant_agent_status` | 查询 Agent 状态 |
+| `actant_list_agents` | 列出所有 Agent |
 
 ---
 
-## 9. 四种外部接入模式对比
+## 9. 五种外部接入模式对比
 
-| 维度 | CLI | ACP Proxy | MCP Server | Self-spawn + Attach |
-|------|-----|-----------|------------|---------------------|
-| **调用方** | 开发者 / 脚本 | IDE / 应用 | 其他 Agent | 应用（Unreal 等） |
-| **协议** | JSON-RPC | ACP / stdio | MCP / stdio | JSON-RPC |
-| **谁 spawn Agent** | Daemon | Daemon | Daemon | **调用方自己** |
-| **谁拥有 ACP** | Daemon | Daemon (Proxy转发) | Daemon | **调用方** |
-| **Actant 感知** | 完全 | 完全 | 完全 | 通过 attach 注册 |
-| **环境穿透** | N/A | 可选 | 不支持 | 调用方自己处理 |
-| **调用方灵活度** | 低 | 中 | 中 | **高** |
+| 维度 | CLI / RPC | ACP Proxy | Email (#136) | MCP Server (#16, P4) | Self-spawn + Attach |
+|------|-----------|-----------|--------------|---------------------|---------------------|
+| **调用方** | 开发者 / 脚本 | IDE / 应用 | Agent / 人 / 应用 | IDE 内 Agent | 应用（Unreal 等） |
+| **协议** | JSON-RPC | ACP / stdio | JSON-RPC (email.*) | MCP / stdio | JSON-RPC |
+| **通信模式** | 同步 | 同步/流式 | **异步** | 同步 | 同步 |
+| **谁 spawn Agent** | Daemon | Daemon | Daemon | Daemon | **调用方自己** |
+| **CC/群发** | 否 | 否 | **是** | 否 | 否 |
+| **持久化记录** | 否 | 否 | **是（Email Hub）** | 否 | 否 |
+| **跨时间线** | 否 | 否 | **是** | 否 | 否 |
+| **时间线分叉** | 否 | 否 | **是（fork to past）** | 否 | 否 |
+| **实现状态** | 已实现 | 已实现 | 规划中 | P4 长期 | 已实现 |
 
 ```
-控制权谱系：
-Actant 全权 ◄──────────────────────────────────► 调用方全权
+通信模式谱系：
+同步 ◄────────────────────────────────────────► 异步
 
- agent.run     ACP Proxy      Self-spawn+Attach    纯 resolve
- (Daemon管)    (Daemon管,      (调用方管进程,       (只要workspace,
-              Proxy转发ACP)    attach注册状态)      不注册)
+ agent.run     ACP Proxy      agent.prompt     Email
+ (一次性)      (流式交互)      (单次提问)       (异步投递,
+                                               跨时间线,
+                                               CC/群发)
 ```
 
 ---

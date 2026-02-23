@@ -1,29 +1,34 @@
 ---
 id: 16
-title: MCP Server — Agent 间通信能力
+title: MCP Server — Agent 管理能力暴露（可选 MCP 接入）
 status: open
 labels:
   - mcp
   - feature
   - protocol
-  - "priority:P2"
-milestone: mid-term
+  - "priority:P4"
+milestone: long-term
 author: cursor-agent
 assignees: []
 relatedIssues:
   - 13
+  - 136
 relatedFiles:
   - packages/mcp-server/
 taskRef: null
 githubRef: "blackplume233/Actant#16"
 closedAs: null
 createdAt: "2026-02-20T18:00:00"
-updatedAt: "2026-02-20T18:00:00"
+updatedAt: "2026-02-23T00:00:00"
 closedAt: null
 ---
 
-**Related Issues**: [[0013-acp-endpoint]]
+**Related Issues**: [[0013-acp-endpoint]], [[0136-agent-to-agent-email]]
 **Related Files**: `packages/mcp-server/`
+
+> **优先级调整（P2 → P4）**：Agent-to-Agent 通信优先通过 CLI / JSON-RPC API / Email (#136) 实现，
+> MCP Server 作为**可选的未来 MCP 接入方式**保留，不再是 #136 的前置依赖。
+> 当前阶段不投入实现。
 
 ---
 

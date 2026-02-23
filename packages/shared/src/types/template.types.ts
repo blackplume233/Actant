@@ -64,7 +64,46 @@ export interface AgentBackendConfig {
   config?: Record<string, unknown>;
 }
 
-export type AgentBackendType = "cursor" | "claude-code" | "custom" | "pi";
+export type AgentBackendType = "cursor" | "cursor-agent" | "claude-code" | "custom" | "pi";
+
+// ---------------------------------------------------------------------------
+// Backend Open Mode — declares how an agent backend can be launched
+// ---------------------------------------------------------------------------
+
+/** The three ways an agent backend can be opened / interacted with. */
+export type AgentOpenMode = "resolve" | "open" | "acp";
+
+/** Platform-aware command specification. */
+export interface PlatformCommand {
+  win32: string;
+  default: string;
+}
+
+/**
+ * Descriptor for a registered agent backend.
+ * Declares which open modes are supported and provides platform-specific commands.
+ */
+export interface BackendDescriptor {
+  type: AgentBackendType;
+  /** Which open modes this backend supports. */
+  supportedModes: AgentOpenMode[];
+  /** Command for `resolve` mode (returns spawn info to external callers). */
+  resolveCommand?: PlatformCommand;
+  /** Command for `open` mode (directly opens native TUI/UI). */
+  openCommand?: PlatformCommand;
+  /** Command for `acp` mode (spawn the ACP agent process). Falls back to resolveCommand if not set. */
+  acpCommand?: PlatformCommand;
+  /**
+   * Custom ACP resolver — when set, takes priority over acpCommand/resolveCommand.
+   * Returns the full { command, args } to spawn the ACP agent process.
+   */
+  acpResolver?: (workspaceDir: string, backendConfig?: Record<string, unknown>) => { command: string; args: string[] };
+  /**
+   * If true, the ACP connection owns the process lifecycle (ProcessLauncher is skipped).
+   * Only relevant when "acp" is in supportedModes.
+   */
+  acpOwnsProcess?: boolean;
+}
 
 export interface ModelProviderConfig {
   type: ModelProviderType;

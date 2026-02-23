@@ -19,6 +19,24 @@ export interface PiCommunicatorConfig {
   tools?: string[];
 }
 
+/**
+ * Extract PiCommunicatorConfig from a template's backend.config record.
+ * Falls back to ACTANT_* environment variables, then to pi-ai built-in env resolution.
+ */
+export function configFromBackend(backendConfig?: Record<string, unknown>): PiCommunicatorConfig {
+  return {
+    provider: asString(backendConfig?.["provider"]) ?? process.env["ACTANT_PROVIDER"],
+    model: asString(backendConfig?.["model"]) ?? process.env["ACTANT_MODEL"],
+    apiKey: asString(backendConfig?.["apiKey"]),
+    thinkingLevel: asString(backendConfig?.["thinkingLevel"]) as PiCommunicatorConfig["thinkingLevel"] ?? (process.env["ACTANT_THINKING_LEVEL"] as PiCommunicatorConfig["thinkingLevel"]),
+    tools: Array.isArray(backendConfig?.["tools"]) ? (backendConfig["tools"] as string[]) : undefined,
+  };
+}
+
+function asString(v: unknown): string | undefined {
+  return typeof v === "string" && v.length > 0 ? v : undefined;
+}
+
 export class PiCommunicator implements AgentCommunicator {
   private readonly config: PiCommunicatorConfig;
 

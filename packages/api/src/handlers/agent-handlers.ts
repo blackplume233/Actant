@@ -16,6 +16,8 @@ import type {
   AgentAdoptResult,
   AgentResolveParams,
   AgentResolveResult,
+  AgentOpenParams,
+  AgentOpenResult,
   AgentAttachParams,
   AgentAttachResult,
   AgentDetachParams,
@@ -42,6 +44,7 @@ export function registerAgentHandlers(registry: HandlerRegistry): void {
   registry.register("agent.list", handleAgentList);
   registry.register("agent.adopt", handleAgentAdopt);
   registry.register("agent.resolve", handleAgentResolve);
+  registry.register("agent.open", handleAgentOpen);
   registry.register("agent.attach", handleAgentAttach);
   registry.register("agent.detach", handleAgentDetach);
   registry.register("agent.run", handleAgentRun);
@@ -128,6 +131,14 @@ async function handleAgentResolve(
 ): Promise<AgentResolveResult> {
   const { name, template, overrides } = params as unknown as AgentResolveParams;
   return ctx.agentManager.resolveAgent(name, template, overrides);
+}
+
+async function handleAgentOpen(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<AgentOpenResult> {
+  const { name } = params as unknown as AgentOpenParams;
+  return ctx.agentManager.openAgent(name);
 }
 
 async function handleAgentAttach(

@@ -41,10 +41,10 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
 
       const agentOpts: PiAgentOptions = {
         workspaceDir: cwd,
-        provider: process.env["PI_PROVIDER"] ?? "anthropic",
-        model: process.env["PI_MODEL"] ?? "claude-sonnet-4-20250514",
+        provider: process.env["ACTANT_PROVIDER"] ?? "anthropic",
+        model: process.env["ACTANT_MODEL"] ?? "claude-sonnet-4-20250514",
         apiKey: process.env["ANTHROPIC_API_KEY"] ?? process.env["OPENAI_API_KEY"],
-        thinkingLevel: (process.env["PI_THINKING_LEVEL"] as PiAgentOptions["thinkingLevel"]) ?? undefined,
+        thinkingLevel: (process.env["ACTANT_THINKING_LEVEL"] as PiAgentOptions["thinkingLevel"]) ?? undefined,
         systemPrompt: "You are a helpful coding assistant. You have access to file and command tools.",
       };
 
@@ -64,9 +64,9 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
         throw new Error(`Session "${params.sessionId}" not found`);
       }
 
-      const promptText = params.content
-        ?.filter((b: { type: string }) => b.type === "text")
-        .map((b: { text?: string }) => b.text ?? "")
+      const promptText = params.prompt
+        ?.filter((b) => b.type === "text")
+        .map((b) => ("text" in b ? (b as { text: string }).text : ""))
         .join("") ?? "";
 
       if (!promptText) {
@@ -85,46 +85,35 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
         if (event.type === "message_update" && event.assistantMessageEvent?.type === "text_delta") {
           conn.sessionUpdate({
             sessionId: params.sessionId,
-            type: "text",
-            textDelta: event.assistantMessageEvent.delta ?? "",
-          }).catch(() => {});
+            update: {
+              sessionUpdate: "agent_message_chunk",
+              content: { type: "text", text: event.assistantMessageEvent.delta ?? "" },
+            },
+          } as never).catch(() => {});
         } else if (event.type === "tool_execution_start") {
           conn.sessionUpdate({
             sessionId: params.sessionId,
-            type: "tool_use",
-            toolName: event.toolName ?? "unknown",
-          }).catch(() => {});
+            update: {
+              sessionUpdate: "tool_call",
+              content: { type: "text", text: `[Tool: ${event.toolName ?? "unknown"}]` },
+            },
+          } as never).catch(() => {});
         }
       });
 
       try {
         await agent.prompt(promptText);
-
-        const messages = agent.state.messages;
-        const last = messages[messages.length - 1];
-        let resultText = "";
-        if (last?.role === "assistant" && Array.isArray(last.content)) {
-          resultText = last.content
-            .filter((b: { type?: string }) => b.type === "text")
-            .map((b: { text?: string }) => b.text ?? "")
-            .join("");
-        }
-
-        conn.sessionUpdate({
-          sessionId: params.sessionId,
-          type: "result",
-          result: resultText,
-        }).catch(() => {});
-
         return { stopReason: "end_turn" } as PromptResponse;
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         conn.sessionUpdate({
           sessionId: params.sessionId,
-          type: "error",
-          error: message,
-        }).catch(() => {});
-        return { stopReason: "error" } as PromptResponse;
+          update: {
+            sessionUpdate: "agent_message_chunk",
+            content: { type: "text", text: `[Error] ${message}` },
+          },
+        } as never).catch(() => {});
+        return { stopReason: "end_turn" } as PromptResponse;
       } finally {
         unsub();
       }
@@ -148,7 +137,7 @@ const webWritable = Writable.toWeb(process.stdout) as WritableStream<Uint8Array>
 const webReadable = Readable.toWeb(process.stdin) as ReadableStream<Uint8Array>;
 const stream = ndJsonStream(webWritable, webReadable);
 
-const _conn = new AgentSideConnection(
+new AgentSideConnection(
   (conn: AgentSideConnection): AcpAgent => buildAgentHandler(conn),
   stream,
 );

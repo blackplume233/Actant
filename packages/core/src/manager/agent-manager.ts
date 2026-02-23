@@ -11,7 +11,8 @@ import {
 import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
-import { resolveBackend, isAcpBackend, isAcpOnlyBackend } from "./launcher/backend-resolver";
+import { resolveBackend, resolveAcpBackend, openBackend, isAcpOnlyBackend } from "./launcher/backend-resolver";
+import { requireMode } from "./launcher/backend-registry";
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
 import { RestartTracker, type RestartPolicy } from "./restart-tracker";
@@ -175,13 +176,16 @@ export class AgentManager {
   }
 
   /**
-   * Start an agent — launch the backend process.
-   * For ACP backends, also establishes ACP connection (initialize + session/new).
+   * Start an agent — launch the backend process via ACP.
+   * Requires the backend to support "acp" mode.
+   * For acpOwnsProcess backends, ProcessLauncher is skipped.
    * @throws {AgentNotFoundError} if agent is not in cache
    * @throws {AgentAlreadyRunningError} if agent is already running
+   * @throws {Error} if backend does not support "acp" mode
    */
   async startAgent(name: string): Promise<void> {
     const meta = this.requireAgent(name);
+    requireMode(meta.backendType, "acp");
 
     if (meta.status === "running" || meta.status === "starting") {
       throw new AgentAlreadyRunningError(name);
@@ -201,8 +205,8 @@ export class AgentManager {
         pid = proc.pid;
       }
 
-      if (isAcpBackend(meta.backendType) && this.acpManager) {
-        const { command, args } = resolveBackend(meta.backendType, dir, meta.backendConfig);
+      if (this.acpManager) {
+        const { command, args } = resolveAcpBackend(meta.backendType, dir, meta.backendConfig);
         const connResult = await this.acpManager.connect(name, {
           command,
           args,
@@ -223,7 +227,7 @@ export class AgentManager {
         this.watcher.watch(name, pid);
       }
       this.restartTracker.recordStart(name);
-      logger.info({ name, pid, launchMode: starting.launchMode, acp: isAcpBackend(meta.backendType) }, "Agent started");
+      logger.info({ name, pid, launchMode: starting.launchMode, acp: true }, "Agent started");
     } catch (err) {
       if (this.acpManager?.has(name)) {
         await this.acpManager.disconnect(name).catch(() => {});
@@ -338,6 +342,18 @@ export class AgentManager {
       backendType: meta.backendType,
       created,
     };
+  }
+
+  /**
+   * Open an agent's native TUI/UI (e.g. `cursor <dir>`).
+   * Requires the backend to support "open" mode.
+   * @throws if backend does not support "open" mode
+   */
+  async openAgent(name: string): Promise<{ command: string; args: string[] }> {
+    const meta = this.requireAgent(name);
+    const dir = join(this.instancesBaseDir, name);
+    const resolved = openBackend(meta.backendType, dir);
+    return resolved;
   }
 
   /**

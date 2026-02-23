@@ -13,6 +13,7 @@ const logger = createLogger("context-materializer");
 /** Config directory per backend: Cursor uses .cursor, Claude Code uses .claude (hooks/MCP go here). */
 const BACKEND_CONFIG_DIR: Record<AgentBackendType, string> = {
   cursor: ".cursor",
+  "cursor-agent": ".cursor",
   "claude-code": ".claude",
   pi: ".pi",
   custom: ".cursor",

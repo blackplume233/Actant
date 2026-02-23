@@ -1,6 +1,13 @@
 import type { AgentBackendType } from "@actant/shared";
+import {
+  getBackendDescriptor,
+  supportsMode,
+  requireMode,
+  getPlatformCommand,
+} from "./backend-registry";
+import "./builtin-backends";
 
-const IS_WINDOWS = process.platform === "win32";
+export type { BackendDescriptor, AgentOpenMode, PlatformCommand } from "@actant/shared";
 
 export interface ResolvedBackend {
   command: string;
@@ -8,76 +15,124 @@ export interface ResolvedBackend {
 }
 
 /**
- * Default CLI commands per backend type and platform.
- * - claude-code uses `claude-agent-acp` for ACP-based communication
- * - cursor / custom use their native CLIs
- * - pi uses `pi-acp-bridge` for ACP-based communication (from @actant/pi)
+ * Whether a backend type supports the ACP protocol for Actant-managed control.
+ * Replaces the old hardcoded `isAcpBackend()`.
  */
-const DEFAULT_COMMANDS: Record<AgentBackendType, () => string> = {
-  cursor: () => (IS_WINDOWS ? "cursor.cmd" : "cursor"),
-  "claude-code": () => (IS_WINDOWS ? "claude-agent-acp.cmd" : "claude-agent-acp"),
-  pi: () => (IS_WINDOWS ? "pi-acp-bridge.cmd" : "pi-acp-bridge"),
-  custom: () => {
-    throw new Error("Custom backend requires explicit executablePath in backend config");
-  },
-};
-
-/** Whether a backend type uses the ACP stdio protocol for communication. */
 export function isAcpBackend(backendType: AgentBackendType): boolean {
-  return backendType === "claude-code" || backendType === "pi";
+  return supportsMode(backendType, "acp");
 }
 
 /**
- * Whether a backend type is ACP-only — the ACP connection IS the agent process.
- * For these backends, ProcessLauncher.launch() is skipped; only AcpConnectionManager
- * spawns the process. This avoids the double-spawn problem where an unused process
- * hangs waiting for ACP input that never arrives.
+ * Whether a backend's ACP connection owns the process lifecycle.
+ * When true, ProcessLauncher.launch() is skipped — only AcpConnectionManager spawns the process.
  */
 export function isAcpOnlyBackend(backendType: AgentBackendType): boolean {
-  return backendType === "pi";
+  const desc = getBackendDescriptor(backendType);
+  return supportsMode(backendType, "acp") && desc.acpOwnsProcess === true;
 }
 
 /**
- * Build the launch arguments.
- * - cursor: `cursor <dir>` (opens Cursor IDE at that folder)
- * - claude-code: no args needed (ACP session's `cwd` parameter handles workspace)
- * - pi: no args needed (ACP session's `cwd` parameter handles workspace)
- * - custom: uses `args` from backendConfig if provided, otherwise `[workspaceDir]`
+ * Build launch arguments for a backend.
+ * - Backends with `open` mode use `[workspaceDir]` to open the IDE at that folder.
+ * - ACP backends need no args (workspace is passed via ACP session).
+ * - Custom backends use `args` from backendConfig if provided.
  */
 function buildArgs(
   backendType: AgentBackendType,
   workspaceDir: string,
   backendConfig?: Record<string, unknown>,
 ): string[] {
-  switch (backendType) {
-    case "cursor":
-      return [workspaceDir];
-    case "claude-code":
-    case "pi":
-      return [];
-    case "custom": {
-      const configArgs = backendConfig?.args;
-      if (Array.isArray(configArgs)) {
-        return configArgs.map(String);
-      }
-      return [workspaceDir];
-    }
+  const desc = getBackendDescriptor(backendType);
+
+  if (backendType === "custom") {
+    const configArgs = backendConfig?.args;
+    if (Array.isArray(configArgs)) return configArgs.map(String);
+    return [workspaceDir];
   }
+
+  if (desc.supportedModes.includes("open") && !desc.supportedModes.includes("acp")) {
+    return [workspaceDir];
+  }
+
+  if (desc.supportedModes.includes("acp")) {
+    return [];
+  }
+
+  return [workspaceDir];
 }
 
 /**
- * Resolve the executable command and arguments for a given backend type.
- * Supports explicit override via `backendConfig.executablePath` and `backendConfig.args`.
+ * Resolve the executable command and arguments for spawning a backend (resolve mode).
+ * @throws if the backend does not support "resolve" mode.
  */
 export function resolveBackend(
   backendType: AgentBackendType,
   workspaceDir: string,
   backendConfig?: Record<string, unknown>,
 ): ResolvedBackend {
+  requireMode(backendType, "resolve");
+
+  const desc = getBackendDescriptor(backendType);
   const explicitPath = backendConfig?.executablePath;
   const command = typeof explicitPath === "string" && explicitPath.length > 0
     ? explicitPath
-    : DEFAULT_COMMANDS[backendType]();
+    : desc.resolveCommand
+      ? getPlatformCommand(desc.resolveCommand)
+      : (() => { throw new Error(`Backend "${backendType}" has no resolveCommand configured.`); })();
+
+  return {
+    command,
+    args: buildArgs(backendType, workspaceDir, backendConfig),
+  };
+}
+
+/**
+ * Resolve the open command for directly launching a backend's native TUI/UI.
+ * @throws if the backend does not support "open" mode.
+ */
+export function openBackend(
+  backendType: AgentBackendType,
+  workspaceDir: string,
+): ResolvedBackend {
+  requireMode(backendType, "open");
+
+  const desc = getBackendDescriptor(backendType);
+  if (!desc.openCommand) {
+    throw new Error(`Backend "${backendType}" has no openCommand configured.`);
+  }
+
+  return {
+    command: getPlatformCommand(desc.openCommand),
+    args: [workspaceDir],
+  };
+}
+
+/**
+ * Resolve the ACP spawn command for a backend.
+ * For ACP backends, this returns the command used by AcpConnectionManager to spawn the agent process.
+ * Checks acpCommand first, then falls back to resolveCommand.
+ * @throws if the backend does not support "acp" mode.
+ */
+export function resolveAcpBackend(
+  backendType: AgentBackendType,
+  workspaceDir: string,
+  backendConfig?: Record<string, unknown>,
+): ResolvedBackend {
+  requireMode(backendType, "acp");
+
+  const desc = getBackendDescriptor(backendType);
+
+  if (desc.acpResolver) {
+    return desc.acpResolver(workspaceDir, backendConfig);
+  }
+
+  const explicitPath = backendConfig?.executablePath;
+  const commandSource = desc.acpCommand ?? desc.resolveCommand;
+  const command = typeof explicitPath === "string" && explicitPath.length > 0
+    ? explicitPath
+    : commandSource
+      ? getPlatformCommand(commandSource)
+      : (() => { throw new Error(`Backend "${backendType}" has no command configured for ACP spawn.`); })();
 
   return {
     command,

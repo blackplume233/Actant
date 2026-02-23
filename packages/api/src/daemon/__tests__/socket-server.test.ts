@@ -149,7 +149,7 @@ describe("SocketServer integration", () => {
     await writeFile(tplFile, JSON.stringify({
       name: "rpc-tpl",
       version: "1.0.0",
-      backend: { type: "cursor" },
+      backend: { type: "claude-code" },
       provider: { type: "anthropic" },
       domainContext: {},
     }));

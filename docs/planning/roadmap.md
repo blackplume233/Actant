@@ -172,8 +172,8 @@ Phase 1 (已完成)
 | ~~#104~~ | ~~AgentTemplate 权限控制 — 对齐 Claude Code permissions~~ | P1 | #45, #99 | 已关闭（推迟到后续 Phase） |
 | ~~#105~~ | ~~AgentTemplate 可通过 Source 分享 + Preset 支持~~ | P1 | #43 | 已关闭（推迟到后续 Phase） |
 | ~~#106~~ | ~~可共享内容版本控制 — 组件/模板/预设版本管理~~ | P1 | #43, #105 | 已关闭（推迟到后续 Phase） |
-| #16 | MCP Server — Agent 间通信能力 | P2 | #13 | 待开始 |
-| #8 | Template hot-reload on file change | P2 | - | 待开始 |
+| #16 | MCP Server — Agent 管理能力暴露（可选 MCP 接入） | **P4** | #13 | 长期保留 |
+| #8 | Template hot-reload on file change | P2 | - | 待开始 → Phase 4 |
 
 #### #15 ACP Proxy — 标准 ACP 协议网关（基础版） ✅ 完成
 > **实现内容**：
@@ -265,21 +265,76 @@ Phase 2 (已完成)
 
 ---
 
-### Phase 4: 扩展体系 (Extensibility)
-**目标**: 可插拔的系统级插件架构，将调度组件 Plugin 化；权限管理
-**时间**: Phase 3 完成后
-**成功标准**: Actant 系统级 Plugin 接口清晰，#47 的 Input 系统可重构为 Plugin 形态
+### Phase 4: 自治 Agent 平台 (Hook · Plugin · 强化 · 通信)
+**目标**: 事件驱动的 Hook/Workflow 体系、可插拔系统级插件、雇员 Agent 强化、Agent-to-Agent 通信
+**时间**: Phase 3 完成后（当前）
+**成功标准**: Hook 事件总线可在三层（Actant 系统层 / Instance 作用域 / 进程 Session 运行时）正确触发；Workflow 配置可声明 shell/builtin/agent 动作；Plugin 接口清晰；Agent 间 Email 通信可用
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
-| #14 | Actant 系统级 Plugin 体系（heartbeat/scheduler/memory 可插拔） | P2 | #22, #47 | 待开始 |
-| #9 | Agent 进程 stdout/stderr 日志收集 | P3 | - | 待开始 |
+| **#135** | **Workflow 重定义为 Hook Package — 事件驱动自动化** | **P1** | #47 | 待开始 |
+| **#14** | **Actant 系统级 Plugin 体系（heartbeat/scheduler/memory 可插拔）** | **P1** | #22, #47 | 待开始 |
+| **#134** | **agent open + interactionModes — 前台 TUI** | **P2** | - | 待开始 |
+| **#133** | **环境变量作为默认 provider 配置** | **P2** | - | 待开始 |
+| **#136** | **Agent-to-Agent Email 通信 — CLI/API/Email 异步范式** | **P2** | 无 | 待开始 |
+| #37 | Initializer: extensible Agent init framework | P1 | - | 待开始 |
 | #40 | Agent 工具权限管理机制设计 | P2 | - | 待开始 |
+| #9 | Agent 进程 stdout/stderr 日志收集 | P3 | - | 待开始 |
+| #128 | spawn EINVAL 友好错误提示 | P2 | - | 待开始 |
+| #8 | Template hot-reload on file change | P2 | - | 待开始 |
+| #38 | Template: Endurance Test Agent | P2 | #37 | 待开始 |
+| #16 | MCP Server — Agent 管理能力暴露（可选 MCP 接入） | **P4** | #13 | 长期保留 |
 
-**Phase 4 关键设计:**
-- Actant 系统级 Plugin 接口（生命周期钩子、配置解析）— 区别于 #43 的 Agent 侧 Plugin
-- #47 的 HeartbeatInput / CronInput / HookInput 重构为 Plugin 形态
-- 插件加载器（本地文件 / 远程 registry）
+**Phase 4 分三波推进：**
+
+**第一波（P0 — 基础保障）**：
+- Bug 修复：#117 gateway.lease, #129 版本发布, #95 terminal stub, #127 install.ps1
+- 完成 #121 Pi 内置后端（进行中）
+
+**第二波（P1 — 核心能力）**：
+- #135 Workflow 重定义 + Hook 三层事件总线
+- #14 Plugin 系统架构 + #47 调度组件 Plugin 化
+- #134 agent open + interactionModes
+- #133 环境变量 provider 配置
+- #37 Extensible Initializer
+
+**第三波（P2 — 深化扩展）**：
+- #136 Agent-to-Agent Email 通信（依赖 #16 作为底层 MCP 通道）
+- #40 权限管理
+- #8 Template hot-reload
+- #38 Endurance Test Agent
+
+**#135 Hook 三层架构：**
+```
+Layer 1: Actant 系统层（全局事件）
+  agent:created / agent:destroyed / agent:modified
+  actant:start / actant:stop / source:updated / cron:<expr>
+  → Actant-level Workflow 监听
+
+Layer 2: AgentInstance（作用域绑定）
+  不产生独立事件，而是绑定 scope
+  Instance-level Workflow 绑定到特定实例，监听其 Layer 3 事件
+
+Layer 3: 进程 / Session 运行时事件
+  process:start / process:stop / process:crash / process:restart
+  session:start / session:end
+  prompt:before / prompt:after / error / idle
+  → 由 Instance-level Workflow 按实例 scope 监听
+```
+
+**#136 Agent-to-Agent Email 范式（CLI/API 优先）：**
+```
+通信通道:
+  P1 CLI:      actant email send/inbox/reply/threads
+  P1 RPC:      email.send / email.inbox / email.reply (JSON-RPC via IPC)
+  P4 MCP:      actant_send_email 等 (可选, #16)
+
+架构:
+  CLI / RPC ──→ Actant Daemon ──→ Email Hub
+                                    ├── 路由 + 投递 + 持久化
+                                    ├── 雇员 Agent → EmailInput → TaskQueue → 主 Session
+                                    └── 普通 Agent → 新进程处理 → 自动回复
+```
 
 **Plugin 类型说明：**
 ```
@@ -318,7 +373,7 @@ Actant-side Plugin (#14, Phase 4):
 
 ## 当前进行中 (Current)
 
-Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#105/#106 增强项已关闭推迟。当前聚焦 **Phase 4 扩展体系**和剩余 BUG 修复。
+Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#105/#106 增强项已关闭推迟。当前聚焦 **Phase 4 自治 Agent 平台**（Hook/Plugin/强化/通信）和剩余 BUG 修复。
 
 **已完成线**：
 - ✅ 管理线 (3a): #94 → #97 → #98 → #43 完成
@@ -327,9 +382,20 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 - ✅ 协议线: #15 ACP Proxy + #18 Session Lease 双模式 完成
 - ✅ 已关闭过期: #13 ACP Client, #41 雇员型设计文档, #46 daemon stop, #48 session 验证, #96 ESM 解析
 
+**Phase 4 进行中**：
+- 🔧 #121 (P1) Pi 内置后端 — 开发中
+- 📋 #135 (P1) Workflow 重定义为 Hook Package — 设计完成，待实现
+- 📋 #136 (P2) Agent-to-Agent Email 通信 — 设计完成，待实现
+- 📋 #134 (P2) agent open + interactionModes — 待开始
+- 📋 #133 (P2) 环境变量 provider 配置 — 待开始
+
 **活跃 BUG**：
-- #57 (P2) Windows daemon fork 退出 — workaround: --foreground
+- #117 (P1) gateway.lease RPC handler missing — Session Lease 模式无法使用
+- #129 (P1) 所有 @actant/* 包需发布 0.1.3 — IPC path mismatch
 - #95 (P2) ACP Gateway terminal stub — 根因已定位（TerminalHandle 映射方案），不依赖 SDK 变更
+- #127 (P2) install.ps1 非交互终端挂起
+- #57 (P2) Windows daemon fork 退出 — workaround: --foreground
+- #126 (P3) daemon.ping 返回硬编码 version
 
 详细 TODO 跟踪见：`docs/planning/phase3-todo.md`
 详细设计见：`docs/design/mvp-next-design.md`
@@ -385,50 +451,48 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 
 ## 后续优先 (Next Up)
 
-按推进优先级排列。依赖关系用 `→` 标注。
+按推进优先级排列。Phase 1-3 已完成，Phase 4 为当前阶段。
 
-### P0 — MVP 必做 (Phase 2 核心)
-
-| 顺序 | Issue | 标题 | 依赖 | 说明 |
-|------|-------|------|------|------|
-| 1 | **#112** | Domain Context 全链路打通 | Phase 1 | AppContext 注入 domainManagers，skills/prompts/MCP 完整物化到 workspace |
-| 2 | **#13** | Daemon ↔ Agent 通信 (ACP Client 简化版) | Phase 1 | claude-code/cursor 后端的 stdin/stdout 通信，prompt→response 基本流程 |
-| 3 | **#113** | Domain 组件加载与 CLI 管理 | #112 | configs/ 目录加载，skill/prompt/mcp 的 CLI 浏览命令，示例内容 |
-| 4 | **#114** | CLI Agent 交互 (chat / run) | #13 | `agent run` 单次任务 + `agent chat` 交互模式 + 流式输出 |
-| 5 | **#115** | MVP 端到端集成与示例模板 | #112-25 | 示例模板 + Quick-start 文档 + E2E 测试 |
-
-### P1 — Phase 3 通信 · 管理 · 构造 · 调度
-
-| 顺序 | Issue | 标题 | 依赖 | 说明 |
-|------|-------|------|------|------|
-| 6 | **#15** | ACP Proxy — 基础版 | #23, #26 | ✅ **已完成** |
-| 7 | **#43** | **统一组件管理体系 — Skill/Prompt/Plugin CRUD** | #112, #113 | BaseComponentManager 增强 + PluginManager + CLI 扩展 |
-| 8 | **#45** | **Workspace 构造器 — 差异化后端构建** | #43 | BackendBuilder strategy + CursorBuilder/ClaudeCodeBuilder |
-| 9 | **#47** | **雇员型 Agent — 内置调度器 + N8N 集成** | #25, #13, #41 | TaskQueue + InputRouter + Scheduler + N8N Bridge |
-| 10 | **#18** | **Proxy + Chat — Direct Bridge 与 Session Lease 双模式** | #15 | Session Lease（默认）+ Direct Bridge，废弃 Gateway |
-| ~~11~~ | ~~#104~~ | ~~AgentTemplate 权限控制~~ | ~~#45, #99~~ | 已关闭（推迟） |
-| ~~12~~ | ~~#105~~ | ~~AgentTemplate 可通过 Source 分享~~ | ~~#43~~ | 已关闭（推迟） |
-| ~~13~~ | ~~#106~~ | ~~可共享内容版本控制~~ | ~~#43, #105~~ | 已关闭（推迟） |
-| 14 | **#16** | MCP Server — Agent 间通信能力 | #13 | 暴露 actant_run_agent 等 MCP tools |
-| 15 | #8 | Template hot-reload on file change | 无 | Daemon 监听 template 变更自动 reload |
-
-### P2 — Phase 4 扩展
-
-| 顺序 | Issue | 标题 | 依赖 | 说明 |
-|------|-------|------|------|------|
-| 11 | **#14** | Plugin 体系设计 | #22, #41 | 可插拔插件架构，#41 Input 系统重构为 Plugin |
-| 12 | #40 | Agent 工具权限管理机制 | 无 | 模板级/实例级权限控制 |
-| 13 | #9 | Agent 进程 stdout/stderr 日志收集 | 无 | 进程输出写入日志文件 + 可选实时查询 |
-
-### P3 — Phase 5 记忆 & 长期
+### 第一波 — Bug 修复 + 基础保障
 
 | 顺序 | Issue | 标题 | 说明 |
 |------|-------|------|------|
-| 14 | #10 | Instance Memory Layer | 实例级长期记忆 |
-| 15 | #11 | Memory Consolidation + Shared Memory | 跨实例记忆整合 |
-| 16 | #12 | Context Layers + ContextBroker | 上下文分层与代理 |
-| 17 | #20 | OpenViking as optional MCP Server | 可选 MCP 集成 |
-| 18 | #17 | ACP-Fleet 扩展协议 | 长期愿景：Daemon 升级为 ACP Server |
+| 1 | **#117** | gateway.lease RPC handler missing | Session Lease 模式无法使用 |
+| 2 | **#129** | 所有 @actant/* 包需发布 0.1.3 | IPC path mismatch |
+| 3 | **#95** | ACP Gateway terminal forwarding stub | IDE terminal 面板不可用 |
+| 4 | **#127** | install.ps1 非交互终端挂起 | CI 安装脚本不可用 |
+| 5 | **#121** | Pi (badlogic/pi-mono) 作为内置后端 | 进行中 |
+
+### 第二波 — Phase 4 核心能力 (Hook · Plugin · 强化)
+
+| 顺序 | Issue | 标题 | 依赖 | 说明 |
+|------|-------|------|------|------|
+| 6 | **#135** | Workflow 重定义为 Hook Package | #47 | 三层 Hook 事件总线 + shell/builtin/agent 动作执行 |
+| 7 | **#14** | Actant 系统级 Plugin 体系 | #22, #47 | 可插拔架构 + #47 调度组件 Plugin 化 |
+| 8 | **#134** | agent open + interactionModes | - | 前台 TUI 交互 + 交互模式声明 |
+| 9 | **#133** | 环境变量作为默认 provider 配置 | - | DX: 避免硬编码 API key |
+| 10 | **#37** | Initializer: extensible Agent init framework | - | 声明式 Agent workspace 初始化 |
+| 11 | **#128** | spawn EINVAL 友好错误提示 | - | 后端 CLI 缺失时清晰指引 |
+
+### 第三波 — Phase 4 深化扩展 (通信 · 权限 · DX)
+
+| 顺序 | Issue | 标题 | 依赖 | 说明 |
+|------|-------|------|------|------|
+| 12 | **#136** | Agent-to-Agent Email 通信 | 无 | CLI/API/Email 异步通信，无硬性前置依赖 |
+| 14 | #40 | Agent 工具权限管理机制 | - | 模板级/实例级权限控制 |
+| 15 | #8 | Template hot-reload on file change | - | Daemon 监听 template 变更自动 reload |
+| 16 | #38 | Template: Endurance Test Agent | #37 | 耐久测试 Agent 模板 |
+| 17 | #9 | Agent 进程 stdout/stderr 日志收集 | - | 进程输出写入日志文件 |
+
+### Phase 5 — 记忆系统 & 长期
+
+| 顺序 | Issue | 标题 | 说明 |
+|------|-------|------|------|
+| 18 | #10 | Instance Memory Layer | 实例级长期记忆 |
+| 19 | #11 | Memory Consolidation + Shared Memory | 跨实例记忆整合 |
+| 20 | #12 | Context Layers + ContextBroker | 上下文分层与代理 |
+| 21 | #20 | OpenViking as optional MCP Server | 可选 MCP 集成 |
+| 22 | #17 | ACP-Fleet 扩展协议 | 长期愿景：Daemon 升级为 ACP Server |
 
 ---
 
@@ -507,7 +571,7 @@ Phase 1 ──→ #13 Daemon ↔ Agent 通信 (P0) ✅
  │     └──→ #18 Proxy + Chat 双模式 (P1)
  │           Session Lease（默认）+ Direct Bridge（--direct）
  │
- └──→ #16 MCP Server (P2) ← Agent-to-Agent
+ └──→ #16 MCP Server (P4) ← 可选 MCP 接入，长期保留
 
 管理线:
 #112/#113 (来自 MVP)
@@ -535,16 +599,39 @@ Phase 1 ──→ #13 Daemon ↔ Agent 通信 (P0) ✅
 
 
 ═══════════════════════════════════════════════════════════════
-                  Phase 4: 扩展体系
+         Phase 4: 自治 Agent 平台 (Hook · Plugin · 强化 · 通信)
 ═══════════════════════════════════════════════════════════════
 
+Hook/Workflow 线:
+#47 EmployeeScheduler (来自 Phase 3c)
+ └──→ #135 Workflow 重定义为 Hook Package (P1)
+       Hook 三层架构: Actant 系统层 / Instance scope / Process·Session 运行时
+       schema + event bus + action runner (shell/builtin/agent)
+       └──→ #47 CronInput/HookInput 统一到 Workflow
+
+Plugin 线:
 #22 ProcessWatcher (来自 Phase 1)
- └──→ #14 Actant 系统级 Plugin 体系 (P2)
+ └──→ #14 Actant 系统级 Plugin 体系 (P1)
        ├──→ #47 Input 系统 Plugin 化 (重构)
        ├──→ memory 插件 (连接 Phase 5)
        └──→ 自定义插件加载器
 
+雇员强化线:
+#134 agent open + interactionModes (P2) — 前台 TUI
+#133 环境变量 provider 配置 (P2) — DX
+#37 Extensible Initializer (P1) → #38 Endurance Test Agent (P2)
+#128 spawn EINVAL 友好提示 (P2)
+
+Agent-to-Agent 通信线:
+#136 Agent-to-Agent Email 通信 (P2) — 无硬性前置依赖
+      CLI: actant email send/inbox/reply
+      RPC: email.send / email.inbox (JSON-RPC)
+      EmailHub: 路由 + 投递 + 持久化 + 跨时间线
+      (可选增强: #10 Memory 做持久化)
+
+#16 MCP Server (P4) — 可选 MCP 接入，长期保留
 #40 Agent 工具权限管理 (P2) — 独立
+#8 Template hot-reload (P2) — 独立
 #9 日志收集 (P3) — 独立
 
 

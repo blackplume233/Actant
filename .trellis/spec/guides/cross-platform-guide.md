@@ -133,6 +133,74 @@ For pnpm commands, use `npx pnpm <cmd>` in PowerShell.
 - Write multi-line content to a temp file, then `git commit -F <file>`
 - Avoid `<` in inline strings (e.g. email addresses in git trailers)
 
+### Common Mistake: pnpm bin link `EINVAL` on Windows
+
+**Symptom**: `child_process.spawn()` of a pnpm monorepo binary (e.g. `pi-acp-bridge`) throws `spawn EINVAL` on Windows.
+
+**Cause**: pnpm creates `.cmd` shim files as bin links in `node_modules/.bin/`. When passed to `child_process.spawn()` without `shell: true`, Windows cannot execute these `.cmd` files and returns `EINVAL`.
+
+**Fix**: Do not spawn pnpm bin links directly. Instead, resolve the target `.js` file's absolute path and spawn it with `process.execPath` (the Node.js executable):
+
+```typescript
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
+
+const BRIDGE_PATH = join(dirname(fileURLToPath(import.meta.url)), "acp-bridge.js");
+
+// In the BackendDescriptor acpResolver:
+acpResolver: () => ({
+  command: process.execPath,   // e.g. "C:\Program Files\nodejs\node.exe"
+  args: [BRIDGE_PATH],         // absolute path to the .js file
+})
+```
+
+This works cross-platform and avoids all `.cmd` shim issues.
+
+### Common Mistake: ACP SDK message format
+
+When implementing an ACP Agent-side bridge (e.g. `acp-bridge.ts`), the following format details are critical:
+
+**1. `PromptRequest` content field**
+
+The user's prompt text is in `params.prompt` (an array of content blocks), **not** `params.content`:
+
+```typescript
+// ✅ Correct
+const text = params.prompt
+  .filter((b: { type: string }) => b.type === "text")
+  .map((b: { text: string }) => b.text)
+  .join("\n");
+
+// ❌ Wrong — params.content does not exist
+const text = params.content;
+```
+
+**2. `SessionNotification` format**
+
+`AgentSideConnection.sessionUpdate()` expects the full `SessionNotification` object with nested `update` structure:
+
+```typescript
+// ✅ Correct format
+conn.sessionUpdate({
+  sessionId,
+  update: {
+    sessionUpdate: "agent_message_chunk",
+    content: { type: "text", text: chunk },
+  },
+});
+
+// ❌ Wrong — flat structure without nesting
+conn.sessionUpdate({
+  sessionId,
+  type: "text",
+  textDelta: chunk,
+});
+```
+
+**3. Avoid duplicate final messages**
+
+The ACP client collects streaming chunks automatically. Do not send a final "complete" message that repeats the accumulated text — it will cause duplicate output.
+
 ---
 
 ## Checklist for New Features

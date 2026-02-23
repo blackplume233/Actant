@@ -43,7 +43,7 @@ describe("CLI E2E (stdio)", () => {
   const validTemplate = {
     name: "e2e-tpl",
     version: "1.0.0",
-    backend: { type: "cursor" },
+    backend: { type: "claude-code" },
     provider: { type: "anthropic" },
     domainContext: {},
   };

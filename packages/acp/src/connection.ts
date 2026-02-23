@@ -402,7 +402,10 @@ export class AcpConnection {
     if (handler) {
       return {
         requestPermission: (p) => handler.requestPermission(p),
-        sessionUpdate: (p) => handler.sessionUpdate(p),
+        sessionUpdate: async (p) => {
+          await handler.sessionUpdate(p);
+          this.dispatchToListeners(p);
+        },
         readTextFile: (p) => handler.readTextFile(p),
         writeTextFile: (p) => handler.writeTextFile(p),
         createTerminal: handler.createTerminal?.bind(handler),
@@ -464,6 +467,10 @@ export class AcpConnection {
 
   private async localSessionUpdate(params: SessionNotification): Promise<void> {
     this.options.onSessionUpdate?.(params);
+    this.dispatchToListeners(params);
+  }
+
+  private dispatchToListeners(params: SessionNotification): void {
     const listeners = this.updateListeners.get(params.sessionId);
     if (listeners) {
       for (const listener of listeners) {

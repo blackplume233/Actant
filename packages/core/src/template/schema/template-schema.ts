@@ -19,7 +19,7 @@ export const DomainContextSchema = z.object({
 });
 
 export const AgentBackendSchema = z.object({
-  type: z.enum(["cursor", "claude-code", "custom", "pi"]),
+  type: z.enum(["cursor", "cursor-agent", "claude-code", "custom", "pi"]),
   config: z.record(z.string(), z.unknown()).optional(),
 });
 

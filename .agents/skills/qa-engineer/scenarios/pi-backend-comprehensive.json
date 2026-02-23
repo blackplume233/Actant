@@ -1,0 +1,211 @@
+{
+  "name": "pi-backend-comprehensive",
+  "description": "全真实环境验证 Pi Agent 后端的全部链路：生命周期、Builder 工作区产物、Communicator LLM 调用、ACP 桥接 LLM 调用、错误处理",
+  "tags": ["pi", "backend", "lifecycle", "acp", "communicator", "real", "comprehensive"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "real",
+    "env": {
+      "ACTANT_PROVIDER": "kimi-coding",
+      "ACTANT_MODEL": "k2p5",
+      "KIMI_API_KEY": "$FROM_CLAUDE_SETTINGS"
+    },
+    "templates": [
+      {
+        "name": "pi-basic",
+        "inline": {
+          "name": "pi-basic",
+          "version": "1.0.0",
+          "backend": {
+            "type": "pi",
+            "config": {
+              "provider": "kimi-coding",
+              "model": "k2p5"
+            }
+          },
+          "provider": { "type": "anthropic" },
+          "domainContext": {}
+        }
+      },
+      {
+        "name": "pi-with-skills",
+        "inline": {
+          "name": "pi-with-skills",
+          "version": "1.0.0",
+          "backend": {
+            "type": "pi",
+            "config": {
+              "provider": "kimi-coding",
+              "model": "k2p5"
+            }
+          },
+          "provider": { "type": "anthropic" },
+          "domainContext": {}
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "phase1-load-template",
+      "description": "[生命周期] 加载 Pi 基础模板",
+      "command": "template list -f json",
+      "expect": "模板列表中包含 pi-basic 和 pi-with-skills"
+    },
+    {
+      "id": "phase1-create",
+      "description": "[生命周期] 用 pi-basic 模板创建 Agent",
+      "command": "agent create pi-test -t pi-basic -f json",
+      "expect": "成功返回 JSON，name=pi-test, status=created, backendType=pi",
+      "artifacts": "workspace 目录创建在 $ACTANT_HOME/instances/pi-test"
+    },
+    {
+      "id": "phase1-status-created",
+      "description": "[生命周期] 确认 Agent 状态为 created",
+      "command": "agent status pi-test -f json",
+      "expect": "status=created, backendType=pi"
+    },
+    {
+      "id": "phase1-resolve-unsupported",
+      "description": "[生命周期] Pi 后端不支持 resolve 模式，应报错",
+      "command": "agent resolve pi-test -f json",
+      "expect": "退出码非 0，错误信息提示 Pi 不支持 resolve 模式"
+    },
+    {
+      "id": "phase1-workspace-check",
+      "description": "[生命周期] 白盒验证: 基础工作区结构正确",
+      "command": "agent status pi-test -f json",
+      "expect": "workspace 存在",
+      "artifacts": "$ACTANT_HOME/instances/pi-test/ 应包含 AGENTS.md 和 .pi/ 目录"
+    },
+    {
+      "id": "phase1-destroy",
+      "description": "[生命周期] 销毁 Agent",
+      "command": "agent destroy pi-test --force",
+      "expect": "成功销毁，退出码 0"
+    },
+    {
+      "id": "phase1-list-empty",
+      "description": "[生命周期] 确认列表为空",
+      "command": "agent list -f json",
+      "expect": "不包含 pi-test"
+    },
+
+    {
+      "id": "phase2-create-with-skills",
+      "description": "[Builder] 用 pi-with-skills 模板创建 Agent",
+      "command": "agent create pi-skill-test -t pi-with-skills -f json",
+      "expect": "成功创建，status=created",
+      "artifacts": "$ACTANT_HOME/instances/pi-skill-test/ 应包含 AGENTS.md、.pi/skills/、.pi/prompts/"
+    },
+    {
+      "id": "phase2-agents-md",
+      "description": "[Builder] 白盒验证: AGENTS.md 包含 skill 内容",
+      "command": "agent status pi-skill-test -f json",
+      "expect": "workspace 存在",
+      "artifacts": "AGENTS.md 文件非空且包含 skill 相关内容"
+    },
+    {
+      "id": "phase2-pi-dir",
+      "description": "[Builder] 白盒验证: .pi/ 目录结构完整",
+      "command": "agent status pi-skill-test -f json",
+      "expect": "workspace 存在",
+      "artifacts": ".pi/skills/ 和 .pi/prompts/ 目录存在"
+    },
+    {
+      "id": "phase2-cleanup",
+      "description": "[Builder] 销毁 skill 测试 Agent",
+      "command": "agent destroy pi-skill-test --force",
+      "expect": "成功销毁"
+    },
+
+    {
+      "id": "phase3-create-for-run",
+      "description": "[Communicator] 创建 Agent 用于 run 测试",
+      "command": "agent create pi-run-test -t pi-basic -f json",
+      "expect": "成功创建"
+    },
+    {
+      "id": "phase3-run-prompt",
+      "description": "[Communicator] agent run 发送真实 LLM prompt",
+      "command": "agent run pi-run-test --prompt \"Reply with exactly: HELLO_PI_TEST\"",
+      "expect": "输出中包含有意义的 AI 回复文本（非空、非错误），理想情况下包含 HELLO_PI_TEST",
+      "artifacts": "退出码 0"
+    },
+    {
+      "id": "phase3-cleanup",
+      "description": "[Communicator] 销毁 run 测试 Agent",
+      "command": "agent destroy pi-run-test --force",
+      "expect": "成功销毁"
+    },
+
+    {
+      "id": "phase4-create-for-acp",
+      "description": "[ACP] 创建 Agent 用于 ACP 测试",
+      "command": "agent create pi-acp-test -t pi-basic -f json",
+      "expect": "成功创建"
+    },
+    {
+      "id": "phase4-start",
+      "description": "[ACP] 启动 Pi Agent (pi-acp-bridge 子进程)",
+      "command": "agent start pi-acp-test",
+      "expect": "成功启动，输出包含 Started 或类似成功信息"
+    },
+    {
+      "id": "phase4-status-running",
+      "description": "[ACP] 确认 Agent 状态为 running",
+      "command": "agent status pi-acp-test -f json",
+      "expect": "status=running, pid 存在且为正整数"
+    },
+    {
+      "id": "phase4-prompt",
+      "description": "[ACP] 通过 ACP 发送 prompt 并获取回复",
+      "command": "agent prompt pi-acp-test -m \"Reply with exactly: ACP_HELLO\"",
+      "expect": "收到 AI 回复文本，理想情况下包含 ACP_HELLO"
+    },
+    {
+      "id": "phase4-stop",
+      "description": "[ACP] 停止 Pi Agent",
+      "command": "agent stop pi-acp-test",
+      "expect": "成功停止，输出包含 Stopped 或类似信息"
+    },
+    {
+      "id": "phase4-status-stopped",
+      "description": "[ACP] 确认 Agent 状态为 stopped",
+      "command": "agent status pi-acp-test -f json",
+      "expect": "status=stopped"
+    },
+    {
+      "id": "phase4-cleanup",
+      "description": "[ACP] 销毁 ACP 测试 Agent",
+      "command": "agent destroy pi-acp-test --force",
+      "expect": "成功销毁"
+    },
+
+    {
+      "id": "phase5-prompt-not-started",
+      "description": "[错误处理] 对未启动的 Agent 执行 prompt 应报错",
+      "command": "agent create pi-err-test -t pi-basic -f json",
+      "expect": "成功创建"
+    },
+    {
+      "id": "phase5-prompt-error",
+      "description": "[错误处理] prompt 未启动的 Agent",
+      "command": "agent prompt pi-err-test -m \"hello\"",
+      "expect": "退出码非 0，错误信息提示 Agent 未启动或无 ACP 连接"
+    },
+    {
+      "id": "phase5-cleanup",
+      "description": "[错误处理] 销毁错误测试 Agent",
+      "command": "agent destroy pi-err-test --force",
+      "expect": "成功销毁"
+    }
+  ],
+  "cleanup": [
+    "agent destroy pi-test --force",
+    "agent destroy pi-skill-test --force",
+    "agent destroy pi-run-test --force",
+    "agent destroy pi-acp-test --force",
+    "agent destroy pi-err-test --force"
+  ]
+}

@@ -15,7 +15,7 @@ describe("agent handlers", () => {
   const validTemplate = {
     name: "test-tpl",
     version: "1.0.0",
-    backend: { type: "cursor" },
+    backend: { type: "claude-code" },
     provider: { type: "anthropic" },
     domainContext: {},
   };

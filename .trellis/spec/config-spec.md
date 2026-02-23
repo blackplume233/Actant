@@ -71,14 +71,17 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 
 #### AgentBackendType
 
-| 值 | 说明 | ACP 通信 |
-|----|------|---------|
-| `"cursor"` | Cursor IDE | 否 |
-| `"claude-code"` | Claude Code CLI | 是 |
-| `"pi"` | Pi Agent（基于 pi-agent-core） | 是（ACP-only） |
-| `"custom"` | 用户自定义可执行程序 | 否 |
+| 值 | 说明 | 支持 Open Mode | ACP 通信 |
+|----|------|---------------|---------|
+| `"cursor"` | Cursor IDE（编辑器模式） | resolve, open | 否 |
+| `"cursor-agent"` | Cursor Agent 模式 | resolve, open, acp | 是 |
+| `"claude-code"` | Claude Code CLI | resolve, acp | 是 |
+| `"pi"` | Pi Agent（基于 pi-agent-core） | acp | 是（ACP-only） |
+| `"custom"` | 用户自定义可执行程序 | resolve | 否 |
 
-> **ACP-only 后端**：`pi` 后端不通过 `ProcessLauncher.launch()` 启动，而是完全由 `AcpConnectionManager` spawn 进程。详见 [api-contracts.md §5.1](./api-contracts.md#51-agentlauncher)。
+> **Open Mode**：每个后端在 BackendRegistry 中声明自己支持的打开方式。详见 [agent-lifecycle.md §5](./agent-lifecycle.md#5-backend-open-mode--后端打开方式)。
+>
+> **ACP-only 后端**：`pi` 后端的 `acpOwnsProcess: true`，进程完全由 `AcpConnectionManager` spawn，不经过 `ProcessLauncher.launch()`。详见 [api-contracts.md §5.1](./api-contracts.md#51-agentlauncher)。
 
 #### config 可用字段
 
@@ -312,7 +315,7 @@ VersionedComponent           ← 基类
   ├── AgentTemplate          ← version 字段必填（覆盖基类的可选）
   ├── SkillDefinition        ← + content
   ├── PromptDefinition       ← + content, variables
-  ├── WorkflowDefinition     ← + content
+  ├── WorkflowDefinition     ← Hook Package: + level, hooks[] (#135)
   ├── McpServerDefinition    ← + command, args, env
   └── PluginDefinition       ← + type, source, config, enabled
 ```
@@ -397,12 +400,44 @@ VersionedComponent           ← 基类
 
 ### WorkflowDefinition
 
-> **Deprecated**: 将废弃并归并为 SkillDefinition（#132）。WorkflowDefinition 与 SkillDefinition 数据结构完全相同（`name + content`），唯一区别是物化路径（`.trellis/workflow.md` vs `AGENTS.md`），不值得维护独立的类型/管理器/处理器。actant-hub 官方组件仓库不再包含 `workflows/` 目录。
+> **重新定义（#135）**：Workflow 不再废弃。#132 的合并提议已关闭。
+> Workflow 重新定义为 **Hook Package** —— 事件驱动的自动化声明。
+> **Skill = 知识/能力注入（静态），Workflow = 事件自动化（动态）**，两者有清晰边界。
+>
+> 当前代码仍使用旧结构（`name + content`），待 #135 实施后升级为下方新结构。
+
+**当前结构**（旧，待迁移）：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
-| `content` | `string` | **是** | 工作流内容 |
+| `content` | `string` | **是** | 工作流内容（markdown 文本） |
+
+**目标结构**（#135 Hook Package，待实现）：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
+| `level` | `"actant" \| "instance"` | **是** | 作用层级：全局系统事件 或 绑定到实例 |
+| `hooks` | `HookDeclaration[]` | **是** | hook 声明列表 |
+
+**HookDeclaration**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `on` | `string` | **是** | 事件名（见 agent-lifecycle.md §1.3 Hook 三层架构） |
+| `actions` | `HookAction[]` | **是** | 触发时执行的动作列表 |
+
+**HookAction**（三种类型）：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `type` | `"shell" \| "builtin" \| "agent"` | 动作类型 |
+| `run` | `string` | (shell) 要执行的 shell 命令 |
+| `action` | `string` | (builtin) Actant 内置动作名 |
+| `target` | `string` | (agent) 目标 Agent 名称 |
+| `prompt` | `string` | (agent) 发送给目标 Agent 的 prompt |
+| `params` | `Record<string, unknown>` | (builtin) 动作参数 |
 
 ### McpServerDefinition
 
@@ -547,8 +582,23 @@ Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
 | `ACTANT_HOME` | 覆盖数据根目录（homeDir） | `~/.actant` |
 | `ACTANT_SOCKET` | 覆盖 IPC Socket 路径 | 平台默认 |
 | `ACTANT_LAUNCHER_MODE` | 设定 Launcher 模式（`"mock"` / `"real"`） | `"real"` |
+| `ACTANT_PROVIDER` | 统一 LLM Provider 标识（如 `openai`、`anthropic`） | 无 |
+| `ACTANT_MODEL` | 统一 LLM 模型名称（如 `gpt-4o`、`claude-sonnet-4-20250514`） | 无 |
+| `ACTANT_THINKING_LEVEL` | 统一 thinking/reasoning 级别 | 无 |
 | `ANTHROPIC_API_KEY` | Anthropic API 密钥，`claude-agent-acp` 需要此变量 | 无（必须设置才能使用 ACP） |
 | `LOG_LEVEL` | Pino 日志级别 | `"info"`（CLI 中未设置时为 `"silent"`） |
+
+### ACTANT_* 后端通用环境变量约定
+
+所有后端通用的 LLM provider / model 配置统一使用 `ACTANT_` 前缀，**不以后端名作为前缀**。
+
+| 变量 | 用途 | 示例 |
+|------|------|------|
+| `ACTANT_PROVIDER` | LLM 服务提供商标识 | `openai`、`anthropic`、`google` |
+| `ACTANT_MODEL` | LLM 模型名称 | `gpt-4o`、`claude-sonnet-4-20250514`、`moonshot-v1-8k` |
+| `ACTANT_THINKING_LEVEL` | Thinking / reasoning 级别 | `low`、`medium`、`high` |
+
+> **设计决策**：使用 `ACTANT_*` 而非 `PI_*`、`CLAUDE_*` 等后端前缀，确保在切换后端时无需修改环境配置。各后端的 ACP bridge 或 communicator 负责读取 `ACTANT_*` 变量并映射到自身 SDK 的配置。
 
 ---
 

@@ -9,6 +9,7 @@ import { createAgentListCommand } from "./list";
 import { createAgentAdoptCommand } from "./adopt";
 import { createAgentDestroyCommand } from "./destroy";
 import { createAgentResolveCommand } from "./resolve";
+import { createAgentOpenCommand } from "./open";
 import { createAgentAttachCommand } from "./attach";
 import { createAgentDetachCommand } from "./detach";
 import { createAgentRunCommand } from "./run";
@@ -30,6 +31,7 @@ export function createAgentCommand(client: RpcClient, printer?: CliPrinter): Com
   cmd.addCommand(createAgentAdoptCommand(client, printer));
   cmd.addCommand(createAgentDestroyCommand(client, printer));
   cmd.addCommand(createAgentResolveCommand(client, printer));
+  cmd.addCommand(createAgentOpenCommand(client, printer));
   cmd.addCommand(createAgentAttachCommand(client, printer));
   cmd.addCommand(createAgentDetachCommand(client, printer));
   cmd.addCommand(createAgentRunCommand(client, printer));

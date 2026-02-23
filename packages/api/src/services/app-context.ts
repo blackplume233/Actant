@@ -19,10 +19,11 @@ import {
   InstanceRegistry,
   createDefaultStepRegistry,
   registerCommunicator,
+  registerBackend,
   type LauncherMode,
 } from "@actant/core";
 import { AcpConnectionManager } from "@actant/acp";
-import { PiBuilder, PiCommunicator } from "@actant/pi";
+import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
 import { createLogger, getIpcPath } from "@actant/shared";
 
 const logger = createLogger("app-context");
@@ -156,9 +157,18 @@ export class AppContext {
   }
 
   private registerPiBackend(): void {
+    registerBackend({
+      type: "pi",
+      supportedModes: ["acp"],
+      acpResolver: () => ({
+        command: process.execPath,
+        args: [ACP_BRIDGE_PATH],
+      }),
+      acpOwnsProcess: true,
+    });
     this.agentInitializer.workspaceBuilder.registerBuilder(new PiBuilder());
-    registerCommunicator("pi", () => new PiCommunicator());
-    logger.info("Pi backend registered");
+    registerCommunicator("pi", (backendConfig) => new PiCommunicator(configFromBackend(backendConfig)));
+    logger.info("Pi backend registered (in-process, acp mode only)");
   }
 
   private async loadDomainComponents(): Promise<void> {

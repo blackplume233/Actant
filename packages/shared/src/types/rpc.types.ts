@@ -184,6 +184,15 @@ export interface AgentResolveParams {
 
 export type AgentResolveResult = ResolveResult;
 
+export interface AgentOpenParams {
+  name: string;
+}
+
+export interface AgentOpenResult {
+  command: string;
+  args: string[];
+}
+
 export interface AgentAttachParams {
   name: string;
   pid: number;
@@ -549,6 +558,7 @@ export interface RpcMethodMap {
   "agent.updatePermissions": { params: AgentUpdatePermissionsParams; result: AgentUpdatePermissionsResult };
   "agent.adopt": { params: AgentAdoptParams; result: AgentAdoptResult };
   "agent.resolve": { params: AgentResolveParams; result: AgentResolveResult };
+  "agent.open": { params: AgentOpenParams; result: AgentOpenResult };
   "agent.attach": { params: AgentAttachParams; result: AgentAttachResult };
   "agent.detach": { params: AgentDetachParams; result: AgentDetachResult };
   "agent.run": { params: AgentRunParams; result: AgentRunResult };

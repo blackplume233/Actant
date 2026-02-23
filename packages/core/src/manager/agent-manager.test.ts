@@ -20,7 +20,7 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
   return {
     name: "test-tpl",
     version: "1.0.0",
-    backend: { type: "cursor" },
+    backend: { type: "claude-code" },
     provider: { type: "openai" },
     domainContext: { skills: ["skill-a"] },
     ...overrides,
@@ -34,7 +34,7 @@ function makeMeta(name: string, overrides?: Partial<AgentInstanceMeta>): AgentIn
     name,
     templateName: "test-tpl",
     templateVersion: "1.0.0",
-    backendType: "cursor",
+    backendType: "claude-code",
     status: "created",
     launchMode: "direct",
     workspacePolicy: "persistent",
@@ -467,7 +467,7 @@ describe("AgentManager", () => {
       expect(result.workspaceDir).toContain("res-agent");
       expect(result.command).toBeDefined();
       expect(result.args).toBeDefined();
-      expect(result.backendType).toBe("cursor");
+      expect(result.backendType).toBe("claude-code");
       expect(result.created).toBe(false);
     });
 

@@ -6,14 +6,33 @@
 
 ---
 
-## 1. 核心概念：两个独立的生命周期
+## 1. 核心概念：实体关系与生命周期
 
-Actant 中的 Agent 有**两个解耦的生命周期**：
+### 1.1 四层实体模型
+
+Actant 中有四个核心实体，具有严格的层次关系和基数约束：
 
 ```
-Workspace 生命周期                Process 生命周期
-（文件系统 / 持久状态）            （操作系统进程）
+AgentTemplate ──1:N──→ AgentInstance ──1:1──→ Process ──1:N──→ Session
+(配置蓝图)            (workspace + 元数据)   (OS 进程)         (ACP 会话)
+```
 
+| 实体 | 本质 | 持久性 | 管理者 | 基数 |
+|------|------|--------|--------|------|
+| **AgentTemplate** | JSON 配置文件，定义 Agent 组成 | 持久（文件系统） | TemplateRegistry | 1 Template : N Instance |
+| **AgentInstance** | workspace 目录 + `.actant.json` 元数据 | 持久（create→destroy） | AgentManager.cache, InstanceRegistry | 1 Instance : 1 Process |
+| **Agent Process** | OS 进程（PID），运行 Agent 后端 | 临时（start→stop/crash） | AgentManager.processes, ProcessWatcher | 1 Process : 1 AcpConnection |
+| **ACP Session** | ACP 协议内的会话 | 临时（newSession→end） | AcpConnection.sessions | 1 Connection : N Session |
+
+> **严格 1:1**：一个 Instance 同一时刻最多有一个 Process。`AgentInstanceMeta.pid` 字段天然暗示此约束。
+> **并发通过实例化**：Instance 被占用时，通过自动创建 ephemeral 副本实现并发，而非在一个 Instance 上启多个 Process。
+
+### 1.2 两个独立的生命周期
+
+Instance 和 Process 有**两个解耦的生命周期**：
+
+```
+Instance 生命周期（持久化）       Process 生命周期（运行时）
   create ──→ exists              spawn ──→ running
      │                              │
      │  可以多次 spawn/terminate     │  可以多次 prompt
@@ -21,7 +40,7 @@ Workspace 生命周期                Process 生命周期
   destroy ──→ gone               exit ──→ stopped / crashed
 ```
 
-| 维度 | Workspace | Process |
+| 维度 | Instance (Workspace) | Process |
 |------|-----------|---------|
 | 实体 | 目录 + `.actant.json` + 领域上下文文件 | OS 进程 (PID) |
 | 创建 | `agent.create` / `agent.resolve` | `agent.start` / 外部 spawn |
@@ -30,6 +49,32 @@ Workspace 生命周期                Process 生命周期
 | 多次使用 | 一个 workspace 可承载多次 spawn | 一次 spawn 只有一个进程 |
 
 **关键理解**：`agent.create` ≠ 启动进程。创建只是准备 workspace（物化配置文件、规则、MCP 配置等）。启动是另一个独立操作。
+
+### 1.3 Hook 三层架构
+
+Hook 机制（#135 Workflow as Hook Package）基于实体关系分为三层：
+
+```
+Layer 1: Actant 系统层（全局事件）
+  监听 Instance 持久化操作 + 系统事件
+  agent:created / agent:destroyed / agent:modified
+  actant:start / actant:stop / source:updated / cron:<expr>
+
+Layer 2: AgentInstance（作用域绑定）
+  不产生独立事件，而是作为 binding scope
+  Instance-level Workflow 绑定到特定实例，监听其 Layer 3 事件
+
+Layer 3: 进程 / Session 运行时事件
+  由 Instance scope 内的 Workflow 监听
+  process:start / process:stop / process:crash / process:restart
+  session:start / session:end
+  prompt:before / prompt:after / error / idle
+```
+
+**设计原则**：
+- Instance 的 create/destroy/modify 是**持久化操作**，归 Layer 1（Actant 系统层）
+- Instance 层不产生独立事件类型，而是作为**作用域**，决定 Layer 3 事件绑定到哪个实例
+- Process 和 Session 的事件是**运行时事件**，归 Layer 3
 
 ---
 
@@ -265,11 +310,70 @@ one-shot   Daemon spawn + 等待退出       (不适用: 一次性任务由 Daem
 
 ---
 
-## 5. 四种外部接入模式
+## 5. Backend Open Mode — 后端打开方式
+
+独立于 LaunchMode 和 ProcessOwnership，每个后端声明自身支持的**打开方式（Open Mode）**。这决定了调用方"如何启动或连接到"一个 Agent 后端。
+
+### 5.1 三种 Open Mode
+
+| Mode | 含义 | 对应操作 | 典型用法 |
+|------|------|---------|---------|
+| **resolve** | 外部 spawn：返回 command/args，由调用方自行启动 | `agent resolve` → 调用方 `spawn()` → `agent attach` | IDE 插件、自定义编排器 |
+| **open** | 直接打开后端的原生 TUI/UI | `agent open` → 启动 detached GUI 进程 | `cursor <dir>` 打开 Cursor IDE |
+| **acp** | Actant 托管控制，通过 ACP 协议通信 | `agent start` / `agent run` / `agent prompt` / `agent chat` / `agent proxy` | 所有 headless 交互场景 |
+
+> **关系说明**：`resolve` 和 `open` 面向"调用方自己管理进程"的场景；`acp` 面向"Actant 代为管理进程"的场景。一个后端可以同时支持多种 mode。
+
+### 5.2 后端支持矩阵
+
+| 后端 | resolve | open | acp | 备注 |
+|------|---------|------|-----|------|
+| `cursor` | **YES** | **YES** | — | 只打开 IDE，不支持 ACP |
+| `cursor-agent` | **YES** | **YES** | **YES** | Cursor Agent 模式，支持全部三种 |
+| `claude-code` | **YES** | — | **YES** | CLI 无独立 UI |
+| `pi` | — | — | **YES** | ACP-only，进程由 AcpConnectionManager spawn |
+| `custom` | **YES** | — | — | 用户自定义，仅支持外部 spawn |
+
+### 5.3 BackendRegistry
+
+后端能力通过 `BackendRegistry` 动态注册，而非硬编码 `if/else` 判断。
+
+**核心 API**（`packages/core/src/manager/launcher/backend-registry.ts`）：
+
+| 函数 | 用途 |
+|------|------|
+| `registerBackend(descriptor)` | 注册一个 `BackendDescriptor` |
+| `getBackendDescriptor(type)` | 获取已注册的描述符（未注册则抛错） |
+| `supportsMode(type, mode)` | 检查后端是否支持指定 mode |
+| `requireMode(type, mode)` | 断言后端支持指定 mode（不支持则抛描述性错误） |
+| `getPlatformCommand(cmd)` | 根据 `process.platform` 选择 `win32` / `default` 命令 |
+
+**BackendDescriptor 结构**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `type` | `AgentBackendType` | 后端类型标识 |
+| `supportedModes` | `AgentOpenMode[]` | 支持的打开方式列表 |
+| `resolveCommand?` | `PlatformCommand` | resolve 模式的可执行命令 |
+| `openCommand?` | `PlatformCommand` | open 模式的可执行命令 |
+| `acpCommand?` | `PlatformCommand` | ACP 模式的可执行命令 |
+| `acpResolver?` | `(workspaceDir, backendConfig?) => { command, args }` | 自定义 ACP 命令解析函数（优先级高于 `acpCommand`） |
+| `acpOwnsProcess?` | `boolean` | 若 `true`，ACP 层全权管理进程（如 Pi） |
+
+**注册时机**：
+
+- **内置后端**（cursor / cursor-agent / claude-code / custom）：在 `builtin-backends.ts` 模块加载时自动注册。
+- **外部后端**（如 Pi）：由其包的初始化代码调用 `registerBackend()`（见 `app-context.ts`）。
+
+> 实现参考：`packages/core/src/manager/launcher/backend-registry.ts`、`packages/core/src/manager/launcher/builtin-backends.ts`
+
+---
+
+## 6. 四种外部接入模式
 
 外部系统与 Actant 交互的四种方式，按**Actant 控制程度**从高到低排列。
 
-### 5.1 agent.run — 全托管
+### 6.1 agent.run — 全托管
 
 ```
 调用方 ──→ Actant API ──→ Agent
@@ -292,7 +396,7 @@ result = agent.run({ template: "reviewer", prompt: "审查这个 PR" })
 
 ---
 
-### 5.2 ACP Proxy — 标准协议接入
+### 6.2 ACP Proxy — 标准协议接入
 
 ```
 调用方 ──ACP/stdio──→ actant proxy ──RPC──→ Daemon ──ACP──→ Agent
@@ -329,7 +433,7 @@ result = agent.run({ template: "reviewer", prompt: "审查这个 PR" })
 
 ---
 
-### 5.3 Self-spawn + Attach — 自主管理
+### 6.3 Self-spawn + Attach — 自主管理
 
 ```
 调用方 ──resolve──→ Actant ──→ workspace 信息
@@ -372,7 +476,7 @@ result = agent.run({ template: "reviewer", prompt: "审查这个 PR" })
 
 ---
 
-### 5.4 MCP Server — Agent 间通信
+### 6.4 MCP Server — Agent 间通信
 
 ```
 Agent A ──MCP tool call──→ Actant MCP Server ──RPC──→ Daemon ──ACP──→ Agent B
@@ -389,7 +493,7 @@ Agent A ──MCP tool call──→ Actant MCP Server ──RPC──→ Daemon
 
 **为什么不用 ACP**：Agent A 自身就是被管理的 Agent，它没有能力扮演 ACP Client（无法提供文件系统、终端、权限）。MCP 是 Agent 的原生工具调用协议。
 
-**MCP Tools**：
+**MCP Tools**（基础版，#16）：
 ```
 actant_run_agent      — 创建 ephemeral Agent 执行任务
 actant_prompt_agent   — 向持久 Agent 发送消息
@@ -398,9 +502,19 @@ actant_create_agent   — 创建实例
 actant_list_agents    — 列出所有 Agent
 ```
 
+> **演进方向：Agent-to-Agent Email 范式（#136）**
+>
+> Agent-to-Agent 通信优先通过 **CLI / JSON-RPC API / Email** 实现（#136），而非 MCP：
+> - Agent 间通过 Email 异步通信（发送后无需等待回复）
+> - 主要通道：`actant email send` CLI + `email.send` RPC handler
+> - 雇员 Agent 的主 Session 处理 Email，普通实例启动新进程处理
+> - 支持 CC/群发、跨时间线传递、Email Hub 持久化记录
+>
+> MCP Server (#16) 降为 P4 可选扩展，作为 Agent 从 IDE 内部发送 Email 的备选通道。
+
 ---
 
-### 5.5 四种模式对比
+### 6.5 四种模式对比
 
 | 维度 | agent.run | ACP Proxy | Self-spawn+Attach | MCP Server |
 |------|-----------|-----------|-------------------|------------|
@@ -424,9 +538,9 @@ Actant 控制程度
 
 ---
 
-## 6. 场景矩阵
+## 7. 场景矩阵
 
-### 6.1 游戏引擎集成（Unreal / Unity）
+### 7.1 游戏引擎集成（Unreal / Unity）
 
 #### 场景 A：一次性代码生成
 
@@ -497,7 +611,7 @@ Actant->Detach("ue-helper");
 
 ---
 
-### 6.2 IDE 插件集成
+### 7.2 IDE 插件集成
 
 #### 场景 D：VSCode 插件接入专业 Agent
 
@@ -524,15 +638,15 @@ Actant->Detach("ue-helper");
 
 ---
 
-### 6.3 Agent-to-Agent 协作
+### 7.3 Agent-to-Agent 协作
 
-#### 场景 E：架构师 Agent 委派任务给编码 Agent
+#### 场景 E：架构师 Agent 委派任务给编码 Agent（同步 MCP）
 
-> Agent A（架构师）需要把实现任务委派给 Agent B（编码专家）。
+> Agent A（架构师）需要把实现任务委派给 Agent B（编码专家），等待结果后继续。
 
 | 选择 | 推荐 |
 |------|------|
-| 接入模式 | **MCP Server** |
+| 接入模式 | **MCP Server**（同步，#16） |
 | Agent B LaunchMode | `one-shot`（单次任务）或 `acp-service`（持久可复用） |
 
 ```
@@ -552,9 +666,38 @@ result = mcp.call("actant_prompt_agent", {
 })
 ```
 
+#### 场景 E2：Agent 间异步 Email 协作（#136）
+
+> Agent A（架构师）发送 Email 给 Agent B（编码专家）和 Agent C（测试专家），无需等待，继续其他工作。
+
+| 选择 | 推荐 |
+|------|------|
+| 接入模式 | **Email via CLI/API**（异步，#136） |
+| Agent B/C LaunchMode | `acp-service`（雇员 Agent，主 Session 处理 Email） |
+
+```bash
+# 通过 CLI 发送 Email（人或 Agent 均可调用）
+actant email send --to team-coder --cc qa-bot \
+  --subject "实现排序模块" \
+  --body "请实现以下接口：..."
+
+# 或通过 RPC（Agent 进程内部调用）
+rpc.call("email.send", {
+  to: ["team-coder"],
+  cc: ["qa-bot"],
+  subject: "实现排序模块",
+  body: "请实现以下接口：...",
+})
+// Agent A 继续其他工作
+
+// 雇员 Agent B 在主 Session 中收到 Email 并处理
+// Agent C (cc) 也收到 Email 备忘
+// 完成后 Agent B 的回复 Email 自动投递回 Agent A
+```
+
 ---
 
-### 6.4 CI/CD 集成
+### 7.4 CI/CD 集成
 
 #### 场景 F：流水线中批量代码审查
 
@@ -576,7 +719,7 @@ done
 
 ---
 
-### 6.5 Web 应用集成
+### 7.5 Web 应用集成
 
 #### 场景 G：SaaS 平台后端调用 Agent
 
@@ -599,7 +742,7 @@ app.post("/api/generate", async (req, res) => {
 
 ---
 
-## 7. 决策流程图
+## 8. 决策流程图
 
 选择接入模式的决策树：
 
@@ -642,7 +785,7 @@ Agent 需要多久？
 
 ---
 
-## 8. 状态转换全图
+## 9. 状态转换全图
 
 ```
                           ┌──────────────────────────────────────────┐
