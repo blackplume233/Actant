@@ -1,6 +1,6 @@
 {
   "name": "actant",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "private": true,
   "description": "A platform for building, managing, and composing AI agents",
   "type": "module",
