@@ -44,6 +44,11 @@ export interface SourceManagerDeps {
  * Manages component sources (GitHub repos, local dirs, etc.).
  * Syncs remote components into the domain managers with `package@name` namespacing.
  */
+export interface SourceManagerOptions {
+  /** Skip auto-registration of the default actant-hub source (useful for tests). */
+  skipDefaultSource?: boolean;
+}
+
 export class SourceManager {
   private readonly sources = new Map<string, ComponentSource>();
   private readonly presets = new Map<string, PresetDefinition>();
@@ -51,12 +56,14 @@ export class SourceManager {
   private readonly homeDir: string;
   private readonly sourcesFilePath: string;
   private readonly cacheDir: string;
+  private readonly skipDefaultSource: boolean;
 
-  constructor(homeDir: string, managers: SourceManagerDeps) {
+  constructor(homeDir: string, managers: SourceManagerDeps, options?: SourceManagerOptions) {
     this.homeDir = homeDir;
     this.managers = managers;
     this.sourcesFilePath = join(homeDir, "sources.json");
     this.cacheDir = join(homeDir, "sources-cache");
+    this.skipDefaultSource = options?.skipDefaultSource ?? false;
   }
 
   // ---------------------------------------------------------------------------
@@ -208,14 +215,13 @@ export class SourceManager {
   // ---------------------------------------------------------------------------
 
   async initialize(): Promise<void> {
-    let entries: SourceEntry[];
+    let entries: SourceEntry[] = [];
     try {
       const raw = await readFile(this.sourcesFilePath, "utf-8");
       const data = JSON.parse(raw) as { sources?: Record<string, SourceConfig> };
       entries = Object.entries(data.sources ?? {}).map(([name, config]) => ({ name, config }));
     } catch {
       logger.debug("No sources.json found, starting with empty sources");
-      return;
     }
 
     for (const entry of entries) {
@@ -228,6 +234,23 @@ export class SourceManager {
       } catch (err) {
         logger.warn({ name: entry.name, error: err }, "Failed to restore source, skipping");
       }
+    }
+
+    await this.ensureDefaultSource();
+  }
+
+  /**
+   * Registers the official actant-hub as the default source if not already present.
+   * Fails silently when offline or the repo is unreachable.
+   */
+  private async ensureDefaultSource(): Promise<void> {
+    if (this.skipDefaultSource) return;
+    if (this.sources.has(DEFAULT_SOURCE_NAME)) return;
+    try {
+      await this.addSource(DEFAULT_SOURCE_NAME, DEFAULT_SOURCE_CONFIG);
+      logger.info("Default source registered: %s", DEFAULT_SOURCE_NAME);
+    } catch (err) {
+      logger.debug({ error: err }, "Failed to register default source (offline?), skipping");
     }
   }
 

@@ -6,4 +6,5 @@ export {
   DEFAULT_SOURCE_NAME,
   DEFAULT_SOURCE_CONFIG,
   type SourceManagerDeps,
+  type SourceManagerOptions,
 } from "./source-manager";

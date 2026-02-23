@@ -18,6 +18,7 @@ import {
   EmployeeScheduler,
   InstanceRegistry,
   createDefaultStepRegistry,
+  registerCommunicator,
   type LauncherMode,
 } from "@actant/core";
 import { AcpConnectionManager } from "@actant/acp";
@@ -86,13 +87,15 @@ export class AppContext {
     this.workflowManager = new WorkflowManager();
     this.pluginManager = new PluginManager();
 
+    const resolvedLauncherMode = config?.launcherMode
+      ?? (process.env["ACTANT_LAUNCHER_MODE"] as LauncherMode | undefined);
     this.sourceManager = new SourceManager(this.homeDir, {
       skillManager: this.skillManager,
       promptManager: this.promptManager,
       mcpConfigManager: this.mcpConfigManager,
       workflowManager: this.workflowManager,
       templateRegistry: this.templateRegistry,
-    });
+    }, { skipDefaultSource: resolvedLauncherMode === "mock" });
 
     this.agentInitializer = new AgentInitializer(
       this.templateRegistry,
@@ -109,8 +112,7 @@ export class AppContext {
     );
     this.acpConnectionManager = new AcpConnectionManager();
     this.sessionRegistry = new SessionRegistry();
-    const launcherMode = config?.launcherMode
-      ?? (process.env["ACTANT_LAUNCHER_MODE"] as LauncherMode | undefined);
+    const launcherMode = resolvedLauncherMode;
     this.agentManager = new AgentManager(
       this.agentInitializer,
       createLauncher({ mode: launcherMode }),
@@ -138,6 +140,7 @@ export class AppContext {
     }
 
     await this.loadDomainComponents();
+    await this.registerPiBackend();
     await this.sourceManager.initialize();
 
     await this.agentManager.initialize();
@@ -149,6 +152,17 @@ export class AppContext {
 
   get uptime(): number {
     return Math.floor((Date.now() - this.startTime) / 1000);
+  }
+
+  private async registerPiBackend(): Promise<void> {
+    try {
+      const { PiBuilder, PiCommunicator } = await import("@actant/pi");
+      this.agentInitializer.workspaceBuilder.registerBuilder(new PiBuilder());
+      registerCommunicator("pi", () => new PiCommunicator());
+      logger.info("Pi backend registered");
+    } catch {
+      logger.debug("@actant/pi not available, Pi backend disabled");
+    }
   }
 
   private async loadDomainComponents(): Promise<void> {
