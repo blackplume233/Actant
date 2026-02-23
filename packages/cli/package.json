@@ -1,6 +1,6 @@
 {
   "name": "@actant/cli",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "CLI for the Actant AI agent platform — build, manage, and compose AI agents",
   "type": "module",
   "license": "MIT",
