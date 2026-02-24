@@ -750,18 +750,20 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | `agent prompt <name>` | `name` | `-m, --message`（必填）, `--session-id`, `--format` | `agent.prompt` |
 | `agent chat <name>` | `name` | `--model`, `--max-turns`, `--session-id` | `agent.run`（循环调用） |
 
-- `agent run`：发送单次 prompt，输出结果后退出。对已启动（`agent start`）的 ACP Agent 优先使用 ACP 连接，否则回退到 CLI pipe 模式。支持 `--format text|json`。
-- `agent prompt`：向已启动的 ACP Agent 发送消息。要求 Agent 已通过 `agent start` 启动。
-- `agent chat`：进入交互式 REPL 模式。输入 `exit`/`quit` 或 Ctrl+C 退出。通过 `--session-id` 和 claude-code session 机制维护跨消息上下文。
+- `agent run`：发送单次 prompt，输出结果后退出（**acp 模式**）。对已启动（`agent start`）的 ACP Agent 优先使用 ACP 连接，否则回退到 CLI pipe 模式。支持 `--format text|json`。
+- `agent prompt`：向已启动的 ACP Agent 发送消息（**acp 模式**）。要求 Agent 已通过 `agent start` 启动。
+- `agent chat`：进入交互式 REPL 模式（**acp 模式**）。Agent 未运行时 CLI 自行 spawn ACP bridge 并建立 ACP 连接（Direct Bridge）；Agent 已运行时使用已有 ACP 连接。输入 `exit`/`quit` 或 Ctrl+C 退出。
 
-### 4.3 外部 Spawn 命令
+> **Backend Mode 映射**：`run`/`prompt`/`chat` 均走 **acp** 模式。后端通过 `BackendDescriptor.resolvePackage` 自声明所需的 npm 包（如 `@zed-industries/claude-agent-acp`），该字段经 `ResolveResult` 传递到 CLI。`binary-resolver` 是泛型解析器——接受 `resolvePackage` 参数，在 PATH 查找失败时自动从 `node_modules` 定位 bin 脚本。详见 [agent-lifecycle.md §5.4](./agent-lifecycle.md#54-后端依赖解析resolvepackage-与-binary-resolver)。
 
-| 命令 | 参数 | 选项 | 对应 RPC |
-|------|------|------|---------|
-| `agent resolve <name>` | `name` | `-t, --template`, `-f, --format` | `agent.resolve` |
-| `agent open <name>` | `name` | — | `agent.open` |
-| `agent attach <name>` | `name` | `--pid`（必填）, `--metadata` | `agent.attach` |
-| `agent detach <name>` | `name` | `--cleanup` | `agent.detach` |
+### 4.3 外部 Spawn 与直接打开命令
+
+| 命令 | 参数 | 选项 | 对应 RPC | Backend Mode |
+|------|------|------|---------|-------------|
+| `agent resolve <name>` | `name` | `-t, --template`, `-f, --format` | `agent.resolve` | **resolve** — 输出 ACP 连接命令 |
+| `agent open <name>` | `name` | — | `agent.open` | **open** — 直接打开原生 UI |
+| `agent attach <name>` | `name` | `--pid`（必填）, `--metadata` | `agent.attach` | （配合 resolve 使用） |
+| `agent detach <name>` | `name` | `--cleanup` | `agent.detach` | （配合 resolve 使用） |
 
 ### 4.4 Domain 组件命令（✅ 已实现）
 
@@ -1136,15 +1138,16 @@ IDE 只会说 ACP 协议，Proxy 在 Session Lease 模式下做协议翻译：
 
 ### 7.6 agent chat 实现
 
-`actant agent chat <name>` 根据 Agent 状态自动选择模式：
+`actant agent chat <name>` 始终通过 **acp** 模式与 Agent 交互，根据 Agent 状态自动选择 ACP 连接方式：
 
-1. **Agent 未运行** → Direct Bridge 模式
-   - 自行 spawn Agent
+1. **Agent 未运行** → Direct Bridge（CLI 自行建立 ACP 连接）
+   - CLI 调用 `agent.resolve` 获取 spawn info → `AcpConnection.spawn()` 启动 ACP bridge
+   - ACP bridge 命令自动解析：优先查找 PATH 上的全局命令，回退到 `@actant/acp` 依赖的 `node_modules` 内安装
    - 使用 `AcpConnection.streamPrompt()` 流式输出
    - 退出时清理进程
 
-2. **Agent 已运行**（`agent start`）→ Daemon-managed 模式
-   - 使用 `agent.prompt` RPC（同步）
+2. **Agent 已运行**（`agent start`）→ Daemon-managed ACP
+   - 使用 `agent.prompt` RPC（复用 Daemon 持有的 ACP 连接）
    - 保留 session 上下文
 
 ### 7.7 外部客户端配置示例

@@ -41,8 +41,9 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@agentclientprotocol/sdk": "^0.14.1",
     "@actant/core": "workspace:*",
-    "@actant/shared": "workspace:*"
+    "@actant/shared": "workspace:*",
+    "@agentclientprotocol/sdk": "^0.14.1",
+    "@zed-industries/claude-agent-acp": "^0.18.0"
   }
 }

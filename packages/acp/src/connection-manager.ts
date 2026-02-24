@@ -14,6 +14,8 @@ export interface ConnectOptions {
   args: string[];
   cwd: string;
   connectionOptions?: AcpConnectionOptions;
+  /** npm package providing the binary (from BackendDescriptor.resolvePackage). */
+  resolvePackage?: string;
 }
 
 /**
@@ -67,7 +69,7 @@ export class AcpConnectionManager {
     this.routers.set(name, router);
 
     try {
-      await connWithRouter.spawn(options.command, options.args, options.cwd);
+      await connWithRouter.spawn(options.command, options.args, options.cwd, options.resolvePackage);
       await connWithRouter.initialize();
       const session = await connWithRouter.newSession(options.cwd);
       this.primarySessions.set(name, session.sessionId);

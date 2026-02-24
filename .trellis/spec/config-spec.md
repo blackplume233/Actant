@@ -71,15 +71,18 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 
 #### AgentBackendType
 
-| 值 | 说明 | 支持 Open Mode | ACP 通信 |
-|----|------|---------------|---------|
-| `"cursor"` | Cursor IDE（编辑器模式） | resolve, open | 否 |
-| `"cursor-agent"` | Cursor Agent 模式 | resolve, open, acp | 是 |
-| `"claude-code"` | Claude Code CLI | resolve, acp | 是 |
+| 值 | 说明 | 支持 Backend Mode | ACP 通信 |
+|----|------|------------------|---------|
+| `"cursor"` | Cursor IDE（编辑器模式） | open, resolve | 否 |
+| `"cursor-agent"` | Cursor Agent 模式 | open, resolve, acp | 是 |
+| `"claude-code"` | Claude Code CLI | open, resolve, acp | 是（`open` → `claude` TUI；`resolve`/`acp` → `claude-agent-acp`） |
 | `"pi"` | Pi Agent（基于 pi-agent-core） | acp | 是（ACP-only） |
 | `"custom"` | 用户自定义可执行程序 | resolve | 否 |
 
-> **Open Mode**：每个后端在 BackendRegistry 中声明自己支持的打开方式。详见 [agent-lifecycle.md §5](./agent-lifecycle.md#5-backend-open-mode--后端打开方式)。
+> **Backend Mode**：每个后端在 BackendRegistry 中声明自己支持的交互模式。详见 [agent-lifecycle.md §5](./agent-lifecycle.md#5-backend-mode--后端交互模式)。
+> - **open** — 直接打开原生 UI（不走 ACP）
+> - **resolve** — 输出 ACP 连接命令供外部调用方使用
+> - **acp** — Actant 托管的 ACP 生命周期（除 open/resolve 外的所有操作）
 >
 > **ACP-only 后端**：`pi` 后端的 `acpOwnsProcess: true`，进程完全由 `AcpConnectionManager` spawn，不经过 `ProcessLauncher.launch()`。详见 [api-contracts.md §5.1](./api-contracts.md#51-agentlauncher)。
 

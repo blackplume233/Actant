@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 22
+- **Total Sessions**: 23
 - **Last Active**: 2026-02-24
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1200 | Active |
+| `journal-1.md` | ~1308 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 23 | 2026-02-24 | actant-hub CI workflow and dev convention | `ef9c72f` |
 | 22 | 2026-02-24 | Agent Skills Open Standard Compatibility (#144) | `4d9bdce` |
 | 21 | 2026-02-24 | Fix CI Publish Failure + Issue Cache Sync | `1800be8`, `bc76dd2` |
 | 20 | 2026-02-23 | Pi Backend, Backend Open Mode Registry, Spec Updates (#121) | `34b2e35`, `8bfb4d0` |

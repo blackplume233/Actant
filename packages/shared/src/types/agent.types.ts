@@ -64,6 +64,8 @@ export interface ResolveResult {
   backendType: AgentBackendType;
   /** Whether a new instance was created by this resolve call. */
   created: boolean;
+  /** npm package that provides the binary (for auto-resolution when not on PATH). */
+  resolvePackage?: string;
 }
 
 /** Result of detaching an externally-managed process. */

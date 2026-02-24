@@ -1260,3 +1260,49 @@ Implemented Agent Skills (agentskills.io) open standard compatibility for Actant
 ### Status
 
 [COMMITTED] **Completed** — pushed to master, #144 closed on GitHub.
+
+## Session 23: actant-hub CI workflow and dev convention
+
+**Date**: 2026-02-24
+**Task**: actant-hub CI workflow and dev convention
+
+### Summary
+
+Added GitHub Actions CI to actant-hub repo; updated spec with hub dev convention
+
+### Main Changes
+
+## 本次工作
+
+### 1. actant-hub 仓库：添加 GitHub Actions CI（已推送）
+
+为 `https://github.com/blackplume233/actant-hub` 仓库创建了完整的 CI 方案：
+
+- `scripts/validate.mjs` — 零依赖 Node.js 验证脚本（manifest、组件 schema、SKILL.md frontmatter、cross-ref、registry 对齐，支持 --strict）
+- `.github/workflows/validate.yml` — CI 工作流（push/PR to main + workflow_dispatch），首次运行 15 秒通过，16 组件全部 PASS
+
+### 2. AgentCraft spec 更新（未提交）
+
+在 `quality-guidelines.md` 的 Hub Component Portability 一节新增开发约定：hub 修改直接操作真实仓库，废弃 `examples/actant-hub/`
+
+**Updated Files (actant-hub repo)**: `scripts/validate.mjs`, `.github/workflows/validate.yml`
+
+**Updated Files (AgentCraft)**: `.trellis/spec/backend/quality-guidelines.md`
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `ef9c72f` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

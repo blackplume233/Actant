@@ -36,6 +36,7 @@ export interface AcpConnectionManagerLike {
     command: string;
     args: string[];
     cwd: string;
+    resolvePackage?: string;
     connectionOptions?: {
       autoApprove?: boolean;
       env?: Record<string, string>;
@@ -209,12 +210,13 @@ export class AgentManager {
       }
 
       if (this.acpManager) {
-        const { command, args } = resolveAcpBackend(meta.backendType, dir, meta.backendConfig);
+        const acpResolved = resolveAcpBackend(meta.backendType, dir, meta.backendConfig);
         const providerEnv = buildProviderEnv(meta.providerConfig);
         const connResult = await this.acpManager.connect(name, {
-          command,
-          args,
+          command: acpResolved.command,
+          args: acpResolved.args,
           cwd: dir,
+          resolvePackage: acpResolved.resolvePackage,
           connectionOptions: {
             autoApprove: true,
             ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
@@ -348,15 +350,16 @@ export class AgentManager {
     }
 
     const dir = join(this.instancesBaseDir, name);
-    const { command, args } = resolveBackend(meta.backendType, dir, meta.backendConfig);
+    const resolved = resolveBackend(meta.backendType, dir, meta.backendConfig);
 
     return {
       workspaceDir: dir,
-      command,
-      args,
+      command: resolved.command,
+      args: resolved.args,
       instanceName: name,
       backendType: meta.backendType,
       created,
+      resolvePackage: resolved.resolvePackage,
     };
   }
 

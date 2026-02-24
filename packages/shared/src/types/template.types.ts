@@ -104,6 +104,12 @@ export interface BackendDescriptor {
    * Only relevant when "acp" is in supportedModes.
    */
   acpOwnsProcess?: boolean;
+  /**
+   * npm package that provides the resolve/acp executable.
+   * Used by binary-resolver as fallback when the command is not found on PATH.
+   * Each backend declares its own dependency — the ACP layer stays generic.
+   */
+  resolvePackage?: string;
 }
 
 /**

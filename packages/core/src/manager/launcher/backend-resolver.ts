@@ -12,6 +12,8 @@ export type { BackendDescriptor, AgentOpenMode, PlatformCommand } from "@actant/
 export interface ResolvedBackend {
   command: string;
   args: string[];
+  /** npm package providing the binary (for auto-resolution when not on PATH). */
+  resolvePackage?: string;
 }
 
 /**
@@ -83,6 +85,7 @@ export function resolveBackend(
   return {
     command,
     args: buildArgs(backendType, workspaceDir, backendConfig),
+    resolvePackage: desc.resolvePackage,
   };
 }
 
@@ -137,5 +140,6 @@ export function resolveAcpBackend(
   return {
     command,
     args: buildArgs(backendType, workspaceDir, backendConfig),
+    resolvePackage: desc.resolvePackage,
   };
 }

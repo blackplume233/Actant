@@ -99,6 +99,33 @@ const env = descriptor.buildProviderEnv?.(providerConfig) ?? defaultEnv;
 
 **Why**: Adding a new backend should not require modifying core manager code. Backend-specific behavior belongs in the backend's own registration descriptor. This follows the same open-closed pattern as `acpResolver` and `resolveCommand`. ACP protocol's `SessionConfigOption` covers model/thinking_level switching but NOT credentials — API Keys can only be injected via env vars at spawn time, so each backend must declare its own expected variable names.
 
+### Don't: Hardcode Backend-Specific Knowledge in Generic Layers
+
+```typescript
+// Bad — ACP layer knows about specific backend packages
+const KNOWN_ACP_PACKAGES: Record<string, string> = {
+  "claude-agent-acp": "@zed-industries/claude-agent-acp",
+  "claude-code-acp": "@zed-industries/claude-code-acp",
+};
+export function resolveAcpBinary(command: string) {
+  const pkg = KNOWN_ACP_PACKAGES[command]; // hardcoded lookup
+  // ...
+}
+
+// Good — backend declares its dependency, resolver is generic
+registerBackend({
+  type: "claude-code",
+  resolvePackage: "@zed-industries/claude-agent-acp",
+  // ...
+});
+// binary-resolver receives resolvePackage as a parameter
+export function resolveAcpBinary(command: string, resolvePackage?: string) {
+  // generic resolution — no backend-specific knowledge
+}
+```
+
+**Why**: Generic layers (`@actant/acp`, `binary-resolver`) provide **mechanisms**, not **policy**. When the ACP layer hardcodes a map of backend→package, adding a new backend requires modifying the ACP package — violating the open-closed principle. By letting each backend declare `resolvePackage` in its `BackendDescriptor`, the knowledge stays where it belongs: in the backend registration.
+
 ### Don't: `any` Types
 
 ```typescript
@@ -317,6 +344,29 @@ actant source validate --path . --compat agent-skills --strict
 
 此命令递归校验所有组件（manifest、schema、cross-reference、template semantics），strict 模式将 warning 提升为 error。actant-hub 已通过此验证（16 组件全部通过）。
 
+**开发约定 — 直接操作 actant-hub 仓库**：
+
+Hub 相关的修改（组件增删、schema 调整、CI 配置等）应**直接操作真实仓库** `https://github.com/blackplume233/actant-hub`，而非 `examples/actant-hub/` 目录。真实仓库即是最好的 example。
+
+```
+# 本地路径约定
+g:\Workspace\AgentWorkSpace\actant-hub    # 真实仓库（独立 clone）
+examples/actant-hub/                       # 已废弃，仅保留作为历史参考
+
+# 如果本地没有该仓库，先克隆
+git clone https://github.com/blackplume233/actant-hub.git \
+  g:\Workspace\AgentWorkSpace\actant-hub
+```
+
+| 操作 | 在哪里做 |
+|------|----------|
+| 新增/修改组件（Skills, Templates, Presets 等） | `actant-hub` 仓库 |
+| 修改 CI workflow | `actant-hub` 仓库的 `.github/workflows/` |
+| 修改 SourceValidator 逻辑 | AgentCraft 主项目 `packages/core/src/source/` |
+| SourceValidator 集成测试 | AgentCraft 主项目，但测试目标应为本地 clone 的 `actant-hub` 仓库 |
+
+> **注意**：`examples/actant-hub/` 和主项目的 `.github/workflows/validate-hub.yml` 不再作为 hub 的主要开发路径。后续如需在主项目 CI 中集成 hub 校验，应 clone 真实仓库而非引用 examples 目录。
+
 ### Parser-level Field Name Mapping
 
 When integrating with external formats that use different naming conventions (e.g., kebab-case YAML keys), map to internal TypeScript conventions at the parser boundary. Downstream code never sees the external naming.
@@ -341,9 +391,11 @@ Every built-in backend should declare its supported modes and provide the correc
 
 | Mode | Purpose | Command | Protocol |
 |------|---------|---------|----------|
-| `resolve` | Daemon spawns and manages via ACP | `resolveCommand` | ACP (stdio) |
-| `open` | Opens TUI for human interaction | `openCommand` | Terminal I/O |
-| `acp` | Direct ACP bridge without daemon | Falls back to `resolveCommand` | ACP (stdio) |
+| `open` | Opens native TUI/UI for human interaction | `openCommand` | Terminal I/O (no ACP) |
+| `resolve` | Returns command/args for external callers to establish ACP connections | `resolveCommand` | ACP (stdio) |
+| `acp` | Actant-managed ACP lifecycle (start/stop/run/chat/prompt/proxy) | `acpCommand` or falls back to `resolveCommand` | ACP (stdio) |
+
+> **Core principle**: Everything except `open` (direct native UI) and `resolve` (output connection info) goes through `acp` mode.
 
 ```typescript
 registerBackend({
@@ -351,14 +403,16 @@ registerBackend({
   supportedModes: ["resolve", "open", "acp"],
   resolveCommand: { win32: "claude-agent-acp.cmd", default: "claude-agent-acp" },
   openCommand: { win32: "claude.cmd", default: "claude" },
+  resolvePackage: "@zed-industries/claude-agent-acp",
 });
 ```
 
 **Key points**:
 - `resolveCommand` and `acp` mode typically share the same executable (the ACP adapter)
-- `openCommand` is the native TUI binary — it may be a **different executable** than the ACP adapter
+- `openCommand` is the native TUI binary — it may be a **different executable** than the ACP adapter (e.g., `claude` vs `claude-agent-acp`)
 - Always provide `win32` variant when the CLI installs `.cmd` shim files (npm global installs)
 - If a backend depends on an **external package** (not bundled with Actant), add an install hint in `backend-registry.ts` (see below)
+- Backends declare their own dependency package via `resolvePackage`. The generic `binary-resolver.ts` accepts this as a parameter — the ACP layer has no hardcoded knowledge of specific backend packages. See [agent-lifecycle.md §5.4](../agent-lifecycle.md#54-后端依赖解析resolvepackage-与-binary-resolver) for the full resolution chain and pnpm constraints.
 
 ### Backend Install Hints for External Dependencies
 

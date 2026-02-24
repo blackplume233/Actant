@@ -310,29 +310,36 @@ one-shot   Daemon spawn + 等待退出       (不适用: 一次性任务由 Daem
 
 ---
 
-## 5. Backend Open Mode — 后端打开方式
+## 5. Backend Mode — 后端交互模式
 
-独立于 LaunchMode 和 ProcessOwnership，每个后端声明自身支持的**打开方式（Open Mode）**。这决定了调用方"如何启动或连接到"一个 Agent 后端。
+独立于 LaunchMode 和 ProcessOwnership，每个后端声明自身支持的**交互模式（Backend Mode）**。这决定了调用方"如何启动或连接到"一个 Agent 后端。
 
-### 5.1 三种 Open Mode
+### 5.1 三种 Backend Mode
 
-| Mode | 含义 | 对应操作 | 典型用法 |
+| Mode | 职责 | 对应操作 | 典型用法 |
 |------|------|---------|---------|
-| **resolve** | 外部 spawn：返回 command/args，由调用方自行启动 | `agent resolve` → 调用方 `spawn()` → `agent attach` | IDE 插件、自定义编排器 |
-| **open** | 直接打开后端的原生 TUI/UI | `agent open` → 启动 detached GUI 进程 | `cursor <dir>` 打开 Cursor IDE |
-| **acp** | Actant 托管控制，通过 ACP 协议通信 | `agent start` / `agent run` / `agent prompt` / `agent chat` / `agent proxy` | 所有 headless 交互场景 |
+| **open** | **直接打开**后端的原生 TUI/UI，不经过 ACP 协议 | `agent open` → 启动 detached 进程 | `cursor <dir>` 打开 IDE、`claude` 打开 TUI |
+| **resolve** | **输出** ACP 连接所需的 command/args，供外部调用方自行建立 ACP 连接 | `agent resolve` → 调用方 `spawn()` → `agent attach` | IDE 插件、自定义编排器 |
+| **acp** | **Actant 托管**控制：由 Daemon 或 CLI 通过 ACP 协议 spawn 并管理 Agent | `agent start` / `agent stop` / `agent run` / `agent prompt` / `agent chat` / `agent proxy` | 所有程序化/headless 交互场景 |
 
-> **关系说明**：`resolve` 和 `open` 面向"调用方自己管理进程"的场景；`acp` 面向"Actant 代为管理进程"的场景。一个后端可以同时支持多种 mode。
+> **核心原则**：除了 `open`（直接打开原生 UI）和 `resolve`（输出连接命令供外部使用）之外，所有与 Agent 的程序化交互都应走 **acp** 模式。
+>
+> **关系说明**：
+> - `open` — 人工交互场景，不涉及 ACP 协议，启动后端原生界面即可。
+> - `resolve` — 为外部系统提供"如何建立 ACP 连接"的信息（command/args/workspace），由外部系统自行管理进程和 ACP 通信。
+> - `acp` — Actant 自身管理的 ACP 生命周期。所有 CLI 命令（start、run、chat、prompt、proxy）和 Daemon 内部调度都通过此模式。
 
 ### 5.2 后端支持矩阵
 
-| 后端 | resolve | open | acp | 备注 |
-|------|---------|------|-----|------|
-| `cursor` | **YES** | **YES** | — | 只打开 IDE，不支持 ACP |
+| 后端 | open | resolve | acp | 备注 |
+|------|------|---------|-----|------|
+| `cursor` | **YES** | **YES** | — | 只打开 IDE，不支持 ACP 协议 |
 | `cursor-agent` | **YES** | **YES** | **YES** | Cursor Agent 模式，支持全部三种 |
-| `claude-code` | **YES** | — | **YES** | CLI 无独立 UI |
+| `claude-code` | **YES** | **YES** | **YES** | `open` → `claude` TUI；`resolve`/`acp` → `claude-agent-acp`（ACP bridge） |
 | `pi` | — | — | **YES** | ACP-only，进程由 AcpConnectionManager spawn |
 | `custom` | **YES** | — | — | 用户自定义，仅支持外部 spawn |
+
+> **`open` vs `acp` 的可执行文件可能不同**：以 `claude-code` 为例，`open` 使用 `claude`（原生 TUI），而 `resolve`/`acp` 使用 `claude-agent-acp`（ACP 桥接器）。前者是人看的终端界面，后者是 ACP 协议的 stdio 通道。
 
 ### 5.3 BackendRegistry
 
@@ -359,6 +366,7 @@ one-shot   Daemon spawn + 等待退出       (不适用: 一次性任务由 Daem
 | `acpCommand?` | `PlatformCommand` | ACP 模式的可执行命令 |
 | `acpResolver?` | `(workspaceDir, backendConfig?) => { command, args }` | 自定义 ACP 命令解析函数（优先级高于 `acpCommand`） |
 | `acpOwnsProcess?` | `boolean` | 若 `true`，ACP 层全权管理进程（如 Pi） |
+| `resolvePackage?` | `string` | 提供 resolve/acp 可执行文件的 npm 包名。后端自声明依赖——`binary-resolver` 在 PATH 查找失败时自动从 `node_modules` 解析该包的 bin 脚本。 |
 | `buildProviderEnv?` | `(providerConfig, backendConfig?) => Record<string, string>` | 将 Provider 配置转换为该后端子进程期望的环境变量。未提供时 fallback 到默认 `ACTANT_*` 映射。（计划中，#141 Phase 2） |
 
 > **为什么需要 `buildProviderEnv`**：不同后端期望不同的原生环境变量。自有 bridge（Pi）读 `ACTANT_*`，第三方后端（如 `claude-agent-acp`）只认 `ANTHROPIC_API_KEY`。集中式硬编码无法扩展，因此让各后端在注册时自描述映射逻辑。ACP 协议的 `SessionConfigOption` 可覆盖 model / thinking_level 的动态切换，但凭证（API Key）只能通过 spawn 时的环境变量传递。
@@ -369,6 +377,32 @@ one-shot   Daemon spawn + 等待退出       (不适用: 一次性任务由 Daem
 - **外部后端**（如 Pi）：由其包的初始化代码调用 `registerBackend()`（见 `app-context.ts`）。
 
 > 实现参考：`packages/core/src/manager/launcher/backend-registry.ts`、`packages/core/src/manager/launcher/builtin-backends.ts`
+
+### 5.4 后端依赖解析：resolvePackage 与 binary-resolver
+
+后端通过 `resolvePackage` 字段自声明"我需要哪个 npm 包提供可执行文件"。`binary-resolver`（位于 `@actant/acp`）是通用解析器，接受 `resolvePackage` 作为参数，不持有任何后端特定知识。
+
+**解析链路**：
+
+```
+BackendDescriptor.resolvePackage          （后端声明意图）
+  → ResolvedBackend.resolvePackage        （backend-resolver 传透）
+    → ResolveResult.resolvePackage        （RPC 序列化传递给 CLI）
+      → AcpConnection.spawn(resolvePackage)（传给 binary-resolver）
+        → resolveAcpBinary(command, resolvePackage)  （泛型解析）
+```
+
+**解析优先级**：
+
+1. 检查 PATH — 已全局安装则直接使用
+2. `resolvePackage` 有值 → `createRequire(import.meta.url)` 从 `node_modules` 解析 bin 脚本，以 `node <script>` 方式执行
+3. 原样返回 command — 由调用方得到 spawn 错误并展示安装提示
+
+> **Warning**: pnpm strict mode 下的依赖定位约束。
+>
+> `createRequire(import.meta.url)` 只能解析**当前包的直接依赖**。`binary-resolver.ts` 位于 `@actant/acp`，因此即使后端在 `@actant/core/builtin-backends.ts` 中通过 `resolvePackage` 声明了包名，实际的 npm dependency 仍必须出现在 `@actant/acp/package.json` 中。
+>
+> 这是 pnpm 严格模式的运行时约束，不是架构泄漏。`resolvePackage` 字段声明"需要什么"（意图由后端管理），`@actant/acp` 的 dep 提供"在哪能找到"（运行时宿主）。未来当后端独立为子包（如 `@actant/backend-claude-code`）时，dep 自然跟随后端包迁移，`@actant/acp` 回归纯通用层。
 
 ---
 

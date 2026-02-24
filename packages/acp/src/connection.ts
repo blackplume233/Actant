@@ -28,6 +28,7 @@ import {
   type ReleaseTerminalResponse,
 } from "@agentclientprotocol/sdk";
 import { createLogger, isWindows } from "@actant/shared";
+import { resolveAcpBinary } from "./binary-resolver";
 import type { PermissionsConfig } from "@actant/shared";
 import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/core";
 import { LocalTerminalManager } from "./terminal-manager";
@@ -109,6 +110,7 @@ export class AcpConnection {
   private readonly terminalManager: LocalTerminalManager;
   private enforcer: PermissionPolicyEnforcer | null = null;
   private auditLogger: PermissionAuditLogger;
+  private _earlyExitPromise: Promise<never> | null = null;
 
   constructor(options?: AcpConnectionOptions) {
     this.options = options ?? {};
@@ -145,13 +147,17 @@ export class AcpConnection {
   /*  Lifecycle                                                        */
   /* ---------------------------------------------------------------- */
 
-  async spawn(command: string, args: string[], cwd: string): Promise<void> {
+  async spawn(command: string, args: string[], cwd: string, resolvePackage?: string): Promise<void> {
     if (this.child) throw new Error("AcpConnection already spawned");
 
-    const env = { ...process.env, ...this.options.env };
-    logger.info({ command, args, cwd }, "Spawning ACP agent subprocess");
+    const resolved = resolveAcpBinary(command, resolvePackage);
+    const finalCommand = resolved.command;
+    const finalArgs = [...resolved.prependArgs, ...args];
 
-    this.child = spawn(command, args, {
+    const env = { ...process.env, ...this.options.env };
+    logger.info({ command: finalCommand, args: finalArgs, cwd }, "Spawning ACP agent subprocess");
+
+    this.child = spawn(finalCommand, finalArgs, {
       cwd,
       stdio: ["pipe", "pipe", "pipe"],
       env,
@@ -162,12 +168,29 @@ export class AcpConnection {
       throw new Error("Failed to create stdio pipes for ACP agent");
     }
 
+    const stderrChunks: string[] = [];
     this.child.stderr?.on("data", (chunk: Buffer) => {
-      logger.debug({ stderr: chunk.toString().trim() }, "ACP agent stderr");
+      const text = chunk.toString().trim();
+      if (text) stderrChunks.push(text);
+      logger.debug({ stderr: text }, "ACP agent stderr");
     });
     this.child.on("error", (err) => {
       logger.error({ error: err }, "ACP agent process error");
     });
+
+    this._earlyExitPromise = new Promise<never>((_resolve, reject) => {
+      this.child!.on("exit", (code, signal) => {
+        const stderr = stderrChunks.join("\n");
+        const detail = stderr
+          ? `\n  stderr: ${stderr}`
+          : "";
+        reject(new Error(
+          `ACP agent process exited unexpectedly (code=${code}, signal=${signal}).` +
+          ` Command: ${finalCommand} ${finalArgs.join(" ")}${detail}`,
+        ));
+      });
+    });
+    this._earlyExitPromise.catch(() => {});
 
     const webWritable = Writable.toWeb(this.child.stdin) as WritableStream<Uint8Array>;
     const webReadable = Readable.toWeb(this.child.stdout) as ReadableStream<Uint8Array>;
@@ -186,7 +209,7 @@ export class AcpConnection {
   async initialize(): Promise<InitializeResponse> {
     if (!this.conn) throw new Error("AcpConnection not spawned");
 
-    this.initResponse = await this.conn.initialize({
+    const initPromise = this.conn.initialize({
       protocolVersion: 1,
       clientCapabilities: {
         fs: { readTextFile: true, writeTextFile: true },
@@ -198,6 +221,12 @@ export class AcpConnection {
         version: "0.1.0",
       },
     });
+
+    this.initResponse = this._earlyExitPromise
+      ? await Promise.race([initPromise, this._earlyExitPromise])
+      : await initPromise;
+
+    this._earlyExitPromise = null;
 
     logger.info({
       agentName: this.initResponse.agentInfo?.name,

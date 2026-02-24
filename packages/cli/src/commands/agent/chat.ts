@@ -134,7 +134,7 @@ async function runDirectBridgeChat(
 
   try {
     try {
-      await conn.spawn(resolved.command, resolved.args, resolved.workspaceDir);
+      await conn.spawn(resolved.command, resolved.args, resolved.workspaceDir, resolved.resolvePackage);
     } catch (spawnErr) {
       const msg = spawnErr instanceof Error ? spawnErr.message : String(spawnErr);
       if (/ENOENT|EINVAL|is not recognized|not found/i.test(msg)) {
@@ -156,7 +156,24 @@ async function runDirectBridgeChat(
     });
     attached = true;
 
-    const initResult = await conn.initialize();
+    let initResult;
+    try {
+      initResult = await conn.initialize();
+    } catch (initErr) {
+      const msg = initErr instanceof Error ? initErr.message : String(initErr);
+      if (/exited unexpectedly|ABORT_ERR|premature close/i.test(msg)) {
+        const hint = resolved.backendType === "claude-code"
+          ? `\n  Install ACP bridge: npm install -g @zed-industries/claude-agent-acp`
+          : `\n  Ensure the backend CLI is installed and supports ACP protocol.`;
+        throw new Error(
+          `Failed to initialize ACP connection with "${resolved.command}".` +
+          ` The agent process exited before completing the handshake.${hint}` +
+          `\n  Detail: ${msg}`,
+          { cause: initErr },
+        );
+      }
+      throw initErr;
+    }
     const agentName = initResult.agentInfo?.name ?? name;
 
     session = await conn.newSession(resolved.workspaceDir);
