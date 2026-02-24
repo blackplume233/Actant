@@ -947,6 +947,7 @@ abstract class BaseComponentManager<T extends NamedComponent> {
 | `WorkflowManager` | `WorkflowDefinition` | — |
 | `McpConfigManager` | `McpServerDefinition` | — |
 | `PluginManager` | `PluginDefinition` | — |
+| `BackendManager` | `BackendDefinition` | 额外管理 `acpResolvers: Map<string, AcpResolverFn>`（行为扩展）；提供 `checkAvailability()`、`getInstallMethods()` |
 | `TemplateRegistry` | `AgentTemplate` | 继承 BaseComponentManager；自定义 `loadFromDirectory()`（使用 TemplateLoader）和重复检查逻辑 |
 
 > 实现参考：`packages/core/src/domain/base-component-manager.ts`, `packages/core/src/template/registry/template-registry.ts`
@@ -954,6 +955,8 @@ abstract class BaseComponentManager<T extends NamedComponent> {
 ### 5.2b SourceManager（默认源自动注册）
 
 管理组件源（GitHub 仓库、本地目录）。通过 `package@name` 命名空间将远程组件注入到各 domain manager。
+
+**支持的组件类型**: skills, prompts, mcp, templates, presets, **backends**。`PackageManifest`（`actant.json`）的 `components` 对象包含 `backends?: string[]` 字段。`SourceManager.injectComponents()` 将从 hub 加载的 `BackendDefinition` 注册到 `BackendManager`。
 
 **默认源行为**: `SourceManager.initialize()` 在启动时自动注册 `actant-hub`（`https://github.com/blackplume233/actant-hub.git`）为默认源。若网络不可用或仓库无法访问，静默跳过。该行为可通过构造时 `{ skipDefaultSource: true }` 禁用（测试场景下 `launcherMode === "mock"` 自动禁用）。
 

@@ -37,6 +37,7 @@ export class ClaudeCodeCommunicator implements AgentCommunicator {
         cwd: workspaceDir,
         stdio: ["pipe", "pipe", "pipe"],
         env: { ...process.env },
+        windowsHide: true,
       });
 
       let stdout = "";
@@ -81,12 +82,19 @@ export class ClaudeCodeCommunicator implements AgentCommunicator {
           } else if (subtype === "error_max_turns") {
             text = "[max turns reached — no final result text]";
           } else {
-            text = stdout.trim();
+            const costUsd = parsed["cost_usd"] as number | undefined;
+            const duration = parsed["duration_ms"] as number | undefined;
+            const parts: string[] = ["[no result text]"];
+            if (subtype) parts.push(`subtype=${subtype}`);
+            if (costUsd != null) parts.push(`cost=$${costUsd.toFixed(4)}`);
+            if (duration != null) parts.push(`duration=${duration}ms`);
+            text = parts.join(" ");
           }
 
           resolve({ text, sessionId });
         } catch {
-          resolve({ text: stdout.trim() });
+          const firstLine = stdout.slice(0, 200).split("\n")[0] ?? "";
+          resolve({ text: firstLine || "[unparseable response]" });
         }
       });
 
@@ -112,6 +120,7 @@ export class ClaudeCodeCommunicator implements AgentCommunicator {
       cwd: workspaceDir,
       stdio: ["pipe", "pipe", "pipe"],
       env: { ...process.env },
+      windowsHide: true,
     });
 
     const timeout = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;

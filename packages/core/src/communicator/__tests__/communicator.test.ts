@@ -14,8 +14,8 @@ describe("createCommunicator", () => {
     expect(comm).toBeInstanceOf(CursorCommunicator);
   });
 
-  it("throws for custom backend", () => {
-    expect(() => createCommunicator("custom")).toThrow("not yet supported");
+  it("throws for unregistered backend", () => {
+    expect(() => createCommunicator("custom")).toThrow("No communicator registered");
   });
 });
 

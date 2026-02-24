@@ -71,13 +71,19 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 
 #### AgentBackendType
 
+`AgentBackendType` 是开放类型：`KnownBackendType | (string & {})`。已知值提供 IDE 自动补全，同时允许任意自定义后端名称。
+
+**已知后端**：
+
 | 值 | 说明 | 支持 Backend Mode | ACP 通信 |
 |----|------|------------------|---------|
 | `"cursor"` | Cursor IDE（编辑器模式） | open, resolve | 否 |
 | `"cursor-agent"` | Cursor Agent 模式 | open, resolve, acp | 是 |
 | `"claude-code"` | Claude Code CLI | open, resolve, acp | 是（`open` → `claude` TUI；`resolve`/`acp` → `claude-agent-acp`） |
-| `"pi"` | Pi Agent（基于 pi-agent-core） | acp | 是（ACP-only） |
+| `"pi"` | Pi Agent（基于 pi-agent-core） | acp | 是（ACP-only, in-process） |
 | `"custom"` | 用户自定义可执行程序 | resolve | 否 |
+
+> **开放类型说明**：`AgentBackendType` 不再是严格枚举。通过 actant-hub 或用户本地注册的自定义后端可使用任意字符串作为 `type`。Zod Schema 使用 `z.string().min(1)` 校验。已知值通过 `KnownBackendType` 类型别名提供 IDE 补全。
 
 > **Backend Mode**：每个后端在 BackendRegistry 中声明自己支持的交互模式。详见 [agent-lifecycle.md §5](./agent-lifecycle.md#5-backend-mode--后端交互模式)。
 > - **open** — 直接打开原生 UI（不走 ACP）
@@ -374,7 +380,8 @@ VersionedComponent           ← 基类
   ├── PromptDefinition       ← + content, variables
   ├── WorkflowDefinition     ← Hook Package: + level, hooks[] (#135)
   ├── McpServerDefinition    ← + command, args, env
-  └── PluginDefinition       ← + type, source, config, enabled
+  ├── PluginDefinition       ← + type, source, config, enabled
+  └── BackendDefinition      ← + supportedModes, resolveCommand?, openCommand?, existenceCheck?, install?
 ```
 
 ---
@@ -523,6 +530,69 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 > 注意：这是 Agent 侧 Plugin（Phase 3a），不同于 Actant 系统级 Plugin（Phase 4 #13）。
 
 > 实现参考：`packages/core/src/domain/plugin/plugin-manager.ts`，类型定义见 `packages/shared/src/types/domain-component.types.ts`
+
+### BackendDefinition
+
+Agent 后端的纯数据配置，JSON 可序列化。由 `BackendManager` 管理，可通过 actant-hub 分发。
+
+> 实现参考：`packages/shared/src/types/template.types.ts`，`packages/core/src/domain/backend/backend-manager.ts`
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
+| `supportedModes` | `AgentOpenMode[]` | **是** | 支持的交互模式（`open`, `resolve`, `acp`） |
+| `resolveCommand` | [`PlatformCommand`](#platformcommand) | 否 | resolve/acp 模式的可执行命令 |
+| `openCommand` | [`PlatformCommand`](#platformcommand) | 否 | open 模式的可执行命令 |
+| `acpCommand` | [`PlatformCommand`](#platformcommand) | 否 | ACP 模式的可执行命令（省略时 fallback 到 `resolveCommand`） |
+| `openWorkspaceDir` | `"arg" \| "cwd"` | 否 | open 模式的 workspace 传递方式（`"arg"` = 作为命令参数，`"cwd"` = 设为工作目录） |
+| `openSpawnOptions` | [`OpenSpawnOptions`](#openspawnoptions) | 否 | open 模式的 spawn 选项（直接映射 Node.js `SpawnOptions` 子集） |
+| `acpOwnsProcess` | `boolean` | 否 | 若 `true`，ACP 层全权管理进程生命周期（如 Pi） |
+| `resolvePackage` | `string` | 否 | 提供 resolve/acp 可执行文件的 npm 包名 |
+| `existenceCheck` | [`BackendExistenceCheck`](#backendexistencecheck) | 否 | 后端可执行文件的存在性验证规则 |
+| `install` | [`BackendInstallMethod[]`](#backendinstallmethod) | 否 | 安装方式列表（按平台过滤） |
+
+> **数据与行为分离**：`BackendDefinition` 是纯数据对象，不含函数。非序列化的行为扩展（如 `acpResolver` 函数）通过 `BackendManager.registerAcpResolver()` 单独注册。旧版 `BackendDescriptor` 作为兼容层保留，但新代码应使用 `BackendDefinition` + `BackendManager`。
+
+#### PlatformCommand
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `win32` | `string` | 否 | Windows 可执行文件（如 `cursor.cmd`） |
+| `default` | `string` | **是** | 其他平台的默认可执行文件（如 `cursor`） |
+
+#### BackendExistenceCheck
+
+用于编程验证后端可执行文件是否已安装。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `command` | `string` | **是** | 验证命令（如 `cursor`、`claude`） |
+| `args` | `string[]` | 否 | 命令参数（默认 `["--version"]`） |
+| `expectedExitCode` | `number` | 否 | 期望的退出码（默认 `0`） |
+| `versionPattern` | `string` | 否 | 正则表达式，从 stdout 提取版本号 |
+
+#### BackendInstallMethod
+
+描述后端可执行文件的安装方式。支持多种安装渠道，按 `platforms` 过滤当前平台适用的方法。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `type` | `"npm" \| "brew" \| "winget" \| "choco" \| "url" \| "manual"` | **是** | 安装方式类型 |
+| `package` | `string` | 否 | 包名（适用于 `npm`, `brew`, `winget`, `choco`）或 URL（适用于 `url`） |
+| `platforms` | `NodeJS.Platform[]` | 否 | 适用的操作系统平台（省略则表示全平台） |
+| `label` | `string` | 否 | 简短安装提示（CLI 错误信息中展示） |
+| `instructions` | `string` | 否 | 详细安装说明 |
+
+#### OpenSpawnOptions
+
+直接映射 Node.js `SpawnOptions` 子集，CLI 零逻辑 spread。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `stdio` | `"inherit" \| "ignore"` | `"ignore"` | 透传 `SpawnOptions.stdio` |
+| `detached` | `boolean` | `true` | 透传 `SpawnOptions.detached` |
+| `windowsHide` | `boolean` | `true` | 透传 `SpawnOptions.windowsHide` |
+| `shell` | `boolean` | `false` | 透传 `SpawnOptions.shell` |
 
 ---
 

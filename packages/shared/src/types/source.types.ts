@@ -39,6 +39,7 @@ export interface PackageManifest {
     mcp?: string[];
     workflows?: string[];
     templates?: string[];
+    backends?: string[];
   };
   presets?: string[];
 }

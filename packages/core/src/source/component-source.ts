@@ -3,6 +3,7 @@ import type {
   PromptDefinition,
   McpServerDefinition,
   WorkflowDefinition,
+  BackendDefinition,
   PresetDefinition,
   PackageManifest,
   AgentTemplate,
@@ -15,6 +16,7 @@ export interface FetchResult {
   prompts: PromptDefinition[];
   mcpServers: McpServerDefinition[];
   workflows: WorkflowDefinition[];
+  backends: BackendDefinition[];
   presets: PresetDefinition[];
   templates: AgentTemplate[];
 }

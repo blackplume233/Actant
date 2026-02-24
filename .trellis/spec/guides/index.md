@@ -47,11 +47,12 @@ These guides help you **ask the right questions before coding**.
 ### When to Think About Composability
 
 - [ ] Adding a new Domain Context component (skill, workflow, MCP)
+- [ ] Adding or modifying a backend definition
 - [ ] Creating a new Agent Template
 - [ ] Modifying how components are referenced or resolved
 - [ ] Adding plugin capabilities (memory, scheduler)
 
-→ Consider: Is this reusable across templates? Is it referenced by name? Can it be swapped?
+→ Consider: Is this reusable across templates? Is it referenced by name? Can it be swapped? If it's a backend, is the data serializable (no functions) and distributable via actant-hub?
 
 ### When to Think About Agent Evolution
 

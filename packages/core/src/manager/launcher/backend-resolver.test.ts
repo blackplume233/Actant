@@ -67,10 +67,17 @@ describe("claude-code backend modes", () => {
     expect(result.args).toEqual([]);
   });
 
-  it("openBackend resolves to claude with workspaceDir arg", () => {
+  it("openBackend resolves to claude with declarative TUI spawn options", () => {
     const result = openBackend("claude-code", "/workspace");
-    expect(result.command).toMatch(/^claude(\.cmd)?$/);
-    expect(result.args).toEqual(["/workspace"]);
+    expect(result.command).toMatch(/^claude(\.exe)?$/);
+    expect(result.args).toEqual([]);
+    expect(result.cwd).toBe("/workspace");
+    expect(result.openSpawnOptions).toEqual({
+      stdio: "inherit",
+      detached: false,
+      windowsHide: false,
+      shell: false,
+    });
   });
 });
 

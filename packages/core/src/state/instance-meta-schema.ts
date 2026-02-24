@@ -21,7 +21,7 @@ export const ProcessOwnershipSchema = z.enum(["managed", "external"]);
 
 export const WorkspacePolicySchema = z.enum(["persistent", "ephemeral"]);
 
-const AgentBackendTypeSchema = z.enum(["cursor", "cursor-agent", "claude-code", "custom", "pi"]);
+const AgentBackendTypeSchema = z.string().min(1);
 
 const PermissionModeSchema = z.enum([
   "default", "acceptEdits", "plan", "dontAsk", "bypassPermissions",

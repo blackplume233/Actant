@@ -31,15 +31,10 @@ export function createCommunicator(
     case "cursor":
     case "cursor-agent":
       return new CursorCommunicator();
-    case "custom":
+    default:
       throw new Error(
-        "Custom backend communicator not yet supported. " +
-        "Implement AgentCommunicator for your backend.",
-      );
-    case "pi":
-      throw new Error(
-        "Pi backend communicator not registered. " +
-        "Ensure @actant/pi is installed and initialized.",
+        `No communicator registered for backend "${backendType}". ` +
+        `Register one via registerCommunicator() at startup.`,
       );
   }
 }

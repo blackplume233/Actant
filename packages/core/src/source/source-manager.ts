@@ -8,6 +8,7 @@ import type {
   PromptDefinition,
   McpServerDefinition,
   WorkflowDefinition,
+  BackendDefinition,
   AgentTemplate,
 } from "@actant/shared";
 
@@ -37,6 +38,7 @@ export interface SourceManagerDeps {
   promptManager: BaseComponentManager<PromptDefinition>;
   mcpConfigManager: BaseComponentManager<McpServerDefinition>;
   workflowManager: BaseComponentManager<WorkflowDefinition>;
+  backendManager?: BaseComponentManager<BackendDefinition>;
   templateRegistry?: TemplateRegistry;
 }
 
@@ -289,6 +291,11 @@ export class SourceManager {
     for (const wf of result.workflows) {
       this.managers.workflowManager.register(ns(wf) as WorkflowDefinition);
     }
+    if (this.managers.backendManager) {
+      for (const backend of result.backends) {
+        this.managers.backendManager.register(ns(backend) as BackendDefinition);
+      }
+    }
     for (const preset of result.presets) {
       this.presets.set(`${packageName}@${preset.name}`, preset);
     }
@@ -318,6 +325,7 @@ export class SourceManager {
         prompts: result.prompts.length,
         mcp: result.mcpServers.length,
         workflows: result.workflows.length,
+        backends: result.backends.length,
         presets: result.presets.length,
         templates: result.templates.length,
       },
@@ -338,6 +346,9 @@ export class SourceManager {
     removeFrom(this.managers.promptManager);
     removeFrom(this.managers.mcpConfigManager);
     removeFrom(this.managers.workflowManager);
+    if (this.managers.backendManager) {
+      removeFrom(this.managers.backendManager);
+    }
     if (this.managers.templateRegistry) {
       for (const t of this.managers.templateRegistry.list()) {
         if (t.name.startsWith(prefix)) {

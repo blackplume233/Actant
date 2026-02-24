@@ -341,42 +341,52 @@ one-shot   Daemon spawn + 等待退出       (不适用: 一次性任务由 Daem
 
 > **`open` vs `acp` 的可执行文件可能不同**：以 `claude-code` 为例，`open` 使用 `claude`（原生 TUI），而 `resolve`/`acp` 使用 `claude-agent-acp`（ACP 桥接器）。前者是人看的终端界面，后者是 ACP 协议的 stdio 通道。
 
-### 5.3 BackendRegistry
+### 5.3 BackendManager（原 BackendRegistry，已重构）
 
-后端能力通过 `BackendRegistry` 动态注册，而非硬编码 `if/else` 判断。
+后端通过 `BackendManager`（继承 `BaseComponentManager<BackendDefinition>`）动态注册和管理。所有后端配置为纯数据的 `BackendDefinition`（`VersionedComponent`），可通过 actant-hub 分发。非序列化的行为扩展（如 `acpResolver` 函数）通过 `BackendManager` 的专用方法单独注册。
 
-**核心 API**（`packages/core/src/manager/launcher/backend-registry.ts`）：
+> **数据与行为分离**：`BackendDefinition` 是 JSON 可序列化的纯数据对象，不含函数字段。行为性扩展（`acpResolver`）由 `BackendManager` 的 `acpResolvers: Map<string, AcpResolverFn>` 独立管理。旧版 `BackendDescriptor`（含 `acpResolver` 函数字段）保留为兼容层，新代码应直接使用 `BackendDefinition` + `BackendManager`。
+
+**核心 API**（`packages/core/src/domain/backend/backend-manager.ts`）：
+
+| 方法 / 函数 | 用途 |
+|------|------|
+| `register(definition)` | 注册一个 `BackendDefinition` |
+| `get(name)` | 获取已注册的定义 |
+| `supportsMode(name, mode)` | 检查后端是否支持指定 mode |
+| `requireMode(name, mode)` | 断言后端支持指定 mode（不支持则抛描述性错误） |
+| `getPlatformCommand(cmd)` | 根据 `process.platform` 选择 `win32` / `default` 命令 |
+| `registerAcpResolver(name, fn)` | 注册自定义 ACP 命令解析函数（行为扩展） |
+| `getAcpResolver(name)` | 获取已注册的 ACP 解析函数 |
+| `checkAvailability(name)` | 使用 `existenceCheck` 探测后端是否已安装 |
+| `getInstallMethods(name)` | 获取当前平台适用的安装方式列表 |
+
+**兼容层**（`packages/core/src/manager/launcher/backend-registry.ts`）：
 
 | 函数 | 用途 |
 |------|------|
-| `registerBackend(descriptor)` | 注册一个 `BackendDescriptor` |
-| `getBackendDescriptor(type)` | 获取已注册的描述符（未注册则抛错） |
-| `supportsMode(type, mode)` | 检查后端是否支持指定 mode |
-| `requireMode(type, mode)` | 断言后端支持指定 mode（不支持则抛描述性错误） |
-| `getPlatformCommand(cmd)` | 根据 `process.platform` 选择 `win32` / `default` 命令 |
+| `registerBackend(descriptor)` | **已废弃** — 兼容旧版 `BackendDescriptor`，内部转换为 `BackendDefinition` + 单独注册 `acpResolver` |
+| `registerBackendDefinition(def)` | 推荐 — 直接注册新版 `BackendDefinition` |
+| `getBackendDescriptor(type)` | 获取描述符（兼容旧调用方） |
+| `getBackendManager()` | 获取底层 `BackendManager` 单例 |
 
-**BackendDescriptor 结构**：
+**BackendDefinition 结构**：见 [config-spec.md §5 BackendDefinition](./config-spec.md#backenddefinition)。
 
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `type` | `AgentBackendType` | 后端类型标识 |
-| `supportedModes` | `AgentOpenMode[]` | 支持的打开方式列表 |
-| `resolveCommand?` | `PlatformCommand` | resolve 模式的可执行命令 |
-| `openCommand?` | `PlatformCommand` | open 模式的可执行命令 |
-| `acpCommand?` | `PlatformCommand` | ACP 模式的可执行命令 |
-| `acpResolver?` | `(workspaceDir, backendConfig?) => { command, args }` | 自定义 ACP 命令解析函数（优先级高于 `acpCommand`） |
-| `acpOwnsProcess?` | `boolean` | 若 `true`，ACP 层全权管理进程（如 Pi） |
-| `resolvePackage?` | `string` | 提供 resolve/acp 可执行文件的 npm 包名。后端自声明依赖——`binary-resolver` 在 PATH 查找失败时自动从 `node_modules` 解析该包的 bin 脚本。 |
-| `buildProviderEnv?` | `(providerConfig, backendConfig?) => Record<string, string>` | 将 Provider 配置转换为该后端子进程期望的环境变量。未提供时 fallback 到默认 `ACTANT_*` 映射。（计划中，#141 Phase 2） |
+**AcpResolverFn**：
 
-> **为什么需要 `buildProviderEnv`**：不同后端期望不同的原生环境变量。自有 bridge（Pi）读 `ACTANT_*`，第三方后端（如 `claude-agent-acp`）只认 `ANTHROPIC_API_KEY`。集中式硬编码无法扩展，因此让各后端在注册时自描述映射逻辑。ACP 协议的 `SessionConfigOption` 可覆盖 model / thinking_level 的动态切换，但凭证（API Key）只能通过 spawn 时的环境变量传递。
+```typescript
+type AcpResolverFn = (workspaceDir: string, backendConfig?: Record<string, unknown>) => { command: string; args: string[] };
+```
+
+自定义 ACP 命令解析函数。优先级高于 `acpCommand`/`resolveCommand`。用于动态解析的后端（如 Pi 使用 `process.execPath`）。
 
 **注册时机**：
 
-- **内置后端**（cursor / cursor-agent / claude-code / custom）：在 `builtin-backends.ts` 模块加载时自动注册。
-- **外部后端**（如 Pi）：由其包的初始化代码调用 `registerBackend()`（见 `app-context.ts`）。
+- **内置后端**（cursor / cursor-agent / claude-code / custom）：在 `builtin-backends.ts` 模块加载时通过 `BackendManager.register()` 自动注册。
+- **外部后端**（如 Pi）：由其包的初始化代码调用 `BackendManager.register()` + `registerAcpResolver()`（见 `app-context.ts`）。
+- **Hub 后端**：通过 `SourceManager.injectComponents()` 从 actant-hub 加载 `BackendDefinition` JSON 文件并注册。Hub 定义可被本地代码中的 `register()` 覆盖（如 Pi 在 `app-context.ts` 中添加 `acpOwnsProcess` 和 `origin`）。
 
-> 实现参考：`packages/core/src/manager/launcher/backend-registry.ts`、`packages/core/src/manager/launcher/builtin-backends.ts`
+> 实现参考：`packages/core/src/domain/backend/backend-manager.ts`、`packages/core/src/manager/launcher/backend-registry.ts`、`packages/core/src/manager/launcher/builtin-backends.ts`
 
 ### 5.4 后端依赖解析：resolvePackage 与 binary-resolver
 

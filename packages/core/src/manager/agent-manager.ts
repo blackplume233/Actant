@@ -13,7 +13,7 @@ import {
 import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
-import { resolveBackend, resolveAcpBackend, openBackend, isAcpOnlyBackend } from "./launcher/backend-resolver";
+import { resolveBackend, resolveAcpBackend, openBackend, isAcpOnlyBackend, type ResolvedBackend } from "./launcher/backend-resolver";
 import { requireMode, getInstallHint } from "./launcher/backend-registry";
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
@@ -368,11 +368,10 @@ export class AgentManager {
    * Requires the backend to support "open" mode.
    * @throws if backend does not support "open" mode
    */
-  async openAgent(name: string): Promise<{ command: string; args: string[] }> {
+  async openAgent(name: string): Promise<ResolvedBackend> {
     const meta = this.requireAgent(name);
     const dir = join(this.instancesBaseDir, name);
-    const resolved = openBackend(meta.backendType, dir);
-    return resolved;
+    return openBackend(meta.backendType, dir);
   }
 
   /**

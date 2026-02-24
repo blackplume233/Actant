@@ -8,6 +8,7 @@ import type {
   PromptDefinition,
   McpServerDefinition,
   WorkflowDefinition,
+  BackendDefinition,
   AgentTemplate,
 } from "@actant/shared";
 import { createLogger } from "@actant/shared";
@@ -45,17 +46,18 @@ export class LocalSource implements ComponentSource {
     const rootDir = this.config.path;
     const manifest = await this.loadManifest(rootDir);
 
-    const [skills, prompts, mcpServers, workflows, presets, templates] = await Promise.all([
+    const [skills, prompts, mcpServers, workflows, backends, presets, templates] = await Promise.all([
       this.loadJsonDir<SkillDefinition>(rootDir, manifest.components?.skills, "skills"),
       this.loadJsonDir<PromptDefinition>(rootDir, manifest.components?.prompts, "prompts"),
       this.loadJsonDir<McpServerDefinition>(rootDir, manifest.components?.mcp, "mcp"),
       this.loadJsonDir<WorkflowDefinition>(rootDir, manifest.components?.workflows, "workflows"),
+      this.loadJsonDir<BackendDefinition>(rootDir, manifest.components?.backends, "backends"),
       this.loadPresets(rootDir, manifest.presets),
       this.loadJsonDir<AgentTemplate>(rootDir, manifest.components?.templates, "templates"),
     ]);
 
     logger.info({ packageName: this.packageName, rootDir }, "Local package loaded");
-    return { manifest, skills, prompts, mcpServers, workflows, presets, templates };
+    return { manifest, skills, prompts, mcpServers, workflows, backends, presets, templates };
   }
 
   private async loadManifest(rootDir: string): Promise<PackageManifest> {

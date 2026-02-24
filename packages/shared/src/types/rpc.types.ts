@@ -1,4 +1,4 @@
-import type { AgentTemplate, PermissionsInput, PermissionsConfig } from "./template.types";
+import type { AgentTemplate, PermissionsInput, PermissionsConfig, OpenSpawnOptions } from "./template.types";
 import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, DetachResult } from "./agent.types";
 import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "./domain-component.types";
 import type { SourceEntry, SourceConfig, PresetDefinition } from "./source.types";
@@ -191,6 +191,10 @@ export interface AgentOpenParams {
 export interface AgentOpenResult {
   command: string;
   args: string[];
+  /** Working directory for the spawned process. */
+  cwd?: string;
+  /** Declarative spawn options — the CLI applies these directly without backend-specific branching. */
+  openSpawnOptions?: OpenSpawnOptions;
 }
 
 export interface AgentAttachParams {

@@ -126,6 +126,42 @@ export function resolveAcpBinary(command: string, resolvePackage?: string) {
 
 **Why**: Generic layers (`@actant/acp`, `binary-resolver`) provide **mechanisms**, not **policy**. When the ACP layer hardcodes a map of backend→package, adding a new backend requires modifying the ACP package — violating the open-closed principle. By letting each backend declare `resolvePackage` in its `BackendDescriptor`, the knowledge stays where it belongs: in the backend registration.
 
+### Don't: Spawn Without `windowsHide` on Windows
+
+```typescript
+// Bad — Windows 上 spawn .cmd 文件会弹出可见的 CMD 窗口
+const child = spawn("claude.cmd", args, {
+  cwd: workspaceDir,
+  stdio: ["pipe", "pipe", "pipe"],
+});
+
+// Good — windowsHide 防止弹窗（在非 Windows 上无副作用）
+const child = spawn("claude.cmd", args, {
+  cwd: workspaceDir,
+  stdio: ["pipe", "pipe", "pipe"],
+  windowsHide: true,
+});
+```
+
+**Why**: 在 Windows 上通过 `spawn` 执行 `.cmd` 文件时，Node.js 默认会创建一个可见的控制台窗口。对于后台通信（如 `agent run` 通过 `claude -p` 管道交互），用户不应看到任何弹窗。`windowsHide: true` 对 macOS/Linux 无影响，可以安全地始终添加。
+
+> **注意**: 这仅适用于后台/管道模式。对于 TUI 应用的 `open` 模式（需要用户交互），应由 `openSpawnOptions.windowsHide: false` 声明式控制，不应设为 `true`。
+
+### Common Mistake: Windows 上 spawn `.cmd` 文件报 EINVAL
+
+**症状**: `spawn EINVAL` 错误，仅在 Windows 上出现。
+
+**原因**: Windows 上 `.cmd` / `.bat` 文件是批处理脚本，不是原生可执行文件。Node.js `spawn` 直接执行它们在某些选项组合（特别是 `detached: true`）下会报 `EINVAL`。
+
+**修复**: 在 Windows 上 spawn `.cmd` / `.bat` 文件时添加 `shell: true`：
+
+```typescript
+const needsShell = process.platform === "win32" && /\.(cmd|bat)$/i.test(command);
+spawn(command, args, { ...opts, shell: needsShell });
+```
+
+**Why**: `shell: true` 让 Node.js 通过 `cmd.exe /c` 执行批处理文件，这是 Windows 上正确解释 `.cmd` 脚本的唯一方式。此选项对非 `.cmd` 可执行文件不需要，因此应按需添加。
+
 ### Don't: `any` Types
 
 ```typescript
@@ -398,12 +434,21 @@ Every built-in backend should declare its supported modes and provide the correc
 > **Core principle**: Everything except `open` (direct native UI) and `resolve` (output connection info) goes through `acp` mode.
 
 ```typescript
-registerBackend({
-  type: "claude-code",
+backendManager.register({
+  name: "claude-code",
+  version: "1.0.0",
+  description: "Claude Code CLI — Anthropic's AI coding agent",
+  tags: ["agent", "cli", "anthropic"],
   supportedModes: ["resolve", "open", "acp"],
   resolveCommand: { win32: "claude-agent-acp.cmd", default: "claude-agent-acp" },
-  openCommand: { win32: "claude.cmd", default: "claude" },
+  openCommand: { win32: "claude.exe", default: "claude" },
+  openWorkspaceDir: "cwd",
+  openSpawnOptions: { stdio: "inherit", detached: false, windowsHide: false },
   resolvePackage: "@zed-industries/claude-agent-acp",
+  existenceCheck: { command: "claude", args: ["--version"] },
+  install: [
+    { type: "npm", package: "@anthropic-ai/claude-code", label: "npm i -g @anthropic-ai/claude-code" },
+  ],
 });
 ```
 
@@ -411,37 +456,113 @@ registerBackend({
 - `resolveCommand` and `acp` mode typically share the same executable (the ACP adapter)
 - `openCommand` is the native TUI binary — it may be a **different executable** than the ACP adapter (e.g., `claude` vs `claude-agent-acp`)
 - Always provide `win32` variant when the CLI installs `.cmd` shim files (npm global installs)
-- If a backend depends on an **external package** (not bundled with Actant), add an install hint in `backend-registry.ts` (see below)
+- Use `existenceCheck` to declare how to verify the backend is installed; `install` to provide platform-specific installation methods
 - Backends declare their own dependency package via `resolvePackage`. The generic `binary-resolver.ts` accepts this as a parameter — the ACP layer has no hardcoded knowledge of specific backend packages. See [agent-lifecycle.md §5.4](../agent-lifecycle.md#54-后端依赖解析resolvepackage-与-binary-resolver) for the full resolution chain and pnpm constraints.
 
-### Backend Install Hints for External Dependencies
+### Declarative Open Spawn Options
 
-When a backend's executable comes from a separate package (not bundled with Actant), register an install hint so error messages can guide users:
+`openSpawnOptions` 直接映射 Node.js `SpawnOptions` 子集。CLI 只做 `spawn(cmd, args, { cwd, ...openSpawnOptions })`，零逻辑零分支。
 
 ```typescript
-const installHints = new Map<AgentBackendType, string>([
-  ["claude-code", "npm install -g @zed-industries/claude-agent-acp"],
-  ["cursor", "Install Cursor from https://cursor.com"],
-]);
+// Good — 后端声明 = Node.js SpawnOptions 子集，CLI 直接 spread
+registerBackend({
+  type: "claude-code",
+  openCommand: { win32: "claude.exe", default: "claude" },
+  openWorkspaceDir: "cwd",
+  openSpawnOptions: { stdio: "inherit", detached: false, windowsHide: false },
+});
 
-export function getInstallHint(type: AgentBackendType): string | undefined {
-  return installHints.get(type);
+// CLI — 一行 spread，零判断
+const child = spawn(result.command, result.args, { cwd: result.cwd, ...result.openSpawnOptions });
+```
+
+```typescript
+// Bad — CLI 内部按后端类型做 if/else 分支
+if (result.spawnMode === "tui") {
+  spawn(cmd, args, { stdio: "inherit" });
+} else {
+  spawn(cmd, args, { detached: true, stdio: "ignore" });
 }
 ```
 
-**Usage in error paths** (AgentManager, CLI chat):
+**`OpenSpawnOptions` 字段（均直接传给 `child_process.spawn`）**:
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `stdio` | `"inherit" \| "ignore"` | `"ignore"` | 直接透传 `SpawnOptions.stdio` |
+| `detached` | `boolean` | `true` | 直接透传 `SpawnOptions.detached` |
+| `windowsHide` | `boolean` | `true` | 直接透传 `SpawnOptions.windowsHide` |
+| `shell` | `boolean` | `false` | 直接透传 `SpawnOptions.shell`（Windows `.cmd` 文件需要 `true`） |
+
+工作目录的传递方式由 `BackendDescriptor.openWorkspaceDir` 控制（`"arg"` 或 `"cwd"`），在 `openBackend()` 中消化为 `args`/`cwd`，CLI 不感知。
+
+**两类典型后端**:
+
+| | GUI 应用 (Cursor) | TUI 应用 (Claude Code) |
+|---|---|---|
+| `openWorkspaceDir` | `"arg"` — 位置参数 `cursor <dir>` | `"cwd"` — Claude CLI 把位置参数当 prompt |
+| `stdio` | `"ignore"` — GUI 有自己的窗口 | `"inherit"` — TUI 需要接管终端 |
+| `detached` | `true` — fire-and-forget | `false` — CLI 等用户退出 |
+| `windowsHide` | `true` — 不需要控制台 | `false` — 需要可见终端 |
+| `shell` | `true` (Win `.cmd`) | `false` — 用 `.exe` |
+
+> **设计原则**: 新增后端时只需在描述符中声明 `openSpawnOptions`，CLI 代码完全不需要修改。不设则使用默认值（GUI 风格）。
+
+### Backend Data/Behavior Separation
+
+Backend configurations that are serializable (commands, modes, install methods) must be defined as `BackendDefinition` (a `VersionedComponent`). Non-serializable behaviors (functions like `acpResolver`) must be registered separately through `BackendManager`'s behavioral extension API.
 
 ```typescript
-if (isSpawnNotFound(error)) {
-  const hint = getInstallHint(backendType);
-  throw new Error(
-    `Backend "${backendType}" executable not found.` +
-    (hint ? `\nInstall with: ${hint}` : " Ensure the CLI is in your PATH."),
-  );
-}
+// Good — pure data in BackendDefinition, behavior registered separately
+mgr.register({
+  name: "pi",
+  version: "1.0.0",
+  description: "Pi in-process backend",
+  supportedModes: ["acp"],
+  acpOwnsProcess: true,
+  install: [{ type: "manual", label: "Included with Actant" }],
+});
+mgr.registerAcpResolver("pi", () => ({
+  command: process.execPath,
+  args: [ACP_BRIDGE_PATH],
+}));
+
+// Bad — mixing data and behavior in the same object
+registerBackend({
+  type: "pi",
+  supportedModes: ["acp"],
+  acpResolver: () => ({ command: process.execPath, args: [...] }),
+  // ↑ function field prevents JSON serialization and hub distribution
+});
 ```
 
-**Why**: Users encountering `ENOENT`/`EINVAL` from a missing backend CLI get a one-line fix instead of a cryptic spawn error. This avoids bundling heavyweight third-party CLIs while maintaining good UX.
+**Why**: `BackendDefinition` is distributed via actant-hub as JSON files. Function fields cannot be serialized. Separating data from behavior enables hub distribution while maintaining the same runtime capabilities through `BackendManager`'s behavioral registry.
+
+### Backend Install Methods (replaces Install Hints)
+
+Backends declare their installation methods via the `install` field in `BackendDefinition`. The `BackendManager.getInstallMethods()` API filters methods by current platform and returns actionable instructions.
+
+```typescript
+// Good — structured install methods in BackendDefinition
+{
+  name: "claude-code",
+  install: [
+    { type: "npm", package: "@anthropic-ai/claude-code", label: "npm i -g @anthropic-ai/claude-code" },
+    { type: "brew", package: "claude-code", platforms: ["darwin"] },
+    { type: "winget", package: "Anthropic.Claude", platforms: ["win32"] },
+  ],
+}
+
+// Usage in error paths
+const methods = backendManager.getInstallMethods(backendName);
+const hint = methods[0]?.label ?? methods[0]?.instructions;
+throw new Error(
+  `Backend "${backendName}" not found.` +
+  (hint ? `\nInstall: ${hint}` : " Ensure the CLI is in your PATH."),
+);
+```
+
+**Why**: Structured `BackendInstallMethod[]` replaces the old `Map<string, string>` install hints. It supports platform-specific filtering, multiple install channels, and is distributable as JSON via actant-hub. In-process backends (Pi) use `{ type: "manual", label: "Included with Actant" }` to indicate no separate installation is needed.
 
 ### Explicit Module Boundaries
 

@@ -65,7 +65,15 @@ export interface AgentBackendConfig {
   config?: Record<string, unknown>;
 }
 
-export type AgentBackendType = "cursor" | "cursor-agent" | "claude-code" | "custom" | "pi";
+/** Well-known built-in backend types. */
+export type KnownBackendType = "cursor" | "cursor-agent" | "claude-code" | "custom" | "pi";
+
+/**
+ * Backend type identifier. Includes well-known built-in types plus any
+ * user-registered backend name. The `(string & {})` arm preserves IDE
+ * autocomplete for known types while allowing arbitrary strings.
+ */
+export type AgentBackendType = KnownBackendType | (string & {});
 
 // ---------------------------------------------------------------------------
 // Backend Open Mode — declares how an agent backend can be launched
@@ -81,11 +89,14 @@ export interface PlatformCommand {
 }
 
 /**
- * Descriptor for a registered agent backend.
- * Declares which open modes are supported and provides platform-specific commands.
+ * Backend definition as a VersionedComponent.
+ * Pure data — JSON-serializable, managed by `BackendManager`, loadable from
+ * `~/.actant/configs/backends/`. The `name` field serves as the backend type
+ * identifier (e.g. "claude-code", "cursor").
+ *
+ * Behavioral extensions (acpResolver) are registered separately on BackendManager.
  */
-export interface BackendDescriptor {
-  type: AgentBackendType;
+export interface BackendDefinition extends VersionedComponent {
   /** Which open modes this backend supports. */
   supportedModes: AgentOpenMode[];
   /** Command for `resolve` mode (returns spawn info to external callers). */
@@ -95,11 +106,6 @@ export interface BackendDescriptor {
   /** Command for `acp` mode (spawn the ACP agent process). Falls back to resolveCommand if not set. */
   acpCommand?: PlatformCommand;
   /**
-   * Custom ACP resolver — when set, takes priority over acpCommand/resolveCommand.
-   * Returns the full { command, args } to spawn the ACP agent process.
-   */
-  acpResolver?: (workspaceDir: string, backendConfig?: Record<string, unknown>) => { command: string; args: string[] };
-  /**
    * If true, the ACP connection owns the process lifecycle (ProcessLauncher is skipped).
    * Only relevant when "acp" is in supportedModes.
    */
@@ -107,9 +113,88 @@ export interface BackendDescriptor {
   /**
    * npm package that provides the resolve/acp executable.
    * Used by binary-resolver as fallback when the command is not found on PATH.
-   * Each backend declares its own dependency — the ACP layer stays generic.
    */
   resolvePackage?: string;
+  /**
+   * How workspace directory is passed in `open` mode: as a positional arg
+   * or via `cwd`. Default: `"arg"`. This is consumed by `openBackend()` to
+   * build `args`/`cwd` — the CLI never sees it.
+   */
+  openWorkspaceDir?: "arg" | "cwd";
+  /**
+   * Spawn options for `open` mode, applied directly to `child_process.spawn`.
+   * The CLI spreads these as-is — no interpretation, no branching.
+   * If omitted, defaults to GUI-style: detached, stdio ignored, window hidden.
+   */
+  openSpawnOptions?: OpenSpawnOptions;
+
+  // -- Existence check & install -------------------------------------------
+
+  /**
+   * How to verify the backend binary is available on the system.
+   * When provided, `BackendManager.checkAvailability()` can probe this.
+   */
+  existenceCheck?: BackendExistenceCheck;
+  /**
+   * Available installation methods, ordered by preference.
+   * Used by CLI to offer one-click install when the backend is missing.
+   */
+  install?: BackendInstallMethod[];
+}
+
+/**
+ * Describes how to probe whether a backend is installed.
+ * A successful check means the exit code matches (default 0) and
+ * optionally `versionPattern` matches stdout.
+ */
+export interface BackendExistenceCheck {
+  /** Command to run (e.g. "claude", "cursor"). Resolved via PATH. */
+  command: string;
+  /** Args passed to the command (e.g. ["--version"]). Default: ["--version"]. */
+  args?: string[];
+  /** Expected exit code. Default: 0. */
+  expectedExitCode?: number;
+  /** Regex applied to stdout; if set, the check passes only when it matches. */
+  versionPattern?: string;
+}
+
+/**
+ * A single installation method for a backend.
+ * Multiple methods can be listed; the CLI/UI picks the best match for the OS.
+ */
+export interface BackendInstallMethod {
+  /** Install method type. */
+  type: "npm" | "brew" | "winget" | "choco" | "url" | "manual";
+  /** Package specifier or download URL (per type). */
+  package?: string;
+  /** Restrict this method to specific platforms. Omit for all platforms. */
+  platforms?: NodeJS.Platform[];
+  /** Human-readable label (e.g. "Install via Homebrew"). */
+  label?: string;
+  /** Human-readable fallback instructions if automated install isn't possible. */
+  instructions?: string;
+}
+
+/**
+ * @deprecated Use `BackendDefinition` (extends VersionedComponent) instead.
+ * This alias is kept for backward compatibility during migration.
+ */
+export interface BackendDescriptor extends BackendDefinition {
+  /** @deprecated Use `name` (from VersionedComponent) instead. */
+  type: AgentBackendType;
+  /** Behavioral extension — not serializable, register via BackendManager.registerAcpResolver(). */
+  acpResolver?: (workspaceDir: string, backendConfig?: Record<string, unknown>) => { command: string; args: string[] };
+}
+
+/**
+ * Subset of Node.js `SpawnOptions` that the CLI applies directly.
+ * The backend descriptor declares these; the CLI is a pure executor.
+ */
+export interface OpenSpawnOptions {
+  stdio?: "inherit" | "ignore";
+  detached?: boolean;
+  windowsHide?: boolean;
+  shell?: boolean;
 }
 
 /**

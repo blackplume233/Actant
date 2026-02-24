@@ -1,19 +1,24 @@
-import type { AgentBackendType } from "@actant/shared";
+import type { AgentBackendType, OpenSpawnOptions } from "@actant/shared";
 import {
   getBackendDescriptor,
+  getAcpResolver,
   supportsMode,
   requireMode,
   getPlatformCommand,
 } from "./backend-registry";
 import "./builtin-backends";
 
-export type { BackendDescriptor, AgentOpenMode, PlatformCommand } from "@actant/shared";
+export type { BackendDefinition, BackendDescriptor, AgentOpenMode, PlatformCommand, OpenSpawnOptions } from "@actant/shared";
 
 export interface ResolvedBackend {
   command: string;
   args: string[];
   /** npm package providing the binary (for auto-resolution when not on PATH). */
   resolvePackage?: string;
+  /** Working directory for the spawned process. */
+  cwd?: string;
+  /** Declarative spawn options for `open` mode (from BackendDescriptor). */
+  openSpawnOptions?: OpenSpawnOptions;
 }
 
 /**
@@ -89,9 +94,19 @@ export function resolveBackend(
   };
 }
 
+/** Default spawn options: GUI-style (detached, ignore stdio, hide window). */
+const DEFAULT_OPEN_SPAWN: OpenSpawnOptions = {
+  stdio: "ignore",
+  detached: true,
+  windowsHide: true,
+  shell: false,
+};
+
 /**
  * Resolve the open command for directly launching a backend's native TUI/UI.
- * @throws if the backend does not support "open" mode.
+ * `openWorkspaceDir` is consumed here to build `args`/`cwd`; the returned
+ * `openSpawnOptions` maps 1:1 to `child_process.SpawnOptions` so the CLI
+ * can spread it as-is with zero branching.
  */
 export function openBackend(
   backendType: AgentBackendType,
@@ -104,9 +119,13 @@ export function openBackend(
     throw new Error(`Backend "${backendType}" has no openCommand configured.`);
   }
 
+  const useCwd = desc.openWorkspaceDir === "cwd";
+
   return {
     command: getPlatformCommand(desc.openCommand),
-    args: [workspaceDir],
+    args: useCwd ? [] : [workspaceDir],
+    cwd: useCwd ? workspaceDir : undefined,
+    openSpawnOptions: { ...DEFAULT_OPEN_SPAWN, ...desc.openSpawnOptions },
   };
 }
 
@@ -125,8 +144,9 @@ export function resolveAcpBackend(
 
   const desc = getBackendDescriptor(backendType);
 
-  if (desc.acpResolver) {
-    return desc.acpResolver(workspaceDir, backendConfig);
+  const resolver = getAcpResolver(backendType);
+  if (resolver) {
+    return resolver(workspaceDir, backendConfig);
   }
 
   const explicitPath = backendConfig?.executablePath;

@@ -38,6 +38,7 @@ export const PackageManifestSchema = z.object({
     mcp: z.array(z.string()).optional(),
     workflows: z.array(z.string()).optional(),
     templates: z.array(z.string()).optional(),
+    backends: z.array(z.string()).optional(),
   }).optional(),
   presets: z.array(z.string()).optional(),
 });
@@ -72,6 +73,41 @@ export const WorkflowDefinitionSchema = z.object({
   content: z.string().min(1, "content is required"),
 });
 
+const PlatformCommandSchema = z.object({
+  win32: z.string().min(1),
+  default: z.string().min(1),
+});
+
+export const SourceBackendDefinitionSchema = z.object({
+  ...VersionedComponentFields,
+  supportedModes: z.array(z.enum(["resolve", "open", "acp"])).min(1),
+  resolveCommand: PlatformCommandSchema.optional(),
+  openCommand: PlatformCommandSchema.optional(),
+  acpCommand: PlatformCommandSchema.optional(),
+  acpOwnsProcess: z.boolean().optional(),
+  resolvePackage: z.string().optional(),
+  openWorkspaceDir: z.enum(["arg", "cwd"]).optional(),
+  openSpawnOptions: z.object({
+    stdio: z.enum(["inherit", "ignore"]).optional(),
+    detached: z.boolean().optional(),
+    windowsHide: z.boolean().optional(),
+    shell: z.boolean().optional(),
+  }).optional(),
+  existenceCheck: z.object({
+    command: z.string().min(1),
+    args: z.array(z.string()).optional(),
+    expectedExitCode: z.number().int().optional(),
+    versionPattern: z.string().optional(),
+  }).optional(),
+  install: z.array(z.object({
+    type: z.enum(["npm", "brew", "winget", "choco", "url", "manual"]),
+    package: z.string().optional(),
+    platforms: z.array(z.string()).optional(),
+    label: z.string().optional(),
+    instructions: z.string().optional(),
+  })).optional(),
+});
+
 export const PresetDefinitionSchema = z.object({
   name: z.string().min(1, "name is required"),
   version: z.string().optional(),
@@ -92,6 +128,7 @@ export const COMPONENT_SCHEMAS = {
   prompts: PromptDefinitionSchema,
   mcp: McpServerDefinitionSchema,
   workflows: WorkflowDefinitionSchema,
+  backends: SourceBackendDefinitionSchema,
   templates: null, // uses AgentTemplateSchema from template-schema.ts
   presets: PresetDefinitionSchema,
 } as const;

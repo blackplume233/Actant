@@ -11,7 +11,7 @@ import type { WorkflowManager } from "../../domain/workflow/workflow-manager";
 const logger = createLogger("context-materializer");
 
 /** Config directory per backend: Cursor uses .cursor, Claude Code uses .claude (hooks/MCP go here). */
-const BACKEND_CONFIG_DIR: Record<AgentBackendType, string> = {
+const BACKEND_CONFIG_DIR: Record<string, string> = {
   cursor: ".cursor",
   "cursor-agent": ".cursor",
   "claude-code": ".claude",
@@ -53,7 +53,7 @@ export class ContextMaterializer {
     domainContext: DomainContextConfig,
     backendType: AgentBackendType = "cursor",
   ): Promise<void> {
-    const configDir = BACKEND_CONFIG_DIR[backendType];
+    const configDir = BACKEND_CONFIG_DIR[backendType] ?? ".cursor";
     const tasks: Promise<void>[] = [];
 
     if (domainContext.skills && domainContext.skills.length > 0) {

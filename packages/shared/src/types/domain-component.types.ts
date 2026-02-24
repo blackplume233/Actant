@@ -91,3 +91,12 @@ export interface PluginDefinition extends VersionedComponent {
   /** Whether this plugin is enabled by default */
   enabled?: boolean;
 }
+
+// ---------------------------------------------------------------------------
+// Backend definition — also a VersionedComponent, managed by BackendManager.
+// Unlike the other component types above, backend definitions reference
+// types from template.types.ts (PlatformCommand, OpenSpawnOptions, etc.).
+// To avoid circular imports, the full BackendDefinition is defined in
+// template.types.ts alongside those types.
+// ---------------------------------------------------------------------------
+// Re-export happens in template.types.ts: see `BackendDefinition`.

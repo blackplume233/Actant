@@ -20,7 +20,7 @@ import {
   InstanceRegistry,
   createDefaultStepRegistry,
   registerCommunicator,
-  registerBackend,
+  getBackendManager,
   modelProviderRegistry,
   registerBuiltinProviders,
   type LauncherMode,
@@ -117,6 +117,7 @@ export class AppContext {
       promptManager: this.promptManager,
       mcpConfigManager: this.mcpConfigManager,
       workflowManager: this.workflowManager,
+      backendManager: getBackendManager(),
       templateRegistry: this.templateRegistry,
     }, { skipDefaultSource: resolvedLauncherMode === "mock" });
 
@@ -224,21 +225,35 @@ export class AppContext {
   }
 
   private registerPiBackend(): void {
-    registerBackend({
-      type: "pi",
-      supportedModes: ["acp"],
-      acpResolver: () => ({
-        command: process.execPath,
-        args: [ACP_BRIDGE_PATH],
-      }),
-      acpOwnsProcess: true,
-    });
+    const mgr = getBackendManager();
+    const existing = mgr.get("pi");
+    if (existing) {
+      mgr.register({ ...existing, acpOwnsProcess: true, origin: { type: "builtin" } });
+    } else {
+      mgr.register({
+        name: "pi",
+        version: "1.0.0",
+        description: "Pi — lightweight in-process AI agent powered by local/cloud LLMs",
+        tags: ["agent", "in-process", "llm"],
+        origin: { type: "builtin" },
+        supportedModes: ["acp"],
+        acpOwnsProcess: true,
+        install: [
+          { type: "manual", label: "Included with Actant", instructions: "Pi is bundled with Actant — no separate installation required." },
+        ],
+      });
+    }
+    mgr.registerAcpResolver("pi", () => ({
+      command: process.execPath,
+      args: [ACP_BRIDGE_PATH],
+    }));
     this.agentInitializer.workspaceBuilder.registerBuilder(new PiBuilder());
     registerCommunicator("pi", (backendConfig) => new PiCommunicator(configFromBackend(backendConfig)));
     logger.info("Pi backend registered (in-process, acp mode only)");
   }
 
   private async loadDomainComponents(): Promise<void> {
+    const backendManager = getBackendManager();
     const dirs: { manager: { setPersistDir(dir: string): void; loadFromDirectory(dirPath: string): Promise<number> }; sub: string }[] = [
       { manager: this.skillManager, sub: "skills" },
       { manager: this.promptManager, sub: "prompts" },
@@ -246,6 +261,7 @@ export class AppContext {
       { manager: this.workflowManager, sub: "workflows" },
       { manager: this.pluginManager, sub: "plugins" },
       { manager: this.templateRegistry, sub: "templates" },
+      { manager: backendManager, sub: "backends" },
     ];
 
     for (const { manager, sub } of dirs) {
