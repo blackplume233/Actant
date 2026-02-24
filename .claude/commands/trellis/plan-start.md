@@ -32,10 +32,10 @@ cat .trellis/workflow.md
 Ensure your Actant Agent identity is initialized. Check if already set, if not, initialize:
 
 ```bash
-./.trellis/scripts/get-developer.sh || ./.trellis/scripts/init-developer.sh claude-agent
+./.trellis/scripts/get-developer.sh || ./.trellis/scripts/init-developer.sh actant-claude-agent
 ```
 
-> **Actant Agent 身份**: AI 开发者是一个 Actant Agent 实例。Claude Code 使用 `claude-agent` 作为身份标识。
+> **Actant Agent 身份**: AI 开发者是一个 Actant Agent 实例。Claude Code 使用 `actant-claude-agent` 作为身份标识。
 
 ### Step 0.3: Get Current Context
 

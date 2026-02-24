@@ -29,7 +29,7 @@
 
 # If not initialized, run:
 ./.trellis/scripts/init-developer.sh <your-name>
-# Example: ./.trellis/scripts/init-developer.sh cursor-agent
+# Example: ./.trellis/scripts/init-developer.sh actant-cursor-agent
 ```
 
 This creates:
@@ -40,10 +40,10 @@ This creates:
 
 | Agent 类型 | 推荐名称 | 说明 |
 |-----------|---------|------|
-| Cursor AI | `cursor-agent` | 使用 `/trellis-plan-start` 启动会话 |
-| Claude Code | `claude-agent` | 使用 `/trellis:plan-start` 启动会话 |
-| Human developer | `<your-name>` | e.g., `john-doe` |
-| Task-scoped agent | `<platform>-<task>` | e.g., `cursor-refactor`, `claude-qa` |
+| Cursor AI | `actant-cursor-agent` | 使用 `/trellis-plan-start` 启动会话 |
+| Claude Code | `actant-claude-agent` | 使用 `/trellis:plan-start` 启动会话 |
+| Human developer | `actant-<your-name>` | e.g., `actant-john-doe` |
+| Task-scoped agent | `actant-<platform>-<task>` | e.g., `actant-cursor-refactor`, `actant-claude-qa` |
 
 > **理念**: 每个 AI 开发者会话对应一个 Actant Agent 实例。身份初始化后，通过 `/trellis-plan-start`（Cursor）或 `/trellis:plan-start`（Claude Code）启动 plan-first 工作流，确保先规划再执行。
 
@@ -424,7 +424,7 @@ gh issue create -t "<title>" -b "<body>" -l "feature"
 ```bash
 ./.trellis/scripts/issue.sh list [--milestone mid-term] [--priority P1] [--rfc]
 ./.trellis/scripts/issue.sh show <id>
-./.trellis/scripts/issue.sh edit <id> --assign cursor-agent --milestone mid-term  # ← auto-sync
+./.trellis/scripts/issue.sh edit <id> --assign actant-cursor-agent --milestone mid-term  # ← auto-sync
 ./.trellis/scripts/issue.sh label <id> --add rfc --remove question               # ← auto-sync
 ./.trellis/scripts/issue.sh comment <id> "Design doc completed"                  # ← auto-sync
 ./.trellis/scripts/issue.sh close <id> --as completed                            # ← auto-sync + auto-archive

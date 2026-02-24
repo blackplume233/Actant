@@ -30,10 +30,10 @@ cat .trellis/workflow.md
 Ensure your Actant Agent identity is initialized. Check if already set, if not, initialize:
 
 ```bash
-./.trellis/scripts/get-developer.sh || ./.trellis/scripts/init-developer.sh cursor-agent
+./.trellis/scripts/get-developer.sh || ./.trellis/scripts/init-developer.sh actant-cursor-agent
 ```
 
-> **Actant Agent 身份**: AI 开发者是一个 Actant Agent 实例。Cursor AI 使用 `cursor-agent` 作为身份标识。
+> **Actant Agent 身份**: AI 开发者是一个 Actant Agent 实例。Cursor AI 使用 `actant-cursor-agent` 作为身份标识。
 
 ### Step 0.3: Get Current Status
 
