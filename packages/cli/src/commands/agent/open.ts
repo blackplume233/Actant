@@ -10,12 +10,16 @@ export function createAgentOpenCommand(client: RpcClient, printer: CliPrinter = 
     .argument("<name>", "Agent name")
     .option("-t, --template <template>", "Template name (auto-creates instance if not found)")
     .option("--no-attach", "Skip registering the process with the daemon")
-    .action(async (name: string, opts: { template?: string; attach: boolean }) => {
+    .option("--auto-install", "Auto-install missing backend CLI dependencies")
+    .option("--no-install", "Disable auto-install (only report errors)")
+    .action(async (name: string, opts: { template?: string; attach: boolean; autoInstall?: boolean; install?: boolean }) => {
       let attached = false;
       try {
+        const autoInstall = opts.autoInstall === true ? true : opts.install === false ? false : undefined;
         const result = await client.call("agent.open", {
           name,
           template: opts.template,
+          autoInstall,
         });
 
         printer.log(`${chalk.green("Opening")} ${name} → ${[result.command, ...result.args].join(" ")}`);

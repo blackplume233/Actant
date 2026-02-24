@@ -9,11 +9,15 @@ export function createAgentResolveCommand(client: RpcClient, printer: CliPrinter
     .argument("<name>", "Agent instance name")
     .option("-t, --template <template>", "Template name (auto-creates instance if not found)")
     .option("-f, --format <format>", "Output format: table, json, quiet", "table")
-    .action(async (name: string, opts: { template?: string; format: OutputFormat }) => {
+    .option("--auto-install", "Auto-install missing backend CLI dependencies")
+    .option("--no-install", "Disable auto-install (only report errors)")
+    .action(async (name: string, opts: { template?: string; format: OutputFormat; autoInstall?: boolean; install?: boolean }) => {
       try {
+        const autoInstall = opts.autoInstall === true ? true : opts.install === false ? false : undefined;
         const result = await client.call("agent.resolve", {
           name,
           template: opts.template,
+          autoInstall,
         });
 
         if (opts.format === "json") {

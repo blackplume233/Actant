@@ -65,8 +65,8 @@ async function handleAgentStart(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<AgentStartResult> {
-  const { name } = params as unknown as AgentStartParams;
-  await ctx.agentManager.startAgent(name);
+  const { name, autoInstall } = params as unknown as AgentStartParams;
+  await ctx.agentManager.startAgent(name, { autoInstall });
   const meta = ctx.agentManager.getAgent(name);
   if (!meta) throw new AgentNotFoundError(name);
   return meta;
@@ -129,16 +129,16 @@ async function handleAgentResolve(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<AgentResolveResult> {
-  const { name, template, overrides } = params as unknown as AgentResolveParams;
-  return ctx.agentManager.resolveAgent(name, template, overrides);
+  const { name, template, overrides, autoInstall } = params as unknown as AgentResolveParams;
+  return ctx.agentManager.resolveAgent(name, template, overrides, { autoInstall });
 }
 
 async function handleAgentOpen(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<AgentOpenResult> {
-  const { name, template } = params as unknown as AgentOpenParams;
-  return ctx.agentManager.openAgent(name, template);
+  const { name, template, autoInstall } = params as unknown as AgentOpenParams;
+  return ctx.agentManager.openAgent(name, template, { autoInstall });
 }
 
 async function handleAgentAttach(

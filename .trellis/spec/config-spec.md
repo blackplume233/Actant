@@ -575,6 +575,10 @@ Agent 后端的纯数据配置，JSON 可序列化。由 `BackendManager` 管理
 | `install` | [`BackendInstallMethod[]`](#backendinstallmethod) | 否 | 安装方式列表（按平台过滤） |
 
 > **数据与行为分离**：`BackendDefinition` 是纯数据对象，不含函数。非序列化的行为扩展（如 `acpResolver` 函数）通过 `BackendManager.registerAcpResolver()` 单独注册。旧版 `BackendDescriptor` 作为兼容层保留，但新代码应使用 `BackendDefinition` + `BackendManager`。
+>
+> **自动安装（#153）**：`BackendManager.ensureAvailable(name, { autoInstall })` 整合 existence check + auto-install 流程。当 `autoInstall: true` 时，按 `install` 声明的方法列表依次尝试安装。对于 `type: "npm"` 的安装方法，若 `npm` 不在 PATH 上，自动检测并回退到 `pnpm`/`yarn`/`bun`；若无任何 JS 包管理器，跳过该方法尝试下一个。`resolvePackage` 的二进制依赖同理通过 `ensureResolvePackageAvailable()` 自动安装。
+>
+> 实现参考：`packages/core/src/domain/backend/backend-installer.ts`
 
 #### PlatformCommand
 

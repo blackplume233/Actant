@@ -7,9 +7,12 @@ export function createAgentStartCommand(client: RpcClient, printer: CliPrinter =
   return new Command("start")
     .description("Start an agent")
     .argument("<name>", "Agent name")
-    .action(async (name: string) => {
+    .option("--auto-install", "Auto-install missing backend CLI dependencies")
+    .option("--no-install", "Disable auto-install (only report errors)")
+    .action(async (name: string, opts: { autoInstall?: boolean; install?: boolean }) => {
       try {
-        await client.call("agent.start", { name });
+        const autoInstall = opts.autoInstall === true ? true : opts.install === false ? false : undefined;
+        await client.call("agent.start", { name, autoInstall });
         printer.log(`${chalk.green("Started")} ${name}`);
       } catch (err) {
         presentError(err, printer);
