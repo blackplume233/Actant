@@ -1,0 +1,11 @@
+{
+  "name": "memory",
+  "description": "Persistent memory plugin for Claude Code — enables long-term context retention across sessions",
+  "type": "npm",
+  "source": "@anthropic/memory",
+  "config": {
+    "storage": "local",
+    "maxEntries": 1000
+  },
+  "enabled": true
+}

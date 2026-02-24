@@ -10,8 +10,8 @@
 
 - Didn't think about what happens at layer boundaries → cross-layer bugs
 - Didn't think about code patterns repeating → duplicated code everywhere
-- Didn't think about edge cases → runtime errors
-- Didn't think about future maintainers → unreadable code
+- Didn't think about agent lifecycle edge cases → orphaned processes
+- Didn't think about composability → rigid, non-reusable components
 
 These guides help you **ask the right questions before coding**.
 
@@ -22,18 +22,53 @@ These guides help you **ask the right questions before coding**.
 | Guide | Purpose | When to Use |
 |-------|---------|-------------|
 | [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md) | Identify patterns and reduce duplication | When you notice repeated patterns |
-| [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning multiple layers |
+| [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md) | Think through data flow across layers | Features spanning CLI ↔ Core ↔ ACP/MCP/API |
+| [Cross-Platform Guide](./cross-platform-guide.md) | Ensure Linux/macOS/Windows compatibility | Any feature touching IPC, signals, file paths, or process management |
+
+### Design References (Mid-term)
+
+| Design Doc | Purpose | Status |
+|------------|---------|--------|
+| [Memory Layer & Agent Evolution](../../../docs/design/memory-layer-agent-evolution.md) | Instance memory, cross-session learning, Template evolution | Draft — Mid-term |
 
 ---
 
-## Quick Reference: Thinking Triggers
+## Actant-Specific Thinking Triggers
+
+### When to Think About Agent Lifecycle
+
+- [ ] Feature involves starting or stopping agents
+- [ ] Feature changes agent state (running, stopped, crashed)
+- [ ] Feature adds a new launch mode or communication path
+- [ ] Long-running agent needs to survive manager restart
+
+→ Consider: What happens on failure? How do we clean up? What state needs persisting?
+
+### When to Think About Composability
+
+- [ ] Adding a new Domain Context component (skill, workflow, MCP)
+- [ ] Adding or modifying a backend definition
+- [ ] Creating a new Agent Template
+- [ ] Modifying how components are referenced or resolved
+- [ ] Adding plugin capabilities (memory, scheduler)
+
+→ Consider: Is this reusable across templates? Is it referenced by name? Can it be swapped? If it's a backend, is the data serializable (no functions) and distributable via actant-hub?
+
+### When to Think About Agent Evolution
+
+- [ ] Feature involves Agent session lifecycle (start/stop)
+- [ ] Feature changes what gets materialized into workspace
+- [ ] Feature adds new instance-level persistent state
+- [ ] Feature involves cross-instance or cross-session data
+
+→ Read [Memory Layer Design](../../../docs/design/memory-layer-agent-evolution.md)
 
 ### When to Think About Cross-Layer Issues
 
-- [ ] Feature touches 3+ layers (API, Service, Component, Database)
+- [ ] Feature touches CLI ↔ Core ↔ API boundaries
 - [ ] Data format changes between layers
-- [ ] Multiple consumers need the same data
-- [ ] You're not sure where to put some logic
+- [ ] Agent communicates via ACP or MCP
+- [ ] External client (Unreal/Unity) consumes agent output
 
 → Read [Cross-Layer Thinking Guide](./cross-layer-thinking-guide.md)
 
@@ -47,6 +82,14 @@ These guides help you **ask the right questions before coding**.
 
 → Read [Code Reuse Thinking Guide](./code-reuse-thinking-guide.md)
 
+### When to Think About CLI ↔ API Parity
+
+- [ ] Adding a new CLI command
+- [ ] Changing command arguments or output format
+- [ ] Adding a new feature to the API
+
+→ Consider: Does the CLI command have an API equivalent? Do they share the same underlying logic?
+
 ---
 
 ## Pre-Modification Rule (CRITICAL)
@@ -54,8 +97,7 @@ These guides help you **ask the right questions before coding**.
 > **Before changing ANY value, ALWAYS search first!**
 
 ```bash
-# Search for the value you're about to change
-grep -r "value_to_change" .
+rg "value_to_change" .
 ```
 
 This single habit prevents most "forgot to update X" bugs.

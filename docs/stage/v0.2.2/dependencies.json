@@ -1,0 +1,36 @@
+﻿{
+  "packages": {
+    "cli": {
+      "workspace": ["@actant/acp", "@actant/api", "@actant/core", "@actant/pi", "@actant/shared"],
+      "external": ["@inquirer/prompts", "chalk", "cli-table3", "commander"]
+    },
+    "core": {
+      "workspace": ["@actant/shared"],
+      "external": ["croner", "zod"]
+    },
+    "shared": {
+      "workspace": [],
+      "external": ["pino"]
+    },
+    "api": {
+      "workspace": ["@actant/acp", "@actant/core", "@actant/pi", "@actant/shared"],
+      "external": []
+    },
+    "acp": {
+      "workspace": ["@actant/core", "@actant/shared"],
+      "external": ["@agentclientprotocol/sdk", "@zed-industries/claude-agent-acp"]
+    },
+    "pi": {
+      "workspace": ["@actant/core", "@actant/shared"],
+      "external": ["@agentclientprotocol/sdk", "@mariozechner/pi-agent-core", "@mariozechner/pi-ai"]
+    },
+    "mcp-server": {
+      "workspace": ["@actant/core", "@actant/shared"],
+      "external": []
+    },
+    "actant": {
+      "workspace": ["@actant/cli", "@actant/core", "@actant/shared", "@actant/api", "@actant/acp", "@actant/mcp-server", "@actant/pi"],
+      "external": []
+    }
+  }
+}

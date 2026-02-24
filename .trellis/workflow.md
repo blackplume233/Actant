@@ -112,7 +112,8 @@ cat .trellis/spec/backend/logging-guidelines.md    # For logging
 |   |   \-- git-context.sh   # Git context implementation
 |   |-- init-developer.sh    # Initialize developer identity
 |   |-- get-developer.sh     # Get current developer name
-|   |-- task.sh              # Manage tasks
+|   |-- task.sh              # Manage tasks (active work)
+|   |-- issue.sh             # Manage issues (backlog)
 |   |-- get-context.sh       # Get session context
 |   \-- add-session.sh       # One-click session recording
 |-- workspace/           # Developer workspaces
@@ -120,14 +121,21 @@ cat .trellis/spec/backend/logging-guidelines.md    # For logging
 |   \-- {developer}/     # Per-developer directories
 |       |-- index.md     # Personal index (with @@@auto markers)
 |       \-- journal-N.md # Journal files (sequential numbering)
-|-- tasks/               # Task tracking
+|-- tasks/               # Task tracking (active work)
 |   \-- {MM}-{DD}-{name}/
 |       \-- task.json
+|-- issues/              # Issue tracking (backlog)
+|   |-- .counter         # Auto-increment ID counter
+|   \-- {NNNN}-{slug}.md    # Obsidian Markdown issue files (YAML frontmatter + wikilinks + body)
+|-- roadmap.md           # Product roadmap — 当前/后续优先级，与 Issues/Tasks 对齐
 |-- spec/                # [!] MUST READ before coding
-|   |-- frontend/        # Frontend guidelines (if applicable)
+|   |-- index.md                 # Spec overview (hierarchy: spec > impl)
+|   |-- config-spec.md           # [PRIMARY] Configuration specification
+|   |-- api-contracts.md         # [PRIMARY] Interface contracts
+|   |-- frontend/        # Frontend implementation guidelines
 |   |   |-- index.md               # Start here - guidelines index
 |   |   \-- *.md                   # Topic-specific docs
-|   |-- backend/         # Backend guidelines (if applicable)
+|   |-- backend/         # Backend implementation guidelines
 |   |   |-- index.md               # Start here - guidelines index
 |   |   \-- *.md                   # Topic-specific docs
 |   \-- guides/          # Thinking guides
@@ -223,6 +231,15 @@ Use the task management script:
 - [OK] Type checks pass (if applicable)
 - [OK] Manual feature testing passes
 
+**Doc sync (config / interface changes)**:
+- [OK] If configuration fields, schemas, or environment variables changed → update `spec/config-spec.md`
+- [OK] If RPC methods, CLI commands, error codes, or public APIs changed → update `spec/api-contracts.md`
+
+**Endurance test sync (功能变更时必选)**:
+- [OK] If changes affect agent lifecycle, state machine, communication, or process management → update `*.endurance.test.ts` per `spec/endurance-testing.md`
+- [OK] If existing endurance tests break due to interface changes → fix them in the same commit
+- [OK] Quick regression passes: `ENDURANCE_DURATION_MS=5000 pnpm test:endurance`
+
 **Project-specific checks**:
 - See `.trellis/spec/frontend/quality-guidelines.md` for frontend
 - See `.trellis/spec/backend/quality-guidelines.md` for backend
@@ -256,6 +273,8 @@ Use `/trellis:finish-work` command to run through:
 3. [OK] No lint/test errors
 4. [OK] Working directory clean (or WIP noted)
 5. [OK] Spec docs updated if needed
+6. [OK] Config/interface changes → `spec/config-spec.md` / `spec/api-contracts.md` updated
+7. [OK] Endurance tests synced if lifecycle/state/communication changed → `spec/endurance-testing.md`
 
 ---
 
@@ -302,7 +321,7 @@ spec/
 - [OK] Bug fixed that reveals missing guidance
 - [OK] New convention established
 
-### 3. Tasks - Task Tracking
+### 3. Tasks - Active Work Tracking
 
 Each task is a directory containing `task.json`:
 
@@ -324,6 +343,168 @@ tasks/
 ./.trellis/scripts/task.sh list-archive    # List archived tasks
 ```
 
+### 4. roadmap.md - Product Roadmap
+
+**Purpose**: Single source of truth for "what we're doing now" and "what we do next". Aligns with Issues and Tasks.
+
+**When to update**:
+- [OK] When starting or completing a task (update "当前进行中" / "后续优先")
+- [OK] When reprioritizing or closing issues
+- [OK] When planning a release or milestone
+
+See `docs/planning/roadmap.md` for structure and maintenance notes.
+
+### 5. Issues - Backlog Tracking (GitHub-first)
+
+> **核心原则：GitHub Issues 是 Issue 的唯一真相源（Single Source of Truth）。**
+> 本地 `.trellis/issues/` 中的 Markdown 文件是 GitHub Issues 的缓存/镜像，Issue 编号（`id` 字段）**必须**与 GitHub Issue 编号一致。
+
+Issues are Obsidian-style Markdown files mirroring GitHub Issues. Each file uses YAML frontmatter for structured metadata, `[[wikilinks]]` for related issue navigation, and rich Markdown body + comments.
+
+```
+issues/
+|-- .counter                 # Tracks highest GitHub issue number
+|-- 0120-windows-daemon...   # Open issue — GitHub #120
+|-- 0121-pi-agent...         # Open issue — GitHub #121
+\-- archive/                 # Closed issues (auto-archived on close)
+    |-- 0022-processwatcher.md
+    |-- 0043-unified-component-management.md
+    \-- ...
+```
+
+**Issue 编号规则**:
+- `id` 字段 = GitHub Issue number（不再使用本地自增序号）
+- 文件名格式: `NNNN-slug.md`，其中 `NNNN` = 零填充的 GitHub Issue number
+- `.counter` 记录当前最大 GitHub Issue number，供新建时参考
+- `githubRef` 字段格式: `"blackplume233/Actant#N"`
+
+**归档机制（Archive）**:
+
+> **已关闭的 issue 自动归档到 `issues/archive/`，避免污染 AI Agent 的上下文窗口。**
+
+- `issue close <id>` 关闭后**自动**将文件移至 `issues/archive/`
+- `issue close <id> --no-archive` 关闭但保留在 issues 根目录（少见场景）
+- `issue reopen <id>` 会自动从 archive 恢复到 issues 根目录
+- `issue archive --all` 批量归档所有已关闭 issue
+- `issue archive <id>` 手动归档单个已关闭 issue
+- `issue show <id>` / `issue search` 仍可查阅归档 issue（自动跨目录搜索）
+- **归档不影响 GitHub**：归档仅是本地文件位置变化，GitHub Issue 状态不变
+
+**Issue vs Task**:
+
+| Concept | Issue | Task |
+|---------|-------|------|
+| Purpose | Backlog — what needs doing (synced with GitHub) | Active work — what's being done now |
+| Lifecycle | open → (promote) → in-progress → closed → **archived** | planning → in_progress → review → completed |
+| Storage | Single Markdown file per issue (mirrors GitHub) | Directory with task.json, prd.md, jsonl contexts |
+| Transition | `issue.sh promote <id>` creates a Task | `task.sh archive <name>` archives completed Task |
+
+**Workflow**: GitHub Issue (idea) → **local cache** → **promote** → Task (active work) → **close** → **archive** → Done
+
+**创建 Issue 的标准流程（GitHub-first）**:
+```bash
+# 1. 在 GitHub 上创建 Issue（推荐使用 gh CLI）
+gh issue create -t "<title>" -b "<body>" -l "feature"
+# → 获得 GitHub Issue #N
+
+# 2. 本地创建对应的缓存文件
+./.trellis/scripts/issue.sh create "<title>" --id N --feature --priority P1
+# 或通过 pull 自动导入
+./.trellis/scripts/issue.sh pull N
+```
+
+**查询与管理（修改操作自动同步到 GitHub）**:
+```bash
+./.trellis/scripts/issue.sh list [--milestone mid-term] [--priority P1] [--rfc]
+./.trellis/scripts/issue.sh show <id>
+./.trellis/scripts/issue.sh edit <id> --assign cursor-agent --milestone mid-term  # ← auto-sync
+./.trellis/scripts/issue.sh label <id> --add rfc --remove question               # ← auto-sync
+./.trellis/scripts/issue.sh comment <id> "Design doc completed"                  # ← auto-sync
+./.trellis/scripts/issue.sh close <id> --as completed                            # ← auto-sync + auto-archive
+./.trellis/scripts/issue.sh reopen <id>                                          # ← auto-restore from archive
+./.trellis/scripts/issue.sh archive --all                                        # Archive all closed issues
+./.trellis/scripts/issue.sh promote <id>       # → Creates Task from Issue
+./.trellis/scripts/issue.sh search "memory"
+./.trellis/scripts/issue.sh stats
+```
+
+**同步与 Dirty 跟踪**:
+```bash
+./.trellis/scripts/issue.sh sync <id>          # 手动推送单个 issue 到 GitHub
+./.trellis/scripts/issue.sh sync --all         # 推送所有 dirty issues
+./.trellis/scripts/issue.sh check-dirty        # 检查是否有未同步的 issue
+./.trellis/scripts/issue.sh check-dirty --strict  # 有 dirty 则 exit 1（用于 commit 前检查）
+./.trellis/scripts/issue.sh pull <number>      # 从 GitHub 拉取到本地
+```
+
+> **Dirty 机制**: 每次修改操作（edit/label/close/reopen/comment）会自动标记为 dirty
+> 并尝试通过 `gh` CLI 推送到 GitHub。若网络不可用，issue 保持 dirty 状态直到手动同步。
+> **commit 前务必运行 `check-dirty`** 确认所有变更已同步。
+
+**Status**: `open` / `closed` (binary, like GitHub)
+**Close reasons**: `completed` / `not-planned` / `duplicate`
+**Labels** (convention, not enforced):
+- Type: `bug` `feature` `enhancement` `question` `discussion` `rfc` `chore` `docs`
+- Priority: `priority:P0` `priority:P1` `priority:P2` `priority:P3`
+- Area: `core` `cli` `api` `mcp` `shared` `acp`
+- Meta: `duplicate` `wontfix` `blocked` `good-first-issue`
+**Milestones**: `near-term` | `mid-term` | `long-term`
+
+### 6. GitHub Integration
+
+> **GitHub 是 Issue 的权威来源**。本地 `.trellis/issues/` 文件是 Obsidian 兼容的缓存，便于离线浏览和图谱导航。
+
+**Architecture**:
+```
+┌──────────┐   gh CLI / MCP   ┌───────────┐   local cache   ┌─────────────┐
+│  GitHub  │ ←──────────────→ │  AI Agent  │ ──────────────→ │ Local .md   │
+│  Issues  │  (source of truth)│ (Orchestrator) │             │ (mirror)    │
+└──────────┘                  └───────────┘                  └─────────────┘
+```
+
+**从 GitHub 拉取到本地**:
+```bash
+./.trellis/scripts/issue.sh pull <number>     # 拉取单个 GitHub Issue → 本地缓存
+```
+
+**从本地推送到 GitHub（自动或手动）**:
+```bash
+# 修改操作会自动尝试同步，如果失败则标记为 dirty
+./.trellis/scripts/issue.sh sync <id>         # 手动推送单个 issue
+./.trellis/scripts/issue.sh sync --all        # 推送所有 dirty issues
+./.trellis/scripts/issue.sh check-dirty       # 检查未同步的 issue
+```
+
+**Dirty 跟踪流程**:
+```
+┌──────────┐   mutation    ┌──────────┐   auto-sync   ┌──────────┐
+│  Local   │ ────────────→ │  Dirty   │ ────────────→ │  GitHub  │
+│  Edit    │               │  Mark    │  (gh CLI)     │  Updated │
+└──────────┘               └──────────┘               └──────────┘
+                                │ if sync fails            ↑
+                                ▼                          │
+                           ┌──────────┐   manual sync  ────┘
+                           │  Stays   │  (issue sync)
+                           │  Dirty   │
+                           └──────────┘
+```
+
+**Commit 前检查**:
+```bash
+# 在 git commit 之前确保所有 issue 变更已同步
+./.trellis/scripts/issue.sh check-dirty --strict  # 有 dirty → exit 1
+./.trellis/scripts/issue.sh sync --all            # 全部推送
+```
+
+**GitHub CLI 常用命令**:
+```bash
+gh issue list --state open                    # 列出所有 open issues
+gh issue view <number>                        # 查看详情
+gh issue create -t "title" -b "body" -l bug   # 创建新 issue
+gh issue close <number>                       # 关闭 issue
+gh issue comment <number> -b "comment"        # 添加评论
+```
+
 ---
 
 ## Best Practices
@@ -339,6 +520,7 @@ tasks/
    - For cross-layer features, use `/trellis:check-cross-layer`
    - Develop only one task at a time
    - Run lint and tests frequently
+   - [!] If changing config schemas or external interfaces, update `spec/config-spec.md` / `spec/api-contracts.md` in the **same commit**
 
 3. **After development complete**:
    - Use `/trellis:finish-work` for completion checklist
@@ -383,14 +565,27 @@ git commit -m "type(scope): description"
 ./.trellis/scripts/get-context.sh    # Get full context
 ./.trellis/scripts/add-session.sh    # Record session
 
-# Task management
+# Task management (active work)
 ./.trellis/scripts/task.sh list      # List tasks
 ./.trellis/scripts/task.sh create "<title>" # Create task
+
+# Issue management (GitHub-first — mutations auto-sync)
+gh issue list --state open                              # List open GitHub issues
+gh issue create -t "<title>" -b "<body>" -l "feature"   # Create on GitHub first
+./.trellis/scripts/issue.sh pull <number>               # Pull GitHub → local cache
+./.trellis/scripts/issue.sh list [filters]              # List local cached issues
+./.trellis/scripts/issue.sh show <id>                   # Show local details
+./.trellis/scripts/issue.sh edit <id> [fields]          # Edit (auto-syncs to GitHub)
+./.trellis/scripts/issue.sh close <id> --as completed   # Close (auto-syncs)
+./.trellis/scripts/issue.sh sync --all                  # Push all dirty issues
+./.trellis/scripts/issue.sh check-dirty --strict        # Pre-commit: ensure all synced
+./.trellis/scripts/issue.sh promote <id>                # Issue → Task
 
 # Slash commands
 /trellis:finish-work          # Pre-commit checklist
 /trellis:break-loop           # Post-debug analysis
 /trellis:check-cross-layer    # Cross-layer verification
+/qa-loop [scope] [options]    # QA cyclic verification loop (test→fix→retest until 100% pass)
 ```
 
 ---

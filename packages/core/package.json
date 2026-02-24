@@ -1,0 +1,48 @@
+{
+  "name": "@actant/core",
+  "version": "0.2.1",
+  "description": "Core runtime engine for the Actant AI agent platform",
+  "type": "module",
+  "license": "MIT",
+  "author": "blackplume <blackplume233@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blackplume233/Actant.git",
+    "directory": "packages/core"
+  },
+  "homepage": "https://github.com/blackplume233/Actant#readme",
+  "bugs": "https://github.com/blackplume233/Actant/issues",
+  "keywords": [
+    "actant",
+    "ai-agent",
+    "core",
+    "runtime"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf dist",
+    "prepublishOnly": "tsup"
+  },
+  "dependencies": {
+    "@actant/shared": "workspace:*",
+    "croner": "^9.0.0",
+    "zod": "^4.3.6"
+  }
+}

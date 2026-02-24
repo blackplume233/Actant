@@ -1,0 +1,99 @@
+{
+  "name": "error-handling",
+  "description": "验证各种错误场景下 CLI 的错误输出和退出码是否合理：不存在的资源、重复操作、参数缺失等",
+  "tags": ["error", "negative"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock",
+    "templates": [
+      {
+        "name": "error-tpl",
+        "inline": {
+          "name": "error-tpl",
+          "version": "1.0.0",
+          "backend": { "type": "cursor" },
+          "provider": { "type": "anthropic" },
+          "domainContext": {}
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "start-nonexistent",
+      "description": "启动不存在的 Agent",
+      "command": "agent start ghost-agent",
+      "expect": "退出码 1，stderr 包含 not found 错误信息"
+    },
+    {
+      "id": "stop-nonexistent",
+      "description": "停止不存在的 Agent",
+      "command": "agent stop ghost-agent",
+      "expect": "退出码 1，stderr 包含 not found 错误信息"
+    },
+    {
+      "id": "status-nonexistent",
+      "description": "查询不存在 Agent 的状态",
+      "command": "agent status ghost-agent",
+      "expect": "退出码 1，stderr 包含 not found 错误信息"
+    },
+    {
+      "id": "destroy-nonexistent",
+      "description": "销毁不存在的 Agent",
+      "command": "agent destroy ghost-agent --force",
+      "expect": "退出码 1，stderr 包含 not found 错误信息"
+    },
+    {
+      "id": "create-no-template-flag",
+      "description": "创建 Agent 时缺少 --template 参数",
+      "command": "agent create missing-tpl-agent",
+      "expect": "退出码非 0，报错提示缺少必填的 --template 选项"
+    },
+    {
+      "id": "create-with-bad-template",
+      "description": "使用不存在的模板创建 Agent",
+      "command": "agent create bad-agent -t nonexistent-template",
+      "expect": "退出码 1，错误信息包含 template 和 not found"
+    },
+    {
+      "id": "setup-for-duplicate",
+      "description": "创建一个 Agent 用于后续重复测试",
+      "command": "agent create dup-agent -t error-tpl -f json",
+      "expect": "成功创建，退出码 0"
+    },
+    {
+      "id": "start-then-start-again",
+      "description": "启动已创建的 Agent 后再次启动",
+      "command": "agent start dup-agent",
+      "expect": "成功启动，退出码 0"
+    },
+    {
+      "id": "double-start",
+      "description": "对已运行的 Agent 再次启动应报错",
+      "command": "agent start dup-agent",
+      "expect": "退出码 1，错误信息提示 Agent 已在运行（already running 或类似）"
+    },
+    {
+      "id": "stop-created-only",
+      "description": "停止 Agent 后再尝试停止（状态应已是 stopped）",
+      "command": "agent stop dup-agent",
+      "expect": "成功停止或提示已停止，退出码 0"
+    },
+    {
+      "id": "template-show-nonexistent",
+      "description": "查看不存在的模板",
+      "command": "template show nonexistent-tpl",
+      "expect": "退出码 1，stderr 包含 not found"
+    },
+    {
+      "id": "template-validate-nonexistent-file",
+      "description": "验证不存在的文件",
+      "command": "template validate /tmp/this-file-does-not-exist.json",
+      "expect": "退出码非 0，报错提示文件不存在"
+    }
+  ],
+  "cleanup": [
+    "agent stop dup-agent",
+    "agent destroy dup-agent --force"
+  ]
+}

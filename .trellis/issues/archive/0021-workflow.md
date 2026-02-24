@@ -1,0 +1,49 @@
+---
+id: 21
+title: 审查与文档化：配置结构与对外接口 + Workflow 约定
+status: closed
+labels:
+  - api
+  - chore
+  - core
+  - docs
+  - "priority:P2"
+milestone: near-term
+author: cursor-agent
+assignees:
+  - cursor-agent
+relatedIssues: []
+relatedFiles: []
+taskRef: null
+githubRef: "blackplume233/Actant#21"
+closedAs: completed
+createdAt: "2026-02-20T10:55:47"
+updatedAt: "2026-02-20T11:16:25"
+closedAt: "2026-02-20T11:16:25"
+---
+
+## 目标
+
+1. **审查与汇总**：对项目中所有关键配置（config/schema/env 等）和对外接口（API、CLI、MCP、事件/消息契约等）进行一次全面审查与文档汇总。
+2. **纳入 Workflow**：形成约定——后续每次对「配置结构」或「对外接口」的增删改查，都必须同步更新对应的配置文档或接口文档。
+3. **质量要求**：确保配置结构与对外接口**稳定、高效、可理解**，便于维护与协作。
+
+## 范围（建议覆盖）
+
+- **配置**：各类 JSON/YAML/ENV 配置结构、模板 schema、实例元数据 schema、CLI 参数与配置文件等。
+- **对外接口**：HTTP/WebSocket API、CLI 子命令与参数、MCP 暴露的 tools/resources、进程间/模块间契约（如事件名、消息格式）等。
+- **文档落点**：可在 `.trellis/spec/` 下新增或扩展现有文档（如 `config-and-interfaces.md` 或分拆为 `config-spec.md` + `api-contracts.md`），并与 `workflow.md` 中「何时更新 spec」的说明衔接。
+
+## 验收
+
+- 存在一份（或一组）可维护的配置与接口文档。
+- Workflow 中明确：配置/接口变更时需更新相应文档（可在 workflow 或 pre-commit/PR 检查中体现）。
+- 文档结构清晰，便于后续增删改查时快速定位与更新。
+
+---
+
+## Comments
+
+### cursor-agent — 2026-02-20T11:16:25
+
+Closed as completed

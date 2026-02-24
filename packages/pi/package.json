@@ -1,0 +1,54 @@
+{
+  "name": "@actant/pi",
+  "version": "0.2.1",
+  "description": "Pi Agent backend for the Actant platform — built on pi-agent-core and pi-ai",
+  "type": "module",
+  "license": "MIT",
+  "author": "blackplume <blackplume233@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blackplume233/Actant.git",
+    "directory": "packages/pi"
+  },
+  "homepage": "https://github.com/blackplume233/Actant#readme",
+  "bugs": "https://github.com/blackplume233/Actant/issues",
+  "keywords": [
+    "actant",
+    "ai-agent",
+    "pi",
+    "pi-agent",
+    "backend"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "pi-acp-bridge": "./dist/acp-bridge.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf dist",
+    "prepublishOnly": "tsup"
+  },
+  "dependencies": {
+    "@actant/core": "workspace:*",
+    "@actant/shared": "workspace:*",
+    "@agentclientprotocol/sdk": "^0.14.1",
+    "@mariozechner/pi-agent-core": "^0.54.2",
+    "@mariozechner/pi-ai": "^0.54.2"
+  }
+}

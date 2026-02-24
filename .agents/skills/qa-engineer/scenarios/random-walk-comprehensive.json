@@ -1,0 +1,457 @@
+{
+  "name": "random-walk-comprehensive",
+  "description": "随机漫游测试 - 覆盖所有功能模块的长时间探索性测试（3小时+）：Agent生命周期、模板管理、Session Lease、Proxy双模式、Domain组件、调度器、错误处理",
+  "tags": ["random-walk", "comprehensive", "long-running", "exploratory"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock",
+    "templates": [
+      {
+        "name": "rw-basic-tpl",
+        "inline": {
+          "name": "rw-basic-tpl",
+          "version": "1.0.0",
+          "description": "Random walk test template",
+          "backend": { "type": "cursor" },
+          "provider": { "type": "anthropic" },
+          "domainContext": {}
+        }
+      },
+      {
+        "name": "rw-claude-tpl",
+        "inline": {
+          "name": "rw-claude-tpl",
+          "version": "1.0.0",
+          "description": "Random walk test template with claude-code backend",
+          "backend": {
+            "type": "claude-code",
+            "config": { "model": "claude-sonnet-4-20250514" }
+          },
+          "provider": {
+            "type": "anthropic",
+            "config": { "apiKeyEnv": "ANTHROPIC_API_KEY" }
+          },
+          "domainContext": {}
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "daemon-ping",
+      "description": "Daemon 健康检查",
+      "command": "daemon ping -f json",
+      "expect": "返回 version 和 uptime，exit_code 0"
+    },
+    {
+      "id": "list-templates",
+      "description": "列出所有模板",
+      "command": "template list -f json",
+      "expect": "返回包含 rw-basic-tpl 和 rw-claude-tpl 的数组"
+    },
+    {
+      "id": "list-skills",
+      "description": "列出所有 skills",
+      "command": "skill list -f json",
+      "expect": "返回 skill 数组，exit_code 0"
+    },
+    {
+      "id": "list-prompts",
+      "description": "列出所有 prompts",
+      "command": "prompt list -f json",
+      "expect": "返回 prompt 数组，exit_code 0"
+    },
+    {
+      "id": "list-mcp",
+      "description": "列出所有 MCP servers",
+      "command": "mcp list -f json",
+      "expect": "返回 mcp 数组，exit_code 0"
+    },
+    {
+      "id": "list-workflows",
+      "description": "列出所有 workflows",
+      "command": "workflow list -f json",
+      "expect": "返回 workflow 数组，exit_code 0"
+    },
+    {
+      "id": "list-plugins",
+      "description": "列出所有 plugins",
+      "command": "plugin list -f json",
+      "expect": "返回 plugin 数组，exit_code 0"
+    },
+    {
+      "id": "list-agents-empty",
+      "description": "确认初始无 Agent",
+      "command": "agent list -f json",
+      "expect": "返回空数组 []"
+    },
+    {
+      "id": "status-nonexistent",
+      "description": "【边界】查询不存在的 Agent",
+      "command": "agent status nonexistent-agent-12345",
+      "expect": "exit_code 非0，错误信息包含 not found"
+    },
+    {
+      "id": "stop-nonexistent",
+      "description": "【边界】停止不存在的 Agent",
+      "command": "agent stop nonexistent-agent-12345",
+      "expect": "exit_code 非0，错误信息包含 not found"
+    },
+    {
+      "id": "start-nonexistent",
+      "description": "【边界】启动不存在的 Agent",
+      "command": "agent start nonexistent-agent-12345",
+      "expect": "exit_code 非0，错误信息包含 not found"
+    },
+    {
+      "id": "destroy-nonexistent",
+      "description": "【边界】销毁不存在的 Agent",
+      "command": "agent destroy nonexistent-agent-12345 --force",
+      "expect": "exit_code 非0，错误信息包含 not found"
+    },
+    {
+      "id": "create-no-template",
+      "description": "【边界】创建 Agent 缺少 --template",
+      "command": "agent create no-template-agent",
+      "expect": "exit_code 非0，提示缺少必填选项"
+    },
+    {
+      "id": "create-bad-template",
+      "description": "【边界】使用不存在的模板",
+      "command": "agent create bad-agent -t nonexistent-template-xyz",
+      "expect": "exit_code 非0，错误包含 template 和 not found"
+    },
+    {
+      "id": "create-agent-1",
+      "description": "创建测试 Agent 1",
+      "command": "agent create rw-agent-1 -t rw-basic-tpl -f json",
+      "expect": "返回 JSON，name=rw-agent-1，status=created，templateName=rw-basic-tpl"
+    },
+    {
+      "id": "list-after-create-1",
+      "description": "确认 Agent 1 在列表中",
+      "command": "agent list -f json",
+      "expect": "返回数组包含 rw-agent-1"
+    },
+    {
+      "id": "status-created-1",
+      "description": "确认 Agent 1 状态为 created",
+      "command": "agent status rw-agent-1 -f json",
+      "expect": "status 字段为 created"
+    },
+    {
+      "id": "duplicate-create",
+      "description": "【边界】重复创建同名 Agent",
+      "command": "agent create rw-agent-1 -t rw-basic-tpl",
+      "expect": "exit_code 非0，提示 Agent 已存在"
+    },
+    {
+      "id": "start-agent-1",
+      "description": "启动 Agent 1",
+      "command": "agent start rw-agent-1",
+      "expect": "exit_code 0，输出包含 Started"
+    },
+    {
+      "id": "status-running-1",
+      "description": "确认 Agent 1 状态为 running",
+      "command": "agent status rw-agent-1 -f json",
+      "expect": "status 字段为 running"
+    },
+    {
+      "id": "double-start",
+      "description": "【边界】重复启动已运行的 Agent",
+      "command": "agent start rw-agent-1",
+      "expect": "exit_code 非0，提示 already running"
+    },
+    {
+      "id": "stop-agent-1",
+      "description": "停止 Agent 1",
+      "command": "agent stop rw-agent-1",
+      "expect": "exit_code 0，输出包含 Stopped"
+    },
+    {
+      "id": "status-stopped-1",
+      "description": "确认 Agent 1 状态为 stopped",
+      "command": "agent status rw-agent-1 -f json",
+      "expect": "status 字段为 stopped"
+    },
+    {
+      "id": "stop-stopped",
+      "description": "【边界】停止已停止的 Agent",
+      "command": "agent stop rw-agent-1",
+      "expect": "exit_code 0 或合理提示"
+    },
+    {
+      "id": "restart-agent-1",
+      "description": "重新启动 Agent 1",
+      "command": "agent start rw-agent-1",
+      "expect": "exit_code 0，成功启动"
+    },
+    {
+      "id": "destroy-running-no-force",
+      "description": "【边界】不带 --force 销毁运行中的 Agent",
+      "command": "agent destroy rw-agent-1",
+      "expect": "exit_code 非0，提示需要 --force"
+    },
+    {
+      "id": "stop-before-destroy",
+      "description": "停止 Agent 准备销毁",
+      "command": "agent stop rw-agent-1",
+      "expect": "exit_code 0"
+    },
+    {
+      "id": "destroy-agent-1",
+      "description": "销毁 Agent 1",
+      "command": "agent destroy rw-agent-1 --force",
+      "expect": "exit_code 0，成功销毁"
+    },
+    {
+      "id": "status-after-destroy",
+      "description": "确认 Agent 1 已删除",
+      "command": "agent status rw-agent-1",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "list-after-destroy",
+      "description": "确认列表为空",
+      "command": "agent list -f json",
+      "expect": "返回空数组 []"
+    },
+    {
+      "id": "template-show",
+      "description": "查看模板详情",
+      "command": "template show rw-basic-tpl -f json",
+      "expect": "返回完整模板 JSON"
+    },
+    {
+      "id": "template-show-nonexistent",
+      "description": "【边界】查看不存在的模板",
+      "command": "template show nonexistent-template-abc",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "skill-show-nonexistent",
+      "description": "【边界】查看不存在的 skill",
+      "command": "skill show nonexistent-skill",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "prompt-show-nonexistent",
+      "description": "【边界】查看不存在的 prompt",
+      "command": "prompt show nonexistent-prompt",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "mcp-show-nonexistent",
+      "description": "【边界】查看不存在的 mcp",
+      "command": "mcp show nonexistent-mcp",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "workflow-show-nonexistent",
+      "description": "【边界】查看不存在的 workflow",
+      "command": "workflow show nonexistent-workflow",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "plugin-show-nonexistent",
+      "description": "【边界】查看不存在的 plugin",
+      "command": "plugin show nonexistent-plugin",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "proxy-help",
+      "description": "查看 proxy 帮助",
+      "command": "proxy --help",
+      "expect": "输出包含 --lease 和 --template 选项"
+    },
+    {
+      "id": "proxy-nonexistent",
+      "description": "【边界】Direct Bridge 访问不存在的 Agent",
+      "command": "proxy nonexistent-proxy-agent",
+      "expect": "exit_code 非0，提示 not found"
+    },
+    {
+      "id": "proxy-lease-nonexistent",
+      "description": "【边界】Session Lease 访问不存在的 Agent",
+      "command": "proxy nonexistent-proxy-agent --lease",
+      "expect": "exit_code 非0，提示 not found"
+    },
+    {
+      "id": "create-proxy-agent",
+      "description": "创建用于 proxy 测试的 Agent",
+      "command": "agent create proxy-test-agent -t rw-basic-tpl",
+      "expect": "exit_code 0"
+    },
+    {
+      "id": "proxy-lease-not-running",
+      "description": "【边界】Session Lease 访问未运行的 Agent",
+      "command": "proxy proxy-test-agent --lease",
+      "expect": "exit_code 非0，提示 not running"
+    },
+    {
+      "id": "proxy-auto-create",
+      "description": "Direct Bridge + --template 自动创建 Agent",
+      "command": "proxy auto-proxy-agent -t rw-basic-tpl",
+      "expect": "即使 spawn 失败，agent 应已创建"
+    },
+    {
+      "id": "verify-auto-created",
+      "description": "验证自动创建的 Agent",
+      "command": "agent status auto-proxy-agent -f json",
+      "expect": "返回 Agent 信息"
+    },
+    {
+      "id": "session-list-empty",
+      "description": "Session 列表初始为空",
+      "command": "RPC session.list {}",
+      "expect": "返回空数组 result=[]"
+    },
+    {
+      "id": "session-create-not-running",
+      "description": "【边界】未启动 Agent 时创建 Session 应失败",
+      "command": "RPC session.create {\"agentName\":\"proxy-test-agent\",\"clientId\":\"test1\"}",
+      "expect": "返回错误 'not running'"
+    },
+    {
+      "id": "session-create-no-agent",
+      "description": "【边界】不存在的 Agent 创建 Session 应失败",
+      "command": "RPC session.create {\"agentName\":\"ghost-agent\",\"clientId\":\"test1\"}",
+      "expect": "返回错误 'not found'"
+    },
+    {
+      "id": "session-cancel-invalid",
+      "description": "【边界】取消不存在的 Session",
+      "command": "RPC session.cancel {\"sessionId\":\"fake-session-id-12345\"}",
+      "expect": "返回错误 'not found'"
+    },
+    {
+      "id": "session-close-invalid",
+      "description": "【边界】关闭不存在的 Session",
+      "command": "RPC session.close {\"sessionId\":\"fake-session-id-12345\"}",
+      "expect": "返回错误 'not found'"
+    },
+    {
+      "id": "session-prompt-invalid",
+      "description": "【边界】Prompt 不存在的 Session",
+      "command": "RPC session.prompt {\"sessionId\":\"fake-session-id-12345\",\"text\":\"hello\"}",
+      "expect": "返回错误 'not found'"
+    },
+    {
+      "id": "concurrent-create-agents",
+      "description": "并发创建多个 Agent",
+      "command": "agent create rw-concurrent-1 -t rw-basic-tpl && agent create rw-concurrent-2 -t rw-basic-tpl && agent create rw-concurrent-3 -t rw-basic-tpl",
+      "expect": "全部成功创建，exit_code 0"
+    },
+    {
+      "id": "list-concurrent",
+      "description": "确认多个 Agent 在列表中",
+      "command": "agent list -f json",
+      "expect": "返回数组包含 3 个 concurrent Agent"
+    },
+    {
+      "id": "start-concurrent-1",
+      "description": "启动 concurrent-1",
+      "command": "agent start rw-concurrent-1",
+      "expect": "exit_code 0"
+    },
+    {
+      "id": "start-concurrent-2",
+      "description": "启动 concurrent-2",
+      "command": "agent start rw-concurrent-2",
+      "expect": "exit_code 0"
+    },
+    {
+      "id": "status-all-concurrent",
+      "description": "检查所有 concurrent Agent 状态",
+      "command": "agent status rw-concurrent-1 -f json && agent status rw-concurrent-2 -f json && agent status rw-concurrent-3 -f json",
+      "expect": "1和2为 running，3为 created"
+    },
+    {
+      "id": "stop-all-concurrent",
+      "description": "停止所有 concurrent Agent",
+      "command": "agent stop rw-concurrent-1 && agent stop rw-concurrent-2 && agent stop rw-concurrent-3",
+      "expect": "exit_code 0"
+    },
+    {
+      "id": "destroy-all-concurrent",
+      "description": "销毁所有 concurrent Agent",
+      "command": "agent destroy rw-concurrent-1 --force && agent destroy rw-concurrent-2 --force && agent destroy rw-concurrent-3 --force",
+      "expect": "全部成功销毁"
+    },
+    {
+      "id": "resolve-nonexistent",
+      "description": "resolve 不存在的 Agent（自动创建）",
+      "command": "agent resolve rw-resolve-test -t rw-basic-tpl -f json",
+      "expect": "返回 resolve 结果，created=true"
+    },
+    {
+      "id": "verify-resolved",
+      "description": "验证 resolve 创建的 Agent",
+      "command": "agent status rw-resolve-test -f json",
+      "expect": "返回 Agent 信息，status=created"
+    },
+    {
+      "id": "attach-nonexistent",
+      "description": "【边界】attach 不存在的 Agent",
+      "command": "agent attach nonexistent-attach --pid 12345",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "detach-nonexistent",
+      "description": "【边界】detach 未 attach 的 Agent",
+      "command": "agent detach rw-resolve-test",
+      "expect": "exit_code 0 或合理提示"
+    },
+    {
+      "id": "dispatch-nonexistent",
+      "description": "【边界】向不存在 Agent 分派任务",
+      "command": "agent dispatch nonexistent-agent -m \"test task\"",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "tasks-nonexistent",
+      "description": "【边界】查询不存在 Agent 的任务",
+      "command": "agent tasks nonexistent-agent",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "logs-nonexistent",
+      "description": "【边界】查询不存在 Agent 的日志",
+      "command": "agent logs nonexistent-agent",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "schedule-nonexistent",
+      "description": "【边界】查询不存在 Agent 的 schedule",
+      "command": "schedule list nonexistent-agent",
+      "expect": "exit_code 非0，not found"
+    },
+    {
+      "id": "daemon-status",
+      "description": "Daemon 状态检查",
+      "command": "daemon status -f json",
+      "expect": "返回 daemon 状态信息"
+    },
+    {
+      "id": "daemon-ping-final",
+      "description": "Daemon 最终健康检查",
+      "command": "daemon ping -f json",
+      "expect": "返回 version 和 uptime"
+    },
+    {
+      "id": "cleanup-verify",
+      "description": "清理前确认列表",
+      "command": "agent list -f json",
+      "expect": "返回当前所有 Agent"
+    }
+  ],
+  "cleanup": [
+    "agent stop proxy-test-agent 2>/dev/null || true",
+    "agent stop auto-proxy-agent 2>/dev/null || true",
+    "agent stop rw-resolve-test 2>/dev/null || true",
+    "agent destroy proxy-test-agent --force 2>/dev/null || true",
+    "agent destroy auto-proxy-agent --force 2>/dev/null || true",
+    "agent destroy rw-resolve-test --force 2>/dev/null || true"
+  ]
+}

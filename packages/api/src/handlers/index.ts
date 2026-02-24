@@ -1,0 +1,10 @@
+export { HandlerRegistry, type RpcHandler } from "./handler-registry";
+export { registerTemplateHandlers } from "./template-handlers";
+export { registerAgentHandlers } from "./agent-handlers";
+export { registerSessionHandlers } from "./session-handlers";
+export { registerDomainHandlers } from "./domain-handlers";
+export { registerSourceHandlers } from "./source-handlers";
+export { registerPresetHandlers } from "./preset-handlers";
+export { registerDaemonHandlers } from "./daemon-handlers";
+export { registerProxyHandlers } from "./proxy-handlers";
+export { registerScheduleHandlers } from "./schedule-handlers";

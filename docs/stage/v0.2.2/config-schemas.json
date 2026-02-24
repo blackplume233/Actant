@@ -1,0 +1,445 @@
+{
+  "version": "0.2.2",
+  "schemas": [
+    {
+      "name": "McpServerRefSchema",
+      "fields": [
+        { "name": "name", "type": "string", "required": true },
+        { "name": "command", "type": "string", "required": true },
+        { "name": "args", "type": "string[]", "required": false },
+        { "name": "env", "type": "Record<string, string>", "required": false }
+      ]
+    },
+    {
+      "name": "DomainContextSchema",
+      "fields": [
+        { "name": "skills", "type": "string[]", "required": false },
+        { "name": "prompts", "type": "string[]", "required": false },
+        { "name": "mcpServers", "type": "McpServerRef[]", "required": false },
+        { "name": "workflow", "type": "string", "required": false },
+        { "name": "subAgents", "type": "string[]", "required": false },
+        { "name": "plugins", "type": "string[]", "required": false },
+        { "name": "extensions", "type": "Record<string, unknown[]>", "required": false }
+      ]
+    },
+    {
+      "name": "AgentBackendSchema",
+      "fields": [
+        { "name": "type", "type": "enum:cursor|cursor-agent|claude-code|custom|pi", "required": true },
+        { "name": "config", "type": "Record<string, unknown>", "required": false }
+      ]
+    },
+    {
+      "name": "ModelProviderSchema",
+      "fields": [
+        { "name": "type", "type": "string", "required": true },
+        { "name": "protocol", "type": "enum:openai|anthropic|custom", "required": false },
+        { "name": "baseUrl", "type": "string", "required": false },
+        { "name": "config", "type": "Record<string, unknown>", "required": false }
+      ]
+    },
+    {
+      "name": "InitializerStepSchema",
+      "fields": [
+        { "name": "type", "type": "string", "required": true },
+        { "name": "config", "type": "Record<string, unknown>", "required": false }
+      ]
+    },
+    {
+      "name": "InitializerSchema",
+      "fields": [
+        { "name": "steps", "type": "InitializerStep[]", "required": true }
+      ]
+    },
+    {
+      "name": "PermissionModeSchema",
+      "fields": [],
+      "enum": ["default", "acceptEdits", "plan", "dontAsk", "bypassPermissions"]
+    },
+    {
+      "name": "SandboxNetworkSchema",
+      "fields": [
+        { "name": "allowedDomains", "type": "string[]", "required": false },
+        { "name": "allowLocalBinding", "type": "boolean", "required": false }
+      ]
+    },
+    {
+      "name": "SandboxSchema",
+      "fields": [
+        { "name": "enabled", "type": "boolean", "required": false },
+        { "name": "autoAllowBashIfSandboxed", "type": "boolean", "required": false },
+        { "name": "network", "type": "SandboxNetwork", "required": false }
+      ]
+    },
+    {
+      "name": "PermissionsObjectSchema",
+      "fields": [
+        { "name": "allow", "type": "string[]", "required": false },
+        { "name": "deny", "type": "string[]", "required": false },
+        { "name": "ask", "type": "string[]", "required": false },
+        { "name": "defaultMode", "type": "PermissionMode", "required": false },
+        { "name": "sandbox", "type": "Sandbox", "required": false },
+        { "name": "additionalDirectories", "type": "string[]", "required": false }
+      ]
+    },
+    {
+      "name": "PermissionPresetSchema",
+      "enum": ["permissive", "standard", "restricted", "readonly"]
+    },
+    {
+      "name": "PermissionsInputSchema",
+      "unionOf": ["PermissionPresetSchema", "PermissionsObjectSchema"]
+    },
+    {
+      "name": "ComponentOriginSchema",
+      "fields": [
+        { "name": "type", "type": "enum:builtin|source|local", "required": true },
+        { "name": "sourceName", "type": "string", "required": false },
+        { "name": "syncHash", "type": "string", "required": false },
+        { "name": "syncedAt", "type": "string", "required": false },
+        { "name": "modified", "type": "boolean", "required": false }
+      ]
+    },
+    {
+      "name": "AgentTemplateSchema",
+      "fields": [
+        { "name": "name", "type": "string", "required": true },
+        { "name": "version", "type": "string", "required": true },
+        { "name": "description", "type": "string", "required": false },
+        { "name": "$type", "type": "string", "required": false },
+        { "name": "$version", "type": "number", "required": false },
+        { "name": "origin", "type": "ComponentOrigin", "required": false },
+        { "name": "tags", "type": "string[]", "required": false },
+        { "name": "backend", "type": "AgentBackend", "required": true },
+        { "name": "provider", "type": "ModelProvider", "required": false },
+        { "name": "domainContext", "type": "DomainContext", "required": true },
+        { "name": "permissions", "type": "PermissionsInput", "required": false },
+        { "name": "initializer", "type": "Initializer", "required": false },
+        { "name": "schedule", "type": "ScheduleConfig", "required": false },
+        { "name": "metadata", "type": "Record<string, string>", "required": false }
+      ]
+    },
+    {
+      "name": "AgentStatusSchema",
+      "enum": ["created", "starting", "running", "stopping", "stopped", "error", "crashed"]
+    },
+    {
+      "name": "LaunchModeSchema",
+      "enum": ["direct", "acp-background", "acp-service", "one-shot"]
+    },
+    {
+      "name": "ProcessOwnershipSchema",
+      "enum": ["managed", "external"]
+    },
+    {
+      "name": "WorkspacePolicySchema",
+      "enum": ["persistent", "ephemeral"]
+    },
+    {
+      "name": "AgentInstanceMetaSchema",
+      "fields": [
+        { "name": "id", "type": "string", "required": true },
+        { "name": "name", "type": "string", "required": true },
+        { "name": "templateName", "type": "string", "required": true },
+        { "name": "templateVersion", "type": "string", "required": true },
+        { "name": "backendType", "type": "string", "required": false },
+        { "name": "backendConfig", "type": "Record<string, unknown>", "required": false },
+        { "name": "providerConfig", "type": "ModelProviderConfig", "required": false },
+        { "name": "status", "type": "AgentStatus", "required": true },
+        { "name": "launchMode", "type": "LaunchMode", "required": true },
+        { "name": "workspacePolicy", "type": "WorkspacePolicy", "required": false },
+        { "name": "processOwnership", "type": "ProcessOwnership", "required": false },
+        { "name": "createdAt", "type": "string (datetime)", "required": true },
+        { "name": "updatedAt", "type": "string (datetime)", "required": true },
+        { "name": "pid", "type": "number", "required": false },
+        { "name": "effectivePermissions", "type": "PermissionsConfig", "required": false },
+        { "name": "metadata", "type": "Record<string, string>", "required": false }
+      ]
+    },
+    {
+      "name": "HeartbeatConfigSchema",
+      "fields": [
+        { "name": "intervalMs", "type": "number", "required": true },
+        { "name": "prompt", "type": "string", "required": true },
+        { "name": "priority", "type": "enum:low|normal|high|critical", "required": false }
+      ]
+    },
+    {
+      "name": "CronConfigSchema",
+      "fields": [
+        { "name": "pattern", "type": "string", "required": true },
+        { "name": "prompt", "type": "string", "required": true },
+        { "name": "timezone", "type": "string", "required": false },
+        { "name": "priority", "type": "enum:low|normal|high|critical", "required": false }
+      ]
+    },
+    {
+      "name": "HookConfigSchema",
+      "fields": [
+        { "name": "eventName", "type": "string", "required": true },
+        { "name": "prompt", "type": "string", "required": true },
+        { "name": "priority", "type": "enum:low|normal|high|critical", "required": false }
+      ]
+    },
+    {
+      "name": "ScheduleConfigSchema",
+      "fields": [
+        { "name": "heartbeat", "type": "HeartbeatConfig", "required": false },
+        { "name": "cron", "type": "CronConfig[]", "required": false },
+        { "name": "hooks", "type": "HookConfig[]", "required": false }
+      ]
+    }
+  ],
+  "interfaces": [
+    {
+      "name": "VersionedComponent",
+      "fields": [
+        { "name": "name", "type": "string", "required": true },
+        { "name": "version", "type": "string", "required": false },
+        { "name": "description", "type": "string", "required": false },
+        { "name": "$type", "type": "string", "required": false },
+        { "name": "$version", "type": "number", "required": false },
+        { "name": "origin", "type": "ComponentOrigin", "required": false },
+        { "name": "tags", "type": "string[]", "required": false }
+      ]
+    },
+    {
+      "name": "AgentTemplate",
+      "extends": "VersionedComponent",
+      "fields": [
+        { "name": "version", "type": "string", "required": true },
+        { "name": "backend", "type": "AgentBackendConfig", "required": true },
+        { "name": "provider", "type": "ModelProviderConfig", "required": false },
+        { "name": "domainContext", "type": "DomainContextConfig", "required": true },
+        { "name": "permissions", "type": "PermissionsInput", "required": false },
+        { "name": "initializer", "type": "InitializerConfig", "required": false },
+        { "name": "schedule", "type": "ScheduleConfig", "required": false },
+        { "name": "metadata", "type": "Record<string, string>", "required": false }
+      ]
+    },
+    {
+      "name": "AgentBackendConfig",
+      "fields": [
+        { "name": "type", "type": "AgentBackendType", "required": true },
+        { "name": "config", "type": "Record<string, unknown>", "required": false }
+      ]
+    },
+    {
+      "name": "ModelProviderConfig",
+      "fields": [
+        { "name": "type", "type": "string", "required": true },
+        { "name": "protocol", "type": "ModelApiProtocol", "required": false },
+        { "name": "baseUrl", "type": "string", "required": false },
+        { "name": "config", "type": "Record<string, unknown>", "required": false }
+      ]
+    },
+    {
+      "name": "InitializerConfig",
+      "fields": [
+        { "name": "steps", "type": "InitializerStep[]", "required": true }
+      ]
+    },
+    {
+      "name": "InitializerStep",
+      "fields": [
+        { "name": "type", "type": "string", "required": true },
+        { "name": "config", "type": "Record<string, unknown>", "required": false }
+      ]
+    },
+    {
+      "name": "AgentInstanceMeta",
+      "fields": [
+        { "name": "id", "type": "string", "required": true },
+        { "name": "name", "type": "string", "required": true },
+        { "name": "templateName", "type": "string", "required": true },
+        { "name": "templateVersion", "type": "string", "required": true },
+        { "name": "backendType", "type": "AgentBackendType", "required": true },
+        { "name": "backendConfig", "type": "Record<string, unknown>", "required": false },
+        { "name": "providerConfig", "type": "ModelProviderConfig", "required": false },
+        { "name": "status", "type": "AgentStatus", "required": true },
+        { "name": "launchMode", "type": "LaunchMode", "required": true },
+        { "name": "workspacePolicy", "type": "WorkspacePolicy", "required": true },
+        { "name": "processOwnership", "type": "ProcessOwnership", "required": true },
+        { "name": "createdAt", "type": "string", "required": true },
+        { "name": "updatedAt", "type": "string", "required": true },
+        { "name": "pid", "type": "number", "required": false },
+        { "name": "effectivePermissions", "type": "PermissionsConfig", "required": false },
+        { "name": "metadata", "type": "Record<string, string>", "required": false }
+      ]
+    },
+    {
+      "name": "ResolveResult",
+      "fields": [
+        { "name": "workspaceDir", "type": "string", "required": true },
+        { "name": "command", "type": "string", "required": true },
+        { "name": "args", "type": "string[]", "required": true },
+        { "name": "env", "type": "Record<string, string>", "required": false },
+        { "name": "instanceName", "type": "string", "required": true },
+        { "name": "backendType", "type": "AgentBackendType", "required": true },
+        { "name": "created", "type": "boolean", "required": true },
+        { "name": "resolvePackage", "type": "string", "required": false }
+      ]
+    },
+    {
+      "name": "DetachResult",
+      "fields": [
+        { "name": "ok", "type": "boolean", "required": true },
+        { "name": "workspaceCleaned", "type": "boolean", "required": true }
+      ]
+    },
+    {
+      "name": "ComponentOrigin",
+      "fields": [
+        { "name": "type", "type": "ComponentOriginType", "required": true },
+        { "name": "sourceName", "type": "string", "required": false },
+        { "name": "syncHash", "type": "string", "required": false },
+        { "name": "syncedAt", "type": "string", "required": false },
+        { "name": "modified", "type": "boolean", "required": false }
+      ]
+    },
+    {
+      "name": "SkillDefinition",
+      "extends": "VersionedComponent",
+      "fields": [
+        { "name": "content", "type": "string", "required": true },
+        { "name": "license", "type": "string", "required": false },
+        { "name": "compatibility", "type": "string", "required": false },
+        { "name": "allowedTools", "type": "string[]", "required": false }
+      ]
+    },
+    {
+      "name": "PromptDefinition",
+      "extends": "VersionedComponent",
+      "fields": [
+        { "name": "content", "type": "string", "required": true },
+        { "name": "variables", "type": "string[]", "required": false }
+      ]
+    },
+    {
+      "name": "WorkflowDefinition",
+      "extends": "VersionedComponent",
+      "fields": [
+        { "name": "content", "type": "string", "required": true }
+      ]
+    },
+    {
+      "name": "McpServerDefinition",
+      "extends": "VersionedComponent",
+      "fields": [
+        { "name": "command", "type": "string", "required": true },
+        { "name": "args", "type": "string[]", "required": false },
+        { "name": "env", "type": "Record<string, string>", "required": false }
+      ]
+    },
+    {
+      "name": "PluginDefinition",
+      "extends": "VersionedComponent",
+      "fields": [
+        { "name": "type", "type": "enum:npm|file|config", "required": true },
+        { "name": "source", "type": "string", "required": false },
+        { "name": "config", "type": "Record<string, unknown>", "required": false },
+        { "name": "enabled", "type": "boolean", "required": false }
+      ]
+    },
+    {
+      "name": "DomainContextConfig",
+      "fields": [
+        { "name": "skills", "type": "string[]", "required": false },
+        { "name": "prompts", "type": "string[]", "required": false },
+        { "name": "mcpServers", "type": "McpServerRef[]", "required": false },
+        { "name": "workflow", "type": "string", "required": false },
+        { "name": "subAgents", "type": "string[]", "required": false },
+        { "name": "plugins", "type": "string[]", "required": false },
+        { "name": "extensions", "type": "Record<string, unknown[]>", "required": false }
+      ]
+    },
+    {
+      "name": "McpServerRef",
+      "fields": [
+        { "name": "name", "type": "string", "required": true },
+        { "name": "command", "type": "string", "required": true },
+        { "name": "args", "type": "string[]", "required": false },
+        { "name": "env", "type": "Record<string, string>", "required": false }
+      ]
+    },
+    {
+      "name": "PermissionsConfig",
+      "fields": [
+        { "name": "allow", "type": "string[]", "required": false },
+        { "name": "deny", "type": "string[]", "required": false },
+        { "name": "ask", "type": "string[]", "required": false },
+        { "name": "defaultMode", "type": "PermissionMode", "required": false },
+        { "name": "sandbox", "type": "SandboxConfig", "required": false },
+        { "name": "additionalDirectories", "type": "string[]", "required": false }
+      ]
+    },
+    {
+      "name": "SandboxConfig",
+      "fields": [
+        { "name": "enabled", "type": "boolean", "required": false },
+        { "name": "autoAllowBashIfSandboxed", "type": "boolean", "required": false },
+        { "name": "network", "type": "SandboxNetworkConfig", "required": false }
+      ]
+    },
+    {
+      "name": "SandboxNetworkConfig",
+      "fields": [
+        { "name": "allowedDomains", "type": "string[]", "required": false },
+        { "name": "allowLocalBinding", "type": "boolean", "required": false }
+      ]
+    },
+    {
+      "name": "SourceConfig",
+      "discriminatedUnion": [
+        { "type": "GitHubSourceConfig" },
+        { "type": "LocalSourceConfig" }
+      ]
+    },
+    {
+      "name": "GitHubSourceConfig",
+      "fields": [
+        { "name": "type", "type": "literal:github", "required": true },
+        { "name": "url", "type": "string", "required": true },
+        { "name": "branch", "type": "string", "required": false }
+      ]
+    },
+    {
+      "name": "LocalSourceConfig",
+      "fields": [
+        { "name": "type", "type": "literal:local", "required": true },
+        { "name": "path", "type": "string", "required": true }
+      ]
+    },
+    {
+      "name": "SourceEntry",
+      "fields": [
+        { "name": "name", "type": "string", "required": true },
+        { "name": "config", "type": "SourceConfig", "required": true },
+        { "name": "syncedAt", "type": "string", "required": false }
+      ]
+    },
+    {
+      "name": "PackageManifest",
+      "fields": [
+        { "name": "name", "type": "string", "required": true },
+        { "name": "version", "type": "string", "required": false },
+        { "name": "description", "type": "string", "required": false },
+        { "name": "components", "type": "{ skills?: string[]; prompts?: string[]; mcp?: string[]; workflows?: string[]; templates?: string[]; backends?: string[] }", "required": false },
+        { "name": "presets", "type": "string[]", "required": false }
+      ]
+    },
+    {
+      "name": "PresetDefinition",
+      "fields": [
+        { "name": "name", "type": "string", "required": true },
+        { "name": "version", "type": "string", "required": false },
+        { "name": "description", "type": "string", "required": false },
+        { "name": "skills", "type": "string[]", "required": false },
+        { "name": "prompts", "type": "string[]", "required": false },
+        { "name": "mcpServers", "type": "string[]", "required": false },
+        { "name": "workflows", "type": "string[]", "required": false },
+        { "name": "templates", "type": "string[]", "required": false }
+      ]
+    }
+  ]
+}

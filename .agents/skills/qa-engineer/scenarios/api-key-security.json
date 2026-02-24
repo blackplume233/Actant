@@ -1,0 +1,129 @@
+{
+  "name": "api-key-security",
+  "description": "验证 API Key 密钥安全模型：Agent workspace 文件（.actant.json、template）不含 apiKey，密钥仅存在于 config.json 和运行时环境变量。黑盒 CLI 操作 + 白盒文件系统检查。",
+  "tags": ["security", "provider", "api-key", "blackbox"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock",
+    "templates": [
+      {
+        "name": "sec-anthropic-tpl",
+        "inline": {
+          "name": "sec-anthropic-tpl",
+          "version": "1.0.0",
+          "description": "Security test template with anthropic provider",
+          "backend": { "type": "cursor" },
+          "provider": {
+            "type": "anthropic",
+            "config": { "apiKeyEnv": "ANTHROPIC_API_KEY" }
+          },
+          "domainContext": {
+            "skills": [],
+            "prompts": []
+          }
+        }
+      },
+      {
+        "name": "sec-openai-tpl",
+        "inline": {
+          "name": "sec-openai-tpl",
+          "version": "1.0.0",
+          "description": "Security test template with openai provider",
+          "backend": { "type": "cursor" },
+          "provider": {
+            "type": "openai",
+            "baseUrl": "https://api.openai.com/v1"
+          },
+          "domainContext": {}
+        }
+      },
+      {
+        "name": "sec-default-tpl",
+        "inline": {
+          "name": "sec-default-tpl",
+          "version": "1.0.0",
+          "description": "Security test template without explicit provider (uses default)",
+          "backend": { "type": "cursor" },
+          "domainContext": {}
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "load-templates",
+      "description": "确认 3 个模板加载成功",
+      "command": "template list -f json",
+      "expect": "返回数组包含 sec-anthropic-tpl、sec-openai-tpl、sec-default-tpl 三个模板"
+    },
+    {
+      "id": "create-agent-anthropic",
+      "description": "使用 anthropic provider 模板创建 Agent",
+      "command": "agent create sec-agent-1 -t sec-anthropic-tpl -f json",
+      "expect": "成功返回 JSON，name=sec-agent-1，status=created"
+    },
+    {
+      "id": "check-meta-no-apikey-1",
+      "description": "[白盒] 检查 sec-agent-1 的 .actant.json 不含 apiKey 字段",
+      "command": "_whitebox_read:$ACTANT_HOME/instances/sec-agent-1/.actant.json",
+      "expect": "文件存在且为有效 JSON。providerConfig 字段应存在且包含 type=anthropic 和 protocol=anthropic，但整个文件中不应出现 apiKey 键（无论值如何）",
+      "artifacts": "$ACTANT_HOME/instances/sec-agent-1/.actant.json 不含 apiKey"
+    },
+    {
+      "id": "create-agent-openai",
+      "description": "使用 openai provider 模板创建 Agent",
+      "command": "agent create sec-agent-2 -t sec-openai-tpl -f json",
+      "expect": "成功返回 JSON，name=sec-agent-2，status=created"
+    },
+    {
+      "id": "check-meta-no-apikey-2",
+      "description": "[白盒] 检查 sec-agent-2 的 .actant.json 不含 apiKey 字段",
+      "command": "_whitebox_read:$ACTANT_HOME/instances/sec-agent-2/.actant.json",
+      "expect": "providerConfig.type=openai、providerConfig.protocol=openai，整个文件不含 apiKey 键",
+      "artifacts": "$ACTANT_HOME/instances/sec-agent-2/.actant.json 不含 apiKey"
+    },
+    {
+      "id": "create-agent-default",
+      "description": "使用无 provider 的模板创建 Agent（应使用默认或无 providerConfig）",
+      "command": "agent create sec-agent-3 -t sec-default-tpl -f json",
+      "expect": "成功返回 JSON，name=sec-agent-3，status=created"
+    },
+    {
+      "id": "check-meta-no-apikey-3",
+      "description": "[白盒] 检查 sec-agent-3 的 .actant.json 不含 apiKey 字段",
+      "command": "_whitebox_read:$ACTANT_HOME/instances/sec-agent-3/.actant.json",
+      "expect": "providerConfig 可能为 undefined 或只含 type/protocol/baseUrl。整个文件不含 apiKey 键",
+      "artifacts": "$ACTANT_HOME/instances/sec-agent-3/.actant.json 不含 apiKey"
+    },
+    {
+      "id": "grep-workspace-apikey",
+      "description": "[白盒] 在全部 Agent workspace 中搜索 apiKey 泄露",
+      "command": "_whitebox_grep:apiKey in $ACTANT_HOME/instances/",
+      "expect": "grep 结果为空，instances/ 目录下任何文件中都不出现 apiKey 字符串（JSON key 或 value 均不应存在）"
+    },
+    {
+      "id": "grep-workspace-secret-patterns",
+      "description": "[白盒] 在全部 Agent workspace 中搜索常见密钥模式",
+      "command": "_whitebox_grep:(sk-|anthropic_api|ACTANT_API_KEY.*=) in $ACTANT_HOME/instances/",
+      "expect": "grep 结果为空，instances/ 下不应出现任何看似 API 密钥的字符串",
+      "artifacts": "确认 workspace 内无密钥泄露"
+    },
+    {
+      "id": "check-template-files",
+      "description": "[白盒] 检查持久化的模板文件不含 apiKey",
+      "command": "_whitebox_grep:apiKey in $ACTANT_HOME/configs/templates/",
+      "expect": "模板目录下的 JSON 文件中不应出现 apiKey 作为顶层 provider 字段（provider.config.apiKeyEnv 作为环境变量名引用是允许的）"
+    },
+    {
+      "id": "destroy-agents",
+      "description": "清理所有测试 Agent",
+      "command": "agent destroy sec-agent-1 --force && agent destroy sec-agent-2 --force && agent destroy sec-agent-3 --force",
+      "expect": "三个 Agent 全部销毁成功，退出码 0"
+    }
+  ],
+  "cleanup": [
+    "agent destroy sec-agent-1 --force",
+    "agent destroy sec-agent-2 --force",
+    "agent destroy sec-agent-3 --force"
+  ]
+}

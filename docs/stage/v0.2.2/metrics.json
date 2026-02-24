@@ -1,0 +1,66 @@
+﻿{
+  "totals": {
+    "lines": 16631,
+    "files": 253,
+    "testFiles": 57,
+    "packages": 8
+  },
+  "packages": {
+    "cli": {
+      "lines": 4312,
+      "files": 96,
+      "testFiles": 7,
+      "sizeBytes": 208982,
+      "exports": 2
+    },
+    "core": {
+      "lines": 8297,
+      "files": 102,
+      "testFiles": 37,
+      "sizeBytes": 601965,
+      "exports": 12
+    },
+    "shared": {
+      "lines": 1452,
+      "files": 16,
+      "testFiles": 3,
+      "sizeBytes": 58950,
+      "exports": 4
+    },
+    "api": {
+      "lines": 1581,
+      "files": 18,
+      "testFiles": 7,
+      "sizeBytes": 93319,
+      "exports": 3
+    },
+    "acp": {
+      "lines": 1432,
+      "files": 8,
+      "testFiles": 2,
+      "sizeBytes": 63594,
+      "exports": 8
+    },
+    "pi": {
+      "lines": 551,
+      "files": 5,
+      "testFiles": 1,
+      "sizeBytes": 25406,
+      "exports": 4
+    },
+    "mcp-server": {
+      "lines": 1,
+      "files": 1,
+      "testFiles": 0,
+      "sizeBytes": 16,
+      "exports": 0
+    },
+    "actant": {
+      "lines": 7,
+      "files": 7,
+      "testFiles": 0,
+      "sizeBytes": 220,
+      "exports": 1
+    }
+  }
+}

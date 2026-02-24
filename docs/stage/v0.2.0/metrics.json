@@ -1,0 +1,62 @@
+{
+  "date": "2026-02-23T17:03:07.865Z",
+  "packages": {
+    "shared": {
+      "lines": 1701,
+      "files": 19,
+      "exports": 4,
+      "testFiles": 3,
+      "srcSizeBytes": 51214,
+      "srcSize": "50.0 KB"
+    },
+    "core": {
+      "lines": 15165,
+      "files": 130,
+      "exports": 11,
+      "testFiles": 36,
+      "srcSizeBytes": 524284,
+      "srcSize": "512.0 KB"
+    },
+    "cli": {
+      "lines": 4767,
+      "files": 95,
+      "exports": 2,
+      "testFiles": 7,
+      "srcSizeBytes": 203545,
+      "srcSize": "198.8 KB"
+    },
+    "api": {
+      "lines": 1696,
+      "files": 18,
+      "exports": 3,
+      "testFiles": 7,
+      "srcSizeBytes": 89855,
+      "srcSize": "87.7 KB"
+    },
+    "acp": {
+      "lines": 1527,
+      "files": 7,
+      "exports": 7,
+      "testFiles": 2,
+      "srcSizeBytes": 59773,
+      "srcSize": "58.4 KB"
+    },
+    "mcp-server": {
+      "lines": 2,
+      "files": 1,
+      "exports": 1,
+      "testFiles": 0,
+      "srcSizeBytes": 16,
+      "srcSize": "16 B"
+    }
+  },
+  "totals": {
+    "lines": 24858,
+    "files": 270,
+    "exports": 28,
+    "testFiles": 55,
+    "srcSizeBytes": 928687,
+    "srcSize": "906.9 KB",
+    "configFiles": 9
+  }
+}

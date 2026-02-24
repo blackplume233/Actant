@@ -1,0 +1,83 @@
+{
+  "name": "template-management",
+  "description": "验证模板的完整 CRUD 流程: validate -> load -> list -> show，以及无效模板的错误处理",
+  "tags": ["template", "crud"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock",
+    "templates": []
+  },
+  "steps": [
+    {
+      "id": "list-empty",
+      "description": "确认初始状态无模板",
+      "command": "template list -f json",
+      "expect": "返回空数组 []"
+    },
+    {
+      "id": "validate-valid",
+      "description": "验证一个合法的模板文件",
+      "command": "template validate $TEMPLATE_FILE",
+      "expect": "输出 Valid，包含模板名 qa-test-tpl，退出码 0",
+      "_note": "执行前需先写入临时模板文件 $TEMPLATE_FILE，内容见 _templateContent"
+    },
+    {
+      "id": "load",
+      "description": "加载模板",
+      "command": "template load $TEMPLATE_FILE",
+      "expect": "输出 Loaded，退出码 0",
+      "artifacts": "模板应持久化到 $ACTANT_HOME 的配置目录中"
+    },
+    {
+      "id": "list-after-load",
+      "description": "确认模板出现在列表中",
+      "command": "template list -f quiet",
+      "expect": "输出包含 qa-test-tpl"
+    },
+    {
+      "id": "show",
+      "description": "查看模板详情",
+      "command": "template show qa-test-tpl -f json",
+      "expect": "返回完整的模板 JSON，包含 name=qa-test-tpl, version=1.0.0, backend.type=cursor"
+    },
+    {
+      "id": "show-not-found",
+      "description": "查看不存在的模板应报错",
+      "command": "template show nonexistent-tpl",
+      "expect": "退出码 1，stderr 包含 not found"
+    },
+    {
+      "id": "validate-invalid",
+      "description": "验证一个非法的模板文件（缺少必填字段）",
+      "command": "template validate $INVALID_TEMPLATE_FILE",
+      "expect": "输出包含验证错误信息，指出缺少的字段",
+      "_note": "执行前需写入一个缺少 backend 字段的临时模板文件"
+    },
+    {
+      "id": "create-agent-from-tpl",
+      "description": "用已加载模板创建 Agent 验证模板可用性",
+      "command": "agent create tpl-test-agent -t qa-test-tpl -f json",
+      "expect": "成功创建 Agent，templateName 为 qa-test-tpl"
+    },
+    {
+      "id": "create-agent-bad-tpl",
+      "description": "用不存在的模板创建 Agent 应报错",
+      "command": "agent create bad-agent -t nonexistent-tpl",
+      "expect": "退出码 1，错误信息包含 not found 或 template"
+    }
+  ],
+  "cleanup": [
+    "agent destroy tpl-test-agent --force"
+  ],
+  "_templateContent": {
+    "name": "qa-test-tpl",
+    "version": "1.0.0",
+    "backend": { "type": "cursor" },
+    "provider": { "type": "anthropic" },
+    "domainContext": {}
+  },
+  "_invalidTemplateContent": {
+    "name": "bad-tpl",
+    "version": "1.0.0"
+  }
+}

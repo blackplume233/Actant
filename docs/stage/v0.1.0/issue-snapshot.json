@@ -1,0 +1,827 @@
+{
+  "version": "v0.1.0",
+  "date": "2026-02-22T00:14:56.357Z",
+  "summary": {
+    "open": 23,
+    "closed": 35,
+    "total": 58
+  },
+  "byLabel": {
+    "core": 20,
+    "feature": 31,
+    "memory": 4,
+    "priority:P3": 4,
+    "priority:P2": 15,
+    "context": 1,
+    "rfc": 1,
+    "launcher": 6,
+    "priority:P1": 27,
+    "dx": 1,
+    "enhancement": 10,
+    "discussion": 1,
+    "mcp": 2,
+    "api": 4,
+    "chore": 1,
+    "docs": 2,
+    "priority:P0": 11,
+    "acp": 7,
+    "architecture": 7,
+    "protocol": 4,
+    "vision": 1,
+    "priority:P4": 1,
+    "review": 13,
+    "roadmap": 1,
+    "cli": 5,
+    "quality": 10,
+    "bug": 6,
+    "progress": 2,
+    "qa": 7,
+    "security": 2,
+    "refactor": 1,
+    "branding": 1,
+    "domain": 4,
+    "scheduler": 4,
+    "phase3a": 3,
+    "testing": 1,
+    "phase3b": 2,
+    "phase3c": 3,
+    "template": 2,
+    "source": 2,
+    "versioning": 1
+  },
+  "byMilestone": {
+    "long-term": 7,
+    "near-term": 8,
+    "mid-term": 20,
+    "short-term": 1,
+    "phase-3": 3
+  },
+  "issues": [
+    {
+      "id": 1,
+      "title": "Instance Memory Layer (Phase 1)",
+      "status": "open",
+      "labels": [
+        "core",
+        "feature",
+        "memory",
+        "priority:P3"
+      ],
+      "milestone": "long-term",
+      "closedAs": null
+    },
+    {
+      "id": 2,
+      "title": "Memory Consolidation + Shared Memory (Phase 2)",
+      "status": "open",
+      "labels": [
+        "core",
+        "feature",
+        "memory",
+        "priority:P2"
+      ],
+      "milestone": "long-term",
+      "closedAs": null
+    },
+    {
+      "id": 3,
+      "title": "Context Layers + ContextBroker (Phase 3)",
+      "status": "open",
+      "labels": [
+        "context",
+        "core",
+        "memory",
+        "priority:P3",
+        "rfc"
+      ],
+      "milestone": "long-term",
+      "closedAs": null
+    },
+    {
+      "id": 4,
+      "title": "Real Agent Launcher implementation",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "launcher",
+        "priority:P1"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed"
+    },
+    {
+      "id": 5,
+      "title": "Template hot-reload on file change",
+      "status": "open",
+      "labels": [
+        "core",
+        "dx",
+        "enhancement",
+        "priority:P2"
+      ],
+      "milestone": "long-term",
+      "closedAs": null
+    },
+    {
+      "id": 6,
+      "title": "OpenViking as optional MCP Server integration",
+      "status": "closed",
+      "labels": [
+        "discussion",
+        "mcp",
+        "memory",
+        "priority:P3"
+      ],
+      "milestone": "long-term",
+      "closedAs": "not-planned"
+    },
+    {
+      "id": 7,
+      "title": "审查与文档化：配置结构与对外接口 + Workflow 约定",
+      "status": "closed",
+      "labels": [
+        "api",
+        "chore",
+        "core",
+        "docs",
+        "priority:P2"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed"
+    },
+    {
+      "id": 8,
+      "title": "ProcessWatcher：进程退出检测与心跳监控",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "launcher",
+        "priority:P0"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed"
+    },
+    {
+      "id": 9,
+      "title": "LaunchMode 行为分化",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "launcher",
+        "priority:P0"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed"
+    },
+    {
+      "id": 10,
+      "title": "one-shot 模式完整实现",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "launcher",
+        "priority:P1"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed"
+    },
+    {
+      "id": 11,
+      "title": "acp-service 崩溃重启策略",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "launcher",
+        "priority:P1"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed"
+    },
+    {
+      "id": 12,
+      "title": "ACP 协议集成 — Daemon 侧 ACP Client + agent.run/prompt",
+      "status": "open",
+      "labels": [
+        "acp",
+        "core",
+        "feature",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null
+    },
+    {
+      "id": 13,
+      "title": "Plugin 体系设计（heartbeat/scheduler/memory 可插拔）",
+      "status": "open",
+      "labels": [
+        "architecture",
+        "core",
+        "feature",
+        "priority:P2"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null
+    },
+    {
+      "id": 14,
+      "title": "Agent 进程 stdout/stderr 日志收集",
+      "status": "open",
+      "labels": [
+        "core",
+        "enhancement",
+        "launcher",
+        "priority:P3"
+      ],
+      "milestone": "long-term",
+      "closedAs": null
+    },
+    {
+      "id": 15,
+      "title": "agent.resolve / agent.attach / agent.detach API — 外部 Spawn 支持",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "api",
+        "priority:P1"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed"
+    },
+    {
+      "id": 16,
+      "title": "ACP Proxy — 标准 ACP 协议网关",
+      "status": "open",
+      "labels": [
+        "acp",
+        "feature",
+        "protocol",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null
+    },
+    {
+      "id": 17,
+      "title": "MCP Server — Agent 间通信能力",
+      "status": "open",
+      "labels": [
+        "mcp",
+        "feature",
+        "protocol",
+        "priority:P2"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null
+    },
+    {
+      "id": 18,
+      "title": "ACP-Fleet 扩展协议 — Actant API 对齐 ACP 标准",
+      "status": "open",
+      "labels": [
+        "acp",
+        "protocol",
+        "vision",
+        "priority:P4"
+      ],
+      "milestone": "long-term",
+      "closedAs": null
+    },
+    {
+      "id": 19,
+      "title": "Roadmap 与 Issue 元数据不一致",
+      "status": "closed",
+      "labels": [
+        "enhancement",
+        "priority:P1",
+        "review",
+        "roadmap"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 20,
+      "title": "CLI 包测试覆盖率为零 — 需补充单元测试",
+      "status": "closed",
+      "labels": [
+        "cli",
+        "enhancement",
+        "priority:P2",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 21,
+      "title": "issue.sh .counter 自增脱节导致 ID 冲突",
+      "status": "closed",
+      "labels": [
+        "bug",
+        "core",
+        "priority:P0",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 22,
+      "title": "CLI 包 console.log 违反质量规范 — 需引入结构化输出层",
+      "status": "closed",
+      "labels": [
+        "cli",
+        "enhancement",
+        "priority:P2",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 23,
+      "title": "项目空转状态 — 无活跃任务且所有 Issue 无 Assignee",
+      "status": "closed",
+      "labels": [
+        "enhancement",
+        "priority:P2",
+        "progress",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "not-planned"
+    },
+    {
+      "id": 24,
+      "title": "core 包 type-check 失败 — 测试与源码类型错误阻塞质量门禁",
+      "status": "closed",
+      "labels": [
+        "core",
+        "priority:P1",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 25,
+      "title": "测试用例实现深度审查 — 类型安全、断言与配对缺口",
+      "status": "closed",
+      "labels": [
+        "enhancement",
+        "priority:P2",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 26,
+      "title": "质量规范禁止模式：非空断言（!）在源码与测试中的全面清除",
+      "status": "closed",
+      "labels": [
+        "core",
+        "priority:P1",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 27,
+      "title": "CI 必须执行 type-check 且与 test 同门禁",
+      "status": "closed",
+      "labels": [
+        "priority:P1",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 28,
+      "title": "测试中固定 setTimeout 延迟导致潜在 flaky",
+      "status": "closed",
+      "labels": [
+        "core",
+        "enhancement",
+        "priority:P2",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 29,
+      "title": "Phase 1 已完成 Issues (#8,#9,#10,#11,#15) 未关闭 — Roadmap 与 Issue Tracker 脱节",
+      "status": "closed",
+      "labels": [
+        "priority:P1",
+        "progress",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 30,
+      "title": "detachAgent cleanup 测试断言与实现语义不匹配 — 1 个单元测试持续失败",
+      "status": "closed",
+      "labels": [
+        "core",
+        "priority:P1",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 31,
+      "title": "AgentInstanceMeta 接口与 Zod Schema 类型定义不同步 — type-check 持续失败",
+      "status": "closed",
+      "labels": [
+        "core",
+        "priority:P1",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 32,
+      "title": "Initializer: 可扩展的 Agent 初始化流程框架",
+      "status": "open",
+      "labels": [
+        "feature",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null
+    },
+    {
+      "id": 33,
+      "title": "Template: 耐久测试专用 Agent 配置 (Endurance Test Agent)",
+      "status": "open",
+      "labels": [
+        "feature",
+        "priority:P2"
+      ],
+      "milestone": "near-term",
+      "closedAs": null
+    },
+    {
+      "id": 34,
+      "title": "Daemon 未读取 ACTANT_HOME 环境变量",
+      "status": "closed",
+      "labels": [
+        "bug",
+        "priority:P1",
+        "qa"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 35,
+      "title": "ACP Proxy + Agent Chat — Direct Bridge 与 Session Lease 双模式",
+      "status": "closed",
+      "labels": [
+        "acp",
+        "feature",
+        "protocol",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed"
+    },
+    {
+      "id": 36,
+      "title": "Agent 工具权限管理机制设计",
+      "status": "open",
+      "labels": [
+        "architecture",
+        "feature",
+        "priority:P2",
+        "security"
+      ],
+      "milestone": null,
+      "closedAs": null
+    },
+    {
+      "id": 37,
+      "title": "雇员型 Agent — 持续调度与主动行为系统",
+      "status": "open",
+      "labels": [
+        "feature",
+        "architecture",
+        "acp",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null
+    },
+    {
+      "id": 38,
+      "title": "项目重命名：Actant → Actant",
+      "status": "open",
+      "labels": [
+        "refactor",
+        "branding",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null
+    },
+    {
+      "id": 38,
+      "title": "统一组件管理体系 — Skill / Prompt / Plugin 完整 CRUD",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "domain",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed"
+    },
+    {
+      "id": 39,
+      "title": "Session Lease API 在 mock launcher 模式下无法端到端测试",
+      "status": "open",
+      "labels": [
+        "bug",
+        "qa",
+        "acp",
+        "priority:P1"
+      ],
+      "milestone": null,
+      "closedAs": null
+    },
+    {
+      "id": 39,
+      "title": "Workspace 构造器 — 面向不同 Agent 后端的差异化构建",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "architecture",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed"
+    },
+    {
+      "id": 40,
+      "title": "daemon stop 连接失败时未输出 'Daemon is not running' 消息",
+      "status": "open",
+      "labels": [
+        "bug",
+        "qa",
+        "cli",
+        "priority:P1"
+      ],
+      "milestone": null,
+      "closedAs": null
+    },
+    {
+      "id": 40,
+      "title": "雇员型 Agent 实现 — 内置调度器 + N8N 集成",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "architecture",
+        "scheduler",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed"
+    },
+    {
+      "id": 41,
+      "title": "session.create 缺少参数验证，空参数暴露 'undefined' 内部细节",
+      "status": "open",
+      "labels": [
+        "enhancement",
+        "qa",
+        "api",
+        "priority:P2"
+      ],
+      "milestone": null,
+      "closedAs": null
+    },
+    {
+      "id": 42,
+      "title": "api-contracts.md 文档与实现不一致（envCallback / env-passthrough / ResolveResult）",
+      "status": "closed",
+      "labels": [
+        "enhancement",
+        "qa",
+        "docs",
+        "priority:P2"
+      ],
+      "milestone": null,
+      "closedAs": "completed"
+    },
+    {
+      "id": 43,
+      "title": "BaseComponentManager CRUD 增强 + 持久化",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "domain",
+        "priority:P0",
+        "phase3a"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": null
+    },
+    {
+      "id": 43,
+      "title": "ACP Gateway: Terminal 回调 IDE 转发未实现（4 个方法为 stub）",
+      "status": "open",
+      "labels": [
+        "bug",
+        "acp",
+        "qa",
+        "priority:P2"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null,
+      "githubRef": null
+    },
+    {
+      "id": 44,
+      "title": "E2E CLI 测试: ESM 模块解析失败 (ERR_MODULE_NOT_FOUND)",
+      "status": "open",
+      "labels": [
+        "bug",
+        "testing",
+        "qa",
+        "priority:P1"
+      ],
+      "milestone": "short-term",
+      "closedAs": null,
+      "githubRef": null
+    },
+    {
+      "id": 44,
+      "title": "PluginManager + PluginDefinition Schema + 示例配置",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "domain",
+        "priority:P0",
+        "phase3a"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": null
+    },
+    {
+      "id": 45,
+      "title": "组件管理 RPC Handlers + CLI 命令扩展",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "cli",
+        "api",
+        "priority:P0",
+        "phase3a"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": null
+    },
+    {
+      "id": 46,
+      "title": "BackendBuilder 接口 + CursorBuilder + ClaudeCodeBuilder 实现",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "architecture",
+        "priority:P0",
+        "phase3b"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": null
+    },
+    {
+      "id": 47,
+      "title": "WorkspaceBuilder Pipeline + AgentInitializer 迁移",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "architecture",
+        "priority:P0",
+        "phase3b"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": null
+    },
+    {
+      "id": 48,
+      "title": "TaskQueue + TaskDispatcher + ExecutionLog 基础实现",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "scheduler",
+        "priority:P0",
+        "phase3c"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": null
+    },
+    {
+      "id": 49,
+      "title": "InputRouter + InputSources (Heartbeat / Cron / Hook)",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "scheduler",
+        "priority:P0",
+        "phase3c"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": null
+    },
+    {
+      "id": 50,
+      "title": "EmployeeScheduler + AgentManager 集成 + CLI 命令",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "scheduler",
+        "cli",
+        "priority:P0",
+        "phase3c"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": null
+    },
+    {
+      "id": 51,
+      "title": "AgentTemplate 权限控制 — 对齐 Claude Code permissions 配置结构",
+      "status": "open",
+      "labels": [
+        "feature",
+        "template",
+        "security",
+        "priority:P1"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": null
+    },
+    {
+      "id": 52,
+      "title": "AgentTemplate 应当可通过 Source 分享，Preset 中也应包含 AgentTemplate",
+      "status": "open",
+      "labels": [
+        "feature",
+        "source",
+        "template",
+        "priority:P1"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": null
+    },
+    {
+      "id": 53,
+      "title": "可共享内容缺少版本控制能力 — 组件/模板/预设的版本管理体系",
+      "status": "open",
+      "labels": [
+        "feature",
+        "source",
+        "domain",
+        "versioning",
+        "priority:P1"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": null
+    }
+  ]
+}

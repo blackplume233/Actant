@@ -1,0 +1,11 @@
+{
+  "name": "github",
+  "description": "GitHub integration plugin — PR reviews, issue management, repository operations",
+  "type": "npm",
+  "source": "@anthropic/github",
+  "config": {
+    "defaultOrg": "",
+    "autoApprove": false
+  },
+  "enabled": true
+}

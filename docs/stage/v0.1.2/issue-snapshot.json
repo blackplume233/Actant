@@ -1,0 +1,1032 @@
+{
+  "version": "v0.1.2",
+  "date": "2026-02-23T08:16:55.910Z",
+  "summary": {
+    "open": 15,
+    "closed": 54,
+    "total": 69
+  },
+  "byLabel": {
+    "cli": 7,
+    "enhancement": 13,
+    "priority:P2": 16,
+    "quality": 10,
+    "review": 13,
+    "core": 22,
+    "dx": 2,
+    "launcher": 6,
+    "priority:P3": 5,
+    "feature": 33,
+    "memory": 4,
+    "context": 1,
+    "rfc": 1,
+    "acp": 9,
+    "priority:P1": 32,
+    "architecture": 12,
+    "protocol": 4,
+    "mcp": 2,
+    "vision": 1,
+    "priority:P4": 1,
+    "discussion": 1,
+    "api": 4,
+    "chore": 1,
+    "docs": 2,
+    "priority:P0": 14,
+    "roadmap": 1,
+    "bug": 10,
+    "progress": 2,
+    "qa": 8,
+    "security": 2,
+    "refactor": 1,
+    "branding": 1,
+    "domain": 6,
+    "scheduler": 4,
+    "platform:windows": 2,
+    "daemon": 1,
+    "phase3a": 3,
+    "testing": 1,
+    "phase3b": 2,
+    "phase3c": 3,
+    "template": 2,
+    "source": 3,
+    "versioning": 1,
+    "documentation": 2,
+    "devx": 2,
+    "design": 2
+  },
+  "byMilestone": {
+    "long-term": 8,
+    "mid-term": 20,
+    "near-term": 9,
+    "phase-3": 9,
+    "short-term": 1,
+    "phase-4": 1
+  },
+  "issues": [
+    {
+      "id": 5,
+      "title": "CLI 包测试覆盖率为零 — 需补充单元测试",
+      "status": "closed",
+      "labels": [
+        "cli",
+        "enhancement",
+        "priority:P2",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#5"
+    },
+    {
+      "id": 6,
+      "title": "CLI 包 console.log 违反质量规范 — 需引入结构化输出层",
+      "status": "closed",
+      "labels": [
+        "cli",
+        "enhancement",
+        "priority:P2",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#6"
+    },
+    {
+      "id": 7,
+      "title": "测试用例实现深度审查 — 类型安全、断言与配对缺口",
+      "status": "closed",
+      "labels": [
+        "enhancement",
+        "priority:P2",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#7"
+    },
+    {
+      "id": 8,
+      "title": "Template hot-reload on file change",
+      "status": "open",
+      "labels": [
+        "core",
+        "dx",
+        "enhancement",
+        "priority:P2"
+      ],
+      "milestone": "long-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#8"
+    },
+    {
+      "id": 9,
+      "title": "Agent 进程 stdout/stderr 日志收集",
+      "status": "open",
+      "labels": [
+        "enhancement",
+        "core",
+        "launcher",
+        "priority:P3"
+      ],
+      "milestone": "long-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#9"
+    },
+    {
+      "id": 10,
+      "title": "Instance Memory Layer (Phase 1)",
+      "status": "open",
+      "labels": [
+        "core",
+        "feature",
+        "memory",
+        "priority:P3"
+      ],
+      "milestone": "long-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#10"
+    },
+    {
+      "id": 11,
+      "title": "Memory Consolidation + Shared Memory (Phase 2)",
+      "status": "open",
+      "labels": [
+        "core",
+        "feature",
+        "memory",
+        "priority:P2"
+      ],
+      "milestone": "long-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#11"
+    },
+    {
+      "id": 12,
+      "title": "Context Layers + ContextBroker (Phase 3)",
+      "status": "open",
+      "labels": [
+        "context",
+        "core",
+        "memory",
+        "priority:P3",
+        "rfc"
+      ],
+      "milestone": "long-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#12"
+    },
+    {
+      "id": 13,
+      "title": "ACP 协议集成 — Daemon 侧 ACP Client + agent.run/prompt",
+      "status": "closed",
+      "labels": [
+        "acp",
+        "core",
+        "feature",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#13"
+    },
+    {
+      "id": 14,
+      "title": "Plugin 体系设计（heartbeat/scheduler/memory 可插拔）",
+      "status": "open",
+      "labels": [
+        "architecture",
+        "core",
+        "feature",
+        "priority:P2"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#14"
+    },
+    {
+      "id": 15,
+      "title": "ACP Proxy — 标准 ACP 协议网关",
+      "status": "closed",
+      "labels": [
+        "acp",
+        "feature",
+        "protocol",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#15"
+    },
+    {
+      "id": 16,
+      "title": "MCP Server — Agent 间通信能力",
+      "status": "open",
+      "labels": [
+        "mcp",
+        "feature",
+        "protocol",
+        "priority:P2"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#16"
+    },
+    {
+      "id": 17,
+      "title": "ACP-Fleet 扩展协议 — Actant API 对齐 ACP 标准",
+      "status": "open",
+      "labels": [
+        "acp",
+        "protocol",
+        "vision",
+        "priority:P4"
+      ],
+      "milestone": "long-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#17"
+    },
+    {
+      "id": 18,
+      "title": "ACP Proxy + Agent Chat — Direct Bridge 与 Session Lease 双模式",
+      "status": "closed",
+      "labels": [
+        "acp",
+        "feature",
+        "protocol",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#18"
+    },
+    {
+      "id": 19,
+      "title": "Real Agent Launcher implementation",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "launcher",
+        "priority:P1"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#19"
+    },
+    {
+      "id": 20,
+      "title": "OpenViking as optional MCP Server integration",
+      "status": "closed",
+      "labels": [
+        "discussion",
+        "mcp",
+        "memory",
+        "priority:P3"
+      ],
+      "milestone": "long-term",
+      "closedAs": "not-planned",
+      "githubRef": "blackplume233/Actant#20"
+    },
+    {
+      "id": 21,
+      "title": "审查与文档化：配置结构与对外接口 + Workflow 约定",
+      "status": "closed",
+      "labels": [
+        "api",
+        "chore",
+        "core",
+        "docs",
+        "priority:P2"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#21"
+    },
+    {
+      "id": 22,
+      "title": "ProcessWatcher锛氳繘绋嬮€€鍑烘娴嬩笌蹇冭烦鐩戞帶",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "launcher",
+        "priority:P0"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#22"
+    },
+    {
+      "id": 23,
+      "title": "LaunchMode 行为分化",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "launcher",
+        "priority:P0"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#23"
+    },
+    {
+      "id": 24,
+      "title": "one-shot 模式完整实现",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "launcher",
+        "priority:P1"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#24"
+    },
+    {
+      "id": 25,
+      "title": "acp-service 崩溃重启策略",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "launcher",
+        "priority:P1"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#25"
+    },
+    {
+      "id": 26,
+      "title": "agent.resolve / agent.attach / agent.detach API — 外部 Spawn 支持",
+      "status": "closed",
+      "labels": [
+        "core",
+        "feature",
+        "api",
+        "priority:P1"
+      ],
+      "milestone": "near-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#26"
+    },
+    {
+      "id": 27,
+      "title": "Roadmap 与 Issue 元数据不一致",
+      "status": "closed",
+      "labels": [
+        "enhancement",
+        "priority:P1",
+        "review",
+        "roadmap"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#27"
+    },
+    {
+      "id": 28,
+      "title": "issue.sh .counter 自增脱节导致 ID 冲突",
+      "status": "closed",
+      "labels": [
+        "bug",
+        "core",
+        "priority:P0",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#28"
+    },
+    {
+      "id": 29,
+      "title": "项目空转状态 — 无活跃任务且所有 Issue 无 Assignee",
+      "status": "closed",
+      "labels": [
+        "enhancement",
+        "priority:P2",
+        "progress",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "not-planned",
+      "githubRef": "blackplume233/Actant#29"
+    },
+    {
+      "id": 30,
+      "title": "core 包 type-check 失败 — 测试与源码类型错误阻塞质量门禁",
+      "status": "closed",
+      "labels": [
+        "core",
+        "priority:P1",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#30"
+    },
+    {
+      "id": 31,
+      "title": "质量规范禁止模式：非空断言（!）在源码与测试中的全面清除",
+      "status": "closed",
+      "labels": [
+        "core",
+        "priority:P1",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#31"
+    },
+    {
+      "id": 32,
+      "title": "CI 必须执行 type-check 且与 test 同门禁",
+      "status": "closed",
+      "labels": [
+        "priority:P1",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#32"
+    },
+    {
+      "id": 33,
+      "title": "测试中固定 setTimeout 延迟导致潜在 flaky",
+      "status": "closed",
+      "labels": [
+        "core",
+        "enhancement",
+        "priority:P2",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#33"
+    },
+    {
+      "id": 34,
+      "title": "Phase 1 已完成 Issues (#8,#9,#10,#11,#15) 未关闭 — Roadmap 与 Issue Tracker 脱节",
+      "status": "closed",
+      "labels": [
+        "priority:P1",
+        "progress",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#34"
+    },
+    {
+      "id": 35,
+      "title": "detachAgent cleanup 测试断言与实现语义不匹配 — 1 个单元测试持续失败",
+      "status": "closed",
+      "labels": [
+        "core",
+        "priority:P1",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#35"
+    },
+    {
+      "id": 36,
+      "title": "AgentInstanceMeta 接口与 Zod Schema 类型定义不同步 — type-check 持续失败",
+      "status": "closed",
+      "labels": [
+        "core",
+        "priority:P1",
+        "quality",
+        "review"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#36"
+    },
+    {
+      "id": 37,
+      "title": "Initializer: 可扩展的 Agent 初始化流程框架",
+      "status": "open",
+      "labels": [
+        "feature",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#37"
+    },
+    {
+      "id": 38,
+      "title": "Template: 耐久测试专用 Agent 配置 (Endurance Test Agent)",
+      "status": "open",
+      "labels": [
+        "feature",
+        "priority:P2"
+      ],
+      "milestone": "near-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#38"
+    },
+    {
+      "id": 39,
+      "title": "Daemon 未读取 ACTANT_HOME 环境变量",
+      "status": "closed",
+      "labels": [
+        "bug",
+        "priority:P1",
+        "qa"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#39"
+    },
+    {
+      "id": 40,
+      "title": "Agent 工具权限管理机制设计",
+      "status": "open",
+      "labels": [
+        "architecture",
+        "feature",
+        "priority:P2",
+        "security"
+      ],
+      "milestone": null,
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#40"
+    },
+    {
+      "id": 41,
+      "title": "雇员型 Agent — 持续调度与主动行为系统",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "architecture",
+        "acp",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#41"
+    },
+    {
+      "id": 42,
+      "title": "项目重命名：AgentCraft → Actant",
+      "status": "closed",
+      "labels": [
+        "refactor",
+        "branding",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#42"
+    },
+    {
+      "id": 43,
+      "title": "统一组件管理体系 — Skill / Prompt / Plugin 完整 CRUD",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "domain",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#43"
+    },
+    {
+      "id": 44,
+      "title": "Session Lease API 在 mock launcher 模式下无法端到端测试",
+      "status": "closed",
+      "labels": [
+        "bug",
+        "qa",
+        "acp",
+        "priority:P1"
+      ],
+      "milestone": null,
+      "closedAs": "not-planned",
+      "githubRef": "blackplume233/Actant#44"
+    },
+    {
+      "id": 45,
+      "title": "Workspace 构造器 — 面向不同 Agent 后端的差异化构建",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "architecture",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#45"
+    },
+    {
+      "id": 46,
+      "title": "daemon stop 连接失败时未输出 'Daemon is not running' 消息",
+      "status": "closed",
+      "labels": [
+        "bug",
+        "qa",
+        "cli",
+        "priority:P1"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#46"
+    },
+    {
+      "id": 47,
+      "title": "雇员型 Agent 实现 — 内置调度器 + N8N 集成",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "architecture",
+        "scheduler",
+        "priority:P1"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#47"
+    },
+    {
+      "id": 48,
+      "title": "session.create 缺少参数验证，空参数暴露 'undefined' 内部细节",
+      "status": "closed",
+      "labels": [
+        "enhancement",
+        "qa",
+        "api",
+        "priority:P2"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#48"
+    },
+    {
+      "id": 49,
+      "title": "api-contracts.md 文档与实现不一致（envCallback / env-passthrough / ResolveResult）",
+      "status": "closed",
+      "labels": [
+        "enhancement",
+        "qa",
+        "docs",
+        "priority:P2"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#49"
+    },
+    {
+      "id": 57,
+      "title": "Windows 平台 daemon start（非 foreground）fork 后立即退出",
+      "status": "closed",
+      "labels": [
+        "bug",
+        "platform:windows",
+        "daemon"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#57"
+    },
+    {
+      "id": 94,
+      "title": "BaseComponentManager CRUD 增强 + 持久化",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "domain",
+        "priority:P0",
+        "phase3a"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#94"
+    },
+    {
+      "id": 95,
+      "title": "ACP Gateway: Terminal 回调 IDE 转发未实现（4 个方法为 stub）",
+      "status": "open",
+      "labels": [
+        "bug",
+        "acp",
+        "qa",
+        "priority:P2"
+      ],
+      "milestone": "mid-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#95"
+    },
+    {
+      "id": 96,
+      "title": "E2E CLI 测试: ESM 模块解析失败 (ERR_MODULE_NOT_FOUND)",
+      "status": "closed",
+      "labels": [
+        "bug",
+        "testing",
+        "qa",
+        "priority:P1"
+      ],
+      "milestone": "short-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#96"
+    },
+    {
+      "id": 97,
+      "title": "PluginManager + PluginDefinition Schema + 示例配置",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "domain",
+        "priority:P0",
+        "phase3a"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#97"
+    },
+    {
+      "id": 98,
+      "title": "组件管理 RPC Handlers + CLI 命令扩展",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "cli",
+        "api",
+        "priority:P0",
+        "phase3a"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#98"
+    },
+    {
+      "id": 99,
+      "title": "BackendBuilder 接口 + CursorBuilder + ClaudeCodeBuilder 实现",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "architecture",
+        "priority:P0",
+        "phase3b"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#99"
+    },
+    {
+      "id": 100,
+      "title": "WorkspaceBuilder Pipeline + AgentInitializer 迁移",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "architecture",
+        "priority:P0",
+        "phase3b"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#100"
+    },
+    {
+      "id": 101,
+      "title": "TaskQueue + TaskDispatcher + ExecutionLog 基础实现",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "scheduler",
+        "priority:P0",
+        "phase3c"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#101"
+    },
+    {
+      "id": 102,
+      "title": "InputRouter + InputSources (Heartbeat / Cron / Hook)",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "scheduler",
+        "priority:P0",
+        "phase3c"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#102"
+    },
+    {
+      "id": 103,
+      "title": "EmployeeScheduler + AgentManager 集成 + CLI 命令",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "scheduler",
+        "cli",
+        "priority:P0",
+        "phase3c"
+      ],
+      "milestone": "mid-term",
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#103"
+    },
+    {
+      "id": 104,
+      "title": "AgentTemplate 权限控制 — 对齐 Claude Code permissions 配置结构",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "template",
+        "security",
+        "priority:P1"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#104"
+    },
+    {
+      "id": 105,
+      "title": "AgentTemplate 应当可通过 Source 分享，Preset 中也应包含 AgentTemplate",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "source",
+        "template",
+        "priority:P1"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#105"
+    },
+    {
+      "id": 106,
+      "title": "可共享内容缺少版本控制能力 — 组件/模板/预设的版本管理体系",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "source",
+        "domain",
+        "versioning",
+        "priority:P1"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#106"
+    },
+    {
+      "id": 107,
+      "title": "DomainContext 类型扩展缺乏指导文档与框架级支持",
+      "status": "closed",
+      "labels": [
+        "enhancement",
+        "documentation",
+        "architecture",
+        "domain",
+        "priority:P1"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#107"
+    },
+    {
+      "id": 108,
+      "title": "Actant 安装流程 · Help 指令 · 本地部署自更新机制",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "cli",
+        "devx",
+        "documentation",
+        "priority:P0"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#108"
+    },
+    {
+      "id": 109,
+      "title": "明确 Actant 自身工作目录与 AgentInstance 工作目录的职责划分",
+      "status": "closed",
+      "labels": [
+        "architecture",
+        "design",
+        "priority:P0"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#109"
+    },
+    {
+      "id": 110,
+      "title": "DomainContext 各类型目录结构与格式设计 — 每种类型一个完整的文件体系",
+      "status": "closed",
+      "labels": [
+        "architecture",
+        "design",
+        "dx",
+        "priority:P0"
+      ],
+      "milestone": "phase-4",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#110"
+    },
+    {
+      "id": 111,
+      "title": "创建官方默认 Source 仓库 — 兼容 Agent Skills (skill.sh) 格式的 GitHub 组件包",
+      "status": "closed",
+      "labels": [
+        "feature",
+        "priority:P1",
+        "source",
+        "architecture",
+        "domain",
+        "devx"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#111"
+    },
+    {
+      "id": 116,
+      "title": "Long-term: AgentSideConnection should expose flat terminal methods (SDK API asymmetry)",
+      "status": "open",
+      "labels": [
+        "enhancement",
+        "acp",
+        "priority:P3"
+      ],
+      "milestone": "long-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#116"
+    },
+    {
+      "id": 117,
+      "title": "gateway.lease RPC handler missing in Daemon — Session Lease Gateway mode broken",
+      "status": "open",
+      "labels": [
+        "bug",
+        "acp",
+        "priority:P1"
+      ],
+      "milestone": "near-term",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#117"
+    },
+    {
+      "id": 118,
+      "title": "Template loader drops schedule, permissions, and plugins fields during Zod-to-type mapping",
+      "status": "closed",
+      "labels": [
+        "bug",
+        "core",
+        "priority:P1"
+      ],
+      "milestone": null,
+      "closedAs": "completed",
+      "githubRef": "blackplume233/Actant#118"
+    },
+    {
+      "id": 119,
+      "title": "统一配置抽象：AgentTemplate 继承 VersionedComponent + 全局配置校验体系",
+      "status": "closed",
+      "labels": [
+        "architecture",
+        "enhancement",
+        "core",
+        "priority:P1"
+      ],
+      "milestone": "phase-3",
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#119"
+    },
+    {
+      "id": 120,
+      "title": "Windows: Daemon and CLI IPC socket path mismatch - getDefaultIpcPath vs getIpcPath",
+      "status": "open",
+      "labels": [
+        "bug",
+        "cli",
+        "priority:P2",
+        "qa",
+        "platform:windows"
+      ],
+      "milestone": null,
+      "closedAs": null,
+      "githubRef": "blackplume233/Actant#120"
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+export { AcpConnection, type AcpConnectionOptions, type AcpSessionInfo, type ClientCallbackHandler } from "./connection";
+export { AcpConnectionManager, type ConnectOptions } from "./connection-manager";
+export { AcpCommunicator } from "./communicator";
+export { LocalTerminalManager } from "./terminal-manager";
+export { ClientCallbackRouter, type UpstreamHandler } from "./callback-router";
+export { AcpGateway, type GatewayOptions } from "./gateway";
+export { resolveAcpBinary, type ResolvedAcpBinary } from "./binary-resolver";
+export type { SessionNotification, ContentBlock } from "@agentclientprotocol/sdk";

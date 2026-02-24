@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "date": "2026-02-24",
+  "runner": "vitest 4.0.18",
+  "duration": "14.15s",
+  "summary": {
+    "testFiles": 55,
+    "testFilesPassed": 55,
+    "testFilesFailed": 0,
+    "tests": 631,
+    "testsPassed": 631,
+    "testsFailed": 0,
+    "testsSkipped": 0
+  },
+  "packages": {
+    "shared": { "files": 3, "tests": 21 },
+    "core": { "files": 34, "tests": 424 },
+    "acp": { "files": 2, "tests": 7 },
+    "pi": { "files": 1, "tests": 8 },
+    "api": { "files": 8, "tests": 83 },
+    "cli": { "files": 7, "tests": 88 }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "version": "1.0.0",
+  "backend": {
+    "type": "cursor"
+  },
+  "provider": {
+    "type": "openai"
+  },
+  "domainContext": {}
+}

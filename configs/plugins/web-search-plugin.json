@@ -1,0 +1,11 @@
+{
+  "name": "web-search",
+  "description": "Web search capability plugin — enables agents to search the web for real-time information",
+  "type": "npm",
+  "source": "@anthropic/web-search",
+  "config": {
+    "maxResults": 10,
+    "safeSearch": true
+  },
+  "enabled": true
+}

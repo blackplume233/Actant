@@ -231,9 +231,38 @@ output_text() {
   fi
   echo ""
 
+  echo "## OPEN ISSUES"
+  local issues_dir="$repo_root/$DIR_WORKFLOW/$DIR_ISSUES"
+  local issue_count=0
+  if [[ -d "$issues_dir" ]]; then
+    for f in "$issues_dir"/*.json; do
+      [[ ! -f "$f" ]] && continue
+      local i_status
+      i_status=$(jq -r '.status' "$f" 2>/dev/null)
+      [[ "$i_status" == "closed" ]] && continue
+      local i_id i_title i_milestone i_labels
+      i_id=$(jq -r '.id' "$f")
+      i_title=$(jq -r '.title' "$f")
+      i_milestone=$(jq -r '.milestone // ""' "$f")
+      i_labels=$(jq -r '.labels | join(", ")' "$f")
+      local ms_str=""
+      [[ -n "$i_milestone" ]] && ms_str=" [$i_milestone]"
+      local lbl_str=""
+      [[ -n "$i_labels" ]] && lbl_str=" {$i_labels}"
+      echo "- #${i_id} ${i_title}${ms_str}${lbl_str}"
+      issue_count=$((issue_count + 1))
+    done
+  fi
+  if [[ $issue_count -eq 0 ]]; then
+    echo "(no open issues)"
+  fi
+  echo "Total: $issue_count open issue(s)"
+  echo ""
+
   echo "## PATHS"
   echo "Workspace: $DIR_WORKFLOW/$DIR_WORKSPACE/$developer/"
   echo "Tasks: $DIR_WORKFLOW/$DIR_TASKS/"
+  echo "Issues: $DIR_WORKFLOW/$DIR_ISSUES/"
   echo "Spec: $DIR_WORKFLOW/$DIR_SPEC/"
   echo ""
 

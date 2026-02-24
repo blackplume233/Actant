@@ -50,7 +50,7 @@ get_latest_journal_info() {
 
 get_current_session() {
   local line=$(grep "Total Sessions" "$INDEX_FILE" 2>/dev/null | head -1)
-  echo "$line" | sed 's/.*: //' | tr -d ' '
+  echo "$line" | sed 's/.*: //' | tr -d ' \r\n'
 }
 
 count_journal_files() {

@@ -1,0 +1,94 @@
+{
+  "name": "basic-lifecycle",
+  "description": "验证 Agent 的基本生命周期: create -> start -> status -> stop -> destroy，确认每步的状态转换和产物正确性",
+  "tags": ["lifecycle", "smoke"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock",
+    "templates": [
+      {
+        "name": "lifecycle-tpl",
+        "inline": {
+          "name": "lifecycle-tpl",
+          "version": "1.0.0",
+          "backend": { "type": "cursor" },
+          "provider": { "type": "anthropic" },
+          "domainContext": {}
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "list-empty",
+      "description": "确认初始状态无 Agent",
+      "command": "agent list -f json",
+      "expect": "返回空数组 []，无任何 Agent 实例"
+    },
+    {
+      "id": "create",
+      "description": "创建 Agent 实例",
+      "command": "agent create test-agent -t lifecycle-tpl -f json",
+      "expect": "成功返回 JSON，包含 name=test-agent，status=created，templateName=lifecycle-tpl",
+      "artifacts": "workspace 目录应已创建在 $ACTANT_HOME 下，包含初始化文件"
+    },
+    {
+      "id": "list-after-create",
+      "description": "确认 Agent 出现在列表中",
+      "command": "agent list -f json",
+      "expect": "返回包含 1 个元素的数组，元素的 name 为 test-agent"
+    },
+    {
+      "id": "status-created",
+      "description": "确认 Agent 状态为 created",
+      "command": "agent status test-agent -f json",
+      "expect": "返回 JSON，status 字段为 created"
+    },
+    {
+      "id": "start",
+      "description": "启动 Agent",
+      "command": "agent start test-agent",
+      "expect": "成功启动，输出包含 Started 字样，退出码 0"
+    },
+    {
+      "id": "status-running",
+      "description": "确认 Agent 状态为 running",
+      "command": "agent status test-agent -f json",
+      "expect": "返回 JSON，status 字段为 running"
+    },
+    {
+      "id": "stop",
+      "description": "停止 Agent",
+      "command": "agent stop test-agent",
+      "expect": "成功停止，输出包含 Stopped 字样，无错误，退出码 0"
+    },
+    {
+      "id": "status-stopped",
+      "description": "确认 Agent 状态为 stopped",
+      "command": "agent status test-agent -f json",
+      "expect": "返回 JSON，status 字段为 stopped"
+    },
+    {
+      "id": "destroy-no-force",
+      "description": "不带 --force 销毁应失败",
+      "command": "agent destroy test-agent",
+      "expect": "退出码非 0，提示需要 --force 标志"
+    },
+    {
+      "id": "destroy",
+      "description": "带 --force 销毁 Agent",
+      "command": "agent destroy test-agent --force",
+      "expect": "成功销毁，退出码 0"
+    },
+    {
+      "id": "list-after-destroy",
+      "description": "确认 Agent 已不存在",
+      "command": "agent list -f json",
+      "expect": "返回空数组，test-agent 不在列表中",
+      "artifacts": "test-agent 的 workspace 目录和实例元数据应已被清理"
+    }
+  ],
+  "cleanup": [
+    "agent destroy test-agent --force"
+  ]
+}

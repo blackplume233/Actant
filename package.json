@@ -1,0 +1,52 @@
+{
+  "name": "actant-monorepo",
+  "version": "0.2.2",
+  "private": true,
+  "description": "A platform for building, managing, and composing AI agents",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blackplume233/Actant.git"
+  },
+  "homepage": "https://github.com/blackplume233/Actant#readme",
+  "scripts": {
+    "build": "pnpm -r run build",
+    "dev": "pnpm --filter @actant/cli run dev",
+    "test": "vitest run",
+    "test:changed": "vitest run --changed",
+    "test:endurance": "vitest run --config vitest.endurance.config.ts",
+    "test:watch": "vitest",
+    "check": "pnpm run type-check && vitest run",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "type-check": "pnpm -r run type-check",
+    "clean": "pnpm -r run clean",
+    "build:standalone": "node scripts/build-standalone.mjs",
+    "build:standalone:bundle-only": "node scripts/build-standalone.mjs --bundle-only",
+    "publish:dry": "pnpm build && pnpm -r publish --dry-run --no-git-checks",
+    "publish:all": "pnpm build && pnpm -r publish --no-git-checks",
+    "version:sync": "node scripts/version-sync.mjs",
+    "install:local": "node scripts/install-local.mjs",
+    "install:local:standalone": "node scripts/install-local.mjs --standalone"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "author": "blackplume <blackplume233@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.3.0",
+    "esbuild": "^0.27.3",
+    "eslint": "^10.0.0",
+    "postject": "1.0.0-alpha.6",
+    "rimraf": "^6.1.3",
+    "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.56.0",
+    "vitest": "^4.0.18"
+  }
+}

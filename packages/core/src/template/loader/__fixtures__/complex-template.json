@@ -1,0 +1,51 @@
+{
+  "name": "game-dev-assistant",
+  "version": "2.3.1",
+  "description": "An AI assistant for Unreal Engine game development",
+  "backend": {
+    "type": "custom",
+    "config": {
+      "executable": "/usr/local/bin/custom-backend",
+      "timeout": 30000
+    }
+  },
+  "provider": {
+    "type": "anthropic",
+    "config": {
+      "apiKeyEnv": "ANTHROPIC_API_KEY",
+      "maxTokens": 8192
+    }
+  },
+  "domainContext": {
+    "skills": ["unreal-engine", "cpp-expert", "blueprint-specialist"],
+    "prompts": ["system-game-dev", "code-style-ue5"],
+    "mcpServers": [
+      {
+        "name": "filesystem",
+        "command": "npx",
+        "args": ["-y", "@anthropic/mcp-filesystem"],
+        "env": { "ROOT_DIR": "/project" }
+      },
+      {
+        "name": "database",
+        "command": "npx",
+        "args": ["-y", "@anthropic/mcp-postgres"],
+        "env": { "DB_URL": "postgres://localhost:5432/gamedb" }
+      }
+    ],
+    "workflow": "ue5-standard",
+    "subAgents": ["code-reviewer", "test-runner"]
+  },
+  "initializer": {
+    "steps": [
+      { "type": "create-workspace" },
+      { "type": "clone-repo", "config": { "url": "https://github.com/example/ue5-project.git" } },
+      { "type": "install-dependencies" },
+      { "type": "apply-workflow" }
+    ]
+  },
+  "metadata": {
+    "author": "GameDev Team",
+    "tags": "game-dev,unreal-engine,cpp"
+  }
+}

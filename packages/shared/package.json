@@ -1,0 +1,48 @@
+{
+  "name": "@actant/shared",
+  "version": "0.2.1",
+  "description": "Shared utilities and types for the Actant AI agent platform",
+  "type": "module",
+  "license": "MIT",
+  "author": "blackplume <blackplume233@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blackplume233/Actant.git",
+    "directory": "packages/shared"
+  },
+  "homepage": "https://github.com/blackplume233/Actant#readme",
+  "bugs": "https://github.com/blackplume233/Actant/issues",
+  "keywords": [
+    "actant",
+    "ai-agent",
+    "shared"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf dist",
+    "prepublishOnly": "tsup"
+  },
+  "dependencies": {
+    "pino": "^10.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.0"
+  }
+}

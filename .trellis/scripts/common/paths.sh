@@ -20,6 +20,7 @@ DIR_WORKFLOW=".trellis"
 DIR_WORKSPACE="workspace"
 DIR_TASKS="tasks"
 DIR_ARCHIVE="archive"
+DIR_ISSUES="issues"
 DIR_SPEC="spec"
 DIR_SCRIPTS="scripts"
 

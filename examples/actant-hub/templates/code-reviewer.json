@@ -1,0 +1,11 @@
+{
+  "name": "code-reviewer",
+  "version": "1.0.0",
+  "description": "A code review agent template",
+  "backend": { "type": "claude-code" },
+  "domainContext": {
+    "skills": ["code-review"],
+    "prompts": ["system-prompt"],
+    "mcpServers": []
+  }
+}

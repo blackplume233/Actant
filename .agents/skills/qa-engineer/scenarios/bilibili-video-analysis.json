@@ -1,0 +1,158 @@
+{
+  "name": "bilibili-video-analysis",
+  "description": "构建一个视频分析 Agent，对 Bilibili 视频 BV12mZtBTEJB（极客湾手机游戏性能大横评）进行分析，产出一份结构化的分析报告文件。验证 Actant 全链路：Agent 创建、域上下文物化、任务执行、产物生成、生命周期管理。",
+  "tags": ["agent-lifecycle", "task-execution", "domain-context", "video-analysis", "e2e", "real-mode", "report-generation"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "real",
+    "configs": {
+      "skills": [
+        {
+          "name": "video-analysis",
+          "description": "Video content analysis methodology",
+          "content": "## Video Analysis Methodology\n\n### Information Gathering\n- Use web fetch / Bilibili API to retrieve video page metadata\n- Extract: title, author, duration, view count, danmaku count, publish date\n- Read video description and tags\n\n### Content Analysis Framework\n1. **Topic Classification**: Identify the main topic and sub-topics\n2. **Key Points Extraction**: List the core arguments/findings\n3. **Data & Evidence**: Note any statistics, benchmarks, or comparisons presented\n4. **Audience & Engagement**: Analyze view/like/coin ratios\n5. **Content Quality Assessment**: Rate production quality, information density, objectivity\n\n### Report Output\n- Write the final report as a Markdown file named `report.md` in the workspace root\n- Include all sections with proper headings\n- Use tables for comparative data\n- Include a summary/conclusion section",
+          "tags": ["video", "analysis", "methodology"]
+        },
+        {
+          "name": "bilibili-expert",
+          "description": "Bilibili platform expertise and data extraction",
+          "content": "## Bilibili Platform Knowledge\n\n### Video URL Formats\n- Standard: https://www.bilibili.com/video/BVxxxxxxxxxx\n- BV/AV number conversion available via API\n\n### Data Sources\n- Video page HTML contains structured data (title, author, stats)\n- Bilibili API: https://api.bilibili.com/x/web-interface/view?bvid=BVxxxxxxxxxx\n- Use the fetch MCP tool or curl to retrieve page/API data\n\n### Key Metrics\n- 播放量 (views), 弹幕数 (danmaku), 点赞 (likes), 投币 (coins), 收藏 (favorites), 分享 (shares)\n- UP主信息: name, follower count, video count",
+          "tags": ["bilibili", "platform", "api"]
+        },
+        {
+          "name": "tech-review-analysis",
+          "description": "Specialized analysis for tech review content",
+          "content": "## Tech Review Analysis Guide\n\n### For Benchmark/Comparison Videos\n- Identify all products/devices tested\n- List test methodology and conditions\n- Extract performance rankings and key metrics\n- Note any controversial findings or biases\n- Assess fairness and objectivity of testing\n\n### For 极客湾 (Geekerwan) Content\n- Known for rigorous hardware benchmarks\n- Often tests retail vs media sample differences\n- Covers: CPU/GPU performance, thermals, battery, display\n- Audience: tech enthusiasts and potential buyers",
+          "tags": ["tech", "review", "benchmark"]
+        }
+      ],
+      "prompts": [
+        {
+          "name": "system-video-analyzer",
+          "description": "System prompt for video analysis agent",
+          "content": "You are a professional video content analyst specializing in Bilibili content. You analyze videos by gathering metadata, understanding content, and producing structured analysis reports.\n\nYour workflow:\n1. Fetch the video page or API data to get metadata (title, author, stats, description)\n2. Analyze the content based on the description, tags, and any available information\n3. Write a comprehensive analysis report as a Markdown file\n\nIMPORTANT: Always write the final report to `report.md` in your current working directory.\n\nThe report must include:\n- Video metadata (title, author, URL, publish date, stats)\n- Content summary\n- Key findings/points\n- Analysis and assessment\n- Conclusion",
+          "variables": []
+        }
+      ],
+      "workflows": [
+        {
+          "name": "trellis-standard",
+          "description": "Standard Trellis development workflow",
+          "content": "# Development Workflow\n\n## Quick Start\n\n1. Read context\n2. Plan\n3. Implement\n4. Test\n5. Record"
+        }
+      ]
+    },
+    "templates": [
+      {
+        "name": "video-analyzer",
+        "inline": {
+          "name": "video-analyzer",
+          "version": "2.0.0",
+          "description": "Bilibili 视频内容分析专家 — 产出结构化分析报告",
+          "backend": {
+            "type": "claude-code",
+            "config": {
+              "model": "claude-sonnet-4-20250514"
+            }
+          },
+          "provider": {
+            "type": "anthropic",
+            "config": {
+              "apiKeyEnv": "ANTHROPIC_API_KEY"
+            }
+          },
+          "domainContext": {
+            "skills": ["video-analysis", "bilibili-expert", "tech-review-analysis"],
+            "prompts": ["system-video-analyzer"],
+            "mcpServers": [
+              {
+                "name": "fetch",
+                "command": "uvx",
+                "args": ["mcp-server-fetch"]
+              }
+            ],
+            "workflow": "trellis-standard"
+          },
+          "initializer": {
+            "steps": [
+              { "type": "create-workspace" },
+              { "type": "apply-workflow" },
+              { "type": "materialize-skills" }
+            ]
+          },
+          "metadata": {
+            "author": "Actant QA",
+            "tags": "video-analysis,bilibili,report-generation"
+          }
+        }
+      }
+    ]
+  },
+  "steps": [
+    {
+      "id": "template-load-verify",
+      "description": "确认 video-analyzer 模板已加载",
+      "command": "template list -f json",
+      "expect": "返回包含 video-analyzer 的模板列表"
+    },
+    {
+      "id": "agent-create",
+      "description": "使用 video-analyzer 模板创建 Agent 实例",
+      "command": "agent create bilibili-analyzer -t video-analyzer -f json",
+      "expect": "成功返回 JSON，包含 name=bilibili-analyzer，status=created",
+      "artifacts": "$ACTANT_HOME/instances/bilibili-analyzer/ 目录应已创建"
+    },
+    {
+      "id": "workspace-verify",
+      "description": "验证 workspace 目录结构和 Domain Context 物化",
+      "command": "agent resolve bilibili-analyzer",
+      "expect": "返回 workspace 路径",
+      "artifacts": "workspace 目录应包含：AGENTS.md（含 skills 内容，包括 video-analysis、bilibili-expert、tech-review-analysis）、prompts/system.md（含 system-video-analyzer 提示词）"
+    },
+    {
+      "id": "agent-run-report",
+      "description": "核心步骤：让 Agent 分析 BV12mZtBTEJB 视频并产出分析报告",
+      "command": "agent run bilibili-analyzer --prompt \"请分析 Bilibili 视频 https://www.bilibili.com/video/BV12mZtBTEJB/ （极客湾：手机游戏性能大横评）。请通过 fetch 工具获取视频页面信息，然后根据获得的信息撰写一份完整的分析报告，保存为当前目录下的 report.md 文件。报告必须包含：1) 视频元数据（标题、UP主、发布时间、播放量等）2) 内容概要 3) 关键发现与数据点 4) 分析评价 5) 总结\" --max-turns 15 -f json",
+      "expect": "成功返回 JSON（exit 0），text 字段表明已完成分析并写入 report.md",
+      "artifacts": "Agent workspace 根目录下应存在 report.md 文件，内容为结构化 Markdown，包含视频标题、UP主名称（极客湾Geekerwan）、播放量等实际数据",
+      "timeout_ms": 180000
+    },
+    {
+      "id": "report-verify",
+      "description": "验证分析报告文件存在且内容有效",
+      "command": "agent resolve bilibili-analyzer",
+      "expect": "返回 workspace 路径，用于后续检查 report.md",
+      "artifacts": "report.md 应至少 500 字节，包含 Markdown 标题结构，提到 '极客湾' 或 'Geekerwan'，包含视频相关数据"
+    },
+    {
+      "id": "agent-stop",
+      "description": "停止 Agent",
+      "command": "agent stop bilibili-analyzer",
+      "expect": "退出码 0"
+    },
+    {
+      "id": "agent-destroy",
+      "description": "销毁 Agent",
+      "command": "agent destroy bilibili-analyzer --force",
+      "expect": "成功销毁，退出码 0"
+    },
+    {
+      "id": "agent-list-final",
+      "description": "确认 Agent 已不存在",
+      "command": "agent list -f json",
+      "expect": "返回空数组或 bilibili-analyzer 不在列表中"
+    }
+  ],
+  "cleanup": [
+    "agent stop bilibili-analyzer",
+    "agent destroy bilibili-analyzer --force"
+  ],
+  "notes": [
+    "目标视频：BV12mZtBTEJB — 极客湾手机游戏性能大横评（2026-02-15 发布，255万播放）",
+    "核心验证点：Agent 通过 fetch MCP 工具获取视频信息，产出 report.md 分析报告",
+    "使用 launcherMode=real，agent run 通过真实 claude -p 执行",
+    "给予 15 个 max-turns 确保 Agent 有足够回合完成信息收集和报告撰写",
+    "setup.configs 提供了场景所需的全部域上下文组件（skills、prompts、workflows）",
+    "报告质量判断标准：包含真实视频数据、结构化 Markdown、至少 500 字节"
+  ]
+}

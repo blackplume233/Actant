@@ -1,0 +1,12 @@
+---
+description: Use incremental testing during /trellis-ship instead of full test suite
+globs:
+alwaysApply: true
+---
+
+# Ship Testing Convention
+
+During `/trellis-ship` (Phase 1 review), run **incremental tests** instead of the full suite:
+
+- Use `pnpm test:changed` (vitest `--changed`) which only runs tests related to uncommitted changes
+- Only fall back to `pnpm test` (full suite) when explicitly requested or when changes touch shared infrastructure (e.g. vitest.config.ts, tsconfig, package.json dependencies)
