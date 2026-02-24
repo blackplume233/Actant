@@ -243,22 +243,19 @@ export class SourceManager {
       }
     }
 
-    await this.ensureDefaultSource();
+    this.ensureDefaultSourceInBackground();
   }
 
   /**
    * Registers the official actant-hub as the default source if not already present.
-   * Fails silently when offline or the repo is unreachable.
+   * Runs in the background so it never blocks daemon startup (git clone can be slow).
    */
-  private async ensureDefaultSource(): Promise<void> {
+  private ensureDefaultSourceInBackground(): void {
     if (this.skipDefaultSource) return;
     if (this.sources.has(DEFAULT_SOURCE_NAME)) return;
-    try {
-      await this.addSource(DEFAULT_SOURCE_NAME, DEFAULT_SOURCE_CONFIG);
-      logger.info("Default source registered: %s", DEFAULT_SOURCE_NAME);
-    } catch (err) {
-      logger.debug({ error: err }, "Failed to register default source (offline?), skipping");
-    }
+    this.addSource(DEFAULT_SOURCE_NAME, DEFAULT_SOURCE_CONFIG)
+      .then(() => logger.info("Default source registered: %s", DEFAULT_SOURCE_NAME))
+      .catch((err) => logger.debug({ error: err }, "Failed to register default source (offline?), skipping"));
   }
 
   // ---------------------------------------------------------------------------
