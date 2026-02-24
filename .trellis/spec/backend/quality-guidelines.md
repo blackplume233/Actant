@@ -267,6 +267,50 @@ Static validation tools (like `source validate`) run without the full applicatio
 
 **Why**: Example templates and hub content should validate cleanly in CI without running the full daemon. Avoid fields that depend on runtime state in static assets unless necessary.
 
+### External Standard Compatibility via Opt-in Validation
+
+When adding compatibility with an external standard (e.g., Agent Skills), use an opt-in `compat` flag rather than changing default behavior. This preserves backward compatibility while enabling stricter checks.
+
+```typescript
+// Good — compat mode is opt-in, default behavior unchanged
+interface ValidateOptions {
+  strict?: boolean;
+  compat?: "agent-skills";  // discriminated union for future standards
+}
+
+// Validator branches on compat mode
+if (compat === "agent-skills") {
+  this.validateAgentSkillsCompat(skill, relPath, issues, parentDirName);
+} else {
+  // existing default checks (e.g., description as warning, not error)
+}
+```
+
+```typescript
+// Bad — changing default behavior to match external standard
+// breaks existing users who don't care about that standard
+```
+
+**Why**: External standards evolve independently from the project's own schema. Layering compat checks on top of base validation keeps the base stable and lets users opt in when they need interoperability.
+
+### Parser-level Field Name Mapping
+
+When integrating with external formats that use different naming conventions (e.g., kebab-case YAML keys), map to internal TypeScript conventions at the parser boundary. Downstream code never sees the external naming.
+
+```typescript
+// Good — parser maps "allowed-tools" → allowedTools at parse time
+const allowedToolsRaw = meta["allowed-tools"];
+const allowedTools = allowedToolsRaw
+  ? allowedToolsRaw.split(/\s+/).filter(Boolean)
+  : undefined;
+return { ...rest, allowedTools };
+
+// Bad — passing raw kebab-case keys through to the type system
+return { "allowed-tools": meta["allowed-tools"] };
+```
+
+**Why**: Keeps the internal type system consistent (`camelCase` everywhere) and avoids bracket-notation access throughout the codebase. The parser is the single place where external format differences are absorbed.
+
 ### Explicit Module Boundaries
 
 Each package exposes a public API via barrel exports. Internal modules are not accessible externally.
@@ -298,6 +342,8 @@ Full CLI regression tests live in `.agents/skills/qa-engineer/scenarios/full-cli
 7. Cleans up (stops daemon, removes temp dirs, unlinks binary)
 
 **Rule**: When changing unit test fixtures (e.g., hardcoded PIDs in `attachAgent` tests), ensure they reference real, existing processes. Use `process.pid` (the test runner's own PID) instead of made-up numbers like `99999`, since PID validation (`process.kill(pid, 0)`) is now enforced.
+
+**Rule**: When adding opt-in validation modes (e.g., `--compat agent-skills`), always include backward-compatibility tests that verify the same input passes without the flag. This ensures new modes don't silently change default behavior.
 
 ### Test Structure
 

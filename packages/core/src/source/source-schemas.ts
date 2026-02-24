@@ -49,6 +49,9 @@ export const PackageManifestSchema = z.object({
 export const SkillDefinitionSchema = z.object({
   ...VersionedComponentFields,
   content: z.string().min(1, "content is required"),
+  license: z.string().optional(),
+  compatibility: z.string().optional(),
+  allowedTools: z.array(z.string()).optional(),
 });
 
 export const PromptDefinitionSchema = z.object({

@@ -85,7 +85,7 @@ async function handleSourceValidate(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<SourceValidateResult> {
-  const { name, path, strict } = params as unknown as SourceValidateParams;
+  const { name, path, strict, compat } = params as unknown as SourceValidateParams;
 
   let rootDir: string;
   if (path) {
@@ -97,5 +97,8 @@ async function handleSourceValidate(
   }
 
   const validator = new SourceValidator();
-  return validator.validate(rootDir, { strict });
+  return validator.validate(rootDir, {
+    strict,
+    compat: compat as "agent-skills" | undefined,
+  });
 }

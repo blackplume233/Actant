@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { SourceValidator } from "./source-validator";
+import { parseSkillMdContent } from "./skill-md-parser";
 
 describe("SourceValidator", () => {
   let tmpDir: string;
@@ -346,6 +347,264 @@ Content.`,
       expect(report.summary.warn).toBeGreaterThan(0);
       expect(report.summary.error).toBe(0);
       expect(report.valid).toBe(true);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // SKILL.md parser — new Agent Skills fields
+  // -------------------------------------------------------------------------
+
+  describe("SKILL.md parser (Agent Skills fields)", () => {
+    it("parses license field", () => {
+      const skill = parseSkillMdContent(`---
+name: test-skill
+description: A test
+license: Apache-2.0
+---
+
+Content.`);
+      expect(skill).not.toBeNull();
+      expect(skill!.license).toBe("Apache-2.0");
+    });
+
+    it("parses compatibility field", () => {
+      const skill = parseSkillMdContent(`---
+name: test-skill
+description: A test
+compatibility: Requires git and docker
+---
+
+Content.`);
+      expect(skill).not.toBeNull();
+      expect(skill!.compatibility).toBe("Requires git and docker");
+    });
+
+    it("parses allowed-tools as space-delimited array", () => {
+      const skill = parseSkillMdContent(`---
+name: test-skill
+description: A test
+allowed-tools: Bash(git:*) Read Write
+---
+
+Content.`);
+      expect(skill).not.toBeNull();
+      expect(skill!.allowedTools).toEqual(["Bash(git:*)", "Read", "Write"]);
+    });
+
+    it("returns undefined for absent optional fields", () => {
+      const skill = parseSkillMdContent(`---
+name: test-skill
+description: A test
+---
+
+Content.`);
+      expect(skill).not.toBeNull();
+      expect(skill!.license).toBeUndefined();
+      expect(skill!.compatibility).toBeUndefined();
+      expect(skill!.allowedTools).toBeUndefined();
+    });
+
+    it("parses all Agent Skills fields together", () => {
+      const skill = parseSkillMdContent(`---
+name: pdf-processing
+description: Extract text and tables from PDFs.
+license: MIT
+compatibility: Requires poppler-utils
+allowed-tools: Bash(pdftotext:*) Read
+metadata:
+  author: example-org
+  version: "2.0"
+  actant-tags: "pdf,extraction"
+---
+
+# PDF Processing
+
+Use this skill for PDF work.`);
+      expect(skill).not.toBeNull();
+      expect(skill!.name).toBe("pdf-processing");
+      expect(skill!.description).toBe("Extract text and tables from PDFs.");
+      expect(skill!.license).toBe("MIT");
+      expect(skill!.compatibility).toBe("Requires poppler-utils");
+      expect(skill!.allowedTools).toEqual(["Bash(pdftotext:*)", "Read"]);
+      expect(skill!.version).toBe("2.0");
+      expect(skill!.tags).toEqual(["pdf", "extraction"]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Agent Skills compat validation mode
+  // -------------------------------------------------------------------------
+
+  describe("Agent Skills compat mode", () => {
+    async function createSkillMdSource(
+      dirName: string,
+      frontmatter: string,
+      body: string = "# Content\n\nSkill instructions.",
+    ): Promise<void> {
+      await writeFile(
+        join(tmpDir, "actant.json"),
+        JSON.stringify({ name: "compat-test", version: "0.1.0" }),
+      );
+      const skillDir = join(tmpDir, "skills", dirName);
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(join(skillDir, "SKILL.md"), `---\n${frontmatter}\n---\n\n${body}`);
+    }
+
+    it("passes for a fully compliant Agent Skills SKILL.md", async () => {
+      await createSkillMdSource("code-review", [
+        "name: code-review",
+        "description: Reviews code for quality and correctness.",
+        "license: MIT",
+      ].join("\n"));
+
+      const report = await validator.validate(tmpDir, { compat: "agent-skills" });
+      const errors = report.issues.filter((i) => i.severity === "error");
+      expect(errors).toHaveLength(0);
+    });
+
+    it("errors when name has uppercase letters", async () => {
+      await createSkillMdSource("BadName", [
+        "name: BadName",
+        "description: Has uppercase.",
+      ].join("\n"));
+
+      const report = await validator.validate(tmpDir, { compat: "agent-skills" });
+      expect(report.issues).toContainEqual(
+        expect.objectContaining({ code: "AGENT_SKILLS_NAME_FORMAT" }),
+      );
+    });
+
+    it("errors when name ends with hyphen", async () => {
+      await createSkillMdSource("bad-", [
+        "name: bad-",
+        "description: Ends with hyphen.",
+      ].join("\n"));
+
+      const report = await validator.validate(tmpDir, { compat: "agent-skills" });
+      expect(report.issues).toContainEqual(
+        expect.objectContaining({ code: "AGENT_SKILLS_NAME_TRAILING_HYPHEN" }),
+      );
+    });
+
+    it("errors when name has consecutive hyphens", async () => {
+      await createSkillMdSource("bad--name", [
+        "name: bad--name",
+        "description: Has consecutive hyphens.",
+      ].join("\n"));
+
+      const report = await validator.validate(tmpDir, { compat: "agent-skills" });
+      expect(report.issues).toContainEqual(
+        expect.objectContaining({ code: "AGENT_SKILLS_NAME_CONSECUTIVE_HYPHENS" }),
+      );
+    });
+
+    it("errors when name does not match parent directory", async () => {
+      await createSkillMdSource("my-dir", [
+        "name: different-name",
+        "description: Name mismatch.",
+      ].join("\n"));
+
+      const report = await validator.validate(tmpDir, { compat: "agent-skills" });
+      expect(report.issues).toContainEqual(
+        expect.objectContaining({ code: "AGENT_SKILLS_NAME_DIR_MISMATCH" }),
+      );
+    });
+
+    it("errors when description is missing in compat mode", async () => {
+      await createSkillMdSource("no-desc", "name: no-desc");
+
+      const report = await validator.validate(tmpDir, { compat: "agent-skills" });
+      expect(report.issues).toContainEqual(
+        expect.objectContaining({ code: "AGENT_SKILLS_DESCRIPTION_REQUIRED", severity: "error" }),
+      );
+    });
+
+    it("warns when description exceeds 1024 characters", async () => {
+      const longDesc = "A".repeat(1025);
+      await createSkillMdSource("long-desc", [
+        "name: long-desc",
+        `description: ${longDesc}`,
+      ].join("\n"));
+
+      const report = await validator.validate(tmpDir, { compat: "agent-skills" });
+      expect(report.issues).toContainEqual(
+        expect.objectContaining({ code: "AGENT_SKILLS_DESCRIPTION_TOO_LONG" }),
+      );
+    });
+
+    it("warns when body exceeds 500 lines", async () => {
+      const longBody = Array.from({ length: 501 }, (_, i) => `Line ${i + 1}`).join("\n");
+      await createSkillMdSource("long-body", [
+        "name: long-body",
+        "description: Has a very long body.",
+      ].join("\n"), longBody);
+
+      const report = await validator.validate(tmpDir, { compat: "agent-skills" });
+      expect(report.issues).toContainEqual(
+        expect.objectContaining({ code: "AGENT_SKILLS_BODY_TOO_LONG" }),
+      );
+    });
+
+    it("backward compat: no compat errors without --compat flag", async () => {
+      await createSkillMdSource("BadName", [
+        "name: BadName",
+        "description: Has uppercase.",
+      ].join("\n"));
+
+      const report = await validator.validate(tmpDir);
+      const compatErrors = report.issues.filter((i) => i.code?.startsWith("AGENT_SKILLS_"));
+      expect(compatErrors).toHaveLength(0);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Agent Skills directory convention (compat mode)
+  // -------------------------------------------------------------------------
+
+  describe("Agent Skills directory conventions", () => {
+    it("emits info for recognized dirs (scripts, references, assets)", async () => {
+      await writeFile(
+        join(tmpDir, "actant.json"),
+        JSON.stringify({ name: "dir-test", version: "0.1.0" }),
+      );
+      const skillDir = join(tmpDir, "skills", "my-skill");
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---\nname: my-skill\ndescription: A skill.\n---\n\nContent.`,
+      );
+      await mkdir(join(skillDir, "scripts"), { recursive: true });
+      await mkdir(join(skillDir, "references"), { recursive: true });
+      await mkdir(join(skillDir, "assets"), { recursive: true });
+
+      const report = await validator.validate(tmpDir, { compat: "agent-skills" });
+      const dirInfos = report.issues.filter((i) => i.code === "AGENT_SKILLS_DIR_FOUND");
+      expect(dirInfos).toHaveLength(3);
+      expect(dirInfos.map((i) => i.path)).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining("scripts"),
+          expect.stringContaining("references"),
+          expect.stringContaining("assets"),
+        ]),
+      );
+    });
+
+    it("does not emit dir info without compat mode", async () => {
+      await writeFile(
+        join(tmpDir, "actant.json"),
+        JSON.stringify({ name: "dir-test", version: "0.1.0" }),
+      );
+      const skillDir = join(tmpDir, "skills", "my-skill");
+      await mkdir(skillDir, { recursive: true });
+      await writeFile(
+        join(skillDir, "SKILL.md"),
+        `---\nname: my-skill\ndescription: A skill.\n---\n\nContent.`,
+      );
+      await mkdir(join(skillDir, "scripts"), { recursive: true });
+
+      const report = await validator.validate(tmpDir);
+      const dirInfos = report.issues.filter((i) => i.code === "AGENT_SKILLS_DIR_FOUND");
+      expect(dirInfos).toHaveLength(0);
     });
   });
 });

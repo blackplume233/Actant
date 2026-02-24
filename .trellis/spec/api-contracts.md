@@ -635,7 +635,7 @@ ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调
 | `source.add` | `{ name, config }` | `{ name, components }` | 添加并 fetch 源 |
 | `source.remove` | `{ name }` | `{ success }` | 移除源及缓存 |
 | `source.sync` | `{ name? }` | `{ synced[], report? }` | 同步单个或全部源 |
-| `source.validate` | `{ name?, path?, strict? }` | `SourceValidateResult` | 递归校验源中所有资产 |
+| `source.validate` | `{ name?, path?, strict?, compat? }` | `SourceValidateResult` | 递归校验源中所有资产 |
 
 #### source.validate 详细说明
 
@@ -645,6 +645,13 @@ ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调
 2. **组件层** — 递归扫描各子目录，JSON 文件用 Zod schema 校验，SKILL.md 检查 frontmatter
 3. **引用层** — Preset 中引用的组件名称是否在该源中存在
 4. **Template 语义校验** — 复用 `validateTemplate()` 检查权限、provider、backend 配置
+
+`compat` 参数可选值为 `"agent-skills"`，启用后对 SKILL.md 执行 [Agent Skills](https://agentskills.io/specification) 标准兼容性检查：
+- `name` 必须为小写字母+连字符，1-64 字符，不含连续连字符，且须匹配父目录名
+- `description` 为必填项（error 级别）
+- `compatibility` 字段不超过 500 字符
+- SKILL.md body 超过 500 行时发出 warning
+- 识别 `scripts/`、`references/`、`assets/` 目录约定（info 级别）
 
 ```typescript
 interface SourceValidateResult {
@@ -800,9 +807,9 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | `source add <name>` | `name` | `--github <url>`, `--local <path>`, `--branch <branch>` | `source.add` |
 | `source remove <name>` | `name` | — | `source.remove` |
 | `source sync [name]` | `name?` | — | `source.sync` |
-| `source validate [name]` | `name?` | `--path <dir>`, `-f, --format`, `--strict` | `source.validate` |
+| `source validate [name]` | `name?` | `--path <dir>`, `-f, --format`, `--strict`, `--compat <standard>` | `source.validate` |
 
-`source validate` 提供 `name`（已注册源）或 `--path`（任意目录）。`--strict` 模式下 warnings 也视为失败（exit code 1）。
+`source validate` 提供 `name`（已注册源）或 `--path`（任意目录）。`--strict` 模式下 warnings 也视为失败（exit code 1）。`--compat agent-skills` 启用 Agent Skills 标准兼容性检查。
 
 > 实现参考：`packages/cli/src/commands/source/`
 

@@ -8,6 +8,9 @@ const SkillDefinitionSchema = z
     description: z.string().optional(),
     content: z.string().min(1),
     tags: z.array(z.string()).optional(),
+    license: z.string().optional(),
+    compatibility: z.string().optional(),
+    allowedTools: z.array(z.string()).optional(),
   })
   .passthrough();
 

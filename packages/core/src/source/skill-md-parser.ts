@@ -149,11 +149,19 @@ export function parseSkillMdContent(raw: string): SkillDefinition | null {
     tags.push(...actantTags.split(",").map((t) => t.trim()).filter(Boolean));
   }
 
+  const allowedToolsRaw = meta["allowed-tools"];
+  const allowedTools = allowedToolsRaw
+    ? allowedToolsRaw.split(/\s+/).filter(Boolean)
+    : undefined;
+
   return {
     name,
     description: meta.description || undefined,
     version: meta["metadata.version"] || meta.version || undefined,
     content,
     tags: tags.length > 0 ? tags : undefined,
+    license: meta.license || undefined,
+    compatibility: meta.compatibility || undefined,
+    allowedTools,
   };
 }

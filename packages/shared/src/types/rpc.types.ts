@@ -527,6 +527,8 @@ export interface SourceValidateParams {
   path?: string;
   /** Treat warnings as errors. */
   strict?: boolean;
+  /** Enable compatibility checks against an external standard (e.g. "agent-skills"). */
+  compat?: string;
 }
 
 export interface SourceValidationIssueDto {

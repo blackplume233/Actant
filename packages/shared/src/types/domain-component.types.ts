@@ -47,6 +47,12 @@ export interface VersionedComponent {
 export interface SkillDefinition extends VersionedComponent {
   /** The actual skill content (markdown/text rules) */
   content: string;
+  /** SPDX license identifier or reference to bundled license file (Agent Skills spec) */
+  license?: string;
+  /** Environment requirements: intended product, system packages, network access (Agent Skills spec) */
+  compatibility?: string;
+  /** Pre-approved tools the skill may use, e.g. ["Bash(git:*)", "Read"] (Agent Skills spec, experimental) */
+  allowedTools?: string[];
 }
 
 /** A Prompt = a system prompt or instruction set. */

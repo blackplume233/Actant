@@ -367,7 +367,7 @@ Provider 存在两个层次：
 ```
 VersionedComponent           ← 基类
   ├── AgentTemplate          ← version 字段必填（覆盖基类的可选）
-  ├── SkillDefinition        ← + content
+  ├── SkillDefinition        ← + content, license?, compatibility?, allowedTools?
   ├── PromptDefinition       ← + content, variables
   ├── WorkflowDefinition     ← Hook Package: + level, hooks[] (#135)
   ├── McpServerDefinition    ← + command, args, env
@@ -443,6 +443,9 @@ VersionedComponent           ← 基类
 |------|------|------|------|
 | *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
 | `content` | `string` | **是** | 规则/知识内容 |
+| `license` | `string` | 否 | SPDX 许可证标识符（Agent Skills 标准字段） |
+| `compatibility` | `string` | 否 | 环境要求描述（Agent Skills 标准字段，max 500 字符） |
+| `allowedTools` | `string[]` | 否 | 预授权工具列表（Agent Skills 标准字段，实验性） |
 
 ### PromptDefinition
 

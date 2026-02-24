@@ -39,8 +39,12 @@ export interface SourceValidationReport {
   issues: SourceValidationIssue[];
 }
 
+export type CompatMode = "agent-skills";
+
 export interface ValidateOptions {
   strict?: boolean;
+  /** Enable compatibility checks against an external standard. */
+  compat?: CompatMode;
 }
 
 // ---------------------------------------------------------------------------
@@ -70,6 +74,7 @@ export class SourceValidator {
     const issues: SourceValidationIssue[] = [];
     let passCount = 0;
     const validatedFiles = new Set<string>();
+    const compat = options?.compat;
 
     // Layer 1: Manifest
     const manifest = await this.validateManifest(rootDir, issues);
@@ -78,9 +83,9 @@ export class SourceValidator {
     // Layer 2: Components (explicit from manifest + directory scan)
     const componentNames = new Map<string, Set<string>>();
     if (manifest) {
-      passCount += await this.validateExplicitFiles(rootDir, manifest, issues, componentNames, validatedFiles);
+      passCount += await this.validateExplicitFiles(rootDir, manifest, issues, componentNames, validatedFiles, compat);
     }
-    passCount += await this.validateComponentDirs(rootDir, issues, componentNames, validatedFiles);
+    passCount += await this.validateComponentDirs(rootDir, issues, componentNames, validatedFiles, compat);
 
     // Layer 3: Cross-references (presets referencing components)
     await this.validatePresetReferences(rootDir, manifest, componentNames, issues);
@@ -207,6 +212,7 @@ export class SourceValidator {
     issues: SourceValidationIssue[],
     componentNames: Map<string, Set<string>>,
     validatedFiles: Set<string>,
+    compat?: CompatMode,
   ): Promise<number> {
     let passCount = 0;
     const components = manifest.components as Record<string, string[]> | undefined;
@@ -232,6 +238,8 @@ export class SourceValidator {
       }
     }
 
+    // compat parameter reserved for future explicit-file compat checks
+    void compat;
     return passCount;
   }
 
@@ -244,6 +252,7 @@ export class SourceValidator {
     issues: SourceValidationIssue[],
     componentNames: Map<string, Set<string>>,
     validatedFiles: Set<string>,
+    compat?: CompatMode,
   ): Promise<number> {
     let passCount = 0;
 
@@ -256,7 +265,7 @@ export class SourceValidator {
         continue;
       }
 
-      passCount += await this.scanDirectory(rootDir, dirPath, dir, issues, componentNames, validatedFiles);
+      passCount += await this.scanDirectory(rootDir, dirPath, dir, issues, componentNames, validatedFiles, compat);
     }
 
     return passCount;
@@ -269,6 +278,7 @@ export class SourceValidator {
     issues: SourceValidationIssue[],
     componentNames: Map<string, Set<string>>,
     validatedFiles: Set<string>,
+    compat?: CompatMode,
   ): Promise<number> {
     let passCount = 0;
     const entries = await readdir(dirPath);
@@ -292,8 +302,11 @@ export class SourceValidator {
             const skillRelPath = relative(rootDir, skillMdPath).replace(/\\/g, "/");
             if (!validatedFiles.has(skillRelPath)) {
               validatedFiles.add(skillRelPath);
-              const ok = await this.validateSkillMd(rootDir, skillRelPath, issues, componentNames);
+              const ok = await this.validateSkillMd(rootDir, skillRelPath, issues, componentNames, entry, compat);
               if (ok) passCount++;
+            }
+            if (compat === "agent-skills") {
+              await this.validateSkillDirConventions(rootDir, fullPath, entry, issues);
             }
           } catch {
             const manifestJsonPath = join(fullPath, "manifest.json");
@@ -437,6 +450,8 @@ export class SourceValidator {
     relPath: string,
     issues: SourceValidationIssue[],
     componentNames: Map<string, Set<string>>,
+    parentDirName?: string,
+    compat?: CompatMode,
   ): Promise<boolean> {
     const fullPath = join(rootDir, relPath);
 
@@ -466,14 +481,18 @@ export class SourceValidator {
 
     this.trackComponentName(componentNames, "skills", skill.name);
 
-    if (!skill.description) {
-      issues.push({
-        severity: "warning",
-        path: relPath,
-        component: skill.name,
-        message: `Missing "description" in SKILL.md frontmatter`,
-        code: "SKILL_MD_MISSING_DESCRIPTION",
-      });
+    if (compat === "agent-skills") {
+      this.validateAgentSkillsCompat(skill, relPath, issues, parentDirName, raw);
+    } else {
+      if (!skill.description) {
+        issues.push({
+          severity: "warning",
+          path: relPath,
+          component: skill.name,
+          message: `Missing "description" in SKILL.md frontmatter`,
+          code: "SKILL_MD_MISSING_DESCRIPTION",
+        });
+      }
     }
 
     if (!skill.content || skill.content.trim().length === 0) {
@@ -487,6 +506,160 @@ export class SourceValidator {
     }
 
     return true;
+  }
+
+  // -------------------------------------------------------------------------
+  // Agent Skills (agentskills.io) compatibility checks
+  // -------------------------------------------------------------------------
+
+  private validateAgentSkillsCompat(
+    skill: { name: string; description?: string; compatibility?: string; content: string },
+    relPath: string,
+    issues: SourceValidationIssue[],
+    parentDirName?: string,
+    raw?: string,
+  ): void {
+    const name = skill.name;
+
+    // name: lowercase + hyphens only, 1-64 chars
+    const NAME_RE = /^[a-z][a-z0-9-]*$/;
+    if (name.length > 64) {
+      issues.push({
+        severity: "error",
+        path: relPath,
+        component: name,
+        message: `Name exceeds 64 characters (${name.length})`,
+        code: "AGENT_SKILLS_NAME_TOO_LONG",
+      });
+    } else if (!NAME_RE.test(name)) {
+      issues.push({
+        severity: "error",
+        path: relPath,
+        component: name,
+        message: `Name must contain only lowercase letters, numbers, and hyphens, starting with a letter`,
+        code: "AGENT_SKILLS_NAME_FORMAT",
+      });
+    } else {
+      if (name.endsWith("-")) {
+        issues.push({
+          severity: "error",
+          path: relPath,
+          component: name,
+          message: "Name must not end with a hyphen",
+          code: "AGENT_SKILLS_NAME_TRAILING_HYPHEN",
+        });
+      }
+      if (name.includes("--")) {
+        issues.push({
+          severity: "error",
+          path: relPath,
+          component: name,
+          message: "Name must not contain consecutive hyphens",
+          code: "AGENT_SKILLS_NAME_CONSECUTIVE_HYPHENS",
+        });
+      }
+    }
+
+    // name must match parent directory
+    if (parentDirName && name !== parentDirName) {
+      issues.push({
+        severity: "error",
+        path: relPath,
+        component: name,
+        message: `Name "${name}" does not match parent directory "${parentDirName}"`,
+        code: "AGENT_SKILLS_NAME_DIR_MISMATCH",
+      });
+    }
+
+    // description: required, max 1024 chars
+    if (!skill.description) {
+      issues.push({
+        severity: "error",
+        path: relPath,
+        component: name,
+        message: `Missing required "description" field (Agent Skills spec)`,
+        code: "AGENT_SKILLS_DESCRIPTION_REQUIRED",
+      });
+    } else if (skill.description.length > 1024) {
+      issues.push({
+        severity: "warning",
+        path: relPath,
+        component: name,
+        message: `Description exceeds 1024 characters (${skill.description.length})`,
+        code: "AGENT_SKILLS_DESCRIPTION_TOO_LONG",
+      });
+    }
+
+    // compatibility: max 500 chars if present
+    if (skill.compatibility && skill.compatibility.length > 500) {
+      issues.push({
+        severity: "warning",
+        path: relPath,
+        component: name,
+        message: `Compatibility field exceeds 500 characters (${skill.compatibility.length})`,
+        code: "AGENT_SKILLS_COMPAT_TOO_LONG",
+      });
+    }
+
+    // Body: warn if > 500 lines (progressive disclosure recommendation)
+    if (raw) {
+      const frontmatterEnd = raw.indexOf("---", 3);
+      if (frontmatterEnd !== -1) {
+        const body = raw.substring(frontmatterEnd + 3).trim();
+        const lineCount = body.split("\n").length;
+        if (lineCount > 500) {
+          issues.push({
+            severity: "warning",
+            path: relPath,
+            component: name,
+            message: `SKILL.md body has ${lineCount} lines; Agent Skills spec recommends < 500 lines`,
+            code: "AGENT_SKILLS_BODY_TOO_LONG",
+          });
+        }
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Agent Skills directory convention (scripts/, references/, assets/)
+  // -------------------------------------------------------------------------
+
+  private async validateSkillDirConventions(
+    rootDir: string,
+    skillDir: string,
+    skillName: string,
+    issues: SourceValidationIssue[],
+  ): Promise<void> {
+    const KNOWN_DIRS = new Set(["scripts", "references", "assets"]);
+    const KNOWN_FILES = new Set(["SKILL.md", "LICENSE", "LICENSE.txt", "LICENSE.md"]);
+
+    let entries: string[];
+    try {
+      entries = await readdir(skillDir);
+    } catch {
+      return;
+    }
+
+    for (const entry of entries) {
+      const fullPath = join(skillDir, entry);
+      const relPath = relative(rootDir, fullPath).replace(/\\/g, "/");
+      const entryStat = await stat(fullPath).catch(() => null);
+      if (!entryStat) continue;
+
+      if (entryStat.isDirectory()) {
+        if (KNOWN_DIRS.has(entry)) {
+          issues.push({
+            severity: "info",
+            path: relPath,
+            component: skillName,
+            message: `Agent Skills convention: ${entry}/ directory detected`,
+            code: "AGENT_SKILLS_DIR_FOUND",
+          });
+        }
+      } else if (!KNOWN_FILES.has(entry)) {
+        // Non-standard files are fine; no warning needed
+      }
+    }
   }
 
   // -------------------------------------------------------------------------

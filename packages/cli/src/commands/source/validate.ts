@@ -11,7 +11,8 @@ export function createSourceValidateCommand(client: RpcClient, printer: CliPrint
     .option("--path <dir>", "Validate a local directory directly (no registration needed)")
     .option("-f, --format <format>", "Output format: table, json", "table")
     .option("--strict", "Treat warnings as errors", false)
-    .action(async (name?: string, opts?: { path?: string; format: OutputFormat; strict: boolean }) => {
+    .option("--compat <standard>", "Enable compatibility checks (e.g. agent-skills)")
+    .action(async (name?: string, opts?: { path?: string; format: OutputFormat; strict: boolean; compat?: string }) => {
       try {
         if (!name && !opts?.path) {
           printer.error("Provide a source name or --path <dir>");
@@ -23,6 +24,7 @@ export function createSourceValidateCommand(client: RpcClient, printer: CliPrint
           name: name || undefined,
           path: opts?.path || undefined,
           strict: opts?.strict || false,
+          compat: opts?.compat || undefined,
         });
 
         if (opts?.format === "json") {

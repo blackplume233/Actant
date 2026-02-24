@@ -13,4 +13,5 @@ export {
   type SourceValidationIssue,
   type SourceValidationReport,
   type ValidateOptions,
+  type CompatMode,
 } from "./source-validator";
