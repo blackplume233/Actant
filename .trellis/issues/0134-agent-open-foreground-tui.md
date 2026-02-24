@@ -1,7 +1,8 @@
 ---
 id: 134
 title: "feat(cli): agent open + interactionModes — 前台 TUI 与模板交互模式声明"
-status: open
+status: closed
+closedAt: "2026-02-24"
 labels:
   - feature
   - "priority:P2"
