@@ -8,6 +8,7 @@ import type {
 } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
 import { BackendDefinitionSchema } from "./backend-schema";
+import { tryInstallMethods, ensureResolvePackage, type EnsureInstallResult, type InstallResult } from "./backend-installer";
 
 export type AcpResolverFn = (
   workspaceDir: string,
@@ -124,7 +125,93 @@ export class BackendManager extends BaseComponentManager<BackendDefinition> {
     const def = this.get(backendName);
     if (!def?.install) return [];
     const plat = process.platform;
-    return def.install.filter((m) => !m.platforms || m.platforms.includes(plat));
+    return def.install.filter((m: BackendInstallMethod) => !m.platforms || m.platforms.includes(plat));
+  }
+
+  // ---------------------------------------------------------------------------
+  // Auto-install
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Check availability and optionally auto-install the backend.
+   * Flow: existence check → (if missing + autoInstall) install → re-check.
+   */
+  async ensureAvailable(
+    backendName: string,
+    options?: { autoInstall?: boolean },
+  ): Promise<EnsureAvailableResult> {
+    const check = await this.checkAvailability(backendName);
+    if (check.available) {
+      return { available: true, version: check.version, alreadyInstalled: true };
+    }
+
+    if (!options?.autoInstall) {
+      const methods = this.getInstallMethods(backendName);
+      return {
+        available: false,
+        alreadyInstalled: false,
+        error: check.error,
+        installMethods: methods,
+      };
+    }
+
+    const installResult = await this.installBackend(backendName);
+    if (!installResult.installed) {
+      return {
+        available: false,
+        alreadyInstalled: false,
+        error: check.error,
+        installResult,
+      };
+    }
+
+    const recheck = await this.checkAvailability(backendName);
+    return {
+      available: recheck.available,
+      alreadyInstalled: false,
+      version: recheck.version,
+      installResult,
+      error: recheck.available ? undefined : recheck.error,
+    };
+  }
+
+  /**
+   * Try all applicable install methods for a backend.
+   * Delegates to backend-installer for actual execution.
+   */
+  async installBackend(backendName: string): Promise<EnsureInstallResult> {
+    const methods = this.getInstallMethods(backendName);
+    if (methods.length === 0) {
+      return { installed: false, attempts: [], manualInstructions: [`No install methods defined for backend "${backendName}".`] };
+    }
+    this.logger.info({ backendName, methodCount: methods.length }, "Attempting to install backend");
+    return tryInstallMethods(methods);
+  }
+
+  /**
+   * Ensure a binary provided by `resolvePackage` is available.
+   * Used for secondary binaries (e.g. `claude-agent-acp` for `claude-code`).
+   */
+  async ensureResolvePackageAvailable(
+    backendName: string,
+    options?: { autoInstall?: boolean },
+  ): Promise<InstallResult | null> {
+    const def = this.get(backendName);
+    if (!def?.resolvePackage) return null;
+
+    const cmd = def.resolveCommand
+      ? this.getPlatformCommand(def.resolveCommand)
+      : undefined;
+
+    if (cmd) {
+      const { exitCode } = await execCommand(cmd, ["--version"]);
+      if (exitCode === 0) return null;
+    }
+
+    if (!options?.autoInstall) return null;
+
+    this.logger.info({ backendName, package: def.resolvePackage }, "Installing resolvePackage");
+    return ensureResolvePackage(def.resolvePackage);
   }
 
   // ---------------------------------------------------------------------------
@@ -156,6 +243,15 @@ export interface BackendAvailability {
   available: boolean;
   version?: string;
   error?: string;
+}
+
+export interface EnsureAvailableResult {
+  available: boolean;
+  alreadyInstalled: boolean;
+  version?: string;
+  error?: string;
+  installMethods?: BackendInstallMethod[];
+  installResult?: EnsureInstallResult;
 }
 
 function execCommand(command: string, args: string[]): Promise<{ stdout: string; exitCode: number }> {

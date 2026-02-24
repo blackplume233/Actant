@@ -14,7 +14,7 @@ import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
 import { resolveBackend, resolveAcpBackend, openBackend, isAcpOnlyBackend, requireInteractionMode, type ResolvedBackend } from "./launcher/backend-resolver";
-import { requireMode, getInstallHint } from "./launcher/backend-registry";
+import { requireMode, getInstallHint, getBackendManager } from "./launcher/backend-registry";
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
 import { RestartTracker, type RestartPolicy } from "./restart-tracker";
@@ -202,11 +202,15 @@ export class AgentManager {
    * Start an agent — launch the backend process via ACP.
    * Requires the backend to support "acp" mode.
    * For acpOwnsProcess backends, ProcessLauncher is skipped.
+   *
+   * When `autoInstall` is true, attempts to install a missing backend
+   * before spawning (tries npm/pnpm/yarn/bun → brew/winget/choco).
+   *
    * @throws {AgentNotFoundError} if agent is not in cache
    * @throws {AgentAlreadyRunningError} if agent is already running
    * @throws {Error} if backend does not support "acp" mode
    */
-  async startAgent(name: string): Promise<void> {
+  async startAgent(name: string, options?: { autoInstall?: boolean }): Promise<void> {
     const meta = this.requireAgent(name);
     requireInteractionMode(meta, "start");
     requireMode(meta.backendType, "acp");
@@ -214,6 +218,8 @@ export class AgentManager {
     if (meta.status === "running" || meta.status === "starting") {
       throw new AgentAlreadyRunningError(name);
     }
+
+    await this.ensureBackendAvailable(meta.backendType, name, options);
 
     const dir = join(this.instancesBaseDir, name);
     const starting = await updateInstanceMeta(dir, { status: "starting" });
@@ -278,6 +284,57 @@ export class AgentManager {
           : spawnMsg,
       ));
     }
+  }
+
+  /**
+   * Pre-flight: ensure the backend binary is available, optionally auto-installing.
+   * Only performs checks when `autoInstall` is explicitly set (true or false).
+   * When undefined, defers to the normal spawn error path for backward compatibility.
+   */
+  private async ensureBackendAvailable(
+    backendType: string,
+    agentName: string,
+    options?: { autoInstall?: boolean },
+  ): Promise<void> {
+    if (options?.autoInstall === undefined) return;
+
+    const mgr = getBackendManager();
+    const result = await mgr.ensureAvailable(backendType, options);
+
+    if (!result.available) {
+      const parts: string[] = [`Backend "${backendType}" is not installed.`];
+
+      if (result.installResult?.attempts.length) {
+        for (const attempt of result.installResult.attempts) {
+          if (!attempt.installed && attempt.error) {
+            parts.push(`  ${attempt.method}: ${attempt.error}`);
+          }
+        }
+      }
+
+      if (result.installResult?.manualInstructions?.length) {
+        parts.push("Manual installation:");
+        for (const instr of result.installResult.manualInstructions) {
+          parts.push(`  ${instr}`);
+        }
+      } else if (result.installMethods?.length) {
+        parts.push("Available install methods:");
+        for (const m of result.installMethods) {
+          parts.push(`  ${m.label ?? `${m.type}: ${m.package ?? ""}`}`);
+        }
+        parts.push('Use --auto-install to install automatically.');
+      } else {
+        parts.push("No install methods available. Ensure the CLI is in your PATH.");
+      }
+
+      throw new AgentLaunchError(agentName, new Error(parts.join("\n")));
+    }
+
+    if (!result.alreadyInstalled && result.installResult?.installed) {
+      logger.info({ backendType, method: result.installResult.method }, "Backend auto-installed");
+    }
+
+    await mgr.ensureResolvePackageAvailable(backendType, options);
   }
 
   /**
@@ -363,6 +420,7 @@ export class AgentManager {
     name: string,
     templateName?: string,
     overrides?: Partial<InstanceOverrides>,
+    options?: { autoInstall?: boolean },
   ): Promise<ResolveResult> {
     let meta = this.cache.get(name);
     let created = false;
@@ -375,6 +433,8 @@ export class AgentManager {
     if (!meta) {
       throw new AgentNotFoundError(name);
     }
+
+    await this.ensureBackendAvailable(meta.backendType, name, options);
 
     const dir = join(this.instancesBaseDir, name);
     const resolved = resolveBackend(meta.backendType, dir, meta.backendConfig);
@@ -397,7 +457,11 @@ export class AgentManager {
    * @throws if agent does not support "open" interaction mode
    * @throws if backend does not support "open" mode
    */
-  async openAgent(name: string, templateName?: string): Promise<ResolvedBackend> {
+  async openAgent(
+    name: string,
+    templateName?: string,
+    options?: { autoInstall?: boolean },
+  ): Promise<ResolvedBackend> {
     let meta = this.cache.get(name);
 
     if (!meta && templateName) {
@@ -413,6 +477,8 @@ export class AgentManager {
     if (meta.status === "running") {
       throw new AgentAlreadyRunningError(name);
     }
+
+    await this.ensureBackendAvailable(meta.backendType, name, options);
 
     const dir = join(this.instancesBaseDir, name);
     return openBackend(meta.backendType, dir);

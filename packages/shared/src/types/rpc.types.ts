@@ -119,6 +119,8 @@ export type AgentCreateResult = AgentInstanceMeta;
 
 export interface AgentStartParams {
   name: string;
+  /** When true, auto-install a missing backend CLI before starting. */
+  autoInstall?: boolean;
 }
 
 export type AgentStartResult = AgentInstanceMeta;
@@ -180,6 +182,8 @@ export interface AgentResolveParams {
     workspacePolicy?: WorkspacePolicy;
     metadata?: Record<string, string>;
   };
+  /** When true, auto-install a missing backend CLI before resolving. */
+  autoInstall?: boolean;
 }
 
 export type AgentResolveResult = ResolveResult;
@@ -188,6 +192,8 @@ export interface AgentOpenParams {
   name: string;
   /** When provided and agent doesn't exist, auto-create from this template. */
   template?: string;
+  /** When true, auto-install a missing backend CLI before opening. */
+  autoInstall?: boolean;
 }
 
 export interface AgentOpenResult {

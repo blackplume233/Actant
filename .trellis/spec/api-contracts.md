@@ -191,7 +191,7 @@ CLI `template validate <file>` 输出格式：
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
 | `agent.create` | `{ name, template, overrides? }` | `AgentInstanceMeta` | `TEMPLATE_NOT_FOUND`, `CONFIG_VALIDATION`, `WORKSPACE_INIT`, `COMPONENT_REFERENCE` |
-| `agent.start` | `{ name }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND`, `AGENT_ALREADY_RUNNING`, `AGENT_LAUNCH`, `INTERACTION_MODE` |
+| `agent.start` | `{ name, autoInstall? }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND`, `AGENT_ALREADY_RUNNING`, `AGENT_LAUNCH`, `INTERACTION_MODE` |
 | `agent.stop` | `{ name }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND` |
 | `agent.destroy` | `{ name }` | `{ success }` | `AGENT_NOT_FOUND`, `INSTANCE_CORRUPTED` |
 | `agent.status` | `{ name }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND` |
@@ -221,14 +221,30 @@ CLI `template validate <file>` 输出格式：
 
 **workDir 机制**：当指定 `workDir` 时，域上下文文件和 `.actant.json` 写入该目录，同时在 `{instancesDir}/{name}` 创建指向它的链接以供 Manager 发现（macOS/Linux 使用 symlink，Windows 使用 junction）。Destroy 时仅移除链接和 `.actant.json`，保留用户目录中的其余文件。
 
+#### autoInstall 参数（#153）
+
+`agent.start`、`agent.resolve`、`agent.open` 均支持可选的 `autoInstall?: boolean` 参数。当 `true` 时，Daemon 在 spawn 前执行 `BackendManager.ensureAvailable()`，按 `BackendDefinition.install` 声明的方法列表自动安装缺失的后端 CLI 依赖。
+
+安装策略（按优先级）：
+1. 对 `type: "npm"` 方法，自动检测可用的 JS 包管理器：`npm` → `pnpm` → `yarn` → `bun`。若无任何 JS 包管理器可用，跳过此方法。
+2. 对 `type: "brew"/"winget"/"choco"` 方法，仅在对应平台且命令可用时尝试。
+3. `type: "url"` / `"manual"` 不自动执行，其说明文字包含在错误信息中供用户参考。
+
+安装成功后自动 re-check 验证；失败时抛出 `AGENT_LAUNCH` 错误并附带详细的失败原因和手动安装指引。
+
+CLI 标志：
+- `--auto-install`：设置 `autoInstall: true`
+- `--no-install`：设置 `autoInstall: false`（禁止自动安装，仅报错）
+- 未指定：`autoInstall` 为 `undefined`（不尝试安装，报错并提示安装方法）
+
 ### 3.3 外部 Spawn 支持
 
 供外部客户端（Unreal/Unity 等）自行 spawn Agent 进程，同时将状态注册到 Actant 进行跟踪。
 
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
-| `agent.resolve` | `{ name, template? }` | `ResolveResult` | `AGENT_NOT_FOUND`, `TEMPLATE_NOT_FOUND`, `WORKSPACE_INIT` |
-| `agent.open` | `{ name, template? }` | `AgentOpenResult` | `AGENT_NOT_FOUND`, `TEMPLATE_NOT_FOUND`, `AGENT_ALREADY_RUNNING`, `AGENT_LAUNCH` |
+| `agent.resolve` | `{ name, template?, autoInstall? }` | `ResolveResult` | `AGENT_NOT_FOUND`, `TEMPLATE_NOT_FOUND`, `WORKSPACE_INIT` |
+| `agent.open` | `{ name, template?, autoInstall? }` | `AgentOpenResult` | `AGENT_NOT_FOUND`, `TEMPLATE_NOT_FOUND`, `AGENT_ALREADY_RUNNING`, `AGENT_LAUNCH` |
 | `agent.attach` | `{ name, pid, metadata? }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND`, `AGENT_ALREADY_RUNNING`, `AGENT_ALREADY_ATTACHED` |
 | `agent.detach` | `{ name, cleanup? }` | `DetachResult` | `AGENT_NOT_FOUND`, `AGENT_NOT_ATTACHED` |
 
@@ -739,7 +755,7 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | 命令 | 参数 | 选项 | 对应 RPC |
 |------|------|------|---------|
 | `agent create <name>` | `name` | `-t, --template`（必填）, `--launch-mode`, `--work-dir`, `--overwrite`, `--append`, `-f, --format` | `agent.create` |
-| `agent start <name>` | `name` | — | `agent.start` |
+| `agent start <name>` | `name` | `--auto-install`, `--no-install` | `agent.start` |
 | `agent stop <name>` | `name` | — | `agent.stop` |
 | `agent status [name]` | `name`（可选） | `-f, --format` | `agent.status` / `agent.list` |
 | `agent list` | — | `-f, --format` | `agent.list` |
@@ -767,8 +783,8 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 
 | 命令 | 参数 | 选项 | 对应 RPC | Backend Mode |
 |------|------|------|---------|-------------|
-| `agent resolve <name>` | `name` | `-t, --template`, `-f, --format` | `agent.resolve` | **resolve** — 输出 ACP 连接命令 |
-| `agent open <name>` | `name` | `-t, --template`, `--no-attach` | `agent.open` | **open** — 前台 TUI 交互（attach/detach 生命周期） |
+| `agent resolve <name>` | `name` | `-t, --template`, `-f, --format`, `--auto-install`, `--no-install` | `agent.resolve` | **resolve** — 输出 ACP 连接命令 |
+| `agent open <name>` | `name` | `-t, --template`, `--no-attach`, `--auto-install`, `--no-install` | `agent.open` | **open** — 前台 TUI 交互（attach/detach 生命周期） |
 | `agent attach <name>` | `name` | `--pid`（必填）, `--metadata` | `agent.attach` | （配合 resolve 使用） |
 | `agent detach <name>` | `name` | `--cleanup` | `agent.detach` | （配合 resolve 使用） |
 
