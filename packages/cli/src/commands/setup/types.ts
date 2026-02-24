@@ -10,14 +10,16 @@ export interface SetupContext {
 }
 
 export interface ProviderConfig {
-  type: "anthropic" | "openai" | "openai-compatible" | "custom";
-  protocol: "http" | "websocket" | "grpc";
+  type: string;
+  protocol: "openai" | "anthropic" | "custom";
   baseUrl: string;
-  apiKeyEnv: string;
+  apiKey?: string;
 }
 
 export interface AppConfig {
   provider?: ProviderConfig;
+  /** Additional registered providers (templates can reference by type). */
+  providers?: ProviderConfig[];
   devSourcePath?: string;
   update?: {
     maxBackups: number;

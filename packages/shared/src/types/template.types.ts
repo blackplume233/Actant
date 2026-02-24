@@ -45,7 +45,8 @@ export interface AgentTemplate extends VersionedComponent {
   /** Required override: templates must have an explicit semver version. */
   version: string;
   backend: AgentBackendConfig;
-  provider: ModelProviderConfig;
+  /** Model provider. Optional — when omitted, uses the default provider from config.json. */
+  provider?: ModelProviderConfig;
   domainContext: DomainContextConfig;
   /** Tool/file/network permission control, aligned with Claude Code permissions. */
   permissions?: PermissionsInput;
@@ -105,14 +106,56 @@ export interface BackendDescriptor {
   acpOwnsProcess?: boolean;
 }
 
+/**
+ * Provider config for templates and instance meta.
+ * SECURITY: apiKey is intentionally excluded — secrets are stored only in
+ * ~/.actant/config.json and resolved at runtime via the registry.
+ * Agent workspaces must never contain API keys.
+ */
 export interface ModelProviderConfig {
-  type: ModelProviderType;
-  protocol?: "http" | "websocket" | "grpc";
+  /** Provider type — any registered provider name (e.g. "anthropic", "openai", "groq"). */
+  type: string;
+  /** API protocol format. Inferred from `type` when omitted (e.g. "deepseek" → "openai"). */
+  protocol?: ModelApiProtocol;
   baseUrl?: string;
   config?: Record<string, unknown>;
 }
 
-export type ModelProviderType = "anthropic" | "openai" | "openai-compatible" | "custom";
+/**
+ * Well-known built-in provider names. Kept for backward compatibility and
+ * type narrowing. The registry accepts any string, not just these.
+ */
+export type ModelProviderType =
+  | "anthropic"
+  | "openai"
+  | "deepseek"
+  | "ollama"
+  | "azure"
+  | "bedrock"
+  | "vertex"
+  | "custom";
+
+/**
+ * API protocol format — the wire-level request/response schema.
+ *   - "openai"    — OpenAI Chat Completions compatible (also DeepSeek, Ollama, Azure, etc.)
+ *   - "anthropic" — Anthropic Messages API (also Bedrock/Vertex with Anthropic models)
+ *   - "custom"    — User-provided adapter
+ */
+export type ModelApiProtocol = "openai" | "anthropic" | "custom";
+
+/**
+ * Descriptor for a registered model provider.
+ * Built-in providers are registered at startup; users can register additional
+ * providers via config.json `providers` field.
+ */
+export interface ModelProviderDescriptor {
+  type: string;
+  displayName: string;
+  protocol: ModelApiProtocol;
+  defaultBaseUrl?: string;
+  apiKey?: string;
+  models?: string[];
+}
 
 export interface InitializerConfig {
   steps: InitializerStep[];

@@ -31,7 +31,8 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
-    }
+    },
+    "./dist/bin/actant.js": "./dist/bin/actant.js"
   },
   "bin": {
     "actant": "./dist/bin/actant.js"

@@ -43,7 +43,8 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
         workspaceDir: cwd,
         provider: process.env["ACTANT_PROVIDER"] ?? "anthropic",
         model: process.env["ACTANT_MODEL"] ?? "claude-sonnet-4-20250514",
-        apiKey: process.env["ANTHROPIC_API_KEY"] ?? process.env["OPENAI_API_KEY"],
+        apiKey: process.env["ACTANT_API_KEY"] ?? process.env["ANTHROPIC_API_KEY"] ?? process.env["OPENAI_API_KEY"],
+        baseUrl: process.env["ACTANT_BASE_URL"] ?? undefined,
         thinkingLevel: (process.env["ACTANT_THINKING_LEVEL"] as PiAgentOptions["thinkingLevel"]) ?? undefined,
         systemPrompt: "You are a helpful coding assistant. You have access to file and command tools.",
       };

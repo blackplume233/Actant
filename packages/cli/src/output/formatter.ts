@@ -35,7 +35,7 @@ export function formatTemplateList(
       t.name,
       t.version,
       t.backend.type,
-      t.provider.type,
+      t.provider?.type ?? chalk.dim("(default)"),
       t.description ?? chalk.dim("—"),
     ]);
   }
@@ -60,7 +60,7 @@ export function formatTemplateDetail(
     `${chalk.bold("Template:")} ${template.name}`,
     `${chalk.bold("Version:")}  ${template.version}`,
     `${chalk.bold("Backend:")}  ${template.backend.type}`,
-    `${chalk.bold("Provider:")} ${template.provider.type}`,
+    `${chalk.bold("Provider:")} ${template.provider?.type ?? "(default)"}`,
   ];
 
   if (template.description) {

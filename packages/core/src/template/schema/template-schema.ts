@@ -23,12 +23,37 @@ export const AgentBackendSchema = z.object({
   config: z.record(z.string(), z.unknown()).optional(),
 });
 
-export const ModelProviderSchema = z.object({
-  type: z.enum(["anthropic", "openai", "openai-compatible", "custom"]),
-  protocol: z.enum(["http", "websocket", "grpc"]).optional().default("http"),
-  baseUrl: z.string().optional(),
-  config: z.record(z.string(), z.unknown()).optional(),
-});
+const ModelApiProtocolEnum = z.enum(["openai", "anthropic", "custom"]);
+
+type ApiProtocol = z.infer<typeof ModelApiProtocolEnum>;
+
+/**
+ * Default API protocol for well-known built-in provider types.
+ * Used as fallback when `protocol` is omitted in a template.
+ * For providers not in this map, protocol defaults to "custom".
+ */
+const DEFAULT_PROTOCOL: Record<string, ApiProtocol> = {
+  anthropic: "anthropic",
+  openai: "openai",
+  deepseek: "openai",
+  ollama: "openai",
+  azure: "openai",
+  bedrock: "anthropic",
+  vertex: "anthropic",
+  custom: "custom",
+};
+
+export const ModelProviderSchema = z
+  .object({
+    type: z.string().min(1),
+    protocol: ModelApiProtocolEnum.optional(),
+    baseUrl: z.string().optional(),
+    config: z.record(z.string(), z.unknown()).optional(),
+  })
+  .transform((val) => ({
+    ...val,
+    protocol: (val.protocol ?? DEFAULT_PROTOCOL[val.type] ?? "custom") as ApiProtocol,
+  }));
 
 export const InitializerStepSchema = z.object({
   type: z.string().min(1),
@@ -109,7 +134,7 @@ export const AgentTemplateSchema = z.object({
   origin: ComponentOriginSchema.optional(),
   tags: z.array(z.string()).optional(),
   backend: AgentBackendSchema,
-  provider: ModelProviderSchema,
+  provider: ModelProviderSchema.optional(),
   domainContext: DomainContextSchema,
   permissions: PermissionsInputSchema.optional(),
   initializer: InitializerSchema.optional(),

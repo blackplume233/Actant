@@ -40,6 +40,7 @@ shared ← core ← pi
 `actant`（无 scope）是面向用户的统一入口：
 
 - **npm 安装**：`npm i -g actant`（CLI）或 `npm i actant`（库）
+- **本地开发安装**：`pnpm install:local`（构建 + `pnpm link --global`，后续 rebuild 自动生效）
 - **Sub-path exports**：`actant/core`、`actant/shared`、`actant/acp`、`actant/mcp`、`actant/pi`、`actant/cli`
 - **依赖关系**：facade 依赖所有 `@actant/*` 子包，通过 `workspace:*` 链接
 - **子包仍可独立安装**：`npm i @actant/core` 用于只需部分功能的场景

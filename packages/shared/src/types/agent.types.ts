@@ -1,4 +1,4 @@
-import type { AgentBackendType, PermissionsConfig } from "./template.types";
+import type { AgentBackendType, ModelProviderConfig, PermissionsConfig } from "./template.types";
 
 /**
  * Agent Instance = a workspace directory.
@@ -14,6 +14,12 @@ export interface AgentInstanceMeta {
   backendType: AgentBackendType;
   /** Backend config from template (e.g. executablePath). Persisted so launcher can use without template registry. */
   backendConfig?: Record<string, unknown>;
+  /**
+   * Provider config reference (type + protocol + baseUrl only).
+   * SECURITY: Never contains apiKey — secrets stay in ~/.actant/config.json
+   * and are resolved at runtime from the in-memory registry.
+   */
+  providerConfig?: ModelProviderConfig;
   status: AgentStatus;
   launchMode: LaunchMode;
   /** Workspace lifecycle policy. "persistent" survives across spawns; "ephemeral" can be cleaned up after task. */

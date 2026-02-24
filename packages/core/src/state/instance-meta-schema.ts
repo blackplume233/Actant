@@ -47,6 +47,15 @@ const PermissionsConfigSchema = z.object({
   additionalDirectories: z.array(z.string()).optional(),
 });
 
+const ModelApiProtocolSchema = z.enum(["openai", "anthropic", "custom"]);
+
+const ModelProviderConfigSchema = z.object({
+  type: z.string().min(1),
+  protocol: ModelApiProtocolSchema.optional().default("custom"),
+  baseUrl: z.string().optional(),
+  config: z.record(z.string(), z.unknown()).optional(),
+});
+
 export const AgentInstanceMetaSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -54,6 +63,7 @@ export const AgentInstanceMetaSchema = z.object({
   templateVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
   backendType: AgentBackendTypeSchema.default("cursor"),
   backendConfig: z.record(z.string(), z.unknown()).optional(),
+  providerConfig: ModelProviderConfigSchema.optional(),
   status: AgentStatusSchema,
   launchMode: LaunchModeSchema,
   workspacePolicy: WorkspacePolicySchema.default("persistent"),

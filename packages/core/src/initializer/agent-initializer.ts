@@ -1,7 +1,7 @@
 import { mkdir, rm, access, symlink, lstat, unlink, readlink } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, WorkDirConflict, PermissionsInput } from "@actant/shared";
+import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, WorkDirConflict, PermissionsInput, ModelProviderConfig } from "@actant/shared";
 import {
   ActantError,
   ConfigValidationError,
@@ -16,6 +16,7 @@ import { readInstanceMeta, writeInstanceMeta } from "../state/index";
 import { InitializationPipeline } from "./pipeline/initialization-pipeline";
 import type { StepRegistry } from "./pipeline/step-registry";
 import type { StepContext } from "./pipeline/types";
+import { modelProviderRegistry } from "../provider/model-provider-registry";
 
 const logger = createLogger("agent-initializer");
 
@@ -139,6 +140,8 @@ export class AgentInitializer {
 
       const effectivePermissions = resolvePermissions(finalPermissions);
 
+      const resolvedProvider = resolveProviderConfig(template.provider);
+
       const now = new Date().toISOString();
       const launchMode = overrides?.launchMode ?? this.options?.defaultLaunchMode ?? "direct";
       const defaultPolicy: WorkspacePolicy = launchMode === "one-shot" ? "ephemeral" : "persistent";
@@ -149,6 +152,7 @@ export class AgentInitializer {
         templateVersion: template.version,
         backendType: template.backend.type,
         backendConfig: template.backend.config ? { ...template.backend.config } : undefined,
+        providerConfig: resolvedProvider,
         status: "created",
         launchMode,
         workspacePolicy: overrides?.workspacePolicy ?? defaultPolicy,
@@ -237,6 +241,31 @@ export class AgentInitializer {
       logger.info({ name }, "Agent instance destroyed");
     }
   }
+}
+
+/**
+ * Resolve the effective provider config for an instance.
+ * Template-level provider takes priority; falls back to registry default.
+ * Always ensures `protocol` is set (uses registry descriptor or "custom" fallback).
+ */
+function resolveProviderConfig(templateProvider?: ModelProviderConfig): ModelProviderConfig | undefined {
+  if (templateProvider) {
+    if (templateProvider.protocol) return templateProvider;
+    const desc = modelProviderRegistry.get(templateProvider.type);
+    return {
+      ...templateProvider,
+      protocol: desc?.protocol ?? "custom",
+    };
+  }
+
+  const defaultDesc = modelProviderRegistry.getDefault();
+  if (!defaultDesc) return undefined;
+
+  return {
+    type: defaultDesc.type,
+    protocol: defaultDesc.protocol,
+    baseUrl: defaultDesc.defaultBaseUrl,
+  };
 }
 
 async function dirExists(path: string): Promise<boolean> {

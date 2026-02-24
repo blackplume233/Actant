@@ -16,6 +16,8 @@ export type {
   BackendDescriptor,
   ModelProviderConfig,
   ModelProviderType,
+  ModelApiProtocol,
+  ModelProviderDescriptor,
   InitializerConfig,
   InitializerStep,
   PermissionMode,

@@ -22,7 +22,7 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
     name: "test-tpl",
     version: "1.0.0",
     backend: { type: "claude-code" },
-    provider: { type: "openai" },
+    provider: { type: "openai", protocol: "openai" },
     domainContext: { skills: ["skill-a"] },
     ...overrides,
   };

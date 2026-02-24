@@ -25,7 +25,9 @@
     "build:standalone:bundle-only": "node scripts/build-standalone.mjs --bundle-only",
     "publish:dry": "pnpm build && pnpm -r publish --dry-run --no-git-checks",
     "publish:all": "pnpm build && pnpm -r publish --no-git-checks",
-    "version:sync": "node scripts/version-sync.mjs"
+    "version:sync": "node scripts/version-sync.mjs",
+    "install:local": "node scripts/install-local.mjs",
+    "install:local:standalone": "node scripts/install-local.mjs --standalone"
   },
   "engines": {
     "node": ">=22.0.0",

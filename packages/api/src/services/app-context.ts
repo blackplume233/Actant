@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { homedir } from "node:os";
 import { mkdir } from "node:fs/promises";
+import { readFileSync } from "node:fs";
 import {
   TemplateRegistry,
   TemplateLoader,
@@ -20,8 +21,11 @@ import {
   createDefaultStepRegistry,
   registerCommunicator,
   registerBackend,
+  modelProviderRegistry,
+  registerBuiltinProviders,
   type LauncherMode,
 } from "@actant/core";
+import type { ModelApiProtocol } from "@actant/shared";
 import { AcpConnectionManager } from "@actant/acp";
 import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
 import { createLogger, getIpcPath } from "@actant/shared";
@@ -29,6 +33,23 @@ import { createLogger, getIpcPath } from "@actant/shared";
 const logger = createLogger("app-context");
 
 const DEFAULT_HOME = join(homedir(), ".actant");
+
+/** Shape of ~/.actant/config.json as written by `actant setup`. */
+interface UserConfig {
+  provider?: {
+    type: string;
+    protocol?: string;
+    baseUrl?: string;
+    apiKey?: string;
+  };
+  providers?: Array<{
+    type: string;
+    protocol?: string;
+    baseUrl?: string;
+    apiKey?: string;
+  }>;
+  [key: string]: unknown;
+}
 
 export interface AppConfig {
   homeDir?: string;
@@ -135,6 +156,8 @@ export class AppContext {
     await mkdir(this.homeDir, { recursive: true });
     await mkdir(this.instancesDir, { recursive: true });
 
+    this.loadProviderRegistry();
+
     await this.instanceRegistry.load();
     const { orphaned, adopted } = await this.instanceRegistry.reconcile();
     if (orphaned.length > 0 || adopted.length > 0) {
@@ -154,6 +177,50 @@ export class AppContext {
 
   get uptime(): number {
     return Math.floor((Date.now() - this.startTime) / 1000);
+  }
+
+  /**
+   * Initialize the provider registry:
+   *   1. Register built-in providers
+   *   2. Read config.json and register default + extra providers
+   */
+  private loadProviderRegistry(): void {
+    registerBuiltinProviders();
+
+    const configFile = join(this.homeDir, "config.json");
+    let userConfig: UserConfig = {};
+    try {
+      userConfig = JSON.parse(readFileSync(configFile, "utf-8")) as UserConfig;
+    } catch {
+      logger.debug("No config.json found or failed to parse, using built-in providers only");
+      return;
+    }
+
+    if (userConfig.provider) {
+      const p = userConfig.provider;
+      modelProviderRegistry.register({
+        type: p.type,
+        displayName: p.type,
+        protocol: (p.protocol ?? "custom") as ModelApiProtocol,
+        defaultBaseUrl: p.baseUrl,
+        apiKey: p.apiKey,
+      });
+      modelProviderRegistry.setDefault(p.type);
+      logger.info({ type: p.type }, "Default provider loaded from config.json");
+    }
+
+    if (userConfig.providers) {
+      for (const p of userConfig.providers) {
+        modelProviderRegistry.register({
+          type: p.type,
+          displayName: p.type,
+          protocol: (p.protocol ?? "custom") as ModelApiProtocol,
+          defaultBaseUrl: p.baseUrl,
+          apiKey: p.apiKey,
+        });
+        logger.debug({ type: p.type }, "Extra provider loaded from config.json");
+      }
+    }
   }
 
   private registerPiBackend(): void {

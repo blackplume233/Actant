@@ -21,6 +21,7 @@ import {
 } from "./template-schema";
 import { ScheduleConfigSchema, type ScheduleConfig } from "../../scheduler/schedule-config";
 import { toAgentTemplate } from "../loader/template-loader";
+import { modelProviderRegistry } from "../../provider/model-provider-registry";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -55,7 +56,17 @@ export function validateProviderConfig(data: unknown): ConfigValidationResult<Mo
   if (!result.success) {
     return { valid: false, errors: zodToIssues(result.error), warnings: [] };
   }
-  return { valid: true, data: result.data, errors: [], warnings: [] };
+  const warnings: ValidationIssue[] = [];
+
+  if (!modelProviderRegistry.has(result.data.type)) {
+    warnings.push(warning(
+      "provider.type",
+      `Provider type "${result.data.type}" is not registered; it will be treated as a custom provider`,
+      "UNKNOWN_PROVIDER_TYPE",
+    ));
+  }
+
+  return { valid: true, data: result.data, errors: [], warnings };
 }
 
 export function validatePermissionsConfig(data: unknown): ConfigValidationResult<PermissionsInput> {
@@ -167,13 +178,22 @@ export function validateTemplate(data: unknown): ConfigValidationResult<AgentTem
     ));
   }
 
-  // Semantic: custom provider without config
-  if (template.provider.type === "custom" && !template.provider.config) {
-    warnings.push(warning(
-      "provider.config",
-      "Custom provider type without config; model routing may fail",
-      "CUSTOM_PROVIDER_NO_CONFIG",
-    ));
+  // Semantic: provider checks
+  if (template.provider) {
+    if (template.provider.type === "custom" && !template.provider.config) {
+      warnings.push(warning(
+        "provider.config",
+        "Custom provider type without config; model routing may fail",
+        "CUSTOM_PROVIDER_NO_CONFIG",
+      ));
+    }
+    if (!modelProviderRegistry.has(template.provider.type)) {
+      warnings.push(warning(
+        "provider.type",
+        `Provider type "${template.provider.type}" is not registered; it will be treated as a custom provider`,
+        "UNKNOWN_PROVIDER_TYPE",
+      ));
+    }
   }
 
   return { valid: true, data: template, errors: [], warnings };

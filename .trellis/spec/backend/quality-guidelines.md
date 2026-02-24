@@ -71,6 +71,34 @@ try {
 
 **Why**: Agent lifecycle failures can leave orphaned processes and corrupted state.
 
+### Don't: Centralized Backend-Specific Logic
+
+```typescript
+// Bad — hardcoded if/else for each backend in a central function
+function buildProviderEnv(provider: ModelProviderConfig, backendType: string) {
+  if (backendType === "pi") {
+    env["ACTANT_API_KEY"] = provider.apiKey;
+  } else if (backendType === "claude-code") {
+    env["ANTHROPIC_API_KEY"] = provider.apiKey;
+  } else if (backendType === "cursor-agent") {
+    // ...more hardcoding
+  }
+}
+
+// Good — each backend self-describes via BackendDescriptor strategy
+registerBackend({
+  type: "claude-code",
+  supportedModes: ["resolve", "acp"],
+  buildProviderEnv: (provider) => ({
+    ANTHROPIC_API_KEY: provider.apiKey,
+  }),
+});
+// AgentManager queries the descriptor, no if/else
+const env = descriptor.buildProviderEnv?.(providerConfig) ?? defaultEnv;
+```
+
+**Why**: Adding a new backend should not require modifying core manager code. Backend-specific behavior belongs in the backend's own registration descriptor. This follows the same open-closed pattern as `acpResolver` and `resolveCommand`. ACP protocol's `SessionConfigOption` covers model/thinking_level switching but NOT credentials — API Keys can only be injected via env vars at spawn time, so each backend must declare its own expected variable names.
+
 ### Don't: `any` Types
 
 ```typescript
@@ -213,7 +241,7 @@ Each package exposes a public API via barrel exports. Internal modules are not a
 
 Full CLI regression tests live in `.agents/skills/qa-engineer/scenarios/full-cli-regression.json`. The QA loop:
 
-1. Builds the project and globally links the `actant` binary (`npm link`)
+1. Builds the project and globally links the `actant` binary (`pnpm install:local`)
 2. Creates an isolated `ACTANT_HOME` in a temp directory
 3. Starts a Daemon with a dedicated `ACTANT_SOCKET`
 4. Executes all scenario steps against the real binary
@@ -283,6 +311,27 @@ pnpm run version:sync    # → node scripts/version-sync.mjs
 **修复**: 发版前始终运行 `pnpm run version:sync`。CI workflow 已包含此步骤。
 
 **预防**: 不要手动编辑子包版本，只编辑根 `package.json` 的 `version` 字段，然后通过 `version:sync` 同步。
+
+### 本地开发全局安装
+
+使用 `pnpm install:local`（即 `scripts/install-local.mjs`）将本地构建的 `actant` 安装到全局环境，支持两种模式：
+
+```bash
+# Link 模式（默认，推荐日常开发）
+pnpm install:local              # 构建 + npm link
+pnpm install:local --force      # 跳过覆盖确认
+pnpm install:local --skip-build # 仅重新 link（已构建时）
+
+# Standalone 模式（独立二进制，无需 Node.js）
+pnpm install:local:standalone              # 构建 SEA 二进制 + 安装
+pnpm install:local:standalone -- --force   # 跳过覆盖确认
+```
+
+Link 模式通过 `npm link` 从 `packages/actant` 创建全局 symlink，安装到 npm 全局目录（已在 PATH 中）。后续只需 `pnpm build` 即可更新全局 `actant` 命令，无需重复 link。
+
+Standalone 模式通过 Node.js SEA 打包平台原生可执行文件（Windows `.exe` / macOS / Linux），完全自包含，不依赖源码仓库或 Node.js 运行时。支持 `--install-dir` 自定义安装目录。
+
+> **Gotcha**: 全局 link 的入口是 **`packages/actant`**（facade 包），不是 `packages/cli`。因为 `actant` 包的 `bin/actant.js` 通过 import 桥接到 `@actant/cli`，而 workspace symlink 会正确解析所有 `@actant/*` 内部依赖。
 
 ### DTS 生成注意事项
 

@@ -27,7 +27,7 @@ export function configFromBackend(backendConfig?: Record<string, unknown>): PiCo
   return {
     provider: asString(backendConfig?.["provider"]) ?? process.env["ACTANT_PROVIDER"],
     model: asString(backendConfig?.["model"]) ?? process.env["ACTANT_MODEL"],
-    apiKey: asString(backendConfig?.["apiKey"]),
+    apiKey: asString(backendConfig?.["apiKey"]) ?? process.env["ACTANT_API_KEY"],
     thinkingLevel: asString(backendConfig?.["thinkingLevel"]) as PiCommunicatorConfig["thinkingLevel"] ?? (process.env["ACTANT_THINKING_LEVEL"] as PiCommunicatorConfig["thinkingLevel"]),
     tools: Array.isArray(backendConfig?.["tools"]) ? (backendConfig["tools"] as string[]) : undefined,
   };

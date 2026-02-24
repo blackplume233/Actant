@@ -1,6 +1,7 @@
 import { join } from "node:path";
+import { existsSync } from "node:fs";
 import { rename, mkdir } from "node:fs/promises";
-import type { AgentInstanceMeta, AgentStatus, ResolveResult, DetachResult } from "@actant/shared";
+import type { AgentInstanceMeta, AgentStatus, ResolveResult, DetachResult, ModelProviderConfig } from "@actant/shared";
 import {
   AgentNotFoundError,
   AgentAlreadyRunningError,
@@ -22,6 +23,7 @@ import { scanInstances, updateInstanceMeta } from "../state/index";
 import type { InstanceRegistryAdapter } from "../state/instance-registry-types";
 import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
 import { createCommunicator } from "../communicator/create-communicator";
+import { modelProviderRegistry } from "../provider/model-provider-registry";
 
 const logger = createLogger("agent-manager");
 
@@ -208,13 +210,17 @@ export class AgentManager {
 
       if (this.acpManager) {
         const { command, args } = resolveAcpBackend(meta.backendType, dir, meta.backendConfig);
+        const providerEnv = buildProviderEnv(meta.providerConfig);
         const connResult = await this.acpManager.connect(name, {
           command,
           args,
           cwd: dir,
-          connectionOptions: { autoApprove: true },
+          connectionOptions: {
+            autoApprove: true,
+            ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
+          },
         });
-        logger.info({ name, acpOnly }, "ACP connection established");
+        logger.info({ name, acpOnly, providerType: meta.providerConfig?.type }, "ACP connection established");
 
         if (acpOnly && "pid" in connResult && typeof connResult.pid === "number") {
           pid = connResult.pid;
@@ -235,7 +241,13 @@ export class AgentManager {
       }
       const errored = await updateInstanceMeta(dir, { status: "error" });
       this.cache.set(name, errored);
-      throw err;
+      if (err instanceof AgentLaunchError) throw err;
+      const spawnMsg = err instanceof Error ? err.message : String(err);
+      throw new AgentLaunchError(name, new Error(
+        isSpawnNotFound(spawnMsg)
+          ? `Backend "${meta.backendType}" executable not found. Ensure the required CLI is installed and in your PATH.`
+          : spawnMsg,
+      ));
     }
   }
 
@@ -279,6 +291,9 @@ export class AgentManager {
   /** Destroy an agent — stop it if running, then remove workspace. */
   async destroyAgent(name: string): Promise<void> {
     const meta = this.cache.get(name);
+    if (!meta && !existsSync(join(this.instancesBaseDir, name))) {
+      throw new AgentNotFoundError(name);
+    }
     if (meta && (meta.status === "running" || meta.status === "starting")) {
       await this.stopAgent(name);
     }
@@ -646,4 +661,40 @@ export class AgentManager {
       logger.error({ name, error: err }, "Failed to move corrupted instance");
     }
   }
+}
+
+/**
+ * Build ACTANT_* env vars from a resolved provider config.
+ *
+ * SECURITY: apiKey is resolved exclusively from the in-memory registry
+ * (loaded from ~/.actant/config.json at daemon startup). It is never
+ * read from providerConfig (which is persisted in the agent workspace
+ * .actant.json and could be visible to the LLM).
+ */
+function buildProviderEnv(providerConfig?: ModelProviderConfig): Record<string, string> {
+  const env: Record<string, string> = {};
+
+  const defaultDesc = modelProviderRegistry.getDefault();
+  const providerType = providerConfig?.type ?? defaultDesc?.type;
+
+  if (providerType) {
+    env["ACTANT_PROVIDER"] = providerType;
+  }
+
+  const descriptor = providerType ? modelProviderRegistry.get(providerType) : defaultDesc;
+  const apiKey = descriptor?.apiKey ?? process.env["ACTANT_API_KEY"];
+  if (apiKey) {
+    env["ACTANT_API_KEY"] = apiKey;
+  }
+
+  const baseUrl = providerConfig?.baseUrl ?? descriptor?.defaultBaseUrl;
+  if (baseUrl) {
+    env["ACTANT_BASE_URL"] = baseUrl;
+  }
+
+  return env;
+}
+
+function isSpawnNotFound(msg: string): boolean {
+  return /ENOENT|EINVAL|is not recognized|not found/i.test(msg);
 }

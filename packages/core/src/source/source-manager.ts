@@ -288,8 +288,20 @@ export class SourceManager {
       this.presets.set(`${packageName}@${preset.name}`, preset);
     }
     if (this.managers.templateRegistry && result.templates.length > 0) {
+      const nsRef = (ref: string) => ref.includes("@") ? ref : `${packageName}@${ref}`;
       for (const template of result.templates) {
-        const nsTemplate = { ...template, name: `${packageName}@${template.name}` };
+        const dc = template.domainContext;
+        const nsTemplate = {
+          ...template,
+          name: `${packageName}@${template.name}`,
+          domainContext: {
+            ...dc,
+            skills: dc.skills?.map(nsRef),
+            prompts: dc.prompts?.map(nsRef),
+            subAgents: dc.subAgents?.map(nsRef),
+            workflow: dc.workflow ? nsRef(dc.workflow) : dc.workflow,
+          },
+        };
         this.managers.templateRegistry.register(nsTemplate);
       }
     }

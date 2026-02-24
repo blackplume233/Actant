@@ -130,18 +130,25 @@ describe("AgentTemplateSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("rejects missing provider", () => {
+  it("accepts missing provider (optional, uses default)", () => {
     const { provider: _, ...noProvider } = MINIMAL_TEMPLATE;
     const result = AgentTemplateSchema.safeParse(noProvider);
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.provider).toBeUndefined();
+    }
   });
 
-  it("rejects invalid provider type", () => {
+  it("accepts any string as provider type (registry validates semantically)", () => {
     const result = AgentTemplateSchema.safeParse({
       ...MINIMAL_TEMPLATE,
-      provider: { type: "google" },
+      provider: { type: "groq" },
     });
-    expect(result.success).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.provider?.type).toBe("groq");
+      expect(result.data.provider?.protocol).toBe("custom");
+    }
   });
 
   it("rejects missing domainContext", () => {

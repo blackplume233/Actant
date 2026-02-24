@@ -9,20 +9,25 @@ labels:
 milestone: null
 author: human
 assignees: []
-relatedIssues: []
+relatedIssues:
+  - 141
 relatedFiles:
   - packages/shared/src/types/template.types.ts
   - packages/core/src/initializer/context/context-materializer.ts
   - packages/core/src/template/schema/template-schema.ts
+  - packages/core/src/manager/agent-manager.ts
+  - packages/core/src/manager/launcher/backend-registry.ts
+  - packages/core/src/manager/launcher/builtin-backends.ts
 taskRef: null
 githubRef: "blackplume233/Actant#133"
 closedAs: null
 createdAt: 2026-02-23T00:00:00
-updatedAt: 2026-02-23T00:00:00
+updatedAt: 2026-02-25T14:00:00
 closedAt: null
 ---
 
-**Related Files**: `packages/shared/src/types/template.types.ts`, `packages/core/src/initializer/context/context-materializer.ts`, `packages/core/src/template/schema/template-schema.ts`
+**Related Issues**: [[0141-model-provider-registry]]
+**Related Files**: `packages/shared/src/types/template.types.ts`, `packages/core/src/initializer/context/context-materializer.ts`, `packages/core/src/template/schema/template-schema.ts`, `packages/core/src/manager/agent-manager.ts`, `packages/core/src/manager/launcher/backend-registry.ts`, `packages/core/src/manager/launcher/builtin-backends.ts`
 
 ---
 
@@ -66,3 +71,20 @@ interface ModelProviderConfig {
 - [ ] 模板中显式指定的值优先于环境变量
 - [ ] 未设置环境变量且模板未配置时，给出清晰的错误提示
 - [ ] 相关文档更新
+
+## Phase 2: 后端感知的 Provider 注入（依赖 #141）
+
+当前 `buildProviderEnv()` 只生成 `ACTANT_*` 统一变量，但第三方后端（如 `claude-agent-acp`）不认识这些变量。详见 [[0141-model-provider-registry]] 中的 Phase 2 设计。
+
+- [ ] `BackendDescriptor.buildProviderEnv` 策略：各后端自描述所需的原生环境变量映射
+- [ ] Claude Code 后端注入 `ANTHROPIC_API_KEY` / `ANTHROPIC_BASE_URL`
+- [ ] Pi 后端注入 `ACTANT_*` 全套（包括 `ACTANT_MODEL`、`ACTANT_BASE_URL`）
+- [ ] AgentManager 改用后端策略替代集中式 `buildProviderEnv()`
+
+---
+
+## Comments
+
+### cursor-agent — 2026-02-25T14:00:00
+
+分析了 ACP 官方协议。ACP 的 `SessionConfigOption`（category: `model` / `thinking_level`）可用于协议层面动态切换 model 和 thinking level，但不覆盖 API Key 等凭证——凭证只能通过 spawn 时的环境变量传递。因此必须在 `BackendDescriptor` 层面解决原生环境变量的映射问题。详细方案已追加到 #141 作为 Phase 2 TODO。

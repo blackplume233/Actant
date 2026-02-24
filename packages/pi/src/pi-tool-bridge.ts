@@ -12,6 +12,8 @@ export interface PiAgentOptions {
   provider?: string;
   model?: string;
   apiKey?: string;
+  /** Provider base URL (reserved for future use with custom endpoints). */
+  baseUrl?: string;
   thinkingLevel?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
   tools?: string[];
   systemPrompt?: string;

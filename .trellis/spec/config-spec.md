@@ -53,7 +53,7 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 | `origin` | [`ComponentOrigin`](#componentorigin) | 否 | 组件来源跟踪（继承自 VersionedComponent） |
 | `tags` | `string[]` | 否 | 分类标签（继承自 VersionedComponent） |
 | `backend` | [`AgentBackendConfig`](#agentbackendconfig) | **是** | Agent 后端运行时 |
-| `provider` | [`ModelProviderConfig`](#modelproviderconfig) | **是** | 模型提供商 |
+| `provider` | [`ModelProviderConfig`](#modelproviderconfig) | 否 | 模型提供商（省略时使用 config.json 默认 Provider） |
 | `domainContext` | [`DomainContextConfig`](#domaincontextconfig) | **是** | 领域上下文组合 |
 | `permissions` | [`PermissionsInput`](#permissionsinput) | 否 | 工具/文件/网络权限控制 |
 | `initializer` | [`InitializerConfig`](#initializerconfig) | 否 | 自定义初始化流程 |
@@ -94,8 +94,61 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `type` | `ModelProviderType` | **是** | `"anthropic"` \| `"openai"` \| `"custom"` |
+| `type` | `string` | **是** | Provider 名称（任何已注册的 Provider，如 `"anthropic"`、`"groq"`） |
+| `protocol` | `ModelApiProtocol` | 否 | API 协议格式，按 `type` 自动推断（见下表） |
+| `baseUrl` | `string` | 否 | 覆盖默认 API 端点 |
 | `config` | `Record<string, unknown>` | 否 | 提供商特定配置 |
+
+> **安全约束**：`ModelProviderConfig` **不含 `apiKey` 字段**。API 密钥仅存储在 `~/.actant/config.json`（用户目录），Daemon 启动时加载到内存中的 `ModelProviderRegistry`，运行时注入为 `ACTANT_API_KEY` 环境变量。Template 文件和 Agent workspace 中的 `.actant.json` 永远不包含密钥，确保 LLM Agent 无法读取。
+>
+> `type` 不再限定为固定枚举值，而是通过 `ModelProviderRegistry` 语义校验。未注册的 type 产生 warning 并降级为 custom。
+
+**内置 Provider（`ModelProviderDescriptor`）**：
+
+| type | displayName | 默认 Protocol | 默认 Base URL |
+|------|-------------|--------------|---------------|
+| `"anthropic"` | Anthropic (Claude) | `"anthropic"` | `https://api.anthropic.com` |
+| `"openai"` | OpenAI | `"openai"` | `https://api.openai.com/v1` |
+| `"deepseek"` | DeepSeek | `"openai"` | `https://api.deepseek.com/v1` |
+| `"ollama"` | Ollama (Local) | `"openai"` | `http://localhost:11434/v1` |
+| `"azure"` | Azure OpenAI | `"openai"` | 用户指定 |
+| `"bedrock"` | AWS Bedrock | `"anthropic"` | 用户指定 |
+| `"vertex"` | Google Vertex AI | `"anthropic"` | 用户指定 |
+| `"custom"` | Custom | `"custom"` | 用户指定 |
+
+用户可通过 `config.json` 的 `providers` 字段注册额外 Provider（如 Groq、OpenRouter、Mistral 等），无需修改源码。
+
+**ModelApiProtocol**（API 协议格式）：
+
+| 值 | 说明 |
+|----|------|
+| `"openai"` | OpenAI Chat Completions API 兼容格式 |
+| `"anthropic"` | Anthropic Messages API 格式 |
+| `"custom"` | 用户自定义协议适配器 |
+
+> `protocol` 省略时根据 `type` 自动推断（如 `deepseek` → `openai`）。仅当默认推断不符合实际需求时才需显式指定。
+
+### ModelProviderDescriptor（#141 新增）
+
+Provider 注册表中每个 Provider 的描述符。内置 Provider 在 Daemon 启动时自动注册；用户可通过 `config.json` 注册额外 Provider。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `type` | `string` | **是** | Provider 唯一标识符 |
+| `displayName` | `string` | **是** | CLI 显示名称 |
+| `protocol` | `ModelApiProtocol` | **是** | 默认 API 协议 |
+| `defaultBaseUrl` | `string` | 否 | 默认 API 端点 |
+| `apiKey` | `string` | 否 | API 密钥（**仅存在于 Daemon 进程内存**，从 `config.json` 加载，不落盘到 workspace） |
+| `models` | `string[]` | 否 | 支持的模型列表（信息性） |
+
+### 默认 Provider vs 注册 Provider
+
+Provider 存在两个层次：
+
+- **默认 Provider**（`config.provider` 单数）：全局唯一，由 `actant setup` 配置。Daemon 和所有未指定 Provider 的 Agent 使用它。Setup 完成后自动注册到 Registry。
+- **注册 Provider**（`config.providers` 复数 + 内置 + 默认自动注册）：多个并存，Template 通过 `provider.type` 按名称引用。
+
+> 实现参考：`packages/core/src/provider/model-provider-registry.ts`，`packages/core/src/provider/builtin-providers.ts`
 
 ### DomainContextConfig
 
@@ -223,6 +276,7 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 | `templateVersion` | `string` | **是** | — | 来源模板版本 |
 | `backendType` | `AgentBackendType` | **是**\* | `"cursor"` | 后端类型（创建时从模板写入） |
 | `backendConfig` | `Record<string, unknown>` | 否 | — | 后端配置快照（创建时从模板写入） |
+| `providerConfig` | [`ModelProviderConfig`](#modelproviderconfig) | 否 | — | Provider 配置引用（type + protocol + baseUrl，**不含 apiKey**；启动时 Daemon 从 Registry 内存解析密钥并注入为环境变量） |
 | `status` | [`AgentStatus`](#agentstatus) | **是** | — | 当前生命周期状态 |
 | `launchMode` | [`LaunchMode`](#launchmode) | **是** | — | 启动模式 |
 | `workspacePolicy` | [`WorkspacePolicy`](#workspacepolicy) | **是** | `"persistent"` | workspace 生命周期策略 |
@@ -582,23 +636,41 @@ Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
 | `ACTANT_HOME` | 覆盖数据根目录（homeDir） | `~/.actant` |
 | `ACTANT_SOCKET` | 覆盖 IPC Socket 路径 | 平台默认 |
 | `ACTANT_LAUNCHER_MODE` | 设定 Launcher 模式（`"mock"` / `"real"`） | `"real"` |
-| `ACTANT_PROVIDER` | 统一 LLM Provider 标识（如 `openai`、`anthropic`） | 无 |
+| `ACTANT_PROVIDER` | 统一 LLM Provider 标识（如 `openai`、`anthropic`） | 无（由 Daemon 从 config.json 注入） |
 | `ACTANT_MODEL` | 统一 LLM 模型名称（如 `gpt-4o`、`claude-sonnet-4-20250514`） | 无 |
+| `ACTANT_API_KEY` | 统一 API 密钥（由 Daemon 从 config.json 注入，fallback 到 provider-specific 变量） | 无 |
+| `ACTANT_BASE_URL` | Provider API 端点（由 Daemon 从 config.json 注入） | 无 |
 | `ACTANT_THINKING_LEVEL` | 统一 thinking/reasoning 级别 | 无 |
-| `ANTHROPIC_API_KEY` | Anthropic API 密钥，`claude-agent-acp` 需要此变量 | 无（必须设置才能使用 ACP） |
+| `ANTHROPIC_API_KEY` | Anthropic API 密钥（兼容 fallback，推荐使用 `ACTANT_API_KEY`） | 无 |
 | `LOG_LEVEL` | Pino 日志级别 | `"info"`（CLI 中未设置时为 `"silent"`） |
 
 ### ACTANT_* 后端通用环境变量约定
 
-所有后端通用的 LLM provider / model 配置统一使用 `ACTANT_` 前缀，**不以后端名作为前缀**。
+自有 bridge（如 Pi）统一使用 `ACTANT_` 前缀读取 LLM provider / model 配置。
 
-| 变量 | 用途 | 示例 |
+| 变量 | 用途 | 来源 |
 |------|------|------|
-| `ACTANT_PROVIDER` | LLM 服务提供商标识 | `openai`、`anthropic`、`google` |
-| `ACTANT_MODEL` | LLM 模型名称 | `gpt-4o`、`claude-sonnet-4-20250514`、`moonshot-v1-8k` |
-| `ACTANT_THINKING_LEVEL` | Thinking / reasoning 级别 | `low`、`medium`、`high` |
+| `ACTANT_PROVIDER` | LLM 服务提供商标识 | config.json → Daemon 注入 ACP |
+| `ACTANT_API_KEY` | 统一 API 密钥 | config.json → Daemon 注入 ACP |
+| `ACTANT_BASE_URL` | Provider API 端点 | config.json → Daemon 注入 ACP |
+| `ACTANT_MODEL` | LLM 模型名称 | 手动设置或 template config |
+| `ACTANT_THINKING_LEVEL` | Thinking / reasoning 级别 | 手动设置 |
 
-> **设计决策**：使用 `ACTANT_*` 而非 `PI_*`、`CLAUDE_*` 等后端前缀，确保在切换后端时无需修改环境配置。各后端的 ACP bridge 或 communicator 负责读取 `ACTANT_*` 变量并映射到自身 SDK 的配置。
+> **设计决策**：自有 bridge 使用 `ACTANT_*` 前缀，确保在切换 Provider 时无需修改环境配置。但**第三方后端（如 `claude-agent-acp`）是独立二进制程序，只认自身原生环境变量**（如 `ANTHROPIC_API_KEY`），不认识 `ACTANT_*`。因此环境变量注入必须分两层处理。
+>
+> **ACP 协议层面**：ACP `SessionConfigOption`（category: `model` / `thinking_level`）可用于协议层面动态切换 model 和 thinking level，但**不覆盖 API Key 等凭证**。凭证只能通过 spawn 时的环境变量传递。
+
+### 后端感知的环境变量注入（计划中，#141 Phase 2）
+
+不同后端的 ACP 子进程期望不同的环境变量。`BackendDescriptor.buildProviderEnv` 策略让各后端自描述所需的原生变量映射，AgentManager 查表调用。
+
+| 后端 | 注入的变量 | 说明 |
+|------|-----------|------|
+| Pi（自有 bridge） | `ACTANT_PROVIDER`、`ACTANT_MODEL`、`ACTANT_API_KEY`、`ACTANT_BASE_URL` | 我们控制 bridge 代码 |
+| Claude Code（第三方） | `ANTHROPIC_API_KEY`、`ANTHROPIC_BASE_URL` | 只认原生变量 |
+| 未注册 `buildProviderEnv` 的后端 | `ACTANT_*`（默认 fallback） | 兼容兜底 |
+
+> **自动注入（#141）**：`actant setup` 配置的 Provider 信息（type、apiKey、baseUrl）持久化到 `~/.actant/config.json`。Daemon 启动时将 `config.json` 中的密钥加载到内存 Registry，启动 ACP 子进程时通过 `BackendDescriptor.buildProviderEnv`（或 fallback）注入环境变量。**密钥安全模型**：API Key 仅存在于 `config.json`（用户目录）和 Daemon 进程内存（Registry），不写入 Agent workspace 的任何文件（template、`.actant.json`），确保 LLM Agent 无法通过文件系统读取密钥。
 
 ---
 

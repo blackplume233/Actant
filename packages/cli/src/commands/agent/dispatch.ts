@@ -19,6 +19,7 @@ export function createAgentDispatchCommand(client: RpcClient, printer: CliPrinte
           printer.log("Task queued.");
         } else {
           printer.dim(`No scheduler for agent "${name}". Task not queued.`);
+          printer.dim(`Hint: use "actant agent run ${name} --prompt <message>" for one-shot execution.`);
           process.exitCode = 1;
         }
       } catch (err) {

@@ -359,6 +359,9 @@ one-shot   Daemon spawn + 等待退出       (不适用: 一次性任务由 Daem
 | `acpCommand?` | `PlatformCommand` | ACP 模式的可执行命令 |
 | `acpResolver?` | `(workspaceDir, backendConfig?) => { command, args }` | 自定义 ACP 命令解析函数（优先级高于 `acpCommand`） |
 | `acpOwnsProcess?` | `boolean` | 若 `true`，ACP 层全权管理进程（如 Pi） |
+| `buildProviderEnv?` | `(providerConfig, backendConfig?) => Record<string, string>` | 将 Provider 配置转换为该后端子进程期望的环境变量。未提供时 fallback 到默认 `ACTANT_*` 映射。（计划中，#141 Phase 2） |
+
+> **为什么需要 `buildProviderEnv`**：不同后端期望不同的原生环境变量。自有 bridge（Pi）读 `ACTANT_*`，第三方后端（如 `claude-agent-acp`）只认 `ANTHROPIC_API_KEY`。集中式硬编码无法扩展，因此让各后端在注册时自描述映射逻辑。ACP 协议的 `SessionConfigOption` 可覆盖 model / thinking_level 的动态切换，但凭证（API Key）只能通过 spawn 时的环境变量传递。
 
 **注册时机**：
 
