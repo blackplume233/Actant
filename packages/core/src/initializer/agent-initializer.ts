@@ -17,6 +17,7 @@ import { InitializationPipeline } from "./pipeline/initialization-pipeline";
 import type { StepRegistry } from "./pipeline/step-registry";
 import type { StepContext } from "./pipeline/types";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
+import { resolveProviderFromEnv } from "../provider/provider-env-resolver";
 import { getBackendDescriptor } from "../manager/launcher/backend-registry";
 
 const logger = createLogger("agent-initializer");
@@ -258,7 +259,8 @@ export class AgentInitializer {
 
 /**
  * Resolve the effective provider config for an instance.
- * Template-level provider takes priority; falls back to registry default.
+ *
+ * Priority: template explicit config > environment variables > registry default.
  * Always ensures `protocol` is set (uses registry descriptor or "custom" fallback).
  */
 function resolveProviderConfig(templateProvider?: ModelProviderConfig): ModelProviderConfig | undefined {
@@ -268,6 +270,15 @@ function resolveProviderConfig(templateProvider?: ModelProviderConfig): ModelPro
     return {
       ...templateProvider,
       protocol: desc?.protocol ?? "custom",
+    };
+  }
+
+  const envProvider = resolveProviderFromEnv();
+  if (envProvider) {
+    const desc = modelProviderRegistry.get(envProvider.type);
+    return {
+      ...envProvider,
+      protocol: envProvider.protocol ?? desc?.protocol ?? "custom",
     };
   }
 

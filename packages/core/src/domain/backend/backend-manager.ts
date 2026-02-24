@@ -4,6 +4,7 @@ import type {
   BackendDefinition,
   BackendInstallMethod,
   ConfigValidationResult,
+  ModelProviderConfig,
   PlatformCommand,
 } from "@actant/shared";
 import { BaseComponentManager } from "../base-component-manager";
@@ -16,6 +17,15 @@ export type AcpResolverFn = (
 ) => { command: string; args: string[] };
 
 /**
+ * Build env vars for a backend's ACP subprocess from the provider config.
+ * Each backend knows which native env vars its process expects.
+ */
+export type BuildProviderEnvFn = (
+  providerConfig: ModelProviderConfig | undefined,
+  backendConfig?: Record<string, unknown>,
+) => Record<string, string>;
+
+/**
  * Manages backend definitions as VersionedComponents.
  *
  * Pure-data definitions are stored in the component registry (JSON-serializable,
@@ -26,6 +36,8 @@ export class BackendManager extends BaseComponentManager<BackendDefinition> {
   protected readonly componentType = "Backend";
 
   private readonly acpResolvers = new Map<string, AcpResolverFn>();
+  private readonly providerEnvBuilders = new Map<string, BuildProviderEnvFn>();
+  private readonly builders = new Map<string, unknown>();
 
   constructor() {
     super("backend-manager");
@@ -41,6 +53,30 @@ export class BackendManager extends BaseComponentManager<BackendDefinition> {
 
   getAcpResolver(backendName: string): AcpResolverFn | undefined {
     return this.acpResolvers.get(backendName);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Provider env builder (behavioral extension, not serializable)
+  // ---------------------------------------------------------------------------
+
+  registerBuildProviderEnv(backendName: string, fn: BuildProviderEnvFn): void {
+    this.providerEnvBuilders.set(backendName, fn);
+  }
+
+  getBuildProviderEnv(backendName: string): BuildProviderEnvFn | undefined {
+    return this.providerEnvBuilders.get(backendName);
+  }
+
+  // ---------------------------------------------------------------------------
+  // Backend builder (behavioral extension for workspace materialization)
+  // ---------------------------------------------------------------------------
+
+  registerBuilder(backendName: string, builder: unknown): void {
+    this.builders.set(backendName, builder);
+  }
+
+  getBuilder(backendName: string): unknown | undefined {
+    return this.builders.get(backendName);
   }
 
   // ---------------------------------------------------------------------------

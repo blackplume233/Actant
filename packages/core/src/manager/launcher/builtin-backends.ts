@@ -1,11 +1,65 @@
-import type { BackendDefinition } from "@actant/shared";
+import type { BackendDefinition, MaterializationSpec, ModelProviderConfig } from "@actant/shared";
 import { getBackendManager } from "./backend-registry";
+import { modelProviderRegistry } from "../../provider/model-provider-registry";
 
-/**
- * Built-in backend definitions.
- * Pure data — no functions, no runtime dependencies.
- * These are registered as `origin: "builtin"` VersionedComponents.
- */
+// ---------------------------------------------------------------------------
+// Materialization specs for built-in backends (#150)
+// ---------------------------------------------------------------------------
+
+const CURSOR_MATERIALIZATION: MaterializationSpec = {
+  configDir: ".cursor",
+  scaffoldDirs: [".cursor/rules", "prompts"],
+  components: {
+    skills: {
+      mode: "dual",
+      outputDir: ".cursor/rules",
+      extension: ".mdc",
+      frontmatterTemplate: 'description: "{{description}}"\nalwaysApply: true',
+    },
+    prompts: { mode: "merged", output: "prompts/system.md" },
+    mcpServers: { enabled: true, outputFile: ".cursor/mcp.json" },
+    plugins: { enabled: true, outputFile: ".cursor/extensions.json", format: "recommendations" },
+    permissions: { mode: "best-effort", outputFile: ".cursor/settings.json" },
+    workflow: { outputFile: ".trellis/workflow.md" },
+  },
+  verifyChecks: [
+    { path: ".cursor", type: "dir", severity: "warning" },
+    { path: "AGENTS.md", type: "file", severity: "warning" },
+  ],
+};
+
+const CLAUDE_CODE_MATERIALIZATION: MaterializationSpec = {
+  configDir: ".claude",
+  scaffoldDirs: [".claude", "prompts"],
+  components: {
+    skills: {
+      mode: "single-file",
+      aggregateFiles: [
+        { path: "AGENTS.md", format: "agents-md" },
+        { path: "CLAUDE.md", format: "claude-md" },
+      ],
+    },
+    prompts: { mode: "merged", output: "prompts/system.md" },
+    mcpServers: { enabled: true, outputFile: ".claude/mcp.json" },
+    plugins: { enabled: true, outputFile: ".claude/plugins.json", format: "entries" },
+    permissions: { mode: "full", outputFile: ".claude/settings.local.json" },
+    workflow: { outputFile: ".trellis/workflow.md" },
+  },
+  verifyChecks: [
+    { path: ".claude", type: "dir", severity: "warning" },
+    { path: "AGENTS.md", type: "file", severity: "warning" },
+    { path: "CLAUDE.md", type: "file", severity: "warning" },
+  ],
+};
+
+const CUSTOM_MATERIALIZATION: MaterializationSpec = {
+  ...CURSOR_MATERIALIZATION,
+};
+
+// ---------------------------------------------------------------------------
+// Built-in backend definitions
+// ---------------------------------------------------------------------------
+
 const BUILTIN_BACKENDS: BackendDefinition[] = [
   {
     name: "cursor",
@@ -23,6 +77,7 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
       { type: "brew", package: "cursor", label: "brew install --cask cursor", platforms: ["darwin"] },
       { type: "winget", package: "Anysphere.Cursor", label: "winget install Anysphere.Cursor", platforms: ["win32"] },
     ],
+    materialization: CURSOR_MATERIALIZATION,
   },
   {
     name: "cursor-agent",
@@ -39,6 +94,7 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
     install: [
       { type: "manual", label: "Included with Cursor", instructions: "Install Cursor from https://cursor.com — the `agent` CLI is bundled." },
     ],
+    materialization: CURSOR_MATERIALIZATION,
   },
   {
     name: "claude-code",
@@ -56,6 +112,7 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
     install: [
       { type: "npm", package: "@anthropic-ai/claude-code", label: "npm install -g @anthropic-ai/claude-code" },
     ],
+    materialization: CLAUDE_CODE_MATERIALIZATION,
   },
   {
     name: "custom",
@@ -64,14 +121,47 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
     origin: { type: "builtin" },
     supportedModes: ["resolve"],
     defaultInteractionModes: ["start"],
+    materialization: CUSTOM_MATERIALIZATION,
   },
 ];
+
+// ---------------------------------------------------------------------------
+// Backend-specific provider env builders (#141 Phase 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Claude Code (third-party binary) expects native Anthropic env vars.
+ * SECURITY: apiKey is resolved from the in-memory registry only.
+ */
+function buildClaudeCodeProviderEnv(
+  providerConfig: ModelProviderConfig | undefined,
+): Record<string, string> {
+  const env: Record<string, string> = {};
+
+  const defaultDesc = modelProviderRegistry.getDefault();
+  const providerType = providerConfig?.type ?? defaultDesc?.type;
+  const descriptor = providerType ? modelProviderRegistry.get(providerType) : defaultDesc;
+
+  const apiKey = descriptor?.apiKey ?? process.env["ACTANT_API_KEY"];
+  if (apiKey) {
+    env["ANTHROPIC_API_KEY"] = apiKey;
+  }
+
+  const baseUrl = providerConfig?.baseUrl ?? descriptor?.defaultBaseUrl;
+  if (baseUrl) {
+    env["ANTHROPIC_BASE_URL"] = baseUrl;
+  }
+
+  return env;
+}
 
 export function registerBuiltinBackends(): void {
   const mgr = getBackendManager();
   for (const def of BUILTIN_BACKENDS) {
     mgr.register(def);
   }
+
+  mgr.registerBuildProviderEnv("claude-code", buildClaudeCodeProviderEnv);
 }
 
 registerBuiltinBackends();

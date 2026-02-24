@@ -147,6 +147,15 @@ export interface BackendDefinition extends VersionedComponent {
    * Used by CLI to offer one-click install when the backend is missing.
    */
   install?: BackendInstallMethod[];
+
+  // -- Materialization (#150) ----------------------------------------------
+
+  /**
+   * Declarative workspace materialization spec.
+   * When present, `DeclarativeBuilder` can build the workspace automatically
+   * without a hand-written `BackendBuilder` class.
+   */
+  materialization?: MaterializationSpec;
 }
 
 /**
@@ -262,4 +271,112 @@ export interface InitializerConfig {
 export interface InitializerStep {
   type: string;
   config?: Record<string, unknown>;
+}
+
+// ---------------------------------------------------------------------------
+// Materialization Spec — declarative workspace build description (#150)
+// ---------------------------------------------------------------------------
+
+/**
+ * Declarative description of how a backend's workspace is materialized.
+ * Stored on `BackendDefinition.materialization` — JSON-serializable,
+ * distributable via actant-hub.
+ */
+export interface MaterializationSpec {
+  /** Config root directory relative to workspaceDir (e.g. ".cursor", ".claude", ".pi"). */
+  configDir: string;
+
+  /** Per-component-type materialization strategies. */
+  components: {
+    skills?: SkillMaterializationStrategy;
+    prompts?: PromptMaterializationStrategy;
+    mcpServers?: McpMaterializationStrategy;
+    plugins?: PluginMaterializationStrategy;
+    permissions?: PermissionMaterializationStrategy;
+    workflow?: WorkflowMaterializationStrategy;
+  };
+
+  /** Directories to create during scaffold phase (relative to workspaceDir). */
+  scaffoldDirs?: string[];
+
+  /** Paths to check during verify phase. */
+  verifyChecks?: VerifyCheckSpec[];
+}
+
+export interface SkillMaterializationStrategy {
+  /**
+   * - "single-file": merge all skills into one AGENTS.md
+   * - "per-file": one file per skill in outputDir
+   * - "dual": both AGENTS.md and per-file output
+   */
+  mode: "single-file" | "per-file" | "dual";
+  /** Target directory for per-file output (relative to workspaceDir). */
+  outputDir?: string;
+  /** File extension for per-file output (e.g. ".mdc", ".md"). */
+  extension?: string;
+  /** Additional aggregate files to generate alongside per-file/single-file output. */
+  aggregateFiles?: AggregateFileSpec[];
+  /** Frontmatter template for per-file output (YAML between --- delimiters). */
+  frontmatterTemplate?: string;
+}
+
+export interface AggregateFileSpec {
+  /** Output path relative to workspaceDir. */
+  path: string;
+  /** Content format. */
+  format: "agents-md" | "claude-md";
+}
+
+export interface PromptMaterializationStrategy {
+  /**
+   * - "merged": combine all prompts into a single file
+   * - "per-file": one file per prompt
+   */
+  mode: "merged" | "per-file";
+  /** Output path (merged) or directory (per-file), relative to workspaceDir. */
+  output: string;
+}
+
+export interface McpMaterializationStrategy {
+  /** false = skip MCP materialization entirely (e.g. Pi). */
+  enabled: boolean;
+  /** Output file path relative to workspaceDir (e.g. ".cursor/mcp.json"). */
+  outputFile?: string;
+}
+
+export interface PluginMaterializationStrategy {
+  /** false = skip plugin materialization entirely. */
+  enabled: boolean;
+  /** Output file path relative to workspaceDir. */
+  outputFile?: string;
+  /**
+   * - "recommendations": VSCode-style extension recommendations (Cursor)
+   * - "entries": full plugin entries with config (Claude Code)
+   */
+  format?: "recommendations" | "entries";
+}
+
+export interface PermissionMaterializationStrategy {
+  /**
+   * - "full": complete allow/deny/ask + sandbox (Claude Code)
+   * - "tools-only": only tools allow list (Pi)
+   * - "best-effort": agent tools allow list (Cursor)
+   */
+  mode: "full" | "tools-only" | "best-effort";
+  /** Output file path relative to workspaceDir. */
+  outputFile: string;
+}
+
+export interface WorkflowMaterializationStrategy {
+  /** Output file path relative to workspaceDir. */
+  outputFile: string;
+}
+
+export interface VerifyCheckSpec {
+  /** Path relative to workspaceDir. */
+  path: string;
+  /** Expected type. */
+  type: "file" | "dir";
+  /** "error" = build fails if missing, "warning" = advisory only. */
+  severity?: "error" | "warning";
 }

@@ -14,7 +14,7 @@ import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
 import { resolveBackend, resolveAcpBackend, openBackend, isAcpOnlyBackend, requireInteractionMode, type ResolvedBackend } from "./launcher/backend-resolver";
-import { requireMode, getInstallHint, getBackendManager } from "./launcher/backend-registry";
+import { requireMode, getInstallHint, getBackendManager, getBuildProviderEnv } from "./launcher/backend-registry";
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
 import { RestartTracker, type RestartPolicy } from "./restart-tracker";
@@ -24,6 +24,7 @@ import type { InstanceRegistryAdapter } from "../state/instance-registry-types";
 import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
 import { createCommunicator } from "../communicator/create-communicator";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
+import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../provider/provider-env-resolver";
 
 const logger = createLogger("agent-manager");
 
@@ -237,7 +238,10 @@ export class AgentManager {
 
       if (this.acpManager) {
         const acpResolved = resolveAcpBackend(meta.backendType, dir, meta.backendConfig);
-        const providerEnv = buildProviderEnv(meta.providerConfig);
+        const backendEnvBuilder = getBuildProviderEnv(meta.backendType);
+        const providerEnv = backendEnvBuilder
+          ? backendEnvBuilder(meta.providerConfig, meta.backendConfig)
+          : buildDefaultProviderEnv(meta.providerConfig);
         const connResult = await this.acpManager.connect(name, {
           command: acpResolved.command,
           args: acpResolved.args,
@@ -777,14 +781,15 @@ export class AgentManager {
 }
 
 /**
- * Build ACTANT_* env vars from a resolved provider config.
+ * Default ACTANT_* env var builder — used when no backend-specific
+ * buildProviderEnv is registered.
  *
  * SECURITY: apiKey is resolved exclusively from the in-memory registry
  * (loaded from ~/.actant/config.json at daemon startup). It is never
  * read from providerConfig (which is persisted in the agent workspace
  * .actant.json and could be visible to the LLM).
  */
-function buildProviderEnv(providerConfig?: ModelProviderConfig): Record<string, string> {
+function buildDefaultProviderEnv(providerConfig?: ModelProviderConfig): Record<string, string> {
   const env: Record<string, string> = {};
 
   const defaultDesc = modelProviderRegistry.getDefault();
@@ -795,12 +800,14 @@ function buildProviderEnv(providerConfig?: ModelProviderConfig): Record<string, 
   }
 
   const descriptor = providerType ? modelProviderRegistry.get(providerType) : defaultDesc;
-  const apiKey = descriptor?.apiKey ?? process.env["ACTANT_API_KEY"];
+  const apiKey = descriptor?.apiKey ?? resolveApiKeyFromEnv(providerType);
   if (apiKey) {
     env["ACTANT_API_KEY"] = apiKey;
   }
 
-  const baseUrl = providerConfig?.baseUrl ?? descriptor?.defaultBaseUrl;
+  const baseUrl = providerConfig?.baseUrl
+    ?? descriptor?.defaultBaseUrl
+    ?? (providerType ? resolveUpstreamBaseUrl(providerType) : undefined);
   if (baseUrl) {
     env["ACTANT_BASE_URL"] = baseUrl;
   }
