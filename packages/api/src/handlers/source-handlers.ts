@@ -2,8 +2,11 @@ import type {
   SourceAddParams,
   SourceRemoveParams,
   SourceSyncParams,
+  SourceValidateParams,
+  SourceValidateResult,
   SourceEntry,
 } from "@actant/shared";
+import { SourceValidator } from "@actant/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 
@@ -12,6 +15,7 @@ export function registerSourceHandlers(registry: HandlerRegistry): void {
   registry.register("source.add", handleSourceAdd);
   registry.register("source.remove", handleSourceRemove);
   registry.register("source.sync", handleSourceSync);
+  registry.register("source.validate", handleSourceValidate);
 }
 
 async function handleSourceList(
@@ -75,4 +79,23 @@ async function handleSourceSync(
       hasBreakingChanges: report.hasBreakingChanges,
     },
   };
+}
+
+async function handleSourceValidate(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<SourceValidateResult> {
+  const { name, path, strict } = params as unknown as SourceValidateParams;
+
+  let rootDir: string;
+  if (path) {
+    rootDir = path;
+  } else if (name) {
+    rootDir = ctx.sourceManager.getSourceRootDir(name);
+  } else {
+    throw new Error("Either 'name' or 'path' parameter is required");
+  }
+
+  const validator = new SourceValidator();
+  return validator.validate(rootDir, { strict });
 }

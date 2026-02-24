@@ -8,3 +8,9 @@ export {
   type SourceManagerDeps,
   type SourceManagerOptions,
 } from "./source-manager";
+export {
+  SourceValidator,
+  type SourceValidationIssue,
+  type SourceValidationReport,
+  type ValidateOptions,
+} from "./source-validator";

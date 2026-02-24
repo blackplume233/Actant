@@ -520,6 +520,31 @@ export interface SourceSyncResult {
   };
 }
 
+export interface SourceValidateParams {
+  /** Validate a registered source by name. */
+  name?: string;
+  /** Validate an arbitrary directory path directly. */
+  path?: string;
+  /** Treat warnings as errors. */
+  strict?: boolean;
+}
+
+export interface SourceValidationIssueDto {
+  severity: "error" | "warning" | "info";
+  path: string;
+  component?: string;
+  message: string;
+  code?: string;
+}
+
+export interface SourceValidateResult {
+  valid: boolean;
+  sourceName: string;
+  rootDir: string;
+  summary: { pass: number; warn: number; error: number };
+  issues: SourceValidationIssueDto[];
+}
+
 export interface PresetListParams {
   packageName?: string;
 }
@@ -614,6 +639,7 @@ export interface RpcMethodMap {
   "source.add": { params: SourceAddParams; result: SourceAddResult };
   "source.remove": { params: SourceRemoveParams; result: SourceRemoveResult };
   "source.sync": { params: SourceSyncParams; result: SourceSyncResult };
+  "source.validate": { params: SourceValidateParams; result: SourceValidateResult };
   "preset.list": { params: PresetListParams; result: PresetListResult };
   "preset.show": { params: PresetShowParams; result: PresetShowResult };
   "preset.apply": { params: PresetApplyParams; result: PresetApplyResult };

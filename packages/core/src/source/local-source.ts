@@ -25,6 +25,10 @@ export class LocalSource implements ComponentSource {
     this.config = config;
   }
 
+  getRootDir(): string {
+    return this.config.path;
+  }
+
   async fetch(): Promise<FetchResult> {
     return this.loadPackage();
   }

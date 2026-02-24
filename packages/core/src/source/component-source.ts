@@ -28,6 +28,9 @@ export interface ComponentSource {
   readonly packageName: string;
   readonly config: SourceConfig;
 
+  /** Filesystem root directory for this source's content. */
+  getRootDir(): string;
+
   fetch(): Promise<FetchResult>;
   sync(): Promise<FetchResult>;
   dispose(): Promise<void>;

@@ -1,0 +1,56 @@
+name: Validate ActantHub
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "examples/actant-hub/**"
+      - "packages/core/src/source/**"
+  pull_request:
+    branches: [main, master]
+    paths:
+      - "examples/actant-hub/**"
+      - "packages/core/src/source/**"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build packages
+        run: pnpm build
+
+      - name: Validate examples/actant-hub
+        run: |
+          node -e "
+            const { SourceValidator } = require('./packages/core/dist/index.js');
+            const path = require('path');
+            async function main() {
+              const validator = new SourceValidator();
+              const report = await validator.validate(path.resolve('examples/actant-hub'), { strict: true });
+              console.log(JSON.stringify(report, null, 2));
+              if (!report.valid) {
+                console.error('Validation failed!');
+                process.exit(1);
+              }
+              console.log('Validation passed.');
+            }
+            main().catch(e => { console.error(e); process.exit(1); });
+          "
+
+      - name: Run source validator tests
+        run: pnpm run -C packages/core test -- --run src/source/source-validator.test.ts

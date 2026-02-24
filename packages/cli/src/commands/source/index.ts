@@ -5,6 +5,7 @@ import { createSourceListCommand } from "./list";
 import { createSourceAddCommand } from "./add";
 import { createSourceRemoveCommand } from "./remove";
 import { createSourceSyncCommand } from "./sync";
+import { createSourceValidateCommand } from "./validate";
 
 export function createSourceCommand(client: RpcClient, printer?: CliPrinter): Command {
   const cmd = new Command("source")
@@ -14,6 +15,7 @@ export function createSourceCommand(client: RpcClient, printer?: CliPrinter): Co
   cmd.addCommand(createSourceAddCommand(client, printer));
   cmd.addCommand(createSourceRemoveCommand(client, printer));
   cmd.addCommand(createSourceSyncCommand(client, printer));
+  cmd.addCommand(createSourceValidateCommand(client, printer));
 
   return cmd;
 }

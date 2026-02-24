@@ -625,7 +625,40 @@ ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调
 
 > 实现参考：`packages/api/src/handlers/schedule-handlers.ts`，`packages/core/src/scheduler/`
 
-### 3.9 守护进程
+### 3.9 组件源管理 ✅ 已实现
+
+管理组件源（GitHub 仓库、本地目录）。通过 `package@name` 命名空间将远程组件注入到各 domain manager。
+
+| 方法 | 参数 | 返回 | 说明 |
+|------|------|------|------|
+| `source.list` | `{}` | `SourceEntry[]` | 列出已注册源 |
+| `source.add` | `{ name, config }` | `{ name, components }` | 添加并 fetch 源 |
+| `source.remove` | `{ name }` | `{ success }` | 移除源及缓存 |
+| `source.sync` | `{ name? }` | `{ synced[], report? }` | 同步单个或全部源 |
+| `source.validate` | `{ name?, path?, strict? }` | `SourceValidateResult` | 递归校验源中所有资产 |
+
+#### source.validate 详细说明
+
+提供 `name`（已注册源名称）或 `path`（任意本地目录路径）之一。校验四层：
+
+1. **Manifest 层** — `actant.json` 存在性、schema 完整性、文件引用存在性
+2. **组件层** — 递归扫描各子目录，JSON 文件用 Zod schema 校验，SKILL.md 检查 frontmatter
+3. **引用层** — Preset 中引用的组件名称是否在该源中存在
+4. **Template 语义校验** — 复用 `validateTemplate()` 检查权限、provider、backend 配置
+
+```typescript
+interface SourceValidateResult {
+  valid: boolean;         // strict 模式下 warn 也算失败
+  sourceName: string;
+  rootDir: string;
+  summary: { pass: number; warn: number; error: number };
+  issues: SourceValidationIssueDto[];
+}
+```
+
+> 实现参考：`packages/core/src/source/source-validator.ts`, `packages/api/src/handlers/source-handlers.ts`
+
+### 3.10 守护进程
 
 | 方法 | 参数 | 返回 | 说明 |
 |------|------|------|------|
@@ -759,7 +792,21 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 └── templates/       # AgentTemplate JSON
 ```
 
-### 4.5 调度器命令（Phase 3c 新增）
+### 4.5 组件源命令 (`actant source`)
+
+| 命令 | 参数 | 选项 | 对应 RPC |
+|------|------|------|---------|
+| `source list` | — | `-f, --format` | `source.list` |
+| `source add <name>` | `name` | `--github <url>`, `--local <path>`, `--branch <branch>` | `source.add` |
+| `source remove <name>` | `name` | — | `source.remove` |
+| `source sync [name]` | `name?` | — | `source.sync` |
+| `source validate [name]` | `name?` | `--path <dir>`, `-f, --format`, `--strict` | `source.validate` |
+
+`source validate` 提供 `name`（已注册源）或 `--path`（任意目录）。`--strict` 模式下 warnings 也视为失败（exit code 1）。
+
+> 实现参考：`packages/cli/src/commands/source/`
+
+### 4.6 调度器命令（Phase 3c 新增）
 
 #### Agent 任务调度
 

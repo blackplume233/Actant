@@ -219,6 +219,54 @@ Interactive CLI commands (wizards, prompts) must provide `--skip-*` flags to ena
 3. Ensure the skipped path still creates necessary artifacts (directories, config files)
 4. Be idempotent — running the command multiple times with the same flags produces the same result
 
+### Deduplication in Recursive Validation
+
+When validating assets that can be discovered through multiple paths (e.g., manifest explicit list + directory scan), always track already-validated files to avoid duplicating issues.
+
+```typescript
+// Good — track validated files to avoid duplicates
+const validatedFiles = new Set<string>();
+
+for (const file of manifestFiles) {
+  validatedFiles.add(file);
+  validate(file);
+}
+
+for (const file of directoryScan) {
+  if (validatedFiles.has(file)) continue; // skip already validated
+  validatedFiles.add(file);
+  validate(file);
+}
+
+// Bad — validate without dedup, same file processed twice
+for (const file of manifestFiles) { validate(file); }
+for (const file of directoryScan) { validate(file); } // duplicates!
+```
+
+**Why**: Sources have both explicit file lists in `actant.json` and auto-scanned directory contents. Without dedup, the same component gets validated twice, producing duplicate warnings/errors and inflated pass counts.
+
+### Static Validation vs Runtime Registry
+
+Static validation tools (like `source validate`) run without the full application context. Singletons populated at startup (e.g., `modelProviderRegistry`) are empty during static validation. Design validation to be resilient to this.
+
+```typescript
+// Good — optional field that's resolved at runtime
+{
+  "backend": { "type": "claude-code" },
+  "domainContext": { "skills": ["code-review"] }
+}
+// provider is omitted; resolved at runtime from config.json
+
+// Caution — provider type warning in static validation
+{
+  "provider": { "type": "anthropic" }
+}
+// Static validator warns: "anthropic is not registered"
+// because modelProviderRegistry is empty at validation time
+```
+
+**Why**: Example templates and hub content should validate cleanly in CI without running the full daemon. Avoid fields that depend on runtime state in static assets unless necessary.
+
 ### Explicit Module Boundaries
 
 Each package exposes a public API via barrel exports. Internal modules are not accessible externally.

@@ -26,6 +26,10 @@ export class GitHubSource implements ComponentSource {
     this.cacheDir = join(cacheDir, packageName);
   }
 
+  getRootDir(): string {
+    return this.cacheDir;
+  }
+
   async fetch(): Promise<FetchResult> {
     await this.clone();
     return this.readCached();

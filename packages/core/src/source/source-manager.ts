@@ -142,6 +142,11 @@ export class SourceManager {
     return this.sources.has(name);
   }
 
+  /** Resolve a registered source name to its filesystem root directory. */
+  getSourceRootDir(name: string): string {
+    return this.getSourceOrThrow(name).getRootDir();
+  }
+
   // ---------------------------------------------------------------------------
   // Preset operations
   // ---------------------------------------------------------------------------
