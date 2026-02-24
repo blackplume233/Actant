@@ -13,6 +13,7 @@ assignees: []
 relatedIssues:
   - 13
   - 136
+  - 137
 relatedFiles:
   - packages/mcp-server/
 taskRef: null
@@ -23,7 +24,7 @@ updatedAt: "2026-02-23T00:00:00"
 closedAt: null
 ---
 
-**Related Issues**: [[0013-acp-endpoint]], [[0136-agent-to-agent-email]]
+**Related Issues**: [[0013-acp-endpoint]], [[0136-agent-to-agent-email]], [[0137-runtime-mcp-manager]]
 **Related Files**: `packages/mcp-server/`
 
 > **优先级调整（P2 → P4）**：Agent-to-Agent 通信优先通过 CLI / JSON-RPC API / Email (#136) 实现，
