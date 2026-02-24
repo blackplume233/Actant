@@ -1,7 +1,7 @@
 ---
 id: 128
 title: "agent start: spawn EINVAL error message should indicate missing backend CLI"
-status: open
+status: closed
 labels:
   - enhancement
   - cli
@@ -14,10 +14,10 @@ relatedIssues: []
 relatedFiles: []
 taskRef: null
 githubRef: "blackplume233/Actant#128"
-closedAs: null
+closedAs: completed
 createdAt: "2026-02-23T12:56:12Z"
-updatedAt: "2026-02-23T12:56:44"
-closedAt: null
+updatedAt: "2026-02-24T15:15:00"
+closedAt: "2026-02-24T15:15:00"
 ---
 
 ## 现象

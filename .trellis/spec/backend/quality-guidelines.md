@@ -293,6 +293,30 @@ if (compat === "agent-skills") {
 
 **Why**: External standards evolve independently from the project's own schema. Layering compat checks on top of base validation keeps the base stable and lets users opt in when they need interoperability.
 
+### Hub Component Portability
+
+共享 source 仓库（如 actant-hub）面向不同配置的用户。设计组件时应最大化可移植性：
+
+**Templates — 省略 `provider` 字段**。让用户 `config.json` 中配置的默认 Provider 生效。
+
+```json
+// Good — provider-agnostic, works for all users
+{ "backend": { "type": "claude-code" }, "domainContext": { "skills": ["code-review"] } }
+
+// Bad — locks template to Anthropic, non-Anthropic users must manually override
+{ "backend": { "type": "claude-code" }, "provider": { "type": "anthropic" }, "domainContext": { ... } }
+```
+
+**Skills — JSON 与 SKILL.md 字段保持一致**。如果 SKILL.md 声明了 `license: MIT`，对应 JSON 也应包含 `"license": "MIT"`。两种格式的元数据应始终同步。
+
+**Validation — 在 CI 中运行严格 Agent Skills 验证**：
+
+```bash
+actant source validate --path . --compat agent-skills --strict
+```
+
+此命令递归校验所有组件（manifest、schema、cross-reference、template semantics），strict 模式将 warning 提升为 error。actant-hub 已通过此验证（16 组件全部通过）。
+
 ### Parser-level Field Name Mapping
 
 When integrating with external formats that use different naming conventions (e.g., kebab-case YAML keys), map to internal TypeScript conventions at the parser boundary. Downstream code never sees the external naming.
@@ -513,6 +537,24 @@ actant daemon start
 - 日常开发**优先使用 Link 模式**（`pnpm install:local`），改动后只需 `pnpm build` 即可生效
 - 仅在需要发布或测试独立部署时使用 Standalone 模式
 - 遇到「源码已修复但全局命令仍有问题」时，**第一步检查全局 `actant` 的安装模式**
+
+### Common Mistake: Standalone Bundle ENOENT on AppData
+
+**症状**: `npx actant source validate` 或其他命令报错：
+
+```
+Error: ENOENT: no such file or directory, open 'C:\Users\<user>\AppData\Roaming\package.json'
+```
+
+**原因**: Standalone bundle 内部使用 `readFileSync` 从 npm 全局前缀路径解析 `package.json`。在非全局安装环境（如 `npx` 临时执行或 `pnpm actant` 脚本调用）下，该路径不存在。
+
+**临时解决方案**: 使用源码模式运行 CLI：
+
+```bash
+pnpm --filter @actant/cli exec tsx src/bin/actant.ts <command>
+```
+
+**预防**: 日常开发使用 Link 模式（`pnpm install:local`）而非 standalone，或在 bundle 入口添加路径存在性检查的 fallback。
 
 ### DTS 生成注意事项
 
