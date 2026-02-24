@@ -86,13 +86,12 @@ importers:
       '@actant/core':
         specifier: workspace:*
         version: link:../core
-      '@actant/shared':
-        specifier: workspace:*
-        version: link:../shared
-    optionalDependencies:
       '@actant/pi':
         specifier: workspace:*
         version: link:../pi
+      '@actant/shared':
+        specifier: workspace:*
+        version: link:../shared
 
   packages/cli:
     dependencies:
