@@ -8,6 +8,7 @@ import {
   AgentAlreadyRunningError,
   AgentAlreadyAttachedError,
   AgentNotAttachedError,
+  AgentLaunchError,
 } from "@actant/shared";
 import { TemplateRegistry } from "../template/registry/template-registry";
 import { AgentInitializer } from "../initializer/agent-initializer";
@@ -486,10 +487,10 @@ describe("AgentManager", () => {
 
     it("attachAgent should register external PID and set status to running", async () => {
       await manager.createAgent("ext-agent", "test-tpl");
-      const result = await manager.attachAgent("ext-agent", 55555);
+      const result = await manager.attachAgent("ext-agent", process.pid);
 
       expect(result.status).toBe("running");
-      expect(result.pid).toBe(55555);
+      expect(result.pid).toBe(process.pid);
       expect(result.processOwnership).toBe("external");
     });
 
@@ -497,25 +498,30 @@ describe("AgentManager", () => {
       await manager.createAgent("ext-meta", "test-tpl", {
         metadata: { env: "prod" },
       });
-      const result = await manager.attachAgent("ext-meta", 55555, { clientId: "unreal-123" });
+      const result = await manager.attachAgent("ext-meta", process.pid, { clientId: "unreal-123" });
 
       expect(result.metadata).toEqual({ env: "prod", clientId: "unreal-123" });
     });
 
     it("attachAgent should throw if already attached", async () => {
       await manager.createAgent("dup-attach", "test-tpl");
-      await manager.attachAgent("dup-attach", 55555);
+      await manager.attachAgent("dup-attach", process.pid);
 
-      await expect(manager.attachAgent("dup-attach", 66666)).rejects.toThrow(AgentAlreadyAttachedError);
+      await expect(manager.attachAgent("dup-attach", process.pid)).rejects.toThrow(AgentAlreadyAttachedError);
     });
 
     it("attachAgent should throw for unknown agent", async () => {
       await expect(manager.attachAgent("unknown", 12345)).rejects.toThrow(AgentNotFoundError);
     });
 
+    it("attachAgent should throw for non-existent PID", async () => {
+      await manager.createAgent("pid-check", "test-tpl");
+      await expect(manager.attachAgent("pid-check", 99999)).rejects.toThrow(AgentLaunchError);
+    });
+
     it("detachAgent should clear pid and return DetachResult", async () => {
       await manager.createAgent("det-agent", "test-tpl");
-      await manager.attachAgent("det-agent", 55555);
+      await manager.attachAgent("det-agent", process.pid);
       const result = await manager.detachAgent("det-agent");
 
       expect(result).toEqual({ ok: true, workspaceCleaned: false });
@@ -530,7 +536,7 @@ describe("AgentManager", () => {
         launchMode: "one-shot",
         workspacePolicy: "ephemeral",
       });
-      await manager.attachAgent("cleanup-eph", 55555);
+      await manager.attachAgent("cleanup-eph", process.pid);
       const result = await manager.detachAgent("cleanup-eph", { cleanup: true });
 
       expect(result).toEqual({ ok: true, workspaceCleaned: true });
@@ -539,7 +545,7 @@ describe("AgentManager", () => {
 
     it("detachAgent with cleanup should NOT destroy persistent workspace", async () => {
       await manager.createAgent("cleanup-persist", "test-tpl");
-      await manager.attachAgent("cleanup-persist", 55555);
+      await manager.attachAgent("cleanup-persist", process.pid);
       const result = await manager.detachAgent("cleanup-persist", { cleanup: true });
 
       expect(result).toEqual({ ok: true, workspaceCleaned: false });
@@ -558,7 +564,7 @@ describe("AgentManager", () => {
       await watcherManager.initialize();
 
       await watcherManager.createAgent("ext-crash", "test-tpl");
-      await watcherManager.attachAgent("ext-crash", 55555);
+      await watcherManager.attachAgent("ext-crash", process.pid);
 
       const processUtils = await import("./launcher/process-utils");
       const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(false);

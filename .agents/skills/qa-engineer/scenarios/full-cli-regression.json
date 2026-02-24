@@ -1,0 +1,610 @@
+{
+  "name": "full-cli-regression",
+  "description": "全流程回归测试 - 遍历几乎所有 CLI 命令，使用真实 build binary 全局安装，真实 launcher 模式",
+  "tags": ["regression", "full-cli", "real", "global-binary"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "real",
+    "globalBinary": true,
+    "templates": [
+      {
+        "name": "qa-regression-tpl",
+        "inline": {
+          "name": "qa-regression-tpl",
+          "version": "1.0.0",
+          "description": "QA full regression test template",
+          "backend": { "type": "cursor" },
+          "provider": { "type": "anthropic" },
+          "domainContext": {}
+        }
+      }
+    ],
+    "fixtures": {
+      "skill": "configs/skills/code-review.json",
+      "prompt": "configs/prompts/system-code-reviewer.json",
+      "mcp": "configs/mcp/filesystem.json",
+      "workflow": "configs/workflows/trellis-standard.json",
+      "plugin": "configs/plugins/web-search-plugin.json",
+      "invalidTemplate": { "inline": { "invalid": true } },
+      "localSource": "_fixtures/local-source/"
+    }
+  },
+  "steps": [
+    {
+      "id": "p1-version",
+      "description": "[基础设施] CLI 版本号",
+      "command": "--version",
+      "expect": "输出版本号（如 0.2.0），退出码 0"
+    },
+    {
+      "id": "p1-help",
+      "description": "[基础设施] CLI 帮助信息",
+      "command": "--help",
+      "expect": "输出帮助信息，列出所有子命令（agent, template, daemon, skill, prompt, mcp, workflow, plugin, source, preset, schedule, proxy），退出码 0"
+    },
+    {
+      "id": "p1-daemon-status",
+      "description": "[基础设施] 确认 Daemon 已在 setup 阶段启动",
+      "command": "daemon status -f json",
+      "expect": "返回 JSON 包含 running 状态和 version，退出码 0"
+    },
+
+    {
+      "id": "p1s-setup-all-skip",
+      "description": "[Setup] 全跳过模式 — 验证 setup 命令基础流程（banner → 目录结构 → summary）",
+      "command": "setup --skip-home --skip-provider --skip-source --skip-agent --skip-autostart --skip-hello --skip-update",
+      "expect": "退出码 0，输出 Setup Complete 摘要，目录结构被创建",
+      "artifacts": "$ACTANT_HOME/config.json 应存在；$ACTANT_HOME/configs/ 目录结构完整"
+    },
+    {
+      "id": "p1s-setup-verify-dirs",
+      "description": "[Setup] 白盒验证 — 确认 setup 创建的目录结构",
+      "command": "template list -f json",
+      "expect": "退出码 0（目录结构正确，daemon 可以操作 configs/templates/ 等目录）"
+    },
+    {
+      "id": "p1s-setup-skip-partial",
+      "description": "[Setup] 部分跳过（非 TTY）— 不跳过 source，验证 @inquirer/prompts 在无 stdin 时优雅取消",
+      "command": "setup --skip-home --skip-provider --skip-agent --skip-autostart --skip-hello --skip-update",
+      "expect": "触发 ExitPromptError / user cancellation 处理，输出「已取消设置向导」",
+      "note": "非 TTY 场景下 @inquirer/prompts 可能挂起直到 stdin 关闭，属于已知行为"
+    },
+    {
+      "id": "p1s-setup-skip-home-env",
+      "description": "[Setup] --skip-home 应使用 ACTANT_HOME 环境变量而非默认 ~/.actant",
+      "command": "setup --skip-home --skip-provider --skip-source --skip-agent --skip-autostart --skip-hello --skip-update",
+      "expect": "退出码 0，输出包含 $ACTANT_HOME 路径，config.json 被创建/重写"
+    },
+    {
+      "id": "p1s-setup-config-structure",
+      "description": "[Setup] 验证 --skip-home 创建的 config.json 结构完整",
+      "command": "powershell -c \"Get-Content $env:ACTANT_HOME/config.json | ConvertFrom-Json | ConvertTo-Json\"",
+      "expect": "JSON 包含 devSourcePath 和 update（maxBackups, preUpdateTestCommand, autoRestartAgents）字段"
+    },
+
+    {
+      "id": "p2-tpl-list-initial",
+      "description": "[模板] 列出初始模板（应包含 setup 阶段加载的模板）",
+      "command": "template list -f json",
+      "expect": "返回数组包含 qa-regression-tpl"
+    },
+    {
+      "id": "p2-tpl-validate-valid",
+      "description": "[模板] 验证合法模板文件",
+      "command": "template validate $FIXTURE_DIR/test-template.json",
+      "expect": "输出 Valid 或类似确认信息，包含模板名 qa-regression-tpl，退出码 0"
+    },
+    {
+      "id": "p2-tpl-validate-invalid",
+      "description": "[模板] 验证无效模板文件应报错",
+      "command": "template validate $FIXTURE_DIR/invalid-template.json",
+      "expect": "退出码非 0，输出验证错误信息"
+    },
+    {
+      "id": "p2-tpl-show",
+      "description": "[模板] 查看模板详情",
+      "command": "template show qa-regression-tpl -f json",
+      "expect": "返回完整模板 JSON，包含 name=qa-regression-tpl, version=1.0.0, backend.type=cursor"
+    },
+    {
+      "id": "p2-tpl-show-nonexistent",
+      "description": "[模板] 查看不存在的模板",
+      "command": "template show nonexistent-tpl-xyz",
+      "expect": "退出码非 0，错误信息提示模板不存在"
+    },
+
+    {
+      "id": "p3-skill-list-empty",
+      "description": "[Skill] 列出 skills（初始状态）",
+      "command": "skill list -f json",
+      "expect": "返回空数组或无 skill，退出码 0"
+    },
+    {
+      "id": "p3-skill-add",
+      "description": "[Skill] 从文件添加 skill",
+      "command": "skill add $FIXTURE_DIR/code-review.json",
+      "expect": "成功添加 code-review skill，退出码 0"
+    },
+    {
+      "id": "p3-skill-list-after-add",
+      "description": "[Skill] 添加后列出",
+      "command": "skill list -f json",
+      "expect": "返回包含 code-review 的数组"
+    },
+    {
+      "id": "p3-skill-show",
+      "description": "[Skill] 查看详情",
+      "command": "skill show code-review -f json",
+      "expect": "返回 code-review 完整信息，包含 name, description, content"
+    },
+    {
+      "id": "p3-skill-export",
+      "description": "[Skill] 导出到文件",
+      "command": "skill export code-review -o $FIXTURE_DIR/skill-exported.json",
+      "expect": "成功导出到指定文件，退出码 0",
+      "artifacts": "$FIXTURE_DIR/skill-exported.json 文件应存在且内容合法"
+    },
+    {
+      "id": "p3-skill-remove",
+      "description": "[Skill] 移除",
+      "command": "skill remove code-review",
+      "expect": "成功移除，退出码 0"
+    },
+    {
+      "id": "p3-skill-list-after-remove",
+      "description": "[Skill] 移除后确认",
+      "command": "skill list -f json",
+      "expect": "code-review 已不在列表中"
+    },
+
+    {
+      "id": "p3-prompt-list-empty",
+      "description": "[Prompt] 列出 prompts（初始状态）",
+      "command": "prompt list -f json",
+      "expect": "返回空数组或无 prompt，退出码 0"
+    },
+    {
+      "id": "p3-prompt-add",
+      "description": "[Prompt] 从文件添加 prompt",
+      "command": "prompt add $FIXTURE_DIR/system-code-reviewer.json",
+      "expect": "成功添加 system-code-reviewer，退出码 0"
+    },
+    {
+      "id": "p3-prompt-list-after-add",
+      "description": "[Prompt] 添加后列出",
+      "command": "prompt list -f json",
+      "expect": "返回包含 system-code-reviewer 的数组"
+    },
+    {
+      "id": "p3-prompt-show",
+      "description": "[Prompt] 查看详情",
+      "command": "prompt show system-code-reviewer -f json",
+      "expect": "返回完整 prompt JSON，包含 name, content, variables"
+    },
+    {
+      "id": "p3-prompt-export",
+      "description": "[Prompt] 导出到文件",
+      "command": "prompt export system-code-reviewer -o $FIXTURE_DIR/prompt-exported.json",
+      "expect": "成功导出，退出码 0",
+      "artifacts": "$FIXTURE_DIR/prompt-exported.json 文件应存在"
+    },
+    {
+      "id": "p3-prompt-remove",
+      "description": "[Prompt] 移除",
+      "command": "prompt remove system-code-reviewer",
+      "expect": "成功移除，退出码 0"
+    },
+    {
+      "id": "p3-prompt-list-after-remove",
+      "description": "[Prompt] 移除后确认",
+      "command": "prompt list -f json",
+      "expect": "system-code-reviewer 已不在列表中"
+    },
+
+    {
+      "id": "p3-mcp-list-empty",
+      "description": "[MCP] 列出 MCP 配置（初始状态）",
+      "command": "mcp list -f json",
+      "expect": "返回空数组或无 mcp，退出码 0"
+    },
+    {
+      "id": "p3-mcp-add",
+      "description": "[MCP] 从文件添加 MCP 配置",
+      "command": "mcp add $FIXTURE_DIR/filesystem.json",
+      "expect": "成功添加 filesystem MCP，退出码 0"
+    },
+    {
+      "id": "p3-mcp-list-after-add",
+      "description": "[MCP] 添加后列出",
+      "command": "mcp list -f json",
+      "expect": "返回包含 filesystem 的数组"
+    },
+    {
+      "id": "p3-mcp-show",
+      "description": "[MCP] 查看详情",
+      "command": "mcp show filesystem -f json",
+      "expect": "返回完整 MCP 配置 JSON，包含 name=filesystem, command=npx"
+    },
+    {
+      "id": "p3-mcp-export",
+      "description": "[MCP] 导出到文件",
+      "command": "mcp export filesystem -o $FIXTURE_DIR/mcp-exported.json",
+      "expect": "成功导出，退出码 0",
+      "artifacts": "$FIXTURE_DIR/mcp-exported.json 文件应存在"
+    },
+    {
+      "id": "p3-mcp-remove",
+      "description": "[MCP] 移除",
+      "command": "mcp remove filesystem",
+      "expect": "成功移除，退出码 0"
+    },
+    {
+      "id": "p3-mcp-list-after-remove",
+      "description": "[MCP] 移除后确认",
+      "command": "mcp list -f json",
+      "expect": "filesystem 已不在列表中"
+    },
+
+    {
+      "id": "p3-workflow-list-empty",
+      "description": "[Workflow] 列出 workflows（初始状态）",
+      "command": "workflow list -f json",
+      "expect": "返回空数组或无 workflow，退出码 0"
+    },
+    {
+      "id": "p3-workflow-add",
+      "description": "[Workflow] 从文件添加 workflow",
+      "command": "workflow add $FIXTURE_DIR/trellis-standard.json",
+      "expect": "成功添加 trellis-standard workflow，退出码 0"
+    },
+    {
+      "id": "p3-workflow-list-after-add",
+      "description": "[Workflow] 添加后列出",
+      "command": "workflow list -f json",
+      "expect": "返回包含 trellis-standard 的数组"
+    },
+    {
+      "id": "p3-workflow-show",
+      "description": "[Workflow] 查看详情",
+      "command": "workflow show trellis-standard -f json",
+      "expect": "返回完整 workflow JSON，包含 name=trellis-standard"
+    },
+    {
+      "id": "p3-workflow-export",
+      "description": "[Workflow] 导出到文件",
+      "command": "workflow export trellis-standard -o $FIXTURE_DIR/workflow-exported.json",
+      "expect": "成功导出，退出码 0",
+      "artifacts": "$FIXTURE_DIR/workflow-exported.json 文件应存在"
+    },
+    {
+      "id": "p3-workflow-remove",
+      "description": "[Workflow] 移除",
+      "command": "workflow remove trellis-standard",
+      "expect": "成功移除，退出码 0"
+    },
+    {
+      "id": "p3-workflow-list-after-remove",
+      "description": "[Workflow] 移除后确认",
+      "command": "workflow list -f json",
+      "expect": "trellis-standard 已不在列表中"
+    },
+
+    {
+      "id": "p3-plugin-list-empty",
+      "description": "[Plugin] 列出 plugins（初始状态）",
+      "command": "plugin list -f json",
+      "expect": "返回空数组或无 plugin，退出码 0"
+    },
+    {
+      "id": "p3-plugin-add",
+      "description": "[Plugin] 从文件添加 plugin",
+      "command": "plugin add $FIXTURE_DIR/web-search-plugin.json",
+      "expect": "成功添加 web-search plugin，退出码 0"
+    },
+    {
+      "id": "p3-plugin-list-after-add",
+      "description": "[Plugin] 添加后列出",
+      "command": "plugin list -f json",
+      "expect": "返回包含 web-search 的数组"
+    },
+    {
+      "id": "p3-plugin-show",
+      "description": "[Plugin] 查看详情",
+      "command": "plugin show web-search -f json",
+      "expect": "返回完整 plugin JSON，包含 name=web-search"
+    },
+    {
+      "id": "p3-plugin-export",
+      "description": "[Plugin] 导出到文件",
+      "command": "plugin export web-search -o $FIXTURE_DIR/plugin-exported.json",
+      "expect": "成功导出，退出码 0",
+      "artifacts": "$FIXTURE_DIR/plugin-exported.json 文件应存在"
+    },
+    {
+      "id": "p3-plugin-remove",
+      "description": "[Plugin] 移除",
+      "command": "plugin remove web-search",
+      "expect": "成功移除，退出码 0"
+    },
+    {
+      "id": "p3-plugin-list-after-remove",
+      "description": "[Plugin] 移除后确认",
+      "command": "plugin list -f json",
+      "expect": "web-search 已不在列表中"
+    },
+
+    {
+      "id": "p4-source-list-empty",
+      "description": "[Source] 列出 sources（初始状态）",
+      "command": "source list -f json",
+      "expect": "返回空数组或无 source，退出码 0"
+    },
+    {
+      "id": "p4-source-add-local",
+      "description": "[Source] 添加本地 source 目录",
+      "command": "source add $FIXTURE_DIR/local-source --type local --name qa-local-source",
+      "expect": "成功添加，退出码 0"
+    },
+    {
+      "id": "p4-source-list-after-add",
+      "description": "[Source] 添加后列出",
+      "command": "source list -f json",
+      "expect": "返回包含 qa-local-source 的数组"
+    },
+    {
+      "id": "p4-source-remove",
+      "description": "[Source] 移除 source",
+      "command": "source remove qa-local-source",
+      "expect": "成功移除，退出码 0"
+    },
+
+    {
+      "id": "p5-preset-list",
+      "description": "[Preset] 列出 presets",
+      "command": "preset list -f json",
+      "expect": "返回数组（可能为空），退出码 0"
+    },
+    {
+      "id": "p5-preset-show-nonexistent",
+      "description": "[Preset] 查看不存在的 preset",
+      "command": "preset show nonexistent@preset",
+      "expect": "退出码非 0，错误信息提示 preset 不存在"
+    },
+
+    {
+      "id": "p6-agent-list-empty",
+      "description": "[Agent 生命周期] 初始 Agent 列表为空",
+      "command": "agent list -f json",
+      "expect": "返回空数组"
+    },
+    {
+      "id": "p6-agent-create",
+      "description": "[Agent 生命周期] 创建 Agent",
+      "command": "agent create reg-agent -t qa-regression-tpl -f json",
+      "expect": "成功返回 JSON，name=reg-agent, status=created",
+      "artifacts": "$ACTANT_HOME/instances/reg-agent/ 目录应被创建"
+    },
+    {
+      "id": "p6-agent-list-after-create",
+      "description": "[Agent 生命周期] 创建后列出",
+      "command": "agent list -f json",
+      "expect": "返回包含 reg-agent 的数组，status=created"
+    },
+    {
+      "id": "p6-agent-status-created",
+      "description": "[Agent 生命周期] 查看状态 (created)",
+      "command": "agent status reg-agent -f json",
+      "expect": "status=created, name=reg-agent"
+    },
+    {
+      "id": "p6-agent-resolve",
+      "description": "[Agent 生命周期] Resolve Agent (cursor 后端支持 resolve 模式)",
+      "command": "agent resolve reg-agent",
+      "expect": "成功 resolve，退出码 0"
+    },
+    {
+      "id": "p6-agent-status-after-resolve",
+      "description": "[Agent 生命周期] Resolve 后查看状态",
+      "command": "agent status reg-agent -f json",
+      "expect": "status 应为 created 或 resolved，退出码 0"
+    },
+    {
+      "id": "p6-agent-destroy",
+      "description": "[Agent 生命周期] 销毁 Agent",
+      "command": "agent destroy reg-agent --force",
+      "expect": "成功销毁，退出码 0"
+    },
+    {
+      "id": "p6-agent-list-after-destroy",
+      "description": "[Agent 生命周期] 销毁后列出",
+      "command": "agent list -f json",
+      "expect": "reg-agent 已不在列表中",
+      "artifacts": "$ACTANT_HOME/instances/reg-agent/ 目录应被删除"
+    },
+
+    {
+      "id": "p7-agent-create-adv",
+      "description": "[Agent 高级] 创建高级测试 Agent",
+      "command": "agent create adv-agent -t qa-regression-tpl -f json",
+      "expect": "成功创建，name=adv-agent"
+    },
+    {
+      "id": "p7-agent-resolve",
+      "description": "[Agent 高级] Resolve Agent workspace",
+      "command": "agent resolve adv-agent",
+      "expect": "成功 resolve（cursor 后端应支持 resolve）或提示相关信息，退出码 0"
+    },
+    {
+      "id": "p7-agent-tasks",
+      "description": "[Agent 高级] 查看 Agent tasks",
+      "command": "agent tasks adv-agent",
+      "expect": "退出码 0，输出任务列表（可能为空）"
+    },
+    {
+      "id": "p7-agent-logs",
+      "description": "[Agent 高级] 查看 Agent logs",
+      "command": "agent logs adv-agent",
+      "expect": "退出码 0，输出日志（可能为空）"
+    },
+    {
+      "id": "p7-agent-dispatch-not-running",
+      "description": "[Agent 高级] 对未启动 Agent dispatch（错误路径）",
+      "command": "agent dispatch adv-agent -m \"test task\"",
+      "expect": "退出码非 0，提示 Agent 未运行或不支持"
+    },
+    {
+      "id": "p7-agent-attach-bad-pid",
+      "description": "[Agent 高级] Attach 不存在的进程 PID",
+      "command": "agent attach adv-agent --pid 99999",
+      "expect": "退出码非 0，错误信息（进程不存在或参数不合法）"
+    },
+    {
+      "id": "p7-agent-detach-not-attached",
+      "description": "[Agent 高级] Detach 未 attach 的 Agent",
+      "command": "agent detach adv-agent",
+      "expect": "退出码非 0 或提示未 attach"
+    },
+    {
+      "id": "p7-agent-destroy-adv",
+      "description": "[Agent 高级] 清理高级测试 Agent",
+      "command": "agent destroy adv-agent --force",
+      "expect": "成功销毁，退出码 0"
+    },
+
+    {
+      "id": "p8-proxy-help",
+      "description": "[Proxy] 查看 Proxy 帮助信息",
+      "command": "proxy --help",
+      "expect": "输出 proxy 用法说明，包含 --lease 选项，退出码 0"
+    },
+    {
+      "id": "p8-proxy-nonexistent",
+      "description": "[Proxy] 对不存在的 Agent 启动 Proxy",
+      "command": "proxy nonexistent-proxy-agent",
+      "expect": "退出码非 0，错误信息提示 Agent 不存在"
+    },
+
+    {
+      "id": "p9-schedule-list",
+      "description": "[Schedule] 列出不存在 Agent 的 schedule",
+      "command": "schedule list nonexistent-schedule-agent",
+      "expect": "退出码非 0，错误信息提示 Agent 不存在"
+    },
+
+    {
+      "id": "p10-err-create-no-tpl",
+      "description": "[错误处理] 创建 Agent 不指定模板",
+      "command": "agent create no-tpl-agent",
+      "expect": "退出码非 0，提示需要指定模板（-t）"
+    },
+    {
+      "id": "p10-err-create-bad-tpl",
+      "description": "[错误处理] 使用不存在的模板创建 Agent",
+      "command": "agent create bad-agent -t nonexistent-tpl-xyz",
+      "expect": "退出码非 0，提示模板不存在"
+    },
+    {
+      "id": "p10-err-start-nonexistent",
+      "description": "[错误处理] 启动不存在的 Agent",
+      "command": "agent start ghost-agent-xyz",
+      "expect": "退出码非 0，错误信息"
+    },
+    {
+      "id": "p10-err-stop-nonexistent",
+      "description": "[错误处理] 停止不存在的 Agent",
+      "command": "agent stop ghost-agent-xyz",
+      "expect": "退出码非 0，错误信息"
+    },
+    {
+      "id": "p10-err-status-nonexistent",
+      "description": "[错误处理] 查看不存在 Agent 的状态",
+      "command": "agent status ghost-agent-xyz",
+      "expect": "退出码非 0，错误信息"
+    },
+    {
+      "id": "p10-err-destroy-nonexistent",
+      "description": "[错误处理] 销毁不存在的 Agent (--force 为幂等操作，应成功)",
+      "command": "agent destroy ghost-agent-xyz --force",
+      "expect": "退出码 0（--force 设计为幂等，不存在的资源也视为成功销毁）"
+    },
+    {
+      "id": "p10-err-dup-setup",
+      "description": "[错误处理] 创建用于重复测试的 Agent",
+      "command": "agent create dup-test -t qa-regression-tpl",
+      "expect": "成功创建，退出码 0"
+    },
+    {
+      "id": "p10-err-dup-create",
+      "description": "[错误处理] 重复创建同名 Agent",
+      "command": "agent create dup-test -t qa-regression-tpl",
+      "expect": "退出码非 0，提示 Agent 已存在"
+    },
+    {
+      "id": "p10-err-dup-cleanup",
+      "description": "[错误处理] 清理重复测试 Agent",
+      "command": "agent destroy dup-test --force",
+      "expect": "成功销毁"
+    },
+    {
+      "id": "p10-err-skill-show-nonexistent",
+      "description": "[错误处理] 查看不存在的 skill",
+      "command": "skill show nonexistent-skill-xyz",
+      "expect": "退出码非 0，错误信息"
+    },
+    {
+      "id": "p10-err-prompt-show-nonexistent",
+      "description": "[错误处理] 查看不存在的 prompt",
+      "command": "prompt show nonexistent-prompt-xyz",
+      "expect": "退出码非 0，错误信息"
+    },
+    {
+      "id": "p10-err-mcp-show-nonexistent",
+      "description": "[错误处理] 查看不存在的 MCP",
+      "command": "mcp show nonexistent-mcp-xyz",
+      "expect": "退出码非 0，错误信息"
+    },
+    {
+      "id": "p10-err-workflow-show-nonexistent",
+      "description": "[错误处理] 查看不存在的 workflow",
+      "command": "workflow show nonexistent-wf-xyz",
+      "expect": "退出码非 0，错误信息"
+    },
+    {
+      "id": "p10-err-plugin-show-nonexistent",
+      "description": "[错误处理] 查看不存在的 plugin",
+      "command": "plugin show nonexistent-plugin-xyz",
+      "expect": "退出码非 0，错误信息"
+    },
+    {
+      "id": "p10-err-tpl-validate-nofile",
+      "description": "[错误处理] 验证不存在的模板文件",
+      "command": "template validate /tmp/this-file-does-not-exist-12345.json",
+      "expect": "退出码非 0，错误信息提示文件不存在"
+    },
+
+    {
+      "id": "p11-final-agent-list",
+      "description": "[清理验证] 确认所有 Agent 已清理",
+      "command": "agent list -f json",
+      "expect": "返回空数组，无残留 Agent"
+    },
+    {
+      "id": "p11-daemon-stop",
+      "description": "[清理验证] 停止 Daemon",
+      "command": "daemon stop",
+      "expect": "成功停止，退出码 0"
+    },
+    {
+      "id": "p11-daemon-status-after-stop",
+      "description": "[清理验证] 确认 Daemon 已停止",
+      "command": "daemon status",
+      "expect": "退出码非 0，提示 daemon 未运行"
+    }
+  ],
+  "cleanup": [
+    "agent destroy reg-agent --force",
+    "agent destroy adv-agent --force",
+    "agent destroy dup-test --force",
+    "daemon stop"
+  ]
+}

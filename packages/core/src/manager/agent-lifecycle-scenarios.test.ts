@@ -223,7 +223,7 @@ describe("Agent lifecycle scenarios", () => {
       expect(manager.getStatus("ext-agent")).toBe("created");
 
       // Step 2: external client spawns process and attaches
-      const externalPid = 99001;
+      const externalPid = process.pid;
       const attached = await manager.attachAgent("ext-agent", externalPid, {
         clientId: "unreal-session-42",
       });
@@ -266,7 +266,7 @@ describe("Agent lifecycle scenarios", () => {
       expect(resolved.created).toBe(false);
 
       // Attach → detach without cleanup
-      await manager.attachAgent("persistent-ext", 99002);
+      await manager.attachAgent("persistent-ext", process.pid);
       expect(manager.getStatus("persistent-ext")).toBe("running");
 
       const result = await manager.detachAgent("persistent-ext");

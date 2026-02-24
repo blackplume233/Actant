@@ -159,6 +159,45 @@ app.use((error, req, res, next) => {
 
 **Fix**: Use typed error classes that carry context. Display the error code and relevant details.
 
+### Mistake: Accepting Nonexistent PIDs in attach
+
+**Symptom**: `agent attach <name> --pid 99999` succeeds with exit code 0, despite PID 99999 not existing. Agent enters `running` state referencing a dead process.
+
+**Cause**: `attachAgent()` trusted the caller-provided PID without verifying process existence.
+
+**Fix**: Validate with `process.kill(pid, 0)` before accepting the PID. If `ESRCH` is thrown, reject with `AgentLaunchError`.
+
+```typescript
+try {
+  process.kill(pid, 0);
+} catch (err: unknown) {
+  if ((err as NodeJS.ErrnoException).code === "ESRCH") {
+    throw new AgentLaunchError(name, new Error(`Process with PID ${pid} does not exist`));
+  }
+}
+```
+
+**Prevention**: Any operation that accepts an external PID (attach, process watcher registration) must verify existence first. `process.kill(pid, 0)` works cross-platform in Node.js.
+
+### Mistake: Silent Success on Failed Operations (Exit Code 0)
+
+**Symptom**: CLI commands print a "failure" message (e.g., "No scheduler for agent") but exit with code 0. Automated scripts and QA tools cannot distinguish success from failure.
+
+**Cause**: Command handlers only set `process.exitCode = 1` for thrown errors, not for logical failures communicated via result objects.
+
+**Fix**: Any CLI command whose result indicates the operation did not succeed must set `process.exitCode = 1`:
+
+```typescript
+if (result.queued) {
+  printer.log("Task queued.");
+} else {
+  printer.dim(`No scheduler for agent "${name}".`);
+  process.exitCode = 1;
+}
+```
+
+**Prevention**: For every CLI command, enumerate the success and failure conditions. Every failure condition must result in a non-zero exit code, regardless of whether it throws an exception.
+
 ### Mistake: No Timeout on External Calls
 
 **Symptom**: CLI hangs indefinitely when a Model Provider is down.

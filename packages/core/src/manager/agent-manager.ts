@@ -6,6 +6,7 @@ import {
   AgentAlreadyRunningError,
   AgentAlreadyAttachedError,
   AgentNotAttachedError,
+  AgentLaunchError,
   createLogger,
 } from "@actant/shared";
 import type { AgentInitializer } from "../initializer/index";
@@ -371,6 +372,18 @@ export class AgentManager {
 
     if (meta.status === "running" && meta.pid != null) {
       throw new AgentAlreadyAttachedError(name);
+    }
+
+    try {
+      process.kill(pid, 0);
+    } catch (err: unknown) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === "ESRCH") {
+        throw new AgentLaunchError(
+          name,
+          new Error(`Process with PID ${pid} does not exist`),
+        );
+      }
     }
 
     const dir = join(this.instancesBaseDir, name);

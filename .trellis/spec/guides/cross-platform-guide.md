@@ -223,6 +223,41 @@ The ACP client collects streaming chunks automatically. Do not send a final "com
 
 ---
 
+## Interactive Prompts (Non-TTY Behavior)
+
+> **Warning**: `@inquirer/prompts` hangs indefinitely when stdin is not a TTY (e.g., piped input, CI environments, automated tests).
+
+When stdin is closed or non-interactive, `@inquirer/prompts` does not immediately throw `ExitPromptError`. Instead, it blocks waiting for input until the process is killed or stdin emits `end`. The `isUserCancellation()` handler in `setup.ts` correctly catches the eventual error, but the delay makes automated testing impractical.
+
+**Mitigation**: The `setup` command provides `--skip-*` flags for each interactive step, enabling fully non-interactive execution:
+
+```bash
+actant setup --skip-home --skip-provider --skip-source --skip-agent --skip-autostart --skip-hello --skip-update
+```
+
+**Future consideration**: Add a global `--non-interactive` flag or detect `!process.stdin.isTTY` to auto-skip all interactive prompts with sensible defaults.
+
+---
+
+## JSON File Writing (UTF-8 BOM)
+
+> **Warning**: PowerShell's `[System.IO.File]::WriteAllText()` and `Set-Content` write UTF-8 with BOM by default on Windows. JSON parsers in Node.js (`JSON.parse`) will reject the BOM character as invalid JSON.
+
+**Symptom**: `actant template load <file>` fails with "Invalid JSON" on a file that looks correct in a text editor.
+
+**Cause**: The file starts with `\xEF\xBB\xBF` (UTF-8 BOM), which is invisible in most editors but rejected by strict JSON parsers.
+
+**Fix**: When writing JSON files in PowerShell for consumption by Node.js:
+
+```powershell
+# Explicit UTF-8 without BOM
+[System.IO.File]::WriteAllText($path, $json, (New-Object System.Text.UTF8Encoding($false)))
+```
+
+**In Node.js code**: This is not an issue — `fs.writeFileSync` with `"utf-8"` encoding does not add a BOM.
+
+---
+
 ## Checklist for New Features
 
 Before implementing any feature, verify:

@@ -16,6 +16,7 @@ export function createScheduleListCommand(client: RpcClient, printer: CliPrinter
         } else {
           if (result.sources.length === 0 && !result.running) {
             printer.dim(`No scheduler for agent "${name}".`);
+            process.exitCode = 1;
           } else {
             printer.log(`Scheduler: ${result.running ? "running" : "stopped"}`);
             for (const s of result.sources) {

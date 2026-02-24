@@ -287,6 +287,7 @@ Client → agent.attach({ name: "reviewer", pid: 12345 })
 | `metadata` | `Record<string, string>` | 否 | 附加信息（如客户端 session ID） |
 
 **行为：**
+- **PID 验证**：通过 `process.kill(pid, 0)` 验证进程存在性。若 PID 不存在（`ESRCH`），抛出 `AGENT_LAUNCH` 错误
 - 设置 `processOwnership: "external"`，`pid`，`status: "running"`
 - 注册 ProcessWatcher 进行 PID 存活监控
 - 若 ProcessWatcher 检测到 PID 死亡但客户端未 detach，状态变为 `"crashed"`
@@ -645,6 +646,30 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | `-h, --help` | 显示帮助 |
 
 无子命令时进入交互式 **REPL**。
+
+### 4.0 Setup 向导 (`actant setup`)
+
+| 命令 | 选项 | 行为 |
+|------|------|------|
+| `setup` | `--skip-home`, `--skip-provider`, `--skip-source`, `--skip-agent`, `--skip-autostart`, `--skip-hello`, `--skip-update` | 交互式设置向导，7 个步骤均可独立跳过 |
+
+**步骤详情：**
+
+| 步骤 | Skip 标志 | 交互方式 | 跳过时行为 |
+|------|-----------|---------|-----------|
+| 1. 选择 ACTANT_HOME | `--skip-home` | `select` + `input` | 使用 `$ACTANT_HOME` 环境变量或 `~/.actant`，创建目录结构和 `config.json` |
+| 2. 配置 Model Provider | `--skip-provider` | `select` + `input` + `password` + `confirm` | 跳过 |
+| 3. 配置组件源 | `--skip-source` | `confirm` + `select` + `input` | 跳过（需 Daemon 运行） |
+| 4. 创建 Agent | `--skip-agent` | `checkbox` + `input` | 跳过（需 Daemon 运行） |
+| 5. 配置自动启动 | `--skip-autostart` | `confirm` | 跳过 |
+| 6. Hello World 验证 | `--skip-hello` | 无（自动） | 跳过（需 Daemon 运行） |
+| 7. 更新选项 | `--skip-update` | `confirm` + `input` | 跳过 |
+
+**幂等性**: 多次运行 `setup`（含全跳过模式）不产生错误，已存在的 `config.json` 和目录结构不被破坏。
+
+**非 TTY 行为**: 未跳过的交互步骤在非 TTY 环境下会挂起（`@inquirer/prompts` 等待 stdin）。`isUserCancellation()` 捕获取消事件并优雅退出。QA 自动化必须使用 `--skip-*` 标志。
+
+> 实现参考：`packages/cli/src/commands/setup/setup.ts`
 
 ### 4.1 模板命令 (`actant template` / `actant tpl`)
 

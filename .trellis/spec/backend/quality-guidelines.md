@@ -151,6 +151,46 @@ README.md 和 GitHub Pages 中的统计数字（LOC、Tests、RPC methods、CLI 
 
 **Why**: 手工计数容易与实际不符，且版本间无法追踪变化。stage 产物是自动提取的，作为统一数据源可确保 README、Pages、Release Notes 之间的数字一致性。
 
+### CLI Exit Code Consistency
+
+Every CLI command must return a non-zero exit code when the operation does not succeed, even if the failure is "soft" (no exception thrown).
+
+```typescript
+// Good — logical failure sets exit code
+if (!result.queued) {
+  printer.dim("No scheduler for agent.");
+  process.exitCode = 1;
+}
+
+// Bad — prints failure message but exits 0
+if (!result.queued) {
+  printer.dim("No scheduler for agent.");
+  // caller sees exit code 0, cannot detect failure
+}
+```
+
+**Why**: QA automation, shell scripts, and CI pipelines rely on exit codes to determine success/failure. A non-zero exit code is the only reliable contract.
+
+**Rule**: For each CLI command, enumerate all execution paths and ensure every "unhappy path" sets `process.exitCode = 1` (or throws, which the global error handler converts to non-zero).
+
+### Non-Interactive Testability (--skip-* Pattern)
+
+Interactive CLI commands (wizards, prompts) must provide `--skip-*` flags to enable fully non-interactive execution for QA automation.
+
+```typescript
+// Good — each interactive step has a skip flag
+.option("--skip-home", "Skip work directory selection")
+.option("--skip-provider", "Skip model provider configuration")
+```
+
+**Why**: Interactive prompts (`@inquirer/prompts`) hang in non-TTY environments. Without skip flags, the command cannot be tested in CI or by QA scripts.
+
+**Rule**: Any command that uses `@inquirer/prompts` or similar interactive input must:
+1. Provide `--skip-<step>` flags for each interactive section
+2. Use sensible defaults when a step is skipped (e.g., `ACTANT_HOME` from env)
+3. Ensure the skipped path still creates necessary artifacts (directories, config files)
+4. Be idempotent — running the command multiple times with the same flags produces the same result
+
 ### Explicit Module Boundaries
 
 Each package exposes a public API via barrel exports. Internal modules are not accessible externally.
@@ -168,6 +208,20 @@ Each package exposes a public API via barrel exports. Internal modules are not a
 | Agent lifecycle | State transitions, error recovery, cleanup |
 | Template composition | Valid/invalid reference resolution |
 | Public APIs | All exported functions must have tests |
+
+### End-to-End Regression (QA Loop)
+
+Full CLI regression tests live in `.agents/skills/qa-engineer/scenarios/full-cli-regression.json`. The QA loop:
+
+1. Builds the project and globally links the `actant` binary (`npm link`)
+2. Creates an isolated `ACTANT_HOME` in a temp directory
+3. Starts a Daemon with a dedicated `ACTANT_SOCKET`
+4. Executes all scenario steps against the real binary
+5. Reports results and creates GitHub issues for failures
+6. Fixes issues, rebuilds, and re-runs until 100% pass
+7. Cleans up (stops daemon, removes temp dirs, unlinks binary)
+
+**Rule**: When changing unit test fixtures (e.g., hardcoded PIDs in `attachAgent` tests), ensure they reference real, existing processes. Use `process.pid` (the test runner's own PID) instead of made-up numbers like `99999`, since PID validation (`process.kill(pid, 0)`) is now enforced.
 
 ### Test Structure
 
