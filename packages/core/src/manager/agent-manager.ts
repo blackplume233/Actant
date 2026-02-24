@@ -18,7 +18,7 @@ import { requireMode, getInstallHint } from "./launcher/backend-registry";
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
 import { RestartTracker, type RestartPolicy } from "./restart-tracker";
-import { delay } from "./launcher/process-utils";
+import { delay, isProcessAlive } from "./launcher/process-utils";
 import { scanInstances, updateInstanceMeta } from "../state/index";
 import type { InstanceRegistryAdapter } from "../state/instance-registry-types";
 import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
@@ -121,6 +121,25 @@ export class AgentManager {
         if (action.type === "restart") {
           pendingRestarts.push(meta.name);
         }
+      } else if (
+        (meta.status === "error" || meta.status === "crashed") &&
+        meta.pid != null &&
+        isProcessAlive(meta.pid)
+      ) {
+        const dir = join(this.instancesBaseDir, meta.name);
+        const reclaimed = await updateInstanceMeta(dir, { status: "running" });
+        this.cache.set(meta.name, reclaimed);
+        this.processes.set(meta.name, { pid: meta.pid, workspaceDir: dir, instanceName: meta.name });
+        this.watcher.watch(meta.name, meta.pid);
+        logger.info({ name: meta.name, pid: meta.pid, oldStatus: meta.status }, "Orphan process reclaimed");
+      } else if (
+        (meta.status === "error" || meta.status === "crashed") &&
+        meta.pid != null
+      ) {
+        const dir = join(this.instancesBaseDir, meta.name);
+        const fixed = await updateInstanceMeta(dir, { pid: undefined });
+        this.cache.set(meta.name, fixed);
+        logger.debug({ name: meta.name, pid: meta.pid, status: meta.status }, "Cleared stale PID from dead process");
       } else {
         this.cache.set(meta.name, meta);
       }
@@ -239,10 +258,17 @@ export class AgentManager {
       this.restartTracker.recordStart(name);
       logger.info({ name, pid, launchMode: starting.launchMode, acp: true }, "Agent started");
     } catch (err) {
+      const proc = this.processes.get(name);
+      if (proc) {
+        await this.launcher.terminate(proc).catch((e) => {
+          logger.warn({ name, pid: proc.pid, error: e }, "Failed to terminate process after start failure");
+        });
+        this.processes.delete(name);
+      }
       if (this.acpManager?.has(name)) {
         await this.acpManager.disconnect(name).catch(() => {});
       }
-      const errored = await updateInstanceMeta(dir, { status: "error" });
+      const errored = await updateInstanceMeta(dir, { status: "error", pid: undefined });
       this.cache.set(name, errored);
       if (err instanceof AgentLaunchError) throw err;
       const spawnMsg = err instanceof Error ? err.message : String(err);

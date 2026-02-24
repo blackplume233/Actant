@@ -579,4 +579,122 @@ describe("AgentManager", () => {
       watcherManager.dispose();
     });
   });
+
+  describe("startAgent error cleanup (#155)", () => {
+    it("should terminate spawned process when ACP connection fails", async () => {
+      const mockAcpManager: import("./agent-manager").AcpConnectionManagerLike = {
+        connect: vi.fn().mockRejectedValue(new Error("ACP handshake timeout")),
+        has: vi.fn().mockReturnValue(false),
+        getPrimarySessionId: vi.fn(),
+        getConnection: vi.fn(),
+        disconnect: vi.fn(),
+        disposeAll: vi.fn(),
+      };
+
+      const acpManager = new AgentManager(initializer, launcher, tmpDir, {
+        acpManager: mockAcpManager,
+      });
+
+      await acpManager.createAgent("acp-fail", "test-tpl");
+      await expect(acpManager.startAgent("acp-fail")).rejects.toThrow(AgentLaunchError);
+
+      expect(acpManager.getStatus("acp-fail")).toBe("error");
+      expect(acpManager.getAgent("acp-fail")?.pid).toBeUndefined();
+      expect(launcher.terminated).toHaveLength(1);
+
+      acpManager.dispose();
+    });
+
+    it("should clear process from internal map on start failure", async () => {
+      const mockAcpManager: import("./agent-manager").AcpConnectionManagerLike = {
+        connect: vi.fn().mockRejectedValue(new Error("connection refused")),
+        has: vi.fn().mockReturnValue(false),
+        getPrimarySessionId: vi.fn(),
+        getConnection: vi.fn(),
+        disconnect: vi.fn(),
+        disposeAll: vi.fn(),
+      };
+
+      const acpManager = new AgentManager(initializer, launcher, tmpDir, {
+        acpManager: mockAcpManager,
+      });
+
+      await acpManager.createAgent("proc-leak", "test-tpl");
+      await expect(acpManager.startAgent("proc-leak")).rejects.toThrow();
+
+      // After failure, the agent should be startable again (not stuck in processes map)
+      mockAcpManager.connect = vi.fn().mockResolvedValue({ sessionId: "s1" });
+      await acpManager.startAgent("proc-leak");
+      expect(acpManager.getStatus("proc-leak")).toBe("running");
+
+      acpManager.dispose();
+    });
+  });
+
+  describe("initialize orphan process detection (#155)", () => {
+    it("should reclaim alive orphan process with error status", async () => {
+      const dir = join(tmpDir, "orphan-error");
+      await mkdir(dir);
+      await writeInstanceMeta(dir, makeMeta("orphan-error", {
+        status: "error",
+        pid: process.pid,
+      }));
+
+      const processUtils = await import("./launcher/process-utils");
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(true);
+
+      const newManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+      });
+      await newManager.initialize();
+
+      expect(newManager.getStatus("orphan-error")).toBe("running");
+      expect(newManager.getAgent("orphan-error")?.pid).toBe(process.pid);
+
+      spy.mockRestore();
+      newManager.dispose();
+    });
+
+    it("should reclaim alive orphan process with crashed status", async () => {
+      const dir = join(tmpDir, "orphan-crashed");
+      await mkdir(dir);
+      await writeInstanceMeta(dir, makeMeta("orphan-crashed", {
+        status: "crashed",
+        pid: process.pid,
+      }));
+
+      const processUtils = await import("./launcher/process-utils");
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(true);
+
+      const newManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+      });
+      await newManager.initialize();
+
+      expect(newManager.getStatus("orphan-crashed")).toBe("running");
+
+      spy.mockRestore();
+      newManager.dispose();
+    });
+
+    it("should clear stale PID from dead error process", async () => {
+      const dir = join(tmpDir, "dead-error");
+      await mkdir(dir);
+      await writeInstanceMeta(dir, makeMeta("dead-error", {
+        status: "error",
+        pid: 99999,
+      }));
+
+      const newManager = new AgentManager(initializer, launcher, tmpDir);
+      await newManager.initialize();
+
+      expect(newManager.getStatus("dead-error")).toBe("error");
+      expect(newManager.getAgent("dead-error")?.pid).toBeUndefined();
+
+      const diskMeta = await readInstanceMeta(dir);
+      expect(diskMeta.pid).toBeUndefined();
+
+      newManager.dispose();
+    });
+  });
 });

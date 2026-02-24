@@ -1,0 +1,60 @@
+{
+  "id": "fix-agent-status-sync",
+  "name": "fix-agent-status-sync",
+  "title": "Fix #155: Agent instance status stuck on error while actually running",
+  "description": "Agent 实例状态卡在 error 但进程正在正常运行。根因：startAgent() catch 块未清理已 spawn 的进程（进程泄漏+状态不一致），handleProcessExit() 对 direct 模式使用错误退出状态，initialize() 不修正 error/crashed 状态的孤儿进程。",
+  "status": "planning",
+  "dev_type": "fix",
+  "scope": "core",
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-02-24",
+  "completedAt": null,
+  "branch": "vk/7b37-155",
+  "base_branch": "master",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {"phase": 1, "action": "implement"},
+    {"phase": 2, "action": "check"},
+    {"phase": 3, "action": "finish"},
+    {"phase": 4, "action": "create-pr"}
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [
+    {
+      "id": "fix1-cleanup-spawned-process",
+      "title": "Fix 1 (P0): startAgent() catch 块增加进程清理",
+      "status": "pending",
+      "description": "在 catch 块中终止已 spawn 的进程并从 this.processes 移除"
+    },
+    {
+      "id": "fix2-exit-status-logic",
+      "title": "Fix 2 (P1): handleProcessExit() 正确区分退出状态",
+      "status": "pending",
+      "description": "将 exitStatus 判断从 processOwnership 改为基于 launch mode action"
+    },
+    {
+      "id": "fix3-orphan-detection",
+      "title": "Fix 3 (P1): initialize() 增加孤儿进程检测",
+      "status": "pending",
+      "description": "Daemon 重启时检查 error/crashed 实例的 PID 是否存活并重新纳管"
+    },
+    {
+      "id": "fix4-unit-tests",
+      "title": "Fix 4: 更新单元测试 + 耐久测试",
+      "status": "pending",
+      "description": "验证 ACP 失败后进程清理、direct 模式退出状态、孤儿进程回收"
+    }
+  ],
+  "relatedFiles": [
+    "packages/core/src/manager/agent-manager.ts",
+    "packages/core/src/manager/launch-mode-handler.ts",
+    "packages/core/src/manager/launcher/process-watcher.ts",
+    "packages/core/src/manager/agent-manager.test.ts",
+    "packages/core/src/manager/agent-manager.endurance.test.ts"
+  ],
+  "notes": "Error-handling.md 明确反对 Swallowing Lifecycle Errors，要求 catch 块清理资源并传播错误。endurance-testing.md 的 INV-PID 不变量要求 stopped/error 状态无残留 PID。"
+}
