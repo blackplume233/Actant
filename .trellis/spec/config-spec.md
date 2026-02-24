@@ -195,6 +195,7 @@ Provider 存在两个层次：
 | `workflow` | `string` | — | Workflow 名称（**deprecated** — 将归并为 skill, #132） |
 | `plugins` | `string[]` | `[]` | Plugin 名称列表（Phase 3a 新增） |
 | `subAgents` | `string[]` | `[]` | 子 Agent 模板名称 |
+| `extensions` | `Record<string, unknown[]>` | `{}` | 自定义组件类型的扩展点（#54），key 为组件类型名，value 为该类型的引用数组 |
 
 ### McpServerRef
 
@@ -741,6 +742,7 @@ Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
 | `ACTANT_BASE_URL` | Provider API 端点（由 Daemon 从 config.json 注入） | 无 |
 | `ACTANT_THINKING_LEVEL` | 统一 thinking/reasoning 级别 | 无 |
 | `ANTHROPIC_API_KEY` | Anthropic API 密钥（兼容 fallback，推荐使用 `ACTANT_API_KEY`） | 无 |
+| `ACTANT_RPC_TIMEOUT_MS` | 覆盖 RPC 客户端请求超时（毫秒） | `10000` |
 | `LOG_LEVEL` | Pino 日志级别 | `"info"`（CLI 中未设置时为 `"silent"`） |
 
 ### ACTANT_* 后端通用环境变量约定

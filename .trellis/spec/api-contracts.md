@@ -197,6 +197,7 @@ CLI `template validate <file>` 输出格式：
 | `agent.status` | `{ name }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND` |
 | `agent.list` | `{}` | `AgentInstanceMeta[]` | — |
 | `agent.updatePermissions` | `{ name, permissions }` | `{ effectivePermissions }` | `AGENT_NOT_FOUND` |
+| `agent.adopt` | `{ path, rename? }` | `{ name, template, workspacePath, location, createdAt }` | `TEMPLATE_NOT_FOUND`, `CONFIG_VALIDATION` |
 
 #### agent.create 的 overrides 参数
 
@@ -220,6 +221,23 @@ CLI `template validate <file>` 输出格式：
 返回值包含解析后的 `effectivePermissions: PermissionsConfig`。
 
 **workDir 机制**：当指定 `workDir` 时，域上下文文件和 `.actant.json` 写入该目录，同时在 `{instancesDir}/{name}` 创建指向它的链接以供 Manager 发现（macOS/Linux 使用 symlink，Windows 使用 junction）。Destroy 时仅移除链接和 `.actant.json`，保留用户目录中的其余文件。
+
+#### agent.adopt
+
+收养一个已存在的 workspace 目录为 Actant 管理的 Agent 实例。从目录中读取模板信息并注册到 instance registry。
+
+| 参数 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `path` | `string` | **是** | 要收养的 workspace 目录绝对路径 |
+| `rename` | `string` | 否 | 可选的新实例名称（默认从目录名推导） |
+
+| 返回字段 | 类型 | 说明 |
+|----------|------|------|
+| `name` | `string` | 实例名称 |
+| `template` | `string` | 关联的模板名称 |
+| `workspacePath` | `string` | workspace 路径 |
+| `location` | `"builtin" \| "external"` | 存储位置 |
+| `createdAt` | `string` | 创建时间（ISO 8601） |
 
 ### 3.3 外部 Spawn 支持
 
@@ -672,7 +690,21 @@ interface SourceValidateResult {
 
 > 实现参考：`packages/core/src/source/source-validator.ts`, `packages/api/src/handlers/source-handlers.ts`
 
-### 3.10 守护进程
+### 3.10 Preset 管理
+
+| 方法 | 参数 | 返回 | 说明 |
+|------|------|------|------|
+| `preset.list` | `{ packageName? }` | `PresetDefinition[]` | 列出所有或指定包的 preset |
+| `preset.show` | `{ qualifiedName }` | `PresetDefinition` | 查看 preset 详情（`package@name` 格式） |
+| `preset.apply` | `{ qualifiedName, templateName }` | `AgentTemplate` | 将 preset 应用到模板，返回合并后的模板 |
+
+### 3.11 Gateway
+
+| 方法 | 参数 | 返回 | 说明 |
+|------|------|------|------|
+| `gateway.lease` | `{ agentName }` | `{ socketPath }` | 请求 ACP Gateway socket 路径，用于 Session Lease 模式 |
+
+### 3.12 守护进程
 
 | 方法 | 参数 | 返回 | 说明 |
 |------|------|------|------|
@@ -744,6 +776,7 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | `agent status [name]` | `name`（可选） | `-f, --format` | `agent.status` / `agent.list` |
 | `agent list` | — | `-f, --format` | `agent.list` |
 | `agent destroy <name>` | `name` | `--force` | `agent.destroy` |
+| `agent adopt <path>` | `path` | `--rename` | `agent.adopt` |
 
 **输出格式**：`table`（默认）, `json`, `quiet`
 
