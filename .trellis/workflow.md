@@ -20,7 +20,8 @@
 
 ### Step 0: Initialize Developer Identity (First Time Only)
 
-> **Multi-developer support**: Each developer/Agent needs to initialize their identity first
+> **Multi-developer support**: Each developer/Agent needs to initialize their identity first.
+> **Actant Agent model**: AI 开发者本质上是一个 Actant Agent 实例——拥有身份、workspace 和生命周期。
 
 ```bash
 # Check if already initialized
@@ -35,10 +36,16 @@ This creates:
 - `.trellis/.developer` - Your identity file (gitignored, not committed)
 - `.trellis/workspace/<your-name>/` - Your personal workspace directory
 
-**Naming suggestions**:
-- Human developers: Use your name, e.g., `john-doe`
-- Cursor AI: `cursor-agent` or `cursor-<task>`
-- Claude Code: `claude-agent` or `claude-<task>`
+**Naming conventions (Actant Agent identity)**:
+
+| Agent 类型 | 推荐名称 | 说明 |
+|-----------|---------|------|
+| Cursor AI | `cursor-agent` | 使用 `/trellis-plan-start` 启动会话 |
+| Claude Code | `claude-agent` | 使用 `/trellis:plan-start` 启动会话 |
+| Human developer | `<your-name>` | e.g., `john-doe` |
+| Task-scoped agent | `<platform>-<task>` | e.g., `cursor-refactor`, `claude-qa` |
+
+> **理念**: 每个 AI 开发者会话对应一个 Actant Agent 实例。身份初始化后，通过 `/trellis-plan-start`（Cursor）或 `/trellis:plan-start`（Claude Code）启动 plan-first 工作流，确保先规划再执行。
 
 ### Step 1: Understand Current Context
 

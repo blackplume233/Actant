@@ -27,7 +27,17 @@ cat .trellis/workflow.md
 
 **Follow the instructions in workflow.md** — it contains core principles, file system structure, and best practices.
 
-### Step 0.2: Get Current Context
+### Step 0.2: Initialize Developer Identity (Actant Agent)
+
+Ensure your Actant Agent identity is initialized. Check if already set, if not, initialize:
+
+```bash
+./.trellis/scripts/get-developer.sh || ./.trellis/scripts/init-developer.sh claude-agent
+```
+
+> **Actant Agent 身份**: AI 开发者是一个 Actant Agent 实例。Claude Code 使用 `claude-agent` 作为身份标识。
+
+### Step 0.3: Get Current Context
 
 ```bash
 ./.trellis/scripts/get-context.sh
@@ -35,7 +45,7 @@ cat .trellis/workflow.md
 
 This shows: developer identity, git status, current task (if any), active tasks.
 
-### Step 0.3: Read Guidelines Index
+### Step 0.4: Read Guidelines Index
 
 ```bash
 cat .trellis/spec/frontend/index.md
@@ -43,7 +53,7 @@ cat .trellis/spec/backend/index.md
 cat .trellis/spec/guides/index.md
 ```
 
-### Step 0.4: Report Ready Status
+### Step 0.5: Report Ready Status
 
 Report what you learned, then:
 
