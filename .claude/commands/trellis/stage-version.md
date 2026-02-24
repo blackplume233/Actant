@@ -160,30 +160,53 @@ bash .trellis/scripts/stage-version.sh release <version>
 gh release create v<version> --title "v<version> - <title>" --notes-file .git/RELEASE_NOTES_TEMP.md
 ```
 
-### Step 12: 更新 GitHub Pages [可选]
+### Step 12: 更新 README + GitHub Pages
 
-Landing Page 源文件在 `docs/site/`，通过 GitHub Actions workflow (`.github/workflows/deploy-site.yml`) 自动部署到 GitHub Pages。
+从 `docs/stage/<version>/` 下的 JSON 产物中提取数据，同步更新 README 和 Landing Page。
 
-**更新内容**：
+**数据来源**（先读取以下文件获取准确数字）：
 
-1. 编辑 `docs/site/index.html`：
-   - 更新 hero 区域的版本号（如 `v0.1.2`）
-   - 更新 Roadmap 区域的 Phase 状态（Done / Active / Planned）
-   - 更新 Stats 区域的统计数字（LOC、Tests、RPC methods、CLI commands）
-   - 更新 Release Notes 按钮链接
-2. 提交并推送到 master
-3. GitHub Actions 自动部署（触发条件: `docs/site/**` 变更）
+- `docs/stage/<version>/metrics.json` → `totals.lines`（LOC）
+- `docs/stage/<version>/test-report.json` → `summary.tests`（测试数）、`summary.testFiles`（套件数）
+- `docs/stage/<version>/api-surface.json` → `rpc.methodCount`（RPC 方法数）、`cli.totalSubcommands`（CLI 命令数）
+
+#### 12a. 更新 README.md
+
+1. **版本 banner**（第 5 行）：更新版本号、Phase 描述
+2. **功能表格 — 多后端描述**：如有新后端，追加到列表
+3. **功能表格 — Roadmap 行**：更新 Phase 状态标记（🔧 进行中 / 🔲 待开始）
+4. **功能表格 — CLI 子命令数量**：从 `api-surface.json` 的 `totalSubcommands` 读取
+5. **技术栈表 — 测试数量**：从 `test-report.json` 读取
+6. **开发命令表 — 测试数量**：同上
+7. **模块结构 — CLI 命令数**：与功能表格一致
+8. **文档链接表**：添加新版本 stage 文档链接（architecture.md、api-surface.md、changelog.md）
+
+#### 12b. 更新 GitHub Pages (`docs/site/index.html`)
+
+1. **安装命令**：Hero 区域为三平台 tab 切换（Linux/macOS 安装脚本、Windows PowerShell 脚本、npm fallback），确认 URL 和 `copyCmd` JS 中的命令文本正确
+2. **Hero 版本号**：hero-pill badge 和 Release Notes 按钮链接
+3. **Roadmap 卡片**：更新各 Phase 的 `rm-tag` class（done/active/planned/vision）和描述文本
+4. **Stats 区域**：
+   - 版本标签（如 `v0.2.0 Stats`）
+   - LOC（从 metrics.json 取整，如 25K+）
+   - Tests（从 test-report.json）
+   - RPC Methods（从 api-surface.json）
+   - CLI Commands（从 api-surface.json）
+
+#### 12c. 提交并部署
+
+1. 提交 README.md 和 `docs/site/index.html` 变更
+2. 推送到 master
+3. GitHub Actions 自动部署 Pages（触发条件: `docs/site/**` 变更）
 
 **验证**：
 
 ```bash
-# 查看 Pages 状态
 gh api repos/<owner>/<repo>/pages
-# 查看最新部署
 gh api repos/<owner>/<repo>/pages/deployments --jq '.[0].status'
 ```
 
-> **部署架构**：Pages 使用 Actions workflow 模式（非 legacy 模式），通过 `deploy-site.yml` 部署 `docs/site/` 目录内容。不受 GitHub Pages 路径限制（legacy 只支持 `/` 或 `/docs`）。
+> **部署架构**：Pages 使用 Actions workflow 模式（非 legacy 模式），通过 `deploy-site.yml` 部署 `docs/site/` 目录内容。
 
 ### Step 13: 验证
 

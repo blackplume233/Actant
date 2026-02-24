@@ -1201,3 +1201,29 @@ Implemented Pi Agent as a built-in zero-external-dependency backend for Actant, 
 ### Status
 
 [COMMITTED] **Completed** — pushed to master, 540/540 tests pass
+
+---
+
+## Session 21 — Fix CI Publish Failure + Issue Cache Sync
+
+**Date**: 2026-02-24
+**Commits**: `1800be8`, `bc76dd2`
+
+### Summary
+
+Fixed npm publish CI failure for v0.2.0 and synced local issue cache.
+
+### Key Changes
+
+| Area | Description |
+|------|-------------|
+| **CI Fix** | `pnpm-lock.yaml` was outdated — missing `@actant/pi` workspace dependency added during Pi backend integration. Regenerated lockfile, moved `v0.2.0` tag to new commit, force-pushed tag to re-trigger publish workflow. |
+| **Issue Cache** | Synced local cache for #16 (added #137 relation) and created new RFC #137 (Runtime MCP Manager). |
+
+### Root Cause
+
+`packages/api/package.json` gained `@actant/pi: workspace:*` during Pi integration, but `pnpm install` was never re-run to update the lockfile. CI uses `--frozen-lockfile` which correctly rejected the mismatch.
+
+### Status
+
+[COMMITTED] **Completed** — v0.2.0 published successfully to npm, CI run [#22332497174](https://github.com/blackplume233/Actant/actions/runs/22332497174) passed.

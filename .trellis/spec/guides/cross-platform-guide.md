@@ -203,6 +203,26 @@ The ACP client collects streaming chunks automatically. Do not send a final "com
 
 ---
 
+## Public-Facing Install Instructions
+
+所有面向用户的安装指南（README、Landing Page、Getting Started）都必须展示多平台安装方式。
+
+**推荐顺序**（官方安装脚本优先）：
+
+| 平台 | 命令 | 说明 |
+|------|------|------|
+| Linux / macOS | `curl -fsSL .../scripts/install.sh \| bash` | 自动检测环境 + 配置向导 |
+| Windows | `irm .../scripts/install.ps1 \| iex` | PowerShell 等效脚本 |
+| npm (fallback) | `npm install -g actant` | 通用方式，跳过配置向导 |
+
+**Rules**:
+- 安装脚本是推荐方式（会自动运行 `actant setup`），npm 直装为 fallback
+- Landing Page 使用 tab 切换展示三种方式，默认选中 Linux/macOS
+- npm 包名始终为 `actant`（门面包），不使用 `@actant/cli`
+- 脚本 URL 指向 `master` 分支，会随每次版本发布自动更新
+
+---
+
 ## Checklist for New Features
 
 Before implementing any feature, verify:

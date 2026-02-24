@@ -44,6 +44,8 @@ shared ← core ← pi
 - **依赖关系**：facade 依赖所有 `@actant/*` 子包，通过 `workspace:*` 链接
 - **子包仍可独立安装**：`npm i @actant/core` 用于只需部分功能的场景
 
+> **Warning**: 用户安装的 npm 包名是 **`actant`**（门面包），不是 `@actant/cli`。安装脚本 `install.sh` / `install.ps1` 内部也使用 `npm install -g actant`。在文档和 Landing Page 中引用安装命令时，始终使用 `actant` 而非 `@actant/cli`。
+
 > **Rule**: `cli`, `api`, `acp`, `mcp-server` must NEVER depend on each other. All go through `core`.
 
 ---

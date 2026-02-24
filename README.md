@@ -2,7 +2,7 @@
 
 一个用于构建、管理和编排 AI Agent 的平台。面向游戏开发等复杂业务场景，让用户能够快速拼装、复用合适的 Agent，零成本地将 AI 嵌入工作流。
 
-> **当前版本**: [v0.1.3](https://github.com/blackplume233/Actant/releases/tag/v0.1.3) — Phase 3 完成，核心功能可用
+> **当前版本**: [v0.2.0](https://github.com/blackplume233/Actant/releases/tag/v0.2.0) — Phase 4 进行中，核心功能可用
 
 ---
 
@@ -15,17 +15,17 @@
 | **Agent Template 系统** | JSON 配置文件定义 Agent 模板，引用式组合 Skills、Prompts、MCP、Workflow | ✅ |
 | **Domain Context 拼装** | 通过 Skills、Prompts、MCP Server、Workflow、Plugin 动态组装 Agent 能力 | ✅ |
 | **Agent 生命周期管理** | 创建、启动、监控、重启、停止、销毁 Agent Instance | ✅ |
-| **多后端支持** | Claude Code / Cursor / Custom 三种 Agent Backend | ✅ |
+| **多后端支持** | Claude Code / Cursor / Pi / Custom 四种 Agent Backend | ✅ |
 | **权限控制** | 4 级预设（permissive/standard/restricted/readonly）+ 沙箱配置 | ✅ |
 | **组件源与共享** | 从 GitHub/本地源同步组件和模板，支持 Preset 批量应用 | ✅ |
 | **组件版本管理** | Semver 引用、同步变更报告、Breaking Change 检测 | ✅ |
 | **可扩展架构** | ComponentTypeHandler 注册模式，可添加自定义组件类型 | ✅ |
 | **实例注册表** | 集中管理所有 Agent 实例，支持 adopt/reconcile 孤立实例 | ✅ |
 | **雇员调度器** | Heartbeat/Cron/Hook 三种输入源，优先级任务队列 | ✅ |
-| **交互式 CLI** | 55+ 子命令，覆盖模板、Agent、组件、源、调度全部操作 | ✅ |
+| **交互式 CLI** | 61+ 子命令，覆盖模板、Agent、组件、源、调度全部操作 | ✅ |
 | **ACP 协议集成** | Direct Bridge + Session Lease 双模式 Agent 通信 | ✅ |
 | **安装与自更新** | 一键安装脚本 + self-update 机制 | ✅ |
-| **MCP Server** | Agent 间通过 MCP 协议互相调用 | 🔲 Phase 4 |
+| **Hook/Plugin 体系** | 事件驱动 Workflow、系统级 Plugin、Agent 间通信 | 🔧 Phase 4 |
 | **记忆系统** | 实例记忆、合并、上下文分层 | 🔲 Phase 5 |
 | **ACP-Fleet** | 多 Agent 集群编排 | 🔲 Phase 6 |
 
@@ -141,7 +141,7 @@ Actant
 ├── @actant/pi           Pi Agent 后端（pi-agent-core、pi-ai）
 ├── @actant/api          Daemon 服务层、RPC Handlers、AppContext
 ├── @actant/acp          ACP 协议集成（连接、网关、回调路由）
-├── @actant/cli          CLI 前端（55+ 命令、REPL、流式输出）
+├── @actant/cli          CLI 前端（61+ 命令、REPL、流式输出）
 └── @actant/mcp-server   MCP 协议服务端（骨架）
 ```
 
@@ -162,7 +162,7 @@ shared ← core ← pi
 | 语言 | TypeScript 5.9+（strict） |
 | 包管理 | pnpm 9+（workspace monorepo） |
 | 构建 | tsup |
-| 测试 | Vitest 4（627 tests, 55 suites） |
+| 测试 | Vitest 4（631 tests, 55 suites） |
 | Schema 校验 | Zod |
 | CLI 框架 | Commander.js v14 |
 | 日志 | pino |
@@ -228,7 +228,7 @@ Actant/
 │   ├── pi/                Pi Agent 后端
 │   ├── api/               Daemon + RPC Handlers + AppContext
 │   ├── acp/               ACP 协议（Connection/Gateway/Callback）
-│   ├── cli/               CLI 命令（12 组 55+ 子命令）
+│   ├── cli/               CLI 命令（11 组 61+ 子命令）
 │   ├── mcp-server/        MCP 服务端（骨架）
 │   └── actant/            统一入口门面包（npm: actant）
 ├── configs/               内置配置（模板、技能、提示词、工作流、插件、MCP）
@@ -250,7 +250,7 @@ Actant/
 |------|------|
 | `pnpm dev` | 开发模式启动 CLI |
 | `pnpm build` | 构建所有包 |
-| `pnpm test` | 运行全部测试（627 tests） |
+| `pnpm test` | 运行全部测试（631 tests） |
 | `pnpm test:changed` | 仅运行受变更影响的测试 |
 | `pnpm test:watch` | 测试监听模式 |
 | `pnpm lint` | ESLint 代码检查 |
@@ -272,8 +272,9 @@ actant self-update --dry-run    # 模拟执行
 | 文档 | 说明 |
 |------|------|
 | [入门指南](docs/guides/getting-started.md) | 安装、配置、第一个 Agent |
-| [v0.1.0 架构文档](docs/stage/v0.1.0/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
-| [v0.1.0 API 接口](docs/stage/v0.1.0/api-surface.md) | 73 个 RPC 方法 + 全部 CLI 命令 |
+| [v0.2.0 架构文档](docs/stage/v0.2.0/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
+| [v0.2.0 API 接口](docs/stage/v0.2.0/api-surface.md) | 75 个 RPC 方法 + 全部 CLI 命令 |
+| [v0.2.0 变更日志](docs/stage/v0.2.0/changelog.md) | v0.1.3 → v0.2.0 变更记录 |
 | [DomainContext 扩展指南](docs/design/domain-context-extension-guide.md) | 如何添加自定义组件类型 |
 | [ADR-001: 技术栈](docs/decisions/001-tech-stack.md) | TypeScript + pnpm monorepo 选型 |
 | [ADR-002: 目录结构](docs/decisions/002-directory-structure.md) | 项目目录规范 |

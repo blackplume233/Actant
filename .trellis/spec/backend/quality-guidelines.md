@@ -138,6 +138,19 @@ const template: AgentTemplate = {
 };
 ```
 
+### Single Source of Truth for Release Metrics
+
+README.md 和 GitHub Pages 中的统计数字（LOC、Tests、RPC methods、CLI commands）**必须**从 `docs/stage/<version>/` 下的 JSON 产物中提取，不得手工计数。
+
+| 指标 | 数据源 | JSON 路径 |
+|------|--------|-----------|
+| Lines of Code | `metrics.json` | `totals.lines` |
+| Tests / Suites | `test-report.json` | `summary.tests` / `summary.testFiles` |
+| RPC Methods | `api-surface.json` | `rpc.methodCount` |
+| CLI Commands | `api-surface.json` | `cli.totalSubcommands` |
+
+**Why**: 手工计数容易与实际不符，且版本间无法追踪变化。stage 产物是自动提取的，作为统一数据源可确保 README、Pages、Release Notes 之间的数字一致性。
+
 ### Explicit Module Boundaries
 
 Each package exposes a public API via barrel exports. Internal modules are not accessible externally.
