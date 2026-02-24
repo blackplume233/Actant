@@ -65,10 +65,13 @@ export class ProcessLauncher implements AgentLauncher {
       stdio = "ignore";
     }
 
+    const needsShell = process.platform === "win32" && /\.(cmd|bat)$/i.test(command);
+
     const child = spawn(command, args, {
       cwd: workspaceDir,
       detached: !useAcp,
       stdio,
+      shell: needsShell,
     });
 
     const spawnResult = await new Promise<{ pid: number } | { error: Error }>((resolve) => {
