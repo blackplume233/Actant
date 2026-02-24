@@ -130,6 +130,7 @@ export class AppContext {
           prompts: this.promptManager,
           mcp: this.mcpConfigManager,
           workflows: this.workflowManager,
+          plugins: this.pluginManager,
         },
         stepRegistry: createDefaultStepRegistry(),
       },

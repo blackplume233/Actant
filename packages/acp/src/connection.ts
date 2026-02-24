@@ -157,7 +157,11 @@ export class AcpConnection {
     const env = { ...process.env, ...this.options.env };
     logger.info({ command: finalCommand, args: finalArgs, cwd }, "Spawning ACP agent subprocess");
 
-    this.child = spawn(finalCommand, finalArgs, {
+    const spawnCommand = isWindows() && finalCommand.includes(" ")
+      ? `"${finalCommand}"`
+      : finalCommand;
+
+    this.child = spawn(spawnCommand, finalArgs, {
       cwd,
       stdio: ["pipe", "pipe", "pipe"],
       env,

@@ -27,7 +27,7 @@ export function createAgentCreateCommand(client: RpcClient, printer: CliPrinter 
     .option("--launch-mode <mode>", "Launch mode: direct, acp-background, acp-service, one-shot")
     .option("--work-dir <path>", "Custom workspace directory (absolute or relative path)")
     .option("--workspace <path>", "Same as --work-dir: create instance at external path instead of builtin location")
-    .option("--overwrite", "If work-dir exists, remove it and recreate")
+    .option("--overwrite", "If instance directory exists, remove it and recreate")
     .option("--append", "If work-dir exists, add agent files into it")
     .option("-f, --format <format>", "Output format: table, json, quiet", "table")
     .action(async (name: string, opts: {
@@ -56,24 +56,22 @@ export function createAgentCreateCommand(client: RpcClient, printer: CliPrinter 
         const workDirPath = opts.workspace ?? opts.workDir;
         const workDir = workDirPath ? resolve(workDirPath) : undefined;
 
-        if (workDir && existsSync(workDir)) {
-          if (opts.overwrite) {
+        if (opts.overwrite) {
+          workDirConflict = "overwrite";
+        } else if (opts.append) {
+          workDirConflict = "append";
+        } else if (workDir && existsSync(workDir)) {
+          printer.warn(`Directory already exists: ${workDir}`);
+          const answer = await askQuestion(
+            `  ${chalk.yellow("(o)")}verwrite / ${chalk.cyan("(a)")}ppend / ${chalk.dim("(c)")}ancel? `,
+          );
+          if (answer === "o" || answer === "overwrite") {
             workDirConflict = "overwrite";
-          } else if (opts.append) {
+          } else if (answer === "a" || answer === "append") {
             workDirConflict = "append";
           } else {
-            printer.warn(`Directory already exists: ${workDir}`);
-            const answer = await askQuestion(
-              `  ${chalk.yellow("(o)")}verwrite / ${chalk.cyan("(a)")}ppend / ${chalk.dim("(c)")}ancel? `,
-            );
-            if (answer === "o" || answer === "overwrite") {
-              workDirConflict = "overwrite";
-            } else if (answer === "a" || answer === "append") {
-              workDirConflict = "append";
-            } else {
-              printer.log("Cancelled.");
-              return;
-            }
+            printer.log("Cancelled.");
+            return;
           }
         }
 
