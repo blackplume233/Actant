@@ -20,7 +20,12 @@ export function createAgentDestroyCommand(client: RpcClient, printer: CliPrinter
       try {
         await client.call("agent.destroy", { name });
         printer.log(`${chalk.green("Destroyed")} ${name}`);
-      } catch (err) {
+      } catch (err: any) {
+        const isNotFound = err?.code === -32003 || err?.data?.code === -32003;
+        if (opts.force && isNotFound) {
+          printer.log(`${chalk.green("Destroyed")} ${name} (already absent)`);
+          return;
+        }
         presentError(err, printer);
         process.exitCode = 1;
       }
