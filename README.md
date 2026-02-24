@@ -2,7 +2,7 @@
 
 一个用于构建、管理和编排 AI Agent 的平台。面向游戏开发等复杂业务场景，让用户能够快速拼装、复用合适的 Agent，零成本地将 AI 嵌入工作流。
 
-> **当前版本**: [v0.2.1](https://github.com/blackplume233/Actant/releases/tag/v0.2.1) — Phase 4 进行中，核心功能可用
+> **当前版本**: [v0.2.2](https://github.com/blackplume233/Actant/releases/tag/v0.2.2) — Phase 4 进行中，核心功能可用
 
 ---
 
@@ -22,7 +22,7 @@
 | **可扩展架构** | ComponentTypeHandler 注册模式，可添加自定义组件类型 | ✅ |
 | **实例注册表** | 集中管理所有 Agent 实例，支持 adopt/reconcile 孤立实例 | ✅ |
 | **雇员调度器** | Heartbeat/Cron/Hook 三种输入源，优先级任务队列 | ✅ |
-| **交互式 CLI** | 62+ 子命令，覆盖模板、Agent、组件、源、调度全部操作 | ✅ |
+| **交互式 CLI** | 68 子命令，覆盖模板、Agent、组件、源、调度全部操作 | ✅ |
 | **ACP 协议集成** | Direct Bridge + Session Lease 双模式 Agent 通信 | ✅ |
 | **安装与自更新** | 一键安装脚本 + self-update 机制 | ✅ |
 | **Hook/Plugin 体系** | 事件驱动 Workflow、系统级 Plugin、Agent 间通信 | 🔧 Phase 4 |
@@ -141,7 +141,7 @@ Actant
 ├── @actant/pi           Pi Agent 后端（pi-agent-core、pi-ai）
 ├── @actant/api          Daemon 服务层、RPC Handlers、AppContext
 ├── @actant/acp          ACP 协议集成（连接、网关、回调路由）
-├── @actant/cli          CLI 前端（62+ 命令、REPL、流式输出）
+├── @actant/cli          CLI 前端（68 命令、REPL、流式输出）
 └── @actant/mcp-server   MCP 协议服务端（骨架）
 ```
 
@@ -228,7 +228,7 @@ Actant/
 │   ├── pi/                Pi Agent 后端
 │   ├── api/               Daemon + RPC Handlers + AppContext
 │   ├── acp/               ACP 协议（Connection/Gateway/Callback）
-│   ├── cli/               CLI 命令（11 组 62+ 子命令）
+│   ├── cli/               CLI 命令（15 组 68 子命令）
 │   ├── mcp-server/        MCP 服务端（骨架）
 │   └── actant/            统一入口门面包（npm: actant）
 ├── configs/               内置配置（模板、技能、提示词、工作流、插件、MCP）
@@ -272,9 +272,9 @@ actant self-update --dry-run    # 模拟执行
 | 文档 | 说明 |
 |------|------|
 | [入门指南](docs/guides/getting-started.md) | 安装、配置、第一个 Agent |
-| [v0.2.1 架构文档](docs/stage/v0.2.1/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
-| [v0.2.1 API 接口](docs/stage/v0.2.1/api-surface.md) | 76 个 RPC 方法 + 全部 CLI 命令 |
-| [v0.2.1 变更日志](docs/stage/v0.2.1/changelog.md) | v0.2.0 → v0.2.1 变更记录 |
+| [v0.2.2 架构文档](docs/stage/v0.2.2/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
+| [v0.2.2 API 接口](docs/stage/v0.2.2/api-surface.md) | 62 个 RPC 方法 + 68 个 CLI 命令 |
+| [v0.2.2 变更日志](docs/stage/v0.2.2/changelog.md) | v0.2.1 → v0.2.2 变更记录 |
 | [DomainContext 扩展指南](docs/design/domain-context-extension-guide.md) | 如何添加自定义组件类型 |
 | [ADR-001: 技术栈](docs/decisions/001-tech-stack.md) | TypeScript + pnpm monorepo 选型 |
 | [ADR-002: 目录结构](docs/decisions/002-directory-structure.md) | 项目目录规范 |
