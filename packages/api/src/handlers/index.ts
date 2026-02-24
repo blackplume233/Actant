@@ -8,3 +8,4 @@ export { registerPresetHandlers } from "./preset-handlers";
 export { registerDaemonHandlers } from "./daemon-handlers";
 export { registerProxyHandlers } from "./proxy-handlers";
 export { registerScheduleHandlers } from "./schedule-handlers";
+export { registerGatewayHandlers, disposeAllLeases } from "./gateway-handlers";

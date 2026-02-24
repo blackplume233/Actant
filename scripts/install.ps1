@@ -2,9 +2,12 @@
 param(
   [switch]$SkipSetup,
   [switch]$Uninstall,
-  [switch]$FromGitHub
+  [switch]$FromGitHub,
+  [switch]$NpmRegistry
 )
 $ErrorActionPreference = "Stop"
+
+$IsInteractive = [Environment]::UserInteractive -and (-not $env:CI) -and (-not $env:GITHUB_ACTIONS)
 
 $GitHubReleaseUrl = "https://github.com/blackplume233/Actant/releases/latest/download/actant-cli.tgz"
 
@@ -60,13 +63,18 @@ if ($existingActant) {
   Write-Host ""
   Write-Host "检测到已安装 Actant $currentVersion" -ForegroundColor Yellow
   Write-Host ""
-  Write-Host "  [U] 更新 (npm registry)"
-  Write-Host "  [G] 从 GitHub Release 更新"
-  Write-Host "  [R] 重新运行配置向导 (actant setup)"
-  Write-Host "  [X] 完全卸载"
-  Write-Host "  [C] 取消"
-  Write-Host ""
-  $choice = Read-Host "请选择 [U/G/R/X/C]"
+  if (-not $IsInteractive) {
+    Write-Host "Non-interactive environment detected. Updating via npm..." -ForegroundColor Yellow
+    $choice = "U"
+  } else {
+    Write-Host "  [U] 更新 (npm registry)"
+    Write-Host "  [G] 从 GitHub Release 更新"
+    Write-Host "  [R] 重新运行配置向导 (actant setup)"
+    Write-Host "  [X] 完全卸载"
+    Write-Host "  [C] 取消"
+    Write-Host ""
+    $choice = Read-Host "请选择 [U/G/R/X/C]"
+  }
 
   switch ($choice.ToUpper()) {
     "U" {
@@ -81,10 +89,12 @@ if ($existingActant) {
       $newVersion = "unknown"
       try { $newVersion = actant --version 2>$null } catch {}
       Write-Host "✓ Actant updated to $newVersion" -ForegroundColor Green
-      Write-Host ""
-      $reconfig = Read-Host "是否重新运行配置向导? [y/N]"
-      if ($reconfig -eq "y" -or $reconfig -eq "Y") {
-        actant setup
+      if ($IsInteractive) {
+        Write-Host ""
+        $reconfig = Read-Host "是否重新运行配置向导? [y/N]"
+        if ($reconfig -eq "y" -or $reconfig -eq "Y") {
+          actant setup
+        }
       }
     }
     "G" {
@@ -94,10 +104,12 @@ if ($existingActant) {
       $newVersion = "unknown"
       try { $newVersion = actant --version 2>$null } catch {}
       Write-Host "✓ Actant updated to $newVersion (from GitHub Release)" -ForegroundColor Green
-      Write-Host ""
-      $reconfig = Read-Host "是否重新运行配置向导? [y/N]"
-      if ($reconfig -eq "y" -or $reconfig -eq "Y") {
-        actant setup
+      if ($IsInteractive) {
+        Write-Host ""
+        $reconfig = Read-Host "是否重新运行配置向导? [y/N]"
+        if ($reconfig -eq "y" -or $reconfig -eq "Y") {
+          actant setup
+        }
       }
     }
     "R" {
@@ -110,7 +122,7 @@ if ($existingActant) {
       try { schtasks /Delete /TN "ActantDaemon" /F 2>$null } catch {}
 
       Write-Host ""
-      $rmData = Read-Host "是否删除数据目录 (~/.actant)? [y/N]"
+      $rmData = if ($IsInteractive) { Read-Host "是否删除数据目录 (~/.actant)? [y/N]" } else { "N" }
       if ($rmData -eq "y" -or $rmData -eq "Y") {
         $actantDir = if ($env:ACTANT_HOME) { $env:ACTANT_HOME } else { Join-Path $env:USERPROFILE ".actant" }
         if (Test-Path $actantDir) {
@@ -134,6 +146,11 @@ if ($existingActant) {
 # ── Fresh install ─────────────────────────────────────────────────
 if ($FromGitHub) {
   Install-FromGitHub
+} elseif ($NpmRegistry -or (-not $IsInteractive)) {
+  if (-not $IsInteractive) {
+    Write-Host "Non-interactive environment detected. Using npm registry." -ForegroundColor Yellow
+  }
+  $installMethod = "1"
 } else {
   Write-Host ""
   Write-Host "安装方式:"

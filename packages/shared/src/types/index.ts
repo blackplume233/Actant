@@ -184,4 +184,6 @@ export {
   type PresetShowResult,
   type PresetApplyParams,
   type PresetApplyResult,
+  type GatewayLeaseParams,
+  type GatewayLeaseResult,
 } from "./rpc.types";

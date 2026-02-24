@@ -413,6 +413,15 @@ export class AgentManager {
   }
 
   /**
+   * Register an externally-adopted agent into the in-memory cache.
+   * Called after InstanceRegistry.adopt() to keep cache in sync.
+   */
+  registerAdopted(meta: AgentInstanceMeta): void {
+    this.cache.set(meta.name, meta);
+    logger.info({ name: meta.name }, "Adopted agent registered in cache");
+  }
+
+  /**
    * Resolve spawn info for an agent without starting it.
    * If the agent doesn't exist but templateName is provided, auto-creates it.
    */

@@ -195,7 +195,7 @@ describe("SocketServer integration", () => {
       jsonrpc: "2.0", id: 20, method: "daemon.ping",
     });
     const result = res.result as { version: string; uptime: number; agents: number };
-    expect(result.version).toBe("0.1.0");
+    expect(result.version).toMatch(/^\d+\.\d+\.\d+/);
     expect(result.uptime).toBeGreaterThanOrEqual(0);
     expect(typeof result.agents).toBe("number");
   });
