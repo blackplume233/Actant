@@ -182,8 +182,9 @@ export class AcpConnection {
       logger.error({ error: err }, "ACP agent process error");
     });
 
+    const child = this.child;
     this._earlyExitPromise = new Promise<never>((_resolve, reject) => {
-      this.child!.on("exit", (code, signal) => {
+      child.on("exit", (code, signal) => {
         const stderr = stderrChunks.join("\n");
         const detail = stderr
           ? `\n  stderr: ${stderr}`
