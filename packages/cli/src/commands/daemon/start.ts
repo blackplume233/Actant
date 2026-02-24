@@ -14,6 +14,14 @@ import { defaultSocketPath } from "../../program";
  */
 export const SEA_DAEMON_FLAG = "--__actant-daemon";
 
+/**
+ * Sentinel written to stderr by the daemon child once it is ready to accept
+ * connections.  The parent watches for this instead of polling blindly.
+ */
+export const DAEMON_READY_SIGNAL = "__ACTANT_DAEMON_READY__";
+
+const STARTUP_TIMEOUT_MS = 30_000;
+
 function spawnDaemonChild() {
   if (isSingleExecutable()) {
     return spawn(process.execPath, [SEA_DAEMON_FLAG], {
@@ -38,6 +46,32 @@ function spawnDaemonChild() {
         stdio: ["ignore", "ignore", "pipe", "ipc"],
         env: process.env,
       });
+}
+
+/**
+ * Wait for the child to signal readiness, exit, or time out.
+ * Returns `"ready"`, `"exited"`, or `"timeout"`.
+ */
+function waitForReady(
+  child: ReturnType<typeof spawnDaemonChild>,
+  stderrChunks: Buffer[],
+): Promise<"ready" | "exited" | "timeout"> {
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => resolve("timeout"), STARTUP_TIMEOUT_MS);
+
+    child.on("exit", () => {
+      clearTimeout(timeout);
+      resolve("exited");
+    });
+
+    child.stderr?.on("data", (chunk: Buffer) => {
+      stderrChunks.push(chunk);
+      if (Buffer.concat(stderrChunks).toString().includes(DAEMON_READY_SIGNAL)) {
+        clearTimeout(timeout);
+        resolve("ready");
+      }
+    });
+  });
 }
 
 export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): Command {
@@ -74,31 +108,22 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
         }
       } else {
         const child = spawnDaemonChild();
-
         const stderrChunks: Buffer[] = [];
-        child.stderr?.on("data", (chunk: Buffer) => {
-          stderrChunks.push(chunk);
-        });
 
-        let earlyExit = false;
-        let earlyExitCode: number | null = null;
-        child.on("exit", (code) => {
-          earlyExit = true;
-          earlyExitCode = code;
-        });
+        const outcome = await waitForReady(child, stderrChunks);
 
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-
-        if (earlyExit) {
+        if (outcome === "exited") {
           const stderr = Buffer.concat(stderrChunks).toString().trim();
-          printer.error(`Daemon process exited unexpectedly (code: ${earlyExitCode}).`);
+          printer.error(`Daemon process exited unexpectedly.`);
           if (stderr) printer.error(stderr);
           process.exitCode = 1;
           return;
         }
 
+        // Confirm with a ping even after receiving the ready signal.
+        // For "timeout" this serves as the last-resort check.
         let healthy = false;
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 5; i++) {
           healthy = await client.ping();
           if (healthy) break;
           await new Promise((resolve) => setTimeout(resolve, 500));
