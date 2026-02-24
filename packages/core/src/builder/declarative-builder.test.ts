@@ -205,9 +205,7 @@ describe("DeclarativeBuilder — Claude Code spec", () => {
 
   it("injectPermissions in full mode includes allow/deny/ask", async () => {
     await builder.scaffold(tmpDir);
-    await builder.injectPermissions(tmpDir, MCP_SERVERS, {
-      mode: "permissive",
-    });
+    await builder.injectPermissions(tmpDir, MCP_SERVERS, "permissive");
 
     const content = JSON.parse(await readFile(join(tmpDir, ".claude", "settings.local.json"), "utf-8"));
     expect(content.permissions).toBeDefined();

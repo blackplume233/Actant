@@ -200,7 +200,7 @@ export class DeclarativeBuilder implements BackendBuilder {
     const outPath = join(workspaceDir, strategy.outputFile);
     await mkdir(join(outPath, ".."), { recursive: true });
 
-    let settings: Record<string, unknown>;
+    let settings: Record<string, unknown> | undefined;
 
     switch (strategy.mode) {
       case "full":
@@ -226,6 +226,7 @@ export class DeclarativeBuilder implements BackendBuilder {
         break;
     }
 
+    if (!settings) return;
     await writeFile(outPath, JSON.stringify(settings, null, 2) + "\n", "utf-8");
   }
 
