@@ -783,12 +783,58 @@ Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
 | `ACTANT_SOCKET` | 覆盖 IPC Socket 路径 | 平台默认 |
 | `ACTANT_LAUNCHER_MODE` | 设定 Launcher 模式（`"mock"` / `"real"`） | `"real"` |
 | `ACTANT_PROVIDER` | 统一 LLM Provider 标识（如 `openai`、`anthropic`） | 无（由 Daemon 从 config.json 注入） |
+| `ACTANT_PROVIDER_TYPE` | `ACTANT_PROVIDER` 的别名（优先级更高） | 无 |
 | `ACTANT_MODEL` | 统一 LLM 模型名称（如 `gpt-4o`、`claude-sonnet-4-20250514`） | 无 |
 | `ACTANT_API_KEY` | 统一 API 密钥（由 Daemon 从 config.json 注入，fallback 到 provider-specific 变量） | 无 |
 | `ACTANT_BASE_URL` | Provider API 端点（由 Daemon 从 config.json 注入） | 无 |
+| `ACTANT_PROVIDER_BASE_URL` | `ACTANT_BASE_URL` 的别名（优先级更高） | 无 |
+| `ACTANT_PROVIDER_PROTOCOL` | 覆盖 Provider API 协议（`openai` / `anthropic` / `custom`） | 按 type 自动推断 |
 | `ACTANT_THINKING_LEVEL` | 统一 thinking/reasoning 级别 | 无 |
 | `ANTHROPIC_API_KEY` | Anthropic API 密钥（兼容 fallback，推荐使用 `ACTANT_API_KEY`） | 无 |
+| `ANTHROPIC_BASE_URL` | Anthropic API 端点（兼容 fallback） | 无 |
+| `OPENAI_API_KEY` | OpenAI API 密钥（兼容 fallback，适用于 openai/deepseek） | 无 |
+| `OPENAI_BASE_URL` | OpenAI API 端点（兼容 fallback，适用于 openai/deepseek） | 无 |
+| `AZURE_OPENAI_API_KEY` | Azure OpenAI API 密钥（兼容 fallback） | 无 |
+| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI 端点（兼容 fallback） | 无 |
 | `LOG_LEVEL` | Pino 日志级别 | `"info"`（CLI 中未设置时为 `"silent"`） |
+
+### Provider 环境变量解析优先级（#133）
+
+模板省略 `provider` 字段时，Actant 会依次查找环境变量和 Registry 默认值：
+
+```
+模板 provider 字段（显式配置）
+  ↓ 未设置
+ACTANT_PROVIDER_TYPE / ACTANT_PROVIDER（环境变量）
+  ↓ 未设置
+Registry 默认 Provider（actant setup 配置）
+  ↓ 未设置
+undefined（无 Provider）
+```
+
+**API Key 解析优先级**（用于 ACP 子进程注入）：
+
+```
+Registry descriptor.apiKey（config.json 加载）
+  ↓ 未设置
+ACTANT_API_KEY
+  ↓ 未设置
+上游原生变量（ANTHROPIC_API_KEY / OPENAI_API_KEY 等，按 provider type）
+```
+
+**Base URL 解析优先级**：
+
+```
+模板 providerConfig.baseUrl
+  ↓ 未设置
+Registry descriptor.defaultBaseUrl
+  ↓ 未设置
+上游原生变量（OPENAI_BASE_URL 等，按 provider type）
+```
+
+> **安全提示**：API Key 不要写入模板文件。推荐使用 `.env` + gitignore 或系统环境变量。
+>
+> 实现参考：`packages/core/src/provider/provider-env-resolver.ts`
 
 ### ACTANT_* 后端通用环境变量约定
 

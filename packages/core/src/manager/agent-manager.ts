@@ -788,6 +788,16 @@ export class AgentManager {
  * (loaded from ~/.actant/config.json at daemon startup). It is never
  * read from providerConfig (which is persisted in the agent workspace
  * .actant.json and could be visible to the LLM).
+ *
+ * API key resolution order:
+ *   1. Registry descriptor (config.json)
+ *   2. ACTANT_API_KEY env var
+ *   3. Upstream provider-specific env var (e.g. ANTHROPIC_API_KEY)
+ *
+ * Base URL resolution order:
+ *   1. Template providerConfig.baseUrl
+ *   2. Registry descriptor defaultBaseUrl
+ *   3. Upstream provider-specific env var (e.g. OPENAI_BASE_URL)
  */
 function buildDefaultProviderEnv(providerConfig?: ModelProviderConfig): Record<string, string> {
   const env: Record<string, string> = {};
