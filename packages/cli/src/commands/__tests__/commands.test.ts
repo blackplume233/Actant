@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Command } from "commander";
-import type { RpcClient } from "../../client/rpc-client";
+import { RpcCallError, type RpcClient } from "../../client/rpc-client";
 import { CliPrinter } from "../../output/printer";
 import { createAgentCreateCommand } from "../agent/create";
 import { createAgentStartCommand } from "../agent/start";
@@ -202,6 +202,21 @@ describe("createAgentDestroyCommand", () => {
 
     expect(mock.call).toHaveBeenCalledWith("agent.destroy", { name: "my-agent" });
     expect(output.logs.some((l) => l.includes("Destroyed") && l.includes("my-agent"))).toBe(true);
+  });
+
+  it("with --force + agent not found: idempotent success (exit 0)", async () => {
+    const mock = createMockClient();
+    const client = mock as unknown as RpcClient;
+    mock.call.mockRejectedValue(new RpcCallError("Agent instance \"ghost\" not found", -32003));
+    const { printer, output } = createTestPrinter();
+    const parent = new Command();
+    parent.exitOverride();
+    parent.addCommand(createAgentDestroyCommand(client, printer));
+    await parent.parseAsync(["node", "test", "destroy", "ghost", "--force"]);
+
+    expect(mock.call).toHaveBeenCalledWith("agent.destroy", { name: "ghost" });
+    expect(output.logs.some((l) => l.includes("already absent"))).toBe(true);
+    expect(process.exitCode).not.toBe(1);
   });
 });
 
