@@ -22,8 +22,9 @@ export function registerBuiltinBackends(): void {
 
   registerBackend({
     type: "claude-code",
-    supportedModes: ["resolve", "acp"],
+    supportedModes: ["resolve", "open", "acp"],
     resolveCommand: { win32: "claude-agent-acp.cmd", default: "claude-agent-acp" },
+    openCommand: { win32: "claude.cmd", default: "claude" },
   });
 
   registerBackend({

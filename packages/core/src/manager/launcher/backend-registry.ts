@@ -56,6 +56,19 @@ export function getPlatformCommand(cmd: { win32: string; default: string }): str
   return process.platform === "win32" ? cmd.win32 : cmd.default;
 }
 
+const installHints = new Map<AgentBackendType, string>([
+  ["claude-code", "npm install -g @zed-industries/claude-agent-acp"],
+  ["cursor", "Install Cursor from https://cursor.com"],
+  ["cursor-agent", "Install Cursor from https://cursor.com"],
+]);
+
+/**
+ * Return a user-facing install instruction for a backend, or undefined if none.
+ */
+export function getInstallHint(type: AgentBackendType): string | undefined {
+  return installHints.get(type);
+}
+
 /**
  * Reset the registry (for testing only).
  * @internal

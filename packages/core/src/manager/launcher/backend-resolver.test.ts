@@ -4,6 +4,7 @@ import { registerBuiltinBackends } from "./builtin-backends";
 import {
   resolveBackend,
   resolveAcpBackend,
+  openBackend,
   isAcpBackend,
   isAcpOnlyBackend,
 } from "./backend-resolver";
@@ -56,6 +57,20 @@ describe("resolveBackend", () => {
 
   it("should throw for pi when not registered in core", () => {
     expect(() => resolveBackend("pi", "/workspace")).toThrow(/not registered/);
+  });
+});
+
+describe("claude-code backend modes", () => {
+  it("resolveAcpBackend resolves to claude-agent-acp with no args", () => {
+    const result = resolveAcpBackend("claude-code", "/workspace");
+    expect(result.command).toMatch(/claude-agent-acp/);
+    expect(result.args).toEqual([]);
+  });
+
+  it("openBackend resolves to claude with workspaceDir arg", () => {
+    const result = openBackend("claude-code", "/workspace");
+    expect(result.command).toMatch(/^claude(\.cmd)?$/);
+    expect(result.args).toEqual(["/workspace"]);
   });
 });
 

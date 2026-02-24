@@ -1,6 +1,6 @@
 {
   "name": "actant-hub",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Actant official component repository",
   "components": {
     "skills": ["skills/code-review.json", "skills/test-writer.json"],

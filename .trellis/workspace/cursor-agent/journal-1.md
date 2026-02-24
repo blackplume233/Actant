@@ -1227,3 +1227,36 @@ Fixed npm publish CI failure for v0.2.0 and synced local issue cache.
 ### Status
 
 [COMMITTED] **Completed** — v0.2.0 published successfully to npm, CI run [#22332497174](https://github.com/blackplume233/Actant/actions/runs/22332497174) passed.
+
+---
+
+## Session 22 — Agent Skills Open Standard Compatibility (#144)
+
+**Date**: 2026-02-24
+**Commits**: `4d9bdce`
+
+### Summary
+
+Implemented Agent Skills (agentskills.io) open standard compatibility for ActantHub source validation. Added opt-in `--compat agent-skills` mode with schema extension, parser updates, strict validation rules, and directory convention support.
+
+### Key Changes
+
+| Area | Description |
+|------|-------------|
+| **Schema Extension (P0)** | Extended `SkillDefinition` with `license`, `compatibility`, and `allowedTools` fields in `domain-component.types.ts`, `source-schemas.ts`, and `skill-manager.ts`. |
+| **Parser Update** | Updated `skill-md-parser.ts` to parse `license`, `compatibility`, and `allowed-tools` frontmatter fields, mapping kebab-case to camelCase at the parser boundary. |
+| **Compat Validation (P1-P2)** | Added `validateAgentSkillsCompat()` to `SourceValidator` — enforces strict name format (lowercase+hyphens, 1-64 chars, must match parent dir), required description, length constraints for description/compatibility/body. |
+| **Directory Conventions (P3)** | `validateSkillDirConventions()` recognizes `scripts/`, `references/`, `assets/` directories per Agent Skills spec (info level). |
+| **CLI/RPC Integration** | Added `--compat <standard>` option to `source validate` CLI and `compat` param to `SourceValidateParams` RPC type. |
+| **Tests** | 35 tests in `source-validator.test.ts` covering new parsing, all validation rules, backward compatibility without flag, and directory conventions. |
+| **Spec Updates** | Updated `api-contracts.md` (compat param docs), `config-spec.md` (new fields), `quality-guidelines.md` (3 new patterns: opt-in compat, parser field mapping, backward-compat testing). |
+
+### Testing
+
+- [OK] 540/541 tests pass (1 pre-existing flaky lifecycle test)
+- [OK] Type-check passes for 7/8 packages (1 pre-existing composite config issue in facade package)
+- [OK] No `console.log`, `any`, or non-null assertions in changed files
+
+### Status
+
+[COMMITTED] **Completed** — pushed to master, #144 closed on GitHub.

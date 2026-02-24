@@ -311,6 +311,60 @@ return { "allowed-tools": meta["allowed-tools"] };
 
 **Why**: Keeps the internal type system consistent (`camelCase` everywhere) and avoids bracket-notation access throughout the codebase. The parser is the single place where external format differences are absorbed.
 
+### Backend Three-Mode Registration
+
+Every built-in backend should declare its supported modes and provide the correct command for each mode. The three modes serve distinct purposes:
+
+| Mode | Purpose | Command | Protocol |
+|------|---------|---------|----------|
+| `resolve` | Daemon spawns and manages via ACP | `resolveCommand` | ACP (stdio) |
+| `open` | Opens TUI for human interaction | `openCommand` | Terminal I/O |
+| `acp` | Direct ACP bridge without daemon | Falls back to `resolveCommand` | ACP (stdio) |
+
+```typescript
+registerBackend({
+  type: "claude-code",
+  supportedModes: ["resolve", "open", "acp"],
+  resolveCommand: { win32: "claude-agent-acp.cmd", default: "claude-agent-acp" },
+  openCommand: { win32: "claude.cmd", default: "claude" },
+});
+```
+
+**Key points**:
+- `resolveCommand` and `acp` mode typically share the same executable (the ACP adapter)
+- `openCommand` is the native TUI binary — it may be a **different executable** than the ACP adapter
+- Always provide `win32` variant when the CLI installs `.cmd` shim files (npm global installs)
+- If a backend depends on an **external package** (not bundled with Actant), add an install hint in `backend-registry.ts` (see below)
+
+### Backend Install Hints for External Dependencies
+
+When a backend's executable comes from a separate package (not bundled with Actant), register an install hint so error messages can guide users:
+
+```typescript
+const installHints = new Map<AgentBackendType, string>([
+  ["claude-code", "npm install -g @zed-industries/claude-agent-acp"],
+  ["cursor", "Install Cursor from https://cursor.com"],
+]);
+
+export function getInstallHint(type: AgentBackendType): string | undefined {
+  return installHints.get(type);
+}
+```
+
+**Usage in error paths** (AgentManager, CLI chat):
+
+```typescript
+if (isSpawnNotFound(error)) {
+  const hint = getInstallHint(backendType);
+  throw new Error(
+    `Backend "${backendType}" executable not found.` +
+    (hint ? `\nInstall with: ${hint}` : " Ensure the CLI is in your PATH."),
+  );
+}
+```
+
+**Why**: Users encountering `ENOENT`/`EINVAL` from a missing backend CLI get a one-line fix instead of a cryptic spawn error. This avoids bundling heavyweight third-party CLIs while maintaining good UX.
+
 ### Explicit Module Boundaries
 
 Each package exposes a public API via barrel exports. Internal modules are not accessible externally.
@@ -426,6 +480,39 @@ Link 模式通过 `npm link` 从 `packages/actant` 创建全局 symlink，安装
 Standalone 模式通过 Node.js SEA 打包平台原生可执行文件（Windows `.exe` / macOS / Linux），完全自包含，不依赖源码仓库或 Node.js 运行时。支持 `--install-dir` 自定义安装目录。
 
 > **Gotcha**: 全局 link 的入口是 **`packages/actant`**（facade 包），不是 `packages/cli`。因为 `actant` 包的 `bin/actant.js` 通过 import 桥接到 `@actant/cli`，而 workspace symlink 会正确解析所有 `@actant/*` 内部依赖。
+
+### Common Mistake: Standalone 二进制与源码不同步
+
+**症状**: 在源码中修复了 bug 并通过 `pnpm test` 验证，但通过全局 `actant` 命令运行时 bug 依旧存在（例如 Source 的 domainContext namespace 解析失败）。
+
+**原因**: 全局安装的 `actant` 使用的是 **旧版 standalone 二进制**（`.exe`），它在构建时将所有代码打包为单一可执行文件。源码改动不会自动反映到已安装的二进制中。
+
+**诊断**:
+
+```bash
+# 检查全局 actant 的实际路径
+where actant      # Windows
+which actant      # macOS/Linux
+
+# 如果路径指向独立 .exe 而非 node_modules 中的 symlink，则为 standalone 模式
+```
+
+**修复**:
+
+```bash
+# 重新构建 + 安装 standalone
+pnpm run build:standalone
+pnpm run install:local:standalone
+
+# 重启 daemon（daemon 也运行旧代码）
+actant daemon stop
+actant daemon start
+```
+
+**预防**:
+- 日常开发**优先使用 Link 模式**（`pnpm install:local`），改动后只需 `pnpm build` 即可生效
+- 仅在需要发布或测试独立部署时使用 Standalone 模式
+- 遇到「源码已修复但全局命令仍有问题」时，**第一步检查全局 `actant` 的安装模式**
 
 ### DTS 生成注意事项
 

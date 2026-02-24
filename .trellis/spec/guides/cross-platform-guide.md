@@ -156,6 +156,35 @@ acpResolver: () => ({
 
 This works cross-platform and avoids all `.cmd` shim issues.
 
+### Common Mistake: External `.cmd` files and `spawn EINVAL`
+
+**Symptom**: `child_process.spawn("claude-agent-acp.cmd", [...])` throws `spawn EINVAL` on Windows.
+
+**Cause**: Windows cannot directly execute `.cmd` / `.bat` files via `spawn()` — they must run through `cmd.exe`. The pnpm bin link pattern (above) avoids this by resolving to the `.js` file. But for **external CLI tools** installed globally (e.g., `claude-agent-acp.cmd` from `@zed-industries/claude-agent-acp`), you don't control the entry point.
+
+**Fix**: Use `shell: true` conditionally on Windows:
+
+```typescript
+import { isWindows } from "@actant/shared";
+
+spawn(command, args, {
+  cwd,
+  stdio: ["pipe", "pipe", "pipe"],
+  env,
+  shell: isWindows(),
+});
+```
+
+**Trade-offs**:
+- `shell: true` routes through `cmd.exe`, which may interpret special characters in args. For ACP bridges where args are controlled and minimal, this is safe.
+- For internal bridges (where you own the `.js` file), prefer the `process.execPath + absolute path` pattern from the section above — it avoids shell entirely.
+
+**Decision tree**:
+| Scenario | Approach |
+|----------|----------|
+| Internal bridge (own `.js` file) | `process.execPath` + absolute `.js` path |
+| External CLI tool (`.cmd` on Windows) | `spawn()` with `shell: isWindows()` |
+
 ### Common Mistake: ACP SDK message format
 
 When implementing an ACP Agent-side bridge (e.g. `acp-bridge.ts`), the following format details are critical:

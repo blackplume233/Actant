@@ -14,7 +14,7 @@ import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
 import { resolveBackend, resolveAcpBackend, openBackend, isAcpOnlyBackend } from "./launcher/backend-resolver";
-import { requireMode } from "./launcher/backend-registry";
+import { requireMode, getInstallHint } from "./launcher/backend-registry";
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
 import { RestartTracker, type RestartPolicy } from "./restart-tracker";
@@ -245,7 +245,7 @@ export class AgentManager {
       const spawnMsg = err instanceof Error ? err.message : String(err);
       throw new AgentLaunchError(name, new Error(
         isSpawnNotFound(spawnMsg)
-          ? `Backend "${meta.backendType}" executable not found. Ensure the required CLI is installed and in your PATH.`
+          ? buildSpawnNotFoundMessage(meta.backendType)
           : spawnMsg,
       ));
     }
@@ -697,4 +697,12 @@ function buildProviderEnv(providerConfig?: ModelProviderConfig): Record<string, 
 
 function isSpawnNotFound(msg: string): boolean {
   return /ENOENT|EINVAL|is not recognized|not found/i.test(msg);
+}
+
+function buildSpawnNotFoundMessage(backendType: string): string {
+  const hint = getInstallHint(backendType as import("@actant/shared").AgentBackendType);
+  const base = `Backend "${backendType}" executable not found.`;
+  return hint
+    ? `${base}\nInstall with: ${hint}`
+    : `${base} Ensure the required CLI is installed and in your PATH.`;
 }

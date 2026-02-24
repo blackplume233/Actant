@@ -133,7 +133,21 @@ async function runDirectBridgeChat(
   };
 
   try {
-    await conn.spawn(resolved.command, resolved.args, resolved.workspaceDir);
+    try {
+      await conn.spawn(resolved.command, resolved.args, resolved.workspaceDir);
+    } catch (spawnErr) {
+      const msg = spawnErr instanceof Error ? spawnErr.message : String(spawnErr);
+      if (/ENOENT|EINVAL|is not recognized|not found/i.test(msg)) {
+        throw new Error(
+          `Cannot start "${resolved.command}". Is it installed?\n` +
+          (resolved.backendType === "claude-code"
+            ? `  Install with: npm install -g @zed-industries/claude-agent-acp`
+            : `  Ensure the backend CLI is installed and in your PATH.`),
+          { cause: spawnErr },
+        );
+      }
+      throw spawnErr;
+    }
 
     await client.call("agent.attach", {
       name: resolved.instanceName,

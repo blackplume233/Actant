@@ -27,7 +27,7 @@ import {
   type ReleaseTerminalRequest,
   type ReleaseTerminalResponse,
 } from "@agentclientprotocol/sdk";
-import { createLogger } from "@actant/shared";
+import { createLogger, isWindows } from "@actant/shared";
 import type { PermissionsConfig } from "@actant/shared";
 import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/core";
 import { LocalTerminalManager } from "./terminal-manager";
@@ -155,6 +155,7 @@ export class AcpConnection {
       cwd,
       stdio: ["pipe", "pipe", "pipe"],
       env,
+      shell: isWindows(),
     });
 
     if (!this.child.stdout || !this.child.stdin) {
