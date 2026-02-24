@@ -573,12 +573,55 @@ Agent 后端的纯数据配置，JSON 可序列化。由 `BackendManager` 管理
 | `resolvePackage` | `string` | 否 | 提供 resolve/acp 可执行文件的 npm 包名 |
 | `existenceCheck` | [`BackendExistenceCheck`](#backendexistencecheck) | 否 | 后端可执行文件的存在性验证规则 |
 | `install` | [`BackendInstallMethod[]`](#backendinstallmethod) | 否 | 安装方式列表（按平台过滤） |
+| `materialization` | [`MaterializationSpec`](#materializationspec158-新增) | 否 | 声明式 workspace 物化规范（#158 新增） |
 
-> **数据与行为分离**：`BackendDefinition` 是纯数据对象，不含函数。非序列化的行为扩展（如 `acpResolver` 函数）通过 `BackendManager.registerAcpResolver()` 单独注册。旧版 `BackendDescriptor` 作为兼容层保留，但新代码应使用 `BackendDefinition` + `BackendManager`。
+> **数据与行为分离**：`BackendDefinition` 是纯数据对象，不含函数。非序列化的行为扩展（如 `acpResolver`、`buildProviderEnv` 函数）通过 `BackendManager.registerAcpResolver()` / `registerBuildProviderEnv()` 单独注册。旧版 `BackendDescriptor` 作为兼容层保留，但新代码应使用 `BackendDefinition` + `BackendManager`。
 >
 > **自动安装（#153）**：`BackendManager.ensureAvailable(name, { autoInstall })` 整合 existence check + auto-install 流程。当 `autoInstall: true` 时，按 `install` 声明的方法列表依次尝试安装。对于 `type: "npm"` 的安装方法，若 `npm` 不在 PATH 上，自动检测并回退到 `pnpm`/`yarn`/`bun`；若无任何 JS 包管理器，跳过该方法尝试下一个。`resolvePackage` 的二进制依赖同理通过 `ensureResolvePackageAvailable()` 自动安装。
 >
 > 实现参考：`packages/core/src/domain/backend/backend-installer.ts`
+
+#### MaterializationSpec（#158 新增）
+
+声明式 workspace 物化规范。存储在 `BackendDefinition.materialization`，JSON 可序列化，可通过 actant-hub 分发。当 `WorkspaceBuilder` 找不到手写的 `BackendBuilder` 时，会自动基于此 spec 创建 `DeclarativeBuilder`。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `configDir` | `string` | **是** | 配置根目录（相对 workspaceDir，如 `.cursor`、`.claude`、`.pi`） |
+| `components` | `object` | **是** | 各组件类型的物化策略（见下方子表） |
+| `scaffoldDirs` | `string[]` | 否 | scaffold 阶段创建的目录列表 |
+| `verifyChecks` | [`VerifyCheckSpec[]`](#verifycheckspec) | 否 | verify 阶段检查的路径列表 |
+
+**components 子字段**：
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `skills` | `SkillMaterializationStrategy` | Skill 物化策略（`mode`: `"single-file"` / `"per-file"` / `"dual"`） |
+| `prompts` | `PromptMaterializationStrategy` | Prompt 物化策略（`mode`: `"merged"` / `"per-file"`） |
+| `mcpServers` | `McpMaterializationStrategy` | MCP 物化策略（`enabled` + `outputFile`） |
+| `plugins` | `PluginMaterializationStrategy` | Plugin 物化策略（`format`: `"recommendations"` / `"entries"`） |
+| `permissions` | `PermissionMaterializationStrategy` | 权限注入策略（`mode`: `"full"` / `"tools-only"` / `"best-effort"`） |
+| `workflow` | `WorkflowMaterializationStrategy` | Workflow 输出路径 |
+
+**各内置后端 MaterializationSpec**：
+
+| 后端 | configDir | skills mode | prompts mode | MCP | plugins format | permissions mode |
+|------|-----------|-------------|-------------|-----|---------------|-----------------|
+| `cursor` | `.cursor` | `dual` (.mdc + AGENTS.md) | `merged` | 启用 | `recommendations` | `best-effort` |
+| `cursor-agent` | `.cursor` | 同 cursor | 同 cursor | 启用 | `recommendations` | `best-effort` |
+| `claude-code` | `.claude` | `single-file` (AGENTS.md + CLAUDE.md) | `merged` | 启用 | `entries` | `full` |
+| `pi` | `.pi` | `dual` (.md + AGENTS.md) | `per-file` | 禁用 | 禁用 | `tools-only` |
+| `custom` | `.cursor` | 同 cursor | 同 cursor | 启用 | `recommendations` | `best-effort` |
+
+> 实现参考：`packages/shared/src/types/template.types.ts`（类型定义），`packages/core/src/builder/declarative-builder.ts`（通用 builder），`packages/core/src/manager/launcher/builtin-backends.ts`（各后端 spec）
+
+#### VerifyCheckSpec
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `path` | `string` | **是** | 检查路径（相对 workspaceDir） |
+| `type` | `"file" \| "dir"` | **是** | 期望类型 |
+| `severity` | `"error" \| "warning"` | 否 | 缺失严重度（默认 `"warning"`） |
 
 #### PlatformCommand
 
@@ -740,12 +783,58 @@ Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
 | `ACTANT_SOCKET` | 覆盖 IPC Socket 路径 | 平台默认 |
 | `ACTANT_LAUNCHER_MODE` | 设定 Launcher 模式（`"mock"` / `"real"`） | `"real"` |
 | `ACTANT_PROVIDER` | 统一 LLM Provider 标识（如 `openai`、`anthropic`） | 无（由 Daemon 从 config.json 注入） |
+| `ACTANT_PROVIDER_TYPE` | `ACTANT_PROVIDER` 的别名（优先级更高） | 无 |
 | `ACTANT_MODEL` | 统一 LLM 模型名称（如 `gpt-4o`、`claude-sonnet-4-20250514`） | 无 |
 | `ACTANT_API_KEY` | 统一 API 密钥（由 Daemon 从 config.json 注入，fallback 到 provider-specific 变量） | 无 |
 | `ACTANT_BASE_URL` | Provider API 端点（由 Daemon 从 config.json 注入） | 无 |
+| `ACTANT_PROVIDER_BASE_URL` | `ACTANT_BASE_URL` 的别名（优先级更高） | 无 |
+| `ACTANT_PROVIDER_PROTOCOL` | 覆盖 Provider API 协议（`openai` / `anthropic` / `custom`） | 按 type 自动推断 |
 | `ACTANT_THINKING_LEVEL` | 统一 thinking/reasoning 级别 | 无 |
 | `ANTHROPIC_API_KEY` | Anthropic API 密钥（兼容 fallback，推荐使用 `ACTANT_API_KEY`） | 无 |
+| `ANTHROPIC_BASE_URL` | Anthropic API 端点（兼容 fallback） | 无 |
+| `OPENAI_API_KEY` | OpenAI API 密钥（兼容 fallback，适用于 openai/deepseek） | 无 |
+| `OPENAI_BASE_URL` | OpenAI API 端点（兼容 fallback，适用于 openai/deepseek） | 无 |
+| `AZURE_OPENAI_API_KEY` | Azure OpenAI API 密钥（兼容 fallback） | 无 |
+| `AZURE_OPENAI_ENDPOINT` | Azure OpenAI 端点（兼容 fallback） | 无 |
 | `LOG_LEVEL` | Pino 日志级别 | `"info"`（CLI 中未设置时为 `"silent"`） |
+
+### Provider 环境变量解析优先级（#133）
+
+模板省略 `provider` 字段时，Actant 会依次查找环境变量和 Registry 默认值：
+
+```
+模板 provider 字段（显式配置）
+  ↓ 未设置
+ACTANT_PROVIDER_TYPE / ACTANT_PROVIDER（环境变量）
+  ↓ 未设置
+Registry 默认 Provider（actant setup 配置）
+  ↓ 未设置
+undefined（无 Provider）
+```
+
+**API Key 解析优先级**（用于 ACP 子进程注入）：
+
+```
+Registry descriptor.apiKey（config.json 加载）
+  ↓ 未设置
+ACTANT_API_KEY
+  ↓ 未设置
+上游原生变量（ANTHROPIC_API_KEY / OPENAI_API_KEY 等，按 provider type）
+```
+
+**Base URL 解析优先级**：
+
+```
+模板 providerConfig.baseUrl
+  ↓ 未设置
+Registry descriptor.defaultBaseUrl
+  ↓ 未设置
+上游原生变量（OPENAI_BASE_URL 等，按 provider type）
+```
+
+> **安全提示**：API Key 不要写入模板文件。推荐使用 `.env` + gitignore 或系统环境变量。
+>
+> 实现参考：`packages/core/src/provider/provider-env-resolver.ts`
 
 ### ACTANT_* 后端通用环境变量约定
 
@@ -763,17 +852,17 @@ Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
 >
 > **ACP 协议层面**：ACP `SessionConfigOption`（category: `model` / `thinking_level`）可用于协议层面动态切换 model 和 thinking level，但**不覆盖 API Key 等凭证**。凭证只能通过 spawn 时的环境变量传递。
 
-### 后端感知的环境变量注入（计划中，#141 Phase 2）
+### 后端感知的环境变量注入（#141 Phase 2 + #158，已实现）
 
-不同后端的 ACP 子进程期望不同的环境变量。`BackendDescriptor.buildProviderEnv` 策略让各后端自描述所需的原生变量映射，AgentManager 查表调用。
+不同后端的 ACP 子进程期望不同的环境变量。`BackendManager.registerBuildProviderEnv()` 策略让各后端自描述所需的原生变量映射，AgentManager 启动时查表调用。
 
-| 后端 | 注入的变量 | 说明 |
-|------|-----------|------|
-| Pi（自有 bridge） | `ACTANT_PROVIDER`、`ACTANT_MODEL`、`ACTANT_API_KEY`、`ACTANT_BASE_URL` | 我们控制 bridge 代码 |
-| Claude Code（第三方） | `ANTHROPIC_API_KEY`、`ANTHROPIC_BASE_URL` | 只认原生变量 |
-| 未注册 `buildProviderEnv` 的后端 | `ACTANT_*`（默认 fallback） | 兼容兜底 |
+| 后端 | 注入的变量 | 注册位置 |
+|------|-----------|---------|
+| Pi（自有 bridge） | `ACTANT_PROVIDER`、`ACTANT_MODEL`、`ACTANT_API_KEY`、`ACTANT_BASE_URL` | `app-context.ts` |
+| Claude Code（第三方） | `ANTHROPIC_API_KEY`、`ANTHROPIC_BASE_URL` | `builtin-backends.ts` |
+| 未注册 `buildProviderEnv` 的后端 | `ACTANT_*`（默认 fallback `buildDefaultProviderEnv`） | `agent-manager.ts` |
 
-> **自动注入（#141）**：`actant setup` 配置的 Provider 信息（type、apiKey、baseUrl）持久化到 `~/.actant/config.json`。Daemon 启动时将 `config.json` 中的密钥加载到内存 Registry，启动 ACP 子进程时通过 `BackendDescriptor.buildProviderEnv`（或 fallback）注入环境变量。**密钥安全模型**：API Key 仅存在于 `config.json`（用户目录）和 Daemon 进程内存（Registry），不写入 Agent workspace 的任何文件（template、`.actant.json`），确保 LLM Agent 无法通过文件系统读取密钥。
+> **自动注入**：`actant setup` 配置的 Provider 信息（type、apiKey、baseUrl）持久化到 `~/.actant/config.json`。Daemon 启动时将 `config.json` 中的密钥加载到内存 Registry，启动 ACP 子进程时通过 `getBuildProviderEnv(backendType)`（或 fallback `buildDefaultProviderEnv`）注入环境变量。**密钥安全模型**：API Key 仅存在于 `config.json`（用户目录）和 Daemon 进程内存（Registry），不写入 Agent workspace 的任何文件（template、`.actant.json`），确保 LLM Agent 无法通过文件系统读取密钥。
 
 ---
 

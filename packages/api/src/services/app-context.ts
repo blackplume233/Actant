@@ -226,10 +226,24 @@ export class AppContext {
   }
 
   private registerPiBackend(): void {
+    const piMaterialization = {
+      configDir: ".pi",
+      scaffoldDirs: [".pi/skills", ".pi/prompts"],
+      components: {
+        skills: { mode: "dual" as const, outputDir: ".pi/skills", extension: ".md" },
+        prompts: { mode: "per-file" as const, output: ".pi/prompts" },
+        mcpServers: { enabled: false },
+        plugins: { enabled: false },
+        permissions: { mode: "tools-only" as const, outputFile: ".pi/settings.json" },
+        workflow: { outputFile: ".trellis/workflow.md" },
+      },
+      verifyChecks: [{ path: "AGENTS.md", type: "file" as const, severity: "error" as const }],
+    };
+
     const mgr = getBackendManager();
     const existing = mgr.get("pi");
     if (existing) {
-      mgr.register({ ...existing, acpOwnsProcess: true, origin: { type: "builtin" } });
+      mgr.register({ ...existing, acpOwnsProcess: true, origin: { type: "builtin" }, materialization: existing.materialization ?? piMaterialization });
     } else {
       mgr.register({
         name: "pi",
@@ -242,12 +256,33 @@ export class AppContext {
         install: [
           { type: "manual", label: "Included with Actant", instructions: "Pi is bundled with Actant — no separate installation required." },
         ],
+        materialization: piMaterialization,
       });
     }
     mgr.registerAcpResolver("pi", () => ({
       command: process.execPath,
       args: [ACP_BRIDGE_PATH],
     }));
+    mgr.registerBuildProviderEnv("pi", (providerConfig) => {
+      const env: Record<string, string> = {};
+      const defaultDesc = modelProviderRegistry.getDefault();
+      const providerType = providerConfig?.type ?? defaultDesc?.type;
+      const descriptor = providerType ? modelProviderRegistry.get(providerType) : defaultDesc;
+
+      if (providerType) env["ACTANT_PROVIDER"] = providerType;
+
+      const apiKey = descriptor?.apiKey ?? process.env["ACTANT_API_KEY"];
+      if (apiKey) env["ACTANT_API_KEY"] = apiKey;
+
+      const baseUrl = providerConfig?.baseUrl ?? descriptor?.defaultBaseUrl;
+      if (baseUrl) env["ACTANT_BASE_URL"] = baseUrl;
+
+      const model = (providerConfig?.config?.["model"] as string | undefined)
+        ?? process.env["ACTANT_MODEL"];
+      if (model) env["ACTANT_MODEL"] = model;
+
+      return env;
+    });
     this.agentInitializer.workspaceBuilder.registerBuilder(new PiBuilder());
     registerCommunicator("pi", (backendConfig) => new PiCommunicator(configFromBackend(backendConfig)));
     logger.info("Pi backend registered (in-process, acp mode only)");

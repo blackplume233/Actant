@@ -1,5 +1,5 @@
 import type { AgentBackendType, AgentOpenMode, BackendDefinition, BackendDescriptor, PlatformCommand } from "@actant/shared";
-import { BackendManager, type AcpResolverFn } from "../../domain/backend/backend-manager";
+import { BackendManager, type AcpResolverFn, type BuildProviderEnvFn } from "../../domain/backend/backend-manager";
 
 // ---------------------------------------------------------------------------
 // Singleton BackendManager instance
@@ -69,6 +69,10 @@ export function getInstallHint(type: AgentBackendType): string | undefined {
 
 export function getAcpResolver(type: AgentBackendType): AcpResolverFn | undefined {
   return manager.getAcpResolver(type);
+}
+
+export function getBuildProviderEnv(type: AgentBackendType): BuildProviderEnvFn | undefined {
+  return manager.getBuildProviderEnv(type);
 }
 
 /**

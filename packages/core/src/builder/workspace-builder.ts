@@ -15,6 +15,8 @@ import type { BackendBuilder, VerifyResult } from "./backend-builder";
 import type { ComponentTypeHandler } from "./component-type-handler";
 import { CursorBuilder } from "./cursor-builder";
 import { ClaudeCodeBuilder } from "./claude-code-builder";
+import { DeclarativeBuilder } from "./declarative-builder";
+import { getBackendManager } from "../manager/launcher/backend-registry";
 import {
   skillsHandler,
   promptsHandler,
@@ -86,8 +88,21 @@ export class WorkspaceBuilder {
     backendType: AgentBackendType = "cursor",
     permissions?: PermissionsInput,
   ): Promise<WorkspaceBuildResult> {
-    // Step 1: Resolve
+    // Step 1: Resolve builder — check local registry, then BackendManager materialization specs
     let builder = this.builders.get(backendType);
+    if (!builder) {
+      const mgr = getBackendManager();
+      const registeredBuilder = mgr.getBuilder(backendType) as BackendBuilder | undefined;
+      if (registeredBuilder) {
+        builder = registeredBuilder;
+      } else {
+        const def = mgr.get(backendType);
+        if (def?.materialization) {
+          builder = new DeclarativeBuilder(backendType, def.materialization);
+          logger.debug({ backendType }, "Created DeclarativeBuilder from MaterializationSpec");
+        }
+      }
+    }
     if (!builder) {
       logger.warn({ backendType }, "No builder registered, falling back to cursor");
       builder = this.builders.get("cursor");
