@@ -1,6 +1,6 @@
 {
   "name": "@actant/pi",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Pi Agent backend for the Actant platform — built on pi-agent-core and pi-ai",
   "type": "module",
   "license": "MIT",

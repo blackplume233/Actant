@@ -188,7 +188,7 @@ export class AppContext {
     registerBuiltinProviders();
 
     const configFile = join(this.homeDir, "config.json");
-    let userConfig: UserConfig = {};
+    let userConfig: UserConfig;
     try {
       userConfig = JSON.parse(readFileSync(configFile, "utf-8")) as UserConfig;
     } catch {
