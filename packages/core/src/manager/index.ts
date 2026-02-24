@@ -15,7 +15,7 @@ export type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
 export { MockLauncher } from "./launcher/mock-launcher";
 export { ProcessLauncher, type ProcessLauncherOptions } from "./launcher/process-launcher";
 export { createLauncher, type LauncherConfig, type LauncherMode } from "./launcher/create-launcher";
-export { resolveBackend, resolveAcpBackend, openBackend, isAcpBackend, isAcpOnlyBackend, type ResolvedBackend } from "./launcher/backend-resolver";
+export { resolveBackend, resolveAcpBackend, openBackend, isAcpBackend, isAcpOnlyBackend, requireInteractionMode, type ResolvedBackend } from "./launcher/backend-resolver";
 export { registerBackend, registerBackendDefinition, getBackendDescriptor, getBackendManager, supportsMode, requireMode, getInstallHint } from "./launcher/backend-registry";
 export { isProcessAlive } from "./launcher/process-utils";
 export {

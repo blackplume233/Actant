@@ -36,6 +36,7 @@ function makeMeta(name: string, overrides?: Partial<AgentInstanceMeta>): AgentIn
     templateName: "test-tpl",
     templateVersion: "1.0.0",
     backendType: "claude-code",
+    interactionModes: ["open", "start", "chat", "run", "proxy"],
     status: "created",
     launchMode: "direct",
     workspacePolicy: "persistent",

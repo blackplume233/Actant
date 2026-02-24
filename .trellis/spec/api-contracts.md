@@ -191,7 +191,7 @@ CLI `template validate <file>` 输出格式：
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
 | `agent.create` | `{ name, template, overrides? }` | `AgentInstanceMeta` | `TEMPLATE_NOT_FOUND`, `CONFIG_VALIDATION`, `WORKSPACE_INIT`, `COMPONENT_REFERENCE` |
-| `agent.start` | `{ name }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND`, `AGENT_ALREADY_RUNNING`, `AGENT_LAUNCH` |
+| `agent.start` | `{ name }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND`, `AGENT_ALREADY_RUNNING`, `AGENT_LAUNCH`, `INTERACTION_MODE` |
 | `agent.stop` | `{ name }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND` |
 | `agent.destroy` | `{ name }` | `{ success }` | `AGENT_NOT_FOUND`, `INSTANCE_CORRUPTED` |
 | `agent.status` | `{ name }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND` |
@@ -228,7 +228,7 @@ CLI `template validate <file>` 输出格式：
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
 | `agent.resolve` | `{ name, template? }` | `ResolveResult` | `AGENT_NOT_FOUND`, `TEMPLATE_NOT_FOUND`, `WORKSPACE_INIT` |
-| `agent.open` | `{ name }` | `AgentOpenResult` | `AGENT_NOT_FOUND`, `AGENT_LAUNCH` |
+| `agent.open` | `{ name, template? }` | `AgentOpenResult` | `AGENT_NOT_FOUND`, `TEMPLATE_NOT_FOUND`, `AGENT_ALREADY_RUNNING`, `AGENT_LAUNCH` |
 | `agent.attach` | `{ name, pid, metadata? }` | `AgentInstanceMeta` | `AGENT_NOT_FOUND`, `AGENT_ALREADY_RUNNING`, `AGENT_ALREADY_ATTACHED` |
 | `agent.detach` | `{ name, cleanup? }` | `DetachResult` | `AGENT_NOT_FOUND`, `AGENT_NOT_ATTACHED` |
 
@@ -316,13 +316,14 @@ Client → agent.attach({ name: "reviewer", pid: 12345 })
 
 #### agent.open
 
-打开 Agent 后端的原生 TUI / UI，通过 detached 子进程启动。要求后端支持 `open` mode（参见 [agent-lifecycle.md §5](./agent-lifecycle.md#5-backend-open-mode--后端打开方式)）。
+打开 Agent 后端的原生 TUI（前台交互模式）。验证 `interactionModes` 包含 `"open"` 以及后端支持 `open` mode。支持通过 `template` 参数自动创建实例。
 
 **参数：**
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `name` | `string` | **是** | Agent 实例名 |
+| `template` | `string` | 否 | 模板名（实例不存在时自动创建） |
 
 **返回 `AgentOpenResult`：**
 
@@ -330,19 +331,25 @@ Client → agent.attach({ name: "reviewer", pid: 12345 })
 |------|------|------|
 | `command` | `string` | 实际执行的命令 |
 | `args` | `string[]` | 命令参数 |
+| `cwd` | `string?` | 工作目录 |
+| `openSpawnOptions` | `OpenSpawnOptions?` | spawn 选项（stdio/detached/windowsHide/shell） |
 
 **行为：**
+- 若实例不存在且提供了 `template`，自动创建实例
+- 通过 `requireInteractionMode(meta, "open")` 验证 Agent 支持 `open` 交互模式
+- 若实例已在运行状态，抛出 `AGENT_ALREADY_RUNNING`
 - 从 BackendRegistry 获取后端描述符，通过 `requireMode(type, "open")` 验证支持 `open` mode
 - 使用描述符的 `openCommand` 解析为平台命令
-- 在 CLI 侧通过 `child_process.spawn(command, args, { detached: true, stdio: "ignore" })` 启动 GUI 进程并立即 `unref()`
-- 后端不支持 `open` mode 时抛出 `AGENT_LAUNCH` 错误
 
-**典型流程：**
+**CLI 侧流程（`actant agent open <name> [-t template] [--no-attach]`）：**
 
 ```
-Client → agent.open({ name: "my-editor" })
-       ← { command: "cursor", args: ["/path/to/workspace"] }
-CLI 侧 → spawn("cursor", ["/path/to/workspace"], { detached: true })
+CLI → agent.open({ name, template })
+    ← { command, args, cwd, openSpawnOptions }
+CLI → agent.attach({ name, pid })   (默认；--no-attach 跳过，失败降级为 warning)
+CLI → spawn(command, args, { cwd, stdio: "inherit" })  (前台 TUI)
+CLI → 等待进程退出
+CLI → agent.detach({ name })        (如果 attach 了)
 ```
 
 ### 3.4 Agent 通信（MVP — print 模式） ✅ 已实现
@@ -761,7 +768,7 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | 命令 | 参数 | 选项 | 对应 RPC | Backend Mode |
 |------|------|------|---------|-------------|
 | `agent resolve <name>` | `name` | `-t, --template`, `-f, --format` | `agent.resolve` | **resolve** — 输出 ACP 连接命令 |
-| `agent open <name>` | `name` | — | `agent.open` | **open** — 直接打开原生 UI |
+| `agent open <name>` | `name` | `-t, --template`, `--no-attach` | `agent.open` | **open** — 前台 TUI 交互（attach/detach 生命周期） |
 | `agent attach <name>` | `name` | `--pid`（必填）, `--metadata` | `agent.attach` | （配合 resolve 使用） |
 | `agent detach <name>` | `name` | `--cleanup` | `agent.detach` | （配合 resolve 使用） |
 

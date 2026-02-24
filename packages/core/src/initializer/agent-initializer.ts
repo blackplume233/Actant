@@ -17,6 +17,7 @@ import { InitializationPipeline } from "./pipeline/initialization-pipeline";
 import type { StepRegistry } from "./pipeline/step-registry";
 import type { StepContext } from "./pipeline/types";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
+import { getBackendDescriptor } from "../manager/launcher/backend-registry";
 
 const logger = createLogger("agent-initializer");
 
@@ -145,6 +146,17 @@ export class AgentInitializer {
       const now = new Date().toISOString();
       const launchMode = overrides?.launchMode ?? this.options?.defaultLaunchMode ?? "direct";
       const defaultPolicy: WorkspacePolicy = launchMode === "one-shot" ? "ephemeral" : "persistent";
+
+      let defaultModes: import("@actant/shared").InteractionMode[] | undefined;
+      try {
+        defaultModes = getBackendDescriptor(template.backend.type).defaultInteractionModes;
+      } catch {
+        // Backend may not be registered yet (e.g. in tests)
+      }
+      const interactionModes = template.backend.interactionModes
+        ?? defaultModes
+        ?? ["start"];
+
       const meta: AgentInstanceMeta = {
         id: randomUUID(),
         name,
@@ -152,6 +164,7 @@ export class AgentInitializer {
         templateVersion: template.version,
         backendType: template.backend.type,
         backendConfig: template.backend.config ? { ...template.backend.config } : undefined,
+        interactionModes,
         providerConfig: resolvedProvider,
         status: "created",
         launchMode,

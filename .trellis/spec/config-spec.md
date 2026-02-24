@@ -68,6 +68,7 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 |------|------|------|------|
 | `type` | `AgentBackendType` | **是** | 后端类型 |
 | `config` | `Record<string, unknown>` | 否 | 后端特定配置 |
+| `interactionModes` | [`InteractionMode[]`](#interactionmode) | 否 | 该 Agent 支持的 CLI 交互命令。省略时使用 BackendDefinition 的 `defaultInteractionModes`，再缺省则默认 `["start"]` |
 
 #### AgentBackendType
 
@@ -98,6 +99,27 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 |------|---------|------|
 | `executablePath` | 全部 | 覆盖平台默认可执行路径 |
 | `args` | `custom` | 自定义启动参数（不设则默认 `[workspaceDir]`） |
+
+### InteractionMode
+
+CLI 命令级别的交互模式，声明 Agent 支持哪些 CLI 命令。与后端协议级别的 `AgentOpenMode`（resolve/open/acp）互补。
+
+| 值 | 对应 CLI 命令 | 说明 |
+|----|-------------|------|
+| `"open"` | `agent open` | 前台打开原生 TUI（需后端支持 `open` mode） |
+| `"start"` | `agent start` | 通过 Daemon 后台启动（需后端支持 `acp` mode） |
+| `"chat"` | `agent chat` | 交互式 REPL 会话 |
+| `"run"` | `agent run` | 单次 prompt 执行 |
+| `"proxy"` | `proxy` | ACP stdio 管道桥接（面向 IDE 集成） |
+
+**各后端默认值**（`BackendDefinition.defaultInteractionModes`）：
+
+| 后端 | 默认 interactionModes |
+|------|----------------------|
+| `cursor` | `["start"]` |
+| `cursor-agent` | `["open", "start", "chat", "run", "proxy"]` |
+| `claude-code` | `["open", "start", "chat", "run", "proxy"]` |
+| `custom` | `["start"]` |
 
 ### ModelProviderConfig
 
@@ -285,6 +307,7 @@ Provider 存在两个层次：
 | `templateVersion` | `string` | **是** | — | 来源模板版本 |
 | `backendType` | `AgentBackendType` | **是**\* | `"cursor"` | 后端类型（创建时从模板写入） |
 | `backendConfig` | `Record<string, unknown>` | 否 | — | 后端配置快照（创建时从模板写入） |
+| `interactionModes` | [`InteractionMode[]`](#interactionmode) | **是** | `["start"]` | 支持的 CLI 交互命令（创建时从 template → backend defaults → `["start"]` 解析） |
 | `providerConfig` | [`ModelProviderConfig`](#modelproviderconfig) | 否 | — | Provider 配置引用（type + protocol + baseUrl，**不含 apiKey**；启动时 Daemon 从 Registry 内存解析密钥并注入为环境变量） |
 | `status` | [`AgentStatus`](#agentstatus) | **是** | — | 当前生命周期状态 |
 | `launchMode` | [`LaunchMode`](#launchmode) | **是** | — | 启动模式 |

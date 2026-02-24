@@ -44,6 +44,7 @@ const minimalAgent: AgentInstanceMeta = {
   templateName: "minimal",
   templateVersion: "1.0.0",
   backendType: "cursor",
+  interactionModes: ["start"],
   status: "running",
   launchMode: "direct",
   workspacePolicy: "persistent",

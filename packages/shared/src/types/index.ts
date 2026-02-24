@@ -12,6 +12,7 @@ export type {
   AgentBackendConfig,
   AgentBackendType,
   KnownBackendType,
+  InteractionMode,
   AgentOpenMode,
   PlatformCommand,
   BackendDefinition,

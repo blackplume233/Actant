@@ -186,6 +186,8 @@ export type AgentResolveResult = ResolveResult;
 
 export interface AgentOpenParams {
   name: string;
+  /** When provided and agent doesn't exist, auto-create from this template. */
+  template?: string;
 }
 
 export interface AgentOpenResult {

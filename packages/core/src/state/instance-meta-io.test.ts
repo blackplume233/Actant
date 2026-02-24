@@ -19,6 +19,7 @@ function makeMeta(overrides?: Partial<AgentInstanceMeta>): AgentInstanceMeta {
     templateName: "test-template",
     templateVersion: "1.0.0",
     backendType: "cursor",
+    interactionModes: ["start"],
     status: "created",
     launchMode: "direct",
     workspacePolicy: "persistent",

@@ -137,8 +137,8 @@ async function handleAgentOpen(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<AgentOpenResult> {
-  const { name } = params as unknown as AgentOpenParams;
-  return ctx.agentManager.openAgent(name);
+  const { name, template } = params as unknown as AgentOpenParams;
+  return ctx.agentManager.openAgent(name, template);
 }
 
 async function handleAgentAttach(

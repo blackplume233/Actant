@@ -13,7 +13,7 @@ import {
 import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
-import { resolveBackend, resolveAcpBackend, openBackend, isAcpOnlyBackend, type ResolvedBackend } from "./launcher/backend-resolver";
+import { resolveBackend, resolveAcpBackend, openBackend, isAcpOnlyBackend, requireInteractionMode, type ResolvedBackend } from "./launcher/backend-resolver";
 import { requireMode, getInstallHint } from "./launcher/backend-registry";
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
@@ -189,6 +189,7 @@ export class AgentManager {
    */
   async startAgent(name: string): Promise<void> {
     const meta = this.requireAgent(name);
+    requireInteractionMode(meta, "start");
     requireMode(meta.backendType, "acp");
 
     if (meta.status === "running" || meta.status === "starting") {
@@ -364,12 +365,29 @@ export class AgentManager {
   }
 
   /**
-   * Open an agent's native TUI/UI (e.g. `cursor <dir>`).
-   * Requires the backend to support "open" mode.
+   * Open an agent's native TUI/UI (e.g. `claude <dir>`).
+   * Validates interactionModes and requires the backend to support "open" mode.
+   * If the agent doesn't exist but templateName is provided, auto-creates it.
+   * @throws if agent does not support "open" interaction mode
    * @throws if backend does not support "open" mode
    */
-  async openAgent(name: string): Promise<ResolvedBackend> {
-    const meta = this.requireAgent(name);
+  async openAgent(name: string, templateName?: string): Promise<ResolvedBackend> {
+    let meta = this.cache.get(name);
+
+    if (!meta && templateName) {
+      meta = await this.createAgent(name, templateName);
+    }
+
+    if (!meta) {
+      throw new AgentNotFoundError(name);
+    }
+
+    requireInteractionMode(meta, "open");
+
+    if (meta.status === "running") {
+      throw new AgentAlreadyRunningError(name);
+    }
+
     const dir = join(this.instancesBaseDir, name);
     return openBackend(meta.backendType, dir);
   }
@@ -464,6 +482,7 @@ export class AgentManager {
     options?: RunPromptOptions,
   ): Promise<PromptResult> {
     const meta = this.requireAgent(name);
+    requireInteractionMode(meta, "run");
 
     if (this.acpManager?.has(name)) {
       const conn = this.acpManager.getConnection(name);

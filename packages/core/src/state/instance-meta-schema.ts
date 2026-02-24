@@ -23,6 +23,8 @@ export const WorkspacePolicySchema = z.enum(["persistent", "ephemeral"]);
 
 const AgentBackendTypeSchema = z.string().min(1);
 
+const InteractionModeSchema = z.enum(["open", "start", "chat", "run", "proxy"]);
+
 const PermissionModeSchema = z.enum([
   "default", "acceptEdits", "plan", "dontAsk", "bypassPermissions",
 ]);
@@ -63,6 +65,7 @@ export const AgentInstanceMetaSchema = z.object({
   templateVersion: z.string().regex(/^\d+\.\d+\.\d+$/),
   backendType: AgentBackendTypeSchema.default("cursor"),
   backendConfig: z.record(z.string(), z.unknown()).optional(),
+  interactionModes: z.array(InteractionModeSchema).default(["start"]),
   providerConfig: ModelProviderConfigSchema.optional(),
   status: AgentStatusSchema,
   launchMode: LaunchModeSchema,

@@ -83,6 +83,7 @@ describe("claude-code backend modes", () => {
 
 describe("Pi backend (when registered)", () => {
   const PI_DESCRIPTOR: import("@actant/shared").BackendDescriptor = {
+    name: "pi",
     type: "pi",
     supportedModes: ["acp"],
     acpCommand: { win32: "pi-acp-bridge.cmd", default: "pi-acp-bridge" },

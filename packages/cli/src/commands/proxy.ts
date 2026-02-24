@@ -84,6 +84,21 @@ async function runDirectBridge(
 
     instanceName = resolved.instanceName;
 
+    // Validate interaction mode
+    try {
+      const meta = await client.call("agent.status", { name: instanceName });
+      if (meta.interactionModes && !meta.interactionModes.includes("proxy")) {
+        printer.error(
+          `Agent "${instanceName}" (${meta.backendType}) does not support "proxy" mode. ` +
+          `Supported modes: ${meta.interactionModes.join(", ")}`,
+        );
+        process.exitCode = 1;
+        return;
+      }
+    } catch {
+      // status check is best-effort; proceed if it fails
+    }
+
     // Check if instance is already occupied → auto-instantiate ephemeral copy
     const targetInstance = await resolveAvailableInstance(
       client,
@@ -251,6 +266,14 @@ async function runSessionLease(
     }
 
     const meta = await rpcClient.call("agent.status", { name: agentName });
+    if (meta.interactionModes && !meta.interactionModes.includes("proxy")) {
+      printer.error(
+        `Agent "${agentName}" (${meta.backendType}) does not support "proxy" mode. ` +
+        `Supported modes: ${meta.interactionModes.join(", ")}`,
+      );
+      process.exitCode = 1;
+      return;
+    }
     if (meta.status !== "running") {
       printer.error(
         `Agent "${agentName}" is not running (status: ${meta.status}). ` +

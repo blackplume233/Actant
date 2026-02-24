@@ -1,4 +1,4 @@
-import type { AgentBackendType, ModelProviderConfig, PermissionsConfig } from "./template.types";
+import type { AgentBackendType, InteractionMode, ModelProviderConfig, PermissionsConfig } from "./template.types";
 
 /**
  * Agent Instance = a workspace directory.
@@ -14,6 +14,8 @@ export interface AgentInstanceMeta {
   backendType: AgentBackendType;
   /** Backend config from template (e.g. executablePath). Persisted so launcher can use without template registry. */
   backendConfig?: Record<string, unknown>;
+  /** CLI interaction modes this agent supports (resolved from template or backend defaults). */
+  interactionModes: InteractionMode[];
   /**
    * Provider config reference (type + protocol + baseUrl only).
    * SECURITY: Never contains apiKey — secrets stay in ~/.actant/config.json

@@ -13,6 +13,7 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
     description: "Cursor IDE",
     origin: { type: "builtin" },
     supportedModes: ["resolve", "open"],
+    defaultInteractionModes: ["start"],
     resolveCommand: { win32: "cursor.cmd", default: "cursor" },
     openCommand: { win32: "cursor.cmd", default: "cursor" },
     openSpawnOptions: { shell: process.platform === "win32" },
@@ -29,6 +30,7 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
     description: "Cursor Agent (TUI)",
     origin: { type: "builtin" },
     supportedModes: ["resolve", "open", "acp"],
+    defaultInteractionModes: ["open", "start", "chat", "run", "proxy"],
     resolveCommand: { win32: "agent", default: "agent" },
     openCommand: { win32: "agent", default: "agent" },
     openWorkspaceDir: "cwd",
@@ -44,6 +46,7 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
     description: "Claude Code CLI",
     origin: { type: "builtin" },
     supportedModes: ["resolve", "open", "acp"],
+    defaultInteractionModes: ["open", "start", "chat", "run", "proxy"],
     resolveCommand: { win32: "claude-agent-acp.cmd", default: "claude-agent-acp" },
     openCommand: { win32: "claude.exe", default: "claude" },
     openWorkspaceDir: "cwd",
@@ -60,6 +63,7 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
     description: "Custom backend (user-provided executable)",
     origin: { type: "builtin" },
     supportedModes: ["resolve"],
+    defaultInteractionModes: ["start"],
   },
 ];
 

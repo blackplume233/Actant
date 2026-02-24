@@ -1,4 +1,4 @@
-import type { AgentBackendType, OpenSpawnOptions } from "@actant/shared";
+import type { AgentBackendType, AgentInstanceMeta, InteractionMode, OpenSpawnOptions } from "@actant/shared";
 import {
   getBackendDescriptor,
   getAcpResolver,
@@ -162,4 +162,21 @@ export function resolveAcpBackend(
     args: buildArgs(backendType, workspaceDir, backendConfig),
     resolvePackage: desc.resolvePackage,
   };
+}
+
+/**
+ * Validate that an agent instance supports the given CLI interaction mode.
+ * @throws if the mode is not in `meta.interactionModes`
+ */
+export function requireInteractionMode(
+  meta: AgentInstanceMeta,
+  mode: InteractionMode,
+): void {
+  if (!meta.interactionModes?.includes(mode)) {
+    const supported = (meta.interactionModes ?? []).join(", ");
+    throw new Error(
+      `Agent "${meta.name}" (${meta.backendType}) does not support "${mode}" mode. ` +
+      `Supported modes: ${supported}`,
+    );
+  }
 }

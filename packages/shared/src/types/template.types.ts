@@ -59,10 +59,15 @@ export interface AgentTemplate extends VersionedComponent {
   metadata?: Record<string, string>;
 }
 
+/** CLI-level interaction modes that an agent supports. */
+export type InteractionMode = "open" | "start" | "chat" | "run" | "proxy";
+
 export interface AgentBackendConfig {
   type: AgentBackendType;
   /** Optional backend-specific config (e.g. executablePath for launcher). Used in materialization and persisted on instance. */
   config?: Record<string, unknown>;
+  /** Which CLI commands this agent supports. When omitted, defaults come from BackendDefinition. */
+  interactionModes?: InteractionMode[];
 }
 
 /** Well-known built-in backend types. */
@@ -99,6 +104,8 @@ export interface PlatformCommand {
 export interface BackendDefinition extends VersionedComponent {
   /** Which open modes this backend supports. */
   supportedModes: AgentOpenMode[];
+  /** Default CLI interaction modes for agents using this backend. Used when template omits interactionModes. */
+  defaultInteractionModes?: InteractionMode[];
   /** Command for `resolve` mode (returns spawn info to external callers). */
   resolveCommand?: PlatformCommand;
   /** Command for `open` mode (directly opens native TUI/UI). */

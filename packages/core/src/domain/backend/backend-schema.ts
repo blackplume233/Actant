@@ -41,6 +41,7 @@ export const BackendDefinitionSchema = z
     resolvePackage: z.string().optional(),
     openWorkspaceDir: z.enum(["arg", "cwd"]).optional(),
     openSpawnOptions: OpenSpawnOptionsSchema.optional(),
+    defaultInteractionModes: z.array(z.enum(["open", "start", "chat", "run", "proxy"])).optional(),
     existenceCheck: ExistenceCheckSchema.optional(),
     install: z.array(InstallMethodSchema).optional(),
   })

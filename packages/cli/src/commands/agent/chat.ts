@@ -38,6 +38,14 @@ async function runChat(
   let daemonManaged = false;
   try {
     const status = await client.call("agent.status", { name });
+    if (status.interactionModes && !status.interactionModes.includes("chat")) {
+      printer.error(
+        `Agent "${name}" (${status.backendType}) does not support "chat" mode. ` +
+        `Supported modes: ${status.interactionModes.join(", ")}`,
+      );
+      process.exitCode = 1;
+      return;
+    }
     if (status.status === "running") {
       daemonManaged = true;
     }
