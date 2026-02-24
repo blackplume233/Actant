@@ -23,7 +23,8 @@ describe("Schema type alignment with shared types", () => {
   });
 
   it("schema provider matches ModelProviderConfig", () => {
-    expectTypeOf<AgentTemplateOutput["provider"]>().toMatchTypeOf<ModelProviderConfig>();
+    type SchemaProvider = NonNullable<AgentTemplateOutput["provider"]>;
+    expectTypeOf<SchemaProvider>().toMatchTypeOf<ModelProviderConfig>();
   });
 
   it("schema domainContext matches DomainContextConfig", () => {

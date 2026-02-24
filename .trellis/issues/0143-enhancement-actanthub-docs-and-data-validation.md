@@ -1,7 +1,8 @@
 ---
 id: 143
 title: "enhancement: ActantHub 文档完善与数据校验功能"
-status: open
+status: closed
+closedAt: "2026-02-24T06:21:38Z"
 labels:
   - enhancement
   - "priority:P2"

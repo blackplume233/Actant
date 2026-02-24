@@ -23,7 +23,7 @@ describe("TemplateLoader", () => {
       expect(template.version).toBe("1.0.0");
       expect(template.description).toBe("A code review agent powered by Claude");
       expect(template.backend.type).toBe("claude-code");
-      expect(template.provider.type).toBe("anthropic");
+      expect(template.provider?.type).toBe("anthropic");
       expect(template.domainContext.skills).toEqual(["code-review", "typescript-expert"]);
       expect(template.domainContext.mcpServers).toHaveLength(1);
       expect(template.domainContext.mcpServers?.[0]?.name).toBe("filesystem");
@@ -41,7 +41,7 @@ describe("TemplateLoader", () => {
       expect(template.version).toBe("0.1.0");
       expect(template.description).toBeUndefined();
       expect(template.backend.type).toBe("cursor");
-      expect(template.provider.type).toBe("openai");
+      expect(template.provider?.type).toBe("openai");
       expect(template.domainContext.skills).toEqual([]);
       expect(template.domainContext.prompts).toEqual([]);
       expect(template.domainContext.mcpServers).toEqual([]);
