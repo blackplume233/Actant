@@ -125,7 +125,7 @@ export class BackendManager extends BaseComponentManager<BackendDefinition> {
     const def = this.get(backendName);
     if (!def?.install) return [];
     const plat = process.platform;
-    return def.install.filter((m) => !m.platforms || m.platforms.includes(plat));
+    return def.install.filter((m: BackendInstallMethod) => !m.platforms || m.platforms.includes(plat));
   }
 
   // ---------------------------------------------------------------------------

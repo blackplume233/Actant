@@ -7,7 +7,6 @@ import {
   tryInstallMethods,
   ensureResolvePackage,
   _resetDetectionCache,
-  type JsPackageManager,
 } from "./backend-installer";
 import type { BackendInstallMethod } from "@actant/shared";
 
@@ -21,7 +20,7 @@ function mockCommandExists(availableCommands: string[]) {
   mockExecFile.mockImplementation(((
     cmd: string,
     args: string[],
-    opts: unknown,
+    _opts: unknown,
     cb: (err: Error | null, stdout: string, stderr: string) => void,
   ) => {
     const probeCmd = args[0];
@@ -56,7 +55,7 @@ function mockCommandExistsWithFailedInstall(availableCommands: string[]) {
   mockExecFile.mockImplementation(((
     cmd: string,
     args: string[],
-    opts: unknown,
+    _opts: unknown,
     cb: (err: Error | null, stdout: string, stderr: string) => void,
   ) => {
     if (cmd === "which" || cmd === "where") {

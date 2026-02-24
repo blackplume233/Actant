@@ -33,9 +33,9 @@ const testBackend: BackendDefinition = {
 
 function mockExistenceCheckResult(available: boolean, version?: string) {
   mockExecFile.mockImplementation(((
-    cmd: string,
-    args: string[],
-    opts: unknown,
+    _cmd: string,
+    _args: string[],
+    _opts: unknown,
     cb: (err: Error | null, stdout: string) => void,
   ) => {
     if (available) {
@@ -84,9 +84,9 @@ describe("BackendManager install methods", () => {
     it("should attempt install when autoInstall is true and backend is missing", async () => {
       let callCount = 0;
       mockExecFile.mockImplementation(((
-        cmd: string,
-        args: string[],
-        opts: unknown,
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
         cb: (err: Error | null, stdout: string) => void,
       ) => {
         callCount++;
@@ -194,9 +194,9 @@ describe("BackendManager install methods", () => {
 
     it("should attempt install when autoInstall is true and command is missing", async () => {
       mockExecFile.mockImplementation(((
-        cmd: string,
-        args: string[],
-        opts: unknown,
+        _cmd: string,
+        _args: string[],
+        _opts: unknown,
         cb: (err: Error | null, stdout: string) => void,
       ) => {
         const err = new Error("ENOENT") as NodeJS.ErrnoException;

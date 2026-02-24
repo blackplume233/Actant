@@ -12,8 +12,13 @@ export type JsPackageManager = "npm" | "pnpm" | "yarn" | "bun";
 export type SystemPackageManager = "brew" | "winget" | "choco";
 export type PackageManagerType = JsPackageManager | SystemPackageManager;
 
-interface DetectedManager {
-  type: PackageManagerType;
+interface DetectedJsManager {
+  type: JsPackageManager;
+  command: string;
+}
+
+interface DetectedSystemManager {
+  type: SystemPackageManager;
   command: string;
 }
 
@@ -30,8 +35,8 @@ const SYSTEM_MANAGERS: Array<{ type: SystemPackageManager; command: string; plat
   { type: "choco", command: "choco", platform: "win32" },
 ];
 
-let cachedJsManager: DetectedManager | null | undefined;
-let cachedSystemManagers: DetectedManager[] | undefined;
+let cachedJsManager: DetectedJsManager | null | undefined;
+let cachedSystemManagers: DetectedSystemManager[] | undefined;
 
 /** Probe whether a command exists on PATH. */
 async function commandExists(command: string): Promise<boolean> {
@@ -47,7 +52,7 @@ async function commandExists(command: string): Promise<boolean> {
  * Detect the first available JS package manager.
  * Result is cached for the process lifetime.
  */
-export async function detectJsPackageManager(): Promise<DetectedManager | null> {
+export async function detectJsPackageManager(): Promise<DetectedJsManager | null> {
   if (cachedJsManager !== undefined) return cachedJsManager;
 
   for (const m of JS_MANAGERS) {
@@ -63,10 +68,10 @@ export async function detectJsPackageManager(): Promise<DetectedManager | null> 
 }
 
 /** Detect all available system package managers for the current platform. */
-export async function detectSystemManagers(): Promise<DetectedManager[]> {
+export async function detectSystemManagers(): Promise<DetectedSystemManager[]> {
   if (cachedSystemManagers !== undefined) return cachedSystemManagers;
 
-  const results: DetectedManager[] = [];
+  const results: DetectedSystemManager[] = [];
   const plat = process.platform;
   for (const m of SYSTEM_MANAGERS) {
     if (m.platform && m.platform !== plat) continue;
