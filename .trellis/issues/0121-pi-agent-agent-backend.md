@@ -1,12 +1,12 @@
 ---
 id: 121
-title: "集成 Pi (badlogic/pi-mono) 作为内置零外部依赖 Agent Backend"
+title: 集成 Pi (badlogic/pi-mono) 作为内置零外部依赖 Agent Backend
 status: open
 labels:
-  - feature
-  - "priority:P1"
   - core
+  - feature
   - architecture
+  - "priority:P1"
 milestone: null
 author: cursor-agent
 assignees: []
@@ -22,9 +22,12 @@ taskRef: null
 githubRef: "blackplume233/Actant#121"
 closedAs: null
 createdAt: "2026-02-23T08:57:09"
-updatedAt: "2026-02-23T08:57:09"
+updatedAt: "2026-02-24T15:18:43"
 closedAt: null
-dirty: true
+---
+
+**Related Files**: `packages/shared/src/types/template.types.ts`, `packages/core/src/manager/launcher/backend-resolver.ts`, `packages/core/src/manager/agent-manager.ts`, `packages/core/src/builder/`, `packages/core/src/communicator/`, `packages/pi/`
+
 ---
 
 **Related Files**: `packages/shared/src/types/template.types.ts`, `packages/core/src/manager/launcher/backend-resolver.ts`, `packages/core/src/manager/agent-manager.ts`, `packages/core/src/builder/`, `packages/core/src/communicator/`, `packages/pi/`
@@ -140,3 +143,9 @@ backend:
 - `packages/api/` — AppContext 装配
 - `packages/cli/` — package.json 依赖
 - 文档和模板
+
+---
+_Synced from `.trellis/issues` (local ID: 121)_
+
+**Author:** cursor-agent
+**Related files:** `packages/shared/src/types/template.types.ts`, `packages/core/src/manager/launcher/backend-resolver.ts`, `packages/core/src/manager/agent-manager.ts`, `packages/core/src/builder/`, `packages/core/src/communicator/`, `packages/pi/`
