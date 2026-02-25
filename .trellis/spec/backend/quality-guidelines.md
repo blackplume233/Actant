@@ -666,18 +666,41 @@ Full CLI regression tests live in `.agents/skills/qa-engineer/scenarios/full-cli
 
 **Rule**: When adding opt-in validation modes (e.g., `--compat agent-skills`), always include backward-compatibility tests that verify the same input passes without the flag. This ensures new modes don't silently change default behavior.
 
-### Don't: 在生命周期测试中使用 MockLauncher
+### Pi 作为默认测试后端（测试约定）
 
-MockLauncher 生成假 PID，与 ProcessWatcher 的真实 OS 检查产生竞态条件。
+Pi 是 Actant 的内置零依赖后端，已在 `builtin-backends.ts` 中注册为一等公民。
+**所有新测试必须使用 Pi 后端**，不再使用 `MockLauncher` 或 `custom` 后端。
+
+#### 两类测试场景
+
+| 场景 | 后端 | Launcher | 说明 |
+|------|------|----------|------|
+| **状态机测试**（crash/restart cycle, 生命周期转换） | `pi` | `MockLauncher`（仅限此场景） | 需要 `isProcessAlive` mock 控制状态转换 |
+| **集成测试**（真实进程 spawn/terminate） | `pi` + `backendConfig` 覆盖 | `ProcessLauncher` | 真实 OS PID，ProcessWatcher 正确工作 |
+
+#### 状态机测试（Pi + MockLauncher）
+
+状态机测试验证 AgentManager 的状态转换逻辑（create → start → crash → restart → error），
+不关心真实进程。此场景允许使用 MockLauncher，但模板**必须**使用 Pi 后端类型：
 
 ```typescript
-// Bad — MockLauncher 的假 PID 可能被 ProcessWatcher 误判为 dead
-const launcher = new MockLauncher();
-const manager = new AgentManager(initializer, launcher, tmpDir, opts);
+function makeTemplate(): AgentTemplate {
+  return {
+    name: "test-tpl",
+    version: "1.0.0",
+    backend: { type: "pi" },  // 必须使用 Pi，不再用 claude-code 或 custom
+    provider: { type: "openai", protocol: "openai" },
+    domainContext: {},
+  };
+}
 ```
 
+#### 集成测试（Pi + 真实进程）
+
+需要真实 OS PID 的测试使用 `createTestManager()` 或 `makeSleeperTemplate()`。
+这些工具通过 `backendConfig` 覆盖将 Pi 解析为 `node` sleeper 进程：
+
 ```typescript
-// Good — 使用 createTestManager() 或 createTestLauncher() + custom 后端
 import { createTestManager } from "../testing";
 
 const { manager, cleanup } = createTestManager(tmpDir, {
@@ -686,9 +709,33 @@ const { manager, cleanup } = createTestManager(tmpDir, {
 // afterEach: await cleanup();
 ```
 
-`createTestManager()` 使用 `custom` 后端 + `node` sleeper 进程，产生真实 OS PID，
-ProcessWatcher 可以正确检测进程存活状态。
+`makeSleeperTemplate()` 返回的模板：
+- `backend.type: "pi"` — 使用 Pi 后端类型
+- `backendConfig.executablePath: process.execPath` — 当前 Node 二进制
+- `backendConfig.args: ["-e", "setTimeout(()=>{},600000)"]` — 长期存活的真实进程
 
+#### Pi Resolve 优先级链（为什么 Pi 不需要外部依赖）
+
+```
+resolveBackend("pi", workspaceDir, backendConfig)
+  1. backendConfig.executablePath   → 用户/测试覆盖（最高优先）
+  2. acpResolver (runtime 注册)      → process.execPath + ACP_BRIDGE_PATH（二进制分发）
+  3. resolveCommand (静态)           → "pi-acp-bridge"（npm 开发环境 fallback）
+```
+
+#### Don't: 使用 MockLauncher + 非 Pi 后端
+
+```typescript
+// Bad — 使用 claude-code 或 custom 后端做测试
+backend: { type: "claude-code" }
+backend: { type: "custom", config: { executablePath: "node", ... } }
+
+// Good — 统一使用 Pi
+backend: { type: "pi" }
+backend: { type: "pi", config: { executablePath: process.execPath, args: [...] } }
+```
+
+> `MockLauncher` 已标记为 `@deprecated`。仅在状态机测试中保留使用，且必须配合 Pi 后端。
 > 参见 `packages/core/src/testing/test-launcher.ts`
 
 ### Test Structure
