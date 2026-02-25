@@ -1129,11 +1129,38 @@ Session Lease 模式使用以下 RPC 方法：
 
 | 方法 | 参数 | 返回 | 说明 |
 |------|------|------|------|
+| `gateway.lease` | `{ agentName }` | `{ socketPath }` | 创建 per-agent 命名管道/Unix socket，IDE 通过该 socket 与 ACP Gateway 通信 |
 | `session.create` | `{ agentName, clientId, idleTtlMs? }` | `SessionLeaseInfo` | 创建新会话 |
 | `session.prompt` | `{ sessionId, text }` | `SessionPromptResult` | 发送消息（同步） |
 | `session.cancel` | `{ sessionId }` | `{ ok }` | 取消正在进行的 prompt |
 | `session.close` | `{ sessionId }` | `{ ok }` | 关闭会话 |
 | `session.list` | `{ agentName? }` | `SessionLeaseInfo[]` | 列会话 |
+
+#### gateway.lease ✅ 已实现
+
+为指定 Agent 创建专用命名管道（Windows）或 Unix socket，IDE 连接后桥接到 AcpGateway。
+
+**参数 `GatewayLeaseParams`：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `agentName` | `string` | **是** | 目标 Agent 实例名（必须处于 `running` 状态且有 ACP 连接） |
+
+**返回 `GatewayLeaseResult`：**
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `socketPath` | `string` | 创建的命名管道/Unix socket 路径（Windows: `\\.\pipe\actant-gw-<name>-<id>`，Unix: `/tmp/actant-gw-<name>-<id>.sock`） |
+
+**行为：**
+- Agent 必须处于 `running` 状态且有活跃的 ACP 连接
+- 同一 Agent 的多次 lease 请求会复用已有 socket（如果上游未连接）
+- 如果上游已连接（单 IDE 独占），先断开旧连接再创建新 lease
+- Daemon 关闭时自动清理所有 lease socket（`disposeAllLeases()`）
+
+**可能错误：** `AGENT_NOT_FOUND`（Agent 不存在）、通用 Error（Agent 未运行、无 ACP 连接、无 Gateway）
+
+> 实现参考：`packages/api/src/handlers/gateway-handlers.ts`
 
 **SessionLeaseInfo** 结构：
 
