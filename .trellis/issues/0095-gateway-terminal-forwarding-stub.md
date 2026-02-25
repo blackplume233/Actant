@@ -1,7 +1,9 @@
 ---
 id: 95
 title: "ACP Gateway: Terminal 回调 IDE 转发未实现（4 个方法为 stub）"
-status: open
+status: closed
+closedAs: completed
+closedAt: 2026-02-25T23:00:00
 labels:
   - bug
   - acp
