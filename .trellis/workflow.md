@@ -20,7 +20,8 @@
 
 ### Step 0: Initialize Developer Identity (First Time Only)
 
-> **Multi-developer support**: Each developer/Agent needs to initialize their identity first
+> **Multi-developer support**: Each developer/Agent needs to initialize their identity first.
+> **Actant Agent model**: AI 开发者本质上是一个 Actant Agent 实例——拥有身份、workspace 和生命周期。
 
 ```bash
 # Check if already initialized
@@ -28,17 +29,23 @@
 
 # If not initialized, run:
 ./.trellis/scripts/init-developer.sh <your-name>
-# Example: ./.trellis/scripts/init-developer.sh cursor-agent
+# Example: ./.trellis/scripts/init-developer.sh actant-cursor-agent
 ```
 
 This creates:
 - `.trellis/.developer` - Your identity file (gitignored, not committed)
 - `.trellis/workspace/<your-name>/` - Your personal workspace directory
 
-**Naming suggestions**:
-- Human developers: Use your name, e.g., `john-doe`
-- Cursor AI: `cursor-agent` or `cursor-<task>`
-- Claude Code: `claude-agent` or `claude-<task>`
+**Naming conventions (Actant Agent identity)**:
+
+| Agent 类型 | 推荐名称 | 说明 |
+|-----------|---------|------|
+| Cursor AI | `actant-cursor-agent` | 使用 `/trellis-plan-start` 启动会话 |
+| Claude Code | `actant-claude-agent` | 使用 `/trellis:plan-start` 启动会话 |
+| Human developer | `actant-<your-name>` | e.g., `actant-john-doe` |
+| Task-scoped agent | `actant-<platform>-<task>` | e.g., `actant-cursor-refactor`, `actant-claude-qa` |
+
+> **理念**: 每个 AI 开发者会话对应一个 Actant Agent 实例。身份初始化后，通过 `/trellis-plan-start`（Cursor）或 `/trellis:plan-start`（Claude Code）启动 plan-first 工作流，确保先规划再执行。
 
 ### Step 1: Understand Current Context
 
@@ -417,7 +424,7 @@ gh issue create -t "<title>" -b "<body>" -l "feature"
 ```bash
 ./.trellis/scripts/issue.sh list [--milestone mid-term] [--priority P1] [--rfc]
 ./.trellis/scripts/issue.sh show <id>
-./.trellis/scripts/issue.sh edit <id> --assign cursor-agent --milestone mid-term  # ← auto-sync
+./.trellis/scripts/issue.sh edit <id> --assign actant-cursor-agent --milestone mid-term  # ← auto-sync
 ./.trellis/scripts/issue.sh label <id> --add rfc --remove question               # ← auto-sync
 ./.trellis/scripts/issue.sh comment <id> "Design doc completed"                  # ← auto-sync
 ./.trellis/scripts/issue.sh close <id> --as completed                            # ← auto-sync + auto-archive

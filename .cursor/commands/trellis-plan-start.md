@@ -25,13 +25,23 @@ Same as `/trellis-start`:
 cat .trellis/workflow.md
 ```
 
-### Step 0.2: Get Current Status
+### Step 0.2: Initialize Developer Identity (Actant Agent)
+
+Ensure your Actant Agent identity is initialized. Check if already set, if not, initialize:
+
+```bash
+./.trellis/scripts/get-developer.sh || ./.trellis/scripts/init-developer.sh actant-cursor-agent
+```
+
+> **Actant Agent 身份**: AI 开发者是一个 Actant Agent 实例。Cursor AI 使用 `actant-cursor-agent` 作为身份标识。
+
+### Step 0.3: Get Current Status
 
 ```bash
 ./.trellis/scripts/get-context.sh
 ```
 
-### Step 0.3: Read Project Guidelines
+### Step 0.4: Read Project Guidelines
 
 Read relevant spec docs based on context:
 
@@ -41,13 +51,13 @@ cat .trellis/spec/backend/index.md
 cat .trellis/spec/guides/index.md
 ```
 
-### Step 0.4: Check Active Tasks
+### Step 0.5: Check Active Tasks
 
 ```bash
 ./.trellis/scripts/task.sh list
 ```
 
-### Step 0.5: Report Ready Status
+### Step 0.6: Report Ready Status
 
 Output initialization summary (same as trellis-start), then:
 
