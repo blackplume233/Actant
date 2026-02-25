@@ -29,6 +29,7 @@ Actant 的接口架构（三层协议分工）：
               │                                    │
               │  RPC: HandlerRegistry              │
               │   ├─ Agent/Template/Domain/Daemon  │
+              │   ├─ Hook handlers (subscribe/list)│
               │   ├─ Email handlers (#136)         │
               │   └─ Proxy(legacy) handlers        │
               │                                    │
@@ -146,6 +147,8 @@ Actant 的接口架构（三层协议分工）：
 | `AGENT_ALREADY_ATTACHED` | -32009 | 实例已被外部进程 attach |
 | `AGENT_NOT_ATTACHED` | -32010 | 实例未被 attach（detach 时） |
 | `PROXY_SESSION_CONFLICT` | -32011 | Proxy session 冲突（同名 Agent 已有活跃 Proxy） |
+| `HOOK_EVENT_NOT_SUBSCRIBABLE` | -32012 | 事件不允许 Agent 自注册（订阅模型 C 不支持） |
+| `HOOK_SUBSCRIPTION_NOT_FOUND` | -32013 | 动态订阅 ID 不存在 |
 
 **映射规则**：`ActantError` 子类在 Socket Server 边界处映射为对应 RPC 错误码；未映射的异常一律返回 `INTERNAL_ERROR`。
 
@@ -756,21 +759,90 @@ interface HookEventDto {
 | `since` | `string` | 否 | ISO timestamp，只返回此时间之后的事件 |
 | `scope` | `'actant' \| 'instance'` | 否 | 过滤作用域 |
 
-### 3.13 MCP Schedule Tools（Phase 4 新增） 🚧
+### 3.13 Hook 订阅管理（Phase 4 新增） 🚧
+
+> 状态：**待实现** — 统一事件系统 (event-system-unified-design.md)
+
+Agent 运行时通过 CLI（`actant hook subscribe`）动态注册/取消事件订阅。这是**事件订阅模型 C（Agent 自注册）**的 RPC 入口。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `hook.subscribe` | `{ agent, event, prompt, interval?, condition? }` | `{ subscriptionId }` | `AGENT_NOT_FOUND`, `HOOK_EVENT_NOT_SUBSCRIBABLE` |
+| `hook.unsubscribe` | `{ agent, subscriptionId }` | `{ success }` | `AGENT_NOT_FOUND`, `HOOK_SUBSCRIPTION_NOT_FOUND` |
+| `hook.list` | `{ agent, dynamic? }` | `HookSubscriptionDto[]` | `AGENT_NOT_FOUND` |
+
+#### hook.subscribe
+
+Agent（通过 `Bash("actant hook subscribe ...")`）或用户在运行时动态注册事件监听。
+
+**参数：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `agent` | `string` | **是** | 目标 Agent 实例名（`"self"` 自动解析为调用者） |
+| `event` | `string` | **是** | 事件名（如 `heartbeat:tick`、`prompt:after`） |
+| `prompt` | `string` | **是** | 事件触发时发送给 Agent 的 prompt |
+| `interval` | `number` | 否 | 对于 `heartbeat:tick` 事件，指定轮询间隔毫秒数（≥1000） |
+| `condition` | `string` | 否 | 模板表达式条件过滤（`${data.xxx}` truthy 判断） |
+
+**行为：**
+- 通过 `HookCategoryRegistry.isAgentSubscribable(event)` 验证该事件允许 Agent 自注册
+- 不允许时抛出 `HOOK_EVENT_NOT_SUBSCRIBABLE` 错误
+- 若 `event` 为 `heartbeat:tick` 且提供了 `interval`，自动创建 `EventSourceManager` 定时器
+- 订阅绑定到 Agent 进程生命周期：进程停止时自动取消（Ephemeral 语义）
+
+**返回 `{ subscriptionId }`：** 用于后续 unsubscribe。
+
+#### hook.unsubscribe
+
+取消动态订阅。同时清理关联的 EventSource（如 heartbeat timer）。
+
+#### hook.list
+
+列出 Agent 的所有事件订阅。`dynamic: true` 只返回 Agent 运行时自注册的订阅。
+
+**返回 `HookSubscriptionDto`：**
+
+```typescript
+interface HookSubscriptionDto {
+  subscriptionId: string;
+  event: string;
+  prompt: string;
+  source: 'workflow' | 'dynamic';
+  createdAt: string;
+}
+```
+
+**CLI 映射：**
+
+```bash
+actant hook subscribe --agent self --event heartbeat:tick \
+  --interval 300000 --prompt "Check for new PRs"
+
+actant hook unsubscribe --agent self --id <subscriptionId>
+
+actant hook list --agent self --dynamic
+```
+
+> 设计依据：事件订阅模型 C。通信通道选择 CLI 而非 MCP。详见 [event-system-unified-design.md §7](../../docs/design/event-system-unified-design.md)。
+
+### 3.14 MCP Schedule Tools（Phase 4 新增） 🚧
 
 > 状态：**待实现** — Step 2 (Scheduler Enhancement)
+>
+> **⚠️ 注意**：在统一事件系统架构下，Schedule Tools 将整合到 EventBus 中。`actant_schedule_wait` 和 `actant_schedule_cron` 的底层实现由独立 TaskQueue 改为 emit 到 EventBus + ActionRunner 分派。
 
 Agent 通过 MCP Tools 操作自身的 Scheduler。这些不是 RPC 方法，而是 MCP Server 暴露的 Tools。
 
 | Tool Name | 参数 | 返回 | 说明 |
 |-----------|------|------|------|
-| `actant_schedule_wait` | `{ delayMs, prompt }` | `{ taskId }` | 创建一次性定时任务 |
-| `actant_schedule_cron` | `{ cron, prompt, name? }` | `{ sourceId }` | 创建 Cron 定时输入源 |
-| `actant_schedule_cancel` | `{ id }` | `{ success }` | 取消定时任务或输入源 |
+| `actant_schedule_wait` | `{ delayMs, prompt }` | `{ taskId }` | 创建一次性定时任务（emit to EventBus） |
+| `actant_schedule_cron` | `{ cron, prompt, name? }` | `{ sourceId }` | 创建 Cron 事件源（emit to EventBus） |
+| `actant_schedule_cancel` | `{ id }` | `{ success }` | 取消事件源 |
 
 #### actant_schedule_wait
 
-Agent 自主请求延迟执行。内部创建 `DelayInput` 实例。
+Agent 自主请求延迟执行。内部创建 `DelayInput` 实例，到期后 emit 到 EventBus。
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -779,7 +851,7 @@ Agent 自主请求延迟执行。内部创建 `DelayInput` 实例。
 
 #### actant_schedule_cron
 
-Agent 自主注册周期性任务。
+Agent 自主注册周期性任务。Cron 定时器作为事件源 emit `cron:<expr>` 到 EventBus。
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -787,7 +859,7 @@ Agent 自主注册周期性任务。
 | `prompt` | `string` | **是** | 每次触发执行的 prompt |
 | `name` | `string` | 否 | 输入源名称，用于取消时引用 |
 
-### 3.14 Email 统计（Phase 4 新增） 🚧
+### 3.15 Email 统计（Phase 4 新增） 🚧
 
 > 状态：**待实现** — Step 5 (Agent-to-Agent Email)
 
@@ -813,7 +885,7 @@ interface EmailStatsDto {
 }
 ```
 
-### 3.15 Memory 统计（Phase 4/5 新增） 🚧
+### 3.16 Memory 统计（Phase 4/5 新增） 🚧
 
 > 状态：**待实现** — Step 8+ (Memory Core) 之后
 
@@ -1018,7 +1090,21 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 
 > 实现参考：`packages/cli/src/commands/agent/dispatch.ts`, `packages/cli/src/commands/schedule/`
 
-### 4.6 ACP Proxy 命令
+### 4.7 Hook 命令 (`actant hook`) 🚧
+
+> 状态：**待实现** — 统一事件系统
+
+Agent 和用户在运行时管理事件订阅。Agent 通过 shell 工具调用这些命令实现动态监听（订阅模型 C）。
+
+| 命令 | 参数 | 选项 | 对应 RPC |
+|------|------|------|---------|
+| `hook subscribe` | — | `--agent <name>`, `--event <name>`（必填）, `--prompt <text>`（必填）, `--interval <ms>`, `--condition <expr>` | `hook.subscribe` |
+| `hook unsubscribe` | — | `--agent <name>`, `--id <subscriptionId>`（必填） | `hook.unsubscribe` |
+| `hook list` | — | `--agent <name>`, `--dynamic`, `-f, --format` | `hook.list` |
+
+`--agent self` 在 Agent 进程内部调用时自动解析为当前 Agent 实例名。
+
+### 4.8 ACP Proxy 命令
 
 | 命令 | 参数 | 选项 | 行为 |
 |------|------|------|------|
@@ -1035,7 +1121,7 @@ actant proxy my-agent -t review-template # 不存在则自动创建
 
 > `--env-passthrough` 选项 *(not yet implemented)*
 
-### 4.6 守护进程命令 (`actant daemon`)
+### 4.9 守护进程命令 (`actant daemon`)
 
 | 命令 | 选项 | 行为 |
 |------|------|------|

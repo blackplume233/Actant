@@ -221,6 +221,10 @@ Provider 存在两个层次：
 
 ### ScheduleConfig（Phase 3c 新增）
 
+> **⚠️ 演进方向**：在统一事件系统架构下，`ScheduleConfig` 将由适配器自动转换为等价的 `WorkflowDefinition`。
+> 定时器（Cron/Heartbeat）变为纯事件源（emit 到 EventBus），不再自带独立 TaskQueue。
+> 详见 [event-system-unified-design.md §6.2](../../docs/design/event-system-unified-design.md)。
+
 定义雇员型 Agent 的自动调度策略。当模板包含 `schedule` 字段时，Agent 启动后自动初始化 EmployeeScheduler。
 
 | 字段 | 类型 | 必填 | 说明 |
@@ -416,7 +420,7 @@ VersionedComponent           ← 基类
   ├── AgentTemplate          ← version 字段必填（覆盖基类的可选）
   ├── SkillDefinition        ← + content, license?, compatibility?, allowedTools?
   ├── PromptDefinition       ← + content, variables
-  ├── WorkflowDefinition     ← Hook Package: + level, hooks[] (#135)
+  ├── WorkflowDefinition     ← Hook Package: + level, hooks[HookDeclaration] (#135, event-system-unified-design)
   ├── McpServerDefinition    ← + command, args, env
   ├── PluginDefinition       ← + type, source, config, enabled
   └── BackendDefinition      ← + supportedModes, resolveCommand?, openCommand?, existenceCheck?, install?
@@ -505,9 +509,10 @@ VersionedComponent           ← 基类
 
 ### WorkflowDefinition
 
-> **重新定义（#135）**：Workflow 不再废弃。#132 的合并提议已关闭。
-> Workflow 重新定义为 **Hook Package** —— 事件驱动的自动化声明。
+> **重新定义（#135）**：Workflow 重新定义为 **Hook Package** —— 事件驱动的自动化声明。
 > **Skill = 知识/能力注入（静态），Workflow = 事件自动化（动态）**，两者有清晰边界。
+>
+> 完整设计：[event-system-unified-design.md](../../docs/design/event-system-unified-design.md)
 >
 > 当前代码仍使用旧结构（`name + content`），待 #135 实施后升级为下方新结构。
 
@@ -518,7 +523,7 @@ VersionedComponent           ← 基类
 | *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
 | `content` | `string` | **是** | 工作流内容（markdown 文本） |
 
-**目标结构**（#135 Hook Package，待实现）：
+**目标结构**（#135 Hook Package）：
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -530,19 +535,96 @@ VersionedComponent           ← 基类
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `on` | `string` | **是** | 事件名（见 agent-lifecycle.md §1.3 Hook 三层架构） |
-| `actions` | `HookAction[]` | **是** | 触发时执行的动作列表 |
+| `on` | `string` | **是** | 事件名（见 [agent-lifecycle.md §1.3 统一事件系统](./agent-lifecycle.md#13-统一事件系统event-first-架构)） |
+| `description` | `string` | 否 | 人类可读的意图描述 |
+| `actions` | `HookAction[]` | **是** | 触发时执行的动作列表（有序） |
+| `priority` | `number` | 否 | 执行优先级，数值越小越先执行（默认 `100`；系统内部 hook 使用 `< 50`） |
+| `condition` | `string` | 否 | 模板表达式条件过滤（`${data.xxx}` truthy 判断） |
+| `allowedCallers` | `HookCallerType[]` | 否 | 限制哪些 caller 类型触发的事件可激活此 hook（省略 = 不限制） |
+| `retry` | `HookRetryPolicy` | 否 | 失败重试策略 |
+| `timeoutMs` | `number` | 否 | 整个 hook 执行的最大超时毫秒数 |
+
+**HookCallerType**（事件发射者身份）：
+
+| 值 | 说明 |
+|----|------|
+| `"system"` | Actant daemon 内部（AgentManager 等） |
+| `"agent"` | LLM 驱动的 Agent（通过 ACP session） |
+| `"plugin"` | 用户安装的插件代码 |
+| `"user"` | 人类通过 CLI 或 API |
+
+**HookRetryPolicy**：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `maxRetries` | `number` | **是** | 最大重试次数 |
+| `backoffMs` | `number` | 否 | 重试间隔毫秒数（默认 `1000`） |
 
 **HookAction**（三种类型）：
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `type` | `"shell" \| "builtin" \| "agent"` | 动作类型 |
-| `run` | `string` | (shell) 要执行的 shell 命令 |
+| `run` | `string` | (shell) 要执行的 shell 命令，支持 `${data.xxx}` 占位符 |
 | `action` | `string` | (builtin) Actant 内置动作名 |
 | `target` | `string` | (agent) 目标 Agent 名称 |
-| `prompt` | `string` | (agent) 发送给目标 Agent 的 prompt |
+| `prompt` | `string` | (agent) 发送给目标 Agent 的 prompt，支持 `${data.xxx}` 占位符 |
 | `params` | `Record<string, unknown>` | (builtin) 动作参数 |
+
+> **Archetype 感知**：当 `type: "agent"` 时，ActionRunner 根据目标 Agent 的 archetype 决定执行策略：
+> - `tool` → 直接 prompt（同步）
+> - `employee` → 进入 TaskQueue 串行派发
+> - `service` → 创建新 session 并发处理
+
+**Actant-level Workflow 示例**：
+
+```json
+{
+  "name": "ops-automation",
+  "level": "actant",
+  "hooks": [
+    {
+      "on": "agent:created",
+      "description": "Log new agent creation and run smoke test",
+      "priority": 10,
+      "actions": [
+        { "type": "shell", "run": "echo 'New agent: ${agent.name}' >> /var/log/actant.log" },
+        { "type": "agent", "target": "qa-bot", "prompt": "Run smoke test for ${agent.name}" }
+      ],
+      "allowedCallers": ["system", "user"]
+    },
+    {
+      "on": "cron:0 9 * * *",
+      "description": "Daily health check",
+      "actions": [
+        { "type": "builtin", "action": "actant.healthcheck" }
+      ],
+      "retry": { "maxRetries": 2, "backoffMs": 5000 },
+      "timeoutMs": 30000
+    }
+  ]
+}
+```
+
+**Instance-level Workflow 示例**：
+
+```json
+{
+  "name": "dev-guard",
+  "level": "instance",
+  "hooks": [
+    {
+      "on": "prompt:after",
+      "description": "Show git diff after prompt completes",
+      "actions": [
+        { "type": "shell", "run": "git diff --stat" }
+      ]
+    }
+  ]
+}
+```
+
+> 实现参考：`packages/shared/src/types/hook.types.ts`（类型定义），`packages/core/src/hooks/`（EventBus、Registry、CategoryRegistry）
 
 ### McpServerDefinition
 
@@ -643,29 +725,37 @@ interface PluginContext {
 
 > 预定设计详见：[Plugin 预定设计](./backend/plugin-guidelines.md)（实施前须重新审查）
 
-### HookEventName（Phase 4 #159 预定） 🚧
-
-> **⚠️ 预定设计**：事件名列表为草案，实际开发时可能增删。
+### HookEventName（#159 已定义）
 
 事件名称联合类型，定义在 `@actant/shared/types/hook.types.ts`。
 
 ```typescript
 type HookEventName =
-  // Layer 1: Actant 系统事件
+  // System Layer (Global)
   | 'actant:start' | 'actant:stop'
+  // Entity Layer (Global)
   | 'agent:created' | 'agent:destroyed' | 'agent:modified'
   | 'source:updated'
-  | `cron:${string}`
-  // Layer 3: 运行时事件
+  // Runtime Layer (Instance scope)
   | 'process:start' | 'process:stop' | 'process:crash' | 'process:restart'
   | 'session:start' | 'session:end'
   | 'prompt:before' | 'prompt:after'
   | 'error' | 'idle'
-  // Plugin 自定义事件
-  | `plugin:${string}`;
+  // Schedule Layer (Configurable)
+  | `cron:${string}`
+  | 'heartbeat:tick'
+  // User Layer (Configurable)
+  | 'user:dispatch' | 'user:run' | 'user:prompt'
+  // Extension Layer (Any)
+  | `plugin:${string}`
+  | `custom:${string}`;
 ```
 
-> 预定命名规范：`<scope>:<noun>` 或 `<scope>:<noun>:<verb>`。详见 [Plugin 预定设计 §Hook 事件规范](./backend/plugin-guidelines.md#hook-事件规范预定)。
+每个内置事件携带 `HookEventMeta`，包含 `subscriptionModels` 标注支持的订阅模型（A: 系统强制 / B: 用户配置 / C: Agent 自注册）。
+
+> 命名规范：`<scope>:<noun>` 或 `<scope>:<noun>:<verb>`。详见 [Plugin 预定设计 §Hook 事件规范](./backend/plugin-guidelines.md#hook-事件规范预定) 和 [event-system-unified-design.md §7](../../docs/design/event-system-unified-design.md)。
+>
+> 实现参考：`packages/shared/src/types/hook.types.ts`（`BUILTIN_EVENT_META` 包含所有 21 个内置事件的完整元数据）
 
 ### BackendDefinition
 
