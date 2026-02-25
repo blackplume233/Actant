@@ -65,6 +65,7 @@ export type {
   SourceConfig,
   GitHubSourceConfig,
   LocalSourceConfig,
+  CommunitySourceConfig,
   SourceEntry,
   PackageManifest,
   PresetDefinition,

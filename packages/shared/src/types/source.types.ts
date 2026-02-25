@@ -5,7 +5,8 @@
 /** Discriminated union for source configurations. New source types extend this. */
 export type SourceConfig =
   | GitHubSourceConfig
-  | LocalSourceConfig;
+  | LocalSourceConfig
+  | CommunitySourceConfig;
 
 export interface GitHubSourceConfig {
   type: "github";
@@ -16,6 +17,18 @@ export interface GitHubSourceConfig {
 export interface LocalSourceConfig {
   type: "local";
   path: string;
+}
+
+/**
+ * Source type for community Agent Skills repositories (e.g. anthropics/skills).
+ * Auto-discovers SKILL.md files without requiring actant.json manifests.
+ */
+export interface CommunitySourceConfig {
+  type: "community";
+  url: string;
+  branch?: string;
+  /** Glob pattern to filter skills; defaults to '**' (import all). */
+  filter?: string;
 }
 
 /** Persisted source entry (stored in sources.json). */

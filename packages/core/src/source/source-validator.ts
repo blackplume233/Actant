@@ -45,6 +45,8 @@ export interface ValidateOptions {
   strict?: boolean;
   /** Enable compatibility checks against an external standard. */
   compat?: CompatMode;
+  /** Treat the source as a community repo — skip manifest requirement, scan for SKILL.md recursively. */
+  community?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -75,6 +77,22 @@ export class SourceValidator {
     let passCount = 0;
     const validatedFiles = new Set<string>();
     const compat = options?.compat;
+
+    if (options?.community) {
+      passCount += await this.validateCommunitySource(rootDir, issues, compat);
+      const errorCount = issues.filter((i) => i.severity === "error").length;
+      const warnCount = issues.filter((i) => i.severity === "warning").length;
+      const valid = options?.strict
+        ? errorCount === 0 && warnCount === 0
+        : errorCount === 0;
+      return {
+        valid,
+        sourceName: rootDir.split(/[\\/]/).pop() ?? "community",
+        rootDir,
+        summary: { pass: passCount, warn: warnCount, error: errorCount },
+        issues,
+      };
+    }
 
     // Layer 1: Manifest
     const manifest = await this.validateManifest(rootDir, issues);
@@ -729,6 +747,66 @@ export class SourceValidator {
         }
       }
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Community source validation (no actant.json required)
+  // -------------------------------------------------------------------------
+
+  private async validateCommunitySource(
+    rootDir: string,
+    issues: SourceValidationIssue[],
+    compat?: CompatMode,
+  ): Promise<number> {
+    let passCount = 0;
+    const componentNames = new Map<string, Set<string>>();
+    passCount += await this.scanCommunityDir(rootDir, rootDir, issues, componentNames, compat);
+    if (passCount === 0) {
+      issues.push({
+        severity: "warning",
+        path: ".",
+        message: "No SKILL.md files found in community source",
+        code: "COMMUNITY_NO_SKILLS",
+      });
+    }
+    return passCount;
+  }
+
+  private async scanCommunityDir(
+    rootDir: string,
+    dirPath: string,
+    issues: SourceValidationIssue[],
+    componentNames: Map<string, Set<string>>,
+    compat?: CompatMode,
+  ): Promise<number> {
+    let passCount = 0;
+    let entries: string[];
+    try {
+      entries = await readdir(dirPath);
+    } catch {
+      return 0;
+    }
+
+    for (const entry of entries) {
+      if (entry === ".git" || entry === "node_modules") continue;
+      const fullPath = join(dirPath, entry);
+      const entryStat = await stat(fullPath).catch(() => null);
+      if (!entryStat?.isDirectory()) continue;
+
+      const skillMdPath = join(fullPath, "SKILL.md");
+      try {
+        await access(skillMdPath);
+        const relPath = relative(rootDir, skillMdPath).replace(/\\/g, "/");
+        const ok = await this.validateSkillMd(rootDir, relPath, issues, componentNames, entry, compat);
+        if (ok) passCount++;
+        if (compat === "agent-skills") {
+          await this.validateSkillDirConventions(rootDir, fullPath, entry, issues);
+        }
+      } catch {
+        passCount += await this.scanCommunityDir(rootDir, fullPath, issues, componentNames, compat);
+      }
+    }
+    return passCount;
   }
 
   // -------------------------------------------------------------------------

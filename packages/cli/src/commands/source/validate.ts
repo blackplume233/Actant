@@ -12,7 +12,8 @@ export function createSourceValidateCommand(client: RpcClient, printer: CliPrint
     .option("-f, --format <format>", "Output format: table, json", "table")
     .option("--strict", "Treat warnings as errors", false)
     .option("--compat <standard>", "Enable compatibility checks (e.g. agent-skills)")
-    .action(async (name?: string, opts?: { path?: string; format: OutputFormat; strict: boolean; compat?: string }) => {
+    .option("--community", "Treat source as community repo (no actant.json required)", false)
+    .action(async (name?: string, opts?: { path?: string; format: OutputFormat; strict: boolean; compat?: string; community: boolean }) => {
       try {
         if (!name && !opts?.path) {
           printer.error("Provide a source name or --path <dir>");
@@ -25,6 +26,7 @@ export function createSourceValidateCommand(client: RpcClient, printer: CliPrint
           path: opts?.path || undefined,
           strict: opts?.strict || false,
           compat: opts?.compat || undefined,
+          community: opts?.community || undefined,
         });
 
         if (opts?.format === "json") {

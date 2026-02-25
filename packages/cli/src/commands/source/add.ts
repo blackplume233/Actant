@@ -7,13 +7,24 @@ export function createSourceAddCommand(client: RpcClient, printer: CliPrinter = 
     .description("Register a component source")
     .argument("<url-or-path>", "GitHub URL or local directory path")
     .requiredOption("--name <name>", "Package name (namespace prefix)")
-    .option("--type <type>", "Source type: github, local", "github")
-    .option("--branch <branch>", "Git branch (for github type)", "main")
-    .action(async (urlOrPath: string, opts: { name: string; type: string; branch: string }) => {
+    .option("--type <type>", "Source type: github, local, community", "github")
+    .option("--branch <branch>", "Git branch (for github/community type)", "main")
+    .option("--filter <glob>", "Glob pattern to filter skills (community type only)")
+    .action(async (urlOrPath: string, opts: { name: string; type: string; branch: string; filter?: string }) => {
       try {
-        const config = opts.type === "local"
-          ? { type: "local" as const, path: urlOrPath }
-          : { type: "github" as const, url: urlOrPath, branch: opts.branch };
+        let config;
+        if (opts.type === "local") {
+          config = { type: "local" as const, path: urlOrPath };
+        } else if (opts.type === "community") {
+          config = {
+            type: "community" as const,
+            url: urlOrPath,
+            branch: opts.branch,
+            filter: opts.filter,
+          };
+        } else {
+          config = { type: "github" as const, url: urlOrPath, branch: opts.branch };
+        }
         const result = await client.call("source.add", { name: opts.name, config });
         const c = result.components;
         printer.success(
