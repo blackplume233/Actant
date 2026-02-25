@@ -308,3 +308,4 @@ Before implementing any feature, verify:
 | Daemon daemonization | Partial | `detached: true` opens console on Windows |
 | Shell scripts | Unix-only | Require Git Bash or WSL on Windows |
 | File permissions | N/A | Windows doesn't support Unix-style permissions |
+| GitNexus CLI | Crash on Windows | `query`/`context`/`impact`/`cypher` CLI 子命令因 KuzuDB native 模块兼容问题崩溃 (exit code -1073741819)。**使用 MCP 模式代替**：通过 `.cursor/mcp.json` 配置 GitNexus MCP Server，Agent 通过 MCP 工具调用同等功能，绕过 CLI 限制 |

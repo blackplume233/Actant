@@ -569,6 +569,104 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 
 > 实现参考：`packages/core/src/domain/plugin/plugin-manager.ts`，类型定义见 `packages/shared/src/types/domain-component.types.ts`
 
+### ActantPlugin 接口（Phase 4 #13 预定） 🚧
+
+> **⚠️ 预定设计**：以下接口为设计草案，实际开发时须重新审查确认。
+
+Actant 系统级 Plugin，运行在 Daemon 进程内，具备三插口能力。与 Agent-side `PluginDefinition` (Phase 3a) 层级不同：
+
+```
+ActantPlugin = Daemon-side 系统级插件（Phase 4）
+  ├─ domainContext 插口: 物化到 Agent workspace 的静态资源
+  ├─ runtime 插口: Daemon 运行时有状态逻辑（五阶段生命周期）
+  └─ hooks 插口: 事件消费/生产（注册到 HookEventBus）
+
+PluginDefinition = Agent-side 能力扩展（Phase 3a）
+  └─ 通过 BackendBuilder 物化到 workspace（npm/file/config）
+```
+
+**ActantPlugin 类型定义**（待定义在 `@actant/shared/types/plugin.types.ts`）：
+
+```typescript
+interface ActantPlugin {
+  name: string;
+  version: string;
+  scope: PluginScope;
+
+  // 三插口（均可选）
+  domainContext?: PluginDomainContext;
+  hooks?: HookDeclaration[];
+
+  // 五阶段生命周期（runtime 插口）
+  init?(ctx: PluginContext): Promise<void>;
+  start?(ctx: PluginContext): Promise<void>;
+  tick?(ctx: PluginContext): Promise<void>;
+  stop?(ctx: PluginContext): Promise<void>;
+  dispose?(ctx: PluginContext): Promise<void>;
+}
+
+type PluginScope = 'actant' | 'instance';
+
+interface PluginDomainContext {
+  files?: Record<string, string>;
+  mcpServers?: McpServerRef[];
+  rules?: string[];
+}
+
+interface PluginContext {
+  scope: PluginScope;
+  instanceName?: string;          // scope=instance 时有值
+  config: Record<string, unknown>;
+  dataDir: string;
+  logger: Logger;
+  eventBus: HookEventBus;
+  getPlugin<T extends ActantPlugin>(name: string): T | undefined;
+}
+```
+
+**PluginRef 配置**（AgentTemplate.plugins / AppConfig.plugins 中引用 ActantPlugin）：
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | `string` | **是** | Plugin 名称 |
+| `enabled` | `boolean` | 否 | 是否启用（默认 `true`） |
+| `config` | `Record<string, unknown>` | 否 | 传递给 PluginContext.config 的配置 |
+
+**数据目录隔离**：
+
+| scope | dataDir 路径 | 说明 |
+|-------|-------------|------|
+| `actant` | `{ACTANT_HOME}/plugins/{pluginName}/` | 全局 Plugin 数据 |
+| `instance` | `{instanceDir}/.actant/plugins/{pluginName}/` | 实例级 Plugin 数据 |
+
+**向后兼容**：旧 `PluginDefinition` (Phase 3a) 通过 `adaptLegacyPlugin()` 自动转换为纯 domainContext 的 `ActantPlugin`。
+
+> 预定设计详见：[Plugin 预定设计](./backend/plugin-guidelines.md)（实施前须重新审查）
+
+### HookEventName（Phase 4 #159 预定） 🚧
+
+> **⚠️ 预定设计**：事件名列表为草案，实际开发时可能增删。
+
+事件名称联合类型，定义在 `@actant/shared/types/hook.types.ts`。
+
+```typescript
+type HookEventName =
+  // Layer 1: Actant 系统事件
+  | 'actant:start' | 'actant:stop'
+  | 'agent:created' | 'agent:destroyed' | 'agent:modified'
+  | 'source:updated'
+  | `cron:${string}`
+  // Layer 3: 运行时事件
+  | 'process:start' | 'process:stop' | 'process:crash' | 'process:restart'
+  | 'session:start' | 'session:end'
+  | 'prompt:before' | 'prompt:after'
+  | 'error' | 'idle'
+  // Plugin 自定义事件
+  | `plugin:${string}`;
+```
+
+> 预定命名规范：`<scope>:<noun>` 或 `<scope>:<noun>:<verb>`。详见 [Plugin 预定设计 §Hook 事件规范](./backend/plugin-guidelines.md#hook-事件规范预定)。
+
 ### BackendDefinition
 
 Agent 后端的纯数据配置，JSON 可序列化。由 `BackendManager` 管理，可通过 actant-hub 分发。
@@ -878,6 +976,67 @@ Registry descriptor.defaultBaseUrl
 | 未注册 `buildProviderEnv` 的后端 | `ACTANT_*`（默认 fallback `buildDefaultProviderEnv`） | `agent-manager.ts` |
 
 > **自动注入**：`actant setup` 配置的 Provider 信息（type、apiKey、baseUrl）持久化到 `~/.actant/config.json`。Daemon 启动时将 `config.json` 中的密钥加载到内存 Registry，启动 ACP 子进程时通过 `getBuildProviderEnv(backendType)`（或 fallback `buildDefaultProviderEnv`）注入环境变量。**密钥安全模型**：API Key 仅存在于 `config.json`（用户目录）和 Daemon 进程内存（Registry），不写入 Agent workspace 的任何文件（template、`.actant.json`），确保 LLM Agent 无法通过文件系统读取密钥。
+
+---
+
+## 12. Memory 配置（Phase 4/5 预定） 🚧
+
+> 状态：**预定设计** — 实际开发前须重新审查
+>
+> **⚠️ 存储后端待讨论**：是否引入 LanceDB 或其他向量数据库尚未最终确认。
+> 以下类型定义作为设计参考，`@agent-memory/core` 的接口层不依赖任何具体存储后端。
+
+### MemoryRecord — 记忆记录（预定）
+
+```typescript
+interface MemoryRecord {
+  uri: string;            // ac://<layer>/<namespace>/<path> 格式
+  content: string;
+  kind: MemoryKind;
+  vector?: number[];      // embedding 向量（维度待定）
+  confidence: number;     // 0.0 ~ 1.0
+  contentHash: string;    // SHA-256, 用于去重和 promote 判断
+  source: MemorySource;
+  createdAt: string;      // ISO timestamp
+  updatedAt: string;
+  metadata?: Record<string, unknown>;
+}
+
+type MemoryKind = 'insight' | 'error-pattern' | 'decision' | 'preference' | 'task-summary';
+
+type MemorySource = {
+  type: 'extraction' | 'promotion' | 'manual';
+  sessionId?: string;
+  agentName?: string;
+};
+```
+
+### URI 安全校验规则
+
+| 规则 | 说明 |
+|------|------|
+| Scheme | 只允许 `ac://` |
+| 路径遍历 | 拒绝 `..`、`~`、绝对路径组件 |
+| 查询安全 | 使用参数化绑定，不拼接 URI 到查询语句 |
+| 长度限制 | 最大 512 字符 |
+
+### 三层记忆架构（预定）
+
+| Layer | URI 前缀 | 存储位置 | 作用域 |
+|-------|---------|---------|-------|
+| Instance | `ac://instance/<name>/` | `{instanceDir}/.memory/` | 单个 Agent 实例 |
+| Template | `ac://template/<name>/` | `{ACTANT_HOME}/memory/template/` | 同模板的所有实例共享 |
+| Actant | `ac://actant/` | `{ACTANT_HOME}/memory/actant/` | 全局共享 |
+
+### Embedding 配置（预定）
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `provider` | `'openai' \| 'onnx' \| 'none'` | 待定 | Embedding 提供者（ONNX 可行性待验证） |
+| `model` | `string` | 待定 | 模型名称 |
+| `dimensions` | `number` | 待定 | 向量维度 |
+| `maxBatchSize` | `number` | `64` | 单次 batch 最大条数 |
+| `maxPerSession` | `number` | `200` | 单 session 最大 embedding 次数 |
 
 ---
 

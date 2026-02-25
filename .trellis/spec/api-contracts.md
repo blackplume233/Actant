@@ -697,6 +697,149 @@ interface SourceValidateResult {
 | `daemon.ping` | `{}` | `{ version, uptime, agents }` | 健康检查 |
 | `daemon.shutdown` | `{}` | `{ success }` | 优雅关闭 |
 
+### 3.11 Plugin 管理（Phase 4 新增） 🚧
+
+> 状态：**待实现** — Step 3 (PluginHost + PluginRegistry)
+
+管理 Actant-level 和 Instance-level 的 Plugin 生命周期状态。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `plugin.list` | `{ scope? }` | `PluginStatusDto[]` | — |
+| `plugin.status` | `{ name }` | `PluginStatusDto` | `PLUGIN_NOT_FOUND` |
+
+#### PluginStatusDto
+
+```typescript
+interface PluginStatusDto {
+  name: string;
+  version: string;
+  scope: 'actant' | 'instance';
+  state: 'inactive' | 'initializing' | 'running' | 'error' | 'stopped';
+  instanceName?: string;         // scope=instance 时绑定的 Agent 名
+  lastTickAt?: string;           // ISO timestamp
+  consecutiveFailures: number;
+  config: Record<string, unknown>;
+}
+```
+
+### 3.12 事件查询（Phase 4 新增） 🚧
+
+> 状态：**待实现** — Step 7 (Dashboard v0) 及 Step 3 (HookEventBus)
+
+Dashboard 和 CLI 查询最近发生的 Hook 事件。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `events.recent` | `{ limit?, since?, scope? }` | `HookEventDto[]` | — |
+| `events.subscribe` | `{ patterns? }` | `{ subscriptionId }` | — |
+| `events.unsubscribe` | `{ subscriptionId }` | `{ success }` | — |
+
+#### HookEventDto
+
+```typescript
+interface HookEventDto {
+  id: string;                      // 事件唯一 ID
+  event: HookEventName;
+  scope: 'actant' | 'instance';
+  agentName?: string;
+  data: Record<string, unknown>;
+  timestamp: string;               // ISO timestamp
+}
+```
+
+#### events.recent
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `limit` | `number` | 否 | 返回最近 N 条，默认 50，最大 500 |
+| `since` | `string` | 否 | ISO timestamp，只返回此时间之后的事件 |
+| `scope` | `'actant' \| 'instance'` | 否 | 过滤作用域 |
+
+### 3.13 MCP Schedule Tools（Phase 4 新增） 🚧
+
+> 状态：**待实现** — Step 2 (Scheduler Enhancement)
+
+Agent 通过 MCP Tools 操作自身的 Scheduler。这些不是 RPC 方法，而是 MCP Server 暴露的 Tools。
+
+| Tool Name | 参数 | 返回 | 说明 |
+|-----------|------|------|------|
+| `actant_schedule_wait` | `{ delayMs, prompt }` | `{ taskId }` | 创建一次性定时任务 |
+| `actant_schedule_cron` | `{ cron, prompt, name? }` | `{ sourceId }` | 创建 Cron 定时输入源 |
+| `actant_schedule_cancel` | `{ id }` | `{ success }` | 取消定时任务或输入源 |
+
+#### actant_schedule_wait
+
+Agent 自主请求延迟执行。内部创建 `DelayInput` 实例。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `delayMs` | `number` | **是** | 延迟毫秒数，最小 1000 |
+| `prompt` | `string` | **是** | 到期后执行的 prompt |
+
+#### actant_schedule_cron
+
+Agent 自主注册周期性任务。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `cron` | `string` | **是** | 标准 cron 表达式 (5 段) |
+| `prompt` | `string` | **是** | 每次触发执行的 prompt |
+| `name` | `string` | 否 | 输入源名称，用于取消时引用 |
+
+### 3.14 Email 统计（Phase 4 新增） 🚧
+
+> 状态：**待实现** — Step 5 (Agent-to-Agent Email)
+
+Dashboard 和 CLI 查询 Email 系统的统计信息。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `email.stats` | `{ name? }` | `EmailStatsDto` | — |
+
+#### EmailStatsDto
+
+```typescript
+interface EmailStatsDto {
+  totalSent: number;
+  totalReceived: number;
+  pendingDelivery: number;
+  agents: Array<{
+    name: string;
+    sent: number;
+    received: number;
+    unread: number;
+  }>;
+}
+```
+
+### 3.15 Memory 统计（Phase 4/5 新增） 🚧
+
+> 状态：**待实现** — Step 8+ (Memory Core) 之后
+
+Dashboard 和 CLI 查询 Memory 系统的统计信息。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `memory.stats` | `{ name? }` | `MemoryStatsDto` | — |
+
+#### MemoryStatsDto
+
+```typescript
+interface MemoryStatsDto {
+  totalRecords: number;
+  instanceRecords: number;
+  templateRecords: number;
+  actantRecords: number;
+  storageBackend: string;    // 'in-memory' | 实际存储后端名（待定）
+  agents: Array<{
+    name: string;
+    records: number;
+    lastExtractedAt?: string;
+  }>;
+}
+```
+
 ---
 
 ## 4. CLI 命令

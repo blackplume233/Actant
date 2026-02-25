@@ -18,10 +18,12 @@ Design → Confirm → Implement → Test → Review → Commit
 
 1. **Design first**: Explicit design document or spec before coding
 2. **Confirm**: Design reviewed and approved before implementation
-3. **Implement**: Small, focused increments (one commit = one coherent change)
-4. **Test**: All CLI/config behaviors covered by unit tests
-5. **Review**: Dedicated review for quality, extensibility, maintainability
-6. **Commit**: Only after all checks pass
+3. **Impact check**: 修改核心模块前执行 `impact({target: "<symbol>", direction: "upstream"})` 确认爆炸半径
+4. **Implement**: Small, focused increments (one commit = one coherent change)
+5. **Test**: All CLI/config behaviors covered by unit tests
+6. **Pre-commit check**: 执行 `detect_changes({scope: "all"})` 确认变更影响范围合理
+7. **Review**: Dedicated review for quality, extensibility, maintainability
+8. **Commit**: Only after all checks pass
 
 ---
 
@@ -191,9 +193,75 @@ if (!agent) {
 }
 ```
 
+### Don't: 在接口层引入具体实现依赖
+
+```typescript
+// Bad — 接口包直接依赖具体实现库
+import { SomeDB } from 'some-db';
+export interface Store { /* ... */ }
+
+// Good — 接口包零外部依赖，实现包单独安装
+// @pkg/core (零依赖)
+export interface Store {
+  query(q: Query): Promise<Result[]>;
+}
+// @pkg/store-impl (依赖具体库)
+import { Store } from '@pkg/core';
+export class ConcreteStore implements Store { /* ... */ }
+```
+
+**Why**: 接口-实现分离是多包架构的基本原则。接口包零外部依赖，使用者可以只安装接口包编写代码，而不需要安装底层实现的重依赖。
+
+### Don't: 事件名硬编码字符串散落各处
+
+```typescript
+// Bad — 事件名散落在不同文件中，无类型检查
+eventBus.emit('agentCreated', data);  // typo 不会被发现
+eventBus.on('agent-created', handler); // 命名不一致
+
+// Good — 统一从 @actant/shared 导入类型化事件名
+import type { HookEventName } from '@actant/shared';
+const event: HookEventName = 'agent:created';
+eventBus.emit(event, data);
+```
+
+**Why**: 事件驱动架构中，事件名不一致或拼写错误会导致事件丢失且难以调试。联合类型提供编译期检查。
+
 ---
 
 ## Required Patterns
+
+### 项目文件格式约定
+
+项目中不同用途的文件使用不同的标准格式：
+
+| 用途 | 格式 | 示例 |
+|------|------|------|
+| **可读配置** | JSON | Agent Template、Workflow、Plugin 配置、`package.json`、`tsconfig.json` |
+| **可运行配置** | TypeScript (.ts) | `vitest.config.ts`、`tsup.config.ts`、构建脚本 |
+| **描述 & Agent 资产** | Markdown (.md) | Skill content、Prompt content、AGENTS.md、设计文档 |
+| **结构化数据** | JSON | RPC payload、持久化状态、Source manifest |
+
+```typescript
+// Good — Workflow 定义使用 JSON
+// workflows/ops-automation.json
+{
+  "name": "ops-automation",
+  "level": "actant",
+  "hooks": [{ "on": "agent:created", "actions": [...] }]
+}
+
+// Bad — 使用 YAML 定义配置
+// workflows/ops-automation.yaml
+name: ops-automation
+level: actant
+hooks:
+  - on: "agent:created"
+```
+
+**Why**: JSON 是 Node.js 生态的原生格式，无需额外 parser 依赖（不需要 `js-yaml`）。TypeScript 配置文件可利用类型检查和 IDE 补全。YAML 虽然可读性好，但引入额外依赖且缩进敏感容易出错。项目统一使用 JSON 降低认知负担和依赖体积。
+
+> **例外**: 外部工具强制的格式不在此约定范围（如 GitHub Actions 的 `.yml`、Docker 的 `Dockerfile`）。
 
 ### CLI-First Implementation
 
@@ -405,7 +473,7 @@ git clone https://github.com/blackplume233/actant-hub.git \
 
 ### Parser-level Field Name Mapping
 
-When integrating with external formats that use different naming conventions (e.g., kebab-case YAML keys), map to internal TypeScript conventions at the parser boundary. Downstream code never sees the external naming.
+When integrating with external formats that use different naming conventions (e.g., kebab-case keys from third-party schemas), map to internal TypeScript conventions at the parser boundary. Downstream code never sees the external naming.
 
 ```typescript
 // Good — parser maps "allowed-tools" → allowedTools at parse time
@@ -623,6 +691,7 @@ describe("TemplateLoader", () => {
 
 Before approving any feature:
 
+- [ ] **Impact checked**: 核心模块变更是否执行了 `impact` 分析，爆炸半径是否在预期内？
 - [ ] **CLI accessible**: Can this feature be fully operated via CLI?
 - [ ] **Tests present**: Are all CLI/config behaviors covered?
 - [ ] **Types correct**: No `any`, no non-null assertions?
@@ -633,6 +702,23 @@ Before approving any feature:
 - [ ] **Logged**: Are important operations logged with structured context?
 - [ ] **Documented**: Are non-obvious design decisions explained?
 - [ ] **Small scope**: Is the change small enough for one coherent commit?
+
+### Phase 4 专项审查（⚠️ 预定，待实施时确认）
+
+> 以下审查项基于预定设计。Plugin / Hook / Memory 的具体方案在实际开发前须重新审查确认。
+> 详见 [Plugin 预定设计](./plugin-guidelines.md)。
+
+**架构完整性**（通用，已确认）:
+- [ ] 新增类型是否定义在 `@actant/shared`（共享类型）而非 `@actant/core`（实现）？
+- [ ] 接口是否足够抽象——能否不修改接口就添加新实现？
+- [ ] 依赖方向是否正确——`shared ← core ← cli`，无反向依赖？
+
+**Plugin / Hook / Memory 相关**（预定，待确认后启用）:
+- [ ] Plugin 生命周期完整性（具体阶段待确认）
+- [ ] 事件命名一致性（`HookEventName` 类型约束）
+- [ ] Workflow 配置（JSON 格式）与 `WorkflowDefinition` schema 一致
+- [ ] 数据查询使用参数化绑定，无字符串拼接
+- [ ] 向后兼容：无 Plugin 的旧 Agent 正常运行
 
 ---
 

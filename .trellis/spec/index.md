@@ -36,6 +36,9 @@ spec/
 |------|------|--------|
 | [Agent 启动场景与 ACP 架构](../../docs/design/agent-launch-scenarios.md) | 7 种启动/交互场景、ACP Gateway 架构、协议分层、控制权谱系 | **核心** — 所有 ACP/Proxy/Chat 相关实现的架构依据 |
 | [架构 Docker 类比](../../docs/design/architecture-docker-analogy.md) | CLI-Daemon 分层设计的概念映射 | 参考 — 理解整体架构思路 |
+| [Plugin/Memory 审查报告](../../docs/design/plugin-memory-review-report.md) | Plugin 三插口设计、Memory 12 轮审查、安全/性能/兼容性 | **核心** — Phase 4 Plugin 和 Memory 系统的设计依据 |
+| [记忆层与 Agent 演进](../../docs/design/memory-layer-agent-evolution.md) | 四层记忆架构、MemoryRecord、Promote 机制、Context Broker | **核心** — Phase 5 Memory 系统的蓝图 |
+| [Phase 4 推进步骤](../../docs/planning/phase4-employee-steps.md) | 14 步实施计划、依赖关系、并行策略、验收标准 | **活跃** — 当前阶段的执行指南 |
 
 ### 第二层：实现指南（Implementation Guidelines）
 

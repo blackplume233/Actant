@@ -110,6 +110,9 @@ cat .trellis/spec/backend/logging-guidelines.md    # For logging
 ### File System
 
 ```
+.cursor/
+|-- mcp.json             # MCP Server 配置 (GitNexus 代码知识图谱)
+
 .trellis/
 |-- .developer           # Developer identity (gitignored)
 |-- scripts/
@@ -214,24 +217,34 @@ Use the task management script:
 1. Create or select task
    \-> ./.trellis/scripts/task.sh create "<title>" --slug <name> or list
 
-2. Write code according to guidelines
+2. Impact analysis (修改核心模块时必须)
+   \-> impact({target: "<symbol>", direction: "upstream"})  确认爆炸半径
+   \-> context({name: "<symbol>"})  理解调用关系
+   \-> query({query: "<concept>"})  搜索相关执行流
+
+3. Write code according to guidelines
    \-> Read .trellis/spec/ docs relevant to your task
    \-> For cross-layer: read .trellis/spec/guides/
 
-3. Self-test
+4. Self-test
    \-> Run project's lint/test commands (see spec docs)
    \-> Manual feature testing
 
-4. Commit code
+5. Pre-commit check
+   \-> detect_changes({scope: "all"})  确认变更影响范围合理
    \-> git add <files>
    \-> git commit -m "type(scope): description"
        Format: feat/fix/docs/refactor/test/chore
 
-5. Record session (one command)
+6. Record session (one command)
    \-> ./.trellis/scripts/add-session.sh --title "Title" --commit "hash"
 ```
 
 ### Code Quality Checklist
+
+**Impact & scope check (修改核心模块时)**:
+- [OK] `impact` 分析已执行，爆炸半径在预期内
+- [OK] `detect_changes` 确认变更只影响预期范围
 
 **Must pass before commit**:
 - [OK] Lint checks pass (project-specific command)
@@ -524,12 +537,14 @@ gh issue comment <number> -b "comment"        # 添加评论
 
 2. **During development**:
    - [!] **Follow** `.trellis/spec/` guidelines
+   - [!] **修改核心模块前** 执行 `impact` 分析确认爆炸半径
    - For cross-layer features, use `/trellis:check-cross-layer`
    - Develop only one task at a time
    - Run lint and tests frequently
    - [!] If changing config schemas or external interfaces, update `spec/config-spec.md` / `spec/api-contracts.md` in the **same commit**
 
 3. **After development complete**:
+   - 执行 `detect_changes` 确认变更影响范围合理
    - Use `/trellis:finish-work` for completion checklist
    - After fix bug, use `/trellis:break-loop` for deep analysis
    - Human commits after testing passes
@@ -555,6 +570,18 @@ gh issue comment <number> -b "comment"        # 添加评论
 | Frontend work | `frontend/index.md` → relevant docs |
 | Backend work | `backend/index.md` → relevant docs |
 | Cross-Layer Feature | `guides/cross-layer-thinking-guide.md` |
+
+### Code Intelligence Tools (GitNexus MCP)
+
+本项目通过 `.cursor/mcp.json` 配置了 GitNexus MCP Server，提供代码知识图谱工具。
+索引过期时执行 `npx gitnexus analyze` 更新。
+
+| 工具 | 用途 | 何时使用 |
+|------|------|---------|
+| `impact` | 符号爆炸半径（上游/下游依赖） | 修改核心模块前（AgentManager, PluginHost, Scheduler 等） |
+| `context` | 符号 360° 视图（调用者/被调用者/所属流程） | 理解不熟悉的模块、调试跨文件 bug |
+| `query` | 按概念搜索执行流 | 理解某个特性如何跨文件运作 |
+| `detect_changes` | 当前 git diff 影响分析 | 提交前确认变更范围合理 |
 
 ### Commit Convention
 

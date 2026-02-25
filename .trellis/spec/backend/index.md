@@ -50,23 +50,27 @@
 ```
 Actant
 ├── ActantCore          # Core functionality
-│   ├── CLI Module          # Interactive command-line interface (Python REPL-like)
+│   ├── CLI Module          # Interactive command-line interface
 │   ├── Template Module     # Agent Template configuration and management
 │   ├── Initializer Module  # Construct Agent Instance from Template
-│   └── Manager Module      # Lifecycle management of all Agent Instances
+│   ├── Manager Module      # Lifecycle management of all Agent Instances
+│   ├── Plugin Module       # [Phase 4] PluginHost + 三插口 Plugin 体系
+│   ├── Hook Module         # [Phase 4] HookEventBus + HookRegistry + ActionRunner
+│   ├── Scheduler Module    # [Phase 3c+4] EmployeeScheduler + 四模式调度
+│   └── Email Module        # [Phase 4] EmailHub + Agent-to-Agent 通信
 │
 ├── Actant ACP          # Agent Client Protocol server
-│                           # External Agent Clients communicate via ACP
 │
-├── Actant MCP          # MCP server for agent-to-Actant access
-│                           # Agents can invoke other agents, control services
+├── Actant MCP          # MCP server + Schedule MCP Tools
 │
 ├── Actant Pi           # Pi Agent backend integration (optional)
-│                           # PiBuilder, PiCommunicator via pi-agent-core
 │
-└── Actant API          # RESTful API layer
-                            # All CLI commands exposed as HTTP endpoints
-                            # Enables Docker deployment
+├── Actant API          # RPC API layer (JSON-RPC over IPC)
+│
+└── Agent Memory        # [Phase 5] 独立记忆系统 (零 Actant 依赖)
+    ├── @agent-memory/core        # 数据模型 + 接口
+    ├── @agent-memory/embedding   # Embedding 客户端
+    └── @agent-memory/store-<TBD>    # 持久化存储（后端待定）
 ```
 
 ### ActantCore Details
@@ -116,6 +120,7 @@ Actant
 | [Error Handling](./error-handling.md) | Error types and handling strategies | Initial |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, testing, review, monorepo publishing | Updated |
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging for agent lifecycle | Initial |
+| [Plugin 预定设计](./plugin-guidelines.md) | **[Phase 4 预定]** Plugin / Hook / Scheduler / Memory 预定设计草案，实施前须重新审查 | **Preliminary** |
 
 ---
 

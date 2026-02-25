@@ -174,7 +174,72 @@ packages/
     rpc-endurance.test.ts                ← Phase 2: RPC 通信（待建）
   acp/src/
     acp-proxy-endurance.test.ts          ← Phase 2: ACP Proxy（待建）
+  core/src/plugin/
+    plugin-host.endurance.test.ts        ← Phase 4: Plugin 生命周期（待建）
+  core/src/scheduler/
+    scheduler.endurance.test.ts          ← Phase 4: Scheduler 多输入源（待建）
+  core/src/email/
+    email-hub.endurance.test.ts          ← Phase 4: Email 投递（待建）
+  agent-memory/store-<backend>/
+    memory-store.endurance.test.ts       ← Phase 5: Memory 存储（待建，后端待定）
 ```
+
+---
+
+## 7. Phase 4 耐久测试场景 🚧
+
+> 以下场景随 Phase 4 各 Step 逐步实施。
+
+### E-PLUG — Plugin 生命周期稳定性
+
+**目标**: 验证 PluginHost 在长时间运行中，多个 Plugin 的 tick 循环稳定、故障隔离有效。
+
+| 维度 | 设计 |
+|------|------|
+| 操作 | 启动 PluginHost（3 个 Plugin），反复触发 tick 循环 |
+| 注入故障 | 随机让某 Plugin tick 抛异常 / 超时 |
+| 不变量 | (1) 单 Plugin 异常不影响其他 Plugin 的 tick (2) consecutiveFailures 计数准确 (3) 无内存泄漏 (4) stop/dispose 全部幂等 |
+| 统计 | tick 总次数、隔离成功次数、平均 tick 延迟 |
+
+### E-SCHED — Scheduler 多输入源压力
+
+**目标**: 验证 EmployeeScheduler 在 Heartbeat + Cron + DelayInput + EmailInput 同时运行时的正确性。
+
+| 维度 | 设计 |
+|------|------|
+| 操作 | 同时注册 4 种 InputSource，高频产生任务 |
+| 不变量 | (1) TaskQueue 不丢任务 (2) 任务按优先级排序 (3) InputRouter 分发无竞态 (4) cancel 后输入源停止 |
+| 统计 | 任务入队总数、处理总数、最大队列深度、平均调度延迟 |
+
+### E-EMAIL — Email 投递可靠性
+
+**目标**: 验证 EmailHub 在大量并发 send/reply 下的消息投递可靠性。
+
+| 维度 | 设计 |
+|------|------|
+| 操作 | N 个 Agent 互相发送 Email，混合在线/离线状态 |
+| 不变量 | (1) 消息不丢失（sent = delivered + pending） (2) 线程归组正确 (3) 持久化与内存状态一致 |
+| 统计 | 消息总数、投递成功率、离线队列峰值、平均投递延迟 |
+
+### E-MEM — Memory 存储稳定性
+
+**目标**: 验证 MemoryStore 实现在大量 recall/navigate/browse 下的稳定性和正确性。（存储后端待定）
+
+| 维度 | 设计 |
+|------|------|
+| 操作 | 批量写入 MemoryRecord，并发执行 recall/navigate/browse |
+| 不变量 | (1) recall 返回结果的 score 单调递减 (2) navigate URI 精确匹配 (3) browse 结果集无遗漏 (4) SQL 参数化无注入 |
+| 统计 | 写入条数、查询总次数、平均查询延迟、存储文件大小 |
+
+### E-HOOK — 事件总线吞吐
+
+**目标**: 验证 HookEventBus 在高频 emit 下的事件分发正确性和性能。
+
+| 维度 | 设计 |
+|------|------|
+| 操作 | 注册 20+ Workflow hooks，高频 emit 混合事件 |
+| 不变量 | (1) 每个匹配的 listener 都被调用 (2) listener 异常不影响其他 listener (3) 无事件丢失 |
+| 统计 | emit 总次数、listener 调用总次数、平均分发延迟 |
 
 ---
 
