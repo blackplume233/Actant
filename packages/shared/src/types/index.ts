@@ -8,6 +8,9 @@ export type {
   DetachResult,
 } from "./agent.types";
 export type {
+  AgentArchetype,
+} from "./template.types";
+export type {
   AgentTemplate,
   AgentBackendConfig,
   AgentBackendType,

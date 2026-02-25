@@ -1,4 +1,5 @@
 import type { AgentTemplate, PermissionsInput, PermissionsConfig, OpenSpawnOptions } from "./template.types";
+import type { AgentArchetype } from "./template.types";
 import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, DetachResult } from "./agent.types";
 import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "./domain-component.types";
 import type { SourceEntry, SourceConfig, PresetDefinition } from "./source.types";
@@ -105,6 +106,10 @@ export interface AgentCreateParams {
   overrides?: {
     launchMode?: LaunchMode;
     workspacePolicy?: WorkspacePolicy;
+    /** Override the template archetype. Affects default launchMode, interactionModes, and autoStart. */
+    archetype?: AgentArchetype;
+    /** Explicitly control auto-start. When omitted, derived from archetype. */
+    autoStart?: boolean;
     /** Absolute path to use as workspace directory instead of the default {instancesDir}/{name}. */
     workDir?: string;
     /** Behavior when workDir already exists. Default: "error". */

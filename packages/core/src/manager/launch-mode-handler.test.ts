@@ -14,6 +14,8 @@ function makeMeta(overrides?: Partial<AgentInstanceMeta>): AgentInstanceMeta {
     launchMode: "direct",
     workspacePolicy: "persistent",
     processOwnership: "managed",
+    archetype: "tool",
+    autoStart: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
     ...overrides,

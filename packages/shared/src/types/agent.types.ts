@@ -1,4 +1,4 @@
-import type { AgentBackendType, InteractionMode, ModelProviderConfig, PermissionsConfig } from "./template.types";
+import type { AgentBackendType, AgentArchetype, InteractionMode, ModelProviderConfig, PermissionsConfig } from "./template.types";
 
 /**
  * Agent Instance = a workspace directory.
@@ -31,6 +31,10 @@ export interface AgentInstanceMeta {
   createdAt: string;
   updatedAt: string;
   pid?: number;
+  /** High-level interaction archetype (tool / employee / service). Defaults to "tool". */
+  archetype: AgentArchetype;
+  /** Whether this instance should be auto-started when the daemon launches. */
+  autoStart: boolean;
   /** Resolved permissions for this instance (after template + override resolution). */
   effectivePermissions?: PermissionsConfig;
   metadata?: Record<string, string>;

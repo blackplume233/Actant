@@ -17,6 +17,8 @@ export const LaunchModeSchema = z.enum([
   "one-shot",
 ]);
 
+export const AgentArchetypeSchema = z.enum(["tool", "employee", "service"]);
+
 export const ProcessOwnershipSchema = z.enum(["managed", "external"]);
 
 export const WorkspacePolicySchema = z.enum(["persistent", "ephemeral"]);
@@ -74,6 +76,8 @@ export const AgentInstanceMetaSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   pid: z.number().int().positive().optional(),
+  archetype: AgentArchetypeSchema.default("tool"),
+  autoStart: z.boolean().default(false),
   effectivePermissions: PermissionsConfigSchema.optional(),
   metadata: z.record(z.string(), z.string()).optional(),
 });
