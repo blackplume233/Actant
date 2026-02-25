@@ -13,6 +13,8 @@ import {
   registerDaemonHandlers,
   registerProxyHandlers,
   registerScheduleHandlers,
+  registerGatewayHandlers,
+  disposeAllLeases,
 } from "../handlers/index";
 import { writePidFile, removePidFile, readPidFile, isProcessRunning } from "./pid-file";
 
@@ -38,6 +40,7 @@ export class Daemon {
     registerDaemonHandlers(this.handlers, () => this.stop());
     registerProxyHandlers(this.handlers);
     registerScheduleHandlers(this.handlers);
+    registerGatewayHandlers(this.handlers);
   }
 
   get socketPath(): string {
@@ -91,6 +94,7 @@ export class Daemon {
     }
 
     this.ctx.templateWatcher.stop();
+    await disposeAllLeases();
     await this.server.close();
     await removePidFile(this.ctx.pidFilePath);
 

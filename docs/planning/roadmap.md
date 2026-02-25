@@ -383,19 +383,24 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 - ✅ 已关闭过期: #13 ACP Client, #41 雇员型设计文档, #46 daemon stop, #48 session 验证, #96 ESM 解析
 
 **Phase 4 进行中**：
-- 🔧 #121 (P1) Pi 内置后端 — 开发中
+- ✅ #134 (P2) agent open + interactionModes — 已完成
+- ✅ #121 (P1) Pi 内置后端 — 已完成
 - 📋 #135 (P1) Workflow 重定义为 Hook Package — 设计完成，待实现
+- 📋 #14 (P1) Actant 系统级 Plugin 体系 — 待实现
 - 📋 #136 (P2) Agent-to-Agent Email 通信 — 设计完成，待实现
-- 📋 #134 (P2) agent open + interactionModes — 待开始
 - 📋 #133 (P2) 环境变量 provider 配置 — 待开始
+- 📋 #37 (P1) Extensible Initializer — 待开始
 
-**活跃 BUG**：
-- #117 (P1) gateway.lease RPC handler missing — Session Lease 模式无法使用
-- #129 (P1) 所有 @actant/* 包需发布 0.1.3 — IPC path mismatch
+**Phase 4 第一波 BUG 修复**（本轮已完成）：
+- ✅ #117 (P1) gateway.lease RPC handler — 已实现 `gateway-handlers.ts`
+- ✅ #151 agent adopt registry/manager cache 不同步 — 已修复
+- ✅ #126 (P3) daemon.ping 硬编码版本 — 已修复，读取真实 package.json 版本
+- ✅ #127 (P2) install.ps1 非交互终端挂起 — 已修复，添加 `$IsInteractive` 检测和 `-NpmRegistry` 参数
+
+**仍活跃 BUG**：
+- #129 (P1) 所有 @actant/* 包需发布 — 版本已升至 0.2.1，需验证 npm 发布状态
 - #95 (P2) ACP Gateway terminal stub — 根因已定位（TerminalHandle 映射方案），不依赖 SDK 变更
-- #127 (P2) install.ps1 非交互终端挂起
 - #57 (P2) Windows daemon fork 退出 — workaround: --foreground
-- #126 (P3) daemon.ping 返回硬编码 version
 
 详细 TODO 跟踪见：`docs/planning/phase3-todo.md`
 详细设计见：`docs/design/mvp-next-design.md`

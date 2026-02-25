@@ -1,9 +1,21 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { join, dirname } from "node:path";
 import type {
   DaemonPingResult,
   DaemonShutdownResult,
 } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
+
+const PKG_VERSION = (() => {
+  try {
+    const pkgPath = join(dirname(fileURLToPath(import.meta.url)), "../../package.json");
+    return (JSON.parse(readFileSync(pkgPath, "utf-8")) as { version: string }).version;
+  } catch {
+    return "unknown";
+  }
+})();
 
 export function registerDaemonHandlers(
   registry: HandlerRegistry,
@@ -15,7 +27,7 @@ export function registerDaemonHandlers(
 
 async function handleDaemonPing(ctx: AppContext): Promise<DaemonPingResult> {
   return {
-    version: "0.1.0",
+    version: PKG_VERSION,
     uptime: ctx.uptime,
     agents: ctx.agentManager.size,
   };

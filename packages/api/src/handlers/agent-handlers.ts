@@ -31,7 +31,7 @@ import type {
 } from "@actant/shared";
 import { AgentNotFoundError } from "@actant/shared";
 import { resolvePermissionsWithMcp, PermissionAuditLogger } from "@actant/core";
-import { updateInstanceMeta } from "@actant/core";
+import { updateInstanceMeta, readInstanceMeta } from "@actant/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 
@@ -115,6 +115,16 @@ async function handleAgentAdopt(
 ): Promise<AgentAdoptResult> {
   const { path, rename } = params as unknown as AgentAdoptParams;
   const entry = await ctx.instanceRegistry.adopt(path, rename);
+
+  // Sync adopted instance into AgentManager's in-memory cache (#151)
+  try {
+    const meta = await readInstanceMeta(entry.workspacePath);
+    const effectiveMeta = rename ? { ...meta, name: rename } : meta;
+    ctx.agentManager.registerAdopted(effectiveMeta);
+  } catch {
+    // Non-fatal: status queries may miss this agent until next daemon restart
+  }
+
   return {
     name: entry.name,
     template: entry.template,
