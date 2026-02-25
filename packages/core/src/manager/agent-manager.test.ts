@@ -255,7 +255,7 @@ describe("AgentManager", () => {
   });
 
   describe("LaunchMode behavior", () => {
-    it("should auto-restart acp-service-mode agent on crash", async () => {
+    it("should auto-restart acp-service agent on crash", async () => {
       const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
         watcherPollIntervalMs: 50,
         restartPolicy: { backoffBaseMs: 10, backoffMaxMs: 50 },
@@ -284,7 +284,7 @@ describe("AgentManager", () => {
       watcherManager.dispose();
     });
 
-    it("should recover acp-service-mode agent on daemon restart", async () => {
+    it("should recover acp-service agent on daemon restart", async () => {
       const dir = join(tmpDir, "svc-stale");
       await mkdir(dir);
       await writeInstanceMeta(dir, makeMeta("svc-stale", {
@@ -298,14 +298,14 @@ describe("AgentManager", () => {
       });
       await newManager.initialize();
 
-      // acp-service-mode should attempt restart: status should be running
+      // acp-service should attempt restart: status should be running
       expect(newManager.getStatus("svc-stale")).toBe("running");
       expect(newManager.getAgent("svc-stale")?.pid).toBeDefined();
 
       newManager.dispose();
     });
 
-    it("should mark acp-service-mode agent as error after restart limit exceeded", async () => {
+    it("should mark acp-service agent as error after restart limit exceeded", async () => {
       const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
         watcherPollIntervalMs: 50,
         restartPolicy: { maxRestarts: 1, backoffBaseMs: 5, backoffMaxMs: 10 },
