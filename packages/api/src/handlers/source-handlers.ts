@@ -85,13 +85,19 @@ async function handleSourceValidate(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<SourceValidateResult> {
-  const { name, path, strict, compat } = params as unknown as SourceValidateParams;
+  const { name, path, strict, compat, community } = params as unknown as SourceValidateParams;
 
   let rootDir: string;
+  let isCommunity = community ?? false;
   if (path) {
     rootDir = path;
   } else if (name) {
     rootDir = ctx.sourceManager.getSourceRootDir(name);
+    const sources = ctx.sourceManager.listSources();
+    const entry = sources.find((s) => s.name === name);
+    if (entry?.config.type === "community") {
+      isCommunity = true;
+    }
   } else {
     throw new Error("Either 'name' or 'path' parameter is required");
   }
@@ -100,5 +106,6 @@ async function handleSourceValidate(
   return validator.validate(rootDir, {
     strict,
     compat: compat as "agent-skills" | undefined,
+    community: isCommunity,
   });
 }

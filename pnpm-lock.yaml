@@ -134,9 +134,16 @@ importers:
       croner:
         specifier: ^9.0.0
         version: 9.1.0
+      picomatch:
+        specifier: ^4.0.3
+        version: 4.0.3
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+    devDependencies:
+      '@types/picomatch':
+        specifier: ^4.0.2
+        version: 4.0.2
 
   packages/mcp-server:
     dependencies:
@@ -1200,6 +1207,9 @@ packages:
 
   '@types/node@25.3.0':
     resolution: {integrity: sha512-4K3bqJpXpqfg2XKGK9bpDTc6xO/xoUP/RBWS7AtRMug6zZFaRekiLzjVtAoZMquxoAbzBvy5nxQ7veS5eYzf8A==}
+
+  '@types/picomatch@4.0.2':
+    resolution: {integrity: sha512-qHHxQ+P9PysNEGbALT8f8YOSHW0KJu6l2xU8DYY0fu/EmGxXdVnuTLvFUvBgPJMSqXq29SYHveejeAha+4AYgA==}
 
   '@types/retry@0.12.0':
     resolution: {integrity: sha512-wWKOClTTiizcZhXnPY4wikVAwmdYHp8q6DmC+EJUzAMsycb7HB32Kh9RN4+0gExjmPmZSAQjgURXIGATPegAvA==}
@@ -3654,6 +3664,8 @@ snapshots:
   '@types/node@25.3.0':
     dependencies:
       undici-types: 7.18.2
+
+  '@types/picomatch@4.0.2': {}
 
   '@types/retry@0.12.0': {}
 

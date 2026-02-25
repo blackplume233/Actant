@@ -49,6 +49,7 @@ export async function configureSource(printer: CliPrinter, client: RpcClient): P
       choices: [
         { name: "GitHub 仓库", value: "github" },
         { name: "本地目录", value: "local" },
+        { name: "社区 Agent Skills 仓库", value: "community" },
       ],
     });
 
@@ -75,6 +76,37 @@ export async function configureSource(printer: CliPrinter, client: RpcClient): P
         const c = result.components;
         printer.success(
           `  ✓ ${name.trim()} 已添加: ${c.skills} skills, ${c.prompts} prompts`,
+        );
+      } catch (err) {
+        printer.warn(`  ⚠ 添加失败: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    } else if (sourceType === "community") {
+      const url = await input({
+        message: "社区仓库 URL (如 https://github.com/anthropics/skills):",
+        validate: (val) => val.trim().length > 0 || "URL 不能为空",
+      });
+      const branch = await input({
+        message: "分支:",
+        default: "main",
+      });
+      const filter = await input({
+        message: "Skill 过滤 (glob, 留空导入全部):",
+        default: "",
+      });
+
+      try {
+        const result = await client.call("source.add", {
+          name: name.trim(),
+          config: {
+            type: "community" as const,
+            url: url.trim(),
+            branch,
+            filter: filter.trim() || undefined,
+          },
+        });
+        const c = result.components;
+        printer.success(
+          `  ✓ ${name.trim()} 已添加: ${c.skills} skills`,
         );
       } catch (err) {
         printer.warn(`  ⚠ 添加失败: ${err instanceof Error ? err.message : String(err)}`);

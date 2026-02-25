@@ -24,6 +24,7 @@ import type { BaseComponentManager, NamedComponent } from "../domain/base-compon
 import type { TemplateRegistry } from "../template/registry/template-registry";
 import { GitHubSource } from "./github-source";
 import { LocalSource } from "./local-source";
+import { CommunitySource } from "./community-source";
 import {
   createEmptySyncReport,
   mergeSyncReports,
@@ -268,6 +269,8 @@ export class SourceManager {
         return new GitHubSource(name, config, this.cacheDir);
       case "local":
         return new LocalSource(name, config);
+      case "community":
+        return new CommunitySource(name, config, this.cacheDir);
       default:
         throw new Error(`Unsupported source type: ${(config as { type: string }).type}`);
     }

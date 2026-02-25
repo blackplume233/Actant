@@ -541,6 +541,8 @@ export interface SourceValidateParams {
   strict?: boolean;
   /** Enable compatibility checks against an external standard (e.g. "agent-skills"). */
   compat?: string;
+  /** Treat the source as a community repo (skip manifest requirement, scan for SKILL.md). */
+  community?: boolean;
 }
 
 export interface SourceValidationIssueDto {
