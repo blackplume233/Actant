@@ -149,7 +149,7 @@ interface AgentInstanceMeta {
 }
 
 type AgentStatus = 'created' | 'starting' | 'running' | 'stopping' | 'stopped' | 'error';
-type LaunchMode = 'direct' | 'acp-background' | 'acp-service' | 'one-shot';
+type LaunchMode = 'direct' | 'acp-background' | 'normal' | 'one-shot';
 
 // template.types.ts — Agent Template 类型
 interface AgentTemplate {
@@ -742,7 +742,7 @@ Session 6: Phase 7                     → Domain Context 测试全绿 (M4)
 
 **Employee 相对常规 Agent 的增量能力**：
 
-- `launchMode: 'acp-service'` — Actant 全权管理生命周期
+- `launchMode: 'normal'` — Actant 全权管理生命周期
 - 崩溃自动重启 + 心跳健康检查
 - 长期记忆（memory plugin）
 - 定时任务（scheduler plugin）

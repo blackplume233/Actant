@@ -53,7 +53,7 @@ isProject: false
 
 - `employee-scheduler.ts` — 编排 InputRouter + TaskQueue + Dispatcher
 - `template-schema.ts` — 新增 ScheduleConfigSchema
-- `agent-manager.ts` — acp-service 模式 + schedule 配置 → 启动 scheduler
+- `agent-manager.ts` — normal 模式 + schedule 配置 → 启动 scheduler
 - RPC handlers: agent.dispatch / agent.tasks / agent.logs
 
 ## Todo 4: CLI + Webhook/N8N

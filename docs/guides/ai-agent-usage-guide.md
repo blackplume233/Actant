@@ -134,7 +134,7 @@ Agent 的能力由 5 类组件组合而成：
                      │                  │   error           │
                      │                  └──────► error      │
                      │                  │                   │
-                     │              crash (acp-service)     │
+                     │              crash (normal)     │
                      │                  └── restart ──┘     │
                      │                                      │
                      └──────────── destroy ◄────────────────┘
@@ -148,7 +148,7 @@ Agent 的能力由 5 类组件组合而成：
 |------|-----------|---------|---------|
 | `direct` | Daemon | 标记 stopped | 直接打开 IDE/TUI |
 | `acp-background` | Daemon + ACP | 标记 stopped | 第三方 Client 通过 ACP 管理 |
-| `acp-service` | Daemon + ACP | 自动重启（指数退避） | 持久化雇员 Agent |
+| `normal` | Daemon + ACP | 自动重启（指数退避） | 持久化雇员 Agent |
 | `one-shot` | Daemon | 标记 stopped 或自动销毁 | 执行任务后终止 |
 
 ### 3.6 通信架构
@@ -217,7 +217,7 @@ actant template install <path>          # 安装模板到 configs 目录
 actant agent create <name> -t <template>           # 基本创建
 actant agent create <name> -t <tpl> --work-dir /p  # 指定工作目录
 actant agent create <name> -t <tpl> --workspace /p # 指定外部工作区
-actant agent create <name> -t <tpl> --launch-mode acp-service  # 指定启动模式
+actant agent create <name> -t <tpl> --launch-mode normal  # 指定启动模式
 actant agent create <name> -t <tpl> --overwrite    # 覆盖已有实例
 actant agent create <name> -t <tpl> --append       # 追加到已有工作区
 
@@ -395,7 +395,7 @@ actant agent list
 
 ```bash
 actant template load ./daily-reviewer.json
-actant agent create reviewer -t daily-reviewer --launch-mode acp-service
+actant agent create reviewer -t daily-reviewer --launch-mode normal
 actant agent start reviewer
 actant schedule list reviewer    # 查看调度状态
 ```

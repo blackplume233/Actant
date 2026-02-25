@@ -61,7 +61,7 @@ export interface ManagerOptions {
   corruptedDir?: string;
   /** Milliseconds between process alive checks. Default: 5000 */
   watcherPollIntervalMs?: number;
-  /** Restart policy for acp-service agents. */
+  /** Restart policy for normal-mode agents. */
   restartPolicy?: Partial<RestartPolicy>;
   /** ACP connection manager for ACP-based backends. */
   acpManager?: AcpConnectionManagerLike;

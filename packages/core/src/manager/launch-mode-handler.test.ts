@@ -45,8 +45,8 @@ describe("LaunchModeHandler", () => {
     });
   });
 
-  describe("acp-service", () => {
-    const handler = getLaunchModeHandler("acp-service");
+  describe("normal", () => {
+    const handler = getLaunchModeHandler("normal");
 
     it("should return restart on process exit", () => {
       expect(handler.getProcessExitAction("agent-1")).toEqual({ type: "restart" });
@@ -81,12 +81,12 @@ describe("LaunchModeHandler", () => {
 
   describe("getLaunchModeHandler", () => {
     it("should return different handlers for each mode", () => {
-      const modes = ["direct", "acp-background", "acp-service", "one-shot"] as const;
+      const modes = ["direct", "acp-background", "normal", "one-shot"] as const;
       const handlers = modes.map(getLaunchModeHandler);
 
       expect(handlers[0]!.mode).toBe("direct");
       expect(handlers[1]!.mode).toBe("acp-background");
-      expect(handlers[2]!.mode).toBe("acp-service");
+      expect(handlers[2]!.mode).toBe("normal");
       expect(handlers[3]!.mode).toBe("one-shot");
     });
   });

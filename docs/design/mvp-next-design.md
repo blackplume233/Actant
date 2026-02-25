@@ -682,7 +682,7 @@ packages/core/src/scheduler/
 
 - TaskQueue：per-agent 串行队列，priority-sorted
 - TaskDispatcher：dequeue → promptAgent → record
-- AgentManager 集成：`startAgent` 时如果 launchMode=acp-service 且有 schedule，启动 dispatcher
+- AgentManager 集成：`startAgent` 时如果 launchMode=normal 且有 schedule，启动 dispatcher
 - CLI：`agent dispatch` 手动派发
 
 #### 阶段 2：InputRouter + 内置 Input Sources（#37 Phase 2）

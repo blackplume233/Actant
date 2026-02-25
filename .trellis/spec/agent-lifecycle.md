@@ -180,7 +180,7 @@ actant agent stop review-agent
 
 ---
 
-### 3.3 acp-service — 持久服务模式
+### 3.3 normal — 持久服务模式
 
 ```
 Actant Daemon (守护者)
@@ -206,7 +206,7 @@ Actant workspace (persistent)
 
 **典型流程**：
 ```
-actant agent create pr-reviewer -t pr-review --launch-mode acp-service
+actant agent create pr-reviewer -t pr-review --launch-mode normal
 actant agent start pr-reviewer
 # Agent 持续运行...
 # 崩溃？Actant 自动重启（指数退避）
@@ -215,7 +215,7 @@ actant agent start pr-reviewer
 
 **与 acp-background 的区别**：
 
-| 维度 | acp-background | acp-service |
+| 维度 | acp-background | normal |
 |------|---------------|-------------|
 | 谁决定何时终止 | 调用方 | Actant（或管理员手动） |
 | 崩溃处理 | 标记 error/crashed，不自动重启 | **自动重启**（指数退避） |
@@ -269,7 +269,7 @@ actant agent start task-123
 
 ### 3.5 LaunchMode 对比总览
 
-| 维度 | direct | acp-background | acp-service | one-shot |
+| 维度 | direct | acp-background | normal | one-shot |
 |------|--------|---------------|-------------|----------|
 | 进程形态 | 有 UI | headless | headless | headless |
 | 生命周期所有者 | 用户 | 调用方 | Actant | Actant |
@@ -619,13 +619,13 @@ actant.detach("task-123", { cleanup: true })
 
 | 选择 | 推荐 |
 |------|------|
-| LaunchMode | `acp-service` |
+| LaunchMode | `normal` |
 | WorkspacePolicy | `persistent` |
 | 接入模式 | **ACP Proxy**（标准协议）或 **agent.prompt**（API 调用） |
 
 ```
 // 一次性设置
-actant agent create team-reviewer -t code-review --launch-mode acp-service
+actant agent create team-reviewer -t code-review --launch-mode normal
 actant agent start team-reviewer
 // Agent 持续运行，崩溃自动重启
 
@@ -694,7 +694,7 @@ Actant->Detach("ue-helper");
 | 选择 | 推荐 |
 |------|------|
 | 接入模式 | **MCP Server**（同步，#16） |
-| Agent B LaunchMode | `one-shot`（单次任务）或 `acp-service`（持久可复用） |
+| Agent B LaunchMode | `one-shot`（单次任务）或 `normal`（持久可复用） |
 
 ```
 // Agent A 的 MCP 配置中包含 Actant MCP Server
@@ -720,7 +720,7 @@ result = mcp.call("actant_prompt_agent", {
 | 选择 | 推荐 |
 |------|------|
 | 接入模式 | **Email via CLI/API**（异步，#136） |
-| Agent B/C LaunchMode | `acp-service`（雇员 Agent，主 Session 处理 Email） |
+| Agent B/C LaunchMode | `normal`（雇员 Agent，主 Session 处理 Email） |
 
 ```bash
 # 通过 CLI 发送 Email（人或 Agent 均可调用）
@@ -821,7 +821,7 @@ Agent 需要多久？
   └─ 需要持续运行
        │
        ├─ 需要 7×24 + 崩溃自动重启？
-       │    └─ 是 ──→ acp-service
+       │    └─ 是 ──→ normal
        │
        ├─ 需要用户直接交互（有 UI）？
        │    └─ 是 ──→ direct
@@ -861,7 +861,7 @@ Agent 需要多久？
                        │    │stopping│ │crashed │─────────┘         │
                        │    └───┬────┘ └────┬───┘                   │
                        │        │           │                       │
-                       │        ▼           │ (acp-service          │
+                       │        ▼           │ (normal          │
                        │    ┌────────┐      │  auto-restart)        │
                        └────│stopped │      └───────────────────────┘
                             └────────┘

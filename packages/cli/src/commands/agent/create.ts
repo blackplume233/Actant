@@ -7,7 +7,7 @@ import type { LaunchMode, WorkDirConflict } from "@actant/shared";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, formatAgentDetail, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
 
-const VALID_LAUNCH_MODES = new Set(["direct", "acp-background", "acp-service", "one-shot"]);
+const VALID_LAUNCH_MODES = new Set(["direct", "acp-background", "normal", "one-shot"]);
 
 function askQuestion(question: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -24,7 +24,7 @@ export function createAgentCreateCommand(client: RpcClient, printer: CliPrinter 
     .description("Create a new agent from a template")
     .argument("<name>", "Agent instance name")
     .requiredOption("-t, --template <template>", "Template name to use")
-    .option("--launch-mode <mode>", "Launch mode: direct, acp-background, acp-service, one-shot")
+    .option("--launch-mode <mode>", "Launch mode: direct, acp-background, normal, one-shot")
     .option("--work-dir <path>", "Custom workspace directory (absolute or relative path)")
     .option("--workspace <path>", "Same as --work-dir: create instance at external path instead of builtin location")
     .option("--overwrite", "If instance directory exists, remove it and recreate")

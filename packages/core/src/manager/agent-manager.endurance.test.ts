@@ -183,13 +183,13 @@ describe("Endurance tests — Phase 1", () => {
     console.log(`[endurance] E-LIFE: ${cycles} cycles in ${Date.now() - startTime}ms`);
   });
 
-  // ── E-SVC: acp-service 连续崩溃重启 ──────────────────────────────────
+  // ── E-SVC: normal 连续崩溃重启 ──────────────────────────────────
 
-  it(`E-SVC: acp-service crash/restart — ${DURATION_MS}ms`, async () => {
+  it(`E-SVC: normal crash/restart — ${DURATION_MS}ms`, async () => {
     const manager = new AgentManager(initializer, launcher, tmpDir, makeManagerOpts());
     await manager.initialize();
 
-    await manager.createAgent("svc", "test-tpl", { launchMode: "acp-service" });
+    await manager.createAgent("svc", "test-tpl", { launchMode: "normal" });
     await manager.startAgent("svc");
 
     const ctl = await createPidController();
@@ -378,11 +378,11 @@ describe("Endurance tests — Phase 1", () => {
       const manager = new AgentManager(initializer, launcher, tmpDir, opts);
       await manager.initialize();
 
-      // Ensure one acp-service and one direct agent exist and run
+      // Ensure one normal and one direct agent exist and run
       const svcName = "daemon-svc";
       const directName = "daemon-direct";
 
-      for (const [name, mode] of [[svcName, "acp-service"], [directName, "direct"]] as const) {
+      for (const [name, mode] of [[svcName, "normal"], [directName, "direct"]] as const) {
         if (!manager.getAgent(name)) {
           await manager.createAgent(name, "test-tpl", { launchMode: mode });
         }
@@ -409,7 +409,7 @@ describe("Endurance tests — Phase 1", () => {
       const manager2 = new AgentManager(initializer, launcher, tmpDir, opts);
       await manager2.initialize();
 
-      // acp-service → auto-restarted → running
+      // normal → auto-restarted → running
       expect(manager2.getStatus(svcName)).toBe("running");
       expect(manager2.getAgent(svcName)?.pid).toBeDefined();
 
@@ -451,7 +451,7 @@ describe("Endurance tests — Phase 1", () => {
 
       if (action < 0.25 && agentNames.size < 20) {
         const name = `mix-${nextId++}`;
-        const mode = (["direct", "acp-service", "one-shot"] as const)[randomInt(0, 2)];
+        const mode = (["direct", "normal", "one-shot"] as const)[randomInt(0, 2)];
         try {
           await manager.createAgent(name, "test-tpl", { launchMode: mode });
           agentNames.add(name);
@@ -619,7 +619,7 @@ describe("Endurance tests — Phase 1", () => {
       console.log(`[endurance] shutdown/one-shot-ephemeral: ${cycles} cycles in ${Date.now() - startTime}ms`);
     });
 
-    it(`acp-service: crash → restart, stop → no restart — ${DURATION_MS}ms`, async () => {
+    it(`normal: crash → restart, stop → no restart — ${DURATION_MS}ms`, async () => {
       const manager = new AgentManager(initializer, launcher, tmpDir, makeManagerOpts());
       await manager.initialize();
       const ctl = await createPidController();
@@ -628,7 +628,7 @@ describe("Endurance tests — Phase 1", () => {
       let cleanStops = 0;
       const startTime = Date.now();
 
-      await manager.createAgent("svc-sh", "test-tpl", { launchMode: "acp-service" });
+      await manager.createAgent("svc-sh", "test-tpl", { launchMode: "normal" });
       await manager.startAgent("svc-sh");
 
       while (Date.now() - startTime < DURATION_MS) {
@@ -662,7 +662,7 @@ describe("Endurance tests — Phase 1", () => {
       ctl.restore();
       manager.dispose();
 
-      console.log(`[endurance] shutdown/acp-service: ${crashRestarts} crash-restarts, ${cleanStops} clean-stops in ${Date.now() - startTime}ms`);
+      console.log(`[endurance] shutdown/normal: ${crashRestarts} crash-restarts, ${cleanStops} clean-stops in ${Date.now() - startTime}ms`);
     });
 
     it(`external attach: crash → crashed (not stopped), detach → ownership reset — ${DURATION_MS}ms`, async () => {

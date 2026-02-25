@@ -86,7 +86,7 @@
 | 驱动者 | 人类（IDE / Chat） | Daemon（调度器） |
 | 连接归属 | Proxy / Chat 持有 AcpConnection | **Daemon 持有 AcpConnection** |
 | 进程生命周期 | 跟随连接 | **长驻，持续运行** |
-| launchMode | interactive / acp-background | **acp-service** |
+| launchMode | interactive / acp-background | **normal** |
 
 **确认**：Gateway 在两种模式下都不需要。雇员型 Agent 拆为独立 Issue #37。
 

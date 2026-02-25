@@ -34,10 +34,10 @@
 | 场景 ID | 场景名称 | 覆盖内容 | 关停行为 |
 |---------|---------|---------|---------|
 | `E-LIFE` | 完整生命周期循环 | create → start → stop → start → stop → destroy，反复 | 显式 stop + destroy |
-| `E-SVC` | acp-service 连续崩溃重启 | 随机崩溃 → 自动重启 → 退避 → 恢复 → 重置计数器 | 崩溃后自动重启；超限后 error |
+| `E-SVC` | normal 连续崩溃重启 | 随机崩溃 → 自动重启 → 退避 → 恢复 → 重置计数器 | 崩溃后自动重启；超限后 error |
 | `E-SHOT` | one-shot 执行与清理 | 创建 → 运行 → 完成 → ephemeral 清理，反复 | 进程退出后自动销毁 |
 | `E-EXT` | 外部 Spawn 完整流程 | resolve → attach → crash/detach → cleanup，交替 ephemeral/persistent | 由调用方 detach 决定 |
-| `E-DAEMON` | Daemon 重启恢复 | Daemon 反复崩溃重启，验证 acp-service 恢复、direct 不恢复 | Daemon dispose → 新 Daemon 恢复 |
+| `E-DAEMON` | Daemon 重启恢复 | Daemon 反复崩溃重启，验证 normal 恢复、direct 不恢复 | Daemon dispose → 新 Daemon 恢复 |
 | `E-MIX` | 混合并发操作 | 多 Agent、多模式、随机 create/start/stop/crash/destroy | 各模式各自关停逻辑 |
 
 #### Phase 2: 通信与协议（待实现）
@@ -78,7 +78,7 @@
 |------------|---------|---------|---------|------------|
 | `direct` | stop → stopped | watcher 检测 → stopped | — | 恢复为 stopped（不自动重启） |
 | `acp-background` | stop → stopped | watcher 检测 → stopped | — | 恢复为 stopped |
-| `acp-service` | stop → stopped | watcher → restart (退避) | → error | 恢复为 running（自动重启） |
+| `normal` | stop → stopped | watcher → restart (退避) | → error | 恢复为 running（自动重启） |
 | `one-shot` | 进程退出 → auto-destroy | 进程退出 → auto-destroy | — | 恢复为 stopped |
 | External attach | detach → stopped | watcher → crashed | — | — |
 

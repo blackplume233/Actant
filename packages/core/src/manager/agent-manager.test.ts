@@ -255,14 +255,14 @@ describe("AgentManager", () => {
   });
 
   describe("LaunchMode behavior", () => {
-    it("should auto-restart acp-service agent on crash", async () => {
+    it("should auto-restart normal-mode agent on crash", async () => {
       const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
         watcherPollIntervalMs: 50,
         restartPolicy: { backoffBaseMs: 10, backoffMaxMs: 50 },
       });
       await watcherManager.initialize();
 
-      await watcherManager.createAgent("svc-agent", "test-tpl", { launchMode: "acp-service" });
+      await watcherManager.createAgent("svc-agent", "test-tpl", { launchMode: "normal" });
       await watcherManager.startAgent("svc-agent");
       expect(watcherManager.getStatus("svc-agent")).toBe("running");
       const firstPid = watcherManager.getAgent("svc-agent")?.pid;
@@ -284,13 +284,13 @@ describe("AgentManager", () => {
       watcherManager.dispose();
     });
 
-    it("should recover acp-service agent on daemon restart", async () => {
+    it("should recover normal-mode agent on daemon restart", async () => {
       const dir = join(tmpDir, "svc-stale");
       await mkdir(dir);
       await writeInstanceMeta(dir, makeMeta("svc-stale", {
         status: "running",
         pid: 99999,
-        launchMode: "acp-service",
+        launchMode: "normal",
       }));
 
       const newManager = new AgentManager(initializer, launcher, tmpDir, {
@@ -298,21 +298,21 @@ describe("AgentManager", () => {
       });
       await newManager.initialize();
 
-      // acp-service should attempt restart: status should be running
+      // normal-mode should attempt restart: status should be running
       expect(newManager.getStatus("svc-stale")).toBe("running");
       expect(newManager.getAgent("svc-stale")?.pid).toBeDefined();
 
       newManager.dispose();
     });
 
-    it("should mark acp-service agent as error after restart limit exceeded", async () => {
+    it("should mark normal-mode agent as error after restart limit exceeded", async () => {
       const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
         watcherPollIntervalMs: 50,
         restartPolicy: { maxRestarts: 1, backoffBaseMs: 5, backoffMaxMs: 10 },
       });
       await watcherManager.initialize();
 
-      await watcherManager.createAgent("svc-limit", "test-tpl", { launchMode: "acp-service" });
+      await watcherManager.createAgent("svc-limit", "test-tpl", { launchMode: "normal" });
       await watcherManager.startAgent("svc-limit");
 
       const processUtils = await import("./launcher/process-utils");

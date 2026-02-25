@@ -198,11 +198,11 @@ async createAgent(name: string, templateName: string, ...)
 
 ```typescript
 // 已实现
-export type LaunchMode = "direct" | "acp-background" | "acp-service" | "one-shot";
+export type LaunchMode = "direct" | "acp-background" | "normal" | "one-shot";
 ```
 
 - **direct**: 直接打开 IDE（已实现 MockLauncher）
-- **acp-service**: 后台服务（AgentManager 支持）
+- **normal**: 后台服务（AgentManager 支持）
 - **one-shot**: 一次性任务（元数据支持）
 - **acp-background**: ACP 后台模式（待实现）
 
