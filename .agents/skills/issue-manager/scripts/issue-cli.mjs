@@ -411,9 +411,11 @@ function ghAvailable() {
 }
 
 /**
- * Execute `gh` CLI with an args array via spawnSync.
- * Bypasses the system shell entirely, avoiding Windows codepage encoding issues
- * that corrupt non-ASCII (e.g. CJK) characters in command-line arguments.
+ * Execute `gh` CLI with an args array via spawnSync (no shell).
+ *
+ * Non-ASCII text (titles, bodies) MUST be passed via JSON file + `--input`,
+ * never as direct CLI arguments — Windows codepage conversions in the
+ * PowerShell → bash → node → gh chain corrupt CJK and other multibyte chars.
  */
 function ghSpawn(args) {
   const result = spawnSync("gh", args, {
@@ -446,36 +448,51 @@ function buildGhBody(meta, body) {
 }
 
 function ghSyncExisting(ghNum, meta, ghBody) {
-  const tmpBody = join(REPO_ROOT, ".trellis", `_sync_body_${ghNum}.tmp`);
-  writeFileSync(tmpBody, ghBody, "utf-8");
+  const tmpPayload = join(REPO_ROOT, ".trellis", `_gh_sync_${ghNum}.json`);
+  const payload = {
+    title: meta.title,
+    body: ghBody,
+    state: meta.status === "closed" ? "closed" : "open",
+  };
+  if (meta.status === "closed" && meta.closedAs) {
+    payload.state_reason = meta.closedAs === "completed" ? "completed" : "not_planned";
+  }
+  writeFileSync(tmpPayload, JSON.stringify(payload), "utf-8");
 
   try {
-    ghSpawn(["issue", "edit", String(ghNum), "-t", meta.title, "-F", tmpBody]);
-
-    if (meta.status === "closed") {
-      try { ghSpawn(["issue", "close", String(ghNum)]); } catch { /* already closed */ }
-    } else {
-      try { ghSpawn(["issue", "reopen", String(ghNum)]); } catch { /* already open */ }
-    }
+    ghSpawn([
+      "api", `repos/${GH_OWNER}/${GH_REPO}/issues/${ghNum}`,
+      "--method", "PATCH",
+      "--input", tmpPayload,
+    ]);
   } finally {
-    try { unlinkSync(tmpBody); } catch {}
+    try { unlinkSync(tmpPayload); } catch {}
   }
 }
 
 function ghCreateNew(meta, ghBody) {
-  const tmpBody = join(REPO_ROOT, ".trellis", "_sync_body_new.tmp");
-  writeFileSync(tmpBody, ghBody, "utf-8");
+  // Ensure labels exist on GitHub (gh api doesn't auto-create labels like gh issue create -l)
+  for (const label of (meta.labels || [])) {
+    try {
+      ghSpawn(["label", "create", label, "--force"]);
+    } catch { /* label already exists or creation failed — continue */ }
+  }
+
+  const tmpPayload = join(REPO_ROOT, ".trellis", "_gh_create_payload.json");
+  const payload = { title: meta.title, body: ghBody };
+  if (meta.labels?.length) payload.labels = meta.labels;
+  writeFileSync(tmpPayload, JSON.stringify(payload), "utf-8");
 
   try {
-    const args = ["issue", "create", "-t", meta.title, "-F", tmpBody];
-    for (const l of (meta.labels || [])) {
-      args.push("-l", l);
-    }
-    const result = ghSpawn(args);
-    const numMatch = result.match(/\/issues\/(\d+)/);
-    return numMatch ? Number(numMatch[1]) : null;
+    const result = ghSpawn([
+      "api", `repos/${GH_OWNER}/${GH_REPO}/issues`,
+      "--method", "POST",
+      "--input", tmpPayload,
+      "--jq", ".number",
+    ]);
+    return result ? Number(result) : null;
   } finally {
-    try { unlinkSync(tmpBody); } catch {}
+    try { unlinkSync(tmpPayload); } catch {}
   }
 }
 
