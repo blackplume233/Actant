@@ -36,6 +36,27 @@ docs/
 | `getting-started.md` | 面向人类的快速入门指南 |
 | `ai-agent-usage-guide.md` | 面向 AI Agent 的 Actant 使用手册 |
 | `ai-agent-dev-guide.md` | 面向 AI Agent 的 Actant 源码开发手册 |
+| `dev-workflow-guide.md` | 开发流程指南（Plan → Code → Review → PR → Ship → QA → Stage） |
+| `dev-environment-setup.md` | 开发环境搭建指南 |
+| `actant-hub-usage.md` | ActantHub 默认组件源的使用指南 |
+| `create-custom-hub.md` | 从零创建自定义组件源仓库 |
+| **[`features/`](guides/features/README.md)** | **逐功能文档**（每个功能独立一篇，含场景和验证示例） |
+
+`features/` 目录包含 10 篇按功能模块组织的文档：
+
+| 文件 | 功能 |
+|------|------|
+| `features/agent-template.md` | Agent 模板系统 |
+| `features/agent-lifecycle.md` | Agent 生命周期管理 |
+| `features/domain-context.md` | 领域上下文拼装（5 类组件） |
+| `features/multi-backend.md` | 多后端支持（5 种后端） |
+| `features/permissions.md` | 权限控制（4 级预设） |
+| `features/employee-scheduler.md` | 雇员调度器（心跳/Cron/Hook） |
+| `features/acp-proxy.md` | ACP 连接与代理（Direct Bridge + Session Lease） |
+| `features/component-source.md` | 组件源与同步 |
+| `features/extensible-architecture.md` | 可扩展架构（ComponentTypeHandler） |
+| `features/cli-interaction.md` | CLI 交互模式（68 命令） |
+| `features/installation-update.md` | 安装与自更新 |
 
 **写入规则**：人类和 AI 均可创建和更新。
 
@@ -219,10 +240,26 @@ GitHub Pages 静态站点源文件，通过 `.github/workflows/deploy-site.yml` 
 ```
 Wiki 首页
 ├── 快速入门              → guides/getting-started.md
+├── 功能文档              → guides/features/README.md
+│   ├── Agent 模板系统    → guides/features/agent-template.md
+│   ├── Agent 生命周期    → guides/features/agent-lifecycle.md
+│   ├── 领域上下文拼装    → guides/features/domain-context.md
+│   ├── 多后端支持        → guides/features/multi-backend.md
+│   ├── 权限控制          → guides/features/permissions.md
+│   ├── 雇员调度器        → guides/features/employee-scheduler.md
+│   ├── ACP 连接与代理    → guides/features/acp-proxy.md
+│   ├── 组件源与同步      → guides/features/component-source.md
+│   ├── 可扩展架构        → guides/features/extensible-architecture.md
+│   ├── CLI 交互模式      → guides/features/cli-interaction.md
+│   └── 安装与自更新      → guides/features/installation-update.md
 ├── 使用指南
-│   └── AI Agent 版       → guides/ai-agent-usage-guide.md
+│   ├── AI Agent 版       → guides/ai-agent-usage-guide.md
+│   ├── ActantHub         → guides/actant-hub-usage.md
+│   └── 创建自定义 Hub    → guides/create-custom-hub.md
 ├── 开发指南
-│   └── AI Agent 版       → guides/ai-agent-dev-guide.md
+│   ├── AI Agent 版       → guides/ai-agent-dev-guide.md
+│   ├── 开发流程指南      → guides/dev-workflow-guide.md
+│   └── 环境搭建          → guides/dev-environment-setup.md
 ├── 产品规划
 │   ├── Roadmap           → planning/roadmap.md
 │   └── Phase 归档        → planning/archive/*.md

@@ -269,9 +269,33 @@ actant self-update --dry-run    # 模拟执行
 
 ## 文档
 
+### 功能文档
+
+逐功能介绍 Actant 的能力，每篇包含使用场景和验证示例：
+
+| 文档 | 说明 |
+|------|------|
+| [功能文档索引](docs/guides/features/README.md) | 全部功能文档的目录和阅读建议 |
+| [Agent 模板系统](docs/guides/features/agent-template.md) | JSON 配置定义可复用的 Agent 类型 |
+| [Agent 生命周期管理](docs/guides/features/agent-lifecycle.md) | 创建、启动、运行、停止、销毁 |
+| [领域上下文拼装](docs/guides/features/domain-context.md) | Skills + Prompts + MCP + Workflow + Plugin |
+| [多后端支持](docs/guides/features/multi-backend.md) | Claude Code / Cursor / Pi / Custom |
+| [权限控制](docs/guides/features/permissions.md) | 4 级安全预设 + 自定义配置 |
+| [雇员调度器](docs/guides/features/employee-scheduler.md) | 心跳 / Cron / Hook 自动任务调度 |
+| [ACP 连接与代理](docs/guides/features/acp-proxy.md) | Direct Bridge + Session Lease |
+| [组件源与同步](docs/guides/features/component-source.md) | GitHub / 本地组件仓库 |
+| [CLI 交互模式](docs/guides/features/cli-interaction.md) | 68 命令 + REPL 模式 |
+| [安装与自更新](docs/guides/features/installation-update.md) | 一键安装 + 自动升级 |
+| [可扩展架构](docs/guides/features/extensible-architecture.md) | ComponentTypeHandler 注册式扩展 |
+
+### 教程与参考
+
 | 文档 | 说明 |
 |------|------|
 | [入门指南](docs/guides/getting-started.md) | 安装、配置、第一个 Agent |
+| [开发流程指南](docs/guides/dev-workflow-guide.md) | Plan → Code → Review → PR → Ship 全流程 |
+| [ActantHub 使用指南](docs/guides/actant-hub-usage.md) | 默认组件源的使用 |
+| [创建自定义 Hub](docs/guides/create-custom-hub.md) | 从零创建组件源仓库 |
 | [v0.2.2 架构文档](docs/stage/v0.2.2/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
 | [v0.2.2 API 接口](docs/stage/v0.2.2/api-surface.md) | 62 个 RPC 方法 + 68 个 CLI 命令 |
 | [v0.2.2 变更日志](docs/stage/v0.2.2/changelog.md) | v0.2.1 → v0.2.2 变更记录 |
