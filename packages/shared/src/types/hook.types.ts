@@ -5,7 +5,9 @@
  *  Design Philosophy
  * ═══════════════════════════════════════════════════════════════
  *
- *  1. Event-Driven    — Hooks react to system events, never poll.
+ *  1. Event-Driven    — Everything is an Event. Every action is a
+ *                        reaction. All triggers (system, timer, user,
+ *                        agent) flow through a single EventBus.
  *  2. Layered Taxonomy — Events are organized by semantic scope,
  *                        from global daemon lifecycle down to
  *                        per-session runtime moments.
@@ -14,11 +16,14 @@
  *                        built-in code paths.
  *  4. Type-Safe        — Discriminated unions + template literal types
  *                        ensure compile-time correctness.
- *  5. Declarative      — Hook bindings are pure data (YAML/JSON),
+ *  5. Declarative      — Hook bindings are pure data (JSON),
  *                        interpreted by the runtime — not imperative code.
+ *  6. Archetype-Aware  — Execution strategy depends on target Agent
+ *                        archetype: employee → queue (serial),
+ *                        service → concurrent, tool → direct.
  *
  * ═══════════════════════════════════════════════════════════════
- *  Architecture — Hook Layer Model
+ *  Architecture — Unified Event System
  * ═══════════════════════════════════════════════════════════════
  *
  *  ┌──────────────────────────────────────────────────────────┐
@@ -34,35 +39,42 @@
  *
  *  "error" and "idle" are standalone runtime events (no prefix).
  *
+ *  Schedule layer = event sources (emit to EventBus), not
+ *  independent schedulers. Where Schedule overlaps EventBus,
+ *  EventBus owns the responsibility.
+ *
  * ═══════════════════════════════════════════════════════════════
  *  Program Design Pattern
  * ═══════════════════════════════════════════════════════════════
  *
  *  Observer + Registry + Strategy
  *
- *  • HookEventBus (Observer)   — pub/sub event distribution
- *  • HookRegistry  (Registry)  — workflow ↔ event binding lifecycle
- *  • ActionRunner  (Strategy)  — pluggable action executors
- *  • HookCategoryRegistry      — extensible event taxonomy
+ *  • EventBus    (Observer)  — single unified pub/sub event bus
+ *  • HookRegistry (Registry) — workflow ↔ event binding lifecycle
+ *  • ActionRunner (Strategy) — archetype-aware action dispatch:
+ *      employee → TaskQueue (serial)
+ *      service  → session pool (concurrent)
+ *      tool     → direct prompt (sync)
+ *  • HookCategoryRegistry    — extensible event taxonomy
  *
  * ═══════════════════════════════════════════════════════════════
  *  Registration Methods
  * ═══════════════════════════════════════════════════════════════
  *
- *  1. Declarative — WorkflowDefinition (YAML/JSON) loaded from
- *     DomainContext or actant-hub packages.
+ *  1. Declarative — Workflow JSON loaded from DomainContext
+ *     or actant-hub packages.
  *  2. Programmatic — HookRegistry.registerWorkflow() from system
  *     code or plugin initializers.
  *  3. Category Extension — HookCategoryRegistry.register() to
  *     inject entirely new event categories at runtime.
  *
  * ═══════════════════════════════════════════════════════════════
- *  Configuration (per HookDeclaration)
+ *  Configuration (per HookDeclaration) — JSON format
  * ═══════════════════════════════════════════════════════════════
  *
  *  • on         — event name to match
  *  • actions    — ordered action list (shell / builtin / agent)
- *  • priority   — execution order among competing listeners
+ *  • priority   — execution order (lower = first, default: 100)
  *  • condition  — template expression for conditional firing
  *  • retry      — retry policy for transient failures
  *  • timeoutMs  — max wall-clock time for the entire hook
@@ -101,6 +113,8 @@
  *    • allowedListeners — caller types permitted to listen
  *
  *  BUILTIN_EVENT_META provides metadata for all built-in events.
+ *
+ *  Full design: docs/design/event-system-unified-design.md
  */
 
 // ─────────────────────────────────────────────────────────────
