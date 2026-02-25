@@ -829,12 +829,29 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | 命令 | 参数 | 选项 | 对应 RPC |
 |------|------|------|---------|
 | `source list` | — | `-f, --format` | `source.list` |
-| `source add <name>` | `name` | `--github <url>`, `--local <path>`, `--branch <branch>` | `source.add` |
+| `source add <name>` | `name` | `--github <url>`, `--local <path>`, `--type <github\|local\|community>`, `--filter <glob>`, `--branch <branch>` | `source.add` |
 | `source remove <name>` | `name` | — | `source.remove` |
 | `source sync [name]` | `name?` | — | `source.sync` |
-| `source validate [name]` | `name?` | `--path <dir>`, `-f, --format`, `--strict`, `--compat <standard>` | `source.validate` |
+| `source validate [name]` | `name?` | `--path <dir>`, `-f, --format`, `--strict`, `--compat <standard>`, `--community` | `source.validate` |
 
-`source validate` 提供 `name`（已注册源）或 `--path`（任意目录）。`--strict` 模式下 warnings 也视为失败（exit code 1）。`--compat agent-skills` 启用 Agent Skills 标准兼容性检查。
+`source validate` 提供 `name`（已注册源）或 `--path`（任意目录）。`--strict` 模式下 warnings 也视为失败（exit code 1）。`--compat agent-skills` 启用 Agent Skills 标准兼容性检查。`--community` 启用社区源验证模式（跳过 manifest 校验，递归扫描 SKILL.md）。
+
+#### Community 源类型（#145 新增） ✅ 已实现
+
+新增 `community` 源类型，支持注册社区 Agent Skills 仓库（如 `anthropics/skills`），无需 `actant.json` manifest。通过递归扫描 `SKILL.md` 文件自动发现技能。
+
+**`CommunitySourceConfig`：**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `type` | `"community"` | **是** | 源类型标识 |
+| `url` | `string` | **是** | Git 仓库 URL |
+| `branch` | `string` | 否 | 指定分支（默认 main） |
+| `filter` | `string` | 否 | glob 过滤（匹配技能名或相对路径） |
+
+**CLI 用法：** `actant source add my-skills --type community --github https://github.com/org/skills --filter "code-*"`
+
+> 实现参考：`packages/core/src/source/community-source.ts`
 
 > 实现参考：`packages/cli/src/commands/source/`
 
