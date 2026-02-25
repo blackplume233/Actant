@@ -206,6 +206,8 @@ CLI `template validate <file>` 输出格式：
 | `workspacePolicy` | `WorkspacePolicy` | 覆盖默认 workspace 策略 |
 | `workDir` | `string` | 自定义 workspace 绝对路径（省略则默认 `{instancesDir}/{name}`） |
 | `workDirConflict` | `"error" \| "overwrite" \| "append"` | workDir 已存在时的行为，默认 `"error"` |
+| `archetype` | `AgentArchetype` | 覆盖模板交互原型（`tool` / `employee` / `service`） |
+| `autoStart` | `boolean` | 覆盖 archetype 推导的 autoStart 默认值 |
 | `permissions` | `PermissionsInput` | 覆盖模板权限配置，完全替代 `template.permissions` |
 | `metadata` | `Record<string, string>` | 额外元数据 |
 

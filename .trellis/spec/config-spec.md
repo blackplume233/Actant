@@ -57,6 +57,7 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 | `domainContext` | [`DomainContextConfig`](#domaincontextconfig) | **是** | 领域上下文组合 |
 | `permissions` | [`PermissionsInput`](#permissionsinput) | 否 | 工具/文件/网络权限控制 |
 | `initializer` | [`InitializerConfig`](#initializerconfig) | 否 | 自定义初始化流程 |
+| `archetype` | [`AgentArchetype`](#agentarchetype) | 否 | 交互原型声明，驱动实例默认的 launchMode/interactionModes/autoStart |
 | `schedule` | [`ScheduleConfig`](#scheduleconfig) | 否 | 雇员型调度配置（Phase 3c 新增） |
 | `metadata` | `Record<string, string>` | 否 | 任意键值元数据 |
 
@@ -317,6 +318,8 @@ Provider 存在两个层次：
 | `updatedAt` | `string` | **是** | — | ISO 8601 更新时间 |
 | `pid` | `number` | 否 | — | 运行时 OS 进程 ID |
 | `effectivePermissions` | `PermissionsConfig` | 否 | — | 解析后的最终生效权限（创建时由 template + override 解析写入，运行时可通过 `agent.updatePermissions` RPC 更新） |
+| `archetype` | [`AgentArchetype`](#agentarchetype) | 否 | `"tool"` | 实例交互原型，驱动 launchMode/interactionModes/autoStart 的默认值 |
+| `autoStart` | `boolean` | 否 | `false` | Daemon 启动时是否自动启动此实例（employee/service 默认 true） |
 | `metadata` | `Record<string, string>` | 否 | — | 任意元数据 |
 
 \* Zod Schema 中标记 optional 以兼容旧文件；读取时缺失则默认 `"cursor"`。`"pi"` 类型实例的 `processOwnership` 始终为 `"managed"`。
@@ -363,6 +366,18 @@ Provider 存在两个层次：
 |----|------|-----------|-------------------|
 | `"managed"` | Actant Daemon spawn 的 | Daemon | 发 ACP 消息、重启、终止 |
 | `"external"` | 外部客户端 spawn 的（通过 `agent.attach` 注册） | 外部客户端 | PID 监控、状态追踪，**不能**发 ACP 消息 |
+
+### AgentArchetype
+
+高层语义字段，描述 Agent 的交互范式。Archetype 驱动 `launchMode`、`interactionModes`、`autoStart` 的默认值；用户 override 始终优先。
+
+| 值 | 默认 launchMode | 默认 interactionModes | 默认 autoStart | 典型场景 |
+|----|----------------|----------------------|---------------|---------|
+| `"tool"` | `direct` | `open, start, chat` | `false` | 按需调用的工具型 Agent |
+| `"employee"` | `acp-background` | `start, run, proxy` | `true` | 后台雇员型 Agent，调度器驱动 |
+| `"service"` | `acp-service` | `proxy` | `true` | 持久化服务型 Agent，崩溃自动重启 |
+
+> 实现参考：`packages/core/src/initializer/archetype-defaults.ts`
 
 ---
 
