@@ -10,6 +10,7 @@
 
 ```
 docs/
+├── wiki/             ★ Wiki 站点（VitePress，生成内容，不作为开发参考）
 ├── guides/           使用教程与操作指南（面向用户和 AI Agent）
 ├── planning/         产品规划（Roadmap、Phase TODO、执行计划）
 │   └── archive/      已完成阶段的计划存档
@@ -27,6 +28,25 @@ docs/
 
 ## 各目录详细说明
 
+### `wiki/` — Wiki 站点（VitePress）
+
+基于 VitePress 的完整 Wiki，面向人类用户，包含入门指南、功能说明、实战教程、架构参考。
+
+**全部内容为生成产物，不作为 AI Agent 的开发或操作参考。**
+
+```bash
+cd docs/wiki && pnpm install && pnpm dev   # 本地预览
+```
+
+| 区域 | 内容 |
+|------|------|
+| `guide/` | 快速开始、安装、核心概念 |
+| `features/` | 10 项功能的精简说明（模板、生命周期、领域上下文、多后端、权限、调度器、ACP、组件源、可扩展架构、CLI） |
+| `recipes/` | 创建组件仓库、CI/CD 集成、雇员 Agent |
+| `reference/` | 架构概览、Changelog |
+
+---
+
 ### `guides/` — 教程与操作指南
 
 面向用户（人类或 AI Agent）的使用教程和操作手册。
@@ -36,6 +56,12 @@ docs/
 | `getting-started.md` | 面向人类的快速入门指南 |
 | `ai-agent-usage-guide.md` | 面向 AI Agent 的 Actant 使用手册 |
 | `ai-agent-dev-guide.md` | 面向 AI Agent 的 Actant 源码开发手册 |
+| `dev-workflow-guide.md` | 开发流程指南（Plan → Code → Review → PR → Ship → QA → Stage） |
+| `dev-environment-setup.md` | 开发环境搭建指南 |
+| `actant-hub-usage.md` | ActantHub 默认组件源的使用指南 |
+| `create-custom-hub.md` | 从零创建自定义组件源仓库 |
+
+> `features/` 子目录已合并入 `wiki/features/`，保留重定向说明。
 
 **写入规则**：人类和 AI 均可创建和更新。
 
@@ -186,6 +212,7 @@ GitHub Pages 静态站点源文件，通过 `.github/workflows/deploy-site.yml` 
 
 | 目录 | 谁可以写 | 可靠性 | 修改限制 |
 |------|---------|--------|---------|
+| `wiki/` | 生成工具 | **生成产物，不作为开发参考** | AI Agent 不应引用 |
 | `guides/` | 人类 + AI | 权威（经审阅后） | 无 |
 | `planning/` | 人类 + AI | 权威 | Roadmap 变更需与 Issues 同步 |
 | `design/` | 人类 + AI | 活文档 | 结构性变更需人类审阅 |
@@ -212,22 +239,14 @@ GitHub Pages 静态站点源文件，通过 `.github/workflows/deploy-site.yml` 
 
 ---
 
-## Wiki 构建规划
+## Wiki 站点
 
-后续将基于此目录结构构建 Wiki 站点，预期目录映射：
+Wiki 已实现，位于 `docs/wiki/`（VitePress 项目）。
 
+```bash
+cd docs/wiki && pnpm install && pnpm dev
 ```
-Wiki 首页
-├── 快速入门              → guides/getting-started.md
-├── 使用指南
-│   └── AI Agent 版       → guides/ai-agent-usage-guide.md
-├── 开发指南
-│   └── AI Agent 版       → guides/ai-agent-dev-guide.md
-├── 产品规划
-│   ├── Roadmap           → planning/roadmap.md
-│   └── Phase 归档        → planning/archive/*.md
-├── 设计文档              → design/*.md
-├── 架构决策              → decisions/*.md
-├── 版本存档              → stage/v<x.y.z>/*.md
-└── 技术报告              → reports/*.md
-```
+
+**定位**：面向人类用户的产品文档。全部内容为生成产物，AI Agent 不应以此为开发参考。
+
+**部署**：与 `docs/site/`（Landing Page）共存，可通过 GitHub Pages 发布到 `/Actant/wiki/` 路径。

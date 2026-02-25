@@ -269,9 +269,32 @@ actant self-update --dry-run    # 模拟执行
 
 ## 文档
 
+### Wiki（功能文档 & 入门指南）
+
+完整的产品文档 Wiki，使用 VitePress 构建：
+
+```bash
+cd docs/wiki && pnpm install && pnpm dev
+```
+
+| 区域 | 内容 |
+|------|------|
+| [快速开始](docs/wiki/guide/getting-started.md) | 5 分钟跑通第一个 Agent |
+| [核心概念](docs/wiki/guide/concepts.md) | Template / Instance / Domain Context |
+| [功能总览](docs/wiki/features/index.md) | 10 项功能说明（模板、生命周期、领域上下文、多后端、权限、调度器、ACP、组件源、可扩展架构、CLI） |
+| [实战教程](docs/wiki/recipes/create-hub.md) | 创建组件仓库、CI/CD 集成、雇员 Agent |
+| [架构概览](docs/wiki/reference/architecture.md) | 模块结构、通信架构、技术栈 |
+
+> Wiki 全部内容为生成产物，不作为开发参考。AI Agent 权威源为 `.trellis/spec/`、`docs/stage/`、源码。
+
+### 教程与参考
+
 | 文档 | 说明 |
 |------|------|
 | [入门指南](docs/guides/getting-started.md) | 安装、配置、第一个 Agent |
+| [开发流程指南](docs/guides/dev-workflow-guide.md) | Plan → Code → Review → PR → Ship 全流程 |
+| [ActantHub 使用指南](docs/guides/actant-hub-usage.md) | 默认组件源的使用 |
+| [创建自定义 Hub](docs/guides/create-custom-hub.md) | 从零创建组件源仓库 |
 | [v0.2.2 架构文档](docs/stage/v0.2.2/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
 | [v0.2.2 API 接口](docs/stage/v0.2.2/api-surface.md) | 62 个 RPC 方法 + 68 个 CLI 命令 |
 | [v0.2.2 变更日志](docs/stage/v0.2.2/changelog.md) | v0.2.1 → v0.2.2 变更记录 |
