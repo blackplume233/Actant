@@ -34,7 +34,7 @@
  *  │  Runtime    │ Instance │ process:* / session:* / prompt:*│
  *  │  Schedule   │ Config.  │ cron:* / heartbeat:*            │
  *  │  User       │ Config.  │ user:dispatch/run/prompt        │
- *  │  Extension  │ Any      │ plugin:* / custom:*             │
+ *  │  Extension  │ Any      │ subsystem:* / plugin:* / custom:*│
  *  └──────────────────────────────────────────────────────────┘
  *
  *  "error" and "idle" are standalone runtime events (no prefix).
@@ -242,6 +242,14 @@ export const HOOK_CATEGORIES = {
     builtinEvents: [],
     dynamic: true,
   },
+  subsystem: {
+    name: "subsystem",
+    prefix: "subsystem",
+    layer: "extension",
+    description: "Subsystem lifecycle events (activated/deactivated/error)",
+    builtinEvents: ["activated", "deactivated", "error"],
+    dynamic: false,
+  },
   custom: {
     name: "custom",
     prefix: "custom",
@@ -296,8 +304,11 @@ type UserEvents =
   | "user:prompt"
   | `user:${string}`;
 
-/** Extension-layer events: plugin + custom with dynamic suffixes. */
+/** Extension-layer events: subsystem + plugin + custom. */
 type ExtensionEvents =
+  | "subsystem:activated"
+  | "subsystem:deactivated"
+  | "subsystem:error"
   | `plugin:${string}`
   | `custom:${string}`;
 
@@ -773,6 +784,45 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
       { name: "source", type: "string", required: false, description: "Origin: cli or api" },
     ],
     allowedEmitters: ["user", "system"],
+    allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: true },
+  },
+
+  // ── Extension Layer — Subsystem ────────────────
+  {
+    event: "subsystem:activated",
+    description: "A Subsystem instance has been activated (initialized + started)",
+    emitters: ["SubsystemCollection"],
+    payloadSchema: [
+      { name: "subsystem.id", type: "string", required: true, description: "Subsystem ID" },
+      { name: "scope", type: "string", required: true, description: "Subsystem scope (actant/instance/process/session)" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+    subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
+  },
+  {
+    event: "subsystem:deactivated",
+    description: "A Subsystem instance has been deactivated (stopped + disposed)",
+    emitters: ["SubsystemCollection"],
+    payloadSchema: [
+      { name: "subsystem.id", type: "string", required: true, description: "Subsystem ID" },
+      { name: "scope", type: "string", required: true, description: "Subsystem scope" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+    subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
+  },
+  {
+    event: "subsystem:error",
+    description: "A Subsystem lifecycle hook threw an exception",
+    emitters: ["SubsystemCollection"],
+    payloadSchema: [
+      { name: "subsystem.id", type: "string", required: true, description: "Subsystem ID" },
+      { name: "phase", type: "string", required: true, description: "Lifecycle phase (initialize/start/stop/dispose)" },
+      { name: "error.message", type: "string", required: true, description: "Error message" },
+    ],
+    allowedEmitters: ["system"],
     allowedListeners: [],
     subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: true },
   },

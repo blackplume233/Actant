@@ -2,6 +2,7 @@ import { createLogger } from "@actant/shared";
 import type { AgentTask, ExecutionRecord } from "./types";
 import type { TaskQueue } from "./task-queue";
 import type { ExecutionLog } from "./execution-log";
+import type { HookEventBus } from "../hooks/hook-event-bus";
 
 const logger = createLogger("task-dispatcher");
 
@@ -9,17 +10,28 @@ export interface PromptAgentFn {
   (agentName: string, prompt: string): Promise<string>;
 }
 
+export interface TaskDispatcherOptions {
+  /** When provided, emits `idle` event when an agent's queue drains. */
+  hookEventBus?: HookEventBus;
+}
+
 export class TaskDispatcher {
   private running = false;
   private dispatchInterval: ReturnType<typeof setInterval> | null = null;
   private agentNames = new Set<string>();
+  private readonly hookEventBus?: HookEventBus;
+  /** Tracks which agents were busy (had tasks or processing) last tick. */
+  private readonly busyAgents = new Set<string>();
 
   constructor(
     private readonly queue: TaskQueue,
     private readonly log: ExecutionLog,
     private readonly promptAgent: PromptAgentFn,
     private readonly pollIntervalMs = 1000,
-  ) {}
+    options?: TaskDispatcherOptions,
+  ) {
+    this.hookEventBus = options?.hookEventBus;
+  }
 
   /** Register an agent name to be dispatched. */
   registerAgent(agentName: string): void {
@@ -29,6 +41,7 @@ export class TaskDispatcher {
   /** Unregister an agent. */
   unregisterAgent(agentName: string): void {
     this.agentNames.delete(agentName);
+    this.busyAgents.delete(agentName);
     this.queue.clear(agentName);
   }
 
@@ -58,9 +71,20 @@ export class TaskDispatcher {
       if (this.queue.isProcessing(agentName)) continue;
 
       const task = this.queue.dequeue(agentName);
-      if (!task) continue;
+      if (!task) {
+        if (this.busyAgents.has(agentName)) {
+          this.busyAgents.delete(agentName);
+          this.hookEventBus?.emit(
+            "idle",
+            { callerType: "system", callerId: "TaskDispatcher" },
+            agentName,
+            { idleSince: new Date().toISOString() },
+          );
+        }
+        continue;
+      }
 
-      // Process asynchronously (non-blocking for other agents)
+      this.busyAgents.add(agentName);
       void this.executeTask(task);
     }
   }

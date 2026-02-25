@@ -41,6 +41,7 @@ spec/
 | [记忆层与 Agent 演进](../../docs/design/memory-layer-agent-evolution.md) | 四层记忆架构、MemoryRecord、Promote 机制、Context Broker | **核心** — Phase 5 Memory 系统的蓝图 |
 | [Phase 4 推进步骤](../../docs/planning/phase4-employee-steps.md) | 14 步实施计划、依赖关系、并行策略、验收标准 | **活跃** — 当前阶段的执行指南 |
 | [Agent 动态监听场景分析](../../docs/design/scenario-agent-dynamic-listen.md) | Agent 运行时动态注册事件订阅的场景、通信通道选择（ACP/CLI）、三种订阅模型 | 参考 — Agent 自主性扩展的设计分析 |
+| [Subsystem 子系统设计](../../docs/design/subsystem-design.md) | 参考 UE Subsystem 的可热插拔辅助系统框架，四层作用域、声明式注册、生命周期绑定 | **核心** — 插件深层集成和系统功能模块化的架构基础 |
 
 ### 第二层：实现指南（Implementation Guidelines）
 

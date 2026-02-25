@@ -276,6 +276,7 @@ function initSchedulerIfNeeded(name: string, ctx: AppContext): void {
 
   const scheduler = new EmployeeScheduler(name, promptFn, {
     persistDir: join(ctx.instancesDir, name, "logs"),
+    hookEventBus: ctx.eventBus,
   });
   scheduler.configure(template.schedule as ScheduleConfigInput);
   scheduler.start();
