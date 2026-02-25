@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { HookCategoryRegistry } from "./hook-category-registry";
-import { HOOK_CATEGORIES } from "@actant/shared";
-import type { HookCategoryDefinition } from "@actant/shared";
+import { HOOK_CATEGORIES, BUILTIN_EVENT_META } from "@actant/shared";
+import type { HookCategoryDefinition, HookEventMeta } from "@actant/shared";
 
 describe("HookCategoryRegistry", () => {
   let registry: HookCategoryRegistry;
@@ -240,5 +240,141 @@ describe("HookCategoryRegistry", () => {
     expect(names).toContain("cron");
     expect(names).toContain("custom");
     expect(names.length).toBe(Object.keys(HOOK_CATEGORIES).length);
+  });
+
+  // ── Event Metadata ─────────────────────────────────────────
+
+  it("loads built-in event metadata on construction", () => {
+    expect(registry.eventMetaCount).toBe(BUILTIN_EVENT_META.length);
+    expect(registry.getEventMeta("agent:created")).toBeDefined();
+    expect(registry.getEventMeta("process:crash")).toBeDefined();
+  });
+
+  it("built-in event meta has correct structure", () => {
+    const meta = registry.getEventMeta("agent:created")!;
+    expect(meta.event).toBe("agent:created");
+    expect(meta.description).toBeTruthy();
+    expect(meta.emitters.length).toBeGreaterThan(0);
+    expect(meta.payloadSchema.length).toBeGreaterThan(0);
+
+    const nameField = meta.payloadSchema.find((f) => f.name === "agent.name");
+    expect(nameField).toBeDefined();
+    expect(nameField!.required).toBe(true);
+    expect(nameField!.type).toBe("string");
+  });
+
+  it("registerEventMeta adds custom event metadata", () => {
+    const custom: HookEventMeta = {
+      event: "custom:deploy-done",
+      description: "Deployment completed",
+      emitters: ["DeployPlugin"],
+      payloadSchema: [
+        { name: "env", type: "string", required: true, description: "Target environment" },
+      ],
+      allowedEmitters: ["plugin"],
+      allowedListeners: [],
+    };
+    registry.registerEventMeta(custom);
+
+    expect(registry.getEventMeta("custom:deploy-done")).toBe(custom);
+    expect(registry.eventMetaCount).toBe(BUILTIN_EVENT_META.length + 1);
+  });
+
+  it("listEventMeta returns all entries", () => {
+    const all = registry.listEventMeta();
+    expect(all.length).toBe(BUILTIN_EVENT_META.length);
+    expect(all.some((m) => m.event === "actant:start")).toBe(true);
+    expect(all.some((m) => m.event === "idle")).toBe(true);
+  });
+
+  it("unregister cleans up event meta for custom category", () => {
+    registry.register({
+      name: "deploy",
+      prefix: "deploy",
+      layer: "extension",
+      description: "Deploy events",
+      builtinEvents: ["started", "failed"],
+      dynamic: false,
+    });
+    registry.registerEventMeta({
+      event: "deploy:started",
+      description: "Deploy started",
+      emitters: ["DeployPlugin"],
+      payloadSchema: [],
+      allowedEmitters: [],
+      allowedListeners: [],
+    });
+
+    registry.unregister("deploy");
+    expect(registry.getEventMeta("deploy:started")).toBeUndefined();
+  });
+
+  // ── Permission Checks ─────────────────────────────────────
+
+  it("canEmit allows when no metadata exists", () => {
+    expect(registry.canEmit("custom:unknown-event", "agent")).toBe(true);
+  });
+
+  it("canEmit allows when allowedEmitters is empty", () => {
+    registry.registerEventMeta({
+      event: "custom:open-event",
+      description: "Open to all callers",
+      emitters: [],
+      payloadSchema: [],
+      allowedEmitters: [],
+      allowedListeners: [],
+    });
+    expect(registry.canEmit("custom:open-event", "agent")).toBe(true);
+    expect(registry.canEmit("custom:open-event", "user")).toBe(true);
+  });
+
+  it("canEmit allows system for system-only events", () => {
+    expect(registry.canEmit("actant:start", "system")).toBe(true);
+  });
+
+  it("canEmit blocks agent for system-only events", () => {
+    expect(registry.canEmit("actant:start", "agent")).toBe(false);
+  });
+
+  it("canEmit allows user for entity events (agent:created)", () => {
+    expect(registry.canEmit("agent:created", "user")).toBe(true);
+    expect(registry.canEmit("agent:created", "system")).toBe(true);
+  });
+
+  it("canEmit blocks plugin for entity events without permission", () => {
+    expect(registry.canEmit("agent:created", "plugin")).toBe(false);
+  });
+
+  it("canListen allows all when allowedListeners is empty", () => {
+    expect(registry.canListen("agent:created", "system")).toBe(true);
+    expect(registry.canListen("agent:created", "agent")).toBe(true);
+    expect(registry.canListen("agent:created", "plugin")).toBe(true);
+    expect(registry.canListen("agent:created", "user")).toBe(true);
+  });
+
+  it("canListen respects non-empty allowedListeners", () => {
+    registry.registerEventMeta({
+      event: "custom:restricted",
+      description: "Restricted event",
+      emitters: [],
+      payloadSchema: [],
+      allowedEmitters: [],
+      allowedListeners: ["system", "plugin"],
+    });
+
+    expect(registry.canListen("custom:restricted", "system")).toBe(true);
+    expect(registry.canListen("custom:restricted", "plugin")).toBe(true);
+    expect(registry.canListen("custom:restricted", "agent")).toBe(false);
+    expect(registry.canListen("custom:restricted", "user")).toBe(false);
+  });
+
+  // ── buildEmitGuard ─────────────────────────────────────────
+
+  it("buildEmitGuard returns a function that checks canEmit", () => {
+    const guard = registry.buildEmitGuard();
+
+    expect(guard("actant:start", { callerType: "system" })).toBe(true);
+    expect(guard("actant:start", { callerType: "agent" })).toBe(false);
+    expect(guard("custom:any", { callerType: "agent" })).toBe(true);
   });
 });

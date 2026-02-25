@@ -1,33 +1,46 @@
 import { createLogger } from "@actant/shared";
 import {
   HOOK_CATEGORIES,
+  BUILTIN_EVENT_META,
   type HookCategoryDefinition,
   type HookCategoryMeta,
   type HookCategoryName,
+  type HookCallerType,
+  type HookEventMeta,
   type HookLayer,
 } from "@actant/shared";
 
 const logger = createLogger("hook-category-registry");
 
 /**
- * Runtime registry for hook categories.
+ * Runtime registry for hook categories and event metadata.
  *
- * Holds the built-in categories (from HOOK_CATEGORIES) and accepts
- * additional categories registered by plugins at runtime.
+ * Holds the built-in categories (from HOOK_CATEGORIES) and built-in
+ * event metadata (from BUILTIN_EVENT_META), and accepts additional
+ * categories/events registered by plugins at runtime.
  *
- * Provides validation helpers so the event bus and registry can
- * verify that an event name belongs to a known category.
+ * Provides:
+ *   - Category CRUD (register / unregister / query)
+ *   - Event validation (is this event name known?)
+ *   - Event metadata lookup (description, payload schema, emitters)
+ *   - Emit permission checks (can this caller type emit this event?)
  */
 export class HookCategoryRegistry {
   private readonly categories = new Map<string, HookCategoryMeta>();
   private readonly prefixIndex = new Map<string, HookCategoryMeta>();
+  private readonly eventMeta = new Map<string, HookEventMeta>();
 
   constructor() {
     for (const meta of Object.values(HOOK_CATEGORIES)) {
       this.categories.set(meta.name, meta);
       this.prefixIndex.set(meta.prefix, meta);
     }
+    for (const em of BUILTIN_EVENT_META) {
+      this.eventMeta.set(em.event, em);
+    }
   }
+
+  // ── Category Registration ──────────────────────────────────
 
   /**
    * Register a new hook category (typically called by plugins).
@@ -83,11 +96,16 @@ export class HookCategoryRegistry {
     const meta = this.categories.get(name);
     if (!meta) return false;
 
+    for (const suffix of meta.builtinEvents) {
+      this.eventMeta.delete(`${meta.prefix}:${suffix}`);
+    }
     this.categories.delete(name);
     this.prefixIndex.delete(meta.prefix);
     logger.info({ category: name }, "Hook category unregistered");
     return true;
   }
+
+  // ── Category Queries ───────────────────────────────────────
 
   /** Get metadata for a category by name. */
   get(name: string): HookCategoryMeta | undefined {
@@ -120,6 +138,8 @@ export class HookCategoryRegistry {
       (c) => !(c.name in HOOK_CATEGORIES),
     );
   }
+
+  // ── Event Resolution & Validation ─────────────────────────
 
   /**
    * Resolve an event name to its category.
@@ -182,9 +202,79 @@ export class HookCategoryRegistry {
     return events;
   }
 
+  // ── Event Metadata ─────────────────────────────────────────
+
+  /** Register metadata for a specific event. */
+  registerEventMeta(meta: HookEventMeta): void {
+    this.eventMeta.set(meta.event, meta);
+  }
+
+  /** Get metadata for a specific event. */
+  getEventMeta(eventName: string): HookEventMeta | undefined {
+    return this.eventMeta.get(eventName);
+  }
+
+  /** List all registered event metadata entries. */
+  listEventMeta(): HookEventMeta[] {
+    return [...this.eventMeta.values()];
+  }
+
+  // ── Permission Checks ─────────────────────────────────────
+
+  /**
+   * Check whether a caller type is permitted to emit a given event.
+   *
+   * Rules:
+   *   - If no event metadata is registered, emission is allowed (open by default)
+   *   - If metadata exists but allowedEmitters is empty, emission is allowed
+   *   - Otherwise, callerType must be in allowedEmitters
+   */
+  canEmit(eventName: string, callerType: HookCallerType): boolean {
+    const meta = this.eventMeta.get(eventName);
+    if (!meta) return true;
+    if (meta.allowedEmitters.length === 0) return true;
+    return meta.allowedEmitters.includes(callerType);
+  }
+
+  /**
+   * Check whether a caller type is permitted to listen to a given event.
+   *
+   * Same rules as canEmit but checks allowedListeners.
+   */
+  canListen(eventName: string, callerType: HookCallerType): boolean {
+    const meta = this.eventMeta.get(eventName);
+    if (!meta) return true;
+    if (meta.allowedListeners.length === 0) return true;
+    return meta.allowedListeners.includes(callerType);
+  }
+
+  /**
+   * Build an EmitGuard function that the HookEventBus can use.
+   * This closes over the registry to check canEmit on every emit call.
+   */
+  buildEmitGuard(): (event: string, context: { callerType: HookCallerType }) => boolean {
+    return (event: string, context: { callerType: HookCallerType }) => {
+      const allowed = this.canEmit(event, context.callerType);
+      if (!allowed) {
+        logger.warn(
+          { event, callerType: context.callerType },
+          "Emit blocked: caller type not in allowedEmitters",
+        );
+      }
+      return allowed;
+    };
+  }
+
+  // ── General ────────────────────────────────────────────────
+
   /** Number of registered categories. */
   get size(): number {
     return this.categories.size;
+  }
+
+  /** Number of registered event metadata entries. */
+  get eventMetaCount(): number {
+    return this.eventMeta.size;
   }
 
   /** Get the names of all built-in categories. */

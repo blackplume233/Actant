@@ -72,8 +72,12 @@ export type {
   HookRetryPolicy,
   HookScope,
   HookCategoryDefinition,
+  HookCallerType,
+  HookEmitContext,
+  HookPayloadFieldSchema,
+  HookEventMeta,
 } from "./hook.types";
-export { HOOK_CATEGORIES } from "./hook.types";
+export { HOOK_CATEGORIES, BUILTIN_EVENT_META } from "./hook.types";
 export type {
   ValidationSeverity,
   ValidationIssue,

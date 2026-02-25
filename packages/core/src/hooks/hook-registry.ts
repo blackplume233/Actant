@@ -54,6 +54,16 @@ export class HookRegistry {
       const listener = (payload: HookEventPayload) => {
         if (level === "instance" && payload.agentName !== agentName) return;
 
+        if (declaration.allowedCallers?.length) {
+          if (!declaration.allowedCallers.includes(payload.callerType)) {
+            logger.debug(
+              { workflow: workflow.name, event: declaration.on, callerType: payload.callerType },
+              "Hook skipped: caller type not in allowedCallers",
+            );
+            return;
+          }
+        }
+
         runActions(declaration.actions, payload, this.actionCtx)
           .then((results: ActionResult[]) => {
             const failed = results.filter((r) => !r.success);
@@ -119,12 +129,14 @@ export class HookRegistry {
   }
 
   /** List all registered hooks (for debugging / CLI). */
-  listHooks(): { workflowName: string; level: string; agentName?: string; event: string }[] {
+  listHooks(): { workflowName: string; level: string; agentName?: string; event: string; description?: string; allowedCallers?: string[] }[] {
     return this.hooks.map((h) => ({
       workflowName: h.workflowName,
       level: h.level,
       agentName: h.agentName,
       event: h.declaration.on,
+      description: h.declaration.description,
+      allowedCallers: h.declaration.allowedCallers,
     }));
   }
 

@@ -66,6 +66,40 @@
  *  • retry      — retry policy for transient failures
  *  • timeoutMs  — max wall-clock time for the entire hook
  *  • description — human-readable intent
+ *  • allowedCallers — restrict which caller types can trigger this hook
+ *
+ * ═══════════════════════════════════════════════════════════════
+ *  Caller Model & Permissions
+ * ═══════════════════════════════════════════════════════════════
+ *
+ *  Every emit() carries an HookEmitContext identifying the caller:
+ *
+ *  ┌─────────────┬──────────────────────────────────────────────┐
+ *  │ CallerType  │ Description                                  │
+ *  ├─────────────┼──────────────────────────────────────────────┤
+ *  │ system      │ Actant daemon internals (AgentManager, etc.) │
+ *  │ agent       │ LLM-driven agent via ACP session             │
+ *  │ plugin      │ User-installed plugin code                   │
+ *  │ user        │ Human via CLI or API                         │
+ *  └─────────────┴──────────────────────────────────────────────┘
+ *
+ *  Permissions are enforced at two levels:
+ *    • Emit-side:  HookEventMeta.allowedEmitters restricts who can fire
+ *    • Listen-side: HookDeclaration.allowedCallers restricts which
+ *                   caller-originated events this hook reacts to
+ *
+ * ═══════════════════════════════════════════════════════════════
+ *  Event Metadata & Payload Schema
+ * ═══════════════════════════════════════════════════════════════
+ *
+ *  Each registered event type carries HookEventMeta describing:
+ *    • description  — human-readable purpose
+ *    • payloadSchema — describes data fields the event provides
+ *    • emitters     — which system components emit this event
+ *    • allowedEmitters — caller types permitted to emit
+ *    • allowedListeners — caller types permitted to listen
+ *
+ *  BUILTIN_EVENT_META provides metadata for all built-in events.
  */
 
 // ─────────────────────────────────────────────────────────────
@@ -292,6 +326,17 @@ export interface HookDeclaration {
   timeoutMs?: number;
   /** Human-readable description of what this hook does. */
   description?: string;
+  /**
+   * Restrict this hook to only fire when the event was emitted by
+   * one of these caller types. Omit or empty array = no restriction.
+   *
+   * @example
+   * ```yaml
+   * # Only react to events emitted by system code, ignore agent-initiated ones
+   * allowedCallers: ["system"]
+   * ```
+   */
+  allowedCallers?: HookCallerType[];
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -343,3 +388,259 @@ export interface HookCategoryDefinition {
   /** If true, allows arbitrary suffixes beyond builtinEvents. */
   dynamic: boolean;
 }
+
+// ─────────────────────────────────────────────────────────────
+//  § 7  Caller Identity & Permissions
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Identifies what kind of entity emitted or is listening to a hook event.
+ *
+ *   system — Actant daemon internals (AgentManager, ProcessWatcher, etc.)
+ *   agent  — LLM-driven agent operating via ACP session
+ *   plugin — User-installed plugin executing within the Actant process
+ *   user   — Human operator via CLI command or REST API
+ */
+export type HookCallerType = "system" | "agent" | "plugin" | "user";
+
+/**
+ * Context attached to every hook emit(), identifying who triggered the event.
+ * The event bus uses this for permission checks and audit logging.
+ */
+export interface HookEmitContext {
+  /** What kind of entity is emitting this event. */
+  callerType: HookCallerType;
+  /** Identifier of the caller (e.g. agent name, plugin name, "daemon", username). */
+  callerId?: string;
+  /** For agent callers: the specific ACP session ID. */
+  sessionId?: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  § 8  Event Metadata & Payload Schema
+// ─────────────────────────────────────────────────────────────
+
+/** Describes a single field in an event's payload. */
+export interface HookPayloadFieldSchema {
+  /** Field name (dot-path for nested, e.g. "agent.name"). */
+  name: string;
+  /** TypeScript-like type hint (e.g. "string", "number", "Record<string, unknown>"). */
+  type: string;
+  /** Whether this field is always present. */
+  required: boolean;
+  /** Human-readable description. */
+  description: string;
+}
+
+/**
+ * Metadata for a specific hook event type.
+ * Used by HookCategoryRegistry to document what each event means,
+ * what payload it carries, and who is allowed to emit/listen.
+ */
+export interface HookEventMeta {
+  /** Full event name (e.g. "agent:created", "process:crash"). */
+  event: string;
+  /** Human-readable description of when this event fires. */
+  description: string;
+  /** Which system component(s) are responsible for emitting this event. */
+  emitters: string[];
+  /** Payload fields this event provides in `data`. */
+  payloadSchema: HookPayloadFieldSchema[];
+  /** Caller types permitted to emit this event. Empty = all allowed. */
+  allowedEmitters: HookCallerType[];
+  /** Caller types permitted to listen to this event. Empty = all allowed. */
+  allowedListeners: HookCallerType[];
+}
+
+// ─────────────────────────────────────────────────────────────
+//  § 9  Built-in Event Metadata Registry
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Metadata for all built-in hook events.
+ *
+ * This is the single source of truth for:
+ *   - What each event means (description)
+ *   - Who fires it (emitters)
+ *   - What data it carries (payloadSchema)
+ *   - Who is allowed to emit / listen (permissions)
+ */
+export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
+  // ── System Layer ──────────────────────────────────────────
+  {
+    event: "actant:start",
+    description: "Actant daemon process has started and is ready",
+    emitters: ["Daemon (main)"],
+    payloadSchema: [
+      { name: "version", type: "string", required: false, description: "Daemon version" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+  {
+    event: "actant:stop",
+    description: "Actant daemon is shutting down gracefully",
+    emitters: ["Daemon (main)"],
+    payloadSchema: [
+      { name: "reason", type: "string", required: false, description: "Shutdown reason" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+
+  // ── Entity Layer ──────────────────────────────────────────
+  {
+    event: "agent:created",
+    description: "A new agent instance has been created (workspace initialized)",
+    emitters: ["AgentManager.createAgent"],
+    payloadSchema: [
+      { name: "agent.name", type: "string", required: true, description: "Instance name" },
+      { name: "agent.template", type: "string", required: true, description: "Template name used" },
+      { name: "agent.backendType", type: "string", required: true, description: "Backend type" },
+    ],
+    allowedEmitters: ["system", "user"],
+    allowedListeners: [],
+  },
+  {
+    event: "agent:destroyed",
+    description: "An agent instance has been destroyed (workspace removed)",
+    emitters: ["AgentManager.destroyAgent"],
+    payloadSchema: [
+      { name: "agent.name", type: "string", required: true, description: "Instance name" },
+    ],
+    allowedEmitters: ["system", "user"],
+    allowedListeners: [],
+  },
+  {
+    event: "agent:modified",
+    description: "An agent instance configuration has been changed",
+    emitters: ["AgentManager (config update)"],
+    payloadSchema: [
+      { name: "agent.name", type: "string", required: true, description: "Instance name" },
+      { name: "changes", type: "string[]", required: false, description: "Changed field paths" },
+    ],
+    allowedEmitters: ["system", "user"],
+    allowedListeners: [],
+  },
+  {
+    event: "source:updated",
+    description: "A component source has been synced or updated",
+    emitters: ["SourceManager.sync"],
+    payloadSchema: [
+      { name: "source.name", type: "string", required: true, description: "Source name" },
+      { name: "source.type", type: "string", required: false, description: "Source type (github/local/community)" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+
+  // ── Runtime Layer (instance-scoped) ───────────────────────
+  {
+    event: "process:start",
+    description: "An agent's backend process has been spawned",
+    emitters: ["AgentManager.startAgent"],
+    payloadSchema: [
+      { name: "pid", type: "number", required: false, description: "OS process ID" },
+      { name: "backendType", type: "string", required: false, description: "Backend type" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+  {
+    event: "process:stop",
+    description: "An agent's backend process has stopped normally",
+    emitters: ["AgentManager.stopAgent"],
+    payloadSchema: [
+      { name: "pid", type: "number", required: false, description: "OS process ID" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+  {
+    event: "process:crash",
+    description: "An agent's backend process exited unexpectedly",
+    emitters: ["ProcessWatcher.poll"],
+    payloadSchema: [
+      { name: "pid", type: "number", required: true, description: "OS process ID" },
+      { name: "exitCode", type: "number", required: false, description: "Exit code if available" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+  {
+    event: "process:restart",
+    description: "An agent's backend process is being restarted after crash",
+    emitters: ["AgentManager.handleProcessExit (via RestartTracker)"],
+    payloadSchema: [
+      { name: "attempt", type: "number", required: true, description: "Restart attempt number" },
+      { name: "delayMs", type: "number", required: false, description: "Backoff delay applied" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+  {
+    event: "session:start",
+    description: "A new ACP session has been created for an agent",
+    emitters: ["AcpConnectionManager.connect"],
+    payloadSchema: [
+      { name: "sessionId", type: "string", required: true, description: "ACP session ID" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+  {
+    event: "session:end",
+    description: "An ACP session has ended",
+    emitters: ["AcpConnectionManager.disconnect"],
+    payloadSchema: [
+      { name: "sessionId", type: "string", required: true, description: "ACP session ID" },
+      { name: "reason", type: "string", required: false, description: "End reason" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+  {
+    event: "prompt:before",
+    description: "A prompt is about to be sent to an agent (interception point)",
+    emitters: ["AgentManager.runPrompt", "AgentManager.promptAgent"],
+    payloadSchema: [
+      { name: "prompt", type: "string", required: true, description: "The prompt text" },
+      { name: "sessionId", type: "string", required: false, description: "ACP session ID" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+  {
+    event: "prompt:after",
+    description: "An agent has finished responding to a prompt",
+    emitters: ["AgentManager.runPrompt", "AgentManager.promptAgent"],
+    payloadSchema: [
+      { name: "prompt", type: "string", required: true, description: "Original prompt text" },
+      { name: "responseLength", type: "number", required: false, description: "Response character count" },
+      { name: "durationMs", type: "number", required: false, description: "Round-trip duration" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+  {
+    event: "error",
+    description: "An agent encountered a runtime error",
+    emitters: ["AgentManager (various)", "ActionRunner"],
+    payloadSchema: [
+      { name: "error.message", type: "string", required: true, description: "Error message" },
+      { name: "error.code", type: "string", required: false, description: "Error code" },
+    ],
+    allowedEmitters: ["system", "agent", "plugin"],
+    allowedListeners: [],
+  },
+  {
+    event: "idle",
+    description: "An agent has entered idle state (no pending tasks or sessions)",
+    emitters: ["EmployeeScheduler", "IdleDetector"],
+    payloadSchema: [
+      { name: "idleSince", type: "string", required: false, description: "ISO timestamp of idle start" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+] as const;
