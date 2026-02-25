@@ -477,6 +477,22 @@ export interface HookPayloadFieldSchema {
 }
 
 /**
+ * Describes which subscription models an event supports.
+ *
+ *   systemMandatory  — System has hardcoded internal handlers for this event
+ *                       (e.g. process:crash → restart policy). Cannot be disabled.
+ *   userConfigurable — Human operator can attach Workflow JSON actions.
+ *   agentSubscribable — A running Agent can dynamically subscribe at runtime
+ *                        via CLI (`actant hook subscribe`). Only meaningful for
+ *                        events that fire while the agent process is alive.
+ */
+export interface EventSubscriptionModels {
+  systemMandatory: boolean;
+  userConfigurable: boolean;
+  agentSubscribable: boolean;
+}
+
+/**
  * Metadata for a specific hook event type.
  * Used by HookCategoryRegistry to document what each event means,
  * what payload it carries, and who is allowed to emit/listen.
@@ -494,6 +510,8 @@ export interface HookEventMeta {
   allowedEmitters: HookCallerType[];
   /** Caller types permitted to listen to this event. Empty = all allowed. */
   allowedListeners: HookCallerType[];
+  /** Which subscription models this event supports. */
+  subscriptionModels: EventSubscriptionModels;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -508,6 +526,7 @@ export interface HookEventMeta {
  *   - Who fires it (emitters)
  *   - What data it carries (payloadSchema)
  *   - Who is allowed to emit / listen (permissions)
+ *   - Which subscription models apply (system mandatory / user / agent)
  */
 export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
   // ── System Layer ──────────────────────────────────────────
@@ -520,6 +539,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: false },
   },
   {
     event: "actant:stop",
@@ -530,6 +550,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: false },
   },
 
   // ── Entity Layer ──────────────────────────────────────────
@@ -544,6 +565,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system", "user"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: false },
   },
   {
     event: "agent:destroyed",
@@ -554,6 +576,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system", "user"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: false },
   },
   {
     event: "agent:modified",
@@ -565,6 +588,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system", "user"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
   },
   {
     event: "source:updated",
@@ -576,6 +600,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
   },
 
   // ── Runtime Layer (instance-scoped) ───────────────────────
@@ -589,6 +614,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: false },
   },
   {
     event: "process:stop",
@@ -599,6 +625,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: false },
   },
   {
     event: "process:crash",
@@ -610,6 +637,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: false },
   },
   {
     event: "process:restart",
@@ -621,6 +649,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: false },
   },
   {
     event: "session:start",
@@ -631,6 +660,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: true },
   },
   {
     event: "session:end",
@@ -642,6 +672,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: true },
   },
   {
     event: "prompt:before",
@@ -653,6 +684,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
   },
   {
     event: "prompt:after",
@@ -665,6 +697,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
   },
   {
     event: "error",
@@ -676,6 +709,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system", "agent", "plugin"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: true },
   },
   {
     event: "idle",
@@ -686,6 +720,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
   },
 
   // ── Schedule Layer ────────────────────────────────────────
@@ -699,6 +734,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
   },
 
   // ── User Layer ────────────────────────────────────────────
@@ -713,6 +749,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["user", "system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: true },
   },
   {
     event: "user:run",
@@ -724,6 +761,7 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["user", "system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: true },
   },
   {
     event: "user:prompt",
@@ -736,5 +774,6 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     ],
     allowedEmitters: ["user", "system"],
     allowedListeners: [],
+    subscriptionModels: { systemMandatory: true, userConfigurable: true, agentSubscribable: true },
   },
 ] as const;

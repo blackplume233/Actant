@@ -308,23 +308,86 @@ AgentTemplate.schedule.hooks[i]
 | `HookRegistry.registerWorkflow()` | 系统代码 | AgentManager 初始化时 |
 | `HookCategoryRegistry.register()` | 插件 | Plugin.init() |
 | `eventBus.emit()` | 任何代码 | 需通过 EmitGuard 校验 |
+| `actant hook subscribe` CLI | Agent (运行时) | Bash 工具 → RPC → Daemon |
 
 ---
 
-## 7. 程序设计模式
+## 7. 事件订阅模型
+
+### 7.1 三种订阅模型
+
+每个事件都需要回答：**谁决定 Agent 要关心这个事件？**
+
+| 模型 | 决定者 | 生命周期 | 机制 |
+|------|--------|---------|------|
+| **A: 系统强制推送** | 系统代码硬编码 | 永久 | 不走 HookRegistry，是系统内部 if-then |
+| **B: 用户配置 Action** | 人类操作者 | Agent 实例生命周期 | Workflow JSON → HookRegistry |
+| **C: Agent 自注册** | Agent 运行时决定 | Ephemeral（进程存活期间） | CLI `actant hook subscribe` → RPC → HookRegistry |
+
+### 7.2 通信通道：ACP/CLI，而非 MCP
+
+Agent 动态订阅（模型 C）的通信通道选择：
+
+- **MCP**: ✗ 错误选择。MCP 是 Agent 连接外部工具的协议，不是管理自身运行时。
+- **ACP 原生扩展**: ○ 未来方向。等 ACP 协议支持 custom server-side capabilities。
+- **CLI**: ✅ 推荐。所有 backend (Claude Code, Cursor, Pi) 都有 shell 能力。
+  Agent 通过 `Bash("actant hook subscribe ...")` 调用。
+
+```bash
+# Agent 注册定期轮询
+actant hook subscribe --agent self --event heartbeat:tick \
+  --interval 300000 --prompt "Check for new PRs"
+
+# Agent 取消订阅
+actant hook unsubscribe --agent self --id <subscriptionId>
+
+# Agent 查看自己的动态订阅
+actant hook list --agent self --dynamic
+```
+
+### 7.3 完整事件订阅矩阵
+
+`HookEventMeta.subscriptionModels` 为每个内置事件标注了支持的订阅模型。
+
+| 事件 | A: 系统强制 | B: 用户配置 | C: Agent 自注册 | 原因 |
+|------|:-:|:-:|:-:|------|
+| `actant:start/stop` | ✅ | ✅ | ✗ | Agent 未运行或正在关闭 |
+| `agent:created/destroyed` | ✅ | ✅ | ✗ | 自身正被创建/销毁 |
+| `agent:modified` | — | ✅ | ✅ | Agent 可关心自己的配置变更 |
+| `source:updated` | — | ✅ | ✅ | Agent 可关心代码源变化 |
+| `process:start/stop/crash/restart` | ✅ | ✅ | ✗ | 进程不存在时 handler 无法执行 |
+| `session:start/end` | ✅ | ✅ | ✅ | Agent 可追踪 session 状态 |
+| `prompt:before/after` | — | ✅ | ✅ | Agent 可拦截/后处理 prompt |
+| `error` | ✅ | ✅ | ✅ | Agent 可注册自定义错误处理 |
+| `idle` | — | ✅ | ✅ | Agent 可决定空闲时做什么 |
+| `heartbeat:tick` | — | ✅ | ✅ | Agent 可动态创建轮询 |
+| `cron:*` | — | ✅ | ✅ | Agent 可动态创建定时任务 |
+| `user:dispatch/run/prompt` | ✅ | ✅ | ✅ | 系统路由 + 用户/agent 可拦截 |
+| `plugin:*/custom:*` | — | ✅ | ✅ | 扩展事件，完全开放 |
+
+**关键规律**:
+- 模型 A 不走 HookRegistry — 是系统行为代码的一部分
+- 模型 B 覆盖所有事件 — Workflow 系统的核心用例
+- 模型 C 排除 Agent 进程不存在时触发的事件 — 逻辑上无法自注册
+
+`HookCategoryRegistry.isAgentSubscribable()` 方法在运行时校验模型 C 的合法性。
+
+---
+
+## 8. 程序设计模式
 
 | 模式 | 组件 | 职责 |
 |------|------|------|
 | **Observer** | EventBus (HookEventBus) | 发布-订阅事件分发 |
 | **Registry** | HookRegistry | Workflow ↔ 事件绑定的生命周期管理 |
-| **Registry** | HookCategoryRegistry | 事件类型分类元数据 + 权限检查 |
+| **Registry** | HookCategoryRegistry | 事件类型分类 + 权限 + subscriptionModels |
 | **Strategy** | ActionRunner | 按 action type × target archetype 分派执行策略 |
 | **Queue** | TaskQueue | employee archetype 专用串行排队 |
-| **Guard** | EmitGuard + allowedCallers | 双层权限拦截 |
+| **Guard** | EmitGuard + allowedCallers + isAgentSubscribable | 三层权限拦截 |
 
 ---
 
-## 8. 与现有系统的关系
+## 9. 与现有系统的关系
 
 | 现有概念 | 统一后 | 变化 |
 |---------|--------|------|
@@ -344,7 +407,7 @@ AgentTemplate.schedule.hooks[i]
 
 ---
 
-## 9. 不做什么
+## 10. 不做什么
 
 - **不做 Event Sourcing**: 事件用于触发动作，不用于状态重建
 - **不做分布式事件**: 事件总线是进程内的，不跨进程
@@ -352,7 +415,7 @@ AgentTemplate.schedule.hooks[i]
 
 ---
 
-## 10. 设计决策记录
+## 11. 设计决策记录
 
 ### D1: 事件链深度限制
 
@@ -416,7 +479,7 @@ Workflow 声明与 Actant 的所有其他配置（template、manifest、backend�
 
 ---
 
-## 11. 关联 Issues
+## 12. 关联 Issues
 
 | Issue | 说明 |
 |-------|------|
@@ -425,4 +488,5 @@ Workflow 声明与 Actant 的所有其他配置（template、manifest、backend�
 | #153 | Instance Interaction Archetype（archetype 字段已实现，本设计依赖它） |
 | #14 | Plugin 系统（Plugin 通过 HookCategoryRegistry 扩展事件） |
 | #47 | EmployeeScheduler（本设计将其重构为 EventBus 消费者） |
-| **NEW** | Service Instance 多 session 与 Instance 并发模型 |
+| #171 | Service Instance 多 session 与 Instance 并发模型 |
+| — | 场景分析: Agent 动态监听 (`scenario-agent-dynamic-listen.md`) |

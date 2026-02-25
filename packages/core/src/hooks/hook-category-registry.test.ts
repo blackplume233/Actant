@@ -360,12 +360,39 @@ describe("HookCategoryRegistry", () => {
       payloadSchema: [],
       allowedEmitters: [],
       allowedListeners: ["system", "plugin"],
+      subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
     });
 
     expect(registry.canListen("custom:restricted", "system")).toBe(true);
     expect(registry.canListen("custom:restricted", "plugin")).toBe(true);
     expect(registry.canListen("custom:restricted", "agent")).toBe(false);
     expect(registry.canListen("custom:restricted", "user")).toBe(false);
+  });
+
+  // ── isAgentSubscribable ───────────────────────────────────
+
+  it("isAgentSubscribable returns true for events with agentSubscribable=true", () => {
+    expect(registry.isAgentSubscribable("heartbeat:tick")).toBe(true);
+    expect(registry.isAgentSubscribable("prompt:before")).toBe(true);
+    expect(registry.isAgentSubscribable("prompt:after")).toBe(true);
+    expect(registry.isAgentSubscribable("idle")).toBe(true);
+    expect(registry.isAgentSubscribable("source:updated")).toBe(true);
+  });
+
+  it("isAgentSubscribable returns false for system-only events", () => {
+    expect(registry.isAgentSubscribable("actant:start")).toBe(false);
+    expect(registry.isAgentSubscribable("actant:stop")).toBe(false);
+    expect(registry.isAgentSubscribable("agent:created")).toBe(false);
+    expect(registry.isAgentSubscribable("agent:destroyed")).toBe(false);
+    expect(registry.isAgentSubscribable("process:crash")).toBe(false);
+    expect(registry.isAgentSubscribable("process:start")).toBe(false);
+    expect(registry.isAgentSubscribable("process:stop")).toBe(false);
+    expect(registry.isAgentSubscribable("process:restart")).toBe(false);
+  });
+
+  it("isAgentSubscribable returns true for unknown events (open by default)", () => {
+    expect(registry.isAgentSubscribable("custom:anything")).toBe(true);
+    expect(registry.isAgentSubscribable("plugin:whatever")).toBe(true);
   });
 
   // ── buildEmitGuard ─────────────────────────────────────────

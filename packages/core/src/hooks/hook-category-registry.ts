@@ -249,6 +249,17 @@ export class HookCategoryRegistry {
   }
 
   /**
+   * Check whether an event supports agent self-subscription at runtime.
+   * Returns false if event metadata exists and agentSubscribable is false.
+   * Events without metadata are assumed subscribable (open by default).
+   */
+  isAgentSubscribable(eventName: string): boolean {
+    const meta = this.eventMeta.get(eventName);
+    if (!meta) return true;
+    return meta.subscriptionModels.agentSubscribable;
+  }
+
+  /**
    * Build an EmitGuard function that the HookEventBus can use.
    * This closes over the registry to check canEmit on every emit call.
    */
