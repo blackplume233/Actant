@@ -3,7 +3,7 @@
 **启动时间**: 2026-02-25 09:55
 **当前时间**: 2026-02-25 09:55
 **总运行时长**: 0 分钟
-**基线 HEAD 变迁**: aec18f7a → afc2ae0 → 0e4ed49 → 51ec005 → 7f57024 → 7bcd996 → 2c860a9 → 2f4c3e7 → 8aa4d83
+**基线 HEAD 变迁**: aec18f7a → ... → 8aa4d83 → 6aa2be5
 **配置**: interval=10min, mock=true, scenario=random-walk-comprehensive
 
 ## 测试轮次
@@ -18,6 +18,7 @@
 | R6 | 13:50 | 新 ship | 2c860a9 | 49/50 | 1 | 0 | 98% |
 | R7 | 14:05 | 新 ship | 2f4c3e7 | BUILD FAIL | — | — | N/A |
 | R8 | 14:50 | 新 ship | 8aa4d83 | BUILD FAIL | — | — | N/A |
+| R9 | 15:15 | 新 ship | 6aa2be5 | 49/50 | 1 | 0 | 98% |
 
 ## 监测检查记录
 
@@ -38,6 +39,8 @@
 | 14:00 | 2c860a9 | 新 ship → Round 7 (BUILD FAIL) |
 | 14:15-14:35 | 2f4c3e7 | 无变化 (连续3次) |
 | 14:45 | 2f4c3e7 | 新 ship → Round 8 (BUILD FAIL) |
+| 14:55 | 8aa4d83 | 无变化 |
+| 15:05 | 8aa4d83 | 新 ship → Round 9 |
 
 ## 覆盖的 PR
 
@@ -53,7 +56,8 @@
 | #170 | feat(source): community source type | R5 PASS |
 | #172 | fix(issue-cli): CJK encoding | R5 未覆盖（CLI 级） |
 | #174 | docs(issues): scheduler 4-mode design | R6 PASS |
-| #175 | feat: Instance Interaction Archetype | R7 BUILD FAIL (picomatch types) |
+| #175 | feat: Instance Interaction Archetype | R7 BUILD FAIL → R9 PASS |
+| #159 | feat(hooks): Hook type system + event bus | R9 PASS |
 
 ## 通过率趋势
 
@@ -66,6 +70,7 @@ R5: █████████░ 96%
 R6: █████████░ 98%
 R7: ░░░░░░░░░░ BUILD FAIL (picomatch)
 R8: ░░░░░░░░░░ BUILD FAIL (picomatch)
+R9: █████████░ 98%
 ```
 
 ## 状态

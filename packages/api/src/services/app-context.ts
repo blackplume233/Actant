@@ -227,40 +227,24 @@ export class AppContext {
     }
   }
 
+  /**
+   * Augment the Pi builtin backend with runtime-only properties.
+   *
+   * The static definition (supportedModes, resolveCommand, materialization)
+   * is already registered by `@actant/core/builtin-backends`.
+   * Here we add:
+   *   - `acpOwnsProcess: true`  → AcpConnectionManager owns the process in production
+   *   - acpResolver             → reliable path via process.execPath + ACP_BRIDGE_PATH
+   *   - providerEnv builder     → injects API keys / model config
+   *   - PiBuilder + PiCommunicator
+   */
   private registerPiBackend(): void {
-    const piMaterialization = {
-      configDir: ".pi",
-      scaffoldDirs: [".pi/skills", ".pi/prompts"],
-      components: {
-        skills: { mode: "dual" as const, outputDir: ".pi/skills", extension: ".md" },
-        prompts: { mode: "per-file" as const, output: ".pi/prompts" },
-        mcpServers: { enabled: false },
-        plugins: { enabled: false },
-        permissions: { mode: "tools-only" as const, outputFile: ".pi/settings.json" },
-        workflow: { outputFile: ".trellis/workflow.md" },
-      },
-      verifyChecks: [{ path: "AGENTS.md", type: "file" as const, severity: "error" as const }],
-    };
-
     const mgr = getBackendManager();
     const existing = mgr.get("pi");
     if (existing) {
-      mgr.register({ ...existing, acpOwnsProcess: true, origin: { type: "builtin" }, materialization: existing.materialization ?? piMaterialization });
-    } else {
-      mgr.register({
-        name: "pi",
-        version: "1.0.0",
-        description: "Pi — lightweight in-process AI agent powered by local/cloud LLMs",
-        tags: ["agent", "in-process", "llm"],
-        origin: { type: "builtin" },
-        supportedModes: ["acp"],
-        acpOwnsProcess: true,
-        install: [
-          { type: "manual", label: "Included with Actant", instructions: "Pi is bundled with Actant — no separate installation required." },
-        ],
-        materialization: piMaterialization,
-      });
+      mgr.register({ ...existing, acpOwnsProcess: true });
     }
+
     mgr.registerAcpResolver("pi", () => ({
       command: process.execPath,
       args: [ACP_BRIDGE_PATH],
@@ -287,7 +271,7 @@ export class AppContext {
     });
     this.agentInitializer.workspaceBuilder.registerBuilder(new PiBuilder());
     registerCommunicator("pi", (backendConfig) => new PiCommunicator(configFromBackend(backendConfig)));
-    logger.info("Pi backend registered (in-process, acp mode only)");
+    logger.info("Pi backend augmented (acpOwnsProcess: true, resolver registered)");
   }
 
   private async autoStartAgents(): Promise<void> {

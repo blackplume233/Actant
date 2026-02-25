@@ -40,27 +40,25 @@ export function isAcpOnlyBackend(backendType: AgentBackendType): boolean {
 
 /**
  * Build launch arguments for a backend.
- * - Backends with `open` mode use `[workspaceDir]` to open the IDE at that folder.
- * - ACP backends need no args (workspace is passed via ACP session).
- * - Custom backends use `args` from backendConfig if provided.
+ *
+ * Priority:
+ *   1. Explicit `backendConfig.args` — any backend can override args.
+ *   2. `custom` backend: default to `[workspaceDir]` (user-provided executables
+ *      typically expect a directory argument).
+ *   3. ACP-capable backends: `[]` (workspace is passed via the ACP session).
+ *   4. Fallback: `[workspaceDir]`.
  */
 function buildArgs(
   backendType: AgentBackendType,
   workspaceDir: string,
   backendConfig?: Record<string, unknown>,
 ): string[] {
+  const configArgs = backendConfig?.args;
+  if (Array.isArray(configArgs)) return configArgs.map(String);
+
+  if (backendType === "custom") return [workspaceDir];
+
   const desc = getBackendDescriptor(backendType);
-
-  if (backendType === "custom") {
-    const configArgs = backendConfig?.args;
-    if (Array.isArray(configArgs)) return configArgs.map(String);
-    return [workspaceDir];
-  }
-
-  if (desc.supportedModes.includes("open") && !desc.supportedModes.includes("acp")) {
-    return [workspaceDir];
-  }
-
   if (desc.supportedModes.includes("acp")) {
     return [];
   }
@@ -70,6 +68,13 @@ function buildArgs(
 
 /**
  * Resolve the executable command and arguments for spawning a backend (resolve mode).
+ *
+ * Resolution priority:
+ *   1. `backendConfig.executablePath` — explicit user override.
+ *   2. Runtime acpResolver (if registered) — dynamic path that works in binary
+ *      distribution where npm bins are unavailable.
+ *   3. Static `resolveCommand` — npm bin name for development environments.
+ *
  * @throws if the backend does not support "resolve" mode.
  */
 export function resolveBackend(
@@ -81,14 +86,26 @@ export function resolveBackend(
 
   const desc = getBackendDescriptor(backendType);
   const explicitPath = backendConfig?.executablePath;
-  const command = typeof explicitPath === "string" && explicitPath.length > 0
-    ? explicitPath
-    : desc.resolveCommand
-      ? getPlatformCommand(desc.resolveCommand)
-      : (() => { throw new Error(`Backend "${backendType}" has no resolveCommand configured.`); })();
+
+  if (typeof explicitPath === "string" && explicitPath.length > 0) {
+    return {
+      command: explicitPath,
+      args: buildArgs(backendType, workspaceDir, backendConfig),
+      resolvePackage: desc.resolvePackage,
+    };
+  }
+
+  const resolver = getAcpResolver(backendType);
+  if (resolver) {
+    return resolver(workspaceDir, backendConfig);
+  }
+
+  if (!desc.resolveCommand) {
+    throw new Error(`Backend "${backendType}" has no resolveCommand configured.`);
+  }
 
   return {
-    command,
+    command: getPlatformCommand(desc.resolveCommand),
     args: buildArgs(backendType, workspaceDir, backendConfig),
     resolvePackage: desc.resolvePackage,
   };

@@ -666,6 +666,31 @@ Full CLI regression tests live in `.agents/skills/qa-engineer/scenarios/full-cli
 
 **Rule**: When adding opt-in validation modes (e.g., `--compat agent-skills`), always include backward-compatibility tests that verify the same input passes without the flag. This ensures new modes don't silently change default behavior.
 
+### Don't: 在生命周期测试中使用 MockLauncher
+
+MockLauncher 生成假 PID，与 ProcessWatcher 的真实 OS 检查产生竞态条件。
+
+```typescript
+// Bad — MockLauncher 的假 PID 可能被 ProcessWatcher 误判为 dead
+const launcher = new MockLauncher();
+const manager = new AgentManager(initializer, launcher, tmpDir, opts);
+```
+
+```typescript
+// Good — 使用 createTestManager() 或 createTestLauncher() + custom 后端
+import { createTestManager } from "../testing";
+
+const { manager, cleanup } = createTestManager(tmpDir, {
+  watcherPollIntervalMs: 200,
+});
+// afterEach: await cleanup();
+```
+
+`createTestManager()` 使用 `custom` 后端 + `node` sleeper 进程，产生真实 OS PID，
+ProcessWatcher 可以正确检测进程存活状态。
+
+> 参见 `packages/core/src/testing/test-launcher.ts`
+
 ### Test Structure
 
 ```

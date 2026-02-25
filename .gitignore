@@ -13,6 +13,7 @@ dist-standalone/
 
 # IDE
 .idea/
+.vscode/
 *.swp
 *.swo
 

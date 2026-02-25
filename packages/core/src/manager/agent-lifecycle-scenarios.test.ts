@@ -10,18 +10,21 @@ import { MockLauncher } from "./launcher/mock-launcher";
 import { readInstanceMeta } from "../state/instance-meta-io";
 
 /**
- * Scenario tests for continuous task correctness.
+ * State-machine scenario tests for agent lifecycle correctness.
  *
- * Each test chains multiple operations and verifies the state machine
- * transitions are correct throughout the entire workflow — not just
- * at a single step.
+ * Uses MockLauncher (fake PIDs) to isolate state transitions from real
+ * process management.  The Pi backend type is used to validate it works
+ * as a first-class builtin.
+ *
+ * For integration tests with real processes, see `@actant/core/testing`
+ * helpers (`createTestManager`, `makeSleeperTemplate`).
  */
 
 function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
   return {
     name: "test-tpl",
     version: "1.0.0",
-    backend: { type: "claude-code" },
+    backend: { type: "pi" },
     provider: { type: "openai", protocol: "openai" },
     domainContext: { skills: ["skill-a"] },
     ...overrides,
@@ -344,6 +347,11 @@ describe("Agent lifecycle scenarios", () => {
         metadata: { autoDestroy: "true" },
       });
 
+      // Set up PID controller BEFORE starting agents so the watcher
+      // sees all mock PIDs as alive (prevents race where the watcher
+      // detects a fake PID as dead before we reach the assertion).
+      const ctl = await createPidController();
+
       await manager.startAgent("svc-a");
       await manager.startAgent("direct-b");
       await manager.startAgent("oneshot-c");
@@ -353,8 +361,6 @@ describe("Agent lifecycle scenarios", () => {
       const pidDirect = manager.getAgent("direct-b")!.pid!;
       const pidOneshot = manager.getAgent("oneshot-c")!.pid!;
 
-      // Kill specific PIDs so the restarted acp-service gets a fresh live PID
-      const ctl = await createPidController();
       ctl.kill(pidSvc);
       ctl.kill(pidDirect);
       ctl.kill(pidOneshot);

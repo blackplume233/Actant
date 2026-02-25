@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { registerBackend, _resetRegistry } from "./backend-registry";
-import { registerBuiltinBackends } from "./builtin-backends";
+import { describe, it, expect, vi } from "vitest";
+import { getBackendManager } from "./backend-registry";
+import * as backendRegistry from "./backend-registry";
 import {
   resolveBackend,
   resolveAcpBackend,
@@ -55,8 +55,46 @@ describe("resolveBackend", () => {
     expect(result.args).toEqual(["-e", "console.log('hello')"]);
   });
 
-  it("should throw for pi when not registered in core", () => {
-    expect(() => resolveBackend("pi", "/workspace")).toThrow(/not registered/);
+  it("should resolve pi to pi-acp-bridge with no args", () => {
+    const result = resolveBackend("pi", "/workspace");
+    expect(result.command).toMatch(/pi-acp-bridge/);
+    expect(result.args).toEqual([]);
+    expect(result.resolvePackage).toBe("@actant/pi");
+  });
+
+  it("should use executablePath override for pi", () => {
+    const result = resolveBackend("pi", "/workspace", { executablePath: "/custom/bridge" });
+    expect(result.command).toBe("/custom/bridge");
+    expect(result.args).toEqual([]);
+  });
+
+  it("should use custom args override for pi", () => {
+    const result = resolveBackend("pi", "/workspace", {
+      executablePath: "node",
+      args: ["-e", "setTimeout(()=>{},60000)"],
+    });
+    expect(result.command).toBe("node");
+    expect(result.args).toEqual(["-e", "setTimeout(()=>{},60000)"]);
+  });
+
+  it("should prefer runtime acpResolver over static resolveCommand (binary distribution)", () => {
+    const spy = vi.spyOn(backendRegistry, "getAcpResolver").mockReturnValue(
+      () => ({ command: "/usr/local/bin/actant", args: ["--pi-bridge"] }),
+    );
+    const result = resolveBackend("pi", "/workspace");
+    expect(result.command).toBe("/usr/local/bin/actant");
+    expect(result.args).toEqual(["--pi-bridge"]);
+    spy.mockRestore();
+  });
+
+  it("should still prefer executablePath over acpResolver", () => {
+    const spy = vi.spyOn(backendRegistry, "getAcpResolver").mockReturnValue(
+      () => ({ command: "/usr/local/bin/actant", args: ["--pi-bridge"] }),
+    );
+    const result = resolveBackend("pi", "/workspace", { executablePath: "/override/bridge" });
+    expect(result.command).toBe("/override/bridge");
+    expect(result.args).toEqual([]);
+    spy.mockRestore();
   });
 });
 
@@ -81,29 +119,14 @@ describe("claude-code backend modes", () => {
   });
 });
 
-describe("Pi backend (when registered)", () => {
-  const PI_DESCRIPTOR: import("@actant/shared").BackendDescriptor = {
-    name: "pi",
-    type: "pi",
-    supportedModes: ["acp"],
-    acpCommand: { win32: "pi-acp-bridge.cmd", default: "pi-acp-bridge" },
-    acpOwnsProcess: true,
-  };
-
-  beforeEach(() => {
-    registerBackend(PI_DESCRIPTOR);
+describe("Pi backend (builtin)", () => {
+  it("resolveBackend resolves pi to pi-acp-bridge", () => {
+    const result = resolveBackend("pi", "/workspace");
+    expect(result.command).toMatch(/pi-acp-bridge/);
+    expect(result.args).toEqual([]);
   });
 
-  afterEach(() => {
-    _resetRegistry();
-    registerBuiltinBackends();
-  });
-
-  it("resolveBackend throws because Pi does not support resolve mode", () => {
-    expect(() => resolveBackend("pi", "/workspace")).toThrow(/does not support .*resolve.* mode/);
-  });
-
-  it("resolveAcpBackend resolves pi to pi-acp-bridge with no args", () => {
+  it("resolveAcpBackend resolves pi via resolveCommand fallback", () => {
     const result = resolveAcpBackend("pi", "/workspace");
     expect(result.command).toMatch(/pi-acp-bridge/);
     expect(result.args).toEqual([]);
@@ -119,8 +142,16 @@ describe("Pi backend (when registered)", () => {
     expect(isAcpBackend("pi")).toBe(true);
   });
 
-  it("isAcpOnlyBackend returns true for pi", () => {
+  it("isAcpOnlyBackend returns false for pi without acpOwnsProcess", () => {
+    expect(isAcpOnlyBackend("pi")).toBe(false);
+  });
+
+  it("isAcpOnlyBackend returns true when app-context sets acpOwnsProcess", () => {
+    const mgr = getBackendManager();
+    const existing = mgr.get("pi")!;
+    mgr.register({ ...existing, acpOwnsProcess: true });
     expect(isAcpOnlyBackend("pi")).toBe(true);
+    mgr.register({ ...existing, acpOwnsProcess: undefined });
   });
 });
 
@@ -137,12 +168,12 @@ describe("isAcpBackend", () => {
     expect(isAcpBackend("cursor")).toBe(false);
   });
 
-  it("should return false for custom", () => {
-    expect(isAcpBackend("custom")).toBe(false);
+  it("should return true for custom", () => {
+    expect(isAcpBackend("custom")).toBe(true);
   });
 
-  it("should return false for pi when not registered", () => {
-    expect(isAcpBackend("pi")).toBe(false);
+  it("should return true for pi (builtin)", () => {
+    expect(isAcpBackend("pi")).toBe(true);
   });
 });
 

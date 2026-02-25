@@ -56,6 +56,20 @@ const CUSTOM_MATERIALIZATION: MaterializationSpec = {
   ...CURSOR_MATERIALIZATION,
 };
 
+const PI_MATERIALIZATION: MaterializationSpec = {
+  configDir: ".pi",
+  scaffoldDirs: [".pi/skills", ".pi/prompts"],
+  components: {
+    skills: { mode: "dual", outputDir: ".pi/skills", extension: ".md" },
+    prompts: { mode: "per-file", output: ".pi/prompts" },
+    mcpServers: { enabled: false },
+    plugins: { enabled: false },
+    permissions: { mode: "tools-only", outputFile: ".pi/settings.json" },
+    workflow: { outputFile: ".trellis/workflow.md" },
+  },
+  verifyChecks: [{ path: "AGENTS.md", type: "file", severity: "error" }],
+};
+
 // ---------------------------------------------------------------------------
 // Built-in backend definitions
 // ---------------------------------------------------------------------------
@@ -119,9 +133,24 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
     version: "1.0.0",
     description: "Custom backend (user-provided executable)",
     origin: { type: "builtin" },
-    supportedModes: ["resolve"],
+    supportedModes: ["resolve", "acp"],
     defaultInteractionModes: ["start"],
     materialization: CUSTOM_MATERIALIZATION,
+  },
+  {
+    name: "pi",
+    version: "1.0.0",
+    description: "Pi — lightweight agent backend powered by local/cloud LLMs",
+    tags: ["agent", "in-process", "llm"],
+    origin: { type: "builtin" },
+    supportedModes: ["resolve", "acp"],
+    defaultInteractionModes: ["start"],
+    resolveCommand: { win32: "pi-acp-bridge.cmd", default: "pi-acp-bridge" },
+    resolvePackage: "@actant/pi",
+    install: [
+      { type: "manual", label: "Included with Actant", instructions: "Pi is bundled with Actant — no separate installation required." },
+    ],
+    materialization: PI_MATERIALIZATION,
   },
 ];
 
