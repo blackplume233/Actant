@@ -3,13 +3,17 @@ param(
   [switch]$SkipSetup,
   [switch]$Uninstall,
   [switch]$FromGitHub,
-  [switch]$NpmRegistry
+  [switch]$NpmRegistry,
+  [switch]$UsePnpm
 )
 $ErrorActionPreference = "Stop"
 
 $IsInteractive = [Environment]::UserInteractive -and (-not $env:CI) -and (-not $env:GITHUB_ACTIONS)
 
 $GitHubReleaseUrl = "https://github.com/blackplume233/Actant/releases/latest/download/actant-cli.tgz"
+
+# Detect UTF-8 support; fall back to ASCII checkmark on legacy terminals
+$OK = if ($OutputEncoding.EncodingName -match "Unicode|UTF" -or $PSVersionTable.PSVersion.Major -ge 7) { "[OK]" } else { "[OK]" }
 
 Write-Host "=== Actant Installer ===" -ForegroundColor Cyan
 Write-Host ""
@@ -22,11 +26,32 @@ try {
     Write-Host "Error: Node.js >= 22 is required. Found: $nodeVersion" -ForegroundColor Red
     exit 1
   }
-  Write-Host "✓ Node.js $nodeVersion" -ForegroundColor Green
+  Write-Host "$OK Node.js $nodeVersion" -ForegroundColor Green
 } catch {
   Write-Host "Error: Node.js is not installed. Please install Node.js >= 22." -ForegroundColor Red
   Write-Host "  https://nodejs.org/" -ForegroundColor Gray
   exit 1
+}
+
+# ── npm / pnpm check ──────────────────────────────────────────────
+$PackageManager = "npm"
+if ($UsePnpm) {
+  $pnpmCmd = Get-Command pnpm -ErrorAction SilentlyContinue
+  if (-not $pnpmCmd) {
+    Write-Host "Error: -UsePnpm specified but pnpm is not installed." -ForegroundColor Red
+    Write-Host "  Install: npm install -g pnpm" -ForegroundColor Gray
+    exit 1
+  }
+  $PackageManager = "pnpm"
+  Write-Host "$OK pnpm $(pnpm --version)" -ForegroundColor Green
+} else {
+  $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+  if (-not $npmCmd) {
+    Write-Host "Error: npm is not available in PATH." -ForegroundColor Red
+    Write-Host "  If using nvm/fnm, ensure the correct Node version is activated." -ForegroundColor Gray
+    exit 1
+  }
+  Write-Host "$OK npm $(npm --version)" -ForegroundColor Green
 }
 
 # ── Non-interactive uninstall ──────────────────────────────────────
@@ -37,7 +62,12 @@ if ($Uninstall) {
   try { schtasks /Delete /TN "ActantDaemon" /F 2>$null } catch {}
   npm uninstall -g actant 2>$null
   npm uninstall -g @actant/cli 2>$null
-  Write-Host "✓ Actant has been uninstalled." -ForegroundColor Green
+  $npmPrefix = npm config get prefix 2>$null
+  if ($npmPrefix) {
+    $staleBin = Join-Path $npmPrefix "actant.cmd"
+    if (Test-Path $staleBin) { Remove-Item $staleBin -Force -ErrorAction SilentlyContinue }
+  }
+  Write-Host "$OK Actant has been uninstalled." -ForegroundColor Green
   Write-Host "  Data directory (~/.actant) was kept. Remove manually if needed." -ForegroundColor Gray
   exit 0
 }
@@ -46,12 +76,19 @@ if ($Uninstall) {
 function Install-FromGitHub {
   Write-Host "Installing actant from GitHub Release..." -ForegroundColor Cyan
   Write-Host "  $GitHubReleaseUrl" -ForegroundColor Gray
-  npm install -g $GitHubReleaseUrl
+
+  try {
+    $response = Invoke-WebRequest -Uri $GitHubReleaseUrl -Method Head -TimeoutSec 10 -ErrorAction Stop -MaximumRedirection 5
+  } catch {
+    Write-Host "Warning: GitHub Release URL may be unreachable. Attempting install anyway..." -ForegroundColor Yellow
+  }
+
+  & $PackageManager install -g $GitHubReleaseUrl
   if ($LASTEXITCODE -ne 0) {
-    Write-Host "Error: npm install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
+    Write-Host "Error: $PackageManager install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
     exit 1
   }
-  Write-Host "✓ Actant installed from GitHub Release" -ForegroundColor Green
+  Write-Host "$OK Actant installed from GitHub Release" -ForegroundColor Green
 }
 
 # ── Existing installation detection ───────────────────────────────
@@ -79,19 +116,19 @@ if ($existingActant) {
   switch ($choice.ToUpper()) {
     "U" {
       Write-Host ""
-      Write-Host "Updating actant from npm..." -ForegroundColor Cyan
-      npm install -g actant
+      Write-Host "Updating actant from $PackageManager..." -ForegroundColor Cyan
+      & $PackageManager install -g actant
       if ($LASTEXITCODE -ne 0) {
-        Write-Host "Error: npm install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
+        Write-Host "Error: $PackageManager install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
         exit 1
       }
       Write-Host ""
       $newVersion = "unknown"
       try { $newVersion = actant --version 2>$null } catch {}
-      Write-Host "✓ Actant updated to $newVersion" -ForegroundColor Green
+      Write-Host "$OK Actant updated to $newVersion" -ForegroundColor Green
       if ($IsInteractive) {
         Write-Host ""
-        $reconfig = Read-Host "是否重新运行配置向导? [y/N]"
+        $reconfig = Read-Host "Reconfigure? [y/N]"
         if ($reconfig -eq "y" -or $reconfig -eq "Y") {
           actant setup
         }
@@ -103,10 +140,10 @@ if ($existingActant) {
       Write-Host ""
       $newVersion = "unknown"
       try { $newVersion = actant --version 2>$null } catch {}
-      Write-Host "✓ Actant updated to $newVersion (from GitHub Release)" -ForegroundColor Green
+      Write-Host "$OK Actant updated to $newVersion (from GitHub Release)" -ForegroundColor Green
       if ($IsInteractive) {
         Write-Host ""
-        $reconfig = Read-Host "是否重新运行配置向导? [y/N]"
+        $reconfig = Read-Host "Reconfigure? [y/N]"
         if ($reconfig -eq "y" -or $reconfig -eq "Y") {
           actant setup
         }
@@ -122,21 +159,29 @@ if ($existingActant) {
       try { schtasks /Delete /TN "ActantDaemon" /F 2>$null } catch {}
 
       Write-Host ""
-      $rmData = if ($IsInteractive) { Read-Host "是否删除数据目录 (~/.actant)? [y/N]" } else { "N" }
+      $rmData = if ($IsInteractive) { Read-Host "Delete data directory (~/.actant)? [y/N]" } else { "N" }
       if ($rmData -eq "y" -or $rmData -eq "Y") {
         $actantDir = if ($env:ACTANT_HOME) { $env:ACTANT_HOME } else { Join-Path $env:USERPROFILE ".actant" }
         if (Test-Path $actantDir) {
           Remove-Item -Recurse -Force $actantDir
-          Write-Host "✓ 已删除 $actantDir" -ForegroundColor Green
+          Write-Host "$OK Deleted $actantDir" -ForegroundColor Green
         }
       }
 
       npm uninstall -g actant 2>$null
       npm uninstall -g @actant/cli 2>$null
-      Write-Host "✓ Actant 已卸载" -ForegroundColor Green
+      # Clean up stale global bin links
+      $npmPrefix = npm config get prefix 2>$null
+      if ($npmPrefix) {
+        $staleBin = Join-Path $npmPrefix "actant.cmd"
+        if (Test-Path $staleBin) {
+          Remove-Item $staleBin -Force -ErrorAction SilentlyContinue
+        }
+      }
+      Write-Host "$OK Actant uninstalled" -ForegroundColor Green
     }
     default {
-      Write-Host "已取消"
+      Write-Host "Cancelled"
       exit 0
     }
   }
@@ -146,18 +191,24 @@ if ($existingActant) {
 # ── Fresh install ─────────────────────────────────────────────────
 if ($FromGitHub) {
   Install-FromGitHub
-} elseif ($NpmRegistry -or (-not $IsInteractive)) {
+} elseif ($NpmRegistry -or $UsePnpm -or (-not $IsInteractive)) {
   if (-not $IsInteractive) {
-    Write-Host "Non-interactive environment detected. Using npm registry." -ForegroundColor Yellow
+    Write-Host "Non-interactive environment detected. Using $PackageManager registry." -ForegroundColor Yellow
   }
-  $installMethod = "1"
+  Write-Host ""
+  Write-Host "Installing actant from $PackageManager..." -ForegroundColor Cyan
+  & $PackageManager install -g actant
+  if ($LASTEXITCODE -ne 0) {
+    Write-Host "Error: $PackageManager install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
+    exit 1
+  }
 } else {
   Write-Host ""
-  Write-Host "安装方式:"
-  Write-Host "  [1] npm registry (推荐, 快速)"
-  Write-Host "  [2] GitHub Release (与 npm 发布同步)"
+  Write-Host "Install method:"
+  Write-Host "  [1] npm registry (recommended)"
+  Write-Host "  [2] GitHub Release"
   Write-Host ""
-  $installMethod = Read-Host "请选择 [1/2] (默认 1)"
+  $installMethod = Read-Host "Choose [1/2] (default 1)"
   if (-not $installMethod) { $installMethod = "1" }
 
   if ($installMethod -eq "2") {
@@ -165,10 +216,10 @@ if ($FromGitHub) {
     Install-FromGitHub
   } else {
     Write-Host ""
-    Write-Host "Installing actant from npm..." -ForegroundColor Cyan
-    npm install -g actant
+    Write-Host "Installing actant from $PackageManager..." -ForegroundColor Cyan
+    & $PackageManager install -g actant
     if ($LASTEXITCODE -ne 0) {
-      Write-Host "Error: npm install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
+      Write-Host "Error: $PackageManager install failed (exit code $LASTEXITCODE)" -ForegroundColor Red
       exit 1
     }
   }
@@ -178,7 +229,7 @@ Write-Host ""
 Write-Host "Verifying installation..." -ForegroundColor Cyan
 try {
   $versionOutput = actant --version 2>&1
-  Write-Host "✓ actant $versionOutput" -ForegroundColor Green
+  Write-Host "$OK actant $versionOutput" -ForegroundColor Green
 } catch {
   Write-Host "Error: actant command not found after install." -ForegroundColor Red
   $npmPrefix = npm config get prefix 2>$null
