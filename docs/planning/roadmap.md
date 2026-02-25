@@ -65,7 +65,7 @@ Actant 同时扮演：
 | #23 | LaunchMode 行为分化 | P0 | #22 | ✅ 完成 |
 | #26 | agent.resolve / agent.attach / agent.detach API | P1 | #22, #23 | ✅ 完成 |
 | #24 | one-shot 模式完整实现 | P1 | #22, #23 | ✅ 完成 |
-| #25 | normal 崩溃重启策略 | P1 | #22 | ✅ 完成 |
+| #25 | acp-service 崩溃重启策略 | P1 | #22 | ✅ 完成 |
 
 ---
 
@@ -410,7 +410,7 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 | 功能 | 实现内容 |
 |------|---------|
 | ProcessWatcher | 定时轮询 PID 存活检测、退出事件回调、与 AgentManager 集成 |
-| LaunchMode 分化 | Handler 模式：direct/acp-background/normal/one-shot 各有独立的退出行为和恢复策略 |
+| LaunchMode 分化 | Handler 模式：direct/acp-background/acp-service/one-shot 各有独立的退出行为和恢复策略 |
 | 外部 Spawn | resolve/attach/detach 完整 API + RPC handler + CLI 命令，支持 metadata 传递 |
 | One-shot 模式 | autoDestroy 自动销毁、ephemeral workspace 策略、WorkspacePolicy 类型系统 |
 | 崩溃重启 | 指数退避 RestartTracker、最大重试限制、daemon 重启恢复、稳定期自动重置计数器 |
@@ -508,7 +508,7 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 | #22 | ProcessWatcher：进程退出检测与心跳监控 | 2026-02-20 | Phase 1 |
 | #23 | LaunchMode 行为分化 | 2026-02-20 | Phase 1 |
 | #24 | one-shot 模式完整实现 | 2026-02-20 | Phase 1 |
-| #25 | normal 崩溃重启策略 | 2026-02-20 | Phase 1 |
+| #25 | acp-service 崩溃重启策略 | 2026-02-20 | Phase 1 |
 | #26 | agent.resolve / attach / detach API — 外部 Spawn 支持 | 2026-02-20 | Phase 1 |
 | #5 | CLI 包测试覆盖率为零 — 补充单元测试 | 2026-02-20 | Phase 1 (质量) |
 | #6 | CLI 包 console.log 违反质量规范 — 引入 CliPrinter 结构化输出层 | 2026-02-20 | Phase 1 (质量) |
@@ -547,7 +547,7 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
  │     └──→ [Phase 2 MVP] #13 ACP Client 简化版
  │     └──→ [Phase 2 MVP] #112 Domain Context 全链路
  │
- ├──→ #25 normal 崩溃重启 (P1) ✅
+ ├──→ #25 acp-service 崩溃重启 (P1) ✅
  └──→ [Phase 4] #14 Plugin 体系 (P2)
 
 

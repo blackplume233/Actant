@@ -243,7 +243,7 @@ Proxy 的翻译逻辑：
 | 驱动方 | **Daemon**（非人类） |
 | 输入来源 | Heartbeat / Cron / Webhook / Hook / Agent-to-Agent |
 | 进程生命周期 | 长驻，崩溃自动重启 |
-| launchMode | `normal` |
+| launchMode | `acp-service` |
 | 适用场景 | 7×24 运行的自主 Agent（PR 审查、监控、客服） |
 
 > 详见 [Issue #37](../../.trellis/issues/0037-employee-agent-scheduling.json)
@@ -334,7 +334,7 @@ Agent 进程由 Daemon 管理，多个客户端通过 Session Lease 交互。IDE
 | 属性 | 值 |
 |------|---|
 | 连接模式 | Session Lease |
-| launchMode | `normal` 或 `acp-background` |
+| launchMode | `acp-service` 或 `acp-background` |
 | 多 Client | 每个 Client 独立 Session |
 
 ---
@@ -357,7 +357,7 @@ actant proxy my-agent --direct     # 即使 agent 已通过 start 运行，仍�
 ### 场景 5: 雇员型 Agent
 
 ```bash
-actant agent create pr-reviewer -t pr-review --launch-mode normal
+actant agent create pr-reviewer -t pr-review --launch-mode acp-service
 actant agent start pr-reviewer
 # Agent 持续运行，Daemon 按 Heartbeat/Cron/Webhook 调度任务
 ```
@@ -365,7 +365,7 @@ actant agent start pr-reviewer
 | 属性 | 值 |
 |------|---|
 | 连接模式 | Daemon Managed |
-| launchMode | `normal` |
+| launchMode | `acp-service` |
 | 输入来源 | Heartbeat / Cron / Webhook / Hook |
 
 ---
@@ -423,9 +423,9 @@ Docker 容器中运行 Daemon + Agent，外部 IM 通过 HTTP Webhook 接入。�
 |------|---------|---------|:---:|:---:|------------|
 | 1. one-shot run | Daemon Managed | Daemon | ✗ | N/A | one-shot |
 | 2. proxy / chat（默认） | **Direct Bridge** | **Client** | **✓** | 自动实例化 | 由 Proxy 控制 |
-| 3. start + --lease | Session Lease | Daemon | ✓ | ✓ (多 Session) | normal/background |
+| 3. start + --lease | Session Lease | Daemon | ✓ | ✓ (多 Session) | acp-service/background |
 | 4. proxy --direct（显式） | Direct Bridge | Client | ✓ | 自动实例化 | 由 Proxy 控制 |
-| 5. 雇员型 | Daemon Managed | Daemon | — | — | normal |
+| 5. 雇员型 | Daemon Managed | Daemon | — | — | acp-service |
 | 6. direct IDE | 无 | 无 | N/A | N/A | direct |
 | 7. external | 外部全权 | 外部 | 外部 | 外部 | 由外部决定 |
 | 8. Web UI | Session Lease | Daemon | ✓ | ✓ | — |

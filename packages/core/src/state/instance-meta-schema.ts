@@ -13,7 +13,7 @@ export const AgentStatusSchema = z.enum([
 export const LaunchModeSchema = z.enum([
   "direct",
   "acp-background",
-  "normal",
+  "acp-service",
   "one-shot",
 ]);
 

@@ -201,7 +201,7 @@ shared ← core ← pi
                      │                  │   error           │
                      │                  └──────► error      │
                      │                  │                   │
-                     │              crash (normal)     │
+                     │              crash (acp-service)     │
                      │                  └── restart ──┘     │
                      │                                      │
                      └──────────── destroy ◄────────────────┘

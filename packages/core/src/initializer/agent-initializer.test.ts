@@ -126,10 +126,10 @@ describe("AgentInitializer", () => {
 
     it("should use defaultLaunchMode from options when no override", async () => {
       initializer = new AgentInitializer(registry, tmpDir, {
-        defaultLaunchMode: "normal",
+        defaultLaunchMode: "acp-service",
       });
       const meta = await initializer.createInstance("my-agent", "test-template");
-      expect(meta.launchMode).toBe("normal");
+      expect(meta.launchMode).toBe("acp-service");
     });
 
     it("should default workspacePolicy to persistent for non-one-shot modes", async () => {

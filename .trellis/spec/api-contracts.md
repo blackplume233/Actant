@@ -763,7 +763,7 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 
 **输出格式**：`table`（默认）, `json`, `quiet`
 
-**启动模式**：`direct`, `acp-background`, `normal`, `one-shot`
+**启动模式**：`direct`, `acp-background`, `acp-service`, `one-shot`
 
 #### Agent 交互（✅ 已实现）
 

@@ -93,14 +93,14 @@ describe("Agent lifecycle scenarios", () => {
     await rm(tmpDir, { recursive: true, force: true });
   });
 
-  describe("Scenario: normal continuous crash-restart cycle", () => {
+  describe("Scenario: acp-service continuous crash-restart cycle", () => {
     it("should restart on crash, backoff, then give up after max retries", async () => {
       const manager = createWatcherManager(initializer, launcher, tmpDir, {
         restartMaxRestarts: 2,
       });
       await manager.initialize();
 
-      await manager.createAgent("svc", "test-tpl", { launchMode: "normal" });
+      await manager.createAgent("svc", "test-tpl", { launchMode: "acp-service" });
       await manager.startAgent("svc");
       expect(manager.getStatus("svc")).toBe("running");
       const pid0 = manager.getAgent("svc")!.pid!;
@@ -282,12 +282,12 @@ describe("Agent lifecycle scenarios", () => {
   });
 
   describe("Scenario: daemon restart recovery", () => {
-    it("should recover normal agents after daemon restart", async () => {
-      // Phase A: create and start an normal agent, then "crash" the daemon
+    it("should recover acp-service agents after daemon restart", async () => {
+      // Phase A: create and start an acp-service agent, then "crash" the daemon
       const manager1 = createWatcherManager(initializer, launcher, tmpDir);
       await manager1.initialize();
 
-      await manager1.createAgent("employee", "test-tpl", { launchMode: "normal" });
+      await manager1.createAgent("employee", "test-tpl", { launchMode: "acp-service" });
       await manager1.startAgent("employee");
       expect(manager1.getStatus("employee")).toBe("running");
       expect(manager1.getAgent("employee")?.pid).toBeDefined();
@@ -299,7 +299,7 @@ describe("Agent lifecycle scenarios", () => {
       const manager2 = createWatcherManager(initializer, launcher, tmpDir);
       await manager2.initialize();
 
-      // normal should have been auto-recovered to running
+      // acp-service should have been auto-recovered to running
       await vi.waitFor(() => {
         expect(manager2.getStatus("employee")).toBe("running");
       }, { timeout: 3000, interval: 50 });
@@ -337,7 +337,7 @@ describe("Agent lifecycle scenarios", () => {
       });
       await manager.initialize();
 
-      await manager.createAgent("svc-a", "test-tpl", { launchMode: "normal" });
+      await manager.createAgent("svc-a", "test-tpl", { launchMode: "acp-service" });
       await manager.createAgent("direct-b", "test-tpl", { launchMode: "direct" });
       await manager.createAgent("oneshot-c", "test-tpl", {
         launchMode: "one-shot",
@@ -353,7 +353,7 @@ describe("Agent lifecycle scenarios", () => {
       const pidDirect = manager.getAgent("direct-b")!.pid!;
       const pidOneshot = manager.getAgent("oneshot-c")!.pid!;
 
-      // Kill specific PIDs so the restarted normal gets a fresh live PID
+      // Kill specific PIDs so the restarted acp-service gets a fresh live PID
       const ctl = await createPidController();
       ctl.kill(pidSvc);
       ctl.kill(pidDirect);
@@ -365,7 +365,7 @@ describe("Agent lifecycle scenarios", () => {
         expect(manager.getStatus("svc-a")).toBe("running");
       }, { timeout: 5000, interval: 50 });
 
-      // normal got a new PID
+      // acp-service got a new PID
       expect(manager.getAgent("svc-a")?.pid).not.toBe(pidSvc);
       expect(manager.size).toBe(2);
 

@@ -343,7 +343,7 @@ Provider 存在两个层次：
 |----|--------------|------|
 | `"direct"` | 用户 | 直接打开 IDE / TUI |
 | `"acp-background"` | 调用方 | 外部客户端通过 ACP 管理 |
-| `"normal"` | Actant | 持久化员工 Agent，崩溃自动重启 |
+| `"acp-service"` | Actant | 持久化员工 Agent，崩溃自动重启 |
 | `"one-shot"` | Actant | 执行后自动终止，可选自动清理 workspace |
 
 ### WorkspacePolicy
@@ -352,7 +352,7 @@ Provider 存在两个层次：
 
 | 值 | 说明 | 典型 LaunchMode |
 |----|------|----------------|
-| `"persistent"` | workspace 持久保留，多次 spawn 复用 | `direct`, `normal` |
+| `"persistent"` | workspace 持久保留，多次 spawn 复用 | `direct`, `acp-service` |
 | `"ephemeral"` | 任务完成后可清理 workspace | `one-shot` |
 
 ### ProcessOwnership

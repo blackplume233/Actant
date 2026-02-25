@@ -41,7 +41,7 @@ logger.info("Agent launched", {
   instanceId,
   templateName,
   port,
-  launchMode: "normal",
+  launchMode: "acp-service",
 });
 ```
 

@@ -48,7 +48,7 @@ export type AgentStatus =
 export type LaunchMode =
   | "direct"
   | "acp-background"
-  | "normal"
+  | "acp-service"
   | "one-shot";
 
 export type ProcessOwnership = "managed" | "external";

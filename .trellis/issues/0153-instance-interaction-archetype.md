@@ -1,6 +1,6 @@
 ## 动机
 
-当前 `AgentInstanceMeta` 具备 `interactionModes`（open / start / chat / run / proxy）、`launchMode`（direct / acp-background / normal / one-shot）和 `schedule` 配置，但缺少一个高层语义字段来描述 **实例的交互范式（archetype）**。用户无法通过单一配置声明"这个 Agent 是自主运行的雇员型"或"这是按需调用的工具型"，导致：
+当前 `AgentInstanceMeta` 具备 `interactionModes`（open / start / chat / run / proxy）、`launchMode`（direct / acp-background / acp-service / one-shot）和 `schedule` 配置，但缺少一个高层语义字段来描述 **实例的交互范式（archetype）**。用户无法通过单一配置声明"这个 Agent 是自主运行的雇员型"或"这是按需调用的工具型"，导致：
 
 1. **雇员型 Agent 无法自动启动** — 系统启动或 API 启动时无法自动拉起配有 schedule 的 Agent
 2. **交互约束散落各处** — `interactionModes` 控制 CLI 命令可用性，`launchMode` 控制进程模式，`schedule` 控制任务调度，但三者之间缺乏上层关联
@@ -20,7 +20,7 @@ export type AgentArchetype = "tool" | "employee" | "service";
 |------------|--------------------------|----------------------------------------------|
 | `tool`     | 按需工具型（默认）        | 用户主动 open/start，无自动启动              |
 | `employee` | 自主雇员型               | 自动启动 + schedule 驱动，后台持续运行       |
-| `service`  | 服务型（API/ACP 对外暴露）| 自动启动，以 normal 模式监听请求        |
+| `service`  | 服务型（API/ACP 对外暴露）| 自动启动，以 acp-service 模式监听请求        |
 
 ### 2. 雇员型自动启动能力
 
@@ -36,7 +36,7 @@ export type AgentArchetype = "tool" | "employee" | "service";
 |------------|----------------------------|--------------------|
 | `tool`     | `["open", "start", "chat"]`| `direct`           |
 | `employee` | `["start", "run", "proxy"]`| `acp-background`   |
-| `service`  | `["proxy"]`                | `normal`      |
+| `service`  | `["proxy"]`                | `acp-service`      |
 
 用户仍可在 template 中显式覆盖。
 

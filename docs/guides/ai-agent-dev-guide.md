@@ -121,7 +121,7 @@ core/src/
 │   │   ├── process-watcher.ts           # ProcessWatcher — PID 监控
 │   │   └── backend-resolver.ts          # resolveBackend() — 后端命令解析
 │   ├── launch-mode-handler.ts           # LaunchModeHandler — 按模式处理退出/恢复
-│   └── restart-tracker.ts               # RestartTracker — normal 指数退避重启
+│   └── restart-tracker.ts               # RestartTracker — acp-service 指数退避重启
 ├── builder/
 │   ├── workspace-builder.ts             # WorkspaceBuilder — 6 步构建流水线
 │   ├── backend-builder.ts               # BackendBuilder 抽象基类, VerifyResult

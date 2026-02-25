@@ -101,7 +101,7 @@
 |------|------|------|
 | `AgentInstanceMeta` | `agent.types.ts` | Instance 元数据：id, name, status, launchMode, pid 等 |
 | `AgentStatus` | `agent.types.ts` | 6 种状态: created/starting/running/stopping/stopped/error |
-| `LaunchMode` | `agent.types.ts` | 4 种模式: direct/acp-background/normal/one-shot |
+| `LaunchMode` | `agent.types.ts` | 4 种模式: direct/acp-background/acp-service/one-shot |
 | `AgentTemplate` | `template.types.ts` | 模板定义：backend, provider, domainContext, initializer |
 | `DomainContextConfig` | `domain-context.types.ts` | 引用配置：skills[], prompts[], mcpServers[], workflow, subAgents[] |
 | `McpServerRef` | `domain-context.types.ts` | MCP Server 内联配置：name, command, args, env |

@@ -6,7 +6,7 @@ const logger = createLogger("launch-mode-handler");
 /**
  * What the manager should do when a watched process exits.
  * - "mark-stopped": set status to stopped, clear pid (default for most modes)
- * - "restart": attempt to relaunch the process (normal mode with restart policy)
+ * - "restart": attempt to relaunch the process (acp-service with restart policy)
  * - "destroy": mark stopped then destroy the instance (one-shot with autoDestroy)
  */
 export type ProcessExitAction =
@@ -17,7 +17,7 @@ export type ProcessExitAction =
 /**
  * What the manager should do for a stale running/starting instance on daemon restart.
  * - "mark-stopped": reset status to stopped (default)
- * - "restart": attempt to relaunch (normal mode recovery)
+ * - "restart": attempt to relaunch (acp-service recovery)
  */
 export type RecoveryAction =
   | { type: "mark-stopped" }
@@ -53,16 +53,16 @@ class AcpBackgroundModeHandler implements LaunchModeHandler {
   }
 }
 
-class NormalModeHandler implements LaunchModeHandler {
-  readonly mode = "normal" as const;
+class AcpServiceModeHandler implements LaunchModeHandler {
+  readonly mode = "acp-service" as const;
 
   getProcessExitAction(instanceName: string): ProcessExitAction {
-    logger.info({ instanceName }, "normal-mode process exited — restart policy will be checked");
+    logger.info({ instanceName }, "acp-service process exited — restart policy will be checked");
     return { type: "restart" };
   }
 
   getRecoveryAction(instanceName: string): RecoveryAction {
-    logger.info({ instanceName }, "normal-mode stale instance — will attempt recovery restart");
+    logger.info({ instanceName }, "acp-service stale instance — will attempt recovery restart");
     return { type: "restart" };
   }
 }
@@ -85,7 +85,7 @@ class OneShotModeHandler implements LaunchModeHandler {
 const handlers: Record<LaunchMode, LaunchModeHandler> = {
   "direct": new DirectModeHandler(),
   "acp-background": new AcpBackgroundModeHandler(),
-  "normal": new NormalModeHandler(),
+  "acp-service": new AcpServiceModeHandler(),
   "one-shot": new OneShotModeHandler(),
 };
 
