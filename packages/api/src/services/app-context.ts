@@ -23,6 +23,8 @@ import {
   getBackendManager,
   modelProviderRegistry,
   registerBuiltinProviders,
+  HookEventBus,
+  HookCategoryRegistry,
   type LauncherMode,
 } from "@actant/core";
 import type { ModelApiProtocol } from "@actant/shared";
@@ -85,6 +87,8 @@ export class AppContext {
   readonly sourceManager: SourceManager;
   readonly templateWatcher: TemplateFileWatcher;
   readonly schedulers: Map<string, EmployeeScheduler>;
+  readonly eventBus: HookEventBus;
+  readonly hookCategoryRegistry: HookCategoryRegistry;
 
   private initialized = false;
   private startTime = Date.now();
@@ -137,6 +141,9 @@ export class AppContext {
     );
     this.acpConnectionManager = new AcpConnectionManager();
     this.sessionRegistry = new SessionRegistry();
+    this.eventBus = new HookEventBus();
+    this.hookCategoryRegistry = new HookCategoryRegistry();
+    this.eventBus.setEmitGuard(this.hookCategoryRegistry.buildEmitGuard());
     const launcherMode = resolvedLauncherMode;
     this.agentManager = new AgentManager(
       this.agentInitializer,
@@ -146,6 +153,7 @@ export class AppContext {
         acpManager: launcherMode !== "mock" ? this.acpConnectionManager : undefined,
         instanceRegistry: this.instanceRegistry,
         watcherPollIntervalMs: launcherMode === "mock" ? 2_147_483_647 : undefined,
+        eventBus: this.eventBus,
       },
     );
     this.templateWatcher = new TemplateFileWatcher(this.templatesDir, this.templateRegistry);

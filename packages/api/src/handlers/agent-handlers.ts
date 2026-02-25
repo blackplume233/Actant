@@ -184,6 +184,10 @@ async function handleAgentRun(
   ctx: AppContext,
 ): Promise<AgentRunResult> {
   const { name, prompt, options } = params as unknown as AgentRunParams;
+  ctx.eventBus.emit("user:run", { callerType: "user", callerId: "api" }, name, {
+    prompt,
+    source: "api",
+  });
   return ctx.agentManager.runPrompt(name, prompt, options);
 }
 
@@ -192,6 +196,11 @@ async function handleAgentPrompt(
   ctx: AppContext,
 ): Promise<AgentPromptResult> {
   const { name, message, sessionId } = params as unknown as AgentPromptParams;
+  ctx.eventBus.emit("user:prompt", { callerType: "user", callerId: "api" }, name, {
+    prompt: message,
+    sessionId,
+    source: "api",
+  });
   const result = await ctx.agentManager.promptAgent(name, message, sessionId);
   return {
     response: result.text,

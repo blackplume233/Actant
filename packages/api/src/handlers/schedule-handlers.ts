@@ -23,6 +23,11 @@ async function handleAgentDispatch(
   ctx: AppContext,
 ): Promise<AgentDispatchResult> {
   const { name, prompt, priority } = params as unknown as AgentDispatchParams;
+  ctx.eventBus.emit("user:dispatch", { callerType: "user", callerId: "api" }, name, {
+    prompt,
+    priority: priority ?? "normal",
+    source: "api",
+  });
   const scheduler = ctx.schedulers.get(name);
   if (!scheduler) {
     return { queued: false };

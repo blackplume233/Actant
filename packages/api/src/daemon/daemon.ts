@@ -73,6 +73,9 @@ export class Daemon {
     await writePidFile(this.ctx.pidFilePath);
     this.running = true;
 
+    this.ctx.eventBus.emit("actant:start", { callerType: "system", callerId: "Daemon" }, undefined, {
+      version: "0.1.0",
+    });
     logger.info({ pid: process.pid, socket: this.ctx.socketPath, homeDir: this.ctx.homeDir }, "Daemon started");
   }
 
@@ -80,6 +83,9 @@ export class Daemon {
     if (!this.running) return;
     this.running = false;
 
+    this.ctx.eventBus.emit("actant:stop", { callerType: "system", callerId: "Daemon" }, undefined, {
+      reason: "shutdown",
+    });
     logger.info("Daemon shutting down...");
 
     const agents = this.ctx.agentManager.listAgents();

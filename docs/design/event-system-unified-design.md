@@ -7,6 +7,47 @@
 
 ---
 
+## 0. 设计原则：事件优先 (Event-First)
+
+> **所有系统行为的副作用都应通过事件表达。**
+
+后续所有功能设计和实现必须遵守：
+
+1. **Emit before extend** — 当一个操作（create / start / stop / prompt / dispatch）完成后，
+   先 emit 事件到 EventBus，再由感兴趣的 listener 决定后续行为。
+   不要在调用方直接硬编码"下一步做什么"。
+
+2. **Side-effects via hooks, not inline** — 如果 `startAgent()` 完成后需要初始化 Scheduler、
+   注册 Workflow、发通知等，这些都应作为 `process:start` 事件的 listener，
+   而不是写在 `startAgent()` 函数体内或 handler 中。
+
+3. **Caller identity always** — 每次 emit 必须携带 `HookEmitContext`
+   （callerType + callerId），让 listener 能做权限判断。
+
+4. **Don't break the bus** — EventBus listener 的异常不能阻断主流程。
+   emit 是 fire-and-forget（listener error 被 catch + log）。
+
+违反此原则的典型反模式：
+
+```
+// ❌ 反模式: 直接调用
+async handleAgentStart(name, ctx) {
+  await ctx.agentManager.startAgent(name);
+  initSchedulerIfNeeded(name, ctx);   // 硬编码副作用
+  sendNotification(name);              // 又一个硬编码副作用
+}
+
+// ✅ 正确: 通过事件
+async handleAgentStart(name, ctx) {
+  await ctx.agentManager.startAgent(name);
+  // startAgent 内部已 emit("process:start")
+  // Scheduler 初始化由 process:start listener 完成
+  // 通知由另一个 listener 完成
+}
+```
+
+---
+
 ## 1. 问题陈述
 
 当前系统存在**两套平行的事件/调度机制**，职责重叠，数据流割裂：
