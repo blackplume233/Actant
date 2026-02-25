@@ -56,8 +56,13 @@ export interface AgentTemplate extends VersionedComponent {
     cron?: Array<{ pattern: string; prompt: string; timezone?: string; priority?: string }>;
     hooks?: Array<{ eventName: string; prompt: string; priority?: string }>;
   };
+  /** High-level interaction archetype that drives default launchMode, interactionModes, and autoStart. */
+  archetype?: AgentArchetype;
   metadata?: Record<string, string>;
 }
+
+/** High-level semantic archetype describing how an agent is intended to be used. */
+export type AgentArchetype = "tool" | "employee" | "service";
 
 /** CLI-level interaction modes that an agent supports. */
 export type InteractionMode = "open" | "start" | "chat" | "run" | "proxy";

@@ -175,6 +175,8 @@ export class AppContext {
     this.initialized = true;
     this.startTime = Date.now();
     logger.info("AppContext initialized");
+
+    await this.autoStartAgents();
   }
 
   get uptime(): number {
@@ -286,6 +288,25 @@ export class AppContext {
     this.agentInitializer.workspaceBuilder.registerBuilder(new PiBuilder());
     registerCommunicator("pi", (backendConfig) => new PiCommunicator(configFromBackend(backendConfig)));
     logger.info("Pi backend registered (in-process, acp mode only)");
+  }
+
+  private async autoStartAgents(): Promise<void> {
+    const agents = this.agentManager.listAgents();
+    const candidates = agents.filter(
+      (a) => a.autoStart && (a.status === "stopped" || a.status === "created"),
+    );
+
+    if (candidates.length === 0) return;
+
+    logger.info({ count: candidates.length }, "Auto-starting agents");
+    for (const agent of candidates) {
+      try {
+        await this.agentManager.startAgent(agent.name);
+        logger.info({ name: agent.name, archetype: agent.archetype }, "Auto-started agent");
+      } catch (err) {
+        logger.error({ name: agent.name, error: err }, "Failed to auto-start agent");
+      }
+    }
   }
 
   private async loadDomainComponents(): Promise<void> {

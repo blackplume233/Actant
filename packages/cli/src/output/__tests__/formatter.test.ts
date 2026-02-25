@@ -49,6 +49,8 @@ const minimalAgent: AgentInstanceMeta = {
   launchMode: "direct",
   workspacePolicy: "persistent",
   processOwnership: "managed",
+  archetype: "tool",
+  autoStart: false,
   createdAt: "2025-01-15T10:00:00.000Z",
   updatedAt: "2025-01-15T10:05:00.000Z",
 };

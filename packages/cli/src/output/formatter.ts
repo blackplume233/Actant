@@ -121,6 +121,7 @@ export function formatAgentList(
     head: [
       chalk.cyan("Name"),
       chalk.cyan("Template"),
+      chalk.cyan("Archetype"),
       chalk.cyan("Status"),
       chalk.cyan("Launch Mode"),
       chalk.cyan("PID"),
@@ -132,6 +133,7 @@ export function formatAgentList(
     table.push([
       a.name,
       `${a.templateName}@${a.templateVersion}`,
+      a.archetype ?? chalk.dim("tool"),
       colorStatus(a.status),
       a.launchMode,
       a.pid?.toString() ?? chalk.dim("—"),
@@ -158,6 +160,8 @@ export function formatAgentDetail(
     `${chalk.bold("Agent:")}     ${agent.name}`,
     `${chalk.bold("ID:")}        ${agent.id}`,
     `${chalk.bold("Template:")}  ${agent.templateName}@${agent.templateVersion}`,
+    `${chalk.bold("Archetype:")} ${agent.archetype ?? "tool"}`,
+    `${chalk.bold("AutoStart:")} ${agent.autoStart ? chalk.green("yes") : chalk.dim("no")}`,
     `${chalk.bold("Status:")}    ${colorStatus(agent.status)}`,
     `${chalk.bold("Launch:")}    ${agent.launchMode}`,
     `${chalk.bold("PID:")}       ${agent.pid ?? chalk.dim("—")}`,

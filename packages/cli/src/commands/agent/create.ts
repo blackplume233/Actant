@@ -3,11 +3,12 @@ import { resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { Command } from "commander";
 import chalk from "chalk";
-import type { LaunchMode, WorkDirConflict } from "@actant/shared";
+import type { AgentArchetype, LaunchMode, WorkDirConflict } from "@actant/shared";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, formatAgentDetail, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
 
 const VALID_LAUNCH_MODES = new Set(["direct", "acp-background", "acp-service", "one-shot"]);
+const VALID_ARCHETYPES = new Set(["tool", "employee", "service"]);
 
 function askQuestion(question: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -25,6 +26,8 @@ export function createAgentCreateCommand(client: RpcClient, printer: CliPrinter 
     .argument("<name>", "Agent instance name")
     .requiredOption("-t, --template <template>", "Template name to use")
     .option("--launch-mode <mode>", "Launch mode: direct, acp-background, acp-service, one-shot")
+    .option("--archetype <type>", "Agent archetype: tool, employee, service")
+    .option("--no-auto-start", "Disable auto-start even if archetype implies it")
     .option("--work-dir <path>", "Custom workspace directory (absolute or relative path)")
     .option("--workspace <path>", "Same as --work-dir: create instance at external path instead of builtin location")
     .option("--overwrite", "If instance directory exists, remove it and recreate")
@@ -33,6 +36,8 @@ export function createAgentCreateCommand(client: RpcClient, printer: CliPrinter 
     .action(async (name: string, opts: {
       template: string;
       launchMode?: string;
+      archetype?: string;
+      autoStart?: boolean;
       workDir?: string;
       workspace?: string;
       overwrite?: boolean;
@@ -42,6 +47,12 @@ export function createAgentCreateCommand(client: RpcClient, printer: CliPrinter 
       try {
         if (opts.launchMode && !VALID_LAUNCH_MODES.has(opts.launchMode)) {
           printer.error(`${chalk.red(`Invalid launch mode: ${opts.launchMode}`)}`);
+          process.exitCode = 1;
+          return;
+        }
+
+        if (opts.archetype && !VALID_ARCHETYPES.has(opts.archetype)) {
+          printer.error(`${chalk.red(`Invalid archetype: ${opts.archetype}`)}`);
           process.exitCode = 1;
           return;
         }
@@ -77,6 +88,8 @@ export function createAgentCreateCommand(client: RpcClient, printer: CliPrinter 
 
         const overrides: Record<string, unknown> = {};
         if (opts.launchMode) overrides.launchMode = opts.launchMode as LaunchMode;
+        if (opts.archetype) overrides.archetype = opts.archetype as AgentArchetype;
+        if (opts.autoStart === false) overrides.autoStart = false;
         if (workDir) overrides.workDir = workDir;
         if (workDirConflict) overrides.workDirConflict = workDirConflict;
 

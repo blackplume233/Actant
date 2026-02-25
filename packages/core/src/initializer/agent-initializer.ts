@@ -1,7 +1,7 @@
 import { mkdir, rm, access, symlink, lstat, unlink, readlink } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, WorkDirConflict, PermissionsInput, ModelProviderConfig } from "@actant/shared";
+import type { AgentInstanceMeta, AgentArchetype, LaunchMode, WorkspacePolicy, WorkDirConflict, PermissionsInput, ModelProviderConfig } from "@actant/shared";
 import {
   ActantError,
   ConfigValidationError,
@@ -19,6 +19,7 @@ import type { StepContext } from "./pipeline/types";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveProviderFromEnv } from "../provider/provider-env-resolver";
 import { getBackendDescriptor } from "../manager/launcher/backend-registry";
+import { getArchetypeDefaults } from "./archetype-defaults";
 
 const logger = createLogger("agent-initializer");
 
@@ -32,6 +33,10 @@ export interface InitializerOptions {
 export interface InstanceOverrides {
   launchMode: LaunchMode;
   workspacePolicy: WorkspacePolicy;
+  /** Override the template archetype. Affects default launchMode, interactionModes, and autoStart. */
+  archetype: AgentArchetype;
+  /** Explicitly control auto-start. When omitted, derived from archetype. */
+  autoStart: boolean;
   /** Absolute path for the agent workspace. When omitted, defaults to {instancesBaseDir}/{name}. */
   workDir: string;
   /** Behavior when workDir already exists. Default: "error". */
@@ -145,7 +150,13 @@ export class AgentInitializer {
       const resolvedProvider = resolveProviderConfig(template.provider);
 
       const now = new Date().toISOString();
-      const launchMode = overrides?.launchMode ?? this.options?.defaultLaunchMode ?? "direct";
+
+      const archetype = overrides?.archetype ?? template.archetype ?? "tool";
+      const archetypeDefaults = getArchetypeDefaults(archetype);
+
+      const launchMode = overrides?.launchMode
+        ?? this.options?.defaultLaunchMode
+        ?? archetypeDefaults.launchMode;
       const defaultPolicy: WorkspacePolicy = launchMode === "one-shot" ? "ephemeral" : "persistent";
 
       let defaultModes: import("@actant/shared").InteractionMode[] | undefined;
@@ -156,7 +167,9 @@ export class AgentInitializer {
       }
       const interactionModes = template.backend.interactionModes
         ?? defaultModes
-        ?? ["start"];
+        ?? archetypeDefaults.interactionModes;
+
+      const autoStart = overrides?.autoStart ?? archetypeDefaults.autoStart;
 
       const meta: AgentInstanceMeta = {
         id: randomUUID(),
@@ -173,6 +186,8 @@ export class AgentInitializer {
         processOwnership: "managed",
         createdAt: now,
         updatedAt: now,
+        archetype,
+        autoStart,
         effectivePermissions,
         metadata: overrides?.metadata,
       };
