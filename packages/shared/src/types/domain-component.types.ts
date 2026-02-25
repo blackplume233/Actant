@@ -66,7 +66,13 @@ export interface PromptDefinition extends VersionedComponent {
 /** A Workflow = a development workflow template (directory-based). */
 export interface WorkflowDefinition extends VersionedComponent {
   /** The workflow content (e.g. workflow.md contents) */
-  content: string;
+  content?: string;
+  /** Hook declarations bound to this workflow (Phase 4 #135). */
+  hooks?: import("./hook.types").HookDeclaration[];
+  /** Whether this workflow is active. Defaults to true. */
+  enabled?: boolean;
+  /** Scope: "actant" for system-wide, "instance" for per-agent. Defaults to "actant". */
+  level?: "actant" | "instance";
 }
 
 /** MCP Server configuration (resolved form, same structure as McpServerRef). */

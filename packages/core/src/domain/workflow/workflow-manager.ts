@@ -19,7 +19,7 @@ export class WorkflowManager extends BaseComponentManager<WorkflowDefinition> {
 
   /** Get the workflow content ready to write to .trellis/workflow.md */
   renderWorkflow(workflow: WorkflowDefinition): string {
-    return workflow.content;
+    return workflow.content ?? "";
   }
 
   validate(data: unknown, _source: string): ConfigValidationResult<WorkflowDefinition> {

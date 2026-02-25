@@ -60,6 +60,14 @@ export type {
   PluginDefinition,
 } from "./domain-component.types";
 export type {
+  HookEventName,
+  HookAction,
+  ShellAction,
+  BuiltinAction,
+  AgentAction,
+  HookDeclaration,
+} from "./hook.types";
+export type {
   ValidationSeverity,
   ValidationIssue,
   ConfigValidationResult,

@@ -3,7 +3,7 @@
 **启动时间**: 2026-02-25 09:55
 **当前时间**: 2026-02-25 09:55
 **总运行时长**: 0 分钟
-**基线 HEAD 变迁**: aec18f7a → afc2ae0 → 0e4ed49 → 51ec005 → 7f57024 → 7bcd996 → 2c860a9 → 2f4c3e7
+**基线 HEAD 变迁**: aec18f7a → afc2ae0 → 0e4ed49 → 51ec005 → 7f57024 → 7bcd996 → 2c860a9 → 2f4c3e7 → 8aa4d83
 **配置**: interval=10min, mock=true, scenario=random-walk-comprehensive
 
 ## 测试轮次
@@ -17,6 +17,7 @@
 | R5 | 12:20 | 新 ship | 7bcd996 | 50/52 | 1 | 1 | 96.2% |
 | R6 | 13:50 | 新 ship | 2c860a9 | 49/50 | 1 | 0 | 98% |
 | R7 | 14:05 | 新 ship | 2f4c3e7 | BUILD FAIL | — | — | N/A |
+| R8 | 14:50 | 新 ship | 8aa4d83 | BUILD FAIL | — | — | N/A |
 
 ## 监测检查记录
 
@@ -35,6 +36,8 @@
 | 12:30-13:30 | 7bcd996 | 无变化 (连续8次) |
 | 13:40 | 7bcd996 | 新 ship → Round 6 |
 | 14:00 | 2c860a9 | 新 ship → Round 7 (BUILD FAIL) |
+| 14:15-14:35 | 2f4c3e7 | 无变化 (连续3次) |
+| 14:45 | 2f4c3e7 | 新 ship → Round 8 (BUILD FAIL) |
 
 ## 覆盖的 PR
 
@@ -61,7 +64,8 @@ R3: ░░░░░░░░░░ BUILD FAIL
 R4: █████████░ 98%
 R5: █████████░ 96%
 R6: █████████░ 98%
-R7: ░░░░░░░░░░ BUILD FAIL
+R7: ░░░░░░░░░░ BUILD FAIL (picomatch)
+R8: ░░░░░░░░░░ BUILD FAIL (picomatch)
 ```
 
 ## 状态

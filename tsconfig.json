@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/shared" },
+    { "path": "packages/core" },
+    { "path": "packages/acp" },
+    { "path": "packages/api" },
+    { "path": "packages/pi" },
+    { "path": "packages/mcp-server" },
+    { "path": "packages/cli" },
+    { "path": "packages/actant" }
+  ]
+}
