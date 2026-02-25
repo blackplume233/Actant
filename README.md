@@ -269,24 +269,23 @@ actant self-update --dry-run    # 模拟执行
 
 ## 文档
 
-### 功能文档
+### Wiki（功能文档 & 入门指南）
 
-逐功能介绍 Actant 的能力，每篇包含使用场景和验证示例：
+完整的产品文档 Wiki，使用 VitePress 构建：
 
-| 文档 | 说明 |
+```bash
+cd docs/wiki && pnpm install && pnpm dev
+```
+
+| 区域 | 内容 |
 |------|------|
-| [功能文档索引](docs/guides/features/README.md) | 全部功能文档的目录和阅读建议 |
-| [Agent 模板系统](docs/guides/features/agent-template.md) | JSON 配置定义可复用的 Agent 类型 |
-| [Agent 生命周期管理](docs/guides/features/agent-lifecycle.md) | 创建、启动、运行、停止、销毁 |
-| [领域上下文拼装](docs/guides/features/domain-context.md) | Skills + Prompts + MCP + Workflow + Plugin |
-| [多后端支持](docs/guides/features/multi-backend.md) | Claude Code / Cursor / Pi / Custom |
-| [权限控制](docs/guides/features/permissions.md) | 4 级安全预设 + 自定义配置 |
-| [雇员调度器](docs/guides/features/employee-scheduler.md) | 心跳 / Cron / Hook 自动任务调度 |
-| [ACP 连接与代理](docs/guides/features/acp-proxy.md) | Direct Bridge + Session Lease |
-| [组件源与同步](docs/guides/features/component-source.md) | GitHub / 本地组件仓库 |
-| [CLI 交互模式](docs/guides/features/cli-interaction.md) | 68 命令 + REPL 模式 |
-| [安装与自更新](docs/guides/features/installation-update.md) | 一键安装 + 自动升级 |
-| [可扩展架构](docs/guides/features/extensible-architecture.md) | ComponentTypeHandler 注册式扩展 |
+| [快速开始](docs/wiki/guide/getting-started.md) | 5 分钟跑通第一个 Agent |
+| [核心概念](docs/wiki/guide/concepts.md) | Template / Instance / Domain Context |
+| [功能总览](docs/wiki/features/index.md) | 10 项功能说明（模板、生命周期、领域上下文、多后端、权限、调度器、ACP、组件源、可扩展架构、CLI） |
+| [实战教程](docs/wiki/recipes/create-hub.md) | 创建组件仓库、CI/CD 集成、雇员 Agent |
+| [架构概览](docs/wiki/reference/architecture.md) | 模块结构、通信架构、技术栈 |
+
+> Wiki 全部内容为生成产物，不作为开发参考。AI Agent 权威源为 `.trellis/spec/`、`docs/stage/`、源码。
 
 ### 教程与参考
 
