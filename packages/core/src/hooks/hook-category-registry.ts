@@ -63,8 +63,8 @@ export class HookCategoryRegistry {
     if (this.categories.has(definition.name)) {
       throw new Error(`Hook category "${definition.name}" is already registered`);
     }
-    if (this.prefixIndex.has(definition.prefix)) {
-      const existing = this.prefixIndex.get(definition.prefix)!;
+    const existing = this.prefixIndex.get(definition.prefix);
+    if (existing) {
       throw new Error(
         `Hook prefix "${definition.prefix}" is already used by category "${existing.name}"`,
       );

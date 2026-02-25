@@ -273,6 +273,7 @@ describe("HookCategoryRegistry", () => {
       ],
       allowedEmitters: ["plugin"],
       allowedListeners: [],
+      subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
     };
     registry.registerEventMeta(custom);
 
@@ -303,6 +304,7 @@ describe("HookCategoryRegistry", () => {
       payloadSchema: [],
       allowedEmitters: [],
       allowedListeners: [],
+      subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: false },
     });
 
     registry.unregister("deploy");
@@ -323,6 +325,7 @@ describe("HookCategoryRegistry", () => {
       payloadSchema: [],
       allowedEmitters: [],
       allowedListeners: [],
+      subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: false },
     });
     expect(registry.canEmit("custom:open-event", "agent")).toBe(true);
     expect(registry.canEmit("custom:open-event", "user")).toBe(true);
