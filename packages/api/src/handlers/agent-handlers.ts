@@ -30,10 +30,13 @@ import type {
   AgentUpdatePermissionsResult,
 } from "@actant/shared";
 import { AgentNotFoundError } from "@actant/shared";
-import { resolvePermissionsWithMcp, PermissionAuditLogger } from "@actant/core";
+import { resolvePermissionsWithMcp, PermissionAuditLogger, EmployeeScheduler, type ScheduleConfigInput } from "@actant/core";
 import { updateInstanceMeta, readInstanceMeta } from "@actant/core";
+import { createLogger } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
+
+const logger = createLogger("agent-handlers");
 
 export function registerAgentHandlers(registry: HandlerRegistry): void {
   registry.register("agent.create", handleAgentCreate);
@@ -69,6 +72,9 @@ async function handleAgentStart(
   await ctx.agentManager.startAgent(name, { autoInstall });
   const meta = ctx.agentManager.getAgent(name);
   if (!meta) throw new AgentNotFoundError(name);
+
+  initSchedulerIfNeeded(name, ctx);
+
   return meta;
 }
 
@@ -77,6 +83,9 @@ async function handleAgentStop(
   ctx: AppContext,
 ): Promise<AgentStopResult> {
   const { name } = params as unknown as AgentStopParams;
+
+  teardownScheduler(name, ctx);
+
   await ctx.agentManager.stopAgent(name);
   const meta = ctx.agentManager.getAgent(name);
   if (!meta) throw new AgentNotFoundError(name);
@@ -88,6 +97,9 @@ async function handleAgentDestroy(
   ctx: AppContext,
 ): Promise<AgentDestroyResult> {
   const { name } = params as unknown as AgentDestroyParams;
+
+  teardownScheduler(name, ctx);
+
   await ctx.agentManager.destroyAgent(name);
   return { success: true };
 }
@@ -223,6 +235,48 @@ interface AgentProcessLogsResult {
   lines: string[];
   stream: string;
   logDir: string;
+}
+
+/**
+ * Create and start an EmployeeScheduler for the agent if its template
+ * declares a `schedule` config. Stores the scheduler in `ctx.schedulers`.
+ */
+function initSchedulerIfNeeded(name: string, ctx: AppContext): void {
+  if (ctx.schedulers.has(name)) return;
+
+  const meta = ctx.agentManager.getAgent(name);
+  if (!meta?.templateName) return;
+
+  const template = ctx.templateRegistry.get(meta.templateName);
+  if (!template?.schedule) return;
+
+  const hasConfig = template.schedule.heartbeat
+    || (template.schedule.cron && template.schedule.cron.length > 0)
+    || (template.schedule.hooks && template.schedule.hooks.length > 0);
+  if (!hasConfig) return;
+
+  const promptFn = async (agentName: string, prompt: string) => {
+    const result = await ctx.agentManager.runPrompt(agentName, prompt);
+    return result.text;
+  };
+
+  const scheduler = new EmployeeScheduler(name, promptFn, {
+    persistDir: join(ctx.instancesDir, name, "logs"),
+  });
+  scheduler.configure(template.schedule as ScheduleConfigInput);
+  scheduler.start();
+
+  ctx.schedulers.set(name, scheduler);
+  logger.info({ name, sources: scheduler.getSources().length }, "EmployeeScheduler initialized for agent");
+}
+
+function teardownScheduler(name: string, ctx: AppContext): void {
+  const scheduler = ctx.schedulers.get(name);
+  if (!scheduler) return;
+
+  scheduler.stop();
+  ctx.schedulers.delete(name);
+  logger.info({ name }, "EmployeeScheduler stopped and removed");
 }
 
 async function handleAgentProcessLogs(

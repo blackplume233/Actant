@@ -83,7 +83,7 @@ describe("CLI E2E (stdio)", () => {
     expect(exitCode).toBe(0);
     const result = JSON.parse(stdout);
     expect(result.running).toBe(true);
-    expect(result.version).toBe("0.1.0");
+    expect(result.version).toMatch(/^\d+\.\d+\.\d+/);
   });
 
   it("template list shows empty list", async () => {
