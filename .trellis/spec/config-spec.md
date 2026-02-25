@@ -221,9 +221,9 @@ Provider 存在两个层次：
 
 ### ScheduleConfig（Phase 3c 新增）
 
-> **⚠️ 演进方向**：在统一事件系统架构下，`ScheduleConfig` 将由适配器自动转换为等价的 `WorkflowDefinition`。
-> 定时器（Cron/Heartbeat）变为纯事件源（emit 到 EventBus），不再自带独立 TaskQueue。
-> 详见 [event-system-unified-design.md §6.2](../../docs/design/event-system-unified-design.md)。
+> **✅ 已重构**：定时器（HeartbeatInput/CronInput）现在是纯**事件源**，同时 emit 到 HookEventBus（`heartbeat:tick` / `cron:<pattern>`）并通过 TaskQueue 串行派发内置 prompt（向后兼容）。
+> TaskDispatcher 在队列排空时 emit `idle` 事件。EmployeeScheduler 接受可选 `hookEventBus` 参数完成集成。
+> 详见 [event-system-unified-design.md](../../docs/design/event-system-unified-design.md)。
 
 定义雇员型 Agent 的自动调度策略。当模板包含 `schedule` 字段时，Agent 启动后自动初始化 EmployeeScheduler。
 
@@ -747,6 +747,7 @@ type HookEventName =
   // User Layer (Configurable)
   | 'user:dispatch' | 'user:run' | 'user:prompt'
   // Extension Layer (Any)
+  | 'subsystem:activated' | 'subsystem:deactivated' | 'subsystem:error'
   | `plugin:${string}`
   | `custom:${string}`;
 ```
@@ -755,7 +756,7 @@ type HookEventName =
 
 > 命名规范：`<scope>:<noun>` 或 `<scope>:<noun>:<verb>`。详见 [Plugin 预定设计 §Hook 事件规范](./backend/plugin-guidelines.md#hook-事件规范预定) 和 [event-system-unified-design.md §7](../../docs/design/event-system-unified-design.md)。
 >
-> 实现参考：`packages/shared/src/types/hook.types.ts`（`BUILTIN_EVENT_META` 包含所有 21 个内置事件的完整元数据）
+> 实现参考：`packages/shared/src/types/hook.types.ts`（`BUILTIN_EVENT_META` 包含所有 24 个内置事件的完整元数据，含 3 个 subsystem 事件）
 
 ### BackendDefinition
 
@@ -1127,6 +1128,50 @@ type MemorySource = {
 | `dimensions` | `number` | 待定 | 向量维度 |
 | `maxBatchSize` | `number` | `64` | 单次 batch 最大条数 |
 | `maxPerSession` | `number` | `200` | 单 session 最大 embedding 次数 |
+
+---
+
+## 13. SubsystemDefinition — 子系统定义（Phase 4 新增） 🚧
+
+> 状态：**规范已定义** — 详见 [subsystem-design.md](../../docs/design/subsystem-design.md)
+
+Subsystem 是绑定到特定 Outer（宿主）的可热插拔功能模块，四种作用域对应不同生命周期。
+
+### SubsystemDefinition
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | `string` | **是** | 子系统唯一名称 |
+| `scope` | `SubsystemScope` | **是** | 作用域 |
+| `description` | `string` | 否 | 人类可读描述 |
+| `dependencies` | `string[]` | 否 | 依赖的其他子系统名称 |
+| `defaultEnabled` | `boolean` | 否 | 默认是否启用（默认 `true`） |
+
+### SubsystemScope
+
+| 值 | Outer 实体 | 生命周期 | UE5 等价物 |
+|----|-----------|---------|-----------|
+| `"actant"` | Daemon 进程 | daemon start → stop | `UEngineSubsystem` |
+| `"instance"` | AgentInstance | create → destroy | `UGameInstanceSubsystem` |
+| `"process"` | AgentProcess | process start → stop | `UWorldSubsystem` |
+| `"session"` | AcpSession | session start → end | `ULocalPlayerSubsystem` |
+
+### SubsystemRef（AgentTemplate 或 AppConfig 中引用）
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `name` | `string` | **是** | 子系统名称 |
+| `enabled` | `boolean` | 否 | 是否启用（覆盖 `defaultEnabled`） |
+| `config` | `Record<string, unknown>` | 否 | 传递给子系统的运行时配置 |
+
+### 四种注册途径
+
+| 途径 | 发起者 | 生命周期 | 典型场景 |
+|------|--------|---------|---------|
+| Builtin | 系统代码 | 永久 | EmployeeScheduler、AutoStart |
+| Plugin | Plugin 声明 | Plugin 启用期间 | Memory、Monitor |
+| User Config | 模板 JSON | 实例存活期间 | 自定义定时检查 |
+| Agent Self | Agent CLI 注册 | Ephemeral（进程存活期间） | 动态注册轮询 |
 
 ---
 

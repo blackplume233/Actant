@@ -149,6 +149,7 @@ Actant 的接口架构（三层协议分工）：
 | `PROXY_SESSION_CONFLICT` | -32011 | Proxy session 冲突（同名 Agent 已有活跃 Proxy） |
 | `HOOK_EVENT_NOT_SUBSCRIBABLE` | -32012 | 事件不允许 Agent 自注册（订阅模型 C 不支持） |
 | `HOOK_SUBSCRIPTION_NOT_FOUND` | -32013 | 动态订阅 ID 不存在 |
+| `SUBSYSTEM_NOT_FOUND` | -32014 | 子系统不存在 |
 
 **映射规则**：`ActantError` 子类在 Socket Server 边界处映射为对应 RPC 错误码；未映射的异常一律返回 `INTERNAL_ERROR`。
 
@@ -859,7 +860,48 @@ Agent 自主注册周期性任务。Cron 定时器作为事件源 emit `cron:<ex
 | `prompt` | `string` | **是** | 每次触发执行的 prompt |
 | `name` | `string` | 否 | 输入源名称，用于取消时引用 |
 
-### 3.15 Email 统计（Phase 4 新增） 🚧
+### 3.15 Subsystem 管理（Phase 4 新增） 🚧
+
+> 状态：**待实现** — 统一事件系统 + Subsystem 框架
+> 设计文档：[subsystem-design.md](../../docs/design/subsystem-design.md)
+
+管理子系统的注册、启停和运行时状态查询。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `subsystem.list` | `{ scope?, agentName? }` | `SubsystemStatusDto[]` | — |
+| `subsystem.status` | `{ name, scope?, agentName? }` | `SubsystemStatusDto` | `SUBSYSTEM_NOT_FOUND` |
+| `subsystem.enable` | `{ name, scope?, agentName?, config? }` | `{ success }` | `SUBSYSTEM_NOT_FOUND` |
+| `subsystem.disable` | `{ name, scope?, agentName? }` | `{ success }` | `SUBSYSTEM_NOT_FOUND` |
+
+#### SubsystemStatusDto
+
+```typescript
+interface SubsystemStatusDto {
+  name: string;
+  scope: 'actant' | 'instance' | 'process' | 'session';
+  state: 'inactive' | 'initializing' | 'running' | 'error' | 'stopped';
+  agentName?: string;
+  description?: string;
+  dependencies: string[];
+  config: Record<string, unknown>;
+  activatedAt?: string;
+  lastError?: string;
+}
+```
+
+#### subsystem.list
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `scope` | `SubsystemScope` | 否 | 过滤作用域 |
+| `agentName` | `string` | 否 | 过滤绑定到指定 Agent 的子系统（instance/process/session scope） |
+
+#### subsystem.enable / subsystem.disable
+
+运行时启用/禁用子系统。启用时可传入 `config` 覆盖默认配置。对于 `instance`/`process`/`session` scope 的子系统需指定 `agentName`。
+
+### 3.16 Email 统计（Phase 4 新增） 🚧
 
 > 状态：**待实现** — Step 5 (Agent-to-Agent Email)
 
@@ -885,7 +927,7 @@ interface EmailStatsDto {
 }
 ```
 
-### 3.16 Memory 统计（Phase 4/5 新增） 🚧
+### 3.17 Memory 统计（Phase 4/5 新增） 🚧
 
 > 状态：**待实现** — Step 8+ (Memory Core) 之后
 
@@ -1090,7 +1132,18 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 
 > 实现参考：`packages/cli/src/commands/agent/dispatch.ts`, `packages/cli/src/commands/schedule/`
 
-### 4.7 Hook 命令 (`actant hook`) 🚧
+### 4.7 Subsystem 命令 (`actant subsystem` / `actant ss`) 🚧
+
+> 状态：**待实现** — Subsystem 框架
+
+| 命令 | 参数 | 选项 | 对应 RPC |
+|------|------|------|---------|
+| `subsystem list` | — | `--scope <scope>`, `--agent <name>`, `-f, --format` | `subsystem.list` |
+| `subsystem status <name>` | `name` | `--scope`, `--agent`, `-f, --format` | `subsystem.status` |
+| `subsystem enable <name>` | `name` | `--scope`, `--agent`, `--config <json>` | `subsystem.enable` |
+| `subsystem disable <name>` | `name` | `--scope`, `--agent` | `subsystem.disable` |
+
+### 4.8 Hook 命令 (`actant hook`) 🚧
 
 > 状态：**待实现** — 统一事件系统
 
@@ -1104,7 +1157,7 @@ Agent 和用户在运行时管理事件订阅。Agent 通过 shell 工具调用�
 
 `--agent self` 在 Agent 进程内部调用时自动解析为当前 Agent 实例名。
 
-### 4.8 ACP Proxy 命令
+### 4.9 ACP Proxy 命令
 
 | 命令 | 参数 | 选项 | 行为 |
 |------|------|------|------|
@@ -1121,7 +1174,7 @@ actant proxy my-agent -t review-template # 不存在则自动创建
 
 > `--env-passthrough` 选项 *(not yet implemented)*
 
-### 4.9 守护进程命令 (`actant daemon`)
+### 4.10 守护进程命令 (`actant daemon`)
 
 | 命令 | 选项 | 行为 |
 |------|------|------|

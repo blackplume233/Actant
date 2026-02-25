@@ -71,7 +71,8 @@ Instance 生命周期（持久化）       Process 生命周期（运行时）
 │          │          │ error, idle                                   │
 │ Schedule │ Config.  │ cron:<expr>, heartbeat:tick                   │
 │ User     │ Config.  │ user:dispatch, user:run, user:prompt          │
-│ Extension│ Any      │ plugin:<name>, custom:<name>                  │
+│ Extension│ Any      │ subsystem:activated/deactivated/error          │
+│          │          │ plugin:<name>, custom:<name>                  │
 └──────────┴──────────┴──────────────────────────────────────────────┘
 ```
 
@@ -115,6 +116,31 @@ Plugin ──────────────────┘                
 2. **Side-effects via hooks, not inline** — 副作用应作为事件 listener，不硬编码在调用方
 3. **Caller identity always** — 每次 emit 必须携带 `HookEmitContext`（callerType + callerId）
 4. **Don't break the bus** — listener 异常不阻断主流程，emit 是 fire-and-forget
+
+#### Schedule 作为事件源
+
+Schedule 层组件（HeartbeatInput、CronInput）是**纯事件源**，emit 到 EventBus 后由 HookRegistry → ActionRunner 路由。不再拥有独立的 TaskQueue 路由。
+
+- `HeartbeatInput` → emit `heartbeat:tick`（携带 `intervalMs` + `tickCount`）
+- `CronInput` → emit `cron:<pattern>`（携带 `pattern` + `timezone`）
+- `TaskDispatcher` → emit `idle`（agent 从有任务变为无任务时触发）
+
+EmployeeScheduler 双路输出：既 emit 到 EventBus（供 Workflow Hook 响应），又通过 TaskQueue 串行派发内置 prompt（向后兼容）。
+
+#### Subsystem 子系统
+
+> 完整设计文档：[subsystem-design.md](../../docs/design/subsystem-design.md)
+
+Subsystem 是绑定到特定 Outer（宿主）的**可热插拔功能模块**，参考 UE5 Subsystem 模式：
+
+| Scope | Outer 实体 | 生命周期 | 典型用途 |
+|-------|-----------|---------|---------|
+| `ActantSubsystem` | Daemon | daemon start → stop | 全局监控、调度策略 |
+| `InstanceSubsystem` | AgentInstance | create → destroy | 领域组件注入、EmployeeScheduler |
+| `ProcessSubsystem` | AgentProcess | start → stop | 健康检查、重启追踪 |
+| `SessionSubsystem` | AcpSession | session start → end | 会话记忆、工具沙箱 |
+
+Subsystem 生命周期由宿主管理器直接驱动（保证有序可靠），业务通信自由使用 EventBus。
 
 #### Instance 层的作用域角色
 
