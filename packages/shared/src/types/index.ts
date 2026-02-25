@@ -66,7 +66,19 @@ export type {
   BuiltinAction,
   AgentAction,
   HookDeclaration,
+  HookLayer,
+  HookCategoryMeta,
+  HookCategoryName,
+  HookRetryPolicy,
+  HookScope,
+  HookCategoryDefinition,
+  HookCallerType,
+  HookEmitContext,
+  HookPayloadFieldSchema,
+  HookEventMeta,
+  EventSubscriptionModels,
 } from "./hook.types";
+export { HOOK_CATEGORIES, BUILTIN_EVENT_META } from "./hook.types";
 export type {
   ValidationSeverity,
   ValidationIssue,

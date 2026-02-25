@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
 import { createLogger } from "@actant/shared";
-import type { HookEventName } from "@actant/shared";
+import type { HookEventName, HookCallerType, HookEmitContext } from "@actant/shared";
 
 const logger = createLogger("hook-event-bus");
 
@@ -13,25 +13,45 @@ export interface HookEventPayload {
   data?: Record<string, unknown>;
   /** ISO timestamp of when the event was emitted. */
   timestamp: string;
+  /** Identifies what kind of entity emitted this event. */
+  callerType: HookCallerType;
+  /** Identifier of the caller. */
+  callerId?: string;
 }
 
 export type HookEventListener = (payload: HookEventPayload) => void | Promise<void>;
 
 /**
+ * Callback invoked before an event is dispatched to listeners.
+ * Return `false` to block the emit (permission denied).
+ */
+export type EmitGuard = (
+  event: HookEventName,
+  context: HookEmitContext,
+) => boolean;
+
+/**
  * Central event bus for the Hook/Workflow system (#135).
  *
- * Fires events at two layers:
- *   Layer 1 (Actant system): `actant:start`, `agent:created`, `cron:*`, etc.
- *   Layer 3 (Instance runtime): `process:start`, `session:end`, `prompt:after`, etc.
- *
- * Instance-scoped events include `agentName` in the payload so listeners
- * can filter by the instance they are bound to.
+ * Every emit() carries an HookEmitContext identifying the caller
+ * (system / agent / plugin / user). An optional EmitGuard can
+ * reject events from unauthorized callers before listeners fire.
  */
 export class HookEventBus {
   private readonly emitter = new EventEmitter();
+  private emitGuard: EmitGuard | null = null;
 
   constructor() {
     this.emitter.setMaxListeners(200);
+  }
+
+  /**
+   * Install a guard function that is consulted before every emit.
+   * The guard receives the event name and caller context.
+   * Return `false` to silently block the event.
+   */
+  setEmitGuard(guard: EmitGuard | null): void {
+    this.emitGuard = guard;
   }
 
   /**
@@ -47,18 +67,50 @@ export class HookEventBus {
   }
 
   /**
-   * Emit a hook event. Listeners are invoked asynchronously.
-   * Errors in listeners are logged but do not propagate.
+   * Emit a hook event with caller context.
+   *
+   * @param event     - The event name
+   * @param context   - Caller identity (who is emitting)
+   * @param agentName - Agent name for instance-scoped events
+   * @param data      - Arbitrary event data
+   *
+   * Backward compatible: omitting `context` defaults to `{ callerType: "system" }`.
    */
-  emit(event: HookEventName, agentName?: string, data?: Record<string, unknown>): void {
+  emit(
+    event: HookEventName,
+    contextOrAgentName?: HookEmitContext | string,
+    agentNameOrData?: string | Record<string, unknown>,
+    data?: Record<string, unknown>,
+  ): void {
+    let context: HookEmitContext;
+    let agentName: string | undefined;
+    let eventData: Record<string, unknown> | undefined;
+
+    if (typeof contextOrAgentName === "object" && contextOrAgentName !== null && "callerType" in contextOrAgentName) {
+      context = contextOrAgentName;
+      agentName = typeof agentNameOrData === "string" ? agentNameOrData : undefined;
+      eventData = typeof agentNameOrData === "object" ? agentNameOrData as Record<string, unknown> : data;
+    } else {
+      context = { callerType: "system" };
+      agentName = typeof contextOrAgentName === "string" ? contextOrAgentName : undefined;
+      eventData = typeof agentNameOrData === "object" ? agentNameOrData as Record<string, unknown> : undefined;
+    }
+
+    if (this.emitGuard && !this.emitGuard(event, context)) {
+      logger.debug({ event, callerType: context.callerType, callerId: context.callerId }, "Hook event blocked by emit guard");
+      return;
+    }
+
     const payload: HookEventPayload = {
       event,
       agentName,
-      data,
+      data: eventData,
       timestamp: new Date().toISOString(),
+      callerType: context.callerType,
+      callerId: context.callerId,
     };
 
-    logger.debug({ event, agentName }, "Hook event emitted");
+    logger.debug({ event, agentName, callerType: context.callerType }, "Hook event emitted");
 
     const listeners = this.emitter.listeners(event) as HookEventListener[];
     for (const listener of listeners) {
@@ -91,5 +143,6 @@ export class HookEventBus {
 
   dispose(): void {
     this.emitter.removeAllListeners();
+    this.emitGuard = null;
   }
 }

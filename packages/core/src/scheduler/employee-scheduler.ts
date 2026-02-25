@@ -9,42 +9,61 @@ import { HeartbeatInput } from "./inputs/heartbeat-input";
 import { CronInput } from "./inputs/cron-input";
 import { HookInput } from "./inputs/hook-input";
 import type { ScheduleConfigInput } from "./schedule-config";
+import type { HookEventBus } from "../hooks/hook-event-bus";
 
 const logger = createLogger("employee-scheduler");
+
+export interface EmployeeSchedulerConfig {
+  persistDir?: string;
+  /**
+   * Unified HookEventBus.
+   * When provided, HeartbeatInput/CronInput emit events to the EventBus
+   * and the dispatcher emits `idle` when the queue drains.
+   */
+  hookEventBus?: HookEventBus;
+}
 
 export class EmployeeScheduler {
   private readonly queue: TaskQueue;
   private readonly dispatcher: TaskDispatcher;
   private readonly log: ExecutionLog;
   private readonly router: InputRouter;
-  private readonly eventBus: EventEmitter;
+  private readonly legacyEventBus: EventEmitter;
+  private readonly hookEventBus?: HookEventBus;
   private _running = false;
 
   constructor(
     private readonly agentName: string,
     promptAgent: PromptAgentFn,
-    config?: { persistDir?: string },
+    config?: EmployeeSchedulerConfig,
   ) {
     this.queue = new TaskQueue();
     this.log = new ExecutionLog();
     if (config?.persistDir) {
       this.log.setPersistDir(config.persistDir);
     }
-    this.dispatcher = new TaskDispatcher(this.queue, this.log, promptAgent);
+    this.hookEventBus = config?.hookEventBus;
+    this.dispatcher = new TaskDispatcher(this.queue, this.log, promptAgent, 1000, {
+      hookEventBus: this.hookEventBus,
+    });
     this.router = new InputRouter(this.queue);
-    this.eventBus = new EventEmitter();
+    this.legacyEventBus = new EventEmitter();
   }
 
   /** Configure schedule from template config. */
   configure(scheduleConfig: ScheduleConfigInput): void {
     if (scheduleConfig.heartbeat) {
-      this.router.register(new HeartbeatInput(scheduleConfig.heartbeat));
+      this.router.register(new HeartbeatInput(scheduleConfig.heartbeat, {
+        eventBus: this.hookEventBus,
+      }));
     }
     for (const cronConfig of scheduleConfig.cron ?? []) {
-      this.router.register(new CronInput(cronConfig));
+      this.router.register(new CronInput(cronConfig, {
+        eventBus: this.hookEventBus,
+      }));
     }
     for (const hookConfig of scheduleConfig.hooks ?? []) {
-      this.router.register(new HookInput(hookConfig, this.eventBus));
+      this.router.register(new HookInput(hookConfig, this.legacyEventBus));
     }
     logger.info({ agentName: this.agentName, sources: this.router.sourceCount }, "Schedule configured");
   }
@@ -81,9 +100,12 @@ export class EmployeeScheduler {
     });
   }
 
-  /** Emit an event to trigger HookInput sources. */
+  /**
+   * Emit an event to trigger HookInput sources (legacy path).
+   * @deprecated Prefer emitting events directly to HookEventBus.
+   */
   emitEvent(eventName: string, payload?: unknown): void {
-    this.eventBus.emit(eventName, payload);
+    this.legacyEventBus.emit(eventName, payload);
   }
 
   /** Get queued tasks. */

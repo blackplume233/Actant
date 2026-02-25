@@ -5,6 +5,13 @@ import type { InputSource, TaskCallback } from "./input-source";
 
 const logger = createLogger("hook-input");
 
+/**
+ * @deprecated Use HookEventBus + HookRegistry instead.
+ * HookInput bridges a Node EventEmitter into the TaskQueue.
+ * In the unified event system, this functionality is handled by
+ * HookRegistry listening on HookEventBus and routing to ActionRunner.
+ */
+
 export interface HookConfig {
   eventName: string;
   prompt: string; // May contain {{payload}} placeholder

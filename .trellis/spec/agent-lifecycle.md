@@ -50,31 +50,103 @@ Instance 生命周期（持久化）       Process 生命周期（运行时）
 
 **关键理解**：`agent.create` ≠ 启动进程。创建只是准备 workspace（物化配置文件、规则、MCP 配置等）。启动是另一个独立操作。
 
-### 1.3 Hook 三层架构
+### 1.3 统一事件系统（Event-First 架构）
 
-Hook 机制（#135 Workflow as Hook Package）基于实体关系分为三层：
+> 完整设计文档：[event-system-unified-design.md](../../docs/design/event-system-unified-design.md)
+
+**核心原则：所有系统行为的副作用都应通过事件表达。**
+
+所有触发源（系统生命周期、定时器、用户命令、Agent 交互、插件）流经单一的 **EventBus**，所有响应（shell 执行、内置动作、Agent prompt）由 **ActionRunner** 按 archetype 分派执行策略。
+
+#### 事件分层（六层分类）
 
 ```
-Layer 1: Actant 系统层（全局事件）
-  监听 Instance 持久化操作 + 系统事件
-  agent:created / agent:destroyed / agent:modified
-  actant:start / actant:stop / source:updated / cron:<expr>
-
-Layer 2: AgentInstance（作用域绑定）
-  不产生独立事件，而是作为 binding scope
-  Instance-level Workflow 绑定到特定实例，监听其 Layer 3 事件
-
-Layer 3: 进程 / Session 运行时事件
-  由 Instance scope 内的 Workflow 监听
-  process:start / process:stop / process:crash / process:restart
-  session:start / session:end
-  prompt:before / prompt:after / error / idle
+┌──────────┬──────────┬──────────────────────────────────────────────┐
+│ Layer    │ Scope    │ Events                                       │
+├──────────┼──────────┼──────────────────────────────────────────────┤
+│ System   │ Global   │ actant:start, actant:stop                    │
+│ Entity   │ Global   │ agent:created/destroyed/modified, source:*   │
+│ Runtime  │ Instance │ process:start/stop/crash/restart              │
+│          │          │ session:start/end, prompt:before/after        │
+│          │          │ error, idle                                   │
+│ Schedule │ Config.  │ cron:<expr>, heartbeat:tick                   │
+│ User     │ Config.  │ user:dispatch, user:run, user:prompt          │
+│ Extension│ Any      │ subsystem:activated/deactivated/error          │
+│          │          │ plugin:<name>, custom:<name>                  │
+└──────────┴──────────┴──────────────────────────────────────────────┘
 ```
 
-**设计原则**：
-- Instance 的 create/destroy/modify 是**持久化操作**，归 Layer 1（Actant 系统层）
-- Instance 层不产生独立事件类型，而是作为**作用域**，决定 Layer 3 事件绑定到哪个实例
-- Process 和 Session 的事件是**运行时事件**，归 Layer 3
+#### Archetype 决定执行策略
+
+**队列串行化仅限 employee archetype**，这是明确 Instance Archetype 的根本原因：
+
+| Archetype | `agent` 动作执行策略 | 原因 |
+|-----------|---------------------|------|
+| **tool** | **Immediate** — 直接 prompt，调用方同步等待 | 按需调用，用户主动触发 |
+| **employee** | **Queued** — 进入 TaskQueue，串行派发 | 多事件可能同时到达，需串行排队 |
+| **service** | **Concurrent** — 多 session 并发处理 | 面向多客户端，每个请求独立 session |
+
+#### 三种事件订阅模型
+
+每个事件需回答："谁决定 Agent 要关心这个事件？"
+
+| 模型 | 决定者 | 生命周期 | 机制 |
+|------|--------|---------|------|
+| **A: 系统强制推送** | 系统代码硬编码 | 永久 | 系统内部 if-then，不走 HookRegistry |
+| **B: 用户配置 Action** | 人类操作者 | Agent 实例生命周期 | Workflow JSON → HookRegistry |
+| **C: Agent 自注册** | Agent 运行时决定 | Ephemeral（进程存活期间） | CLI `actant hook subscribe` → RPC → HookRegistry |
+
+**通信通道**：Agent 动态订阅（模型 C）通过 **CLI**（`actant hook subscribe`）实现，而非 MCP。MCP 是 Agent 连接外部工具的协议，不用于管理自身运行时。
+
+#### 统一数据流
+
+```
+Timer → emit(EventBus) ─┐
+System event ────────────┤
+User CLI/API ────────────┤→ EventBus → HookRegistry → ActionRunner ─┬→ shell/builtin (immediate)
+Plugin ──────────────────┘                                          └→ agent prompt
+                                                                       ├ employee → TaskQueue → serial
+                                                                       ├ service  → session pool → concurrent
+                                                                       └ tool     → direct → sync
+```
+
+#### Event-First 设计规则
+
+1. **Emit before extend** — 操作完成后先 emit 事件，由 listener 决定后续行为
+2. **Side-effects via hooks, not inline** — 副作用应作为事件 listener，不硬编码在调用方
+3. **Caller identity always** — 每次 emit 必须携带 `HookEmitContext`（callerType + callerId）
+4. **Don't break the bus** — listener 异常不阻断主流程，emit 是 fire-and-forget
+
+#### Schedule 作为事件源
+
+Schedule 层组件（HeartbeatInput、CronInput）是**纯事件源**，emit 到 EventBus 后由 HookRegistry → ActionRunner 路由。不再拥有独立的 TaskQueue 路由。
+
+- `HeartbeatInput` → emit `heartbeat:tick`（携带 `intervalMs` + `tickCount`）
+- `CronInput` → emit `cron:<pattern>`（携带 `pattern` + `timezone`）
+- `TaskDispatcher` → emit `idle`（agent 从有任务变为无任务时触发）
+
+EmployeeScheduler 双路输出：既 emit 到 EventBus（供 Workflow Hook 响应），又通过 TaskQueue 串行派发内置 prompt（向后兼容）。
+
+#### Subsystem 子系统
+
+> 完整设计文档：[subsystem-design.md](../../docs/design/subsystem-design.md)
+
+Subsystem 是绑定到特定 Outer（宿主）的**可热插拔功能模块**，参考 UE5 Subsystem 模式：
+
+| Scope | Outer 实体 | 生命周期 | 典型用途 |
+|-------|-----------|---------|---------|
+| `ActantSubsystem` | Daemon | daemon start → stop | 全局监控、调度策略 |
+| `InstanceSubsystem` | AgentInstance | create → destroy | 领域组件注入、EmployeeScheduler |
+| `ProcessSubsystem` | AgentProcess | start → stop | 健康检查、重启追踪 |
+| `SessionSubsystem` | AcpSession | session start → end | 会话记忆、工具沙箱 |
+
+Subsystem 生命周期由宿主管理器直接驱动（保证有序可靠），业务通信自由使用 EventBus。
+
+#### Instance 层的作用域角色
+
+- Instance 的 create/destroy/modify 是**持久化操作**，归 Entity 层（全局事件）
+- Instance 层不产生独立事件类型，而是作为**作用域**（binding scope），决定 Runtime 层事件绑定到哪个实例
+- Process 和 Session 的事件是**运行时事件**，归 Runtime 层
 
 ---
 

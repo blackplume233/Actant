@@ -1,3 +1,4 @@
-export { HookEventBus, type HookEventPayload, type HookEventListener } from "./hook-event-bus";
+export { HookEventBus, type HookEventPayload, type HookEventListener, type EmitGuard } from "./hook-event-bus";
 export { HookRegistry } from "./hook-registry";
 export { runActions, type ActionContext, type ActionResult } from "./action-runner";
+export { HookCategoryRegistry } from "./hook-category-registry";

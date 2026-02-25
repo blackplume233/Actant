@@ -25,6 +25,7 @@ import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicato
 import { createCommunicator } from "../communicator/create-communicator";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../provider/provider-env-resolver";
+import type { HookEventBus } from "../hooks/hook-event-bus";
 
 const logger = createLogger("agent-manager");
 
@@ -67,6 +68,8 @@ export interface ManagerOptions {
   acpManager?: AcpConnectionManagerLike;
   /** Instance registry for discovering external workspaces. */
   instanceRegistry?: InstanceRegistryAdapter;
+  /** Hook event bus for emitting lifecycle events. When provided, AgentManager emits events for all state transitions. */
+  eventBus?: HookEventBus;
 }
 
 export class AgentManager {
@@ -77,6 +80,7 @@ export class AgentManager {
   private readonly restartTracker: RestartTracker;
   private readonly acpManager?: AcpConnectionManagerLike;
   private readonly instanceRegistry?: InstanceRegistryAdapter;
+  private readonly eventBus?: HookEventBus;
 
   constructor(
     private readonly initializer: AgentInitializer,
@@ -92,6 +96,7 @@ export class AgentManager {
     );
     this.restartTracker = new RestartTracker(options?.restartPolicy);
     this.acpManager = options?.acpManager;
+    this.eventBus = options?.eventBus;
   }
 
   /**
@@ -176,6 +181,11 @@ export class AgentManager {
   ): Promise<AgentInstanceMeta> {
     const meta = await this.initializer.createInstance(name, templateName, overrides);
     this.cache.set(name, meta);
+    this.eventBus?.emit("agent:created", { callerType: "system", callerId: "AgentManager" }, name, {
+      "agent.name": name,
+      "agent.template": templateName,
+      "agent.backendType": meta.backendType,
+    });
     return meta;
   }
 
@@ -258,6 +268,10 @@ export class AgentManager {
           pid = connResult.pid;
           this.processes.set(name, { pid, workspaceDir: dir, instanceName: name });
         }
+
+        this.eventBus?.emit("session:start", { callerType: "system", callerId: "AcpConnectionManager" }, name, {
+          sessionId: "sessionId" in connResult ? String(connResult.sessionId) : "primary",
+        });
       }
 
       const running = await updateInstanceMeta(dir, { status: "running", pid });
@@ -266,6 +280,10 @@ export class AgentManager {
         this.watcher.watch(name, pid);
       }
       this.restartTracker.recordStart(name);
+      this.eventBus?.emit("process:start", { callerType: "system", callerId: "AgentManager" }, name, {
+        pid: pid ?? 0,
+        backendType: meta.backendType,
+      });
       logger.info({ name, pid, launchMode: starting.launchMode, acp: true }, "Agent started");
     } catch (err) {
       const proc = this.processes.get(name);
@@ -280,6 +298,10 @@ export class AgentManager {
       }
       const errored = await updateInstanceMeta(dir, { status: "error", pid: undefined });
       this.cache.set(name, errored);
+      this.eventBus?.emit("error", { callerType: "system", callerId: "AgentManager" }, name, {
+        "error.message": err instanceof Error ? err.message : String(err),
+        "error.code": "AGENT_LAUNCH",
+      });
       if (err instanceof AgentLaunchError) throw err;
       const spawnMsg = err instanceof Error ? err.message : String(err);
       throw new AgentLaunchError(name, new Error(
@@ -362,6 +384,10 @@ export class AgentManager {
     this.cache.set(name, stopping);
 
     if (this.acpManager?.has(name)) {
+      this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, name, {
+        sessionId: "primary",
+        reason: "agent-stop",
+      });
       await this.acpManager.disconnect(name).catch((err) => {
         logger.warn({ name, error: err }, "Error disconnecting ACP during stop");
       });
@@ -375,6 +401,9 @@ export class AgentManager {
 
     const stopped = await updateInstanceMeta(dir, { status: "stopped", pid: undefined });
     this.cache.set(name, stopped);
+    this.eventBus?.emit("process:stop", { callerType: "system", callerId: "AgentManager" }, name, {
+      pid: meta.pid ?? 0,
+    });
     logger.info({ name }, "Agent stopped");
   }
 
@@ -393,6 +422,9 @@ export class AgentManager {
     await this.initializer.destroyInstance(name);
     this.cache.delete(name);
     this.processes.delete(name);
+    this.eventBus?.emit("agent:destroyed", { callerType: "system", callerId: "AgentManager" }, name, {
+      "agent.name": name,
+    });
     logger.info({ name }, "Agent destroyed");
   }
 
@@ -589,19 +621,35 @@ export class AgentManager {
     const meta = this.requireAgent(name);
     requireInteractionMode(meta, "run");
 
+    this.eventBus?.emit("prompt:before", { callerType: "system", callerId: "AgentManager" }, name, {
+      prompt,
+    });
+
+    let result: PromptResult;
     if (this.acpManager?.has(name)) {
       const conn = this.acpManager.getConnection(name);
       const sessionId = this.acpManager.getPrimarySessionId(name);
       if (conn && sessionId) {
         logger.debug({ name, sessionId }, "Sending prompt via ACP");
-        const result = await conn.prompt(sessionId, prompt);
-        return { text: result.text, sessionId };
+        const acpResult = await conn.prompt(sessionId, prompt);
+        result = { text: acpResult.text, sessionId };
+      } else {
+        const dir = join(this.instancesBaseDir, name);
+        const communicator = createCommunicator(meta.backendType);
+        result = await communicator.runPrompt(dir, prompt, options);
       }
+    } else {
+      const dir = join(this.instancesBaseDir, name);
+      const communicator = createCommunicator(meta.backendType);
+      result = await communicator.runPrompt(dir, prompt, options);
     }
 
-    const dir = join(this.instancesBaseDir, name);
-    const communicator = createCommunicator(meta.backendType);
-    return communicator.runPrompt(dir, prompt, options);
+    this.eventBus?.emit("prompt:after", { callerType: "system", callerId: "AgentManager" }, name, {
+      prompt,
+      responseLength: result.text.length,
+    });
+
+    return result;
   }
 
   /**
@@ -685,7 +733,18 @@ export class AgentManager {
       throw new Error(`No session found for agent "${name}"`);
     }
 
+    this.eventBus?.emit("prompt:before", { callerType: "system", callerId: "AgentManager" }, name, {
+      prompt: message,
+      sessionId: targetSessionId,
+    });
+
     const result = await conn.prompt(targetSessionId, message);
+
+    this.eventBus?.emit("prompt:after", { callerType: "system", callerId: "AgentManager" }, name, {
+      prompt: message,
+      responseLength: result.text.length,
+    });
+
     return { text: result.text, sessionId: targetSessionId };
   }
 
@@ -716,6 +775,10 @@ export class AgentManager {
     logger.warn({ instanceName, pid, launchMode: meta.launchMode, action: action.type, previousStatus: meta.status }, "Agent process exited unexpectedly");
 
     if (this.acpManager?.has(instanceName)) {
+      this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, instanceName, {
+        sessionId: "primary",
+        reason: "process-crash",
+      });
       await this.acpManager.disconnect(instanceName).catch(() => {});
     }
 
@@ -730,12 +793,20 @@ export class AgentManager {
     this.cache.set(instanceName, stopped);
     this.processes.delete(instanceName);
 
+    this.eventBus?.emit("process:crash", { callerType: "system", callerId: "ProcessWatcher" }, instanceName, {
+      pid,
+    });
+
     switch (action.type) {
       case "restart": {
         const decision = this.restartTracker.shouldRestart(instanceName);
         if (!decision.allowed) {
           const errored = await updateInstanceMeta(dir, { status: "error" });
           this.cache.set(instanceName, errored);
+          this.eventBus?.emit("error", { callerType: "system", callerId: "RestartTracker" }, instanceName, {
+            "error.message": `Restart limit exceeded after ${decision.attempt} attempts`,
+            "error.code": "RESTART_LIMIT_EXCEEDED",
+          });
           logger.error({ instanceName, attempt: decision.attempt }, "Restart limit exceeded — marking as error");
           break;
         }
@@ -747,6 +818,10 @@ export class AgentManager {
         }
 
         this.restartTracker.recordRestart(instanceName);
+        this.eventBus?.emit("process:restart", { callerType: "system", callerId: "RestartTracker" }, instanceName, {
+          attempt: decision.attempt,
+          delayMs: decision.delayMs,
+        });
         try {
           await this.startAgent(instanceName);
           logger.info({ instanceName, attempt: decision.attempt }, "Crash restart succeeded");
