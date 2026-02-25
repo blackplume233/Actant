@@ -66,7 +66,14 @@ export type {
   BuiltinAction,
   AgentAction,
   HookDeclaration,
+  HookLayer,
+  HookCategoryMeta,
+  HookCategoryName,
+  HookRetryPolicy,
+  HookScope,
+  HookCategoryDefinition,
 } from "./hook.types";
+export { HOOK_CATEGORIES } from "./hook.types";
 export type {
   ValidationSeverity,
   ValidationIssue,
