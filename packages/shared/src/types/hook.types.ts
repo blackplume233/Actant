@@ -27,7 +27,8 @@
  *  │  System     │ Global   │ actant:*                        │
  *  │  Entity     │ Global   │ agent:* / source:*              │
  *  │  Runtime    │ Instance │ process:* / session:* / prompt:*│
- *  │  Schedule   │ Global   │ cron:*                          │
+ *  │  Schedule   │ Config.  │ cron:* / heartbeat:*            │
+ *  │  User       │ Config.  │ user:dispatch/run/prompt        │
  *  │  Extension  │ Any      │ plugin:* / custom:*             │
  *  └──────────────────────────────────────────────────────────┘
  *
@@ -112,6 +113,7 @@ export type HookLayer =
   | "entity"
   | "runtime"
   | "schedule"
+  | "user"
   | "extension";
 
 /** Metadata describing a hook category — used by the category registry. */
@@ -198,6 +200,24 @@ export const HOOK_CATEGORIES = {
     builtinEvents: [],
     dynamic: true,
   },
+  heartbeat: {
+    name: "heartbeat",
+    prefix: "heartbeat",
+    layer: "schedule",
+    description: "Periodic heartbeat ticks bound to an agent instance",
+    builtinEvents: ["tick"],
+    dynamic: false,
+  },
+
+  // ── User Layer ────────────────────────────────────────────
+  user: {
+    name: "user",
+    prefix: "user",
+    layer: "user",
+    description: "User-initiated operations via CLI or API",
+    builtinEvents: ["dispatch", "run", "prompt"],
+    dynamic: true,
+  },
 
   // ── Extension Layer ───────────────────────────────────────
   plugin: {
@@ -250,8 +270,17 @@ type RuntimeEvents =
   | "error"
   | "idle";
 
-/** Schedule-layer events: cron with dynamic expression suffix. */
-type ScheduleEvents = `cron:${string}`;
+/** Schedule-layer events: cron + heartbeat. */
+type ScheduleEvents =
+  | `cron:${string}`
+  | "heartbeat:tick";
+
+/** User-layer events: user-initiated operations via CLI/API. */
+type UserEvents =
+  | "user:dispatch"
+  | "user:run"
+  | "user:prompt"
+  | `user:${string}`;
 
 /** Extension-layer events: plugin + custom with dynamic suffixes. */
 type ExtensionEvents =
@@ -267,6 +296,7 @@ export type HookEventName =
   | EntityEvents
   | RuntimeEvents
   | ScheduleEvents
+  | UserEvents
   | ExtensionEvents;
 
 // ─────────────────────────────────────────────────────────────
@@ -641,6 +671,56 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
       { name: "idleSince", type: "string", required: false, description: "ISO timestamp of idle start" },
     ],
     allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+
+  // ── Schedule Layer ────────────────────────────────────────
+  {
+    event: "heartbeat:tick",
+    description: "Periodic heartbeat timer tick for an agent instance",
+    emitters: ["HeartbeatScheduler"],
+    payloadSchema: [
+      { name: "intervalMs", type: "number", required: true, description: "Configured interval in ms" },
+      { name: "tickCount", type: "number", required: false, description: "Monotonic tick counter" },
+    ],
+    allowedEmitters: ["system"],
+    allowedListeners: [],
+  },
+
+  // ── User Layer ────────────────────────────────────────────
+  {
+    event: "user:dispatch",
+    description: "User dispatched a task to an agent via CLI or API",
+    emitters: ["CLI (agent dispatch)", "API (agent.dispatch)"],
+    payloadSchema: [
+      { name: "prompt", type: "string", required: true, description: "Task prompt text" },
+      { name: "priority", type: "string", required: false, description: "Task priority level" },
+      { name: "source", type: "string", required: false, description: "Origin: cli or api" },
+    ],
+    allowedEmitters: ["user", "system"],
+    allowedListeners: [],
+  },
+  {
+    event: "user:run",
+    description: "User invoked agent run (one-shot prompt) via CLI or API",
+    emitters: ["CLI (agent run)", "API (agent.run)"],
+    payloadSchema: [
+      { name: "prompt", type: "string", required: true, description: "Prompt text" },
+      { name: "source", type: "string", required: false, description: "Origin: cli or api" },
+    ],
+    allowedEmitters: ["user", "system"],
+    allowedListeners: [],
+  },
+  {
+    event: "user:prompt",
+    description: "User sent a prompt to a running agent session via CLI or API",
+    emitters: ["CLI (agent prompt)", "API (agent.prompt)", "API (session.prompt)"],
+    payloadSchema: [
+      { name: "prompt", type: "string", required: true, description: "Prompt text" },
+      { name: "sessionId", type: "string", required: false, description: "Target ACP session ID" },
+      { name: "source", type: "string", required: false, description: "Origin: cli or api" },
+    ],
+    allowedEmitters: ["user", "system"],
     allowedListeners: [],
   },
 ] as const;
