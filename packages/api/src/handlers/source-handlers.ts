@@ -31,6 +31,12 @@ async function handleSourceAdd(
 ): Promise<{ name: string; components: Record<string, number> }> {
   const { name, config } = params as unknown as SourceAddParams;
   const result = await ctx.sourceManager.addSource(name, config);
+
+  ctx.eventBus.emit("source:updated", { callerType: "system", callerId: "SourceManager" }, undefined, {
+    "source.name": name,
+    "source.type": config.type,
+  });
+
   return {
     name,
     components: {
@@ -59,6 +65,11 @@ async function handleSourceSync(
   const { name } = params as unknown as SourceSyncParams;
   if (name) {
     const { report } = await ctx.sourceManager.syncSourceWithReport(name);
+
+    ctx.eventBus.emit("source:updated", { callerType: "system", callerId: "SourceManager" }, undefined, {
+      "source.name": name,
+    });
+
     return {
       synced: [name],
       report: {
@@ -70,8 +81,16 @@ async function handleSourceSync(
     };
   }
   const { report } = await ctx.sourceManager.syncAllWithReport();
+  const synced = ctx.sourceManager.listSources().map((s) => s.name);
+
+  for (const sourceName of synced) {
+    ctx.eventBus.emit("source:updated", { callerType: "system", callerId: "SourceManager" }, undefined, {
+      "source.name": sourceName,
+    });
+  }
+
   return {
-    synced: ctx.sourceManager.listSources().map((s) => s.name),
+    synced,
     report: {
       addedCount: report.added.length,
       updatedCount: report.updated.length,

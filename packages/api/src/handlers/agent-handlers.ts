@@ -231,6 +231,11 @@ async function handleAgentUpdatePermissions(
   const auditLogger = new PermissionAuditLogger(name);
   auditLogger.logUpdated("rpc:agent.updatePermissions");
 
+  ctx.eventBus.emit("agent:modified", { callerType: "user", callerId: "api" }, name, {
+    "agent.name": name,
+    changes: ["effectivePermissions"],
+  });
+
   return { effectivePermissions: resolved };
 }
 

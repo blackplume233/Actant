@@ -268,6 +268,10 @@ export class AgentManager {
           pid = connResult.pid;
           this.processes.set(name, { pid, workspaceDir: dir, instanceName: name });
         }
+
+        this.eventBus?.emit("session:start", { callerType: "system", callerId: "AcpConnectionManager" }, name, {
+          sessionId: "sessionId" in connResult ? String(connResult.sessionId) : "primary",
+        });
       }
 
       const running = await updateInstanceMeta(dir, { status: "running", pid });
@@ -294,6 +298,10 @@ export class AgentManager {
       }
       const errored = await updateInstanceMeta(dir, { status: "error", pid: undefined });
       this.cache.set(name, errored);
+      this.eventBus?.emit("error", { callerType: "system", callerId: "AgentManager" }, name, {
+        "error.message": err instanceof Error ? err.message : String(err),
+        "error.code": "AGENT_LAUNCH",
+      });
       if (err instanceof AgentLaunchError) throw err;
       const spawnMsg = err instanceof Error ? err.message : String(err);
       throw new AgentLaunchError(name, new Error(
@@ -376,6 +384,10 @@ export class AgentManager {
     this.cache.set(name, stopping);
 
     if (this.acpManager?.has(name)) {
+      this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, name, {
+        sessionId: "primary",
+        reason: "agent-stop",
+      });
       await this.acpManager.disconnect(name).catch((err) => {
         logger.warn({ name, error: err }, "Error disconnecting ACP during stop");
       });
@@ -763,6 +775,10 @@ export class AgentManager {
     logger.warn({ instanceName, pid, launchMode: meta.launchMode, action: action.type, previousStatus: meta.status }, "Agent process exited unexpectedly");
 
     if (this.acpManager?.has(instanceName)) {
+      this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, instanceName, {
+        sessionId: "primary",
+        reason: "process-crash",
+      });
       await this.acpManager.disconnect(instanceName).catch(() => {});
     }
 
@@ -787,6 +803,10 @@ export class AgentManager {
         if (!decision.allowed) {
           const errored = await updateInstanceMeta(dir, { status: "error" });
           this.cache.set(instanceName, errored);
+          this.eventBus?.emit("error", { callerType: "system", callerId: "RestartTracker" }, instanceName, {
+            "error.message": `Restart limit exceeded after ${decision.attempt} attempts`,
+            "error.code": "RESTART_LIMIT_EXCEEDED",
+          });
           logger.error({ instanceName, attempt: decision.attempt }, "Restart limit exceeded — marking as error");
           break;
         }
