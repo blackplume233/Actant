@@ -20,6 +20,7 @@ relatedFiles:
   - packages/mcp-server/src/index.ts
   - packages/acp/src/connection-manager.ts
   - packages/core/src/manager/agent-manager.ts
+githubRef: "blackplume233/Actant#218"
 ---
 
 **Related Issues**: [[0210-session-context-injector]], [[0211-actant-mcp-server-canvas]]

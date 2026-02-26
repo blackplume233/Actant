@@ -24,6 +24,7 @@ relatedFiles:
   - packages/dashboard/client/src/hooks/use-realtime.tsx
   - packages/dashboard/client/src/pages/live-canvas.tsx
   - .agents/skills/canvas-manager/SKILL.md
+githubRef: "blackplume233/Actant#217"
 ---
 
 ## Summary

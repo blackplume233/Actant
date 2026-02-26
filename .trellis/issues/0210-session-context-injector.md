@@ -22,6 +22,7 @@ relatedFiles:
   - packages/acp/src/connection-manager.ts
   - packages/core/src/manager/agent-manager.ts
   - packages/api/src/services/app-context.ts
+githubRef: "blackplume233/Actant#216"
 ---
 
 ## Summary
