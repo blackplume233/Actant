@@ -25,6 +25,8 @@ import {
   registerBuiltinProviders,
   HookEventBus,
   HookCategoryRegistry,
+  HookRegistry,
+  type ActionContext,
   type LauncherMode,
 } from "@actant/core";
 import type { ModelApiProtocol } from "@actant/shared";
@@ -89,6 +91,7 @@ export class AppContext {
   readonly schedulers: Map<string, EmployeeScheduler>;
   readonly eventBus: HookEventBus;
   readonly hookCategoryRegistry: HookCategoryRegistry;
+  readonly hookRegistry: HookRegistry;
 
   private initialized = false;
   private startTime = Date.now();
@@ -144,6 +147,8 @@ export class AppContext {
     this.eventBus = new HookEventBus();
     this.hookCategoryRegistry = new HookCategoryRegistry();
     this.eventBus.setEmitGuard(this.hookCategoryRegistry.buildEmitGuard());
+    const actionCtx: ActionContext = { cwd: this.homeDir };
+    this.hookRegistry = new HookRegistry(this.eventBus, actionCtx);
     const launcherMode = resolvedLauncherMode;
     this.agentManager = new AgentManager(
       this.agentInitializer,
@@ -177,6 +182,8 @@ export class AppContext {
     await this.loadDomainComponents();
     this.registerPiBackend();
     await this.sourceManager.initialize();
+    this.registerWorkflowHooks();
+    this.listenForInstanceHooks();
 
     await this.agentManager.initialize();
     this.templateWatcher.start();
@@ -299,6 +306,51 @@ export class AppContext {
         logger.error({ name: agent.name, error: err }, "Failed to auto-start agent");
       }
     }
+  }
+
+  /**
+   * Register actant-level workflow hooks with the HookRegistry.
+   * Instance-level hooks are registered per-agent at creation time via listenForInstanceHooks.
+   */
+  private registerWorkflowHooks(): void {
+    const workflows = this.workflowManager.list();
+    let registered = 0;
+    for (const wf of workflows) {
+      if (!wf.hooks?.length) continue;
+      const level = wf.level ?? "actant";
+      if (level === "actant") {
+        this.hookRegistry.registerWorkflow(wf);
+        registered++;
+      }
+    }
+    if (registered > 0) {
+      logger.info({ count: registered, totalHooks: this.hookRegistry.hookCount }, "Actant-level workflow hooks registered");
+    }
+  }
+
+  /**
+   * Listen for agent:created events and register instance-level workflow hooks
+   * for the newly created agent.
+   */
+  private listenForInstanceHooks(): void {
+    this.eventBus.on("agent:created", (payload) => {
+      const agentName = payload.agentName;
+      if (!agentName) return;
+
+      const workflows = this.workflowManager.list();
+      for (const wf of workflows) {
+        if (!wf.hooks?.length) continue;
+        if (wf.level === "instance") {
+          this.hookRegistry.registerWorkflow(wf, agentName);
+        }
+      }
+    });
+
+    this.eventBus.on("agent:destroyed", (payload) => {
+      const agentName = payload.agentName;
+      if (!agentName) return;
+      this.hookRegistry.unregisterAgent(agentName);
+    });
   }
 
   private async loadDomainComponents(): Promise<void> {
