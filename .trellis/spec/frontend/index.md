@@ -137,10 +137,49 @@ interface Transport {
 | Live Canvas | `/canvas` | SSE (canvas) | 每个 Agent 的 HTML Canvas，iframe sandbox 渲染 |
 | Agents | `/agents` | SSE (agents) | Agent 列表，支持搜索和按状态过滤 |
 | Agent Detail | `/agents/:name` | SSE + REST | Agent 详情（Overview / Sessions / Logs 三 Tab） |
-| Agent Chat | `/agents/:name/chat` | REST (prompt) | 与 Agent 实时对话，支持 session 管理 |
+| Agent Chat | `/agents/:name/chat` | REST (prompt) | 与 Agent 实时对话，支持 session 管理（见下方通信链路） |
 | Activity | `/activity` | SSE (agents, events) | 活动时间线 |
 | Events | `/events` | SSE (events) | EventBus 事件流，支持层级过滤和搜索 |
 | Settings | `/settings` | SSE (daemon) | Daemon 连接信息和 Dashboard 设置 |
+
+### Agent Chat 通信链路
+
+Dashboard 的 Agent Chat 功能走一条独立于 CLI 的通信路径。理解此链路对排查 "Agent 无法 chat" 问题至关重要：
+
+```
+agent-chat.tsx (前端)
+  │  POST /v1/sessions/:id/prompt  （有 fallback 到 /v1/agents/:name/prompt）
+  ▼
+REST API route handler (sessions.ts / agents.ts)
+  │  ctx.bridge.call("session.prompt", ..., { timeoutMs: 305_000 })
+  ▼
+RpcBridge → Named Pipe / Unix Socket
+  │
+  ▼
+Daemon RPC handler (session-handlers.ts / agent-handlers.ts)
+  │  agentManager.promptAgent(name, sessionId, message)
+  ▼
+AgentManager.promptAgent()   ← 300s timeout + Promise.race
+  │
+  ▼
+AcpConnectionManager.prompt(name, sessionId, message)
+  │  通过 AcpConnection 的 stdio 通道发送 ACP 消息
+  ▼
+pi-acp-bridge (子进程)
+  │
+  ▼
+pi-agent-core → LLM API
+```
+
+**关键差异 vs CLI**：
+
+| 维度 | CLI `agent chat` | Dashboard Chat |
+|------|-----------------|----------------|
+| 入口 | CLI 命令解析 | REST API `/v1/` |
+| interactionModes 校验 | 有（`chat.ts` 入口检查） | **无** |
+| 通信 | 直接 RPC | REST → RpcBridge → RPC |
+| Session 管理 | CLI 内部创建 | 前端显式 `session.create` |
+| 超时 | CLI 默认 RPC 超时 | 分层超时（300s / 305s / 310s） |
 
 ### Dashboard Page Conventions
 
@@ -161,6 +200,13 @@ interface Transport {
 **Build Order**：Dashboard 依赖链为 `@actant/shared` → `@actant/rest-api` → `@actant/dashboard`。修改 shared 或 rest-api 包后，需按此顺序重新构建。
 
 **API 路径前缀**：所有 REST API 端点使用 `/v1/` 前缀（如 `/v1/agents`）。Dashboard server 保留 `/api/` → `/v1/` 兼容重写，但新代码应直接使用 `/v1/`。前端 `lib/api.ts` 和 `lib/transport.ts` 已迁移至 `/v1/` 路径。
+
+**Dashboard Chat 不校验 interactionModes**：CLI `agent chat` 命令在入口处会检查 `status.interactionModes.includes("chat")`，不满足则拒绝。但 Dashboard Chat 走的是 REST API → RPC → ACP 的独立路径，**不经过** CLI 的 interactionModes 校验。这意味着：
+- 后端 `defaultInteractionModes` 配置错误时，CLI 被阻断但 Dashboard 可能正常工作（或反过来，Dashboard 暴露了后端实际不支持的能力）
+- 两端行为应保持一致——`defaultInteractionModes` 必须准确反映后端能力
+- 前端 `agent-chat.tsx` 需自行检查 agent 是否处于 running 状态和 ACP 连接是否可用
+
+**Prompt 超时预期**：Dashboard 的 prompt 调用经过多层超时保护（Core 300s → RPC 305s → HTTP socket 310s）。前端应在 UI 层面考虑长等待场景——显示加载指示器，不要用短于 310s 的前端 timeout 截断请求。如果 LLM 响应慢，用户应看到 "thinking" 状态而非突然断开。
 
 ### iframe Canvas Security
 

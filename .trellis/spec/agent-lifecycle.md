@@ -420,10 +420,14 @@ one-shot   Daemon spawn + 等待退出       (不适用: 一次性任务由 Daem
 | `cursor` | **YES** | **YES** | — | 只打开 IDE，不支持 ACP 协议 |
 | `cursor-agent` | **YES** | **YES** | **YES** | Cursor Agent 模式，支持全部三种 |
 | `claude-code` | **YES** | **YES** | **YES** | `open` → `claude` TUI；`resolve`/`acp` → `claude-agent-acp`（ACP bridge） |
-| `pi` | — | — | **YES** | ACP-only，进程由 AcpConnectionManager spawn |
+| `pi` | — | — | **YES** | ACP-only，进程由 AcpConnectionManager spawn；无原生 TUI，不支持 open |
 | `custom` | **YES** | — | — | 用户自定义，仅支持外部 spawn |
 
 > **`open` vs `acp` 的可执行文件可能不同**：以 `claude-code` 为例，`open` 使用 `claude`（原生 TUI），而 `resolve`/`acp` 使用 `claude-agent-acp`（ACP 桥接器）。前者是人看的终端界面，后者是 ACP 协议的 stdio 通道。
+
+> **InteractionMode vs Dashboard 通信**：`interactionModes` 仅在 CLI 层校验（`chat.ts`、`run.ts` 等命令入口处检查）。Dashboard 通过 REST API → RPC → `AgentManager.promptAgent()` → ACP 直接通信，**不经过 interactionModes 校验**。因此即使后端缺少某个 interactionMode，Dashboard 侧的功能可能仍然可用（只要 ACP 连接正常）。但 CLI 和 Dashboard 的行为应保持一致，`defaultInteractionModes` 应准确反映后端的实际能力。
+
+> **ACP-only 后端的进程追踪**：`pi` 等 ACP-only 后端的子进程由 `AcpConnectionManager` spawn，而非 `ProcessLauncher`。`AcpConnection.childPid` 暴露子进程 PID，`connect()` 返回值包含 `pid` 字段，供 `startAgent()` 注册到 `ProcessWatcher`。若 PID 未正确传递，bridge 进程崩溃时 Agent 状态将不会更新（保持 "running" 但 ACP 已断开）。
 
 ### 5.3 BackendManager（原 BackendRegistry，已重构）
 
