@@ -149,8 +149,9 @@ export class AgentManager {
         const dir = join(this.instancesBaseDir, meta.name);
         const reclaimed = await updateInstanceMeta(dir, { status: "running", startedAt: new Date().toISOString() });
         this.cache.set(meta.name, reclaimed);
-        this.processes.set(meta.name, { pid: meta.pid!, workspaceDir: dir, instanceName: meta.name });
-        this.watcher.watch(meta.name, meta.pid!);
+        const pid = meta.pid as number;
+        this.processes.set(meta.name, { pid, workspaceDir: dir, instanceName: meta.name });
+        this.watcher.watch(meta.name, pid);
         logger.info({ name: meta.name, pid: meta.pid, oldStatus: meta.status }, "Orphan process reclaimed");
       } else if (
         (meta.status === "error" || meta.status === "crashed") &&
@@ -782,7 +783,25 @@ export class AgentManager {
         .catch(() => {});
     }
 
-    const result = await conn.prompt(targetSessionId, message);
+    const PROMPT_TIMEOUT_MS = 300_000;
+    const promptPromise = conn.prompt(targetSessionId, message);
+    const timeoutPromise = new Promise<never>((_resolve, reject) => {
+      setTimeout(() => reject(new Error(
+        `Prompt to agent "${name}" timed out after ${PROMPT_TIMEOUT_MS / 1000}s. ` +
+        `The agent may be unresponsive or the LLM call may have failed.`,
+      )), PROMPT_TIMEOUT_MS);
+    });
+
+    let result;
+    try {
+      result = await Promise.race([promptPromise, timeoutPromise]);
+    } catch (err) {
+      this.eventBus?.emit("error", { callerType: "system", callerId: "AgentManager" }, name, {
+        "error.message": err instanceof Error ? err.message : String(err),
+        "error.code": "PROMPT_FAILED",
+      });
+      throw err;
+    }
 
     if (this.activityRecorder) {
       this.activityRecorder.record(name, targetSessionId, {

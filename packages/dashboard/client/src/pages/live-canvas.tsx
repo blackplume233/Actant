@@ -3,11 +3,11 @@ import { Sparkles, Bot, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useSSEContext, type CanvasEntry } from "@/hooks/use-sse";
+import { useRealtimeContext, type CanvasEntry } from "@/hooks/use-realtime";
 
 export function LiveCanvas() {
   const { t } = useTranslation();
-  const { agents, canvas } = useSSEContext();
+  const { agents, canvas } = useRealtimeContext();
   const employeeAgents = agents.filter((a) => a.status === "running" && a.archetype === "employee");
   const employeeNames = new Set(employeeAgents.map((a) => a.name));
 

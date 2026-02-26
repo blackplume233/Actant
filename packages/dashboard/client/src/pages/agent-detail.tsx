@@ -12,13 +12,17 @@ import {
   Clock,
   Terminal,
   ChevronRight,
+  AlertCircle,
+  RotateCcw,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatusBadge } from "@/components/agents/status-badge";
-import { useSSEContext, type AgentInfo } from "@/hooks/use-sse";
+import { useRealtimeContext, type AgentInfo } from "@/hooks/use-realtime";
+import { useAgentError } from "@/hooks/use-agent-error";
+import { useAgentActions } from "@/hooks/use-agent-actions";
 import { agentApi, type SessionSummary, type ConversationTurn } from "@/lib/api";
 
 type Tab = "overview" | "sessions" | "logs";
@@ -27,9 +31,8 @@ export function AgentDetailPage() {
   const { t } = useTranslation();
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
-  const { agents } = useSSEContext();
+  const { agents } = useRealtimeContext();
   const [tab, setTab] = useState<Tab>("overview");
-  const [loading, setLoading] = useState<string | null>(null);
 
   const agent = useMemo(
     () => agents.find((a) => a.name === name),
@@ -37,23 +40,13 @@ export function AgentDetailPage() {
   );
 
   const isRunning = agent?.status === "running";
+  const isErrored = agent?.status === "error" || agent?.status === "crashed";
+  const agentError = useAgentError(name);
+  const { loading, execute } = useAgentActions(name ?? "");
 
-  const handleAction = async (action: "start" | "stop" | "destroy") => {
-    if (!name) return;
-    setLoading(action);
-    try {
-      if (action === "start") await agentApi.start(name);
-      else if (action === "stop") await agentApi.stop(name);
-      else if (action === "destroy") {
-        await agentApi.destroy(name);
-        navigate("/agents");
-        return;
-      }
-    } catch {
-      // SSE will sync
-    } finally {
-      setLoading(null);
-    }
+  const handleDestroy = async () => {
+    const ok = await execute("destroy");
+    if (ok) navigate("/agents");
   };
 
   if (!agent) {
@@ -105,31 +98,43 @@ export function AgentDetailPage() {
             <MessageSquare className="h-4 w-4" />
             {t("common.chat")}
           </Button>
+          {isErrored && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-amber-500/50 text-amber-600 hover:bg-amber-500/10"
+              onClick={() => void execute("start")}
+              disabled={loading === "start"}
+            >
+              {loading === "start" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              {t("common.retry", "Retry")}
+            </Button>
+          )}
           {isRunning ? (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleAction("stop")}
+              onClick={() => void execute("stop")}
               disabled={loading === "stop"}
             >
               {loading === "stop" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
               {t("common.stop")}
             </Button>
-          ) : (
+          ) : !isErrored ? (
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleAction("start")}
+              onClick={() => void execute("start")}
               disabled={loading === "start"}
             >
               {loading === "start" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
               {t("common.start")}
             </Button>
-          )}
+          ) : null}
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => handleAction("destroy")}
+            onClick={() => void handleDestroy()}
             disabled={loading === "destroy"}
           >
             {loading === "destroy" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
@@ -137,6 +142,43 @@ export function AgentDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* Error banner */}
+      {isErrored && agentError && (
+        <Card className="border-red-500/30 bg-red-500/5">
+          <CardContent className="flex items-start gap-3 p-4">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                {agent.status === "crashed"
+                  ? t("agentDetail.crashedTitle", "Agent crashed unexpectedly")
+                  : t("agentDetail.errorTitle", "Agent encountered an error")}
+              </p>
+              <p className="mt-1 text-sm text-red-600/80 dark:text-red-400/80">{agentError.message}</p>
+              <div className="mt-2 flex items-center gap-3">
+                {agentError.code && (
+                  <Badge variant="outline" className="border-red-500/30 text-red-500 text-xs font-mono">
+                    {agentError.code}
+                  </Badge>
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {new Date(agentError.timestamp).toLocaleString()}
+                </span>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="shrink-0 border-red-500/30 text-red-600 hover:bg-red-500/10"
+              onClick={() => void execute("start")}
+              disabled={loading === "start"}
+            >
+              {loading === "start" ? <Loader2 className="h-4 w-4 animate-spin" /> : <RotateCcw className="h-4 w-4" />}
+              {t("common.retry", "Retry")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b">

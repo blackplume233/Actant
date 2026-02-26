@@ -205,3 +205,56 @@ if (result.queued) {
 **Cause**: No timeout configured on HTTP/process calls.
 
 **Fix**: All external calls (provider API, ACP, MCP) must have configurable timeouts.
+
+### Mistake: ACP 子进程 PID 未传递给 ProcessWatcher
+
+**Symptom**: Agent 状态显示 "running"，但 `agent.prompt` 返回 "no ACP connection"。Bridge 进程实际已崩溃/退出，但 Daemon 未感知。
+
+**Cause**: `AcpConnectionManager.connect()` 未将子进程 PID 返回给 `startAgent()`，导致 `ProcessWatcher` 不监控 bridge 进程。进程退出后无事件触发状态更新。
+
+**Fix**: `AcpConnection` 提供 `get childPid()` accessor，`AcpConnectionManager.connect()` 返回 `{ ...session, pid }` 供调用方注册到 ProcessWatcher。
+
+```typescript
+// AcpConnection — 暴露子进程 PID
+get childPid(): number | undefined {
+  return this.child?.pid;
+}
+
+// AcpConnectionManager.connect() — 返回 PID
+const pid = connWithRouter.childPid;
+return { ...session, pid };
+```
+
+**Prevention**: 所有 spawn 子进程的模块（`ProcessLauncher`、`AcpConnectionManager`）都必须将 PID 传回调用方。检查清单：
+1. 子进程创建后是否有 getter 暴露 PID？
+2. 返回值是否携带 PID？
+3. 调用方是否注册了 ProcessWatcher？
+
+### Mistake: Prompt 方法无超时保护
+
+**Symptom**: Dashboard 发送 prompt 后长时间无响应，整个 session 挂起。后续所有 prompt 也失败。
+
+**Cause**: `AgentManager.promptAgent()` 直接 `await` ACP prompt 调用，无超时。当 LLM API 挂起或 bridge 进程卡死时，Promise 永远不 resolve。同时 REST API 的 socket 超时（默认 30s）远低于 LLM 正常响应时间（可达 60-300s）。
+
+**Fix**:
+1. `promptAgent()` 使用 `Promise.race` 添加 300s 超时，超时后发射 error 事件并 reject。
+2. REST API prompt 路由的 RPC 调用使用 305s 超时（略高于 Core 层超时）。
+3. `RpcBridge.call()` 支持 `timeoutMs` 参数。
+
+```typescript
+const PROMPT_TIMEOUT_MS = 300_000;
+const result = await Promise.race([
+  this.acpManager.prompt(name, sessionId, message),
+  new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`Prompt timed out after ${PROMPT_TIMEOUT_MS}ms`)), PROMPT_TIMEOUT_MS)
+  ),
+]);
+```
+
+**Prevention**: 所有涉及外部 I/O（LLM API、ACP prompt、MCP tool call）的异步方法必须包含超时。各层超时应层层递增（Core < REST RPC < HTTP socket），防止上层在下层超时前断开。推荐超时梯度：
+
+| 层 | 超时 | 原因 |
+|----|------|------|
+| Core (`promptAgent`) | 300s | LLM 调用本身可能耗时较长 |
+| REST RPC (`RpcBridge.call`) | 305s | 留 5s 给 Core 返回错误 |
+| HTTP socket | 310s | 留 5s 给 REST 层返回 HTTP 响应 |

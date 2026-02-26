@@ -15,7 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatusBadge } from "@/components/agents/status-badge";
-import { useSSEContext } from "@/hooks/use-sse";
+import { useRealtimeContext } from "@/hooks/use-realtime";
 import { agentApi, sessionApi, type ConversationTurn, type SessionLease } from "@/lib/api";
 
 interface ChatMessage {
@@ -31,7 +31,7 @@ export function AgentChatPage() {
   const { t } = useTranslation();
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
-  const { agents } = useSSEContext();
+  const { agents } = useRealtimeContext();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);

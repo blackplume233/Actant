@@ -18,7 +18,7 @@ Dashboard 使用 React + Tailwind CSS + shadcn/ui 组件库。页面组件位于
 
 ```typescript
 export default function SomePage() {
-  const { agents, events } = useSSEContext();
+  const { agents, events } = useRealtimeContext();
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
 
@@ -116,7 +116,7 @@ Agent 详情页使用手动 Tab 切换（非路由级 Tab），三个标签：
 
 **Why it's bad**: 破坏 `Transport` 抽象层，无法适配未来 Tauri IPC。
 
-**Instead**: 通过 `useSSEContext()` / `useRealtimeContext()` 获取实时数据，或通过 `transport.fetch()` 发起请求。
+**Instead**: 通过 `useRealtimeContext()` 获取实时数据，或通过 `transport.fetch()` 发起请求。
 
 ### Don't: 在 Canvas iframe 中使用 allow-same-origin
 

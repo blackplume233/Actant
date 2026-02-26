@@ -70,7 +70,7 @@ Actant 的接口架构（三层协议分工）：
 | **Self-spawn + Attach** | JSON-RPC via Socket | 外部客户端自己 spawn Agent，注册到 Actant | §3.3 |
 
 - **传输层**：JSON-RPC 2.0，换行分隔，通过 Unix Socket（Windows Named Pipe）
-- **客户端超时**：10 秒
+- **客户端超时**：默认 10 秒（普通管理操作）；`agent.prompt`/`agent.run`/`session.prompt` 等长耗时 RPC 需调用方显式传入更长超时
 - **Socket 路径**：`ACTANT_SOCKET` 环境变量或平台默认值（详见 [配置规范](./config-spec.md#5-平台与-ipc)）
 
 ---
@@ -1375,6 +1375,24 @@ POST /v1/webhooks/message
 | -32004 (AGENT_ALREADY_RUNNING) | 409 | Agent 已在运行 |
 | -32601 (METHOD_NOT_FOUND) | 404 | 方法不存在 |
 | 其他 | 500 | 内部错误 |
+
+### RpcBridge 超时约定
+
+REST API 通过 `RpcBridge` 调用 Daemon RPC。默认 RPC 超时较短（10s），适合快速管理操作（list、status 等）。对于 **长耗时** 操作（prompt、run），路由 handler 必须显式传入更长的 `timeoutMs`：
+
+| 端点 | RPC 方法 | 推荐 timeoutMs | 原因 |
+|------|----------|---------------|------|
+| `POST /v1/agents/:name/prompt` | `agent.prompt` | 305_000 | LLM 调用可达 300s |
+| `POST /v1/agents/:name/run` | `agent.run` | 305_000 | 多轮 agentic 调用 |
+| `POST /v1/sessions/:id/prompt` | `session.prompt` | 305_000 | 同 agent.prompt |
+| 其他管理类端点 | 各种 | 默认（10s） | 操作应秒级完成 |
+
+```typescript
+// 示例：agents.ts route handler
+const result = await ctx.bridge.call("agent.prompt", params, { timeoutMs: 305_000 });
+```
+
+> **超时梯度原则**：Core 层 promptAgent 超时 (300s) < RPC 超时 (305s) < HTTP socket 超时 (310s)。各层依次递增 5s，确保下层错误能正常传播到上层，而非上层先断开。
 
 > 实现参考：`packages/rest-api/src/`
 

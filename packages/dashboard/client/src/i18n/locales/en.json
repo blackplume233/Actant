@@ -102,7 +102,9 @@
     "tools": "tools",
     "empty": "(empty)",
     "loadingLogs": "Loading logs...",
-    "noLogs": "No log output available."
+    "noLogs": "No log output available.",
+    "crashedTitle": "Agent crashed unexpectedly",
+    "errorTitle": "Agent encountered an error"
   },
 
   "chat": {

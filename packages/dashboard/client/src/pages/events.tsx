@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/table";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useSSEContext } from "@/hooks/use-sse";
+import { useRealtimeContext } from "@/hooks/use-realtime";
 
 const LAYER_PREFIXES = [
   "all",
@@ -45,7 +45,7 @@ function eventBadgeClass(event: string): string {
 
 export function EventsPage() {
   const { t } = useTranslation();
-  const { events } = useSSEContext();
+  const { events } = useRealtimeContext();
   const [search, setSearch] = useState("");
   const [layerFilter, setLayerFilter] = useState<string>("all");
 

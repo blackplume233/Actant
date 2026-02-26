@@ -23,7 +23,7 @@ export function registerSessionRoutes(router: Router): void {
     const result = await ctx.bridge.call("session.prompt", {
       sessionId: ctx.params.id,
       text: message,
-    });
+    }, { timeoutMs: 305_000 });
     json(res, result);
   });
 

@@ -120,7 +120,10 @@ CLI 命令级别的交互模式，声明 Agent 支持哪些 CLI 命令。与后�
 | `cursor` | `["start"]` |
 | `cursor-agent` | `["open", "start", "chat", "run", "proxy"]` |
 | `claude-code` | `["open", "start", "chat", "run", "proxy"]` |
+| `pi` | `["start", "chat", "run", "proxy"]` |
 | `custom` | `["start"]` |
+
+> **PI 没有 `"open"` 模式**：PI 后端无原生 TUI，`supportedModes` 不含 `open`，因此 `defaultInteractionModes` 排除 `"open"`。PI 的所有交互均通过 ACP 协议（由 `pi-acp-bridge` 桥接）。
 
 ### ModelProviderConfig
 

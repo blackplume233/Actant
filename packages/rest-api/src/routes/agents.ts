@@ -78,7 +78,7 @@ export function registerAgentRoutes(router: Router): void {
       name: ctx.params.name,
       message,
       ...(sessionId ? { sessionId } : {}),
-    });
+    }, { timeoutMs: 305_000 });
     json(res, result);
   });
 
@@ -95,7 +95,7 @@ export function registerAgentRoutes(router: Router): void {
       name: ctx.params.name,
       prompt,
       ...(options ? { options } : {}),
-    });
+    }, { timeoutMs: 305_000 });
     json(res, result);
   });
 

@@ -68,10 +68,10 @@ get_previous_tag() {
 get_issue_count() {
   local status="${1:-open}"
   local count=0
-  for f in "$ISSUES_DIR"/[0-9][0-9][0-9][0-9]-*.json; do
+  for f in "$ISSUES_DIR"/[0-9][0-9][0-9][0-9]-*.md; do
     [[ ! -f "$f" ]] && continue
     local s
-    s=$(node -e "console.log(JSON.parse(require('fs').readFileSync('$f','utf8')).status)" 2>/dev/null)
+    s=$(grep -m1 '^status:' "$f" 2>/dev/null | sed 's/^status:[[:space:]]*//')
     [[ "$s" == "$status" ]] && count=$((count + 1))
   done
   echo "$count"
@@ -80,14 +80,17 @@ get_issue_count() {
 collect_issues_by_label() {
   local label="$1"
   local status="${2:-closed}"
-  for f in "$ISSUES_DIR"/[0-9][0-9][0-9][0-9]-*.json; do
+  for f in "$ISSUES_DIR"/[0-9][0-9][0-9][0-9]-*.md; do
     [[ ! -f "$f" ]] && continue
-    node -e "
-      const d = JSON.parse(require('fs').readFileSync('$f','utf8'));
-      if (d.status === '$status' && (d.labels || []).includes('$label')) {
-        console.log('#' + d.id + ' ' + d.title);
-      }
-    " 2>/dev/null
+    local s
+    s=$(grep -m1 '^status:' "$f" 2>/dev/null | sed 's/^status:[[:space:]]*//')
+    [[ "$s" != "$status" ]] && continue
+    if grep -q "^  - .*${label}" "$f" 2>/dev/null; then
+      local id title
+      id=$(grep -m1 '^id:' "$f" 2>/dev/null | sed 's/^id:[[:space:]]*//')
+      title=$(grep -m1 '^title:' "$f" 2>/dev/null | sed 's/^title:[[:space:]]*//')
+      echo "#${id} ${title}"
+    fi
   done
 }
 
@@ -455,14 +458,18 @@ cmd_changelog() {
 
   # Collect open issues
   local open_issues=""
-  for f in "$ISSUES_DIR"/[0-9][0-9][0-9][0-9]-*.json; do
+  for f in "$ISSUES_DIR"/[0-9][0-9][0-9][0-9]-*.md; do
     [[ ! -f "$f" ]] && continue
-    node -e "
-      const d = JSON.parse(require('fs').readFileSync('$f','utf8'));
-      if (d.status === 'open') {
-        console.log('- #' + d.id + ' ' + d.title + (d.milestone ? ' [' + d.milestone + ']' : ''));
-      }
-    " 2>/dev/null
+    local s
+    s=$(grep -m1 '^status:' "$f" 2>/dev/null | sed 's/^status:[[:space:]]*//')
+    [[ "$s" != "open" ]] && continue
+    local id title milestone
+    id=$(grep -m1 '^id:' "$f" 2>/dev/null | sed 's/^id:[[:space:]]*//')
+    title=$(grep -m1 '^title:' "$f" 2>/dev/null | sed 's/^title:[[:space:]]*//')
+    milestone=$(grep -m1 '^milestone:' "$f" 2>/dev/null | sed 's/^milestone:[[:space:]]*//')
+    local suffix=""
+    [[ -n "$milestone" && "$milestone" != "null" ]] && suffix=" [$milestone]"
+    echo "- #${id} ${title}${suffix}"
   done > /tmp/actant_open_issues.tmp
   open_issues=$(cat /tmp/actant_open_issues.tmp 2>/dev/null || echo "")
   rm -f /tmp/actant_open_issues.tmp

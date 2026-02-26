@@ -1,9 +1,11 @@
 import { AppSidebar } from "./app-sidebar";
 import { TopBar } from "./top-bar";
-import { SSEProvider, useSSEContext } from "@/hooks/use-sse";
+import { RealtimeProvider, useRealtimeContext } from "@/hooks/use-realtime";
+import { ToastProvider } from "@/hooks/use-toast";
+import { ToastContainer } from "@/components/ui/toast";
 
 function ShellInner({ children }: { children: React.ReactNode }) {
-  const { status } = useSSEContext();
+  const { status } = useRealtimeContext();
 
   return (
     <div className="flex h-screen bg-background text-foreground">
@@ -12,14 +14,17 @@ function ShellInner({ children }: { children: React.ReactNode }) {
         <TopBar status={status} />
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
+      <ToastContainer />
     </div>
   );
 }
 
 export function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <SSEProvider>
-      <ShellInner>{children}</ShellInner>
-    </SSEProvider>
+    <RealtimeProvider>
+      <ToastProvider>
+        <ShellInner>{children}</ShellInner>
+      </ToastProvider>
+    </RealtimeProvider>
   );
 }

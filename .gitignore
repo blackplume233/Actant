@@ -4,6 +4,8 @@ node_modules/
 # Build output
 dist/
 dist-standalone/
+dist-pack/
+release/
 *.tsbuildinfo
 
 # Environment
@@ -37,3 +39,6 @@ docs/wiki/node_modules/
 .trellis/issues/.dirty
 .trellis/_sync_body_*.tmp
 .gitnexus
+
+# QA Alpha persistent environment
+.trellis/qa-alpha/

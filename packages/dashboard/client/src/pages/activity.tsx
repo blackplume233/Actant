@@ -4,11 +4,11 @@ import { Activity, Bot, Clock, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useSSEContext } from "@/hooks/use-sse";
+import { useRealtimeContext } from "@/hooks/use-realtime";
 
 export function ActivityPage() {
   const { t } = useTranslation();
-  const { agents, events } = useSSEContext();
+  const { agents, events } = useRealtimeContext();
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
 
   const runningAgents = useMemo(

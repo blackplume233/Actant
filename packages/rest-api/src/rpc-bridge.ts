@@ -6,10 +6,10 @@ let requestId = 0;
 export class RpcBridge {
   constructor(private readonly socketPath: string) {}
 
-  async call(method: string, params: Record<string, unknown> = {}): Promise<unknown> {
+  async call(method: string, params: Record<string, unknown> = {}, options?: { timeoutMs?: number }): Promise<unknown> {
     const id = ++requestId;
     const request: RpcRequest = { jsonrpc: "2.0", id, method, params };
-    const response = await this.send(request);
+    const response = await this.send(request, options?.timeoutMs);
     if (response.error) {
       const err = new Error(response.error.message) as Error & { code: number; data?: unknown };
       err.code = response.error.code;
@@ -28,7 +28,8 @@ export class RpcBridge {
     }
   }
 
-  private send(request: RpcRequest): Promise<RpcResponse> {
+  private send(request: RpcRequest, timeoutMs?: number): Promise<RpcResponse> {
+    const effectiveTimeout = timeoutMs ?? 30_000;
     return new Promise((resolve, reject) => {
       const socket = createConnection(this.socketPath, () => {
         socket.write(JSON.stringify(request) + "\n");
@@ -57,9 +58,9 @@ export class RpcBridge {
         reject(new Error(`Cannot connect to daemon at ${this.socketPath}: ${err.message}`));
       });
 
-      socket.setTimeout(30_000, () => {
+      socket.setTimeout(effectiveTimeout, () => {
         socket.destroy();
-        reject(new Error("RPC call timed out after 30s"));
+        reject(new Error(`RPC call timed out after ${effectiveTimeout / 1000}s`));
       });
     });
   }

@@ -3,7 +3,7 @@ import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Radio } from "lucide-react";
-import type { EventEntry } from "@/hooks/use-sse";
+import type { EventEntry } from "@/hooks/use-realtime";
 
 interface EventListProps {
   events: EventEntry[];

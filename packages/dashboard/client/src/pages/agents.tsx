@@ -4,14 +4,14 @@ import { Bot, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { AgentGrid } from "@/components/agents/agent-grid";
-import { useSSEContext } from "@/hooks/use-sse";
+import { useRealtimeContext } from "@/hooks/use-realtime";
 
 const STATUS_FILTERS = ["all", "running", "stopped", "error", "crashed"] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
 export function AgentsPage() {
   const { t } = useTranslation();
-  const { agents, connected } = useSSEContext();
+  const { agents, connected } = useRealtimeContext();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 

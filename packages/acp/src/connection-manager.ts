@@ -41,7 +41,7 @@ export class AcpConnectionManager {
    * When connectionOptions.permissionPolicy is set, creates a PermissionPolicyEnforcer
    * for Layer 2 ACP Client allowlist enforcement.
    */
-  async connect(name: string, options: ConnectOptions): Promise<AcpSessionInfo> {
+  async connect(name: string, options: ConnectOptions): Promise<AcpSessionInfo & { pid?: number }> {
     if (this.connections.has(name)) {
       throw new Error(`ACP connection for "${name}" already exists`);
     }
@@ -92,8 +92,9 @@ export class AcpConnectionManager {
       });
       this.gateways.set(name, gateway);
 
-      logger.info({ name, sessionId: session.sessionId }, "ACP agent connected (gateway-ready)");
-      return session;
+      const pid = connWithRouter.childPid;
+      logger.info({ name, sessionId: session.sessionId, pid }, "ACP agent connected (gateway-ready)");
+      return { ...session, pid };
     } catch (err) {
       await connWithRouter.close().catch(() => {});
       this.connections.delete(name);

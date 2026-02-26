@@ -135,6 +135,10 @@ export class AcpConnection {
     return this.conn != null && !this.conn.signal.aborted;
   }
 
+  get childPid(): number | undefined {
+    return this.child?.pid;
+  }
+
   get agentCapabilities(): InitializeResponse | null {
     return this.initResponse;
   }
