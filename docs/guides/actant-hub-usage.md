@@ -1,6 +1,6 @@
 # ActantHub 使用指南
 
-> ActantHub 是 Actant 平台的官方默认组件仓库，类似 Homebrew 的 `homebrew-core`。它提供开箱即用的 Skills、Prompts、MCP 配置、Templates 和 Presets。
+> ActantHub 是 Actant 平台的官方默认组件仓库，类似 Homebrew 的 `homebrew-core`。它提供开箱即用的 Agent Templates、Skills、Prompts、MCP 配置和 Presets。
 
 ## 什么是 ActantHub
 
@@ -8,13 +8,21 @@ ActantHub 是一个**组件源（Source）**——一个标准化的目录结构
 
 **ActantHub 提供的组件类型**：
 
-| 类型 | 说明 | 示例 |
-|------|------|------|
-| Skills | Agent 遵循的规则/知识 | `code-review`, `test-writer` |
-| Prompts | 系统提示词模板 | `system-prompt` |
-| MCP Servers | MCP 服务器配置 | `filesystem` |
-| Templates | 完整的 Agent 配置模板 | `code-reviewer` |
-| Presets | 组件组合包 | `dev-suite` |
+| 类型 | 数量 | 说明 | 示例 |
+|------|------|------|------|
+| Templates | 8 | 完整的 Agent 配置模板 | `actant-steward`, `actant-curator` |
+| Skills | 25 | Agent 遵循的规则/知识 | `intent-routing`, `memory-governance` |
+| Prompts | 8 | 系统提示词模板 | `steward-system-prompt` |
+| MCP Servers | 0 | MCP 服务器配置（后续内置） | - |
+| Presets | 4 | 组件组合包 | `actant-kernel`, `actant-full` |
+
+**三层架构**：
+
+| 层 | 包含 | 说明 |
+|---|------|------|
+| Kernel | steward + maintainer + curator | 默认启用，最小完整系统 |
+| Auxiliary | updater + scavenger + researcher + onboarder | 按需启用 |
+| Spark | spark | 仅限贡献者 |
 
 ## 管理 Source
 
@@ -101,13 +109,13 @@ actant source validate actant-hub --format json
 使用 `source@name` 格式引用源中的组件：
 
 ```bash
-actant template install actant-hub@code-reviewer
+actant template install actant-hub@actant-steward
 ```
 
 安装后模板会在本地注册，可以直接使用：
 
 ```bash
-actant agent create my-reviewer --template actant-hub@code-reviewer
+actant agent create my-steward --template actant-hub@actant-steward
 ```
 
 ### 浏览可用组件
@@ -120,10 +128,10 @@ actant skill list
 actant template list
 
 # 查看 Template 详情
-actant template show actant-hub@code-reviewer
+actant template show actant-hub@actant-curator
 ```
 
-源中的组件以 `package@name` 格式命名，例如 `actant-hub@code-review`。
+源中的组件以 `package@name` 格式命名，例如 `actant-hub@memory-governance`。
 
 ### 使用 Preset
 
@@ -131,16 +139,25 @@ Preset 是按场景打包的组件组合。查看可用 Preset：
 
 ```bash
 actant preset list
-actant preset show actant-hub@dev-suite
+actant preset show actant-hub@actant-kernel
 ```
 
 应用 Preset 到模板：
 
 ```bash
-actant preset apply actant-hub@dev-suite --template my-template
+actant preset apply actant-hub@actant-kernel --template my-template
 ```
 
 这会将 Preset 中定义的所有 skills、prompts、MCP servers 等注入到指定模板的 `domainContext` 中。
+
+**可用 Presets**：
+
+| 预设 | 内容 | 适用场景 |
+|------|------|---------|
+| `actant-kernel` | steward + maintainer + curator (9 skills) | 默认配置 |
+| `actant-full` | 全部 8 templates (25 skills) | 全功能 |
+| `actant-lite` | steward only (3 skills) | 最小入口 |
+| `actant-contributor` | kernel + spark (13 skills) | 贡献者 |
 
 ## Local Source vs GitHub Source
 

@@ -1,0 +1,41 @@
+{
+  "name": "actant-scavenger",
+  "version": "1.0.0",
+  "description": "Actant 清道夫 — 垃圾清理 + 资源回收。维护系统整洁，释放磁盘和内存资源。",
+  "archetype": "employee",
+  "backend": { "type": "claude-code" },
+  "domainContext": {
+    "skills": [
+      "resource-scan",
+      "cleanup-policy",
+      "capacity-monitor"
+    ],
+    "prompts": ["scavenger-system-prompt"],
+    "mcpServers": []
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": ["Read", "Write", "Shell"],
+    "sandbox": { "enabled": false }
+  },
+  "schedule": {
+    "cron": [
+      {
+        "pattern": "0 5 * * *",
+        "prompt": "夜间清理：扫描临时文件、过期缓存、孤儿进程，按策略清理或归档",
+        "priority": "normal"
+      }
+    ],
+    "hooks": [
+      {
+        "eventName": "disk:threshold-exceeded",
+        "prompt": "磁盘使用超过阈值，紧急扫描可回收资源并执行清理",
+        "priority": "high"
+      }
+    ]
+  },
+  "metadata": {
+    "layer": "auxiliary",
+    "tier": "5"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "self-repair",
+  "version": "1.0.0",
+  "description": "自修复 — 根据诊断结果自动执行修复操作，重启服务、清理状态、回滚配置",
+  "content": "# Self-Repair\n\n## Overview\n\nExecute repair operations based on diagnosis: restart services, reset state, rollback config.\n\n## Repair Strategies\n\n| Strategy | When to use | Actions |\n|----------|--------------|--------|\n| **Restart** | Process hung, memory leak | Stop → wait → start; verify healthy |\n| **State reset** | Corrupted workspace state | Clear temp, reset session; preserve user data |\n| **Config rollback** | Bad config caused failure | Restore last-known-good from backup |\n| **Dependency reinstall** | MCP/npm failure | Reinstall from lockfile; verify |\n\n## Safety Guards\n\n- **Dry-run first**: Log intended actions; require confirmation for destructive ops\n- **Backup before change**: Snapshot config/state before repair\n- **Rollback plan**: If repair fails, revert to pre-repair state\n- **Rate limit**: Max N repairs per hour; escalate to human if exceeded\n\n## Repair Verification\n\n- After restart: poll health endpoint / check process list\n- After state reset: run smoke test (e.g. create Agent, list)\n- After config rollback: validate schema, test load\n- Report: success / partial / failed with next-step recommendation",
+  "tags": ["repair", "recovery", "self-healing", "maintainer"],
+  "license": "MIT"
+}

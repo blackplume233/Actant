@@ -1,0 +1,8 @@
+{
+  "name": "knowledge-synthesis",
+  "version": "1.0.0",
+  "description": "知识合成 — 将多来源信息融合为结构化知识，生成摘要、报告和知识图谱",
+  "content": "# Knowledge Synthesis\n\n## Overview\n\nFuse multi-source information into structured knowledge; generate summaries, reports, and knowledge graphs.\n\n## Information Fusion\n\n- Merge overlapping content; resolve redundancy\n- Align terminology across sources; normalize units and formats\n- Preserve provenance (source, timestamp) for each fact\n\n## Contradiction Resolution\n\n- Detect conflicting claims across sources\n- Apply source-evaluation scores to prefer higher-credibility sources\n- Surface unresolved contradictions to user with context\n\n## Structured Output Generation\n\n- **Reports**: Executive summary, key findings, recommendations, appendix with sources\n- **Summaries**: Bullet-point or paragraph form; configurable length\n- **Comparisons**: Side-by-side analysis (e.g., tool A vs B); pros/cons tables\n\n## Knowledge Graph Entry Creation\n\n- Extract entities (people, orgs, concepts) and relations\n- Create graph nodes and edges; support incremental updates\n- Export to standard formats (JSON-LD, RDF) for downstream use\n\n## Confidence Scoring\n\n- Assign confidence (0–1) to synthesized claims based on source agreement and quality\n- Include confidence in output; flag low-confidence items for review",
+  "tags": ["synthesis", "knowledge", "summarization", "researcher"],
+  "license": "MIT"
+}

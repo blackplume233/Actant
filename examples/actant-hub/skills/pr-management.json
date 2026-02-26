@@ -1,0 +1,8 @@
+{
+  "name": "pr-management",
+  "version": "1.0.0",
+  "description": "PR 管理 — 创建、维护和响应 Pull Request，处理 review 意见和 CI 反馈",
+  "content": "# PR Management\n\n## Overview\n\nCreate, maintain, and respond to Pull Requests. Handle review feedback and CI failures to ship changes successfully.\n\n## PR Creation\n\n- **Title**: Clear, descriptive; use conventional format (feat:, fix:, refactor:)\n- **Description**: Link to Issue, summarize changes, list testing done\n- **Labels**: Apply appropriate labels (bug, feature, documentation, etc.)\n\n## Review Response Workflow\n\n- Address each review comment: fix, explain, or discuss\n- Push follow-up commits; avoid force-push unless rebase is required\n- Re-request review after addressing feedback\n\n## CI Failure Analysis and Fix\n\n- Parse CI logs to identify failing tests or lint errors\n- Fix root cause locally; verify with same commands CI runs\n- Push fix; monitor CI until green\n\n## Merge Conflict Resolution\n\n- Rebase or merge main into branch when conflicts arise\n- Resolve conflicts carefully; preserve intended changes\n- Run full test suite after resolving conflicts\n\n## Changelog Entry\n\n- Add entry to CHANGELOG.md (or equivalent) for user-facing changes\n- Follow existing changelog format and section structure",
+  "tags": ["pr", "github", "review", "spark"],
+  "license": "MIT"
+}

@@ -1,0 +1,34 @@
+{
+  "name": "actant-steward",
+  "version": "1.0.0",
+  "description": "Actant 管家 — 人类唯一入口，替代 CLI。理解意图、路由任务、汇报结果。",
+  "archetype": "service",
+  "backend": { "type": "claude-code" },
+  "domainContext": {
+    "skills": [
+      "intent-routing",
+      "conversation-management",
+      "task-delegation"
+    ],
+    "prompts": ["steward-system-prompt"],
+    "mcpServers": []
+  },
+  "permissions": {
+    "defaultMode": "default",
+    "allow": ["Read"],
+    "sandbox": { "enabled": true }
+  },
+  "schedule": {
+    "hooks": [
+      {
+        "eventName": "user:message",
+        "prompt": "解析用户意图，路由到合适的 Agent 或直接回答",
+        "priority": "high"
+      }
+    ]
+  },
+  "metadata": {
+    "layer": "kernel",
+    "tier": "1"
+  }
+}

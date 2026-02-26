@@ -1,0 +1,48 @@
+{
+  "name": "actant-spark",
+  "version": "1.0.0",
+  "description": "Actant 火种 — 自主 fork、持续编码、PR 回馈主线。永不停止的贡献者 Agent。",
+  "archetype": "employee",
+  "backend": { "type": "claude-code" },
+  "domainContext": {
+    "skills": [
+      "code-generation",
+      "pr-management",
+      "self-bootstrap",
+      "contribution-policy"
+    ],
+    "prompts": ["spark-system-prompt"],
+    "mcpServers": []
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": ["Read", "Write", "Shell"],
+    "sandbox": { "enabled": false }
+  },
+  "schedule": {
+    "heartbeat": {
+      "intervalMs": 600000,
+      "prompt": "检查当前任务进度，继续编码或选择新任务",
+      "priority": "normal"
+    },
+    "cron": [
+      {
+        "pattern": "0 */4 * * *",
+        "prompt": "每 4 小时审查进行中的 PR 状态，响应 review 意见，合并已通过的 PR",
+        "priority": "normal"
+      }
+    ],
+    "hooks": [
+      {
+        "eventName": "pr:review-requested",
+        "prompt": "PR review 请求到达，回应 review 意见并修改代码",
+        "priority": "high"
+      }
+    ]
+  },
+  "metadata": {
+    "layer": "spark",
+    "tier": "8",
+    "access": "contributor-only"
+  }
+}

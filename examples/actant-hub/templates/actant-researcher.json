@@ -1,0 +1,40 @@
+{
+  "name": "actant-researcher",
+  "version": "1.0.0",
+  "description": "Actant 研究员 — 信息检索 + 知识采集。为其他 Agent 和人类提供外部知识支持。",
+  "archetype": "service",
+  "backend": { "type": "claude-code" },
+  "domainContext": {
+    "skills": [
+      "web-research",
+      "knowledge-synthesis",
+      "source-evaluation"
+    ],
+    "prompts": ["researcher-system-prompt"],
+    "mcpServers": []
+  },
+  "permissions": {
+    "defaultMode": "default",
+    "allow": ["Read", "Shell"],
+    "sandbox": {
+      "enabled": true,
+      "network": {
+        "allowedDomains": ["*"],
+        "allowLocalBinding": false
+      }
+    }
+  },
+  "schedule": {
+    "hooks": [
+      {
+        "eventName": "research:request",
+        "prompt": "收到研究请求，执行信息检索并返回结构化结果",
+        "priority": "normal"
+      }
+    ]
+  },
+  "metadata": {
+    "layer": "auxiliary",
+    "tier": "6"
+  }
+}

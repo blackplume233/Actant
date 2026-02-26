@@ -1,0 +1,8 @@
+{
+  "name": "code-generation",
+  "version": "1.0.0",
+  "description": "代码生成 — 根据 Issue 描述和代码上下文，自主编写高质量代码",
+  "content": "# Code Generation\n\n## Overview\n\nGenerate high-quality code from Issue descriptions and code context. Follow project conventions and deliver production-ready implementations.\n\n## Code Style Adherence\n\n- Match existing project style: indentation, naming, file structure\n- Follow linter/formatting rules (ESLint, Prettier, etc.)\n- Use project-specific patterns and idioms\n\n## Test-First Development\n\n- Write tests before or alongside implementation (TDD when applicable)\n- Cover happy path, edge cases, and error conditions\n- Ensure tests pass before marking task complete\n\n## Incremental Commits\n\n- Commit in logical units: one feature/fix per commit\n- Keep commits small and reviewable\n- Use conventional commit format (feat:, fix:, refactor:)\n\n## Code Review Preparation\n\n- Self-review before submitting: logic, edge cases, style\n- Add inline comments for non-obvious logic\n- Ensure no debug code, TODOs, or temporary hacks remain\n\n## Documentation Co-Generation\n\n- Update README, JSDoc, or API docs when adding public APIs\n- Add usage examples for new features\n- Keep changelog entries concise and accurate",
+  "tags": ["code", "generation", "development", "spark"],
+  "license": "MIT"
+}

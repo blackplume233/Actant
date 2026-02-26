@@ -1,7 +1,0 @@
-{
-  "name": "system-prompt",
-  "version": "1.0.0",
-  "description": "Default system prompt for code assistance",
-  "content": "You are an expert software engineer. Help the user with their coding tasks. Be precise, follow best practices, and explain your reasoning.",
-  "variables": []
-}

@@ -1,0 +1,8 @@
+{
+  "name": "interactive-tutorial",
+  "version": "1.0.0",
+  "description": "交互式教程 — 通过实践驱动的教程帮助用户掌握 Actant 核心功能",
+  "content": "# Interactive Tutorial\n\n## Overview\n\nPractice-driven tutorials to help users master Actant core features.\n\n## Progressive Skill Building\n\n- **Basic**: Installation, first command, simple task delegation\n- **Intermediate**: Skills, workflows, multi-Agent coordination\n- **Advanced**: Custom skills, Hub management, pipeline orchestration\n\n## Hands-On Exercises\n\n- Each lesson: explain concept → demonstrate → user tries → verify\n- Provide starter files or commands; user completes with guidance\n- Offer hints on struggle; avoid giving full answer too early\n\n## Real-Time Feedback\n\n- Validate user actions (e.g., correct command, expected output)\n- Explain errors in tutorial context; suggest fix\n- Celebrate completion; unlock next lesson\n\n## Adaptive Difficulty\n\n- Adjust pace based on user performance (fast/slow)\n- Skip lessons user already demonstrates mastery\n- Offer challenge variants for advanced learners\n\n## Completion Tracking\n\n- Persist progress (lessons completed, scores)\n- Show progress bar or checklist; suggest next lesson\n- Award badges or certificates for milestones",
+  "tags": ["tutorial", "learning", "interactive", "onboarder"],
+  "license": "MIT"
+}

@@ -1,0 +1,33 @@
+{
+  "name": "actant-contributor",
+  "version": "1.0.0",
+  "description": "贡献者预设 — Kernel + Spark，适合参与 Actant 开发的贡献者",
+  "skills": [
+    "intent-routing",
+    "conversation-management",
+    "task-delegation",
+    "self-diagnosis",
+    "self-repair",
+    "evolution-report",
+    "memory-governance",
+    "asset-registry",
+    "lifecycle-policy",
+    "code-generation",
+    "pr-management",
+    "self-bootstrap",
+    "contribution-policy"
+  ],
+  "prompts": [
+    "steward-system-prompt",
+    "maintainer-system-prompt",
+    "curator-system-prompt",
+    "spark-system-prompt"
+  ],
+  "mcpServers": [],
+  "templates": [
+    "actant-steward",
+    "actant-maintainer",
+    "actant-curator",
+    "actant-spark"
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "name": "contribution-policy",
+  "version": "1.0.0",
+  "description": "贡献策略 — 遵循项目贡献规范，选择合适的 Issue、规划开发路径、确保质量标准",
+  "content": "# Contribution Policy\n\n## Overview\n\nFollow project contribution norms: select appropriate Issues, plan development path, and ensure quality standards.\n\n## Issue Selection Criteria\n\n- **good-first-issue**: Prefer labeled issues for onboarding; scope should be clear\n- **Priority**: Align with project roadmap; high-priority bugs before low-priority features\n- **Complexity**: Match skill level; avoid over-scoped or underspecified issues\n\n## Branch Naming Convention\n\n- Use format: `{type}/{short-description}` (e.g., feat/add-login, fix/typo-in-readme)\n- Keep names short, lowercase, hyphen-separated\n- Include Issue number when applicable: `fix/123-fix-null-check`\n\n## Commit Message Convention\n\n- Use conventional commits: feat:, fix:, docs:, refactor:, test:, chore:\n- Scope optional: feat(auth): add login\n- Body: explain what and why; reference Issue with Closes #N\n\n## Testing Requirements\n\n- New code must have tests; maintain or improve coverage\n- All tests must pass before PR submission\n- Integration tests for critical paths when applicable\n\n## Documentation Requirements\n\n- Update docs for user-facing changes\n- Add JSDoc/TSDoc for public APIs\n- Keep CONTRIBUTING and README accurate",
+  "tags": ["contribution", "policy", "standards", "spark"],
+  "license": "MIT"
+}

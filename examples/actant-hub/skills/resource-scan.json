@@ -1,0 +1,8 @@
+{
+  "name": "resource-scan",
+  "version": "1.0.0",
+  "description": "资源扫描 — 全面扫描系统资源使用情况，识别可回收资源和冗余文件",
+  "content": "# Resource Scan\n\n## Overview\n\nComprehensive scan of system resource usage; identify reclaimable resources and redundant files.\n\n## Disk Usage Analysis\n\n- **By directory**: Aggregate size per directory; identify largest consumers\n- **By age**: Find files not accessed/modified beyond threshold (e.g., 30 days)\n- **By type**: Group by extension (e.g., .log, .tmp, .cache); report totals\n\n## Orphan File Detection\n\n- **Temp files**: System temp dirs, project `.tmp/`, `*.tmp`, `*.temp`\n- **Build artifacts**: `dist/`, `build/`, `out/`, `.next/`, `node_modules/.cache/`\n- **Stale caches**: Expired cache entries; caches exceeding max age or size\n\n## Process Resource Consumption\n\n- Identify zombie processes; suggest cleanup\n- Detect memory leaks (long-running processes with growing RSS)\n- Report top CPU/memory consumers for user review\n\n## Docker Resource Audit\n\n- **Dangling images**: Untagged images; report reclaimable space\n- **Stopped containers**: List and estimate disk usage\n- **Unused volumes**: Orphan volumes not attached to any container\n- Provide `docker system df`-style summary",
+  "tags": ["scan", "resource", "disk", "scavenger"],
+  "license": "MIT"
+}
