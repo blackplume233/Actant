@@ -93,6 +93,14 @@ body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:
 .id-summary{text-align:center;font-size:16px;color:var(--text-2);line-height:1.7;max-width:640px;margin:0 auto;padding:20px 0;border-top:1px solid var(--border)}
 .id-summary strong{color:var(--text);font-weight:700}
 
+.id-analogy{max-width:640px;margin:32px auto 0;border-radius:var(--r-xl);border:1px solid var(--border);overflow:hidden;background:var(--bg-card)}
+.id-analogy-title{padding:14px 20px;font-family:var(--heading);font-size:13px;font-weight:700;color:var(--text-3);letter-spacing:.04em;border-bottom:1px solid var(--border);background:var(--bg-subtle)}
+.id-analogy-row{display:grid;grid-template-columns:1fr 24px 1fr;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border);font-size:13px}
+.id-analogy-row:last-child{border-bottom:none}
+.id-analogy-row .a-docker{font-family:var(--mono);color:var(--text-3)}
+.id-analogy-row .a-eq{text-align:center;color:var(--text-3);font-size:11px}
+.id-analogy-row .a-actant{font-family:var(--mono);color:var(--accent)}
+
 /* ════ CAPABILITIES ════ */
 .cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
 .cap-card{padding:24px 22px;border-radius:var(--r-xl);background:var(--bg-card);border:1px solid var(--border);transition:border-color .2s}
@@ -314,6 +322,16 @@ body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:
 
     <div class="id-summary reveal">
       <strong>Actant</strong> = 一个能独立行动、在网络中产生影响、持续进化的实体。<br>这就是我们对 AI Agent 的定义。
+    </div>
+
+    <div class="id-analogy reveal">
+      <div class="id-analogy-title">If you know Docker, you know Actant</div>
+      <div class="id-analogy-row"><span class="a-docker">Dockerfile</span><span class="a-eq">&rarr;</span><span class="a-actant">Agent Template</span></div>
+      <div class="id-analogy-row"><span class="a-docker">Image</span><span class="a-eq">&rarr;</span><span class="a-actant">Template Registry</span></div>
+      <div class="id-analogy-row"><span class="a-docker">Container</span><span class="a-eq">&rarr;</span><span class="a-actant">Agent Instance</span></div>
+      <div class="id-analogy-row"><span class="a-docker">Volume</span><span class="a-eq">&rarr;</span><span class="a-actant">Domain Context</span></div>
+      <div class="id-analogy-row"><span class="a-docker">docker commit</span><span class="a-eq">&rarr;</span><span class="a-actant">Memory Promotion</span></div>
+      <div class="id-analogy-row"><span class="a-docker">Network</span><span class="a-eq">&rarr;</span><span class="a-actant">ACP / MCP</span></div>
     </div>
   </div>
 </section>
