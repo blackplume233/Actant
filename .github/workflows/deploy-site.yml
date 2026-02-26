@@ -35,11 +35,11 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
 
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
       - name: Build Wiki (VitePress)
-        working-directory: docs/wiki
-        run: |
-          pnpm install --no-frozen-lockfile
-          pnpm build
+        run: pnpm --filter actant-wiki build
 
       - name: Merge site artifacts
         run: |
