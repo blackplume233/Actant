@@ -1368,3 +1368,41 @@ Fixed 5 issues in install.sh: stdin pipe fix, bash 3.2 compat, non-interactive m
 ### Next Steps
 
 - None - task complete
+
+## Session 26: Fix deploy-site CI workflow failure
+
+**Date**: 2026-02-26
+**Task**: Fix deploy-site GitHub Actions workflow (#22424256292)
+
+### Summary
+
+Fixed the `Deploy Site + Wiki` CI workflow that failed because `vitepress` was not found. Root cause: `docs/wiki` was not listed in `pnpm-workspace.yaml`, so `pnpm install` in CI delegated to the workspace root and skipped wiki dependencies entirely.
+
+### Main Changes
+
+| Item | Detail |
+|------|--------|
+| Root Cause | `docs/wiki` not in `pnpm-workspace.yaml` → vitepress not installed in CI |
+| Fix | Added `docs/wiki` to workspace, restructured `deploy-site.yml` to install at root then filter-build wiki |
+| Files Changed | `pnpm-workspace.yaml`, `.github/workflows/deploy-site.yml`, `pnpm-lock.yaml` |
+| CI Verified | [Run #22426127920](https://github.com/blackplume233/Actant/actions/runs/22426127920) — 32s, ✅ pass |
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `dc0e36f` | fix(ci): add docs/wiki to pnpm workspace to resolve deploy-site failure |
+
+### Testing
+
+- [OK] Local `pnpm install` — Scope: 10 workspace projects (was 9)
+- [OK] Local `pnpm --filter actant-wiki build` — VitePress build in 3.58s
+- [OK] CI verified — Deploy Site + Wiki workflow passed in 32s
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
