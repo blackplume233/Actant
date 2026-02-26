@@ -149,8 +149,9 @@ export class AgentManager {
         const dir = join(this.instancesBaseDir, meta.name);
         const reclaimed = await updateInstanceMeta(dir, { status: "running", startedAt: new Date().toISOString() });
         this.cache.set(meta.name, reclaimed);
-        this.processes.set(meta.name, { pid: meta.pid!, workspaceDir: dir, instanceName: meta.name });
-        this.watcher.watch(meta.name, meta.pid!);
+        const pid = meta.pid as number;
+        this.processes.set(meta.name, { pid, workspaceDir: dir, instanceName: meta.name });
+        this.watcher.watch(meta.name, pid);
         logger.info({ name: meta.name, pid: meta.pid, oldStatus: meta.status }, "Orphan process reclaimed");
       } else if (
         (meta.status === "error" || meta.status === "crashed") &&
