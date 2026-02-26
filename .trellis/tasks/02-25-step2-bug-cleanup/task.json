@@ -1,0 +1,60 @@
+{
+  "id": "step2-bug-cleanup",
+  "name": "step2-bug-cleanup",
+  "title": "Step 2: Bug cleanup + script fixes (#129 #95 #57)",
+  "description": "Phase 4 Step 2: npm 发布验证、ACP Gateway terminal stub、Windows daemon fork 评估、Trellis 脚本 CRLF 修复",
+  "status": "review",
+  "dev_type": "fix",
+  "scope": "infra",
+  "priority": "P1",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-02-25",
+  "completedAt": null,
+  "branch": "vk/1a2d-step2",
+  "base_branch": "master",
+  "worktree_path": null,
+  "current_phase": 2,
+  "next_action": [
+    {"phase": 1, "action": "implement"},
+    {"phase": 2, "action": "check"},
+    {"phase": 3, "action": "finish"},
+    {"phase": 4, "action": "create-pr"}
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [
+    {
+      "id": "crlf-fix",
+      "title": "Trellis scripts CRLF → LF + .gitattributes",
+      "status": "done",
+      "description": "21 个 .sh 文件转换为 LF 行尾，新增 .gitattributes 防止 Git 自动转换"
+    },
+    {
+      "id": "npm-129",
+      "title": "#129: npm 发布验证 — @actant/* 0.2.2 已确认",
+      "status": "done",
+      "description": "所有 5 个包已发布 0.2.2，IPC 路径修复已包含，Issue 关闭"
+    },
+    {
+      "id": "gateway-95",
+      "title": "#95: ACP Gateway terminal TerminalHandle 映射 + 测试",
+      "status": "done",
+      "description": "TerminalHandle map 已实现。新增 callback-router.test.ts (22 tests) 覆盖 terminal 转发/回退/能力路由"
+    },
+    {
+      "id": "daemon-57",
+      "title": "#57: Windows daemon fork — 已关闭",
+      "status": "done",
+      "description": "Issue 已关闭为 completed，无遗留工作"
+    }
+  ],
+  "relatedFiles": [
+    ".trellis/scripts/",
+    ".gitattributes",
+    "packages/acp/src/gateway.ts",
+    "packages/acp/src/callback-router.ts",
+    "packages/acp/src/__tests__/callback-router.test.ts"
+  ],
+  "notes": "Step 2 in Phase 4 employee-steps. Round 1. All subtasks done. 804 tests pass (64 files). Unblocks Step 3."
+}

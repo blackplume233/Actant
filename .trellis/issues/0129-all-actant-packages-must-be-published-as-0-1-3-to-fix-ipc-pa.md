@@ -1,7 +1,9 @@
 ---
 id: 129
 title: "All @actant/* packages must be published as 0.1.3 to fix IPC path mismatch"
-status: open
+status: closed
+closedAs: completed
+closedAt: 2026-02-25T23:00:00
 labels:
   - bug
   - "priority:P1"

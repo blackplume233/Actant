@@ -397,10 +397,11 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 - ✅ #126 (P3) daemon.ping 硬编码版本 — 已修复，读取真实 package.json 版本
 - ✅ #127 (P2) install.ps1 非交互终端挂起 — 已修复，添加 `$IsInteractive` 检测和 `-NpmRegistry` 参数
 
-**仍活跃 BUG**：
-- #129 (P1) 所有 @actant/* 包需发布 — 版本已升至 0.2.1，需验证 npm 发布状态
-- #95 (P2) ACP Gateway terminal stub — 根因已定位（TerminalHandle 映射方案），不依赖 SDK 变更
-- #57 (P2) Windows daemon fork 退出 — workaround: --foreground
+**Step 2 BUG 清理（已完成）**：
+- ✅ #129 (P1) @actant/* 包 npm 发布 — 全部 0.2.2 已在 npm 发布，IPC 路径修复已包含
+- ✅ #95 (P2) ACP Gateway terminal stub — TerminalHandle 映射方案已实现 + 22 个测试覆盖
+- ✅ #57 (P2) Windows daemon fork — 已关闭 (workaround: --foreground 已文档化)
+- ✅ Trellis 脚本 CRLF — 21 个 .sh 文件转为 LF + .gitattributes 防止复现
 
 详细 TODO 跟踪见：`docs/planning/phase3-todo.md`
 详细设计见：`docs/design/mvp-next-design.md`
