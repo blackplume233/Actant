@@ -509,27 +509,21 @@ VersionedComponent           ← 基类
 
 ### WorkflowDefinition
 
-> **重新定义（#135）**：Workflow 重新定义为 **Hook Package** —— 事件驱动的自动化声明。
+> **重新定义（#135, PR #196）**：Workflow 重新定义为 **Hook Package** —— 事件驱动的自动化声明。
 > **Skill = 知识/能力注入（静态），Workflow = 事件自动化（动态）**，两者有清晰边界。
 >
 > 完整设计：[event-system-unified-design.md](../../docs/design/event-system-unified-design.md)
 >
-> 当前代码仍使用旧结构（`name + content`），待 #135 实施后升级为下方新结构。
-
-**当前结构**（旧，待迁移）：
-
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
-| `content` | `string` | **是** | 工作流内容（markdown 文本） |
-
-**目标结构**（#135 Hook Package）：
+> Schema 已在 PR #196 中完成对齐：`content` 改为 optional，新增 `hooks`/`enabled`/`level` 字段。
+> 纯内容 Workflow 和纯 Hook Workflow 均可通过校验。
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
-| `level` | `"actant" \| "instance"` | **是** | 作用层级：全局系统事件 或 绑定到实例 |
-| `hooks` | `HookDeclaration[]` | **是** | hook 声明列表 |
+| `content` | `string` | 否 | 工作流内容（markdown 文本）。纯 Hook Workflow 可省略 |
+| `hooks` | `HookDeclaration[]` | 否 | hook 声明列表。纯内容 Workflow 可省略 |
+| `enabled` | `boolean` | 否 | 是否启用（默认 `true`） |
+| `level` | `"actant" \| "instance"` | 否 | 作用层级：全局系统事件 或 绑定到实例（默认 `"actant"`） |
 
 **HookDeclaration**：
 
