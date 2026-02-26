@@ -67,7 +67,7 @@ actant agent logs patrol       # 查看执行日志
 
 ```bash
 # 手动触发一次任务（优先级最高）
-actant agent dispatch patrol --prompt "立即审查 PR #42"
+actant agent dispatch patrol -m "立即审查 PR #42"
 ```
 
 ## 6. 停止

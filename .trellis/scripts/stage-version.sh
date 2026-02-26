@@ -800,6 +800,25 @@ cmd_snapshot() {
 }
 
 # =============================================================================
+# Command: wiki
+# =============================================================================
+
+cmd_wiki() {
+  echo -e "${BLUE}Phase 1: Mechanical sync (changelog + architecture)...${NC}"
+  node "$SCRIPT_DIR/update-wiki-from-stage.mjs"
+  echo -e "${GREEN}✓ Mechanical sync done.${NC}"
+  echo ""
+  echo -e "${YELLOW}Phase 2: Intelligent update needed${NC}"
+  echo -e "  Run ${CYAN}/wiki-update${NC} in your AI agent session to:"
+  echo -e "  • Analyze code changes and identify new/modified features"
+  echo -e "  • Generate wiki pages for new features"
+  echo -e "  • Fix outdated content in existing pages"
+  echo -e "  • Update VitePress sidebar config"
+  echo -e ""
+  echo -e "  Skill: ${CYAN}.agents/skills/wiki-updater/SKILL.md${NC}"
+}
+
+# =============================================================================
 # Command: diff
 # =============================================================================
 
@@ -842,6 +861,7 @@ case "${1:-}" in
   release)     cmd_release "$2" ;;
   sync-issues) cmd_sync_issues "$2" ;;
   diff)        cmd_diff "$2" "$3" ;;
+  wiki)        cmd_wiki ;;
   bump)        cmd_bump "$2" ;;
   unstage)     cmd_unstage "$2" ;;
   latest)      cmd_latest ;;
@@ -860,6 +880,7 @@ case "${1:-}" in
     echo "  sync-issues <version>                  Snapshot and sync issues"
     echo ""
     echo "Publishing:"
+    echo "  wiki                                   Sync stage data → wiki reference pages"
     echo "  tag <version>                          Create git tag"
     echo "  release <version>                      Create GitHub release"
     echo ""

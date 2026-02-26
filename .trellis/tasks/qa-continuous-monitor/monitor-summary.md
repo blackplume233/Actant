@@ -1,9 +1,9 @@
 # QA 持续监测汇总
 
 **启动时间**: 2026-02-25 09:55
-**当前时间**: 2026-02-25 09:55
-**总运行时长**: 0 分钟
-**基线 HEAD 变迁**: aec18f7a → ... → 8aa4d83 → 6aa2be5
+**当前时间**: 2026-02-25 22:00
+**总运行时长**: ~12h
+**基线 HEAD 变迁**: aec18f7a → ... → c375bd3
 **配置**: interval=10min, mock=true, scenario=random-walk-comprehensive
 
 ## 测试轮次
@@ -19,59 +19,54 @@
 | R7 | 14:05 | 新 ship | 2f4c3e7 | BUILD FAIL | — | — | N/A |
 | R8 | 14:50 | 新 ship | 8aa4d83 | BUILD FAIL | — | — | N/A |
 | R9 | 15:15 | 新 ship | 6aa2be5 | 49/50 | 1 | 0 | 98% |
-
-## 监测检查记录
-
-| 检查时间 | 基线 | 结果 |
-|----------|------|------|
-| 10:15 | afc2ae0 | 新 ship → Round 2 |
-| 10:35 | 0e4ed49 | 新 ship → Round 3 (BUILD FAIL) |
-| 10:50 | 51ec005 | 无变化 |
-| 11:00 | 51ec005 | 无变化 (连续2次) |
-| 11:10 | 51ec005 | 新 ship → Round 4 |
-| 11:25 | 7f57024 | 无变化 |
-| 11:35 | 7f57024 | 无变化 (连续2次) |
-| 11:45 | 7f57024 | 无变化 (连续3次) |
-| 11:55 | 7f57024 | 无变化 (连续4次) |
-| 12:05 | 7f57024 | 新 ship → Round 5 |
-| 12:30-13:30 | 7bcd996 | 无变化 (连续8次) |
-| 13:40 | 7bcd996 | 新 ship → Round 6 |
-| 14:00 | 2c860a9 | 新 ship → Round 7 (BUILD FAIL) |
-| 14:15-14:35 | 2f4c3e7 | 无变化 (连续3次) |
-| 14:45 | 2f4c3e7 | 新 ship → Round 8 (BUILD FAIL) |
-| 14:55 | 8aa4d83 | 无变化 |
-| 15:05 | 8aa4d83 | 新 ship → Round 9 |
+| R10 | 15:50 | 新 ship | 3c84b02 | 47/50 | 3 | 0 | 94% |
+| R11 | 16:10 | 新 ship | 3305ea1 | 46/50 | 4 | 0 | 92% |
+| R12 | 17:40 | 新 ship | c375bd3 | 48/50 | 2 | 0 | 96% |
 
 ## 覆盖的 PR
 
 | PR | 标题 | 回归结果 |
 |----|------|---------|
-| #164 | docs(trellis): update developer identity spec | R1 PASS |
 | #162 | feat(core): backend-aware provider env injection | R1 PASS |
-| #165 | feat(phase4): wave-1 bug fixes | R2 PASS (version WARN) |
-| #166 | fix(scripts): harden install.ps1 | R2 未覆盖（脚本级） |
+| #164 | docs(trellis): update developer identity spec | R1 PASS |
+| #165 | feat(phase4): wave-1 bug fixes | R2 PASS |
+| #166 | fix(scripts): harden install.ps1 | R2 未覆盖 |
 | #167 | fix(api): initialize EmployeeScheduler | R2 PASS |
-| #168 | fix(scripts): harden install.ps1 (#166 merge) | R3 BUILD FAIL, R4 PASS |
+| #168 | fix(scripts): install.ps1 merge | R3 BUILD FAIL → R4 PASS |
 | #169 | docs(guides): dev workflow guide | R4 PASS |
 | #170 | feat(source): community source type | R5 PASS |
-| #172 | fix(issue-cli): CJK encoding | R5 未覆盖（CLI 级） |
+| #172 | fix(issue-cli): CJK encoding | R5 未覆盖 |
 | #174 | docs(issues): scheduler 4-mode design | R6 PASS |
 | #175 | feat: Instance Interaction Archetype | R7 BUILD FAIL → R9 PASS |
 | #159 | feat(hooks): Hook type system + event bus | R9 PASS |
+| — | feat(backend): Pi builtin backend | R10 PASS (94%) |
+| #176 | docs(wiki): VitePress wiki | R11 PASS (92%) |
+| #179 | feat(hooks): unified event system + schedule refactoring | R12 PASS (96%) |
 
 ## 通过率趋势
 
 ```
-R1: █████████░ 98%
-R2: █████████░ 92%
-R3: ░░░░░░░░░░ BUILD FAIL
-R4: █████████░ 98%
-R5: █████████░ 96%
-R6: █████████░ 98%
-R7: ░░░░░░░░░░ BUILD FAIL (picomatch)
-R8: ░░░░░░░░░░ BUILD FAIL (picomatch)
-R9: █████████░ 98%
+R1:  █████████░ 98%
+R2:  █████████░ 92%
+R3:  ░░░░░░░░░░ BUILD FAIL
+R4:  █████████░ 98%
+R5:  █████████░ 96%
+R6:  █████████░ 98%
+R7:  ░░░░░░░░░░ BUILD FAIL
+R8:  ░░░░░░░░░░ BUILD FAIL
+R9:  █████████░ 98%
+R10: █████████░ 94%
+R11: █████████░ 92%
+R12: █████████░ 96%
 ```
+
+## 统计总结
+
+- **总轮次**: 12 (9 次完整测试 + 3 次 BUILD FAIL)
+- **成功测试中平均通过率**: 95.6%
+- **总 FAIL**: 1 (R5 的 agent restart，测试设计问题)
+- **0 个功能性 FAIL**
+- **常见 WARN**: cursor backend start 限制, mock 模式时序, agent list 缓存
 
 ## 状态
 

@@ -13,14 +13,58 @@ GITHUB_RELEASE_URL="https://github.com/blackplume233/Actant/releases/latest/down
 SKIP_SETUP=false
 UNINSTALL=false
 FROM_GITHUB=false
+YES_MODE=false
 
 for arg in "$@"; do
   case "$arg" in
     --skip-setup)    SKIP_SETUP=true ;;
     --uninstall)     UNINSTALL=true ;;
     --from-github)   FROM_GITHUB=true ;;
+    --yes|-y)        YES_MODE=true ;;
+    --help|-h)
+      echo "Usage: install.sh [OPTIONS]"
+      echo ""
+      echo "Options:"
+      echo "  --yes, -y        Non-interactive mode (defaults: npm install, skip reconfig prompts)"
+      echo "  --from-github    Install from GitHub Release instead of npm registry"
+      echo "  --skip-setup     Skip the setup wizard after installation"
+      echo "  --uninstall      Uninstall Actant (non-interactive)"
+      echo "  --help, -h       Show this help message"
+      echo ""
+      echo "Examples:"
+      echo "  curl -fsSL https://raw.githubusercontent.com/blackplume233/Actant/master/scripts/install.sh | bash"
+      echo "  curl -fsSL ... | bash -s -- --from-github"
+      echo "  curl -fsSL ... | bash -s -- --yes --skip-setup"
+      echo "  bash install.sh --uninstall"
+      exit 0
+      ;;
   esac
 done
+
+# When stdin is not a terminal (e.g. curl | bash), force non-interactive mode
+if [[ ! -t 0 ]]; then
+  YES_MODE=true
+fi
+
+to_lower() {
+  echo "$1" | tr '[:upper:]' '[:lower:]'
+}
+
+prompt_read() {
+  local prompt="$1"
+  local varname="$2"
+  if $YES_MODE; then
+    eval "$varname=''"
+    return
+  fi
+  if [[ -t 0 ]]; then
+    read -rp "$prompt" "$varname"
+  elif [[ -e /dev/tty ]]; then
+    read -rp "$prompt" "$varname" </dev/tty
+  else
+    eval "$varname=''"
+  fi
+}
 
 echo -e "${CYAN}=== Actant Installer ===${NC}"
 echo ""
@@ -39,15 +83,37 @@ if [[ "$NODE_VERSION" -lt 22 ]]; then
 fi
 echo -e "${GREEN}✓ Node.js $(node -v)${NC}"
 
+# ── OS detection (used for daemon cleanup) ─────────────────────────
+detect_os() {
+  case "$(uname -s)" in
+    Linux*)  echo "linux" ;;
+    Darwin*) echo "macos" ;;
+    MINGW*|MSYS*|CYGWIN*) echo "windows" ;;
+    *)       echo "unknown" ;;
+  esac
+}
+
+cleanup_daemon_services() {
+  local os
+  os="$(detect_os)"
+
+  actant daemon stop 2>/dev/null || true
+
+  if [[ "$os" == "linux" ]]; then
+    rm -f ~/.config/systemd/user/actant-daemon.service 2>/dev/null
+    systemctl --user disable actant-daemon 2>/dev/null || true
+    systemctl --user daemon-reload 2>/dev/null || true
+  elif [[ "$os" == "macos" ]]; then
+    launchctl unload ~/Library/LaunchAgents/com.actant.daemon.plist 2>/dev/null || true
+    rm -f ~/Library/LaunchAgents/com.actant.daemon.plist 2>/dev/null
+  fi
+}
+
 # ── Non-interactive uninstall ──────────────────────────────────────
 if $UNINSTALL; then
   echo ""
   echo -e "${YELLOW}Uninstalling Actant...${NC}"
-  actant daemon stop 2>/dev/null || true
-  rm -f ~/.config/systemd/user/actant-daemon.service 2>/dev/null
-  systemctl --user disable actant-daemon 2>/dev/null || true
-  rm -f ~/Library/LaunchAgents/com.actant.daemon.plist 2>/dev/null
-  launchctl unload ~/Library/LaunchAgents/com.actant.daemon.plist 2>/dev/null || true
+  cleanup_daemon_services
   npm uninstall -g actant 2>/dev/null || true
   npm uninstall -g @actant/cli 2>/dev/null || true
   echo -e "${GREEN}✓ Actant has been uninstalled.${NC}"
@@ -68,6 +134,18 @@ if command -v actant &>/dev/null; then
   CURRENT_VERSION=$(actant --version 2>/dev/null || echo "unknown")
   echo ""
   echo -e "${YELLOW}检测到已安装 Actant ${CURRENT_VERSION}${NC}"
+
+  if $YES_MODE; then
+    echo -e "${DIM}  Non-interactive mode: updating from npm...${NC}"
+    echo ""
+    echo -e "${CYAN}Updating actant from npm...${NC}"
+    npm install -g actant
+    echo ""
+    NEW_VERSION=$(actant --version 2>/dev/null || echo "unknown")
+    echo -e "${GREEN}✓ Actant updated to ${NEW_VERSION}${NC}"
+    exit 0
+  fi
+
   echo ""
   echo "  [U] 更新 (npm registry)"
   echo "  [G] 从 GitHub Release 更新"
@@ -75,9 +153,11 @@ if command -v actant &>/dev/null; then
   echo "  [X] 完全卸载"
   echo "  [C] 取消"
   echo ""
-  read -rp "请选择 [U/G/R/X/C]: " choice
 
-  case "${choice,,}" in
+  prompt_read "请选择 [U/G/R/X/C]: " choice
+  choice="$(to_lower "${choice:-c}")"
+
+  case "$choice" in
     u)
       echo ""
       echo -e "${CYAN}Updating actant from npm...${NC}"
@@ -86,8 +166,9 @@ if command -v actant &>/dev/null; then
       NEW_VERSION=$(actant --version 2>/dev/null || echo "unknown")
       echo -e "${GREEN}✓ Actant updated to ${NEW_VERSION}${NC}"
       echo ""
-      read -rp "是否重新运行配置向导? [y/N]: " reconfig
-      if [[ "${reconfig,,}" == "y" ]]; then
+      prompt_read "是否重新运行配置向导? [y/N]: " reconfig
+      reconfig="$(to_lower "${reconfig:-n}")"
+      if [[ "$reconfig" == "y" ]]; then
         actant setup
       fi
       ;;
@@ -98,8 +179,9 @@ if command -v actant &>/dev/null; then
       NEW_VERSION=$(actant --version 2>/dev/null || echo "unknown")
       echo -e "${GREEN}✓ Actant updated to ${NEW_VERSION} (from GitHub Release)${NC}"
       echo ""
-      read -rp "是否重新运行配置向导? [y/N]: " reconfig
-      if [[ "${reconfig,,}" == "y" ]]; then
+      prompt_read "是否重新运行配置向导? [y/N]: " reconfig
+      reconfig="$(to_lower "${reconfig:-n}")"
+      if [[ "$reconfig" == "y" ]]; then
         actant setup
       fi
       ;;
@@ -109,17 +191,12 @@ if command -v actant &>/dev/null; then
     x)
       echo ""
       echo -e "${YELLOW}Uninstalling Actant...${NC}"
-      actant daemon stop 2>/dev/null || true
-
-      rm -f ~/.config/systemd/user/actant-daemon.service 2>/dev/null
-      systemctl --user disable actant-daemon 2>/dev/null || true
-      systemctl --user daemon-reload 2>/dev/null || true
-      launchctl unload ~/Library/LaunchAgents/com.actant.daemon.plist 2>/dev/null || true
-      rm -f ~/Library/LaunchAgents/com.actant.daemon.plist 2>/dev/null
+      cleanup_daemon_services
 
       echo ""
-      read -rp "是否删除数据目录 (~/.actant)? [y/N]: " rm_data
-      if [[ "${rm_data,,}" == "y" ]]; then
+      prompt_read "是否删除数据目录 (~/.actant)? [y/N]: " rm_data
+      rm_data="$(to_lower "${rm_data:-n}")"
+      if [[ "$rm_data" == "y" ]]; then
         ACTANT_DIR="${ACTANT_HOME:-$HOME/.actant}"
         rm -rf "$ACTANT_DIR"
         echo -e "${GREEN}✓ 已删除 ${ACTANT_DIR}${NC}"
@@ -140,13 +217,17 @@ fi
 # ── Fresh install ─────────────────────────────────────────────────
 if $FROM_GITHUB; then
   install_from_github
+elif $YES_MODE; then
+  echo ""
+  echo -e "${CYAN}Installing actant from npm...${NC}"
+  npm install -g actant
 else
   echo ""
   echo -e "安装方式:"
   echo "  [1] npm registry (推荐, 快速)"
   echo "  [2] GitHub Release (与 npm 发布同步)"
   echo ""
-  read -rp "请选择 [1/2] (默认 1): " install_method
+  prompt_read "请选择 [1/2] (默认 1): " install_method
   install_method="${install_method:-1}"
 
   if [[ "$install_method" == "2" ]]; then

@@ -47,7 +47,9 @@
       "Bash(tree:*)",
       "mcp__vibe_kanban__list_projects",
       "Bash(./.trellis/scripts/issue.sh list:*)",
-      "Bash(./.trellis/scripts/issue.sh pull:*)"
+      "Bash(./.trellis/scripts/issue.sh pull:*)",
+      "Bash(gh issue:*)",
+      "Bash(tail:*)"
     ]
   }
 }

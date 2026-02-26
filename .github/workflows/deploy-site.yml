@@ -1,10 +1,11 @@
-name: Deploy Landing Page
+name: Deploy Site + Wiki
 
 on:
   push:
     branches: [master]
     paths:
       - 'docs/site/**'
+      - 'docs/wiki/**'
   workflow_dispatch:
 
 permissions:
@@ -25,6 +26,27 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Build Wiki (VitePress)
+        working-directory: docs/wiki
+        run: |
+          pnpm install --no-frozen-lockfile
+          pnpm build
+
+      - name: Merge site artifacts
+        run: |
+          mkdir -p docs/site/wiki
+          cp -r docs/wiki/.vitepress/dist/* docs/site/wiki/
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

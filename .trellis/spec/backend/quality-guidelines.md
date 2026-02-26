@@ -13,17 +13,18 @@ Actant follows a **test-driven, review-enforced** quality model. Every feature e
 ## Development Workflow
 
 ```
-Design → Confirm → Implement → Test → Review → Commit
+文档/规范 → 接口/类型 → 确认 → 实现 → 测试 → 审查 → 提交
 ```
 
-1. **Design first**: Explicit design document or spec before coding
-2. **Confirm**: Design reviewed and approved before implementation
-3. **Impact check**: 修改核心模块前执行 `impact({target: "<symbol>", direction: "upstream"})` 确认爆炸半径
-4. **Implement**: Small, focused increments (one commit = one coherent change)
-5. **Test**: All CLI/config behaviors covered by unit tests
-6. **Pre-commit check**: 执行 `detect_changes({scope: "all"})` 确认变更影响范围合理
-7. **Review**: Dedicated review for quality, extensibility, maintainability
-8. **Commit**: Only after all checks pass
+1. **Documentation first (文档先行)**：任何功能扩展或修改，必须先输出文档再实现。详见下方 [Documentation-First 开发模式](#documentation-first-开发模式)
+2. **Interface before implementation (接口先于实现)**：TypeScript 类型、公共 API 签名、配置 Schema 必须在编写业务逻辑之前定义
+3. **Confirm**: 文档和接口经审查确认后方可进入实现
+4. **Impact check**: 修改核心模块前执行 `impact({target: "<symbol>", direction: "upstream"})` 确认爆炸半径
+5. **Implement**: Small, focused increments (one commit = one coherent change)
+6. **Test**: All CLI/config behaviors covered by unit tests
+7. **Pre-commit check**: 执行 `detect_changes({scope: "all"})` 确认变更影响范围合理
+8. **Review**: Dedicated review for quality, extensibility, maintainability. **必须确认文档与代码同步**
+9. **Commit**: Only after all checks pass
 
 ---
 
@@ -230,6 +231,45 @@ eventBus.emit(event, data);
 ---
 
 ## Required Patterns
+
+### Documentation-First 开发模式
+
+**文档、契约、接口、配置的优先级高于代码实现。** 这是本项目最重要的开发原则。
+
+任何功能扩展或修改必须按照以下顺序推进：
+
+| 步骤 | 产出 | 必须包含 | 示例 |
+|------|------|----------|------|
+| 1 | **规范文档** | 行为描述、边界条件、错误场景 | 在 `spec/` 下新增或更新 `.md` |
+| 2 | **接口/类型定义** | TypeScript `interface`/`type`、公共 API 签名 | `@actant/shared` 中新增类型 |
+| 3 | **配置 Schema** | JSON Schema、默认值、枚举选项 | 更新 `config-spec.md` |
+| 4 | **契约** | RPC 方法签名、CLI 命令规格、错误码 | 更新 `api-contracts.md` |
+| 5 | **实现代码** | 业务逻辑、测试用例 | `packages/` 下的 `.ts` 文件 |
+
+```typescript
+// Good — 先定义接口，再实现
+// Step 1: 在 spec 中描述 EmployeeScheduler 的行为
+// Step 2: 在 @actant/shared 定义类型
+export interface EmployeeScheduler {
+  schedule(instance: AgentInstance, trigger: ScheduleTrigger): Promise<void>;
+  cancel(instanceId: string): void;
+}
+
+// Step 3: 更新 config-spec.md 中的 ScheduleTrigger schema
+// Step 4: 更新 api-contracts.md 中的 RPC 方法
+// Step 5: 实现 EmployeeSchedulerImpl
+
+// Bad — 直接写实现，文档后补（或不补）
+export class EmployeeSchedulerImpl {
+  // 接口未定义就开始写逻辑...
+  // 配置结构随手定义...
+  // 文档？什么文档？
+}
+```
+
+**Why**: 文档和接口是团队协作的契约基础。先写文档迫使开发者在编码前想清楚行为边界；先定义接口确保模块间的耦合是显式的、可审查的。代码可以重写，但错误的接口一旦被依赖就难以修正。
+
+> **规则**: 任何 PR 如果包含新功能或接口变更，但缺少对应的 spec/类型/配置文档更新，应被 reject。
 
 ### 项目文件格式约定
 
@@ -763,6 +803,8 @@ describe("TemplateLoader", () => {
 
 Before approving any feature:
 
+- [ ] **Documentation first**: 是否先更新了 spec/接口/配置文档？文档与实现是否同步？
+- [ ] **Interface before implementation**: 公共接口/类型是否在实现代码之前定义？
 - [ ] **Impact checked**: 核心模块变更是否执行了 `impact` 分析，爆炸半径是否在预期内？
 - [ ] **CLI accessible**: Can this feature be fully operated via CLI?
 - [ ] **Tests present**: Are all CLI/config behaviors covered?

@@ -255,6 +255,11 @@ Use the task management script:
 - [OK] If configuration fields, schemas, or environment variables changed → update `spec/config-spec.md`
 - [OK] If RPC methods, CLI commands, error codes, or public APIs changed → update `spec/api-contracts.md`
 
+**Wiki sync (功能变更时)**:
+- [OK] If new features added → use `/wiki-update` skill to generate wiki pages
+- [OK] If existing features changed → use `/wiki-update` skill to update wiki pages
+- [OK] Run `node .trellis/scripts/update-wiki-from-stage.mjs` for mechanical changelog/architecture sync
+
 **Endurance test sync (功能变更时必选)**:
 - [OK] If changes affect agent lifecycle, state machine, communication, or process management → update `*.endurance.test.ts` per `spec/endurance-testing.md`
 - [OK] If existing endurance tests break due to interface changes → fix them in the same commit

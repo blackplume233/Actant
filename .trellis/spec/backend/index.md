@@ -95,10 +95,11 @@ Actant
 
 ## Development Principles
 
-1. **CLI-First, UI-Ready**: All core functions must work via text config and CLI. CLI design should anticipate future UI integration.
-2. **Test-Driven**: All behaviors exposed as CLI operations or configurations must have comprehensive unit tests.
-3. **Plan Before Execute**: Every development task requires explicit design and confirmation before implementation. Keep each commit scope small and focused.
-4. **Thorough Review**: Completed features must be reviewed for code quality, extensibility, and maintainability. Iterate agilely while keeping tech debt bounded.
+1. **Documentation-First（文档先行）**: 任何功能扩展或修改，**必须先输出文档、定义接口、确定配置结构，再编写实现代码**。文档、契约、接口、配置是项目的主要产出，代码是对它们的实现。详见 [Documentation-First 开发模式](./quality-guidelines.md#documentation-first-开发模式)。
+2. **CLI-First, UI-Ready**: All core functions must work via text config and CLI. CLI design should anticipate future UI integration.
+3. **Test-Driven**: All behaviors exposed as CLI operations or configurations must have comprehensive unit tests.
+4. **Contract-Driven（契约驱动）**: 模块间通信通过显式接口契约约束。接口先于实现定义，实现必须符合已发布的契约。接口变更需先更新 `api-contracts.md` 和类型定义。
+5. **Thorough Review**: Completed features must be reviewed for code quality, extensibility, and maintainability. **Review 必须确认文档与代码同步。**
 
 ---
 

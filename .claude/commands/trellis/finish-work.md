@@ -26,7 +26,7 @@ pnpm test
 
 ### 2. Documentation Sync
 
-**Structure Docs**:
+**Spec Docs**:
 - [ ] Does `.trellis/spec/backend/` need updates?
   - New patterns, new modules, new conventions
 - [ ] Does `.trellis/spec/frontend/` need updates?
@@ -94,7 +94,7 @@ git diff --name-only
 
 | Oversight | Consequence | Check |
 |-----------|-------------|-------|
-| Structure docs not updated | Others don't know the change | Check .trellis/spec/ |
+| Spec docs not updated | Others don't know the change | Check .trellis/spec/ |
 | Migration not created | Schema out of sync | Check db/migrations/ |
 | Types not synced | Runtime errors | Check shared types |
 | Tests not updated | False confidence | Run full test suite |

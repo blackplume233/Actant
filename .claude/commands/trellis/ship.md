@@ -1,6 +1,6 @@
-# Ship - 审查、提交、推送一站式流程
+# Ship - 审查、提交、推送、同步 Issue 一站式流程
 
-编排 `/trellis:finish-work` 的审查清单，并追加 Commit 和 Push 操作，一次完成交付。
+编排 `/trellis:finish-work` 的审查清单，并追加 Commit、Push、Issue 同步操作，一次完成交付。
 
 **时机**: 代码编写完成后，准备交付时执行。
 
@@ -125,15 +125,19 @@ git push origin <当前分支>
 
 ---
 
-### Phase 4: Issue 状态更新与同步
+### Phase 4: Issue Sync（同步相关 Issue）
 
-Push 成功后，根据 commit message 中的 Issue 引用自动更新状态。
+推送成功后，检查本次变更是否关联 Issue，并自动同步状态。
 
-#### 4.1 解析 commit message 中的 Issue 引用
+#### 4.1 识别关联 Issue
 
-从最新 commit message 中提取 Issue 编号：
-- `(#NNN)` — 关联引用（不自动关闭，仅添加评论）
-- `fixes #NNN` / `closes #NNN` / `resolves #NNN` — 自动关闭
+从以下来源识别本次变更关联的 Issue：
+
+1. **Commit message** — 解析 `#N` 引用（如 `fix(acp): ... (#95)`）
+   - `(#NNN)` — 关联引用（不自动关闭，仅添加评论）
+   - `fixes #NNN` / `closes #NNN` / `resolves #NNN` — 自动关闭
+2. **变更文件** — 检查 `.trellis/issues/` 目录下是否有新建或修改的 issue 文件
+3. **代码注释** — 检查变更代码中引用的 `#N`（如 `// see #116`）
 
 #### 4.2 更新 Issue 状态
 
@@ -171,10 +175,10 @@ gh issue view <N> --json state,closedAt
 
 如果 `gh` CLI 不可用，标记为 "⚠️ 跳过" 并在报告中提醒手动操作。
 
-#### 4.4 输出 Issue 更新报告
+#### 4.4 输出 Issue 同步报告
 
 ```
-## Issue 更新
+## Issue 同步报告
 
 | Issue | 操作 | 状态 |
 |-------|------|------|
@@ -183,7 +187,7 @@ gh issue view <N> --json state,closedAt
 
 ---
 
-推送和 Issue 更新完成后输出最终摘要：
+推送和 Issue 同步完成后输出最终摘要：
 
 ```
 ## 完成摘要
@@ -191,7 +195,7 @@ gh issue view <N> --json state,closedAt
 - 提交: <hash> <message>
 - 分支: <branch> → origin/<branch>
 - 变更: N files changed, +insertions, -deletions
-- Issue: #NNN 已关闭 / 无关联 Issue
+- Issue: N 个 Issue 已同步
 ```
 
 ---
@@ -228,4 +232,3 @@ gh issue view <N> --json state,closedAt
 | `/trellis:ship` | 审查 + Spec 同步 + 提交 + 推送 + Issue 同步（本命令） |
 | `/trellis:record-session` | 记录会话和进度 |
 | `/trellis:update-spec` | 更新规范文档 |
-| `issue.sh` | Issue 管理 CLI（被 Phase 2.2 和 Phase 4 调用） |

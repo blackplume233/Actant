@@ -4,7 +4,7 @@ export default defineConfig({
   lang: 'zh-CN',
   title: 'Actant',
   description: 'The Docker for AI Agents — 构建、管理和编排 AI Agent 的平台',
-  base: '/Actant/wiki/',
+  base: '/wiki/',
 
   head: [
     ['meta', { name: 'robots', content: 'noai, noimageai' }],
@@ -49,6 +49,7 @@ export default defineConfig({
           text: '运行调度',
           items: [
             { text: '雇员调度器', link: '/features/scheduler' },
+            { text: 'Hook 事件系统', link: '/features/hooks' },
             { text: 'ACP 连接', link: '/features/acp-proxy' },
           ],
         },

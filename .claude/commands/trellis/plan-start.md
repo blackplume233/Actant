@@ -53,7 +53,13 @@ cat .trellis/spec/backend/index.md
 cat .trellis/spec/guides/index.md
 ```
 
-### Step 0.5: Report Ready Status
+### Step 0.5: Check Active Tasks
+
+```bash
+./.trellis/scripts/task.sh list
+```
+
+### Step 0.6: Report Ready Status
 
 Report what you learned, then:
 

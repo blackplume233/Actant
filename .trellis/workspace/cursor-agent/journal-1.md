@@ -1306,3 +1306,65 @@ Added GitHub Actions CI to actant-hub repo; updated spec with hub dev convention
 ### Next Steps
 
 - None - task complete
+
+## Session 24: fix scripts install.sh pipe-safety
+
+**Date**: 2026-02-26
+**Task**: fix scripts install.sh pipe-safety
+
+### Summary
+
+Fixed 5 issues in install.sh: stdin pipe fix, bash 3.2 compat, non-interactive mode, OS-aware cleanup, help flag
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `pending` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
+
+## Session 25: fix scripts install.sh pipe-safety
+
+**Date**: 2026-02-26
+**Task**: fix scripts install.sh pipe-safety
+
+### Summary
+
+Fixed 5 issues in install.sh: stdin pipe fix, bash 3.2 compat, non-interactive mode, OS-aware cleanup, help flag
+
+### Main Changes
+
+
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `pending` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete
