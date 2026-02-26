@@ -1335,10 +1335,26 @@
       {
         "name": "ActivityRecord",
         "fields": [
-          {"name": "ts", "optional": false, "type": "number"},
-          {"name": "sessionId", "optional": false, "type": "string"},
-          {"name": "type", "optional": false, "type": "ActivityRecordType"},
-          {"name": "data", "optional": false, "type": "unknown"}
+          {
+            "name": "ts",
+            "optional": false,
+            "type": "number"
+          },
+          {
+            "name": "sessionId",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "optional": false,
+            "type": "ActivityRecordType"
+          },
+          {
+            "name": "data",
+            "optional": false,
+            "type": "unknown"
+          }
         ],
         "raw": "ts: number; sessionId: string; type: ActivityRecordType; data: unknown;"
       },
@@ -1350,20 +1366,58 @@
       {
         "name": "ActivitySessionSummary",
         "fields": [
-          {"name": "sessionId", "optional": false, "type": "string"},
-          {"name": "agentName", "optional": false, "type": "string"},
-          {"name": "startTs", "optional": false, "type": "number"},
-          {"name": "endTs", "optional": true, "type": "number"},
-          {"name": "recordCount", "optional": false, "type": "number"},
-          {"name": "messageCount", "optional": false, "type": "number"},
-          {"name": "toolCallCount", "optional": false, "type": "number"},
-          {"name": "fileWriteCount", "optional": false, "type": "number"}
+          {
+            "name": "sessionId",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "agentName",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "startTs",
+            "optional": false,
+            "type": "number"
+          },
+          {
+            "name": "endTs",
+            "optional": true,
+            "type": "number"
+          },
+          {
+            "name": "recordCount",
+            "optional": false,
+            "type": "number"
+          },
+          {
+            "name": "messageCount",
+            "optional": false,
+            "type": "number"
+          },
+          {
+            "name": "toolCallCount",
+            "optional": false,
+            "type": "number"
+          },
+          {
+            "name": "fileWriteCount",
+            "optional": false,
+            "type": "number"
+          }
         ],
         "raw": "sessionId: string; agentName: string; startTs: number; endTs?: number; recordCount: number; messageCount: number; toolCallCount: number; fileWriteCount: number;"
       },
       {
         "name": "ActivitySessionsParams",
-        "fields": [{"name": "agentName", "optional": false, "type": "string"}],
+        "fields": [
+          {
+            "name": "agentName",
+            "optional": false,
+            "type": "string"
+          }
+        ],
         "raw": "agentName: string;"
       },
       {
@@ -1374,27 +1428,63 @@
       {
         "name": "ActivityStreamParams",
         "fields": [
-          {"name": "agentName", "optional": false, "type": "string"},
-          {"name": "sessionId", "optional": false, "type": "string"},
-          {"name": "types", "optional": true, "type": "string[]"},
-          {"name": "offset", "optional": true, "type": "number"},
-          {"name": "limit", "optional": true, "type": "number"}
+          {
+            "name": "agentName",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "sessionId",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "types",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "offset",
+            "optional": true,
+            "type": "number"
+          },
+          {
+            "name": "limit",
+            "optional": true,
+            "type": "number"
+          }
         ],
         "raw": "agentName: string; sessionId: string; types?: string[]; offset?: number; limit?: number;"
       },
       {
         "name": "ActivityStreamResult",
         "fields": [
-          {"name": "records", "optional": false, "type": "ActivityRecord[]"},
-          {"name": "total", "optional": false, "type": "number"}
+          {
+            "name": "records",
+            "optional": false,
+            "type": "ActivityRecord[]"
+          },
+          {
+            "name": "total",
+            "optional": false,
+            "type": "number"
+          }
         ],
         "raw": "records: ActivityRecord[]; total: number;"
       },
       {
         "name": "ActivityConversationParams",
         "fields": [
-          {"name": "agentName", "optional": false, "type": "string"},
-          {"name": "sessionId", "optional": false, "type": "string"}
+          {
+            "name": "agentName",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "sessionId",
+            "optional": false,
+            "type": "string"
+          }
         ],
         "raw": "agentName: string; sessionId: string;"
       },
@@ -1406,14 +1496,28 @@
       {
         "name": "ActivityBlobParams",
         "fields": [
-          {"name": "agentName", "optional": false, "type": "string"},
-          {"name": "hash", "optional": false, "type": "string"}
+          {
+            "name": "agentName",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "hash",
+            "optional": false,
+            "type": "string"
+          }
         ],
         "raw": "agentName: string; hash: string;"
       },
       {
         "name": "ActivityBlobResult",
-        "fields": [{"name": "content", "optional": false, "type": "string"}],
+        "fields": [
+          {
+            "name": "content",
+            "optional": false,
+            "type": "string"
+          }
+        ],
         "raw": "content: string;"
       }
     ],
@@ -1421,29 +1525,69 @@
       {
         "name": "CanvasUpdateParams",
         "fields": [
-          {"name": "agentName", "optional": false, "type": "string"},
-          {"name": "html", "optional": false, "type": "string"},
-          {"name": "title", "optional": true, "type": "string"}
+          {
+            "name": "agentName",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "html",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "optional": true,
+            "type": "string"
+          }
         ],
         "raw": "agentName: string; html: string; title?: string;"
       },
       {
         "name": "CanvasUpdateResult",
-        "fields": [{"name": "ok", "optional": false, "type": "boolean"}],
+        "fields": [
+          {
+            "name": "ok",
+            "optional": false,
+            "type": "boolean"
+          }
+        ],
         "raw": "ok: boolean;"
       },
       {
         "name": "CanvasGetParams",
-        "fields": [{"name": "agentName", "optional": false, "type": "string"}],
+        "fields": [
+          {
+            "name": "agentName",
+            "optional": false,
+            "type": "string"
+          }
+        ],
         "raw": "agentName: string;"
       },
       {
         "name": "CanvasGetResult",
         "fields": [
-          {"name": "agentName", "optional": false, "type": "string"},
-          {"name": "html", "optional": false, "type": "string"},
-          {"name": "title", "optional": true, "type": "string"},
-          {"name": "updatedAt", "optional": false, "type": "number"}
+          {
+            "name": "agentName",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "html",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "optional": false,
+            "type": "number"
+          }
         ],
         "raw": "agentName: string; html: string; title?: string; updatedAt: number;"
       },
@@ -1454,17 +1598,35 @@
       },
       {
         "name": "CanvasListResult",
-        "fields": [{"name": "entries", "optional": false, "type": "CanvasGetResult[]"}],
+        "fields": [
+          {
+            "name": "entries",
+            "optional": false,
+            "type": "CanvasGetResult[]"
+          }
+        ],
         "raw": "entries: CanvasGetResult[];"
       },
       {
         "name": "CanvasClearParams",
-        "fields": [{"name": "agentName", "optional": false, "type": "string"}],
+        "fields": [
+          {
+            "name": "agentName",
+            "optional": false,
+            "type": "string"
+          }
+        ],
         "raw": "agentName: string;"
       },
       {
         "name": "CanvasClearResult",
-        "fields": [{"name": "ok", "optional": false, "type": "boolean"}],
+        "fields": [
+          {
+            "name": "ok",
+            "optional": false,
+            "type": "boolean"
+          }
+        ],
         "raw": "ok: boolean;"
       }
     ],
