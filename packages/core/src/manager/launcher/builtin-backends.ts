@@ -144,7 +144,7 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
     tags: ["agent", "in-process", "llm"],
     origin: { type: "builtin" },
     supportedModes: ["resolve", "acp"],
-    defaultInteractionModes: ["start"],
+    defaultInteractionModes: ["start", "chat", "run", "proxy"],
     resolveCommand: { win32: "pi-acp-bridge.cmd", default: "pi-acp-bridge" },
     resolvePackage: "@actant/pi",
     install: [

@@ -782,7 +782,25 @@ export class AgentManager {
         .catch(() => {});
     }
 
-    const result = await conn.prompt(targetSessionId, message);
+    const PROMPT_TIMEOUT_MS = 300_000;
+    const promptPromise = conn.prompt(targetSessionId, message);
+    const timeoutPromise = new Promise<never>((_resolve, reject) => {
+      setTimeout(() => reject(new Error(
+        `Prompt to agent "${name}" timed out after ${PROMPT_TIMEOUT_MS / 1000}s. ` +
+        `The agent may be unresponsive or the LLM call may have failed.`,
+      )), PROMPT_TIMEOUT_MS);
+    });
+
+    let result;
+    try {
+      result = await Promise.race([promptPromise, timeoutPromise]);
+    } catch (err) {
+      this.eventBus?.emit("error", { callerType: "system", callerId: "AgentManager" }, name, {
+        "error.message": err instanceof Error ? err.message : String(err),
+        "error.code": "PROMPT_FAILED",
+      });
+      throw err;
+    }
 
     if (this.activityRecorder) {
       this.activityRecorder.record(name, targetSessionId, {
