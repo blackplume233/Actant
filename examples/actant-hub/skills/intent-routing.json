@@ -1,0 +1,8 @@
+{
+  "name": "intent-routing",
+  "version": "1.0.0",
+  "description": "意图识别与路由 — 解析用户自然语言输入，识别意图类别，路由到合适的 Agent 或内置命令",
+  "content": "# Intent Routing\n\n## Overview\n\nParse user natural language input, classify intent categories, and route to the appropriate Agent or built-in command.\n\n## Intent Categories\n\n| Category | Description | Routing Target |\n|----------|-------------|----------------|\n| **task-delegation** | User wants work done by an Agent | Steward → domain Agent (Researcher, Maintainer, etc.) |\n| **query** | User asks a question or seeks information | Steward → Researcher or direct answer |\n| **system-command** | User invokes system control (start/stop, config, status) | Built-in command handler |\n| **conversation** | Greeting, clarification, follow-up | Steward handles directly, maintain context |\n\n## Routing Rules\n\n1. **Keyword matching**: Slash commands (`/qa`, `/issue`), explicit verbs (\"create\", \"run\", \"check\")\n2. **Semantic inference**: Use context and prior turns to disambiguate ambiguous input\n3. **Fallback**: When intent unclear, ask clarifying question before routing\n\n## Fallback Behavior\n\n- If confidence < threshold: respond with \"I'm not sure if you want to... [options]. Which applies?\"\n- If multiple valid routes: prefer the one with highest prior success rate for similar queries\n- If no valid route: explain capabilities and suggest alternatives",
+  "tags": ["intent", "routing", "nlp", "steward"],
+  "license": "MIT"
+}

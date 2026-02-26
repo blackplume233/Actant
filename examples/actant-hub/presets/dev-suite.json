@@ -1,8 +1,0 @@
-{
-  "name": "dev-suite",
-  "version": "1.0.0",
-  "description": "Full development suite with all skills",
-  "skills": ["code-review", "test-writer"],
-  "prompts": ["system-prompt"],
-  "templates": ["code-reviewer"]
-}

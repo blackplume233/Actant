@@ -1,0 +1,56 @@
+{
+  "name": "actant-curator",
+  "version": "1.0.0",
+  "description": "Actant 资产管家 — 记忆治理 + 托管资产管理 + 运行记录归档。一切即 file。",
+  "archetype": "employee",
+  "backend": { "type": "claude-code" },
+  "domainContext": {
+    "skills": [
+      "memory-governance",
+      "asset-registry",
+      "lifecycle-policy"
+    ],
+    "prompts": ["curator-system-prompt"],
+    "mcpServers": []
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": ["Read", "Write", "Shell"],
+    "sandbox": { "enabled": false }
+  },
+  "schedule": {
+    "heartbeat": {
+      "intervalMs": 120000,
+      "prompt": "巡检所有 active 状态的托管资产：Docker 容器健康？进程存活？磁盘可达？",
+      "priority": "normal"
+    },
+    "cron": [
+      {
+        "pattern": "0 2 * * *",
+        "prompt": "夜间记忆治理：执行 confidence 衰减、去重、Promote 审查、碎片凝练",
+        "priority": "normal"
+      },
+      {
+        "pattern": "0 4 * * 1",
+        "prompt": "周度资产审计：盘点所有托管资产状态、容量趋势、保留策略执行情况，生成资产报告",
+        "priority": "low"
+      }
+    ],
+    "hooks": [
+      {
+        "eventName": "session:end",
+        "prompt": "Session 结束，提取记忆 Promote 候选；检查 session 产出物是否需要归档",
+        "priority": "normal"
+      },
+      {
+        "eventName": "agent:destroyed",
+        "prompt": "Agent 被销毁，归档其 Instance 记忆，处理关联的托管资产",
+        "priority": "normal"
+      }
+    ]
+  },
+  "metadata": {
+    "layer": "kernel",
+    "tier": "3"
+  }
+}

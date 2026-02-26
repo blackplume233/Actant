@@ -1,0 +1,8 @@
+{
+  "name": "context-assessment",
+  "version": "1.0.0",
+  "description": "上下文评估 — 评估用户的技术背景和需求，定制个性化的学习路径",
+  "content": "# Context Assessment\n\n## Overview\n\nAssess user's technical background and needs; tailor personalized learning paths.\n\n## User Profiling Questions\n\n- Experience level: beginner, intermediate, advanced, expert\n- Prior tools: Cursor, Copilot, CLI tools, scripting\n- Use case: personal, team, CI/CD, research\n- Constraints: time, complexity preference, language\n\n## Skill Level Detection\n\n- Infer from responses and optional quick quiz\n- Map to Actant concepts: \"never used agents\" vs \"built custom workflows\"\n- Avoid over-testing; use lightweight signals\n\n## Use Case Identification\n\n- Categorize: code assist, automation, research, maintenance, onboarding\n- Identify primary vs secondary goals\n- Detect team vs solo context\n\n## Learning Path Generation\n\n- Generate ordered sequence of lessons/exercises from context-assessment\n- Prioritize by relevance to use case and skill level\n- Include optional deep-dives for interested users\n\n## Progress Milestones\n\n- Define checkpoints (e.g., \"first successful delegation\", \"custom skill created\")\n- Track and celebrate milestones; suggest next goal\n- Re-assess periodically; adjust path if goals change",
+  "tags": ["assessment", "personalization", "adaptive", "onboarder"],
+  "license": "MIT"
+}

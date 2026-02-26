@@ -1,0 +1,8 @@
+{
+  "name": "conversation-management",
+  "version": "1.0.0",
+  "description": "会话管理 — 维护多轮对话上下文，管理会话生命周期，确保连贯的用户体验",
+  "content": "# Conversation Management\n\n## Overview\n\nMaintain multi-turn dialogue context, manage session lifecycle, and ensure coherent user experience.\n\n## Context Window Management\n\n- **Sliding window**: Keep recent N turns within token budget; summarize older content if needed\n- **Key facts extraction**: Persist user preferences, project context, and decisions across turns\n- **Token awareness**: Proactively suggest summarization or session split when approaching limits\n\n## Session Lifecycle\n\n| Phase | Actions |\n|-------|--------|\n| **Start** | Load persisted context (if any), greet, establish scope |\n| **Active** | Append turns, update working memory, track delegated tasks |\n| **Pause** | Persist state for resume; optional checkpoint for long gaps |\n| **End** | Extract memories for Promote, archive session artifacts, cleanup |\n\n## Multi-Turn State Tracking\n\n- Track: current task chain, pending delegations, user corrections, open questions\n- On handoff: pass relevant context to receiving Agent; record handoff reason\n- On return: merge delegated result into conversation; update user-facing summary\n\n## Graceful Handoff\n\n- Before delegating: briefly confirm scope with user if ambiguous\n- After delegation: present result in user-friendly form; offer follow-up options\n- On Agent error: surface error clearly, suggest retry or alternative",
+  "tags": ["conversation", "context", "session", "steward"],
+  "license": "MIT"
+}

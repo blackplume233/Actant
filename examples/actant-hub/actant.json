@@ -1,13 +1,61 @@
 {
   "name": "actant-hub",
-  "version": "0.2.0",
-  "description": "Actant official component repository",
+  "version": "1.0.0",
+  "description": "Actant official component hub — kernel, auxiliary, and spark agent templates with skills, prompts, MCP configs & presets",
   "components": {
-    "skills": ["skills/code-review.json", "skills/test-writer.json"],
-    "prompts": ["prompts/system-prompt.json"],
-    "mcp": ["mcp/filesystem.json"],
-    "workflows": ["workflows/tdd-workflow.json"],
-    "templates": ["templates/code-reviewer.json"]
+    "skills": [
+      "skills/intent-routing.json",
+      "skills/conversation-management.json",
+      "skills/task-delegation.json",
+      "skills/self-diagnosis.json",
+      "skills/self-repair.json",
+      "skills/evolution-report.json",
+      "skills/memory-governance.json",
+      "skills/asset-registry.json",
+      "skills/lifecycle-policy.json",
+      "skills/version-check.json",
+      "skills/migration-engine.json",
+      "skills/rollback-strategy.json",
+      "skills/resource-scan.json",
+      "skills/cleanup-policy.json",
+      "skills/capacity-monitor.json",
+      "skills/web-research.json",
+      "skills/knowledge-synthesis.json",
+      "skills/source-evaluation.json",
+      "skills/guided-setup.json",
+      "skills/interactive-tutorial.json",
+      "skills/context-assessment.json",
+      "skills/code-generation.json",
+      "skills/pr-management.json",
+      "skills/self-bootstrap.json",
+      "skills/contribution-policy.json"
+    ],
+    "prompts": [
+      "prompts/steward-system-prompt.json",
+      "prompts/maintainer-system-prompt.json",
+      "prompts/curator-system-prompt.json",
+      "prompts/updater-system-prompt.json",
+      "prompts/scavenger-system-prompt.json",
+      "prompts/researcher-system-prompt.json",
+      "prompts/onboarder-system-prompt.json",
+      "prompts/spark-system-prompt.json"
+    ],
+    "mcp": [],
+    "templates": [
+      "templates/actant-steward.json",
+      "templates/actant-maintainer.json",
+      "templates/actant-curator.json",
+      "templates/actant-updater.json",
+      "templates/actant-scavenger.json",
+      "templates/actant-researcher.json",
+      "templates/actant-onboarder.json",
+      "templates/actant-spark.json"
+    ]
   },
-  "presets": ["presets/dev-suite.json"]
+  "presets": [
+    "presets/actant-kernel.json",
+    "presets/actant-full.json",
+    "presets/actant-lite.json",
+    "presets/actant-contributor.json"
+  ]
 }

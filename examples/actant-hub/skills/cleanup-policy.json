@@ -1,0 +1,8 @@
+{
+  "name": "cleanup-policy",
+  "version": "1.0.0",
+  "description": "清理策略 — 基于规则的自动清理执行引擎，支持 dry-run 预览和安全确认",
+  "content": "# Cleanup Policy\n\n## Overview\n\nRule-based automated cleanup execution engine; supports dry-run preview and safety confirmation.\n\n## Cleanup Rules\n\n- **Age-based**: Delete files older than N days (e.g., logs > 7 days)\n- **Size-based**: Delete when directory exceeds threshold; evict oldest first\n- **Pattern-based**: Match glob patterns (e.g., `*.log`, `*.tmp`); apply rule to matches\n\n## Dry-Run Mode\n\n- List all files/dirs that would be affected without modifying\n- Show estimated space reclaimed; require explicit confirm before execution\n- Output machine-readable report for integration\n\n## Safety Checklist\n\n- **Protected paths**: Never touch system dirs, `.git/`, config files, user home\n- **Minimum free space guard**: Abort if cleanup would leave disk below threshold (e.g., 10%)\n- **Whitelist/blacklist**: User-defined paths to always exclude or include\n\n## Execution Logging\n\n- Log every deleted file/dir with timestamp and size\n- Persist log for audit; support rollback reference\n\n## Cleanup Report Generation\n\n- Summary: total reclaimed space, file count, rule breakdown\n- Per-rule stats: matched vs deleted; skipped (protected) count",
+  "tags": ["cleanup", "policy", "automation", "scavenger"],
+  "license": "MIT"
+}

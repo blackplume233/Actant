@@ -1,0 +1,8 @@
+{
+  "name": "self-diagnosis",
+  "version": "1.0.0",
+  "description": "自诊断 — 监控系统健康指标，检测异常模式，定位故障根因",
+  "content": "# Self-Diagnosis\n\n## Overview\n\nMonitor system health metrics, detect anomaly patterns, and locate root causes of failures.\n\n## Health Metrics\n\n| Metric | Source | Thresholds |\n|--------|--------|------------|\n| **CPU** | Process / OS | > 90% sustained → alert |\n| **Memory** | RSS, heap | > 80% of limit → warn |\n| **Disk** | Workspace, logs, temp | < 10% free → alert |\n| **Process** | Daemon, Agent PIDs | Not running → critical |\n| **Latency** | RPC, ACP round-trip | > 5s → warn |\n\n## Anomaly Detection Patterns\n\n- **Spike**: Sudden jump in metric; compare to rolling baseline\n- **Drift**: Gradual degradation over time\n- **Cascade**: One failure triggers others; trace dependency chain\n- **Recurrence**: Same error pattern repeats; correlate with recent changes\n\n## Log Analysis\n\n- Parse stderr, daemon logs, Agent activity logs\n- Extract error codes, stack traces, timestamps\n- Group by error type; count frequency; identify hotspots\n\n## Dependency Chain Tracing\n\n- Map: Daemon → Agent → MCP → external service\n- On failure: walk upstream to find first failing component\n- Report: \"Agent X failed because MCP Y timed out; MCP Y failed because...\"",
+  "tags": ["diagnosis", "monitoring", "health-check", "maintainer"],
+  "license": "MIT"
+}

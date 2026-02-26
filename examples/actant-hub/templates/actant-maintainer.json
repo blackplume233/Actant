@@ -1,0 +1,51 @@
+{
+  "name": "actant-maintainer",
+  "version": "1.0.0",
+  "description": "Actant 维护者 — 自修复 + 自进化免疫系统。监控健康、诊断问题、自动修复、生成进化报告。",
+  "archetype": "employee",
+  "backend": { "type": "claude-code" },
+  "domainContext": {
+    "skills": [
+      "self-diagnosis",
+      "self-repair",
+      "evolution-report"
+    ],
+    "prompts": ["maintainer-system-prompt"],
+    "mcpServers": []
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": ["Read", "Write", "Shell"],
+    "sandbox": { "enabled": false }
+  },
+  "schedule": {
+    "heartbeat": {
+      "intervalMs": 300000,
+      "prompt": "检查系统健康状态：进程存活、资源使用、错误日志异常模式",
+      "priority": "normal"
+    },
+    "cron": [
+      {
+        "pattern": "0 3 * * 0",
+        "prompt": "周度进化报告：分析过去一周的错误模式、性能趋势、Agent 运行质量，提出改进建议",
+        "priority": "low"
+      }
+    ],
+    "hooks": [
+      {
+        "eventName": "agent:error",
+        "prompt": "Agent 出现错误，诊断根因并尝试自动修复",
+        "priority": "high"
+      },
+      {
+        "eventName": "system:degraded",
+        "prompt": "系统性能降级，分析瓶颈并采取措施",
+        "priority": "high"
+      }
+    ]
+  },
+  "metadata": {
+    "layer": "kernel",
+    "tier": "2"
+  }
+}

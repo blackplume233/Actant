@@ -1,0 +1,8 @@
+{
+  "name": "migration-engine",
+  "version": "1.0.0",
+  "description": "数据迁移引擎 — 执行跨版本数据格式迁移，确保配置、状态和存储的向前兼容",
+  "content": "# Migration Engine\n\n## Overview\n\nExecute cross-version data format migrations; ensure forward compatibility of config, state, and storage.\n\n## Migration Script Discovery\n\n- Discover migration scripts by version range (e.g., v1.2.0 → v1.3.0)\n- Load from Hub skill bundles or project `.migrations/` directory\n- Order migrations by target version; execute sequentially\n\n## Schema Diff Analysis\n\n- Compare current schema with target schema; identify added, removed, renamed fields\n- Detect type changes (string → number, object shape changes)\n- Generate migration plan with required transformations\n\n## Data Transformation\n\n- Apply field mappings, type coercions, and default value injection\n- Support custom transform functions for complex migrations\n- Preserve unknown fields when schema allows additional properties\n\n## Dry-Run Validation\n\n- Simulate migration without writing; report planned changes\n- Validate transform output against target schema\n- Abort if validation fails; provide actionable error messages\n\n## Progress Tracking & Partial Failure Recovery\n\n- Track migration progress; support resume from last successful step\n- On failure: rollback partial writes; persist failure state for retry\n- Log all transformations for audit trail",
+  "tags": ["migration", "schema", "compatibility", "updater"],
+  "license": "MIT"
+}

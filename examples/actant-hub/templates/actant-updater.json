@@ -1,0 +1,41 @@
+{
+  "name": "actant-updater",
+  "version": "1.0.0",
+  "description": "Actant 升级者 — 版本升级 + 数据迁移 + Hub 源同步。确保系统始终运行在最佳版本。",
+  "archetype": "employee",
+  "backend": { "type": "claude-code" },
+  "domainContext": {
+    "skills": [
+      "version-check",
+      "migration-engine",
+      "rollback-strategy"
+    ],
+    "prompts": ["updater-system-prompt"],
+    "mcpServers": []
+  },
+  "permissions": {
+    "defaultMode": "bypassPermissions",
+    "allow": ["Read", "Write", "Shell"],
+    "sandbox": { "enabled": false }
+  },
+  "schedule": {
+    "cron": [
+      {
+        "pattern": "0 6 * * *",
+        "prompt": "每日版本检查：检测 Actant 核心、Hub 组件、依赖包的可用更新",
+        "priority": "low"
+      }
+    ],
+    "hooks": [
+      {
+        "eventName": "source:sync-complete",
+        "prompt": "Hub 源同步完成，检查是否有 breaking changes 需要迁移",
+        "priority": "normal"
+      }
+    ]
+  },
+  "metadata": {
+    "layer": "auxiliary",
+    "tier": "4"
+  }
+}

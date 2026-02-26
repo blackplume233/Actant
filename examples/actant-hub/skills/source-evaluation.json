@@ -1,0 +1,8 @@
+{
+  "name": "source-evaluation",
+  "version": "1.0.0",
+  "description": "来源评估 — 评估信息来源的可靠性和时效性，过滤低质量内容",
+  "content": "# Source Evaluation\n\n## Overview\n\nEvaluate reliability and timeliness of information sources; filter low-quality content.\n\n## Source Authority Scoring\n\n- **Domain reputation**: Known authoritative domains (e.g., official docs, .gov, .edu)\n- **Publisher track record**: Historical accuracy; user ratings if available\n- **Expertise signals**: Author credentials, institutional affiliation\n\n## Freshness Assessment\n\n- Extract publication/update date from page metadata or content\n- Score by recency; deprioritize stale content for time-sensitive topics\n- Handle missing dates; infer from context when possible\n\n## Bias Detection\n\n- Identify promotional, opinion, or advocacy content vs factual\n- Flag potential conflicts of interest (e.g., vendor-authored comparisons)\n- Surface bias level to user; do not auto-filter, allow user choice\n\n## Cross-Reference Verification\n\n- Check if claims are corroborated by multiple independent sources\n- Weight corroboration in overall score\n\n## Citation Tracking\n\n- Track which sources cite which; build citation graph\n- Prefer well-cited sources; flag uncited or circular citations",
+  "tags": ["evaluation", "credibility", "quality", "researcher"],
+  "license": "MIT"
+}

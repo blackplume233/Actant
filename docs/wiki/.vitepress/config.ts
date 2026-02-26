@@ -13,6 +13,8 @@ export default defineConfig({
   },
 
   head: [
+    ['link', { rel: 'icon', type: 'image/png', href: '/wiki/favicon.png' }],
+    ['meta', { property: 'og:image', content: '/wiki/og-image.png' }],
     ['meta', { name: 'robots', content: 'noai, noimageai' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
@@ -22,7 +24,7 @@ export default defineConfig({
   ],
 
   themeConfig: {
-    logo: '/logo.svg',
+    logo: '/logo.png',
     siteTitle: 'Actant Wiki',
 
     nav: [

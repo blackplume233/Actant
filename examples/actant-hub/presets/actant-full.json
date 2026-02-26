@@ -1,0 +1,53 @@
+{
+  "name": "actant-full",
+  "version": "1.0.0",
+  "description": "完整预设 — 全部 8 个 Agent 模板 + 25 个 Skills，Actant 平台的全功能配置",
+  "skills": [
+    "intent-routing",
+    "conversation-management",
+    "task-delegation",
+    "self-diagnosis",
+    "self-repair",
+    "evolution-report",
+    "memory-governance",
+    "asset-registry",
+    "lifecycle-policy",
+    "version-check",
+    "migration-engine",
+    "rollback-strategy",
+    "resource-scan",
+    "cleanup-policy",
+    "capacity-monitor",
+    "web-research",
+    "knowledge-synthesis",
+    "source-evaluation",
+    "guided-setup",
+    "interactive-tutorial",
+    "context-assessment",
+    "code-generation",
+    "pr-management",
+    "self-bootstrap",
+    "contribution-policy"
+  ],
+  "prompts": [
+    "steward-system-prompt",
+    "maintainer-system-prompt",
+    "curator-system-prompt",
+    "updater-system-prompt",
+    "scavenger-system-prompt",
+    "researcher-system-prompt",
+    "onboarder-system-prompt",
+    "spark-system-prompt"
+  ],
+  "mcpServers": [],
+  "templates": [
+    "actant-steward",
+    "actant-maintainer",
+    "actant-curator",
+    "actant-updater",
+    "actant-scavenger",
+    "actant-researcher",
+    "actant-onboarder",
+    "actant-spark"
+  ]
+}
