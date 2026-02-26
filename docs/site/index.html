@@ -93,13 +93,6 @@ body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:
 .id-summary{text-align:center;font-size:16px;color:var(--text-2);line-height:1.7;max-width:640px;margin:0 auto;padding:20px 0;border-top:1px solid var(--border)}
 .id-summary strong{color:var(--text);font-weight:700}
 
-.id-analogy{max-width:640px;margin:32px auto 0;border-radius:var(--r-xl);border:1px solid var(--border);overflow:hidden;background:var(--bg-card)}
-.id-analogy-title{padding:14px 20px;font-family:var(--heading);font-size:13px;font-weight:700;color:var(--text-3);letter-spacing:.04em;border-bottom:1px solid var(--border);background:var(--bg-subtle)}
-.id-analogy-row{display:grid;grid-template-columns:1fr 24px 1fr;align-items:center;padding:10px 20px;border-bottom:1px solid var(--border);font-size:13px}
-.id-analogy-row:last-child{border-bottom:none}
-.id-analogy-row .a-docker{font-family:var(--mono);color:var(--text-3)}
-.id-analogy-row .a-eq{text-align:center;color:var(--text-3);font-size:11px}
-.id-analogy-row .a-actant{font-family:var(--mono);color:var(--accent)}
 
 /* ════ CAPABILITIES ════ */
 .cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
@@ -123,6 +116,8 @@ body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:
 .uc-item:nth-child(1) .uc-tag{color:var(--accent)}
 .uc-item:nth-child(2) .uc-tag{color:var(--blue)}
 .uc-item:nth-child(3) .uc-tag{color:var(--teal)}
+.uc-item:nth-child(4) .uc-tag{color:var(--purple)}
+.uc-item:nth-child(5) .uc-tag{color:var(--green)}
 .uc-text p{font-size:14px;color:var(--text-2);line-height:1.7}
 .uc-code{border-radius:var(--r-lg);background:var(--bg-code);border:1px solid var(--border);padding:16px 18px;font-family:var(--mono);font-size:12px;line-height:1.9;overflow-x:auto}
 .uc-code .t-cmt{color:var(--text-3)}
@@ -324,15 +319,6 @@ body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:
       <strong>Actant</strong> = 一个能独立行动、在网络中产生影响、持续进化的实体。<br>这就是我们对 AI Agent 的定义。
     </div>
 
-    <div class="id-analogy reveal">
-      <div class="id-analogy-title">If you know Docker, you know Actant</div>
-      <div class="id-analogy-row"><span class="a-docker">Dockerfile</span><span class="a-eq">&rarr;</span><span class="a-actant">Agent Template</span></div>
-      <div class="id-analogy-row"><span class="a-docker">Image</span><span class="a-eq">&rarr;</span><span class="a-actant">Template Registry</span></div>
-      <div class="id-analogy-row"><span class="a-docker">Container</span><span class="a-eq">&rarr;</span><span class="a-actant">Agent Instance</span></div>
-      <div class="id-analogy-row"><span class="a-docker">Volume</span><span class="a-eq">&rarr;</span><span class="a-actant">Domain Context</span></div>
-      <div class="id-analogy-row"><span class="a-docker">docker commit</span><span class="a-eq">&rarr;</span><span class="a-actant">Memory Promotion</span></div>
-      <div class="id-analogy-row"><span class="a-docker">Network</span><span class="a-eq">&rarr;</span><span class="a-actant">ACP / MCP</span></div>
-    </div>
   </div>
 </section>
 
@@ -423,16 +409,50 @@ body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:
         <div class="uc-text">
           <div class="uc-tag">ACP Service</div>
           <h3>外部应用接入</h3>
-          <p>Unreal Engine、Unity 或任何支持 ACP 协议的客户端，都可以通过标准协议调用 Actant 托管的 Agent。Agent 成为你应用架构中的智能服务节点。</p>
+          <p>Unreal Engine、Unity 或任何外部应用，通过 spawn <code>actant proxy</code> 子进程以 stdio ACP 协议调用 Actant 托管的 Agent。Agent 成为你应用架构中的智能服务节点。</p>
         </div>
         <div class="uc-code">
-<div class="t-ln t-cmt"># 启动 ACP 代理服务</div>
+<div class="t-ln t-cmt"># 创建并启动 Agent（崩溃自动重启）</div>
 <div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent create game-ai <span class="t-fl">-t</span> game-assistant</span></div>
 <div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent start game-ai <span class="t-fl">--launch-mode</span> acp-service</span></div>
-<div class="t-ln t-out t-ok">&#10003; ACP endpoint ready: ws://localhost:3100</div>
+<div class="t-ln t-out t-ok">&#10003; Agent running (acp-service, auto-restart)</div>
 <div class="t-gap"></div>
-<div class="t-ln t-cmt"># 外部客户端通过 ACP 协议连接</div>
-<div class="t-ln t-out">&nbsp;&nbsp;Unreal Client &rarr; ACP Proxy &rarr; Agent Instance</div>
+<div class="t-ln t-cmt"># 外部应用 spawn proxy 子进程，通过 stdio 通信</div>
+<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant proxy game-ai <span class="t-fl">--lease</span></span></div>
+        </div>
+      </div>
+
+      <div class="uc-item reveal">
+        <div class="uc-text">
+          <div class="uc-tag">Zed AgentServer</div>
+          <h3>IDE AgentServer 接入</h3>
+          <p>一条命令将 Agent 以前台 TUI 或 ACP Server 形式暴露给 Zed、VS Code 等编辑器。<code>agent open</code> 直接启动后端原生界面，<code>proxy</code> 以标准协议连接。</p>
+        </div>
+        <div class="uc-code">
+<div class="t-ln t-cmt"># 前台打开 Agent 原生 TUI</div>
+<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent open my-coder <span class="t-fl">-t</span> code-review-agent</span></div>
+<div class="t-ln t-out t-ok">Opening my-coder &rarr; claude-code --workspace ...</div>
+<div class="t-gap"></div>
+<div class="t-ln t-cmt"># 或以 ACP Proxy 暴露给编辑器</div>
+<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant proxy my-coder <span class="t-fl">--lease</span></span></div>
+<div class="t-ln t-out t-ok">&#10003; Session Lease ready, waiting for client...</div>
+        </div>
+      </div>
+
+      <div class="uc-item reveal">
+        <div class="uc-text">
+          <div class="uc-tag">Unreal Backend</div>
+          <h3>游戏引擎智能后端</h3>
+          <p>Unreal Engine、Unity 通过 spawn <code>actant proxy</code> 子进程，以 stdio ACP 协议与 Agent 通信。获取代码生成、资产分析、关卡设计建议等智能服务。</p>
+        </div>
+        <div class="uc-code">
+<div class="t-ln t-cmt"># 部署 Unreal AI 后端</div>
+<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent create ue-ai <span class="t-fl">-t</span> unreal-assistant</span></div>
+<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent start ue-ai <span class="t-fl">--launch-mode</span> acp-service</span></div>
+<div class="t-ln t-out t-ok">&#10003; Agent running (acp-service, auto-restart)</div>
+<div class="t-gap"></div>
+<div class="t-ln t-cmt"># UE 端 spawn proxy 子进程通信</div>
+<div class="t-ln t-out">&nbsp;&nbsp;UE5 &rarr; spawn actant proxy ue-ai &rarr; stdio ACP &rarr; Agent</div>
         </div>
       </div>
     </div>

@@ -29,6 +29,10 @@ coverage/
 data/
 /daemon
 
+# Site build artifacts
+docs/site/wiki/
+docs/wiki/node_modules/
+
 # Issue sync temp files
 .trellis/issues/.dirty
 .trellis/_sync_body_*.tmp

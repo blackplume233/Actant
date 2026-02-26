@@ -1,0 +1,157 @@
+@font-face {
+  font-family: 'Maple Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/fontsource/fonts/maple-mono@latest/latin-400-normal.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Maple Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/fontsource/fonts/maple-mono@latest/latin-500-normal.woff2') format('woff2');
+}
+
+:root {
+  --vp-c-brand-1: #d4644a;
+  --vp-c-brand-2: #e0775e;
+  --vp-c-brand-3: #d4644a;
+  --vp-c-brand-soft: rgba(212, 100, 74, 0.14);
+
+  --vp-c-tip-1: #3db9a2;
+  --vp-c-tip-2: #3db9a2;
+  --vp-c-tip-3: #3db9a2;
+  --vp-c-tip-soft: rgba(61, 185, 162, 0.14);
+
+  --vp-font-family-base: 'DM Sans', 'Inter', system-ui, -apple-system, sans-serif;
+  --vp-font-family-mono: 'Maple Mono', 'Fira Code', 'SF Mono', 'Menlo', monospace;
+
+  --vp-c-bg: #0c0c0c;
+  --vp-c-bg-alt: #151515;
+  --vp-c-bg-elv: #1a1a1a;
+  --vp-c-bg-soft: #1a1a1a;
+
+  --vp-c-text-1: #f2efea;
+  --vp-c-text-2: #a8a29e;
+  --vp-c-text-3: #6b6560;
+
+  --vp-c-divider: rgba(255, 255, 255, 0.07);
+  --vp-c-border: rgba(255, 255, 255, 0.07);
+  --vp-c-gutter: #0c0c0c;
+
+  --vp-code-block-bg: #1e1e1e;
+  --vp-code-bg: rgba(255, 255, 255, 0.12);
+  --vp-c-code-dimm: rgba(255, 255, 255, 0.1);
+  --vp-code-color: #d4d4d4;
+
+  --vp-nav-bg-color: rgba(12, 12, 12, 0.85);
+  --vp-sidebar-bg-color: #0c0c0c;
+
+  --vp-c-default-1: #a8a29e;
+  --vp-c-default-2: rgba(255, 255, 255, 0.07);
+  --vp-c-default-3: rgba(255, 255, 255, 0.07);
+  --vp-c-default-soft: rgba(255, 255, 255, 0.03);
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(135deg, #d4644a, #f0a050);
+
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-text: #fff;
+  --vp-button-brand-bg: #d4644a;
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-hover-text: #fff;
+  --vp-button-brand-hover-bg: #e0775e;
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-active-text: #fff;
+  --vp-button-brand-active-bg: #b84a30;
+
+  --vp-button-alt-border: rgba(255, 255, 255, 0.07);
+  --vp-button-alt-text: #f2efea;
+  --vp-button-alt-bg: #1a1a1a;
+  --vp-button-alt-hover-border: rgba(255, 255, 255, 0.13);
+  --vp-button-alt-hover-text: #f2efea;
+  --vp-button-alt-hover-bg: #1f1f1f;
+
+  --vp-input-border-color: rgba(255, 255, 255, 0.07);
+  --vp-input-bg-color: #151515;
+  --vp-input-switch-bg-color: #1a1a1a;
+
+  --vp-local-search-bg: #151515;
+  --vp-local-search-result-bg: #1a1a1a;
+  --vp-local-search-result-border: rgba(255, 255, 255, 0.07);
+
+  --vp-carbon-ads-bg-color: #1a1a1a;
+}
+
+.dark {
+  --vp-c-bg: #0c0c0c;
+  --vp-c-bg-alt: #151515;
+  --vp-c-bg-elv: #1a1a1a;
+  --vp-c-bg-soft: #1a1a1a;
+  --vp-c-text-1: #f2efea;
+  --vp-c-text-2: #a8a29e;
+  --vp-c-text-3: #6b6560;
+  --vp-c-divider: rgba(255, 255, 255, 0.07);
+  --vp-c-border: rgba(255, 255, 255, 0.07);
+  --vp-c-gutter: #0c0c0c;
+  --vp-c-brand-1: #d4644a;
+  --vp-c-brand-2: #e0775e;
+  --vp-c-brand-3: #d4644a;
+  --vp-c-brand-soft: rgba(212, 100, 74, 0.1);
+  --vp-code-block-bg: #1e1e1e;
+  --vp-code-color: #d4d4d4;
+  --vp-nav-bg-color: rgba(12, 12, 12, 0.85);
+  --vp-sidebar-bg-color: #0c0c0c;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: #d4644a;
+  color: #fff;
+}
+
+.VPNavBar .title {
+  font-weight: 700 !important;
+}
+
+.VPNav .VPNavBar {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+.VPSidebar {
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+div[class*="language-"] {
+  background-color: #1e1e1e !important;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+div[class*="language-"] pre {
+  background-color: #1e1e1e !important;
+}
+
+div[class*="language-"] code {
+  font-size: 13.5px;
+  line-height: 1.75;
+}
+
+div[class*="language-"] .copy {
+  background-color: #2a2a2a !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+:not(pre) > code {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #f2efea !important;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.9em;
+}

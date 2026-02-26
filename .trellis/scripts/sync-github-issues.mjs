@@ -325,6 +325,12 @@ async function main() {
   let skipped = 0;
 
   for (const issue of issues) {
+    if (!issue.id || !issue.title) {
+      console.warn(`  [skip] ${issue._file}: missing id or title, skipping`);
+      skipped++;
+      continue;
+    }
+
     const ghNumber = parseGhRef(issue.githubRef);
 
     if (ghNumber) {

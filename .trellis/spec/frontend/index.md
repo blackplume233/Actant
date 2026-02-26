@@ -82,6 +82,18 @@ Support multiple output formats for different consumers:
 
 ---
 
+## Site & Wiki
+
+GitHub Pages 主页（`docs/site/`）和 VitePress 文档站（`docs/wiki/`）的开发约定：
+
+- 统一配色体系、字体、暗色模式
+- Wiki 构建与部署流程
+- 关键 Gotcha（ESM 兼容、workspace 隔离、构建产物 gitignore）
+
+详见 [Site & Wiki 开发规范](./site-and-wiki.md)。
+
+---
+
 ## Future Phase: Web UI
 
 When the Web UI phase begins, these guidelines will be expanded with:

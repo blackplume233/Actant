@@ -3,11 +3,22 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   lang: 'zh-CN',
   title: 'Actant',
-  description: 'The Docker for AI Agents — 构建、管理和编排 AI Agent 的平台',
+  description: 'AI Agent 运行时平台 — 构建、管理和编排 AI Agent',
   base: '/wiki/',
+
+  appearance: 'dark',
+
+  markdown: {
+    theme: { light: 'github-dark', dark: 'github-dark' },
+  },
 
   head: [
     ['meta', { name: 'robots', content: 'noai, noimageai' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+    ['link', { href: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&display=swap', rel: 'stylesheet' }],
+    ['link', { href: 'https://cdn.jsdelivr.net/fontsource/fonts/maple-mono@latest/latin-400-normal.woff2', rel: 'preload', as: 'font', type: 'font/woff2', crossorigin: '' }],
+    ['link', { href: 'https://cdn.jsdelivr.net/fontsource/fonts/maple-mono@latest/latin-500-normal.woff2', rel: 'preload', as: 'font', type: 'font/woff2', crossorigin: '' }],
   ],
 
   themeConfig: {
@@ -74,6 +85,8 @@ export default defineConfig({
             { text: '创建组件仓库', link: '/recipes/create-hub' },
             { text: 'CI/CD 集成', link: '/recipes/ci-integration' },
             { text: '打造雇员 Agent', link: '/recipes/employee-agent' },
+            { text: 'Zed AgentServer 接入', link: '/recipes/zed-agent-server' },
+            { text: 'Unreal Engine 后端 Agent', link: '/recipes/unreal-backend' },
           ],
         },
       ],

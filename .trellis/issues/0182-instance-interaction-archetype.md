@@ -1,3 +1,24 @@
+---
+id: 182
+title: "RFC: Instance Interaction Archetype (tool / employee / service)"
+status: open
+labels:
+  - rfc
+  - architecture
+  - core
+  - "priority:P2"
+milestone: mid-term
+author: cursor-agent
+assignees: []
+relatedIssues:
+  - 122
+  - 153
+relatedFiles:
+  - "packages/shared/src/types/template.types.ts"
+  - "packages/shared/src/types/agent.types.ts"
+  - "packages/core/src/manager/agent-manager.ts"
+---
+
 ## 动机
 
 当前 `AgentInstanceMeta` 具备 `interactionModes`（open / start / chat / run / proxy）、`launchMode`（direct / acp-background / acp-service / one-shot）和 `schedule` 配置，但缺少一个高层语义字段来描述 **实例的交互范式（archetype）**。用户无法通过单一配置声明"这个 Agent 是自主运行的雇员型"或"这是按需调用的工具型"，导致：

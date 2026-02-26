@@ -77,7 +77,7 @@ describe("SourceManager", () => {
     homeDir = await mkdtemp(join(tmpdir(), "sm-home-"));
     pkgDir = await mkdtemp(join(tmpdir(), "sm-pkg-"));
     managers = createManagers();
-    sourceMgr = new SourceManager(homeDir, managers);
+    sourceMgr = new SourceManager(homeDir, managers, { skipDefaultSource: true });
     await createLocalPackage(pkgDir);
   });
 
@@ -298,7 +298,7 @@ You are an expert code reviewer.`,
       await sourceMgr.addSource("persist-test", { type: "local", path: pkgDir });
 
       const mgr2 = createManagers();
-      const sourceMgr2 = new SourceManager(homeDir, mgr2);
+      const sourceMgr2 = new SourceManager(homeDir, mgr2, { skipDefaultSource: true });
       await sourceMgr2.initialize();
 
       expect(sourceMgr2.hasSource("persist-test")).toBe(true);

@@ -51,4 +51,4 @@ jobs:
           "
 
       - name: Run source validator tests
-        run: pnpm run -C packages/core test -- --run src/source/source-validator.test.ts
+        run: pnpm test -- packages/core/src/source/source-validator.test.ts
