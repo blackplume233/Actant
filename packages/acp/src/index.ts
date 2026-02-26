@@ -5,4 +5,5 @@ export { LocalTerminalManager } from "./terminal-manager";
 export { ClientCallbackRouter, type UpstreamHandler } from "./callback-router";
 export { AcpGateway, type GatewayOptions } from "./gateway";
 export { resolveAcpBinary, type ResolvedAcpBinary } from "./binary-resolver";
+export { RecordingCallbackHandler } from "./recording-handler";
 export type { SessionNotification, ContentBlock } from "@agentclientprotocol/sdk";

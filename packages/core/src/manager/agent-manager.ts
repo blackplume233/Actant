@@ -26,6 +26,7 @@ import { createCommunicator } from "../communicator/create-communicator";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../provider/provider-env-resolver";
 import type { HookEventBus } from "../hooks/hook-event-bus";
+import type { ActivityRecorder } from "../activity/activity-recorder";
 
 const logger = createLogger("agent-manager");
 
@@ -43,6 +44,8 @@ export interface AcpConnectionManagerLike {
       autoApprove?: boolean;
       env?: Record<string, string>;
     };
+    /** When provided, wraps callback handler with RecordingCallbackHandler for activity recording. */
+    activityRecorder?: unknown;
   }): Promise<{ sessionId: string }>;
   has(name: string): boolean;
   getPrimarySessionId(name: string): string | undefined;
@@ -70,6 +73,8 @@ export interface ManagerOptions {
   instanceRegistry?: InstanceRegistryAdapter;
   /** Hook event bus for emitting lifecycle events. When provided, AgentManager emits events for all state transitions. */
   eventBus?: HookEventBus;
+  /** Activity recorder for managed agent ACP interaction recording. */
+  activityRecorder?: ActivityRecorder;
 }
 
 export class AgentManager {
@@ -81,6 +86,7 @@ export class AgentManager {
   private readonly acpManager?: AcpConnectionManagerLike;
   private readonly instanceRegistry?: InstanceRegistryAdapter;
   private readonly eventBus?: HookEventBus;
+  private readonly activityRecorder?: ActivityRecorder;
 
   constructor(
     private readonly initializer: AgentInitializer,
@@ -97,6 +103,7 @@ export class AgentManager {
     this.restartTracker = new RestartTracker(options?.restartPolicy);
     this.acpManager = options?.acpManager;
     this.eventBus = options?.eventBus;
+    this.activityRecorder = options?.activityRecorder;
   }
 
   /**
@@ -261,6 +268,7 @@ export class AgentManager {
             autoApprove: true,
             ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
           },
+          activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
         });
         logger.info({ name, acpOnly, providerType: meta.providerConfig?.type }, "ACP connection established");
 
@@ -631,7 +639,18 @@ export class AgentManager {
       const sessionId = this.acpManager.getPrimarySessionId(name);
       if (conn && sessionId) {
         logger.debug({ name, sessionId }, "Sending prompt via ACP");
+        if (this.activityRecorder) {
+          const packed = await this.activityRecorder.packContent(name, prompt);
+          this.activityRecorder.record(name, sessionId, { type: "prompt_sent", data: packed })
+            .catch(() => {});
+        }
         const acpResult = await conn.prompt(sessionId, prompt);
+        if (this.activityRecorder) {
+          this.activityRecorder.record(name, sessionId, {
+            type: "prompt_complete",
+            data: { stopReason: acpResult.stopReason },
+          }).catch(() => {});
+        }
         result = { text: acpResult.text, sessionId };
       } else {
         const dir = join(this.instancesBaseDir, name);
@@ -738,7 +757,20 @@ export class AgentManager {
       sessionId: targetSessionId,
     });
 
+    if (this.activityRecorder) {
+      const packed = await this.activityRecorder.packContent(name, message);
+      this.activityRecorder.record(name, targetSessionId, { type: "prompt_sent", data: packed })
+        .catch(() => {});
+    }
+
     const result = await conn.prompt(targetSessionId, message);
+
+    if (this.activityRecorder) {
+      this.activityRecorder.record(name, targetSessionId, {
+        type: "prompt_complete",
+        data: { stopReason: result.stopReason },
+      }).catch(() => {});
+    }
 
     this.eventBus?.emit("prompt:after", { callerType: "system", callerId: "AgentManager" }, name, {
       prompt: message,

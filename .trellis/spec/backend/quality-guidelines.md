@@ -150,6 +150,51 @@ const child = spawn("claude.cmd", args, {
 
 > **注意**: 这仅适用于后台/管道模式。对于 TUI 应用的 `open` 模式（需要用户交互），应由 `openSpawnOptions.windowsHide: false` 声明式控制，不应设为 `true`。
 
+### Don't: Hardcoded Relative Paths That Break After Bundling
+
+```typescript
+// Bad — works in source (src/handlers/foo.ts) but breaks after tsup (dist/index.js)
+const pkgPath = join(dirname(fileURLToPath(import.meta.url)), "../../package.json");
+const version = JSON.parse(readFileSync(pkgPath, "utf-8")).version;
+
+// Good — try multiple candidates to handle both source and bundled layouts
+const thisDir = dirname(fileURLToPath(import.meta.url));
+const candidates = [
+  join(thisDir, "../package.json"),   // dist/index.js → package.json
+  join(thisDir, "../../package.json"), // src/handlers/foo.ts → package.json
+];
+for (const p of candidates) {
+  try { return JSON.parse(readFileSync(p, "utf-8")).version; }
+  catch { /* try next */ }
+}
+```
+
+**Why**: tsup bundles all source files into a single `dist/index.js`, collapsing the directory hierarchy. A path like `../../package.json` that resolves correctly from `src/handlers/` will overshoot from `dist/`. Since the same code runs in both development (ts-node/vitest) and production (bundled), use a fallback chain of candidate paths. This pattern was discovered fixing Issue #126 where `daemon.ping` returned `"unknown"` instead of the actual version.
+
+### Don't: `Promise.all` in SSE/Streaming Handlers
+
+```typescript
+// Bad — one failed RPC kills ALL data, client sees "Daemon connection lost"
+const [status, agents, events] = await Promise.all([
+  bridge.call("daemon.ping", {}),
+  bridge.call("agent.list", {}),
+  bridge.call("events.recent", { limit: 50 }),
+]);
+
+// Good — partial data is better than no data
+const results = await Promise.allSettled([
+  bridge.call("daemon.ping", {}),
+  bridge.call("agent.list", {}),
+  bridge.call("events.recent", { limit: 50 }),
+]);
+if (results[0].status === "fulfilled") send("status", results[0].value);
+if (results[1].status === "fulfilled") send("agents", results[1].value);
+if (results[2].status === "fulfilled") send("events", results[2].value);
+else send("events", { events: [] }); // graceful fallback
+```
+
+**Why**: SSE endpoints aggregate multiple RPC calls. If a new RPC method hasn't been deployed yet (e.g., daemon running old code), `Promise.all` causes a total blackout — the client receives zero data. `Promise.allSettled` ensures available data is still delivered. This is especially critical during incremental rollouts where the daemon may be running for days without restart.
+
 ### Common Mistake: Windows 上 spawn `.cmd` 文件报 EINVAL
 
 **症状**: `spawn EINVAL` 错误，仅在 Windows 上出现。
@@ -164,6 +209,35 @@ spawn(command, args, { ...opts, shell: needsShell });
 ```
 
 **Why**: `shell: true` 让 Node.js 通过 `cmd.exe /c` 执行批处理文件，这是 Windows 上正确解释 `.cmd` 脚本的唯一方式。此选项对非 `.cmd` 可执行文件不需要，因此应按需添加。
+
+### Common Mistake: ACP 类型定义与官方 Schema 漂移
+
+**症状**: 内部文档或代码中的 ACP 类型与官方规范不一致，导致协议互操作失败或行为异常。
+
+**原因**: ACP SDK (`@agentclientprotocol/sdk`) 的类型可能包含尚未纳入官方 Schema 的 RFD 提案字段（如 `session_info_update`、`usage_update`），也可能因版本滞后而缺少官方新增的字段/值。
+
+**高频漂移类型（基于实际审计发现）**:
+
+| 类别 | 典型错误 | 正确值 |
+|------|---------|--------|
+| 字段名 | Plan.`steps` | Plan.`entries` |
+| 字段名 | AvailableCommandsUpdate.`commands` | `.availableCommands` |
+| 字段名 | PermissionOption.`message` | `.name` |
+| 枚举值 | StopReason `"tool_use"` | 不存在；应为 `"max_requests"`, `"refusal"` |
+| 枚举值 | PermissionOptionKind `"deny"` | `"reject_once"`, `"reject_always"` |
+| Discriminant | `"config_option_update"` | `"config_options_update"`（复数） |
+| 缺失结构 | AgentCapabilities 仅含 `loadSession` | 还需 `mcpCapabilities`, `promptCapabilities`, `sessionCapabilities` |
+| SDK 独有 | ToolCallUpdate.`isError`, PromptResponse.`usage` | 不在官方 Schema 中 |
+| 内容类型 | ToolCallUpdate.content 为 `ContentBlock[]` | 应为 `ToolCallContent[]`（含 diff/terminal） |
+
+**预防**:
+
+1. **权威来源原则**: ACP 相关文档/代码以官方 Schema 为准 — https://agentclientprotocol.com/protocol/schema
+2. **完整索引**: https://agentclientprotocol.com/llms.txt
+3. **审计流程**: 每次升级 `@agentclientprotocol/sdk` 版本后，对照官方 Schema 页面逐字段校验 `docs/reference/acp-interface-reference.md`
+4. **RFD 标注**: SDK 中已实现但未正式纳入 spec 的功能（RFD 阶段）必须在文档中显式标注 `// RFD`
+
+> 参考审计记录：ACP Interface Reference 首次全量审计修正了 12+ 处差异。
 
 ### Don't: `any` Types
 

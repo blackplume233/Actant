@@ -26,6 +26,7 @@ import {
   HookEventBus,
   HookCategoryRegistry,
   HookRegistry,
+  ActivityRecorder,
   type ActionContext,
   type LauncherMode,
 } from "@actant/core";
@@ -92,6 +93,7 @@ export class AppContext {
   readonly eventBus: HookEventBus;
   readonly hookCategoryRegistry: HookCategoryRegistry;
   readonly hookRegistry: HookRegistry;
+  readonly activityRecorder: ActivityRecorder;
 
   private initialized = false;
   private startTime = Date.now();
@@ -144,6 +146,7 @@ export class AppContext {
     );
     this.acpConnectionManager = new AcpConnectionManager();
     this.sessionRegistry = new SessionRegistry();
+    this.activityRecorder = new ActivityRecorder(this.instancesDir);
     this.eventBus = new HookEventBus();
     this.hookCategoryRegistry = new HookCategoryRegistry();
     this.eventBus.setEmitGuard(this.hookCategoryRegistry.buildEmitGuard());
@@ -159,6 +162,7 @@ export class AppContext {
         instanceRegistry: this.instanceRegistry,
         watcherPollIntervalMs: launcherMode === "mock" ? 2_147_483_647 : undefined,
         eventBus: this.eventBus,
+        activityRecorder: this.activityRecorder,
       },
     );
     this.templateWatcher = new TemplateFileWatcher(this.templatesDir, this.templateRegistry);
@@ -185,6 +189,7 @@ export class AppContext {
     this.registerWorkflowHooks();
     this.listenForInstanceHooks();
 
+    await this.activityRecorder.rebuildIndex();
     await this.agentManager.initialize();
     this.templateWatcher.start();
     this.initialized = true;

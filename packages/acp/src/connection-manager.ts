@@ -1,9 +1,10 @@
 import type { Socket } from "node:net";
 import { createLogger } from "@actant/shared";
 import type { PermissionsConfig } from "@actant/shared";
-import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/core";
+import { PermissionPolicyEnforcer, PermissionAuditLogger, type ActivityRecorder } from "@actant/core";
 import { AcpConnection, type AcpConnectionOptions, type AcpSessionInfo, type ClientCallbackHandler } from "./connection";
 import { ClientCallbackRouter } from "./callback-router";
+import { RecordingCallbackHandler } from "./recording-handler";
 import { AcpGateway } from "./gateway";
 import { LocalTerminalManager } from "./terminal-manager";
 
@@ -16,6 +17,8 @@ export interface ConnectOptions {
   connectionOptions?: AcpConnectionOptions;
   /** npm package providing the binary (from BackendDescriptor.resolvePackage). */
   resolvePackage?: string;
+  /** When provided, wraps the callback handler with RecordingCallbackHandler for activity recording. */
+  activityRecorder?: ActivityRecorder;
 }
 
 /**
@@ -59,10 +62,16 @@ export class AcpConnectionManager {
     const localHandler: ClientCallbackHandler = buildLocalHandler(localConn, options.connectionOptions, enforcer, auditLogger);
     const router = new ClientCallbackRouter(localHandler);
 
-    // Now create the real connection with the router as callback handler
+    // Wrap with RecordingCallbackHandler when activity recording is enabled.
+    // Chain: AcpConnection → RecordingCallbackHandler → ClientCallbackRouter → Local/IDE
+    const finalHandler: ClientCallbackHandler = options.activityRecorder
+      ? new RecordingCallbackHandler(router, options.activityRecorder, name)
+      : router;
+
+    // Now create the real connection with the final callback handler
     const connWithRouter = new AcpConnection({
       ...options.connectionOptions,
-      callbackHandler: router,
+      callbackHandler: finalHandler,
     });
 
     this.connections.set(name, connWithRouter);

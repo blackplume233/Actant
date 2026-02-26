@@ -3,6 +3,7 @@ import type { AgentArchetype } from "./template.types";
 import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, DetachResult } from "./agent.types";
 import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "./domain-component.types";
 import type { SourceEntry, SourceConfig, PresetDefinition } from "./source.types";
+import type { ActivityRecord, ActivitySessionSummary, ConversationTurn } from "./activity.types";
 
 // ---------------------------------------------------------------------------
 // JSON-RPC 2.0 base types
@@ -585,6 +586,62 @@ export interface PresetApplyParams {
 
 export type PresetApplyResult = AgentTemplate;
 
+// activity.*
+
+export interface ActivitySessionsParams {
+  agentName: string;
+}
+
+export type ActivitySessionsResult = ActivitySessionSummary[];
+
+export interface ActivityStreamParams {
+  agentName: string;
+  sessionId: string;
+  /** Filter by record type(s). When omitted returns all types. */
+  types?: string[];
+  /** Pagination: skip first N records. */
+  offset?: number;
+  /** Pagination: max records to return (default 200). */
+  limit?: number;
+}
+
+export interface ActivityStreamResult {
+  records: ActivityRecord[];
+  total: number;
+}
+
+export interface ActivityConversationParams {
+  agentName: string;
+  sessionId: string;
+}
+
+export type ActivityConversationResult = ConversationTurn[];
+
+export interface ActivityBlobParams {
+  agentName: string;
+  hash: string;
+}
+
+export interface ActivityBlobResult {
+  content: string;
+}
+
+// events.*
+
+export interface EventsRecentParams {
+  limit?: number;
+}
+
+export interface EventsRecentResult {
+  events: Array<{
+    ts: number;
+    event: string;
+    agentName?: string;
+    caller: string;
+    payload: Record<string, unknown>;
+  }>;
+}
+
 // ---------------------------------------------------------------------------
 // Method registry type — maps method name to params/result for type safety
 // ---------------------------------------------------------------------------
@@ -667,6 +724,11 @@ export interface RpcMethodMap {
   "daemon.ping": { params: DaemonPingParams; result: DaemonPingResult };
   "daemon.shutdown": { params: DaemonShutdownParams; result: DaemonShutdownResult };
   "gateway.lease": { params: GatewayLeaseParams; result: GatewayLeaseResult };
+  "activity.sessions": { params: ActivitySessionsParams; result: ActivitySessionsResult };
+  "activity.stream": { params: ActivityStreamParams; result: ActivityStreamResult };
+  "activity.conversation": { params: ActivityConversationParams; result: ActivityConversationResult };
+  "activity.blob": { params: ActivityBlobParams; result: ActivityBlobResult };
+  "events.recent": { params: EventsRecentParams; result: EventsRecentResult };
 }
 
 export type RpcMethod = keyof RpcMethodMap;

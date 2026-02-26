@@ -22,3 +22,7 @@ Use `@/.trellis/` to learn:
 Keep this managed block so 'trellis update' can refresh the instructions.
 
 <!-- TRELLIS:END -->
+
+## Key References
+
+- **ACP (Agent Client Protocol)**: https://agentclientprotocol.com/llms.txt — 修改 ACP 相关代码/文档前必须先读取此索引，以官方定义为准

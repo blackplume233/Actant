@@ -9,10 +9,10 @@
   },
   "steps": [
     {
-      "id": "list-empty",
-      "description": "确认初始状态无模板",
+      "id": "list-initial",
+      "description": "确认初始模板列表（可能包含内置模板如 actant-hub）",
       "command": "template list -f json",
-      "expect": "返回空数组 []"
+      "expect": "返回数组，退出码 0。列表中不包含本场景将要加载的 qa-test-tpl（尚未加载）"
     },
     {
       "id": "validate-valid",

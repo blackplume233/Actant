@@ -13,3 +13,4 @@ export { createDaemonCommand } from "./daemon/index";
 export { createProxyCommand } from "./proxy";
 export { createSelfUpdateCommand } from "./self-update";
 export { createSetupCommand } from "./setup/setup";
+export { createDashboardCommand } from "./dashboard/index";

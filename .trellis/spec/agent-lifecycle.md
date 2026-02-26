@@ -941,6 +941,61 @@ Agent 需要多久？
 
 ---
 
+## 10. 平台级默认 Agent 体系
+
+> 详细设计见 [Hub Agent Kernel (#204)](https://github.com/blackplume233/Actant/issues/204)
+
+Actant 系统自带一套三层平台级 Agent，它们是 actant-hub 的初始内容，不是用户创建的应用级 Agent，而是构成平台"自治操作系统内核"的组成部分。
+
+### 10.1 三层架构
+
+```
+┌─ Spark Layer ──────────────────────────────────┐
+│  actant-spark  (自主进化引擎，默认不启用)         │
+├─ Auxiliary Layer ──────────────────────────────┤
+│  updater · scavenger · researcher · onboarder  │
+├─ Kernel Layer ─────────────────────────────────┤
+│  actant-steward · actant-maintainer · actant-curator │
+└────────────────────────────────────────────────┘
+```
+
+| 层级 | Archetype | LaunchMode | WorkspacePolicy | 特征 |
+|------|-----------|------------|-----------------|------|
+| Kernel | `employee` | `acp-service` | `persistent` | 随 daemon 启动，7×24 运行 |
+| Auxiliary | `employee` | `acp-service` | `persistent` | 按需激活或由 Kernel 委派 |
+| Spark | `employee` | `acp-service` | `persistent` | 贡献者专用，自主 fork/PR |
+
+### 10.2 Kernel Agent 职责
+
+| Agent | 核心职责 | 关键交互 |
+|-------|---------|---------|
+| **Steward（总管）** | 人类交互的统一入口，取代 CLI；路由、编排、会话管理 | Email in → 理解意图 → 委派给其他 Agent |
+| **Maintainer（维护员）** | 自我诊断、自动修复、工程进化、依赖更新 | 监听 error/crash 事件 → 自我修复流程 |
+| **Curator（资产管理员）** | 管理本地运行时资产（记忆、人类委托的 Docker/目录/进程等） | `ac://` URI 统一寻址，"一切即文件" |
+
+### 10.3 资产系统概念（Curator 核心）
+
+Curator 遵循 **"一切即文件"** 哲学，将所有受管实体统一为 `ManagedAsset`，通过 `ac://` URI 寻址：
+
+```
+ac://memory/{instance}/{layer}/{id}    — 记忆记录
+ac://assets/workspace/{name}           — 工作目录
+ac://assets/docker/{name}              — Docker 容器
+ac://assets/process/{pid}              — 托管进程
+ac://records/{instance}/{type}         — 执行记录
+ac://artifacts/{instance}/{name}       — Agent 产物
+```
+
+**设计原则**：
+- Curator 不管理 actant-hub（那是 Updater/Maintainer 的职责）
+- Curator 管理的是 **本地运行时产出** 和 **人类委托的外部资产**
+- 记忆部分与 Memory 系统分层概念（L0/L1/L2、Instance/Template/Actant 层）深度集成
+- 每个资产有 `retentionPolicy`、`healthStatus`、`owner` 属性，支持生命周期自治
+
+> **Gotcha**: 资产系统是 Memory 系统的超集。Memory 专注于记忆记录（L0/L1/L2），Asset System 额外涵盖人类委托的进程、容器、目录等非记忆性资源。两者通过 `ac://` URI 统一。
+
+---
+
 ## 变更约定
 
 > 对本文档所定义的任何生命周期状态、LaunchMode 语义、接入模式或场景进行增删改时，**必须先更新本文档，再修改代码**，并在同一次提交中完成。

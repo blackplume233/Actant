@@ -82,8 +82,8 @@ describe("SourceManager", () => {
   });
 
   afterEach(async () => {
-    await rm(homeDir, { recursive: true, force: true });
-    await rm(pkgDir, { recursive: true, force: true });
+    await rm(homeDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
+    await rm(pkgDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
   });
 
   it("addSource registers local source and injects namespaced components", async () => {

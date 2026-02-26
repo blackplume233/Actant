@@ -312,6 +312,10 @@ Agent A (MCP Tool: email.send)
 - RPC Bridge 连接 Daemon 的 IPC Socket，SSE 推送到浏览器
 - 断线重连: 浏览器 EventSource 自动重连，服务端保持无状态
 
+> **Gotcha: Daemon 版本漂移**
+>
+> Daemon 可能长时间运行（数天），而代码可能已经更新。新增的 RPC handler（如 `events.recent`、`activity.*`）在旧 Daemon 进程中不存在。SSE handler **必须**使用 `Promise.allSettled`（而非 `Promise.all`）聚合多个 RPC 调用，确保部分方法不可用时仍能推送可用数据。部署新 handler 后需提醒用户执行 `actant daemon stop && actant daemon start` 重启。
+
 ### Phase 4 跨层检查清单
 
 - [ ] 新增的跨层数据是否有明确的类型定义（在 `@actant/shared`）？

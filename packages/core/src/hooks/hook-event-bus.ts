@@ -40,9 +40,12 @@ export type EmitGuard = (
 export class HookEventBus {
   private readonly emitter = new EventEmitter();
   private emitGuard: EmitGuard | null = null;
+  private readonly recentBuffer: HookEventPayload[] = [];
+  private readonly maxRecent: number;
 
-  constructor() {
+  constructor(options?: { maxRecentEvents?: number }) {
     this.emitter.setMaxListeners(200);
+    this.maxRecent = options?.maxRecentEvents ?? 500;
   }
 
   /**
@@ -112,6 +115,11 @@ export class HookEventBus {
 
     logger.debug({ event, agentName, callerType: context.callerType }, "Hook event emitted");
 
+    this.recentBuffer.push(payload);
+    if (this.recentBuffer.length > this.maxRecent) {
+      this.recentBuffer.shift();
+    }
+
     const listeners = this.emitter.listeners(event) as HookEventListener[];
     for (const listener of listeners) {
       try {
@@ -141,8 +149,14 @@ export class HookEventBus {
     return this.emitter.listenerCount(event);
   }
 
+  /** Get the most recent N events from the ring buffer. */
+  getRecentEvents(limit = 100): HookEventPayload[] {
+    return this.recentBuffer.slice(-limit);
+  }
+
   dispose(): void {
     this.emitter.removeAllListeners();
+    this.recentBuffer.length = 0;
     this.emitGuard = null;
   }
 }

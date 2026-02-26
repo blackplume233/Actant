@@ -133,6 +133,28 @@ For pnpm commands, use `npx pnpm <cmd>` in PowerShell.
 - Write multi-line content to a temp file, then `git commit -F <file>`
 - Avoid `<` in inline strings (e.g. email addresses in git trailers)
 
+### Common Mistake: Bash scripts with CRLF on Windows
+
+**Symptom**: Running `.sh` scripts via `bash` on Windows Git Bash produces `$'\r': command not found` errors.
+
+**Cause**: Git on Windows may checkout files with CRLF line endings. Bash interprets `\r` as part of the command/variable name.
+
+**Fix**:
+- Add a `.gitattributes` rule: `*.sh text eol=lf`
+- For existing files: `dos2unix <file>` or configure Git: `git config core.autocrlf input`
+- Agent skill scripts (`.agents/skills/*/scripts/*.sh`) are particularly affected since they're authored outside the main build pipeline
+
+### Common Mistake: `gh issue create --body` with inline content in PowerShell
+
+**Symptom**: `gh issue create --body "..."` with multi-line Chinese/Unicode content in PowerShell produces garbled parse errors or encoding issues.
+
+**Fix**: Write the body to a temporary file, then use `--body-file`:
+
+```powershell
+[System.IO.File]::WriteAllText("$env:TEMP\issue-body.md", $content, [System.Text.UTF8Encoding]::new($false))
+gh issue create --title "..." --body-file "$env:TEMP\issue-body.md"
+```
+
 ### Common Mistake: pnpm bin link `EINVAL` on Windows
 
 **Symptom**: `child_process.spawn()` of a pnpm monorepo binary (e.g. `pi-acp-bridge`) throws `spawn EINVAL` on Windows.

@@ -39,9 +39,9 @@
     },
     {
       "id": "destroy-nonexistent",
-      "description": "销毁不存在的 Agent",
+      "description": "销毁不存在的 Agent（--force 为幂等操作）",
       "command": "agent destroy ghost-agent --force",
-      "expect": "退出码 1，stderr 包含 not found 错误信息"
+      "expect": "退出码 0，输出 already absent 或类似幂等成功信息（--force 设计为幂等，不存在也视为成功）"
     },
     {
       "id": "create-no-template-flag",
@@ -62,16 +62,16 @@
       "expect": "成功创建，退出码 0"
     },
     {
-      "id": "start-then-start-again",
-      "description": "启动已创建的 Agent 后再次启动",
-      "command": "agent start dup-agent",
-      "expect": "成功启动，退出码 0"
+      "id": "resolve-agent",
+      "description": "Resolve 已创建的 Agent（cursor 后端支持 resolve 模式）",
+      "command": "agent resolve dup-agent",
+      "expect": "成功 resolve，退出码 0"
     },
     {
-      "id": "double-start",
-      "description": "对已运行的 Agent 再次启动应报错",
-      "command": "agent start dup-agent",
-      "expect": "退出码 1，错误信息提示 Agent 已在运行（already running 或类似）"
+      "id": "double-resolve",
+      "description": "对已 resolve 的 Agent 再次 resolve（应幂等成功）",
+      "command": "agent resolve dup-agent",
+      "expect": "退出码 0，幂等操作应成功"
     },
     {
       "id": "stop-created-only",

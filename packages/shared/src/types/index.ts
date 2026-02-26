@@ -93,6 +93,25 @@ export type {
   PackageManifest,
   PresetDefinition,
 } from "./source.types";
+export type {
+  ContentRef,
+  ActivityRecord,
+  ActivityRecordType,
+  SessionUpdateData,
+  FileWriteData,
+  FileReadData,
+  TerminalCreateData,
+  TerminalOutputData,
+  TerminalExitData,
+  PermissionRequestData,
+  PromptSentData,
+  PromptCompleteData,
+  ActivitySessionSummary,
+  ConversationTurn,
+  ConversationToolCall,
+  ConversationFileOp,
+} from "./activity.types";
+export { INLINE_THRESHOLD, PREVIEW_LENGTH } from "./activity.types";
 export {
   RPC_ERROR_CODES,
   type RpcRequest,
@@ -219,4 +238,14 @@ export {
   type PresetApplyResult,
   type GatewayLeaseParams,
   type GatewayLeaseResult,
+  type ActivitySessionsParams,
+  type ActivitySessionsResult,
+  type ActivityStreamParams,
+  type ActivityStreamResult,
+  type ActivityConversationParams,
+  type ActivityConversationResult,
+  type ActivityBlobParams,
+  type ActivityBlobResult,
+  type EventsRecentParams,
+  type EventsRecentResult,
 } from "./rpc.types";

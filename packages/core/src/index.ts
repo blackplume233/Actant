@@ -11,3 +11,4 @@ export * from "./session/index";
 export * from "./source/index";
 export * from "./provider/index";
 export * from "./hooks/index";
+export * from "./activity/index";

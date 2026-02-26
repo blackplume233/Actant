@@ -14,6 +14,8 @@ import {
   registerProxyHandlers,
   registerScheduleHandlers,
   registerGatewayHandlers,
+  registerActivityHandlers,
+  registerEventHandlers,
   disposeAllLeases,
 } from "../handlers/index";
 import { writePidFile, removePidFile, readPidFile, isProcessRunning } from "./pid-file";
@@ -41,6 +43,8 @@ export class Daemon {
     registerProxyHandlers(this.handlers);
     registerScheduleHandlers(this.handlers);
     registerGatewayHandlers(this.handlers);
+    registerActivityHandlers(this.handlers);
+    registerEventHandlers(this.handlers);
   }
 
   get socketPath(): string {

@@ -1370,6 +1370,10 @@ CLI 层按以下优先级处理错误：
 
 ## 7. ACP 实时交互层 — Direct Bridge + Session Lease 双模式
 
+> **⚠️ ACP 协议权威来源**: 一切 ACP 协议类型和行为以官方文档为准 — https://agentclientprotocol.com/protocol/schema
+> 修改 ACP 相关代码/文档前，先查阅官方最新定义。完整文档索引: https://agentclientprotocol.com/llms.txt
+> ACP 类型的全接口参考见 [`docs/reference/acp-interface-reference.md`](../../docs/reference/acp-interface-reference.md)。
+>
 > 状态：**已实现**（参见 [Issue #35](../../.trellis/issues/0035-acp-proxy-full-protocol.json)、[启动场景文档](../../docs/design/agent-launch-scenarios.md)）
 >
 > 最终架构：**Direct Bridge（默认）+ Session Lease（`--lease`）**。废弃原 ACP Gateway 架构。

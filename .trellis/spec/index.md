@@ -72,6 +72,8 @@ spec/
 | [Phase 4 推进步骤](../../docs/planning/phase4-employee-steps.md) | 14 步实施计划、依赖关系、并行策略、验收标准 | **活跃** — 当前阶段的执行指南 |
 | [Agent 动态监听场景分析](../../docs/design/scenario-agent-dynamic-listen.md) | Agent 运行时动态注册事件订阅的场景、通信通道选择（ACP/CLI）、三种订阅模型 | 参考 — Agent 自主性扩展的设计分析 |
 | [Subsystem 子系统设计](../../docs/design/subsystem-design.md) | 参考 UE Subsystem 的可热插拔辅助系统框架，四层作用域、声明式注册、生命周期绑定 | **核心** — 插件深层集成和系统功能模块化的架构基础 |
+| [actant-hub 组件仓库设计](../../docs/design/actant-hub-registry-design.md) | 官方 Hub 结构、组件类型、Skill 双格式、Source 集成 | **核心** — Hub 内容和 Source 系统的架构依据 |
+| [Hub Agent 内核设计 (#204)](https://github.com/blackplume233/Actant/issues/204) | 三层平台级 Agent 体系（Kernel/Auxiliary/Spark）、资产系统、`ac://` 统一寻址 | **核心** — actant-hub 初始内容和资产管理的蓝图 |
 
 ### 第二层：实现指南（Implementation Guidelines）
 

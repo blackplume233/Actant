@@ -9,12 +9,17 @@ import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 
 const PKG_VERSION = (() => {
-  try {
-    const pkgPath = join(dirname(fileURLToPath(import.meta.url)), "../../package.json");
-    return (JSON.parse(readFileSync(pkgPath, "utf-8")) as { version: string }).version;
-  } catch {
-    return "unknown";
+  const thisDir = dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    join(thisDir, "../package.json"),
+    join(thisDir, "../../package.json"),
+  ];
+  for (const p of candidates) {
+    try {
+      return (JSON.parse(readFileSync(p, "utf-8")) as { version: string }).version;
+    } catch { /* try next */ }
   }
+  return "unknown";
 })();
 
 export function registerDaemonHandlers(

@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Actant Dashboard</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font: 14px system-ui, -apple-system, sans-serif; background: #18181b; color: #fafafa; }
+    .status-bar { display: flex; align-items: center; gap: 1.5rem; padding: 0.75rem 1rem; background: #27272a; border-bottom: 1px solid #3f3f46; }
+    .logo { font-weight: 700; color: #3b82f6; }
+    .main { display: grid; grid-template-columns: 1fr 320px; grid-template-rows: 1fr 180px; gap: 0; height: calc(100vh - 48px); }
+    .agents-panel { overflow-y: auto; padding: 1rem; }
+    .agents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 0.75rem; }
+    .agent-card { background: #27272a; border-radius: 8px; padding: 1rem; cursor: pointer; border: 2px solid transparent; transition: border-color 0.15s; }
+    .agent-card:hover, .agent-card.selected { border-color: #3b82f6; }
+    .agent-card h3 { margin: 0 0 0.5rem; font-size: 1rem; }
+    .badges { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-bottom: 0.5rem; }
+    .badge { font-size: 11px; padding: 0.2rem 0.5rem; border-radius: 4px; font-weight: 500; }
+    .status-running { background: #22c55e; color: #000; }
+    .status-stopped, .status-stopping, .status-created { background: #71717a; color: #fff; }
+    .status-error, .status-crashed { background: #ef4444; color: #fff; }
+    .status-starting { background: #eab308; color: #000; }
+    .archetype-employee { background: #3b82f6; color: #fff; }
+    .archetype-tool { background: #a855f7; color: #fff; }
+    .archetype-service { background: #f97316; color: #fff; }
+    .agent-meta { font-size: 12px; color: #a1a1aa; }
+    .detail-panel { background: #1f1f23; border-left: 1px solid #3f3f46; overflow: hidden; display: flex; flex-direction: column; }
+    .detail-header { padding: 0.75rem 1rem; border-bottom: 1px solid #3f3f46; font-weight: 600; }
+    .sessions-list { overflow-y: auto; flex: 1; padding: 0.5rem; }
+    .session-item { padding: 0.5rem 0.75rem; border-radius: 6px; cursor: pointer; margin-bottom: 0.25rem; font-size: 13px; }
+    .session-item:hover { background: #27272a; }
+    .session-item.selected { background: #3b82f6; color: #fff; }
+    .chat-replay { overflow-y: auto; flex: 1; padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+    .msg { max-width: 85%; padding: 0.6rem 0.9rem; border-radius: 8px; white-space: pre-wrap; word-break: break-word; }
+    .msg-user { align-self: flex-end; background: #3b82f6; color: #fff; }
+    .msg-assistant { align-self: flex-start; background: #27272a; color: #e4e4e7; }
+    .tool-block { background: #27272a; border-radius: 8px; margin: 0.25rem 0; overflow: hidden; }
+    .tool-header { padding: 0.5rem 0.75rem; cursor: pointer; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+    .tool-header:hover { background: #3f3f46; }
+    .tool-body { padding: 0.5rem 0.75rem; font-size: 12px; color: #a1a1aa; border-top: 1px solid #3f3f46; max-height: 200px; overflow-y: auto; white-space: pre-wrap; }
+    .tool-body.collapsed { display: none; }
+    .events-panel { grid-column: 1 / -1; background: #27272a; border-top: 1px solid #3f3f46; overflow: hidden; display: flex; flex-direction: column; }
+    .events-header { padding: 0.5rem 1rem; font-weight: 600; font-size: 13px; }
+    .events-list { overflow-y: auto; flex: 1; padding: 0 1rem 0.5rem; font-size: 12px; font-family: ui-monospace, monospace; }
+    .event-row { padding: 0.25rem 0; border-bottom: 1px solid #3f3f46; display: grid; grid-template-columns: 140px 1fr 120px 100px; gap: 0.5rem; align-items: center; }
+    .empty { color: #71717a; padding: 1rem; text-align: center; }
+  </style>
+</head>
+<body>
+  <header class="status-bar">
+    <span class="logo">Actant</span>
+    <span id="version">—</span>
+    <span id="uptime">00:00:00</span>
+    <span id="agent-count">0 agents</span>
+  </header>
+  <main class="main">
+    <section class="agents-panel">
+      <div class="agents-grid" id="agents-grid"></div>
+    </section>
+    <aside class="detail-panel">
+      <div class="detail-header" id="detail-title">Select an agent</div>
+      <div class="sessions-list" id="sessions-list"></div>
+      <div class="chat-replay" id="chat-replay"></div>
+    </aside>
+    <section class="events-panel">
+      <div class="events-header">Event Stream</div>
+      <div class="events-list" id="events-list"></div>
+    </section>
+  </main>
+  <script>
+    const STATUS_COLORS = { running: 'status-running', stopped: 'status-stopped', stopping: 'status-stopping', created: 'status-created', error: 'status-error', crashed: 'status-error', starting: 'status-starting' };
+    const ARCHETYPE_COLORS = { employee: 'archetype-employee', tool: 'archetype-tool', service: 'archetype-service' };
+    let selectedAgent = null, selectedSession = null, es = null, reconnectTimer = null;
+
+    function formatUptime(s) {
+      const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+      return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':');
+    }
+    function relativeTime(ts) {
+      const d = (Date.now() - ts) / 1000;
+      if (d < 60) return Math.floor(d) + 's ago';
+      if (d < 3600) return Math.floor(d / 60) + 'm ago';
+      if (d < 86400) return Math.floor(d / 3600) + 'h ago';
+      return Math.floor(d / 86400) + 'd ago';
+    }
+
+    function connectSSE() {
+      if (es) es.close();
+      es = new EventSource('/sse');
+      es.onmessage = (e) => { try { const d = JSON.parse(e.data); handleEvent(e.type || 'message', d); } catch (_) {} };
+      es.addEventListener('status', (e) => { try { handleEvent('status', JSON.parse(e.data)); } catch (_) {} });
+      es.addEventListener('agents', (e) => { try { handleEvent('agents', JSON.parse(e.data)); } catch (_) {} });
+      es.addEventListener('events', (e) => { try { handleEvent('events', JSON.parse(e.data)); } catch (_) {} });
+      es.addEventListener('error', (e) => { handleEvent('error', e); });
+      es.onerror = () => { clearTimeout(reconnectTimer); reconnectTimer = setTimeout(connectSSE, 3000); };
+    }
+
+    function handleEvent(type, data) {
+      if (type === 'status') {
+        document.getElementById('version').textContent = data.version || '—';
+        document.getElementById('uptime').textContent = formatUptime(data.uptime || 0);
+        document.getElementById('agent-count').textContent = (data.agents ?? 0) + ' agents';
+      } else if (type === 'agents') {
+        renderAgents(Array.isArray(data) ? data : (data.agents || []));
+      } else if (type === 'events') {
+        renderEvents((data.events || []).slice().reverse());
+      } else if (type === 'error') {
+        document.getElementById('version').textContent = 'offline';
+      }
+    }
+
+    function renderAgents(agents) {
+      const grid = document.getElementById('agents-grid');
+      grid.innerHTML = agents.map(a => {
+        const statusClass = STATUS_COLORS[a.status] || 'status-stopped';
+        const archClass = ARCHETYPE_COLORS[a.archetype || 'tool'] || 'archetype-tool';
+        const selected = selectedAgent === a.name ? ' selected' : '';
+        return `<div class="agent-card${selected}" data-name="${escapeHtml(a.name)}">
+          <h3>${escapeHtml(a.name)}</h3>
+          <div class="badges"><span class="badge ${archClass}">${escapeHtml(a.archetype || 'tool')}</span><span class="badge ${statusClass}">${escapeHtml(a.status || 'stopped')}</span></div>
+          <div class="agent-meta">${escapeHtml(a.templateName || '—')} ${a.pid ? '· PID ' + a.pid : ''}</div>
+        </div>`;
+      }).join('');
+      grid.querySelectorAll('.agent-card').forEach(el => {
+        el.addEventListener('click', () => selectAgent(el.dataset.name));
+      });
+    }
+
+    function selectAgent(name) {
+      selectedAgent = name;
+      selectedSession = null;
+      document.querySelectorAll('.agent-card').forEach(c => c.classList.toggle('selected', c.dataset.name === name));
+      document.getElementById('detail-title').textContent = name || 'Select an agent';
+      document.getElementById('sessions-list').innerHTML = '<div class="empty">Loading…</div>';
+      document.getElementById('chat-replay').innerHTML = '';
+      if (!name) return;
+      fetch(`/api/agent/${encodeURIComponent(name)}/sessions`).then(r => r.json()).then(sessions => {
+        const list = document.getElementById('sessions-list');
+        if (!sessions.length) { list.innerHTML = '<div class="empty">No sessions</div>'; return; }
+        list.innerHTML = sessions.map(s => `<div class="session-item" data-id="${escapeHtml(s.sessionId)}">${relativeTime(s.startTs)} · ${s.messageCount} msgs</div>`).join('');
+        list.querySelectorAll('.session-item').forEach(el => {
+          el.addEventListener('click', () => selectSession(el.dataset.id));
+        });
+      }).catch(() => { document.getElementById('sessions-list').innerHTML = '<div class="empty">Failed to load</div>'; });
+    }
+
+    function selectSession(sessionId) {
+      selectedSession = sessionId;
+      document.querySelectorAll('.session-item').forEach(s => s.classList.toggle('selected', s.dataset.id === sessionId));
+      const chat = document.getElementById('chat-replay');
+      chat.innerHTML = '<div class="empty">Loading…</div>';
+      if (!selectedAgent || !sessionId) return;
+      fetch(`/api/agent/${encodeURIComponent(selectedAgent)}/session/${encodeURIComponent(sessionId)}/conversation`).then(r => r.json()).then(turns => {
+        if (!turns.length) { chat.innerHTML = '<div class="empty">No messages</div>'; return; }
+        chat.innerHTML = turns.map(t => {
+          let html = '';
+          if (t.role === 'user') html += `<div class="msg msg-user">${escapeHtml(t.content || '')}</div>`;
+          else {
+            if (t.content) html += `<div class="msg msg-assistant">${escapeHtml(t.content)}</div>`;
+            (t.toolCalls || []).forEach(tc => {
+              const id = 'tc-' + (tc.toolCallId || Math.random()).toString(36).slice(2);
+              html += `<div class="tool-block"><div class="tool-header" data-toggle="${id}">${escapeHtml(tc.title || tc.kind || 'tool')} <span>▼</span></div><div class="tool-body" id="${id}">${escapeHtml(tc.input || '')}\n---\n${escapeHtml(tc.output || '')}</div></div>`;
+            });
+          }
+          return html;
+        }).join('');
+        chat.querySelectorAll('.tool-header').forEach(h => {
+          h.addEventListener('click', () => {
+            const body = document.getElementById(h.dataset.toggle);
+            if (body) body.classList.toggle('collapsed');
+          });
+        });
+      }).catch(() => { chat.innerHTML = '<div class="empty">Failed to load</div>'; });
+    }
+
+    function renderEvents(events) {
+      const list = document.getElementById('events-list');
+      list.innerHTML = events.map(ev => {
+        const time = new Date(ev.ts).toLocaleTimeString();
+        return `<div class="event-row"><span>${time}</span><span>${escapeHtml(ev.event || '')}</span><span>${escapeHtml(ev.agentName || '—')}</span><span>${escapeHtml(ev.caller || '')}</span></div>`;
+      }).join('');
+    }
+
+    function escapeHtml(s) {
+      if (s == null) return '';
+      const div = document.createElement('div');
+      div.textContent = String(s);
+      return div.innerHTML;
+    }
+
+    connectSSE();
+  </script>
+</body>
+</html>

@@ -22,6 +22,7 @@
 11. [与现有架构的关系](#11-与现有架构的关系)
 12. [设计约束与取舍](#12-设计约束与取舍)
 13. [OpenViking 参考对照](#13-openviking-参考对照)
+14. [附录 A: `ac://` 统一寻址协议](#附录-a-ac-统一寻址协议)
 
 ---
 
@@ -715,7 +716,7 @@ Phase 3 (Context Layers + ContextBroker):
 
 | 维度 | OpenViking | 本设计 | 差异原因 |
 |------|-----------|--------|---------|
-| URI 协议 | `viking://` | 暂不引入，Phase 3 考虑 `ac://` | 当前 name-based 寻址够用 |
+| URI 协议 | `viking://` | `ac://` 三命名空间（memory/assets/components），分阶段引入 | 渐进式：先 memory → assets → components |
 | 上下文分层 | L0/L1/L2 (VLM 自动生成) | L0/L1/L2 (规则 + 组件元数据) | 不依赖 AI 模型 |
 | 存储后端 | 自建向量数据库 + C++ 扩展 | JSON 文件 / JSONL | 零依赖 |
 | 检索 | 向量语义 + 目录递归 | tag 匹配 + glob | 组件规模小 |
@@ -728,29 +729,103 @@ Phase 3 (Context Layers + ContextBroker):
 
 ---
 
-## 附录 A: 虚拟路径 (Phase 3 预留)
+## 附录 A: `ac://` 统一寻址协议
 
-Phase 3 可考虑引入 `ac://` 协议统一组件寻址：
+`ac://` 是 Actant 的统一资源寻址协议，覆盖三大命名空间：**组件**（Hub 内容）、**记忆**（分层记忆系统）和**资产**（运行时产物 + 人类委托资源）。
+
+### A.1 完整命名空间
 
 ```
 ac://
-├── components/
+├── components/                    ← Hub 组件（Phase 3 预留）
 │   ├── skills/{name}
 │   ├── prompts/{name}
 │   ├── workflows/{name}
 │   └── mcp-servers/{name}
-├── instances/{name}/
-│   ├── workspace/
-│   ├── memory/
-│   └── sessions/
-└── memory/
-    ├── user/
-    └── learnings/
+│
+├── memory/                        ← 记忆系统
+│   ├── {instance}/{layer}/{id}    # 实例级记忆条目
+│   ├── user/                      # 用户偏好（shared pool）
+│   └── learnings/                 # 跨实例经验（shared pool）
+│
+├── assets/                        ← 人类委托的资产
+│   ├── workspace/{name}           # 工作目录
+│   ├── docker/{name}              # Docker 容器
+│   ├── repo/{name}                # Git 仓库
+│   ├── process/{pid}              # 托管进程
+│   ├── config/{name}              # 配置文件
+│   ├── secret/{name}              # 密钥（只记 ref，不存值）
+│   ├── data/{name}                # 通用数据集
+│   └── custom/{type}/{name}       # 用户自定义类型
+│
+├── records/                       ← 执行记录
+│   └── {instance}/{type}          # 任务记录、错误日志、审计记录
+│
+├── artifacts/                     ← Agent 产物
+│   └── {instance}/{name}          # 生成的文件、报告、代码片段
+│
+└── instances/{name}/              ← 实例视图（聚合）
+    ├── workspace/
+    ├── memory/
+    └── sessions/
 ```
 
-引入时机判断标准：
-- 组件数量 > 50，name-based 查找效率下降
-- 需要跨层引用（如 skill 引用另一个 skill）
-- 需要语义检索（非精确匹配的组件发现）
+### A.2 资产系统核心模型
 
-在此之前，name-based resolution 是更简单正确的选择。
+> 详见 [Hub Agent Kernel (#204)](https://github.com/blackplume233/Actant/issues/204) — Curator Asset System
+
+资产系统遵循 **"一切即文件"** 哲学，人类可以将 Docker 容器、工作目录、Git 仓库、后台进程等外部资源委托给 Actant（通过 Curator agent）管理：
+
+```typescript
+interface ManagedAsset {
+  uri: string;                  // ac:// URI
+  type: AssetType;
+  name: string;
+  status: AssetStatus;
+  owner: string;                // 委托人或创建该资产的 Agent
+  localPath?: string;
+  containerRef?: string;        // Docker container ID
+  processRef?: { pid: number };
+  createdAt: string;
+  updatedAt: string;
+  lastCheckedAt: string;
+  healthStatus: "healthy" | "degraded" | "unreachable" | "unknown";
+  retentionPolicy?: RetentionPolicy;
+  backupPolicy?: BackupPolicy;
+  tags: string[];
+  notes?: string;
+}
+
+type AssetType =
+  | "workspace" | "docker" | "repo" | "process"
+  | "config" | "secret" | "data" | "custom";
+
+interface RetentionPolicy {
+  maxAge?: string;              // e.g. "30d", "1y"
+  maxSize?: string;             // e.g. "10GB"
+  onExpiry: "archive" | "delete" | "notify";
+}
+```
+
+### A.3 记忆系统 vs 资产系统
+
+| 维度 | Memory System | Asset System |
+|------|--------------|--------------|
+| 管辖范围 | 记忆记录（L0/L1/L2） | 记忆 + 非记忆性资源（Docker、目录、进程等） |
+| URI 前缀 | `ac://memory/` | `ac://assets/`, `ac://records/`, `ac://artifacts/` |
+| 数据性质 | 认知性（经验、模式、偏好） | 操作性（进程、容器、文件） |
+| 生命周期 | confidence 衰减 + promote | retentionPolicy + healthCheck |
+| 管理者 | Memory Store / Promoter | Curator agent |
+
+**关系**：资产系统是记忆系统的超集。`ac://memory/` 命名空间由 Memory 子系统原生管理，Curator 作为上层治理者在资产视图中统一呈现。
+
+### A.4 引入时机
+
+| 命名空间 | 引入阶段 | 判断标准 |
+|----------|---------|---------|
+| `ac://memory/` | Phase 5（Memory 系统） | Instance Memory 实现后 |
+| `ac://assets/` | Phase 4+（Curator agent） | Curator 实现后 |
+| `ac://components/` | Phase 6+ | 组件数量 > 50 或需跨层引用 |
+| `ac://records/`, `ac://artifacts/` | 与 Memory/Curator 同步 | 需要结构化追溯时 |
+
+在对应阶段之前，name-based resolution 是更简单正确的选择。

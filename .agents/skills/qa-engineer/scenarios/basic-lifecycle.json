@@ -45,20 +45,20 @@
       "expect": "返回 JSON，status 字段为 created"
     },
     {
-      "id": "start",
-      "description": "启动 Agent",
-      "command": "agent start test-agent",
-      "expect": "成功启动，输出包含 Started 字样，退出码 0"
+      "id": "resolve",
+      "description": "Resolve Agent workspace（cursor 后端支持 resolve 模式）",
+      "command": "agent resolve test-agent",
+      "expect": "成功 resolve，退出码 0"
     },
     {
-      "id": "status-running",
-      "description": "确认 Agent 状态为 running",
+      "id": "status-after-resolve",
+      "description": "确认 Resolve 后状态",
       "command": "agent status test-agent -f json",
-      "expect": "返回 JSON，status 字段为 running"
+      "expect": "返回 JSON，status 字段为 created 或 resolved，退出码 0"
     },
     {
       "id": "stop",
-      "description": "停止 Agent",
+      "description": "停止 Agent（从 created/resolved 状态停止）",
       "command": "agent stop test-agent",
       "expect": "成功停止，输出包含 Stopped 字样，无错误，退出码 0"
     },

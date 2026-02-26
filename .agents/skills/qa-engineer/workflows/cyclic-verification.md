@@ -110,6 +110,10 @@
 3. Session Lease API 需要真实 ACP 连接（claude-code 后端）
 4. PowerShell 写入 JSON 文件会添加 BOM，需用 `[System.IO.File]::WriteAllText`
 5. `issue.sh` 在 Windows 上有 CRLF 兼容问题
+6. **场景模板必须匹配 backend 能力**: `cursor` backend 仅支持 `resolve`/`open` 模式，不支持 `acp`（即 `agent start`）。需要 start/stop 测试的场景应使用 `claude-code` backend 或改为测试 resolve/open 路径
+7. **`destroy --force` 是幂等操作**: 对不存在的 Agent 返回 exit 0 + "already absent"，场景 expect 不应期望 exit 1
+8. **`template list` 初始状态非空**: Daemon 初始化时自动加载内置模板（如 `actant-hub`），场景不应期望空数组，而应断言"不含本场景特有模板"
+9. **场景间隔离**: 多个场景共享临时目录时，前场景创建的 Agent 会泄漏到后续场景。对列表断言应检查"包含/不包含目标项"而非"数组长度"
 
 ### 覆盖缺口（待补充）
 

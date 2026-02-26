@@ -9,3 +9,5 @@ export { registerDaemonHandlers } from "./daemon-handlers";
 export { registerProxyHandlers } from "./proxy-handlers";
 export { registerScheduleHandlers } from "./schedule-handlers";
 export { registerGatewayHandlers, disposeAllLeases } from "./gateway-handlers";
+export { registerActivityHandlers } from "./activity-handlers";
+export { registerEventHandlers } from "./event-handlers";

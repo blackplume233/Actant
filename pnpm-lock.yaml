@@ -113,6 +113,9 @@ importers:
       '@actant/core':
         specifier: workspace:*
         version: link:../core
+      '@actant/dashboard':
+        specifier: workspace:*
+        version: link:../dashboard
       '@actant/pi':
         specifier: workspace:*
         version: link:../pi
@@ -150,6 +153,19 @@ importers:
       '@types/picomatch':
         specifier: ^4.0.2
         version: 4.0.2
+
+  packages/dashboard:
+    dependencies:
+      '@actant/shared':
+        specifier: workspace:*
+        version: link:../shared
+    devDependencies:
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
 
   packages/mcp-server:
     dependencies:
