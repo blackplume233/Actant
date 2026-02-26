@@ -14,3 +14,4 @@ export { createProxyCommand } from "./proxy";
 export { createSelfUpdateCommand } from "./self-update";
 export { createSetupCommand } from "./setup/setup";
 export { createDashboardCommand } from "./dashboard/index";
+export { createApiCommand } from "./api/index";

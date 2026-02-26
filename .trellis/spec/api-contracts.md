@@ -727,9 +727,61 @@ interface PluginStatusDto {
 }
 ```
 
-### 3.12 事件查询（Phase 4 新增） 🚧
+### 3.12 Canvas 管理（Phase 4 Step 3b 新增） ✅ 已实现
 
-> 状态：**待实现** — Step 7 (Dashboard v0) 及 Step 3 (HookEventBus)
+> 状态：**已实现** — Step 3b (动态上下文注入 + Canvas)
+> 关联 Issue: #210, #211
+
+Agent 的 Live Canvas HTML 内容管理。Agent 通过内置 Actant MCP Server 的 `actant_canvas_update` 工具间接调用这些 RPC 方法。Dashboard 通过 SSE 实时广播 canvas 数据。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `canvas.update` | `{ agentName, html, title? }` | `{ ok }` | `INVALID_PARAMS` |
+| `canvas.get` | `{ agentName }` | `CanvasGetResult` | `AGENT_NOT_FOUND` |
+| `canvas.list` | `{}` | `{ entries: CanvasGetResult[] }` | — |
+| `canvas.clear` | `{ agentName }` | `{ ok }` | — |
+
+#### CanvasGetResult
+
+```typescript
+interface CanvasGetResult {
+  agentName: string;
+  html: string;
+  title?: string;
+  updatedAt: number;
+}
+```
+
+#### 数据流
+
+```
+Agent Process → actant_canvas_update (MCP Tool)
+  → Built-in Actant MCP Server (stdio)
+    → canvas.update RPC (via ACTANT_SOCKET)
+      → CanvasStore (in-memory)
+        → SSE broadcast → Dashboard iframe sandbox
+```
+
+**内存存储**：Canvas 内容存储在 `CanvasStore`（内存 Map），Daemon 重启后丢失。每个 Agent 最多一个 canvas entry。
+
+> 实现参考：`packages/api/src/handlers/canvas-handlers.ts`，`packages/api/src/services/canvas-store.ts`
+
+### 3.12b MCP Canvas Tools（Phase 4 Step 3b 新增） ✅ 已实现
+
+内置 Actant MCP Server（`packages/mcp-server/`）通过 ACP `session/new` 的 `mcpServers` 参数自动注入到 Agent 进程。Agent 无需配置即可使用以下工具：
+
+| Tool | 参数 | 返回 | 说明 |
+|------|------|------|------|
+| `actant_canvas_update` | `{ html: string, title?: string }` | success/error text | 更新 Agent 的 Live Canvas HTML |
+| `actant_canvas_clear` | `{}` | success/error text | 清除 Canvas |
+
+**注入机制**：`SessionContextInjector` 在 ACP session 创建前收集所有 `ContextProvider` 注册的 MCP servers，通过 `newSession(cwd, mcpServers)` 传参。内置 MCP Server 以 stdio 模式运行，通过 `ACTANT_SOCKET` 环境变量连接回 Daemon RPC。
+
+> 实现参考：`packages/mcp-server/src/index.ts`，`packages/core/src/context-injector/session-context-injector.ts`
+
+### 3.13 事件查询（Phase 4 新增） ✅ 已实现
+
+> 状态：**已实现** — Step 3 (Dashboard v0)
 
 Dashboard 和 CLI 查询最近发生的 Hook 事件。
 
@@ -1182,7 +1234,118 @@ actant proxy my-agent -t review-template # 不存在则自动创建
 | `daemon stop` | — | 发送 `daemon.shutdown` RPC |
 | `daemon status` | `-f, --format` | 发送 `daemon.ping` RPC |
 
-> 实现参考：`packages/cli/src/commands/`
+### 4.12 Dashboard 和 API 服务器
+
+| 命令 | 选项 | 行为 |
+|------|------|------|
+| `dashboard` | `-p, --port <port>` (默认 3200), `--no-open` | 启动 Web Dashboard（SPA + REST API），自动打开浏览器 |
+| `api` | `-p, --port <port>` (默认 3100), `-H, --host <host>` (默认 0.0.0.0), `-k, --api-key <key>` | 启动独立 REST API 服务器（无 SPA），用于 n8n / IM / 外部集成 |
+
+`api` 命令的 API Key 也可通过 `ACTANT_API_KEY` 环境变量设置。
+
+> 实现参考：`packages/cli/src/commands/dashboard/`, `packages/cli/src/commands/api/`
+
+---
+
+## 4A. REST API（`@actant/rest-api`）
+
+独立的 RESTful HTTP 服务器，覆盖所有 Daemon RPC 方法。可被 Dashboard、n8n、Slack/Discord/WeChat 等 IM 机器人、以及任意 HTTP 客户端访问。
+
+### 架构
+
+```
+HTTP Client (Dashboard / n8n / IM Bot / curl)
+      │
+      │ HTTP (REST + SSE)
+      │
+┌─────▼──────────────────────────┐
+│     @actant/rest-api           │
+│  Router → Route Handlers       │
+│  Middleware (CORS, API Key)    │
+│  RpcBridge (JSON-RPC 2.0)     │
+└─────┬──────────────────────────┘
+      │ Unix Socket / Named Pipe
+      │
+┌─────▼──────────────────────────┐
+│     Actant Daemon              │
+└────────────────────────────────┘
+```
+
+Dashboard（`@actant/dashboard`）在内部挂载 `@actant/rest-api` 的 handler，并额外提供 SPA 静态文件服务。
+
+### 端点概览
+
+所有端点均以 `/v1/` 为前缀。
+
+| 分类 | 方法 | 端点 | 对应 RPC |
+|------|------|------|---------|
+| **System** | GET | `/v1/status` | `daemon.ping` |
+| | POST | `/v1/shutdown` | `daemon.shutdown` |
+| | GET | `/v1/sse` | SSE 实时流（每 2s 轮询） |
+| | GET | `/v1/openapi` | 自描述 OpenAPI 路由目录 |
+| **Agents** | GET | `/v1/agents` | `agent.list` |
+| | POST | `/v1/agents` | `agent.create` |
+| | GET | `/v1/agents/:name` | `agent.status` |
+| | DELETE | `/v1/agents/:name` | `agent.destroy` |
+| | POST | `/v1/agents/:name/start` | `agent.start` |
+| | POST | `/v1/agents/:name/stop` | `agent.stop` |
+| | POST | `/v1/agents/:name/prompt` | `agent.prompt` |
+| | POST | `/v1/agents/:name/run` | `agent.run` |
+| | PUT | `/v1/agents/:name/permissions` | `agent.updatePermissions` |
+| | POST | `/v1/agents/:name/attach` | `agent.attach` |
+| | POST | `/v1/agents/:name/detach` | `agent.detach` |
+| | POST | `/v1/agents/:name/dispatch` | `agent.dispatch` |
+| | GET | `/v1/agents/:name/sessions` | `activity.sessions` |
+| | GET | `/v1/agents/:name/sessions/:id` | `activity.conversation` |
+| | GET | `/v1/agents/:name/logs` | `agent.processLogs` |
+| | GET | `/v1/agents/:name/tasks` | `agent.tasks` |
+| | GET | `/v1/agents/:name/schedule` | `schedule.list` |
+| **Templates** | GET | `/v1/templates` | `template.list` |
+| | GET | `/v1/templates/:name` | `template.get` |
+| **Domain** | GET | `/v1/skills`, `prompts`, `mcp-servers`, `workflows`, `plugins` | 各 `*.list` |
+| **Sources** | GET | `/v1/sources` | `source.list` |
+| | POST | `/v1/sources` | `source.add` |
+| | DELETE | `/v1/sources/:name` | `source.remove` |
+| **Sessions** | GET | `/v1/sessions` | `session.list` |
+| | POST | `/v1/sessions` | `session.create` |
+| **Canvas** | GET | `/v1/canvas` | `canvas.list` |
+| | GET/POST/DELETE | `/v1/canvas/:agent` | `canvas.get/update/clear` |
+| **Events** | GET | `/v1/events` | `events.recent` |
+| **Webhooks** | POST | `/v1/webhooks/message` | `agent.prompt`（简化入口） |
+| | POST | `/v1/webhooks/run` | `agent.run`（简化入口） |
+| | POST | `/v1/webhooks/event` | `gateway.lease` |
+
+### 认证
+
+设置 API Key（`--api-key` 或 `ACTANT_API_KEY`）后，所有请求须携带 `Authorization: Bearer <key>` 或 `X-API-Key: <key>` 头。SSE 端点免认证（浏览器 EventSource 无法设置自定义 header）。
+
+### Webhook 集成模式
+
+`/v1/webhooks/message` 端点是 IM 集成的推荐入口：
+
+```json
+// Request
+POST /v1/webhooks/message
+{ "agent": "my-agent", "message": "用户消息" }
+
+// Response
+{ "agent": "my-agent", "response": "Agent 回复", "sessionId": "..." }
+```
+
+**n8n 集成**：HTTP Request 节点 → `POST http://actant:3100/v1/webhooks/message`，Body 携带 `agent` 和 `message` 字段。
+
+### RPC 错误 → HTTP 状态码映射
+
+| RPC 错误码 | HTTP 状态码 | 含义 |
+|-----------|-----------|------|
+| -32001 (TEMPLATE_NOT_FOUND) | 404 | 模板不存在 |
+| -32003 (AGENT_NOT_FOUND) | 404 | Agent 不存在 |
+| -32002 (CONFIG_VALIDATION) | 400 | 配置校验失败 |
+| -32004 (AGENT_ALREADY_RUNNING) | 409 | Agent 已在运行 |
+| -32601 (METHOD_NOT_FOUND) | 404 | 方法不存在 |
+| 其他 | 500 | 内部错误 |
+
+> 实现参考：`packages/rest-api/src/`
 
 ---
 
@@ -1668,28 +1831,101 @@ E1[需求] → E2[方案A] → E3[实现] → E4[产出] → E5[发现问题]
 
 ---
 
-## 9. 五种外部接入模式对比
+## 9. REST API Server (`@actant/rest-api`)
 
-| 维度 | CLI / RPC | ACP Proxy | Email (#136) | MCP Server (#16, P4) | Self-spawn + Attach |
-|------|-----------|-----------|--------------|---------------------|---------------------|
-| **调用方** | 开发者 / 脚本 | IDE / 应用 | Agent / 人 / 应用 | IDE 内 Agent | 应用（Unreal 等） |
-| **协议** | JSON-RPC | ACP / stdio | JSON-RPC (email.*) | MCP / stdio | JSON-RPC |
-| **通信模式** | 同步 | 同步/流式 | **异步** | 同步 | 同步 |
-| **谁 spawn Agent** | Daemon | Daemon | Daemon | Daemon | **调用方自己** |
-| **CC/群发** | 否 | 否 | **是** | 否 | 否 |
-| **持久化记录** | 否 | 否 | **是（Email Hub）** | 否 | 否 |
-| **跨时间线** | 否 | 否 | **是** | 否 | 否 |
-| **时间线分叉** | 否 | 否 | **是（fork to past）** | 否 | 否 |
-| **实现状态** | 已实现 | 已实现 | 规划中 | P4 长期 | 已实现 |
+独立的 RESTful HTTP API 服务器，供 Dashboard、n8n、IM 机器人等外部系统访问。
+
+**启动方式**：`actant api [-p 3100] [-k <api-key>]`
+
+**认证**：可选 API Key，通过 `Authorization: Bearer <key>` 或 `X-API-Key` header 传递，或 `ACTANT_API_KEY` 环境变量配置。
+
+### 端点总览
+
+所有端点前缀 `/v1/`。
+
+| 分类 | 方法 | 路径 | RPC 映射 |
+|------|------|------|----------|
+| System | GET | `/v1/status` | `daemon.ping` |
+| System | POST | `/v1/shutdown` | `daemon.shutdown` |
+| System | GET | `/v1/sse` | SSE 实时流 |
+| System | GET | `/v1/openapi` | 自描述端点目录 |
+| Agents | GET | `/v1/agents` | `agent.list` |
+| Agents | POST | `/v1/agents` | `agent.create` |
+| Agents | GET | `/v1/agents/:name` | `agent.status` |
+| Agents | DELETE | `/v1/agents/:name` | `agent.destroy` |
+| Agents | POST | `/v1/agents/:name/start` | `agent.start` |
+| Agents | POST | `/v1/agents/:name/stop` | `agent.stop` |
+| Agents | POST | `/v1/agents/:name/prompt` | `agent.prompt` |
+| Agents | POST | `/v1/agents/:name/run` | `agent.run` |
+| Agents | PUT | `/v1/agents/:name/permissions` | `agent.updatePermissions` |
+| Activity | GET | `/v1/agents/:name/sessions` | `activity.sessions` |
+| Activity | GET | `/v1/agents/:name/sessions/:id` | `activity.conversation` |
+| Activity | GET | `/v1/agents/:name/logs` | `agent.processLogs` |
+| Templates | GET | `/v1/templates` | `template.list` |
+| Templates | GET | `/v1/templates/:name` | `template.get` |
+| Domain | GET | `/v1/skills` | `skill.list` |
+| Domain | GET | `/v1/prompts` | `prompt.list` |
+| Domain | GET | `/v1/mcp-servers` | `mcp.list` |
+| Domain | GET | `/v1/workflows` | `workflow.list` |
+| Domain | GET | `/v1/plugins` | `plugin.list` |
+| Events | GET | `/v1/events` | `events.recent` |
+| Canvas | GET | `/v1/canvas` | `canvas.list` |
+| Canvas | GET | `/v1/canvas/:agent` | `canvas.get` |
+| Sessions | GET | `/v1/sessions` | `session.list` |
+| Sessions | POST | `/v1/sessions` | `session.create` |
+| Webhooks | POST | `/v1/webhooks/message` | `agent.prompt`（简化封装） |
+| Webhooks | POST | `/v1/webhooks/run` | `agent.run`（简化封装） |
+
+### Webhook 接口
+
+为 n8n / IM 集成设计的简化接口：
+
+**POST `/v1/webhooks/message`**
+```json
+{ "agent": "my-agent", "message": "Hello", "metadata": {} }
+→ { "agent": "my-agent", "response": "...", "sessionId": "..." }
+```
+
+**POST `/v1/webhooks/run`**
+```json
+{ "agent": "my-agent", "prompt": "Analyze this", "template": "analyst" }
+→ { "agent": "my-agent", "response": "...", "sessionId": null }
+```
+
+### 错误映射
+
+| RPC 错误码 | HTTP 状态码 | 含义 |
+|-----------|------------|------|
+| -32001 (TEMPLATE_NOT_FOUND) | 404 | 模板未找到 |
+| -32003 (AGENT_NOT_FOUND) | 404 | Agent 未找到 |
+| -32002 (CONFIG_VALIDATION) | 400 | 参数校验失败 |
+| -32004 (AGENT_ALREADY_RUNNING) | 409 | Agent 已在运行 |
+| -32601 (METHOD_NOT_FOUND) | 404 | 方法不存在 |
+| 其他 | 500 | 内部错误 |
+
+---
+
+## 10. 六种外部接入模式对比
+
+| 维度 | CLI / RPC | REST API | ACP Proxy | Email (#136) | MCP Server (#16, P4) | Self-spawn + Attach |
+|------|-----------|----------|-----------|--------------|---------------------|---------------------|
+| **调用方** | 开发者 / 脚本 | n8n / IM / Web | IDE / 应用 | Agent / 人 / 应用 | IDE 内 Agent | 应用（Unreal 等） |
+| **协议** | JSON-RPC | HTTP/SSE | ACP / stdio | JSON-RPC (email.*) | MCP / stdio | JSON-RPC |
+| **通信模式** | 同步 | 同步+SSE | 同步/流式 | **异步** | 同步 | 同步 |
+| **谁 spawn Agent** | Daemon | Daemon | Daemon | Daemon | Daemon | **调用方自己** |
+| **认证** | 无 | API Key | 无 | 无 | 无 | 无 |
+| **CC/群发** | 否 | 否 | 否 | **是** | 否 | 否 |
+| **持久化记录** | 否 | 否 | 否 | **是（Email Hub）** | 否 | 否 |
+| **实现状态** | 已实现 | 已实现 | 已实现 | 规划中 | P4 长期 | 已实现 |
 
 ```
 通信模式谱系：
-同步 ◄────────────────────────────────────────► 异步
+同步 ◄──────────────────────────────────────────────► 异步
 
- agent.run     ACP Proxy      agent.prompt     Email
- (一次性)      (流式交互)      (单次提问)       (异步投递,
-                                               跨时间线,
-                                               CC/群发)
+ agent.run     ACP Proxy    REST API     agent.prompt     Email
+ (一次性)      (流式交互)   (HTTP+SSE)    (单次提问)       (异步投递,
+                           n8n/IM/Web                     跨时间线,
+                                                         CC/群发)
 ```
 
 ---

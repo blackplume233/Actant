@@ -285,6 +285,8 @@ type RuntimeEvents =
   | "process:stop"
   | "process:crash"
   | "process:restart"
+  | "session:preparing"
+  | "session:context-ready"
   | "session:start"
   | "session:end"
   | "prompt:before"

@@ -626,6 +626,43 @@ export interface ActivityBlobResult {
   content: string;
 }
 
+// canvas.*
+
+export interface CanvasUpdateParams {
+  agentName: string;
+  html: string;
+  title?: string;
+}
+
+export interface CanvasUpdateResult {
+  ok: boolean;
+}
+
+export interface CanvasGetParams {
+  agentName: string;
+}
+
+export interface CanvasGetResult {
+  agentName: string;
+  html: string;
+  title?: string;
+  updatedAt: number;
+}
+
+export type CanvasListParams = Record<string, never>;
+
+export interface CanvasListResult {
+  entries: CanvasGetResult[];
+}
+
+export interface CanvasClearParams {
+  agentName: string;
+}
+
+export interface CanvasClearResult {
+  ok: boolean;
+}
+
 // events.*
 
 export interface EventsRecentParams {
@@ -728,6 +765,10 @@ export interface RpcMethodMap {
   "activity.stream": { params: ActivityStreamParams; result: ActivityStreamResult };
   "activity.conversation": { params: ActivityConversationParams; result: ActivityConversationResult };
   "activity.blob": { params: ActivityBlobParams; result: ActivityBlobResult };
+  "canvas.update": { params: CanvasUpdateParams; result: CanvasUpdateResult };
+  "canvas.get": { params: CanvasGetParams; result: CanvasGetResult };
+  "canvas.list": { params: CanvasListParams; result: CanvasListResult };
+  "canvas.clear": { params: CanvasClearParams; result: CanvasClearResult };
   "events.recent": { params: EventsRecentParams; result: EventsRecentResult };
 }
 

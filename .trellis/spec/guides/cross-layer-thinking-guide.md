@@ -131,6 +131,83 @@ For each boundary:
 
 **Why**: Core owns the business rules for config resolution (defaults, overrides, validation). Bypassing it creates inconsistencies.
 
+### Mistake 6: Putting Business Logic in ACP Transport Layer
+
+**Bad**: Implementing `ac://` URI resolution, memory lookup, or asset management directly in `AcpConnection.localReadTextFile`
+
+**Good**: ACP 层只做前缀识别和分发，实际解析逻辑在 Core 层
+
+**Why**: ACP 是协议传输 + 回调拦截层，加入业务语义会混淆关注点，也会使协议层难以替换。
+
+---
+
+## ACP Client Callback 层的职责边界
+
+### 核心定位
+
+ACP 层（`packages/acp/`）是一个**瘦传输层**，职责仅限于：
+
+| 职责 | 实现 |
+|------|------|
+| 协议传输 (stdio/socket) | `AcpConnection` |
+| 会话生命周期 | `newSession(cwd)` / `closeSession` |
+| 客户端回调分发 | `ClientCallbackRouter` |
+| 权限预过滤 | `PermissionPolicyEnforcer` |
+| 网关模式 | `AcpGateway` (IDE ↔ Agent) |
+
+**不属于 ACP 层的职责**：资源解析、记忆查询、资产管理、组件索引。
+
+### ClientCallbackRouter 是 fs 操作的唯一瓶颈点
+
+所有 Agent 发起的 `readTextFile` / `writeTextFile` 请求都经过 `ClientCallbackRouter`：
+
+```
+Agent Process
+    │ ACP Protocol: client/readTextFile { path }
+    ▼
+AcpConnection.buildClient()
+    │ callbackHandler?
+    ▼
+ClientCallbackRouter          ← 唯一瓶颈点（lease + local 全覆盖）
+    ├── ac:// 前缀? → resolver.readVirtual()   [注入自 Core]
+    ├── lease active? → upstream (IDE)
+    └── no lease → local.readTextFile() → node:fs
+```
+
+### 扩展模式：前缀分发 + 依赖注入
+
+当需要拦截特殊路径（如 `ac://` 虚拟寻址），正确做法是在 `ClientCallbackRouter` 中加入前缀检查，实际处理委托给从 Core 层注入的 resolver：
+
+```typescript
+// 接口定义在 acp 或 shared 包
+interface AcUriResolver {
+  readVirtual(params: ReadTextFileRequest): Promise<ReadTextFileResponse>;
+  writeVirtual(params: WriteTextFileRequest): Promise<WriteTextFileResponse>;
+}
+
+// ClientCallbackRouter 持有可选引用
+private resolver: AcUriResolver | null = null;
+
+setResolver(resolver: AcUriResolver | null): void {
+  this.resolver = resolver;
+}
+
+// 在 readTextFile 路由决策之前拦截
+async readTextFile(params: ReadTextFileRequest) {
+  if (this.resolver && params.path.startsWith("ac://")) {
+    return this.resolver.readVirtual(params);
+  }
+  // 原有路由逻辑不变...
+}
+```
+
+**关键约束**：
+- **接口定义在 ACP 包，实现注入自 Core 包** — 保持依赖方向 Core → ACP
+- **未注入 resolver 时行为完全不变** — 向后兼容
+- **不要在 `localReadTextFile` 中拦截** — 那只覆盖无 lease 的本地模式，lease 模式下 `ac://` 会被透传给 IDE（IDE 不认识）
+
+> **参考**: Issue [#209](https://github.com/blackplume233/Actant/issues/209), Memory Layer 设计文档附录 A (`ac://` 统一寻址协议)
+
 ---
 
 ## Actant Cross-Layer Checklist

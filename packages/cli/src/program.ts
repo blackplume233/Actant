@@ -20,6 +20,7 @@ import {
   createSelfUpdateCommand,
   createSetupCommand,
   createDashboardCommand,
+  createApiCommand,
 } from "./commands/index";
 import { presentError, type CliPrinter } from "./output/index";
 
@@ -55,6 +56,7 @@ export function createProgram(socketPath?: string, printer?: CliPrinter): Comman
   program.addCommand(createSelfUpdateCommand());
   program.addCommand(createSetupCommand(printer));
   program.addCommand(createDashboardCommand(printer));
+  program.addCommand(createApiCommand(printer));
 
   program.exitOverride();
 

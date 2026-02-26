@@ -54,6 +54,7 @@ Actant
 │   ├── Template Module     # Agent Template configuration and management
 │   ├── Initializer Module  # Construct Agent Instance from Template
 │   ├── Manager Module      # Lifecycle management of all Agent Instances
+│   ├── Context Injector    # [Phase 4] SessionContextInjector — 动态上下文注入框架
 │   ├── Plugin Module       # [Phase 4] PluginHost + 三插口 Plugin 体系
 │   ├── Hook Module         # [Phase 4] HookEventBus + HookRegistry + ActionRunner
 │   ├── Scheduler Module    # [Phase 3c+4] EmployeeScheduler + 四模式调度
@@ -61,11 +62,14 @@ Actant
 │
 ├── Actant ACP          # Agent Client Protocol server
 │
-├── Actant MCP          # MCP server + Schedule MCP Tools
+├── Actant MCP          # Built-in MCP server (actant_canvas_update, actant_schedule_* tools)
 │
 ├── Actant Pi           # Pi Agent backend integration (optional)
 │
 ├── Actant API          # RPC API layer (JSON-RPC over IPC)
+│
+├── Actant REST API     # Standalone RESTful HTTP server (@actant/rest-api)
+│                       # 供 Dashboard / n8n / IM 等外部系统访问
 │
 └── Agent Memory        # [Phase 5] 独立记忆系统 (零 Actant 依赖)
     ├── @agent-memory/core        # 数据模型 + 接口
@@ -140,6 +144,34 @@ Agent Templates use **name references** to Domain Context components rather than
 - Component reuse across templates
 - Centralized management of Skills, Workflows, MCP configs
 - Independent versioning of components
+
+### Dynamic Context Injection (SessionContextInjector)
+
+Agent 启动时的 ACP session 创建流程中，`SessionContextInjector` 负责收集并注入动态上下文：
+
+| 参与者 | 接口 | 职责 |
+|--------|------|------|
+| `SessionContextInjector` | 核心调度器 | 管理 `ContextProvider` 注册表，在 session 创建前调用所有 providers |
+| `ContextProvider` | 扩展接口 | 各子系统实现，贡献 MCP servers 和 system prompt 片段 |
+| `HookEventBus` | 事件通知 | 发射 `session:preparing` / `session:context-ready` 事件 |
+
+```
+AgentManager.startAgent()
+  → SessionContextInjector.prepare(agentName)
+    → emit "session:preparing"
+    → forEach ContextProvider.collect()  ← 并行收集 MCP servers + system context
+    → emit "session:context-ready"
+  → AcpConnectionManager.connect({ mcpServers })
+    → ACP session/new({ mcpServers })   ← Agent 进程接收注入的 MCP servers
+```
+
+**设计原则**：
+- 子系统（Canvas、Schedule、未来的 Email/Memory）通过注册 `ContextProvider` 实现松耦合扩展
+- 每个 provider 独立声明自己需要注入的 MCP Server `{ command, args, env }`
+- 内置 MCP Server 通过 `ACTANT_SOCKET` 环境变量连接回 Daemon RPC 层
+- Provider 也可注入 `systemContextAdditions`（追加到 system prompt 的文本）
+
+> 实现参考：`packages/core/src/context-injector/session-context-injector.ts`，`packages/api/src/services/app-context.ts`
 
 ### Multiple Launch Modes
 

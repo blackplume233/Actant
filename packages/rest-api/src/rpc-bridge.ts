@@ -1,40 +1,27 @@
 import { createConnection } from "node:net";
-import type {
-  RpcRequest,
-  RpcResponse,
-  RpcMethodMap,
-  RpcMethod,
-} from "@actant/shared";
+import type { RpcRequest, RpcResponse } from "@actant/shared";
 
 let requestId = 0;
 
 export class RpcBridge {
   constructor(private readonly socketPath: string) {}
 
-  async call<M extends RpcMethod>(
-    method: M,
-    params: RpcMethodMap[M]["params"],
-  ): Promise<RpcMethodMap[M]["result"]> {
+  async call(method: string, params: Record<string, unknown> = {}): Promise<unknown> {
     const id = ++requestId;
-    const request: RpcRequest = {
-      jsonrpc: "2.0",
-      id,
-      method,
-      params: params as Record<string, unknown>,
-    };
-
+    const request: RpcRequest = { jsonrpc: "2.0", id, method, params };
     const response = await this.send(request);
-
     if (response.error) {
-      throw new Error(response.error.message);
+      const err = new Error(response.error.message) as Error & { code: number; data?: unknown };
+      err.code = response.error.code;
+      err.data = response.error.data;
+      throw err;
     }
-
-    return response.result as RpcMethodMap[M]["result"];
+    return response.result;
   }
 
   async ping(): Promise<boolean> {
     try {
-      await this.call("daemon.ping", {});
+      await this.call("daemon.ping");
       return true;
     } catch {
       return false;
@@ -61,22 +48,18 @@ export class RpcBridge {
             resolve(response);
             return;
           } catch {
-            // partial data
+            // partial data, keep buffering
           }
         }
       });
 
       socket.on("error", (err) => {
-        reject(
-          new Error(
-            `Cannot connect to daemon at ${this.socketPath}: ${err.message}`,
-          ),
-        );
+        reject(new Error(`Cannot connect to daemon at ${this.socketPath}: ${err.message}`));
       });
 
-      socket.setTimeout(15_000, () => {
+      socket.setTimeout(30_000, () => {
         socket.destroy();
-        reject(new Error("RPC call timed out"));
+        reject(new Error("RPC call timed out after 30s"));
       });
     });
   }

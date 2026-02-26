@@ -1,7 +1,10 @@
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { mkdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
+
+const __actantApiDir = dirname(fileURLToPath(import.meta.url));
 import {
   TemplateRegistry,
   TemplateLoader,
@@ -27,9 +30,11 @@ import {
   HookCategoryRegistry,
   HookRegistry,
   ActivityRecorder,
+  SessionContextInjector,
   type ActionContext,
   type LauncherMode,
 } from "@actant/core";
+import { CanvasStore } from "./canvas-store";
 import type { ModelApiProtocol } from "@actant/shared";
 import { AcpConnectionManager } from "@actant/acp";
 import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
@@ -94,6 +99,8 @@ export class AppContext {
   readonly hookCategoryRegistry: HookCategoryRegistry;
   readonly hookRegistry: HookRegistry;
   readonly activityRecorder: ActivityRecorder;
+  readonly sessionContextInjector: SessionContextInjector;
+  readonly canvasStore: CanvasStore;
 
   private initialized = false;
   private startTime = Date.now();
@@ -147,6 +154,8 @@ export class AppContext {
     this.acpConnectionManager = new AcpConnectionManager();
     this.sessionRegistry = new SessionRegistry();
     this.activityRecorder = new ActivityRecorder(this.instancesDir);
+    this.sessionContextInjector = new SessionContextInjector();
+    this.canvasStore = new CanvasStore();
     this.eventBus = new HookEventBus();
     this.hookCategoryRegistry = new HookCategoryRegistry();
     this.eventBus.setEmitGuard(this.hookCategoryRegistry.buildEmitGuard());
@@ -163,6 +172,7 @@ export class AppContext {
         watcherPollIntervalMs: launcherMode === "mock" ? 2_147_483_647 : undefined,
         eventBus: this.eventBus,
         activityRecorder: this.activityRecorder,
+        sessionContextInjector: this.sessionContextInjector,
       },
     );
     this.templateWatcher = new TemplateFileWatcher(this.templatesDir, this.templateRegistry);
@@ -190,6 +200,18 @@ export class AppContext {
     this.listenForInstanceHooks();
 
     await this.activityRecorder.rebuildIndex();
+
+    this.sessionContextInjector.setEventBus(this.eventBus);
+    this.sessionContextInjector.register({
+      name: "canvas",
+      getMcpServers: () => [{
+        name: "actant-builtin",
+        command: process.execPath,
+        args: [join(__actantApiDir, "..", "..", "..", "mcp-server", "dist", "index.js")],
+        env: [{ name: "ACTANT_SOCKET", value: this.socketPath }],
+      }],
+    });
+
     await this.agentManager.initialize();
     this.templateWatcher.start();
     this.initialized = true;

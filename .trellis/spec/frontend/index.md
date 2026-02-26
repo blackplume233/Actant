@@ -94,16 +94,77 @@ GitHub Pages 主页（`docs/site/`）和 VitePress 文档站（`docs/wiki/`）�
 
 ---
 
-## Future Phase: Web UI
+## Dashboard (Web UI) — Active ✅
 
-When the Web UI phase begins, these guidelines will be expanded with:
+Dashboard 已进入实现阶段（Phase 4 Step 7）。
 
-- Component architecture (likely React-based)
-- State management patterns
-- Real-time agent monitoring via WebSocket
-- Template visual editor
+### Technology Stack
 
-The web UI will consume the same REST API that the CLI uses, ensuring feature parity.
+| Layer | Technology | Notes |
+|-------|-----------|-------|
+| Framework | React 19 + TypeScript | Vite dev/build |
+| Styling | Tailwind CSS v4 + shadcn/ui | Dark theme preferred |
+| Routing | react-router-dom v7 | Client-side SPA |
+| Real-time | SSE (Server-Sent Events) | Via `Transport` abstraction |
+| Backend | `@actant/rest-api` (RESTful HTTP) | Dashboard 挂载 rest-api handler + 静态文件 |
+| Rendering | iframe sandbox | For Live Canvas (agent-generated HTML) |
+
+### Transport Abstraction Layer
+
+Dashboard 通信通过 `Transport` 接口抽象，为未来 Tauri 桌面应用做准备：
+
+```typescript
+interface Transport {
+  fetch<T>(endpoint: string): Promise<T>;
+  subscribe(onData: (event: string, data: unknown) => void): () => void;
+}
+```
+
+| 实现 | 传输方式 | 场景 |
+|------|---------|------|
+| `WebTransport` | HTTP fetch + EventSource (SSE) | 当前 Web 模式 |
+| `TauriTransport` | Tauri IPC Commands + Events | 未来桌面模式（尚未实现） |
+
+代码中使用 `useRealtimeContext()` hook 消费实时数据，不直接依赖具体传输实现。旧 hook `useSSEContext` 是 `useRealtimeContext` 的兼容别名。
+
+> 实现参考：`packages/dashboard/client/src/lib/transport.ts`，`packages/dashboard/client/src/hooks/use-realtime.tsx`
+
+### Dashboard Pages
+
+| Page | Route | Data Source | Description |
+|------|-------|-------------|-------------|
+| Overview | `/` | SSE (agents, events) | Agent 总览 + 最近事件 |
+| Live Canvas | `/canvas` | SSE (canvas) | 每个 Agent 的 HTML Canvas，iframe sandbox 渲染 |
+| Agents | `/agents` | SSE (agents) | Agent 列表，支持搜索和按状态过滤 |
+| Agent Detail | `/agents/:name` | SSE + REST | Agent 详情（Overview / Sessions / Logs 三 Tab） |
+| Agent Chat | `/agents/:name/chat` | REST (prompt) | 与 Agent 实时对话，支持 session 管理 |
+| Activity | `/activity` | SSE (agents, events) | 活动时间线 |
+| Events | `/events` | SSE (events) | EventBus 事件流，支持层级过滤和搜索 |
+| Settings | `/settings` | SSE (daemon) | Daemon 连接信息和 Dashboard 设置 |
+
+### Dashboard Page Conventions
+
+每个页面遵循统一布局模式：
+
+1. **标题区**：`<h1>` 标题 + 简要描述
+2. **过滤区**：使用 `Badge` 组件做 tab 式过滤（不要用 `Select` dropdown）
+3. **搜索**：使用 `Input` 组件提供关键词搜索
+4. **内容区**：`Card` 容器包裹列表/表格/网格内容
+5. **空状态**：当无数据时显示友好的空状态文案
+
+**为什么用 Badge 而不是 Select**：Badge 过滤器比 Select 下拉框在 dashboard 场景下更直观——用户可以一眼看到所有选项并快速切换，适合 2-6 个选项的过滤场景。
+
+### Common Gotchas
+
+**shadcn/ui 组件缺失**：并非所有 shadcn/ui 组件都已安装。新建页面前先检查 `packages/dashboard/client/src/components/ui/` 目录中已有哪些组件。缺失的组件可通过 `npx shadcn@latest add <component>` 安装或手动创建。
+
+**Build Order**：Dashboard 依赖链为 `@actant/shared` → `@actant/rest-api` → `@actant/dashboard`。修改 shared 或 rest-api 包后，需按此顺序重新构建。
+
+**API 路径前缀**：所有 REST API 端点使用 `/v1/` 前缀（如 `/v1/agents`）。Dashboard server 保留 `/api/` → `/v1/` 兼容重写，但新代码应直接使用 `/v1/`。前端 `lib/api.ts` 和 `lib/transport.ts` 已迁移至 `/v1/` 路径。
+
+### iframe Canvas Security
+
+Agent 生成的 HTML 通过 `<iframe srcDoc={html} sandbox="allow-scripts" />` 渲染。`sandbox` 属性限制了 iframe 的能力，防止 Agent 代码访问父窗口或发起导航。允许 `allow-scripts` 使 Agent 可使用 JS 构建交互式状态面板。
 
 ---
 

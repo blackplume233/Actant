@@ -1,7 +1,6 @@
 import { createServer } from "node:http";
 import { createLogger } from "@actant/shared";
 import { createRequestHandler } from "./server";
-import { RpcBridge } from "./rpc-bridge";
 
 const logger = createLogger("dashboard");
 
@@ -13,20 +12,24 @@ export interface DashboardOptions {
 
 export async function startDashboard(options: DashboardOptions): Promise<void> {
   const port = options.port ?? 3200;
-  const bridge = new RpcBridge(options.socketPath);
 
+  // Verify daemon connectivity via rest-api bridge
+  const { RpcBridge } = await import("@actant/rest-api");
+  const bridge = new RpcBridge(options.socketPath);
   const alive = await bridge.ping();
   if (!alive) {
     throw new Error("Cannot connect to Actant daemon. Is it running?");
   }
 
-  const handler = createRequestHandler(bridge);
+  const handler = createRequestHandler(options.socketPath);
   const server = createServer(handler);
 
   server.listen(port, () => {
     const url = `http://localhost:${port}`;
     logger.info({ port, url }, "Dashboard server started");
-    console.log(`\n  Dashboard: ${url}\n`);
+    logger.info(`Dashboard: ${url}`);
+    logger.info(`REST API:  ${url}/v1`);
+    logger.info(`SSE:       ${url}/v1/sse`);
 
     if (options.open !== false) {
       import("node:child_process")
@@ -52,6 +55,5 @@ export async function startDashboard(options: DashboardOptions): Promise<void> {
     });
   }
 
-  // Keep the process alive
   await new Promise(() => {});
 }

@@ -1,0 +1,35 @@
+{
+  "name": "@actant/rest-api",
+  "version": "0.2.3",
+  "description": "Standalone RESTful API server for Actant — serves dashboard, n8n, and IM integrations",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx --watch src/index.ts",
+    "type-check": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@actant/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.0"
+  }
+}

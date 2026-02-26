@@ -51,6 +51,7 @@
     "@actant/api": "workspace:*",
     "@actant/core": "workspace:*",
     "@actant/dashboard": "workspace:*",
+    "@actant/rest-api": "workspace:*",
     "@actant/pi": "workspace:*",
     "@actant/shared": "workspace:*",
     "@inquirer/prompts": "^8.3.0",

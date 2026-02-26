@@ -107,6 +107,19 @@ These guides help you **ask the right questions before coding**.
 
 **Key insight**: Actant follows an "everything is a file" philosophy. All managed entities — memories, Docker containers, working directories, processes, configs — are unified under the `ac://` URI scheme and managed by the Curator agent. When adding any persistent resource, think about how it fits into this asset model.
 
+### When to Think About ACP Layer Boundaries
+
+- [ ] Feature intercepts or transforms Agent 的 fs read/write 请求
+- [ ] Feature needs Agent to access non-physical paths (virtual URIs like `ac://`)
+- [ ] Feature adds new callback types to `ClientCallbackHandler`
+- [ ] Feature modifies `ClientCallbackRouter` routing logic
+- [ ] Feature changes what the ACP "workspace" (cwd) means
+
+→ Consider: ACP 是瘦传输层，不应包含业务语义。扩展 Agent 可访问的资源时，在 `ClientCallbackRouter` 做前缀分发（唯一瓶颈点），实际解析注入自 Core 层。不要在 `localReadTextFile` 中处理——那只覆盖无 lease 模式。
+
+→ Read [Cross-Layer Thinking Guide — ACP Client Callback 层的职责边界](./cross-layer-thinking-guide.md#acp-client-callback-层的职责边界)
+→ See Issue [#209](https://github.com/blackplume233/Actant/issues/209)
+
 ### When to Think About Platform-Level Agent Design
 
 - [ ] Feature provides a cross-cutting capability used by multiple Agents
@@ -118,6 +131,25 @@ These guides help you **ask the right questions before coding**.
 
 **Key architecture**: Platform agents form three layers — Kernel (always-on, default), Auxiliary (on-demand), and Spark (contributor-only self-evolution). Avoid adding application-level concerns (code review, testing) to kernel agents; those belong in userspace templates.
 
+### When to Think About Dynamic Context Injection
+
+- [ ] Feature provides a new capability (tool, resource, context) to Agent processes
+- [ ] Feature needs to inject MCP servers or system prompts at session startup
+- [ ] Feature adds a new subsystem that agents should be aware of
+- [ ] Feature extends what data/tools are available during an ACP session
+
+→ Consider: Should this register a `ContextProvider` with `SessionContextInjector`? Does it need a new MCP tool on the built-in MCP server? Should it inject system prompt additions?
+
+**Key pattern**: New agent capabilities follow the `ContextProvider` → `SessionContextInjector` → ACP `session/new` pipeline:
+1. Register a `ContextProvider` in `AppContext` initialization
+2. The provider's `collect()` returns `{ mcpServers?, systemContextAdditions? }`
+3. `SessionContextInjector.prepare()` aggregates all providers
+4. `AgentManager.startAgent()` passes the result to ACP connection
+
+**Gotcha**: The built-in MCP server (`packages/mcp-server`) communicates back to the Daemon via `ACTANT_SOCKET` environment variable. If you add a new MCP tool, it must use the `RpcClient` to call daemon RPC methods — the tool itself runs in a separate process.
+
+→ See [SessionContextInjector](../../packages/core/src/context-injector/session-context-injector.ts), [AppContext CanvasProvider registration](../../packages/api/src/services/app-context.ts)
+
 ### When to Think About CLI ↔ API Parity
 
 - [ ] Adding a new CLI command
@@ -125,6 +157,19 @@ These guides help you **ask the right questions before coding**.
 - [ ] Adding a new feature to the API
 
 → Consider: Does the CLI command have an API equivalent? Do they share the same underlying logic?
+
+### When to Think About REST API Surface
+
+- [ ] Adding a new RPC handler to the Daemon
+- [ ] Changing RPC method signatures or behavior
+- [ ] Adding a new feature that external systems (n8n, IM bots) might need
+- [ ] Modifying existing REST API routes or response shapes
+
+→ Consider: Has the route been added to `@actant/rest-api`'s route files? Is the OpenAPI summary in `server.ts` updated? Does the Dashboard's `lib/api.ts` need updating?
+
+**Key architecture**: All external HTTP access goes through `@actant/rest-api`. The package translates RESTful routes to Daemon RPC calls via `RpcBridge`. New RPC methods should get corresponding REST endpoints. The Dashboard mounts this handler internally and adds static file serving on top.
+
+→ See [API Contracts §4A](../api-contracts.md#4a-rest-apiactantrest-api), `packages/rest-api/src/routes/`
 
 ---
 

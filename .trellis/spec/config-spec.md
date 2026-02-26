@@ -732,6 +732,7 @@ type HookEventName =
   | 'source:updated'
   // Runtime Layer (Instance scope)
   | 'process:start' | 'process:stop' | 'process:crash' | 'process:restart'
+  | 'session:preparing' | 'session:context-ready'
   | 'session:start' | 'session:end'
   | 'prompt:before' | 'prompt:after'
   | 'error' | 'idle'
@@ -750,7 +751,7 @@ type HookEventName =
 
 > 命名规范：`<scope>:<noun>` 或 `<scope>:<noun>:<verb>`。详见 [Plugin 预定设计 §Hook 事件规范](./backend/plugin-guidelines.md#hook-事件规范预定) 和 [event-system-unified-design.md §7](../../docs/design/event-system-unified-design.md)。
 >
-> 实现参考：`packages/shared/src/types/hook.types.ts`（`BUILTIN_EVENT_META` 包含所有 24 个内置事件的完整元数据，含 3 个 subsystem 事件）
+> 实现参考：`packages/shared/src/types/hook.types.ts`（`BUILTIN_EVENT_META` 包含所有 26 个内置事件的完整元数据，含 3 个 subsystem 事件）
 
 ### BackendDefinition
 
