@@ -265,6 +265,14 @@ Use the task management script:
 - [OK] If existing endurance tests break due to interface changes → fix them in the same commit
 - [OK] Quick regression passes: `ENDURANCE_DURATION_MS=5000 pnpm test:endurance`
 
+**Stage / Release 前（version tag 推送前）**:
+- [OK] `pnpm install --frozen-lockfile` 成功（lockfile 与 package.json 同步）
+- [OK] `pnpm run version:sync` 完成（子包版本对齐）
+- [OK] `pnpm build` 零错误
+- [OK] `pnpm test` 全部通过
+- [OK] Issue 无 dirty（`./.trellis/scripts/issue.sh check-dirty --strict`）
+- 详见 `spec/backend/quality-guidelines.md` §"Stage 前必须确保 GitHub Actions 通过"
+
 **Project-specific checks**:
 - See `.trellis/spec/frontend/quality-guidelines.md` for frontend
 - See `.trellis/spec/backend/quality-guidelines.md` for backend

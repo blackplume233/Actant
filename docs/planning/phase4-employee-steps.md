@@ -1,7 +1,7 @@
 # Phase 4 雇员自治能力扩展 — 步骤化推进计划
 
 > **状态: ACTIVE**
-> 更新日期: 2026-02-25
+> 更新日期: 2026-02-26
 > 关联 Epic: #173 (GitHub)
 > 前置文档: `docs/planning/phase4-plan.md` (旧版评估，保留参考)
 
@@ -13,13 +13,13 @@
 > Phase 4 的目标是围绕雇员型 Agent，逐步赋予六大自治能力:
 > 调度增强 / 事件自动化 / 自主初始化 / 跨 Agent 协作 / 经验记忆 / 运行监控
 
-全部 14 Step，每步是一个可独立交付的小版本。串行总计 ~22 天，最大并行化关键路径 ~14 天。
+全部 15 Step（含 3b），每步是一个可独立交付的小版本。串行总计 ~24 天，最大并行化关键路径 ~14 天。
 
 ---
 
 ## 并行调度总览
 
-14 个 Step 按依赖关系分为 7 个 Round，同一 Round 内的步骤可并行推进。
+15 个 Step（含 3b）按依赖关系分为 7 个 Round，同一 Round 内的步骤可并行推进。
 
 ```mermaid
 flowchart TB
@@ -31,6 +31,7 @@ flowchart TB
 
     subgraph R2 ["Round 2 -- 并行"]
         S3["Step 3: Dashboard v0<br/>新建 | 1d"]
+        S3b["Step 3b: 动态上下文注入+Canvas<br/>#210 #211 | 2d"]
         S4["Step 4: Plugin Core<br/>#14 | 2d"]
     end
 
@@ -60,10 +61,12 @@ flowchart TB
 
     S1 --> S4
     S2 --> S3
+    S3 --> S3b
     S4 --> S5
     S1 --> S8
     S4 --> S8
     S5 --> S6
+    S3b --> S6
     S5 --> S9
     S5 --> S13
     S12 --> S13
@@ -79,9 +82,9 @@ flowchart TB
 | Round | 可并行步骤 | 前置条件 | 并行耗时 |
 |-------|-----------|---------|---------|
 | R1 | Step 1 + Step 2 + Step 12 | 无 | ~2 天 |
-| R2 | Step 3 + Step 4 | Step 1, Step 2 | ~2 天 |
+| R2 | Step 3 + Step 3b + Step 4 | Step 1, Step 2 | ~2 天 |
 | R3 | Step 5 + Step 8 | Step 4 | ~2 天 |
-| R4 | Step 6 + Step 9 + Step 13 | Step 5, Step 12 | ~2.5 天 |
+| R4 | Step 6 + Step 9 + Step 13 | Step 5 + Step 3b, Step 12 | ~2.5 天 |
 | R5 | Step 7 + Step 11 | Step 3, Step 6 | ~2 天 |
 | R6 | Step 10 | Step 7, Step 8 | ~1 天 |
 | R7 | Step 14 | Step 13 | ~2.5 天 |
@@ -195,6 +198,50 @@ flowchart TB
 
 ---
 
+## Step 3b: 动态上下文注入 + Canvas
+
+| 字段 | 值 |
+|------|------|
+| 关联 Issue | #210, #211 |
+| 预估 | 2 天 |
+| 依赖 | Step 3 (Dashboard v0 基础) |
+| 阻塞 | Step 6 (#122 调度增强 — MCP 工具注入依赖此步) |
+| 并行 | **Round 2** — 可与 Step 4 同时推进 |
+
+**背景**: 雇员型 Agent 需要系统级工具能力（Canvas 状态面板、未来的调度工具等），这些工具通过内置 MCP Server 提供，在 ACP session 创建时自动注入。需要一个可扩展的动态上下文注入模块作为统一基础设施。
+
+**交付物**:
+
+- **SessionContextInjector 模块** (`packages/core/src/context-injector/`)
+  - `ContextProvider` 接口：任何子系统可注册为 provider
+  - `prepare(agentName, meta)` 收集所有 MCP servers + 系统上下文，去重同名 server
+  - EventBus 可扩展：`session:preparing` / `session:context-ready` 事件
+- **内置 Actant MCP Server 激活** (`packages/mcp-server/`)
+  - `@modelcontextprotocol/sdk` + `zod` 依赖
+  - `actant_canvas_update(html, title?)` / `actant_canvas_clear()` 工具
+  - 通过 `ACTANT_SOCKET` 环境变量连接回 Daemon RPC
+- **ACP 管道打通**
+  - `ConnectOptions` + `AcpConnectionManagerLike` 新增 `mcpServers`
+  - `AgentManager.startAgent()` 调用 `injector.prepare()` 收集上下文
+  - `newSession(cwd, mcpServers)` 传参
+- **Canvas 数据流**
+  - `CanvasStore` 内存存储 + `canvas.*` RPC handlers
+  - Dashboard SSE 广播 canvas 数据 + REST 端点
+- **Dashboard Live Canvas**
+  - Transport 抽象层 (Tauri 桌面化预留)
+  - `use-realtime.tsx` 替代 `use-sse.tsx`（向后兼容）
+  - iframe sandbox 渲染 Agent HTML 内容
+- **canvas-manager Skill** (`.agents/skills/canvas-manager/SKILL.md`)
+
+**对现有 Step 的影响**:
+
+- Step 6 (#122) 的 `actant_schedule_*` MCP 工具改为依赖 Step 3b（在已激活的 MCP Server 上添加工具，而非从零实现）
+- 依赖图变更: `Step 5 + Step 3b → Step 6`
+
+**验收**: Agent 启动后自动获得 `actant_canvas_update` 工具；Agent 调用该工具后，Dashboard Live Canvas 页面 iframe 渲染出 HTML 内容
+
+---
+
 ## Step 4: Plugin 体系核心
 
 | 字段 | 值 |
@@ -270,7 +317,7 @@ flowchart TB
 |------|------|
 | 关联 Issue | #122 |
 | 预估 | 2 天 |
-| 依赖 | Step 5 (#161 Plugin 集成) |
+| 依赖 | Step 5 (#161 Plugin 集成) + Step 3b (#210 SessionContextInjector — MCP 工具注入基础) |
 | 并行 | **Round 4** — 可与 Step 9, Step 13 同时推进 |
 
 **背景**: 当前调度器仅支持模式 1 (配置驱动)。增强后 Agent 可以自主安排工作节奏 (模式 2)、Plugin 可扩展调度能力 (模式 3)、支持一次性延迟触发 (模式 4)。
@@ -608,8 +655,9 @@ flowchart TB
 |------|-----------|--------|------|-------|---------|
 | 1 | #159 | 基础设施 | 0.5d | R1 | Step 2, 12 |
 | 2 | #129, #95, #57 | 工程稳定性 | 1.5d | R1 | Step 1, 12 |
-| 3 | 新建 | 运行监控 | 1d | R2 | Step 4 |
-| 4 | #14 | 基础设施 | 2d | R2 | Step 3 |
+| 3 | 新建 | 运行监控 | 1d | R2 | Step 3b, 4 |
+| 3b | #210, #211 | 基础设施/运行监控 | 2d | R2 | Step 3, 4 |
+| 4 | #14 | 基础设施 | 2d | R2 | Step 3, 3b |
 | 5 | #160, #161 | 基础设施 | 1.5d | R3 | Step 8 |
 | 6 | #122 | 调度增强 | 2d | R4 | Step 9, 13 |
 | 7 | 同 Step 3 | 运行监控 | 1d | R5 | Step 11 |
@@ -620,4 +668,4 @@ flowchart TB
 | 12 | #162, #164 | 经验记忆 | 2d | R1 | Step 1, 2 |
 | 13 | #163, #165 | 经验记忆 | 2.5d | R4 | Step 6, 9 |
 | 14 | #166, #169 | 经验记忆 | 2.5d | R7 | (收尾) |
-| **合计** | | | **串行 ~22d / 并行 ~14d** | | |
+| **合计** | | | **串行 ~24d / 并行 ~14d** | | |

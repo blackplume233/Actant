@@ -13,9 +13,9 @@ export interface AgentInfo {
   archetype?: string;
   templateName?: string;
   pid?: number;
-  startedAt?: number;
+  startedAt?: string;
   launchMode?: string;
-  workspace?: string;
+  workspaceDir?: string;
 }
 
 export interface EventEntry {

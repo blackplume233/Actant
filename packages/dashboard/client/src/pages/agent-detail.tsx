@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   Play,
@@ -23,6 +24,7 @@ import { agentApi, type SessionSummary, type ConversationTurn } from "@/lib/api"
 type Tab = "overview" | "sessions" | "logs";
 
 export function AgentDetailPage() {
+  const { t } = useTranslation();
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
   const { agents } = useSSEContext();
@@ -58,12 +60,12 @@ export function AgentDetailPage() {
     return (
       <div className="mx-auto max-w-4xl space-y-4">
         <Button variant="ghost" size="sm" onClick={() => navigate("/agents")}>
-          <ArrowLeft className="h-4 w-4" /> Back
+          <ArrowLeft className="h-4 w-4" /> {t("common.back")}
         </Button>
         <div className="flex flex-col items-center py-16 text-center">
           <Bot className="mb-3 h-10 w-10 text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground">
-            Agent &quot;{name}&quot; not found. It may have been destroyed.
+            {t("agentDetail.notFound", { name })}
           </p>
         </div>
       </div>
@@ -71,9 +73,9 @@ export function AgentDetailPage() {
   }
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: "overview", label: "Overview", icon: <Bot className="h-4 w-4" /> },
-    { key: "sessions", label: "Sessions", icon: <MessageSquare className="h-4 w-4" /> },
-    { key: "logs", label: "Logs", icon: <Terminal className="h-4 w-4" /> },
+    { key: "overview", label: t("agentDetail.tabOverview"), icon: <Bot className="h-4 w-4" /> },
+    { key: "sessions", label: t("agentDetail.tabSessions"), icon: <MessageSquare className="h-4 w-4" /> },
+    { key: "logs", label: t("agentDetail.tabLogs"), icon: <Terminal className="h-4 w-4" /> },
   ];
 
   return (
@@ -101,7 +103,7 @@ export function AgentDetailPage() {
             onClick={() => navigate(`/agents/${encodeURIComponent(agent.name)}/chat`)}
           >
             <MessageSquare className="h-4 w-4" />
-            Chat
+            {t("common.chat")}
           </Button>
           {isRunning ? (
             <Button
@@ -111,7 +113,7 @@ export function AgentDetailPage() {
               disabled={loading === "stop"}
             >
               {loading === "stop" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
-              Stop
+              {t("common.stop")}
             </Button>
           ) : (
             <Button
@@ -121,7 +123,7 @@ export function AgentDetailPage() {
               disabled={loading === "start"}
             >
               {loading === "start" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Start
+              {t("common.start")}
             </Button>
           )}
           <Button
@@ -131,25 +133,25 @@ export function AgentDetailPage() {
             disabled={loading === "destroy"}
           >
             {loading === "destroy" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-            Destroy
+            {t("common.destroy")}
           </Button>
         </div>
       </div>
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b">
-        {tabs.map((t) => (
+        {tabs.map((tb) => (
           <button
-            key={t.key}
+            key={tb.key}
             className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === t.key
+              tab === tb.key
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
-            onClick={() => setTab(t.key)}
+            onClick={() => setTab(tb.key)}
           >
-            {t.icon}
-            {t.label}
+            {tb.icon}
+            {tb.label}
           </button>
         ))}
       </div>
@@ -163,16 +165,17 @@ export function AgentDetailPage() {
 }
 
 function OverviewTab({ agent }: { agent: AgentInfo }) {
+  const { t } = useTranslation();
   const rows = [
-    { label: "Name", value: agent.name },
-    { label: "Status", value: agent.status },
-    { label: "Archetype", value: agent.archetype ?? "—" },
-    { label: "Template", value: agent.templateName ?? "—" },
-    { label: "PID", value: agent.pid ?? "—" },
-    { label: "Launch Mode", value: agent.launchMode ?? "—" },
-    { label: "Workspace", value: agent.workspace ?? "—" },
+    { label: t("agentDetail.fieldName"), value: agent.name },
+    { label: t("agentDetail.fieldStatus"), value: agent.status },
+    { label: t("agentDetail.fieldArchetype"), value: agent.archetype ?? "—" },
+    { label: t("agentDetail.fieldTemplate"), value: agent.templateName ?? "—" },
+    { label: t("agentDetail.fieldPid"), value: agent.pid ?? "—" },
+    { label: t("agentDetail.fieldLaunchMode"), value: agent.launchMode ?? "—" },
+    { label: t("agentDetail.fieldWorkspace"), value: agent.workspaceDir ?? "—" },
     {
-      label: "Uptime",
+      label: t("agentDetail.fieldUptime"),
       value: agent.startedAt && agent.status === "running"
         ? formatElapsed(agent.startedAt)
         : "—",
@@ -196,6 +199,7 @@ function OverviewTab({ agent }: { agent: AgentInfo }) {
 }
 
 function SessionsTab({ agentName }: { agentName: string }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
@@ -233,14 +237,14 @@ function SessionsTab({ agentName }: { agentName: string }) {
   }, [agentName, selectedSession]);
 
   if (loadingSessions) {
-    return <div className="py-8 text-center text-sm text-muted-foreground">Loading sessions...</div>;
+    return <div className="py-8 text-center text-sm text-muted-foreground">{t("agentDetail.loadingSessions")}</div>;
   }
 
   if (sessions.length === 0) {
     return (
       <div className="flex flex-col items-center py-12 text-center">
         <MessageSquare className="mb-3 h-8 w-8 text-muted-foreground/40" />
-        <p className="text-sm text-muted-foreground">No sessions found.</p>
+        <p className="text-sm text-muted-foreground">{t("agentDetail.noSessions")}</p>
         <Button
           variant="outline"
           size="sm"
@@ -248,7 +252,7 @@ function SessionsTab({ agentName }: { agentName: string }) {
           onClick={() => navigate(`/agents/${encodeURIComponent(agentName)}/chat`)}
         >
           <MessageSquare className="h-4 w-4" />
-          Start a conversation
+          {t("agentDetail.startConversation")}
         </Button>
       </div>
     );
@@ -274,7 +278,8 @@ function SessionsTab({ agentName }: { agentName: string }) {
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{s.sessionId.slice(0, 8)}...</div>
                   <div className="text-xs text-muted-foreground">
-                    {new Date(s.startedAt).toLocaleString()} &middot; {s.turns} turns
+                    {new Date(s.startTs).toLocaleString()} &middot; {s.messageCount} {t("agentDetail.msgs")}
+                    {s.toolCallCount > 0 && ` · ${s.toolCallCount} ${t("agentDetail.tools")}`}
                   </div>
                 </div>
                 <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
@@ -289,12 +294,12 @@ function SessionsTab({ agentName }: { agentName: string }) {
         <CardContent className="p-4">
           {!selectedSession ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
-              Select a session to view its conversation.
+              {t("agentDetail.selectSession")}
             </div>
           ) : loadingTurns ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">Loading...</div>
+            <div className="py-8 text-center text-sm text-muted-foreground">{t("agentDetail.loadingConversation")}</div>
           ) : turns.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">No conversation data.</div>
+            <div className="py-8 text-center text-sm text-muted-foreground">{t("agentDetail.noConversation")}</div>
           ) : (
             <ScrollArea className="max-h-[500px]">
               <div className="space-y-4">
@@ -311,6 +316,7 @@ function SessionsTab({ agentName }: { agentName: string }) {
 }
 
 function TurnBubble({ turn }: { turn: ConversationTurn }) {
+  const { t } = useTranslation();
   const isUser = turn.role === "user";
   return (
     <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
@@ -321,7 +327,7 @@ function TurnBubble({ turn }: { turn: ConversationTurn }) {
             : "bg-muted"
         }`}
       >
-        <div className="whitespace-pre-wrap break-words">{turn.content || "(empty)"}</div>
+        <div className="whitespace-pre-wrap break-words">{turn.content || t("agentDetail.empty")}</div>
         {turn.toolCalls.length > 0 && (
           <div className="mt-2 space-y-1">
             {turn.toolCalls.map((tc) => (
@@ -347,6 +353,7 @@ function TurnBubble({ turn }: { turn: ConversationTurn }) {
 }
 
 function LogsTab({ agentName }: { agentName: string }) {
+  const { t } = useTranslation();
   const [lines, setLines] = useState<string[]>([]);
   const [loadingLogs, setLoadingLogs] = useState(true);
 
@@ -368,14 +375,14 @@ function LogsTab({ agentName }: { agentName: string }) {
   }, [agentName]);
 
   if (loadingLogs) {
-    return <div className="py-8 text-center text-sm text-muted-foreground">Loading logs...</div>;
+    return <div className="py-8 text-center text-sm text-muted-foreground">{t("agentDetail.loadingLogs")}</div>;
   }
 
   if (lines.length === 0) {
     return (
       <div className="flex flex-col items-center py-12 text-center">
         <Terminal className="mb-3 h-8 w-8 text-muted-foreground/40" />
-        <p className="text-sm text-muted-foreground">No log output available.</p>
+        <p className="text-sm text-muted-foreground">{t("agentDetail.noLogs")}</p>
       </div>
     );
   }
@@ -393,8 +400,10 @@ function LogsTab({ agentName }: { agentName: string }) {
   );
 }
 
-function formatElapsed(startTs: number): string {
-  const seconds = Math.floor((Date.now() - startTs) / 1000);
+function formatElapsed(startTs: string | number): string {
+  const epoch = typeof startTs === "string" ? Date.parse(startTs) : startTs;
+  if (Number.isNaN(epoch)) return "—";
+  const seconds = Math.floor((Date.now() - epoch) / 1000);
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;

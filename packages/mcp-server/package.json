@@ -42,6 +42,8 @@
   },
   "dependencies": {
     "@actant/core": "workspace:*",
-    "@actant/shared": "workspace:*"
+    "@actant/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "zod": "^4.3.6"
   }
 }

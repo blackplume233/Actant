@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { AgentCard } from "./agent-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Bot } from "lucide-react";
@@ -9,6 +10,7 @@ interface AgentGridProps {
 }
 
 export function AgentGrid({ agents, loading }: AgentGridProps) {
+  const { t } = useTranslation();
   if (loading) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -23,10 +25,8 @@ export function AgentGrid({ agents, loading }: AgentGridProps) {
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-12 text-center">
         <Bot className="mb-3 h-10 w-10 text-muted-foreground/50" />
-        <p className="text-sm font-medium text-muted-foreground">No agents yet</p>
-        <p className="mt-1 text-xs text-muted-foreground/70">
-          Create an agent with <code className="rounded bg-muted px-1.5 py-0.5">actant agent create</code>
-        </p>
+        <p className="text-sm font-medium text-muted-foreground">{t("agents.noAgents")}</p>
+        <p className="mt-1 text-xs text-muted-foreground/70">{t("agents.createHint")}</p>
       </div>
     );
   }

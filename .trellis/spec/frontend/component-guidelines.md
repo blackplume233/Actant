@@ -125,3 +125,112 @@ Agent 详情页使用手动 Tab 切换（非路由级 Tab），三个标签：
 **Why it's bad**: Agent 生成的 HTML 将能访问父窗口 DOM 和 cookies，构成安全风险。
 
 **Instead**: 仅使用 `sandbox="allow-scripts"`，确保 iframe 与父窗口完全隔离。
+
+### Don't: 仅按 Agent 列表过滤而忽略关联数据源
+
+**Problem**:
+```tsx
+// 只过滤了 agent，没有过滤 canvas 数据
+const employeeAgents = agents.filter(a => a.archetype === "employee");
+// canvas 仍包含所有 agent 的条目，导致空状态判断失败
+{employeeAgents.length === 0 && canvas.length === 0 ? <Empty /> : <Grid />}
+```
+
+**Why it's bad**: 非 employee agent 的 canvas 条目会使 `canvas.length > 0`，导致本应显示空状态的页面渲染一个空 grid。
+
+**Instead**:
+```tsx
+const employeeNames = new Set(employeeAgents.map(a => a.name));
+const filteredCanvas = canvas.filter(e => employeeNames.has(e.agentName));
+{employeeAgents.length === 0 && filteredCanvas.length === 0 ? <Empty /> : <Grid />}
+```
+
+**防止方法**: 当页面同时使用多个数据源（agents、canvas、events）时，所有数据源都必须应用相同的过滤条件。
+
+### Don't: 向未运行的 Agent 发送 prompt 请求
+
+**Problem**: Chat 页面允许用户在 Agent 未运行时发送消息，后端返回 "No session found" 技术性错误。
+
+**Why it's bad**: 用户看到的是后端内部错误而非可操作的提示。网络请求被浪费。
+
+**Instead**: 在前端预先拦截——Agent 未运行时 disable 输入框和发送按钮，显示清晰的引导文案（如"请先启动 Agent"）。如果用户仍能触发发送（如键盘快捷键），在 `handleSend` 开头检查 `isRunning` 并直接显示本地化友好提示，不发起后端请求。
+
+### Don't: 在组件中硬编码用户可见文案
+
+**Problem**: `<p>No agents match the current filter.</p>`
+
+**Why it's bad**: 无法支持多语言，切换语言后仍显示英文。
+
+**Instead**: `<p>{t("agents.noMatch")}</p>` — 通过 `useTranslation()` hook 引用翻译键。
+
+---
+
+## i18n Patterns
+
+### Pattern: 组件国际化
+
+**Problem**: 需要在不同组件中显示翻译文本。
+
+**Solution**: 每个含用户可见文案的函数组件都使用 `useTranslation` hook。
+
+**Example**:
+```tsx
+import { useTranslation } from "react-i18next";
+
+function MyComponent() {
+  const { t } = useTranslation();
+  return <h1>{t("page.title")}</h1>;
+}
+```
+
+**注意**: 子组件也需要独立调用 `useTranslation()`，不要通过 props 传递 `t` 函数。
+
+### Pattern: 静态配置数组使用 labelKey
+
+**Problem**: `navItems` 等模块级常量数组无法使用 hook。
+
+**Solution**: 数组存储翻译键（`labelKey`），在组件渲染时调用 `t(item.labelKey)`。
+
+**Example**:
+```tsx
+const navKeys = [
+  { to: "/", icon: LayoutDashboard, labelKey: "nav.dashboard" },
+  { to: "/agents", icon: Bot, labelKey: "nav.agents" },
+];
+
+function Sidebar() {
+  const { t } = useTranslation();
+  return navKeys.map(item => <Link key={item.to}>{t(item.labelKey)}</Link>);
+}
+```
+
+### Pattern: 带插值的翻译
+
+**Problem**: 翻译文本中包含动态值（agent name、count 等）。
+
+**Solution**: 使用 i18next 的 `{{variable}}` 插值语法。
+
+**Example**:
+```json
+{ "chat.startPrompt": "Start a conversation with {{name}}" }
+```
+```tsx
+{t("chat.startPrompt", { name: agentName })}
+```
+
+### Pattern: 复数形式
+
+**Problem**: "1 agent" vs "3 agents" 需要根据数量变化。
+
+**Solution**: 使用 i18next 的 `_one`/`_other` 后缀（英文）。中文不区分单复数，但仍需定义两个键。
+
+**Example**:
+```json
+{
+  "nav.agentCount_one": "{{count}} agent",
+  "nav.agentCount_other": "{{count}} agents"
+}
+```
+```tsx
+{t("nav.agentCount", { count: n })}
+```

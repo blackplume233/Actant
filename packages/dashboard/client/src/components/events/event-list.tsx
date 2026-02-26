@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,13 +27,14 @@ function eventBadgeClass(event: string): string {
 }
 
 export function EventList({ events, limit = 20 }: EventListProps) {
+  const { t } = useTranslation();
   const display = events.slice(0, limit);
 
   if (display.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-8 text-center">
         <Radio className="mb-2 h-8 w-8 text-muted-foreground/40" />
-        <p className="text-sm text-muted-foreground">No recent events</p>
+        <p className="text-sm text-muted-foreground">{t("events.noRecent")}</p>
       </div>
     );
   }
@@ -42,10 +44,10 @@ export function EventList({ events, limit = 20 }: EventListProps) {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Time</TableHead>
-            <TableHead>Event</TableHead>
-            <TableHead>Agent</TableHead>
-            <TableHead className="w-[100px]">Source</TableHead>
+            <TableHead className="w-[100px]">{t("events.colTime")}</TableHead>
+            <TableHead>{t("events.colEvent")}</TableHead>
+            <TableHead>{t("events.colAgent")}</TableHead>
+            <TableHead className="w-[100px]">{t("events.colSource")}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

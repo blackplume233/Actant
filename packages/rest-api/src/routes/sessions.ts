@@ -1,9 +1,12 @@
 import type { Router } from "../router";
 import { json, error } from "../router";
+import { URL } from "node:url";
 
 export function registerSessionRoutes(router: Router): void {
-  router.get("/v1/sessions", async (ctx, _req, res) => {
-    const result = await ctx.bridge.call("session.list");
+  router.get("/v1/sessions", async (ctx, req, res) => {
+    const url = new URL(req.url ?? "", `http://${req.headers.host}`);
+    const agentName = url.searchParams.get("agentName") ?? undefined;
+    const result = await ctx.bridge.call("session.list", { agentName });
     json(res, result);
   });
 
@@ -19,7 +22,7 @@ export function registerSessionRoutes(router: Router): void {
     }
     const result = await ctx.bridge.call("session.prompt", {
       sessionId: ctx.params.id,
-      message,
+      text: message,
     });
     json(res, result);
   });

@@ -1,0 +1,175 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "back": "Back",
+    "search": "Search",
+    "start": "Start",
+    "stop": "Stop",
+    "destroy": "Destroy",
+    "chat": "Chat",
+    "details": "Details",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "retry": "Retry",
+    "noData": "—",
+    "connected": "Connected",
+    "disconnected": "Disconnected",
+    "online": "Online",
+    "offline": "Offline"
+  },
+
+  "status": {
+    "running": "Running",
+    "starting": "Starting",
+    "stopping": "Stopping",
+    "stopped": "Stopped",
+    "created": "Created",
+    "error": "Error",
+    "crashed": "Crashed"
+  },
+
+  "nav": {
+    "dashboard": "Dashboard",
+    "canvas": "Live Canvas",
+    "agents": "Agents",
+    "activity": "Activity",
+    "events": "Events",
+    "settings": "Settings",
+    "brand": "Actant",
+    "agentCount_one": "{{count}} agent",
+    "agentCount_other": "{{count}} agents"
+  },
+
+  "dashboard": {
+    "title": "Command Center",
+    "subtitle": "Monitor and manage all your agents from a single view.",
+    "totalAgents": "Total Agents",
+    "running": "Running",
+    "stopped": "Stopped",
+    "error": "Error",
+    "agents": "Agents",
+    "recentEvents": "Recent Events"
+  },
+
+  "canvas": {
+    "title": "Live Canvas",
+    "preview": "Preview",
+    "subtitle": "Real-time streaming workspace managed by each employee agent autonomously.",
+    "heading": "Streaming AI Canvas",
+    "description": "This page is a live, streaming workspace where each employee agent owns a section and can push rich HTML widgets — status panels, charts, progress bars, and interactive controls.",
+    "featureAgentTitle": "Agent-Owned Sections",
+    "featureAgentDesc": "Each employee manages its own area with full HTML/CSS/JS freedom.",
+    "featureSandboxTitle": "Secure Sandbox",
+    "featureSandboxDesc": "Content renders in iframe sandbox for isolation and security.",
+    "featureRealtimeTitle": "Real-Time Updates",
+    "featureRealtimeDesc": "Canvas updates arrive via SSE, no page refresh needed.",
+    "agentSlots": "Agent Slots",
+    "emptySlots": "No running employee agents. Only employee-archetype agents can push canvas content.",
+    "awaitingStream": "Awaiting stream connection...",
+    "updatedAt": "Updated {{time}}"
+  },
+
+  "agents": {
+    "title": "Agents",
+    "subtitle": "View and manage all registered agent instances.",
+    "searchPlaceholder": "Search agents...",
+    "noMatch": "No agents match the current filter.",
+    "noAgents": "No agents yet",
+    "createHint": "Create an agent with actant agent create",
+    "all": "All"
+  },
+
+  "agentDetail": {
+    "notFound": "Agent \"{{name}}\" not found. It may have been destroyed.",
+    "tabOverview": "Overview",
+    "tabSessions": "Sessions",
+    "tabLogs": "Logs",
+    "fieldName": "Name",
+    "fieldStatus": "Status",
+    "fieldArchetype": "Archetype",
+    "fieldTemplate": "Template",
+    "fieldPid": "PID",
+    "fieldLaunchMode": "Launch Mode",
+    "fieldWorkspace": "Workspace",
+    "fieldUptime": "Uptime",
+    "loadingSessions": "Loading sessions...",
+    "noSessions": "No sessions found.",
+    "startConversation": "Start a conversation",
+    "selectSession": "Select a session to view its conversation.",
+    "loadingConversation": "Loading...",
+    "noConversation": "No conversation data.",
+    "msgs": "msgs",
+    "tools": "tools",
+    "empty": "(empty)",
+    "loadingLogs": "Loading logs...",
+    "noLogs": "No log output available."
+  },
+
+  "chat": {
+    "newChat": "New Chat",
+    "newConversation": "New conversation started.",
+    "historyBanner": "Showing {{count}} messages from previous session",
+    "startFresh": "Start fresh",
+    "continuingBanner": "Continuing conversation ({{count}} previous messages loaded)",
+    "loadingConversation": "Loading conversation...",
+    "startPrompt": "Start a conversation with {{name}}",
+    "readyHint": "This agent is running and ready to chat.",
+    "stoppedHint": "Agent is stopped — start it from the detail page to begin chatting.",
+    "thinking": "Thinking...",
+    "inputPlaceholder": "Message {{name}}...",
+    "inputDisabled": "Agent is not running — start it to chat",
+    "sendHint": "Enter to send · Shift+Enter for new line",
+    "notRunning": "Agent \"{{name}}\" is not running. Please start it first before chatting."
+  },
+
+  "activity": {
+    "title": "Activity",
+    "subtitle": "Agent activity feed — prompts, sessions, and interactions.",
+    "filterAll": "All",
+    "activeAgents": "Active Agents",
+    "recentEvents": "Recent Events",
+    "prompts": "Prompts",
+    "sessions": "Sessions",
+    "timeline": "Activity Timeline",
+    "empty": "No activity recorded yet."
+  },
+
+  "events": {
+    "title": "Events",
+    "subtitle": "Real-time event stream from the Actant EventBus.",
+    "searchPlaceholder": "Search events...",
+    "filterAll": "all",
+    "logTitle": "Event Log",
+    "empty": "No events match the current filter.",
+    "noRecent": "No recent events",
+    "colTime": "Time",
+    "colEvent": "Event",
+    "colAgent": "Agent",
+    "colSource": "Source",
+    "colDetails": "Details"
+  },
+
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Daemon information and dashboard configuration.",
+    "connectionTitle": "Daemon Connection",
+    "connectionDesc": "Current connection to the Actant daemon process.",
+    "daemonInfo": "Daemon Info",
+    "version": "Version",
+    "uptime": "Uptime",
+    "managedAgents": "Managed Agents",
+    "agentOverview": "Agent Overview",
+    "agentOverviewDesc": "Summary of all registered agents by status.",
+    "noAgents": "No agents registered.",
+    "aboutTitle": "About",
+    "aboutDesc": "Actant Dashboard — real-time monitoring for AI agent orchestration.",
+    "aboutTransport": "Transport: <code>WebTransport (HTTP + SSE)</code>",
+    "aboutTauri": "Tauri-ready architecture — swap to TauriTransport for native desktop."
+  },
+
+  "notFound": {
+    "code": "404",
+    "message": "Page not found",
+    "backHome": "Back to Dashboard"
+  }
+}

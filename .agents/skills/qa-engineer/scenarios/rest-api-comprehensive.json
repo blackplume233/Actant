@@ -1,0 +1,139 @@
+{
+  "name": "rest-api-comprehensive",
+  "description": "REST API 全功能黑盒测试：认证、CRUD、生命周期、Canvas、Webhooks、SSE、错误处理",
+  "tags": ["rest-api", "integration", "comprehensive"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "real",
+    "restApi": {
+      "port": 3220,
+      "apiKey": "qa-test-key"
+    },
+    "templates": []
+  },
+  "steps": [
+    {
+      "id": "auth-no-key",
+      "description": "无认证访问应返回 401",
+      "command": "curl -s -w '\\nHTTP:%{http_code}' http://localhost:3220/v1/status",
+      "expect": "HTTP 401 with clear error message about missing API key"
+    },
+    {
+      "id": "auth-wrong-key",
+      "description": "错误密钥应返回 401",
+      "command": "curl -s -w '\\nHTTP:%{http_code}' -H 'Authorization: Bearer wrong' http://localhost:3220/v1/status",
+      "expect": "HTTP 401 with 'Invalid API key' message"
+    },
+    {
+      "id": "auth-correct",
+      "description": "正确 Bearer token 应返回 200",
+      "command": "curl -s -w '\\nHTTP:%{http_code}' -H 'Authorization: Bearer qa-test-key' http://localhost:3220/v1/status",
+      "expect": "HTTP 200 with version, uptime, agents count"
+    },
+    {
+      "id": "auth-x-api-key",
+      "description": "X-API-Key header 认证方式",
+      "command": "curl -s -w '\\nHTTP:%{http_code}' -H 'X-API-Key: qa-test-key' http://localhost:3220/v1/status",
+      "expect": "HTTP 200"
+    },
+    {
+      "id": "cors-preflight",
+      "description": "OPTIONS 预检请求不要求认证",
+      "command": "curl -s -w '\\nHTTP:%{http_code}' -X OPTIONS -H 'Origin: http://example.com' -H 'Access-Control-Request-Method: POST' http://localhost:3220/v1/agents",
+      "expect": "HTTP 204"
+    },
+    {
+      "id": "openapi-self-describe",
+      "description": "OpenAPI 自描述端点",
+      "command": "curl -s -H 'Authorization: Bearer qa-test-key' http://localhost:3220/v1/openapi",
+      "expect": "Valid OpenAPI 3.0.3 JSON with all route paths defined"
+    },
+    {
+      "id": "agent-create",
+      "description": "创建 Agent",
+      "command": "agent create qa-bot -t actant-hub@code-reviewer",
+      "expect": "HTTP 201, status: created, full agent metadata in response"
+    },
+    {
+      "id": "agent-list",
+      "description": "列出 Agents",
+      "command": "curl -s -H 'Authorization: Bearer qa-test-key' http://localhost:3220/v1/agents",
+      "expect": "Array containing the created agent"
+    },
+    {
+      "id": "agent-status",
+      "description": "获取单个 Agent 状态",
+      "command": "curl -s -H 'Authorization: Bearer qa-test-key' http://localhost:3220/v1/agents/qa-bot",
+      "expect": "HTTP 200 with full agent object"
+    },
+    {
+      "id": "agent-prompt-stopped",
+      "description": "对未启动 Agent 发送 prompt 应返回 409",
+      "command": "curl -s -X POST -H 'Authorization: Bearer qa-test-key' -d '{\"message\":\"hello\"}' http://localhost:3220/v1/agents/qa-bot/prompt",
+      "expect": "HTTP 409 with message about no ACP connection"
+    },
+    {
+      "id": "agent-sessions",
+      "description": "获取 Agent 会话列表",
+      "command": "curl -s -H 'Authorization: Bearer qa-test-key' http://localhost:3220/v1/agents/qa-bot/sessions",
+      "expect": "HTTP 200, array (may be empty)"
+    },
+    {
+      "id": "agent-logs",
+      "description": "获取 Agent 日志",
+      "command": "curl -s -H 'Authorization: Bearer qa-test-key' http://localhost:3220/v1/agents/qa-bot/logs",
+      "expect": "HTTP 200 with lines array and logDir path"
+    },
+    {
+      "id": "canvas-create",
+      "description": "创建 Canvas",
+      "command": "curl -s -X POST -H 'Authorization: Bearer qa-test-key' -d '{\"html\":\"<p>Test</p>\",\"title\":\"QA\"}' http://localhost:3220/v1/canvas/qa-bot",
+      "expect": "HTTP 200 with ok:true"
+    },
+    {
+      "id": "canvas-read",
+      "description": "读取 Canvas",
+      "command": "curl -s -H 'Authorization: Bearer qa-test-key' http://localhost:3220/v1/canvas/qa-bot",
+      "expect": "HTTP 200 with agentName, html, title, updatedAt"
+    },
+    {
+      "id": "canvas-delete",
+      "description": "清除 Canvas",
+      "command": "curl -s -X DELETE -H 'Authorization: Bearer qa-test-key' http://localhost:3220/v1/canvas/qa-bot",
+      "expect": "HTTP 200 with ok:true"
+    },
+    {
+      "id": "webhook-event-no-agent",
+      "description": "Event webhook 无 agentName 应返回 400",
+      "command": "curl -s -X POST -H 'Authorization: Bearer qa-test-key' -d '{\"event\":\"test\"}' http://localhost:3220/v1/webhooks/event",
+      "expect": "HTTP 400 with 'agentName is required' message"
+    },
+    {
+      "id": "sse-stream",
+      "description": "SSE 事件流",
+      "command": "curl -s --max-time 2 -H 'Authorization: Bearer qa-test-key' http://localhost:3220/v1/sse",
+      "expect": "Four SSE events: status, agents, events, canvas"
+    },
+    {
+      "id": "error-404-route",
+      "description": "不存在的路由返回 404",
+      "command": "curl -s -H 'Authorization: Bearer qa-test-key' http://localhost:3220/v1/nonexistent",
+      "expect": "HTTP 404"
+    },
+    {
+      "id": "error-404-agent",
+      "description": "不存在的 Agent 返回 404",
+      "command": "curl -s -H 'Authorization: Bearer qa-test-key' http://localhost:3220/v1/agents/ghost",
+      "expect": "HTTP 404 with 'not found' message"
+    },
+    {
+      "id": "error-duplicate",
+      "description": "重复创建 Agent 返回 409",
+      "command": "curl -s -X POST -H 'Authorization: Bearer qa-test-key' -d '{\"name\":\"qa-bot\",\"template\":\"actant-hub@code-reviewer\"}' http://localhost:3220/v1/agents",
+      "expect": "HTTP 409 with 'already exists' message"
+    }
+  ],
+  "cleanup": [
+    "agent destroy qa-bot --force"
+  ]
+}

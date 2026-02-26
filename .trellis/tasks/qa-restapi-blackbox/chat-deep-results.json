@@ -1,0 +1,134 @@
+[
+  {
+    "id": "C1",
+    "desc": "Chat page loads with agent name + status",
+    "status": "PASS",
+    "detail": "name=True, status=True, textarea=True"
+  },
+  {
+    "id": "C2",
+    "desc": "Empty state shows placeholder + auto-start hint",
+    "status": "PASS",
+    "detail": "prompt=True, auto_start_hint=True"
+  },
+  {
+    "id": "C3",
+    "desc": "Textarea placeholder shows agent name",
+    "status": "PASS",
+    "detail": "placeholder='Message test-alpha...'"
+  },
+  {
+    "id": "C4",
+    "desc": "Send button disabled when textarea empty",
+    "status": "PASS",
+    "detail": "disabled="
+  },
+  {
+    "id": "C5",
+    "desc": "Send button enables after typing",
+    "status": "PASS",
+    "detail": "disabled_after_type=False"
+  },
+  {
+    "id": "C6",
+    "desc": "Send to stopped agent shows error message",
+    "status": "PASS",
+    "detail": "user_msg=True, error=True, styled=True"
+  },
+  {
+    "id": "C7",
+    "desc": "Error message uses destructive styling",
+    "status": "PASS",
+    "detail": "destructive_elements=True"
+  },
+  {
+    "id": "C8",
+    "desc": "User message aligned to right",
+    "status": "PASS",
+    "detail": "right_aligned=1"
+  },
+  {
+    "id": "C9",
+    "desc": "Textarea refocused after send completes",
+    "status": "WARN",
+    "detail": "focused=False"
+  },
+  {
+    "id": "C10",
+    "desc": "Enter key sends message",
+    "status": "PASS",
+    "detail": "msg_visible=True"
+  },
+  {
+    "id": "C11",
+    "desc": "Shift+Enter adds newline instead of sending",
+    "status": "PASS",
+    "detail": "textarea_value='Line1\nLine2'"
+  },
+  {
+    "id": "C12",
+    "desc": "Back button navigates to agent detail",
+    "status": "PASS",
+    "detail": "url=http://localhost:3230/agents/test-alpha"
+  },
+  {
+    "id": "C13",
+    "desc": "Agent status updates to Running in chat header",
+    "status": "WARN",
+    "detail": "running=False"
+  },
+  {
+    "id": "C14",
+    "desc": "Running agent returns real response",
+    "status": "PASS",
+    "detail": "question=True, answer=True"
+  },
+  {
+    "id": "C15",
+    "desc": "Session ID displayed in header",
+    "status": "WARN",
+    "detail": "session_visible=False"
+  },
+  {
+    "id": "C16",
+    "desc": "Assistant message has bot avatar icon",
+    "status": "WARN",
+    "detail": "icons=0"
+  },
+  {
+    "id": "C17",
+    "desc": "User message has user avatar icon",
+    "status": "PASS",
+    "detail": "icons=1"
+  },
+  {
+    "id": "C18",
+    "desc": "Messages have timestamps",
+    "status": "WARN",
+    "detail": "timestamp_elements=1"
+  },
+  {
+    "id": "C19",
+    "desc": "Send button state correct (enabled when ready)",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "C20",
+    "desc": "Multiple messages render correctly",
+    "status": "PASS",
+    "detail": "found_questions=2"
+  },
+  {
+    "id": "C21",
+    "desc": "Chat page handles non-existent agent",
+    "status": "PASS",
+    "detail": "A\nActant\nDashboard\nLive Canvas\nAgents\nActivity\nEvents\nSettings\n\nv0.2.3\n\n2 agents\n\nActant\nv0.2.3\n|\n5m\nOnline\nnonexistent-agent-xyz\n\nStart a conversatio"
+  },
+  {
+    "id": "C22",
+    "desc": "No critical JS console errors during chat",
+    "status": "PASS",
+    "detail": "errors=0"
+  }
+]

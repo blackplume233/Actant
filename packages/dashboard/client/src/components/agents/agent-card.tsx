@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
   Bot,
@@ -29,6 +30,7 @@ const archetypeStyles: Record<string, string> = {
 };
 
 export function AgentCard({ agent }: AgentCardProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const archetype = agent.archetype ?? "tool";
   const isRunning = agent.status === "running";
@@ -70,7 +72,6 @@ export function AgentCard({ agent }: AgentCardProps) {
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={(e) => e.stopPropagation()}
               >
                 {loading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -81,53 +82,34 @@ export function AgentCard({ agent }: AgentCardProps) {
             }
           >
             {isRunning ? (
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAction("stop");
-                }}
-              >
+              <DropdownMenuItem onClick={() => handleAction("stop")}>
                 <Square className="h-3.5 w-3.5" />
-                Stop
+                {t("common.stop")}
               </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleAction("start");
-                }}
-              >
+              <DropdownMenuItem onClick={() => handleAction("start")}>
                 <Play className="h-3.5 w-3.5" />
-                Start
+                {t("common.start")}
               </DropdownMenuItem>
             )}
             <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/agents/${encodeURIComponent(agent.name)}/chat`);
-              }}
+              onClick={() => navigate(`/agents/${encodeURIComponent(agent.name)}/chat`)}
             >
               <MessageSquare className="h-3.5 w-3.5" />
-              Chat
+              {t("common.chat")}
             </DropdownMenuItem>
             <DropdownMenuItem
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/agents/${encodeURIComponent(agent.name)}`);
-              }}
+              onClick={() => navigate(`/agents/${encodeURIComponent(agent.name)}`)}
             >
               <ExternalLink className="h-3.5 w-3.5" />
-              Details
+              {t("common.details")}
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive hover:!bg-destructive/10 hover:!text-destructive"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleAction("destroy");
-              }}
+              onClick={() => handleAction("destroy")}
             >
               <Trash2 className="h-3.5 w-3.5" />
-              Destroy
+              {t("common.destroy")}
             </DropdownMenuItem>
           </DropdownMenu>
         </div>
@@ -158,8 +140,10 @@ export function AgentCard({ agent }: AgentCardProps) {
   );
 }
 
-function formatElapsed(startTs: number): string {
-  const seconds = Math.floor((Date.now() - startTs) / 1000);
+function formatElapsed(startTs: string | number): string {
+  const epoch = typeof startTs === "string" ? Date.parse(startTs) : startTs;
+  if (Number.isNaN(epoch)) return "—";
+  const seconds = Math.floor((Date.now() - epoch) / 1000);
   const h = Math.floor(seconds / 3600);
   const m = Math.floor((seconds % 3600) / 60);
   if (h > 0) return `${h}h ${m}m`;

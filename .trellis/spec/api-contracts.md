@@ -734,9 +734,11 @@ interface PluginStatusDto {
 
 Agent 的 Live Canvas HTML 内容管理。Agent 通过内置 Actant MCP Server 的 `actant_canvas_update` 工具间接调用这些 RPC 方法。Dashboard 通过 SSE 实时广播 canvas 数据。
 
+**Archetype 限制**：Canvas 仅对 `employee` archetype 的 Agent 开放。`canvas.update` 在写入 CanvasStore 前校验 `agentName` 对应的 Agent archetype，非 `employee` 类型返回 `INVALID_PARAMS` 错误。Dashboard 侧同步过滤，仅展示 `employee` Agent 的 canvas slots。
+
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
-| `canvas.update` | `{ agentName, html, title? }` | `{ ok }` | `INVALID_PARAMS` |
+| `canvas.update` | `{ agentName, html, title? }` | `{ ok }` | `INVALID_PARAMS`（含 archetype 不匹配） |
 | `canvas.get` | `{ agentName }` | `CanvasGetResult` | `AGENT_NOT_FOUND` |
 | `canvas.list` | `{}` | `{ entries: CanvasGetResult[] }` | — |
 | `canvas.clear` | `{ agentName }` | `{ ok }` | — |
@@ -778,6 +780,35 @@ Agent Process → actant_canvas_update (MCP Tool)
 **注入机制**：`SessionContextInjector` 在 ACP session 创建前收集所有 `ContextProvider` 注册的 MCP servers，通过 `newSession(cwd, mcpServers)` 传参。内置 MCP Server 以 stdio 模式运行，通过 `ACTANT_SOCKET` 环境变量连接回 Daemon RPC。
 
 > 实现参考：`packages/mcp-server/src/index.ts`，`packages/core/src/context-injector/session-context-injector.ts`
+
+### 3.12c Activity 查询（Phase 4 Step 3 新增） ✅ 已实现
+
+> 状态：**已实现** — Step 3 (Dashboard v0)
+
+查询 Agent 的活动会话和对话历史。Dashboard 使用这些方法渲染 Chat 界面和 Activity 页面。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `activity.sessions` | `{ agentName }` | `SessionSummary[]` | `AGENT_NOT_FOUND` |
+| `activity.conversation` | `{ agentName, sessionId }` | `ConversationTurn[]` | `AGENT_NOT_FOUND` |
+
+#### activity.sessions
+
+列出 Agent 的所有活动记录会话（按时间倒序）。
+
+#### activity.conversation
+
+获取单个会话的对话轮次。内部由 `assembleConversation()` 将原始 `ActivityRecord` 流组装为结构化的 `ConversationTurn[]`。
+
+**支持的 Activity Record 类型**：
+
+| record.type | 处理方式 |
+|-------------|---------|
+| `prompt_sent` | 提取 `data.content`（或 `data.contentRef.preview`）生成 `role: "user"` 轮次 |
+| `prompt_complete` | 结束当前轮次（重置 currentTurn） |
+| `session_update` | 根据 `data.sessionUpdate` 生成 `role: "assistant"` 轮次（含 `text_chunk`、`tool_use`、`tool_result`、`completion` 等） |
+
+> 实现参考：`packages/api/src/handlers/activity-handlers.ts`
 
 ### 3.13 事件查询（Phase 4 新增） ✅ 已实现
 

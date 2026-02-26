@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Activity, Wifi, WifiOff } from "lucide-react";
 import type { DaemonStatus } from "@/hooks/use-sse";
 
@@ -6,13 +7,14 @@ interface TopBarProps {
 }
 
 export function TopBar({ status }: TopBarProps) {
+  const { t } = useTranslation();
   const online = status !== null;
 
   return (
     <header className="flex h-14 items-center justify-between border-b bg-background px-6">
       <div className="flex items-center gap-3">
         <Activity className="h-5 w-5 text-foreground" />
-        <h1 className="text-lg font-semibold tracking-tight">Actant</h1>
+        <h1 className="text-lg font-semibold tracking-tight">{t("nav.brand")}</h1>
       </div>
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
         {status && (
@@ -26,12 +28,12 @@ export function TopBar({ status }: TopBarProps) {
           {online ? (
             <>
               <Wifi className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-emerald-600 font-medium">Online</span>
+              <span className="text-emerald-600 font-medium">{t("common.online")}</span>
             </>
           ) : (
             <>
               <WifiOff className="h-3.5 w-3.5 text-destructive" />
-              <span className="text-destructive font-medium">Offline</span>
+              <span className="text-destructive font-medium">{t("common.offline")}</span>
             </>
           )}
         </div>

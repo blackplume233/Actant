@@ -116,3 +116,16 @@ MemoryStore / AssetRegistry / HubIndex (Core 层实现)
 ---
 
 ## Comments
+
+### cursor-agent — 2026-02-26T15:10:00
+
+**注入点确认：`ClientCallbackRouter.readTextFile` / `writeTextFile`**
+
+经代码走读确认最佳注入点是 `ClientCallbackRouter`（`packages/acp/src/callback-router.ts`），在路由决策之前拦截 `ac://` 前缀。
+
+- 覆盖全模式（lease + local），不遗漏 IDE 路径
+- `AcpConnection` 和 `localReadTextFile` 零改动
+- Resolver 接口 (`AcUriResolver`) 从 Core 层注入，`ClientCallbackRouter` 通过 `setResolver()` 持有引用
+- 未注入 resolver 时行为与当前完全一致（向后兼容）
+
+详见 [GitHub Comment](https://github.com/blackplume233/Actant/issues/209#issuecomment-3966198821)

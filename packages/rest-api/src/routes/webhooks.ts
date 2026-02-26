@@ -59,12 +59,19 @@ export function registerWebhookRoutes(router: Router): void {
     const agentName = String(agent);
     const promptText = String(prompt);
 
+    const RUN_TIMEOUT_MS = 120_000;
     try {
-      const result = await ctx.bridge.call("agent.run", {
+      const rpcPromise = ctx.bridge.call("agent.run", {
         name: agentName,
         prompt: promptText,
         ...(template ? { template: String(template) } : {}),
-      }) as { text: string; sessionId?: string };
+      }) as Promise<{ text: string; sessionId?: string }>;
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("agent.run timed out after 120s")), RUN_TIMEOUT_MS),
+      );
+
+      const result = await Promise.race([rpcPromise, timeoutPromise]);
 
       json(res, {
         agent: agentName,
@@ -89,13 +96,14 @@ export function registerWebhookRoutes(router: Router): void {
     if (!event) {
       return error(res, "event is required", 400);
     }
+    if (!agentName) {
+      return error(res, "agentName is required for event routing", 400);
+    }
 
-    // For now, forward as a gateway lease call
-    // In the future, this could directly inject into the EventBus
     try {
       const result = await ctx.bridge.call("gateway.lease", {
         event: String(event),
-        ...(agentName ? { agentName: String(agentName) } : {}),
+        agentName: String(agentName),
         ...(payload ? { payload } : {}),
       });
       json(res, result);

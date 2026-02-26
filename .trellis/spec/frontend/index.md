@@ -166,6 +166,55 @@ interface Transport {
 
 Agent 生成的 HTML 通过 `<iframe srcDoc={html} sandbox="allow-scripts" />` 渲染。`sandbox` 属性限制了 iframe 的能力，防止 Agent 代码访问父窗口或发起导航。允许 `allow-scripts` 使 Agent 可使用 JS 构建交互式状态面板。
 
+### Archetype Feature Gating
+
+Dashboard 中某些功能仅对特定 archetype 的 Agent 开放：
+
+| 功能 | 允许的 Archetype | 实现层 |
+|------|-----------------|--------|
+| **Live Canvas**（推送/显示 HTML widgets） | `employee` only | 前端过滤 + 后端 `canvas.update` handler 校验 |
+| **Chat**（对话交互） | 所有（但需 running 状态） | 前端 disable + 后端错误提示 |
+| **Agent Card / Detail** | 所有 | — |
+
+**前后端双重校验原则**：archetype 限制必须在前端（UI 不渲染/disable）和后端（RPC handler 拒绝）同时实施。仅靠前端过滤不安全（API 可直接调用），仅靠后端拒绝则 UX 不友好。
+
+### Internationalization (i18n)
+
+Dashboard 使用 `react-i18next` 实现多语言支持。
+
+**技术栈**：
+
+| 库 | 用途 |
+|----|------|
+| `i18next` | 核心 i18n 引擎 |
+| `react-i18next` | React 绑定（`useTranslation` hook） |
+| `i18next-browser-languagedetector` | 自动检测浏览器语言 |
+
+**文件结构**：
+
+```
+client/src/i18n/
+├── index.ts              # 初始化配置（语言检测、fallback、持久化）
+└── locales/
+    ├── en.json           # 英文翻译
+    └── zh-CN.json        # 中文翻译
+```
+
+**翻译键命名约定**：采用扁平 dot-notation，按模块分组：
+
+| 命名空间 | 用途 | 示例 |
+|----------|------|------|
+| `common.*` | 跨页面共用标签 | `common.start`, `common.stop` |
+| `status.*` | Agent 状态标签 | `status.running`, `status.stopped` |
+| `nav.*` | 侧边栏导航 | `nav.dashboard`, `nav.agents` |
+| `<pageName>.*` | 页面专属文案 | `chat.thinking`, `settings.title` |
+
+**使用方式**：每个含硬编码文案的组件必须 `import { useTranslation } from "react-i18next"` 并在函数体内调用 `const { t } = useTranslation()`，然后用 `t("key")` 替换硬编码字符串。
+
+**语言切换**：侧边栏底部内嵌 `LanguageSwitcher` 组件，选择自动持久化到 `localStorage`（key: `actant-lang`）。
+
+**添加新语言**：(1) 在 `locales/` 下新建翻译文件；(2) 在 `i18n/index.ts` 的 `resources` 和 `supportedLanguages` 中注册。
+
 ---
 
 **Language**: See [Language Conventions](../backend/quality-guidelines.md#language-conventions) in Quality Guidelines.

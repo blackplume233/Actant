@@ -1,3 +1,4 @@
+import { useTranslation, Trans } from "react-i18next";
 import { Settings, Server, Clock, Cpu, HardDrive } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -5,14 +6,15 @@ import { Separator } from "@/components/ui/separator";
 import { useSSEContext } from "@/hooks/use-sse";
 
 export function SettingsPage() {
+  const { t } = useTranslation();
   const { status, agents, connected } = useSSEContext();
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Settings</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{t("settings.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Daemon information and dashboard configuration.
+          {t("settings.subtitle")}
         </p>
       </div>
 
@@ -21,9 +23,9 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Server className="h-4 w-4" />
-            Daemon Connection
+            {t("settings.connectionTitle")}
           </CardTitle>
-          <CardDescription>Current connection to the Actant daemon process.</CardDescription>
+          <CardDescription>{t("settings.connectionDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-3">
@@ -33,7 +35,7 @@ export function SettingsPage() {
               }`}
             />
             <span className="text-sm font-medium">
-              {connected ? "Connected" : "Disconnected"}
+              {connected ? t("common.connected") : t("common.disconnected")}
             </span>
           </div>
         </CardContent>
@@ -45,20 +47,20 @@ export function SettingsPage() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Cpu className="h-4 w-4" />
-              Daemon Info
+              {t("settings.daemonInfo")}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <InfoRow label="Version" value={status.version} />
+            <InfoRow label={t("settings.version")} value={status.version} />
             <Separator />
             <InfoRow
-              label="Uptime"
+              label={t("settings.uptime")}
               value={formatUptime(status.uptime)}
               icon={<Clock className="h-3.5 w-3.5 text-muted-foreground" />}
             />
             <Separator />
             <InfoRow
-              label="Managed Agents"
+              label={t("settings.managedAgents")}
               value={String(status.agents)}
               icon={<HardDrive className="h-3.5 w-3.5 text-muted-foreground" />}
             />
@@ -71,13 +73,13 @@ export function SettingsPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Settings className="h-4 w-4" />
-            Agent Overview
+            {t("settings.agentOverview")}
           </CardTitle>
-          <CardDescription>Summary of all registered agents by status.</CardDescription>
+          <CardDescription>{t("settings.agentOverviewDesc")}</CardDescription>
         </CardHeader>
         <CardContent>
           {agents.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No agents registered.</p>
+            <p className="text-sm text-muted-foreground">{t("settings.noAgents")}</p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {Object.entries(
@@ -98,15 +100,15 @@ export function SettingsPage() {
       {/* About */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">About</CardTitle>
+          <CardTitle className="text-base">{t("settings.aboutTitle")}</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-1">
-          <p>Actant Dashboard — real-time monitoring for AI agent orchestration.</p>
+          <p>{t("settings.aboutDesc")}</p>
           <p>
-            Transport: <code className="rounded bg-muted px-1.5 py-0.5 text-xs">WebTransport (HTTP + SSE)</code>
+            <Trans i18nKey="settings.aboutTransport" components={{ code: <code className="rounded bg-muted px-1.5 py-0.5 text-xs" /> }} />
           </p>
           <p className="text-xs">
-            Tauri-ready architecture — swap to TauriTransport for native desktop.
+            {t("settings.aboutTauri")}
           </p>
         </CardContent>
       </Card>

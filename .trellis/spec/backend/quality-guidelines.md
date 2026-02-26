@@ -239,6 +239,33 @@ spawn(command, args, { ...opts, shell: needsShell });
 
 > 参考审计记录：ACP Interface Reference 首次全量审计修正了 12+ 处差异。
 
+### Common Mistake: QA/集成测试后残留 Node.js 僵尸进程
+
+**症状**: 系统中出现大量（数十甚至上百个）node.exe 进程，内存占用持续增长，机器变慢。
+
+**原因**: QA 测试或集成测试启动了 Daemon（`daemon start --foreground &`），Daemon 又启动了 Agent 子进程。测试结束后仅调用 `daemon stop` 或仅删除临时目录，但 Daemon 启动的子进程（ACP bridge、Agent 进程等）未被完整回收，成为孤儿进程。
+
+**修复**:
+
+```bash
+# Windows — 强制杀死所有 node 进程（慎用，会影响其他 Node 应用）
+taskkill /F /IM node.exe
+
+# 更精确的方式 — 杀死特定进程树
+taskkill /F /T /PID <daemon_pid>
+
+# Unix
+kill -9 -<daemon_pgid>
+```
+
+**预防**:
+
+1. QA 测试的 cleanup 步骤必须包含**进程树清理**（`taskkill /T` 或 `pkill -P`），而非仅 `daemon stop`
+2. 测试结束后验证进程数回到基线水平
+3. 启动 Daemon 时记录其 PID，供 cleanup 精确终止
+
+> 参考：2026-02-26 事故 — 多轮 QA 测试后系统累积 150+ 僵尸 node.exe，总内存 >6GB。
+
 ### Don't: `any` Types
 
 ```typescript
@@ -911,6 +938,61 @@ Before approving any feature:
 ---
 
 ## Monorepo 发布规范
+
+### Stage 前必须确保 GitHub Actions 通过
+
+Stage version（生成 `docs/stage/vX.Y.Z/` 产物并推送 v* tag）前，**必须在本地模拟所有 CI workflow 的关键步骤**，确认推送后 GitHub Actions 不会失败。
+
+#### GitHub Actions 清单
+
+| Workflow | 触发条件 | 关键步骤 | 本地验证命令 |
+|----------|---------|----------|-------------|
+| **publish-npm** | `v*` tag push | install → version:sync → build → test → publish | `pnpm install --frozen-lockfile && pnpm run version:sync && pnpm build && pnpm test` |
+| **build-standalone** | `v*` tag push | install → build → build-standalone (3 平台) | `pnpm build && node scripts/build-standalone.mjs` |
+| **deploy-site** | master push (docs/site/\*\*, docs/wiki/\*\*) | install → wiki build → merge → deploy | `pnpm --filter actant-wiki build` |
+| **validate-hub** | master push/PR (examples/actant-hub/\*\*, packages/core/src/source/\*\*) | install → build → source validate → test | `pnpm build && pnpm test -- packages/core/src/source/source-validator.test.ts` |
+| **sync-issues** | master push (.trellis/issues/\*\*) | checkout → sync issues | `node .trellis/scripts/sync-github-issues.mjs` |
+
+#### Pre-Stage 检查清单
+
+```bash
+# 1. 锁文件完整性 — CI 使用 --frozen-lockfile，本地 lockfile 必须同步
+pnpm install --frozen-lockfile
+
+# 2. 版本同步
+pnpm run version:sync
+
+# 3. 构建（零错误）
+pnpm build
+
+# 4. 全量测试通过
+pnpm test
+
+# 5. Standalone 构建（可选但推荐，验证 SEA 打包不报错）
+node scripts/build-standalone.mjs
+
+# 6. Wiki 构建（如有 docs 变更）
+pnpm --filter actant-wiki build
+
+# 7. 确认无 dirty issues
+./.trellis/scripts/issue.sh check-dirty --strict
+```
+
+> **规则**: 任何 stage 操作（`docs/stage/vX.Y.Z/` 产物生成 + `git tag vX.Y.Z`）之前，上述第 1~4 步**必须全部通过**。如果本地验证失败，修复后重新验证，不得跳过直接推送 tag。
+
+#### Common Mistake: 推送 tag 后 CI 失败
+
+**症状**: 推送 `v*` tag 后，`publish-npm` 或 `build-standalone` workflow 失败（红叉），npm 发布中断或 Release 缺少二进制。
+
+**原因**: 本地开发环境与 CI 环境存在差异，常见原因包括：
+- `pnpm-lock.yaml` 未提交（CI `--frozen-lockfile` 失败）
+- 本地有未提交的改动使测试通过，但 CI checkout 的代码缺少这些改动
+- Node.js 版本不一致（CI 使用 v22）
+- 依赖了全局安装的包（CI 是干净环境）
+
+**修复**: 删除远端 tag → 修复问题 → 本地全量验证 → 重新 tag 并推送。
+
+**预防**: 严格执行 Pre-Stage 检查清单。特别注意 `pnpm install --frozen-lockfile` 这一步——它是最常见的 CI 失败根因。
 
 ### 版本同步
 

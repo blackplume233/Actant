@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Activity, Bot, Clock, MessageSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useSSEContext } from "@/hooks/use-sse";
 
 export function ActivityPage() {
+  const { t } = useTranslation();
   const { agents, events } = useSSEContext();
   const [selectedAgent, setSelectedAgent] = useState<string>("all");
 
@@ -40,9 +42,9 @@ export function ActivityPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Activity</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{t("activity.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Agent activity feed — prompts, sessions, and interactions.
+          {t("activity.subtitle")}
         </p>
       </div>
 
@@ -54,7 +56,7 @@ export function ActivityPage() {
           className="cursor-pointer select-none"
           onClick={() => setSelectedAgent("all")}
         >
-          All
+          {t("activity.filterAll")}
         </Badge>
         {agentNames.map((name) => (
           <Badge
@@ -72,22 +74,22 @@ export function ActivityPage() {
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <SummaryCard
           icon={<Bot className="h-4 w-4 text-blue-500" />}
-          label="Active Agents"
+          label={t("activity.activeAgents")}
           value={runningAgents.length}
         />
         <SummaryCard
           icon={<Activity className="h-4 w-4 text-emerald-500" />}
-          label="Recent Events"
+          label={t("activity.recentEvents")}
           value={agentEvents.length}
         />
         <SummaryCard
           icon={<MessageSquare className="h-4 w-4 text-violet-500" />}
-          label="Prompts"
+          label={t("activity.prompts")}
           value={promptEvents.length}
         />
         <SummaryCard
           icon={<Clock className="h-4 w-4 text-amber-500" />}
-          label="Sessions"
+          label={t("activity.sessions")}
           value={sessionEvents.length}
         />
       </div>
@@ -95,13 +97,13 @@ export function ActivityPage() {
       {/* Activity timeline */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Activity Timeline</CardTitle>
+          <CardTitle className="text-base">{t("activity.timeline")}</CardTitle>
         </CardHeader>
         <CardContent>
           {agentEvents.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">
               <Activity className="mb-2 h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">No activity recorded yet.</p>
+              <p className="text-sm text-muted-foreground">{t("activity.empty")}</p>
             </div>
           ) : (
             <ScrollArea className="max-h-[500px]">

@@ -38,6 +38,10 @@ export interface AgentInstanceMeta {
   /** Resolved permissions for this instance (after template + override resolution). */
   effectivePermissions?: PermissionsConfig;
   metadata?: Record<string, string>;
+  /** Absolute path to the agent's workspace directory. Populated at runtime by AgentManager. */
+  workspaceDir?: string;
+  /** ISO timestamp of when the agent process was last started. */
+  startedAt?: string;
 }
 
 export type AgentStatus =

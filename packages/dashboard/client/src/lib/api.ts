@@ -53,11 +53,39 @@ export const agentApi = {
     ),
 };
 
+export const sessionApi = {
+  list: (agentName?: string) =>
+    get<SessionLease[]>(`sessions${agentName ? `?agentName=${encodeURIComponent(agentName)}` : ""}`),
+  create: (agentName: string, clientId: string) =>
+    post<SessionLease>(`sessions`, { agentName, clientId }),
+  prompt: (sessionId: string, message: string) =>
+    post<{ stopReason: string; text: string }>(
+      `sessions/${encodeURIComponent(sessionId)}/prompt`,
+      { message },
+    ),
+  close: (sessionId: string) =>
+    del<{ ok: boolean }>(`sessions/${encodeURIComponent(sessionId)}`),
+};
+
+export interface SessionLease {
+  sessionId: string;
+  agentName: string;
+  clientId: string;
+  state: "active" | "idle" | "expired";
+  createdAt: string;
+  lastActivityAt: string;
+  idleTtlMs: number;
+}
+
 export interface SessionSummary {
   sessionId: string;
-  startedAt: number;
-  endedAt?: number;
-  turns: number;
+  agentName?: string;
+  startTs: number;
+  endTs?: number;
+  recordCount: number;
+  messageCount: number;
+  toolCallCount: number;
+  fileWriteCount: number;
 }
 
 export interface ConversationTurn {

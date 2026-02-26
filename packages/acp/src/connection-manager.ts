@@ -19,6 +19,8 @@ export interface ConnectOptions {
   resolvePackage?: string;
   /** When provided, wraps the callback handler with RecordingCallbackHandler for activity recording. */
   activityRecorder?: ActivityRecorder;
+  /** MCP servers to inject into the ACP session via session/new. */
+  mcpServers?: Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }>;
 }
 
 /**
@@ -80,7 +82,7 @@ export class AcpConnectionManager {
     try {
       await connWithRouter.spawn(options.command, options.args, options.cwd, options.resolvePackage);
       await connWithRouter.initialize();
-      const session = await connWithRouter.newSession(options.cwd);
+      const session = await connWithRouter.newSession(options.cwd, options.mcpServers ?? []);
       this.primarySessions.set(name, session.sessionId);
 
       // Pre-create a Gateway for this connection (inactive until IDE connects)

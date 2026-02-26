@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Radio, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ function eventBadgeClass(event: string): string {
 }
 
 export function EventsPage() {
+  const { t } = useTranslation();
   const { events } = useSSEContext();
   const [search, setSearch] = useState("");
   const [layerFilter, setLayerFilter] = useState<string>("all");
@@ -79,9 +81,9 @@ export function EventsPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Events</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{t("events.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Real-time event stream from the Actant EventBus.
+          {t("events.subtitle")}
         </p>
       </div>
 
@@ -90,7 +92,7 @@ export function EventsPage() {
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search events..."
+            placeholder={t("events.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -107,7 +109,7 @@ export function EventsPage() {
               }`}
               onClick={() => setLayerFilter(prefix)}
             >
-              {prefix === "all" ? "all" : prefix.replace(":", "")}
+              {prefix === "all" ? t("events.filterAll") : prefix.replace(":", "")}
               {layerCounts[prefix] != null && (
                 <span className="ml-1 opacity-60">{layerCounts[prefix]}</span>
               )}
@@ -120,7 +122,7 @@ export function EventsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">
-            Event Log
+            {t("events.logTitle")}
             <span className="ml-2 text-sm font-normal text-muted-foreground">
               ({filtered.length} events)
             </span>
@@ -130,18 +132,18 @@ export function EventsPage() {
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center py-8 text-center">
               <Radio className="mb-2 h-8 w-8 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">No events match the current filter.</p>
+              <p className="text-sm text-muted-foreground">{t("events.empty")}</p>
             </div>
           ) : (
             <ScrollArea className="max-h-[600px]">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[140px]">Time</TableHead>
-                    <TableHead>Event</TableHead>
-                    <TableHead>Agent</TableHead>
-                    <TableHead className="w-[120px]">Source</TableHead>
-                    <TableHead>Details</TableHead>
+                    <TableHead className="w-[140px]">{t("events.colTime")}</TableHead>
+                    <TableHead>{t("events.colEvent")}</TableHead>
+                    <TableHead>{t("events.colAgent")}</TableHead>
+                    <TableHead className="w-[120px]">{t("events.colSource")}</TableHead>
+                    <TableHead>{t("events.colDetails")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

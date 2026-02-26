@@ -50,7 +50,14 @@
       "Bash(./.trellis/scripts/issue.sh pull:*)",
       "Bash(gh issue:*)",
       "Bash(tail:*)",
-      "Bash(gh auth:*)"
+      "Bash(gh auth:*)",
+      "Bash(gh repo:*)",
+      "WebFetch(domain:agentclientprotocol.com)",
+      "Bash(curl:*)",
+      "Bash",
+      "WebFetch",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_install"
     ]
   }
 }

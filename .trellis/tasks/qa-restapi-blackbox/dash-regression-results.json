@@ -1,0 +1,176 @@
+[
+  {
+    "id": "R1",
+    "desc": "Dashboard home loads",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R2",
+    "desc": "Agents page loads with data",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R3",
+    "desc": "Events page loads with event log",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R4",
+    "desc": "Canvas page loads",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R5",
+    "desc": "Settings page loads with daemon info",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R6",
+    "desc": "Activity page loads",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R7",
+    "desc": "404 page for unknown routes",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R8",
+    "desc": "Sidebar has all nav links",
+    "status": "PASS",
+    "detail": "Found: ['/', '/canvas', '/agents', '/activity', '/events']"
+  },
+  {
+    "id": "R9",
+    "desc": "Top bar shows version + Online",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R10",
+    "desc": "Footer shows agent count",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R11",
+    "desc": "Dropdown opens on click",
+    "status": "PASS",
+    "detail": "Items: ['Stop', 'Chat', 'Details', 'Destroy']"
+  },
+  {
+    "id": "R12",
+    "desc": "Escape key closes dropdown",
+    "status": "PASS",
+    "detail": "After escape: 0"
+  },
+  {
+    "id": "R13",
+    "desc": "Click outside closes dropdown",
+    "status": "PASS",
+    "detail": "After click outside: 0"
+  },
+  {
+    "id": "R14",
+    "desc": "Menu shows Start/Chat/Details/Destroy",
+    "status": "PASS",
+    "detail": "Items: ['Start', 'Chat', 'Details', 'Destroy']"
+  },
+  {
+    "id": "R15",
+    "desc": "Agent detail shows name + status",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R16",
+    "desc": "Agent detail has 3 tabs",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R17",
+    "desc": "Agent detail has action buttons",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R18",
+    "desc": "Overview tab shows agent properties",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R19",
+    "desc": "Sessions tab loads data",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R20",
+    "desc": "Logs tab loads",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R21",
+    "desc": "Chat page loads with input",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R22",
+    "desc": "Chat sends message and shows response",
+    "status": "PASS",
+    "detail": "A\nActant\nDashboard\nLive Canvas\nAgents\nActivity\nEvents\nSettings\n\nv0.2.3\n\n2 agents\n\nActant\nv0.2.3\n|\n25m\nOnline\nreviewer\nRunning\nsession: b340cc4d...\nRegression test message\n21:37:09\n我看到你发送了\"Regression t"
+  },
+  {
+    "id": "R23",
+    "desc": "Events page shows event table",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R24",
+    "desc": "Events page has category filters",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R25",
+    "desc": "Canvas page shows content",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R26",
+    "desc": "Settings shows daemon connection status",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R27",
+    "desc": "Settings shows version + uptime + agents",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R28",
+    "desc": "Search filters agents",
+    "status": "PASS",
+    "detail": ""
+  },
+  {
+    "id": "R29",
+    "desc": "No critical JS console errors",
+    "status": "PASS",
+    "detail": "Total non-critical: 0"
+  }
+]

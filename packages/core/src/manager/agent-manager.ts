@@ -27,6 +27,7 @@ import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../provider/provider-env-resolver";
 import type { HookEventBus } from "../hooks/hook-event-bus";
 import type { ActivityRecorder } from "../activity/activity-recorder";
+import type { SessionContextInjector } from "../context-injector/session-context-injector";
 
 const logger = createLogger("agent-manager");
 
@@ -46,6 +47,8 @@ export interface AcpConnectionManagerLike {
     };
     /** When provided, wraps callback handler with RecordingCallbackHandler for activity recording. */
     activityRecorder?: unknown;
+    /** MCP servers to inject into the ACP session via session/new. */
+    mcpServers?: Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }>;
   }): Promise<{ sessionId: string }>;
   has(name: string): boolean;
   getPrimarySessionId(name: string): string | undefined;
@@ -75,6 +78,8 @@ export interface ManagerOptions {
   eventBus?: HookEventBus;
   /** Activity recorder for managed agent ACP interaction recording. */
   activityRecorder?: ActivityRecorder;
+  /** Session context injector for dynamic MCP server injection. */
+  sessionContextInjector?: SessionContextInjector;
 }
 
 export class AgentManager {
@@ -87,6 +92,7 @@ export class AgentManager {
   private readonly instanceRegistry?: InstanceRegistryAdapter;
   private readonly eventBus?: HookEventBus;
   private readonly activityRecorder?: ActivityRecorder;
+  private readonly sessionContextInjector?: SessionContextInjector;
 
   constructor(
     private readonly initializer: AgentInitializer,
@@ -104,6 +110,7 @@ export class AgentManager {
     this.acpManager = options?.acpManager;
     this.eventBus = options?.eventBus;
     this.activityRecorder = options?.activityRecorder;
+    this.sessionContextInjector = options?.sessionContextInjector;
   }
 
   /**
@@ -140,10 +147,10 @@ export class AgentManager {
         isProcessAlive(meta.pid)
       ) {
         const dir = join(this.instancesBaseDir, meta.name);
-        const reclaimed = await updateInstanceMeta(dir, { status: "running" });
+        const reclaimed = await updateInstanceMeta(dir, { status: "running", startedAt: new Date().toISOString() });
         this.cache.set(meta.name, reclaimed);
-        this.processes.set(meta.name, { pid: meta.pid, workspaceDir: dir, instanceName: meta.name });
-        this.watcher.watch(meta.name, meta.pid);
+        this.processes.set(meta.name, { pid: meta.pid!, workspaceDir: dir, instanceName: meta.name });
+        this.watcher.watch(meta.name, meta.pid!);
         logger.info({ name: meta.name, pid: meta.pid, oldStatus: meta.status }, "Orphan process reclaimed");
       } else if (
         (meta.status === "error" || meta.status === "crashed") &&
@@ -259,6 +266,11 @@ export class AgentManager {
         const providerEnv = backendEnvBuilder
           ? backendEnvBuilder(meta.providerConfig, meta.backendConfig)
           : buildDefaultProviderEnv(meta.providerConfig);
+
+        const sessionCtx = this.sessionContextInjector
+          ? await this.sessionContextInjector.prepare(name, meta)
+          : undefined;
+
         const connResult = await this.acpManager.connect(name, {
           command: acpResolved.command,
           args: acpResolved.args,
@@ -269,6 +281,7 @@ export class AgentManager {
             ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
           },
           activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
+          mcpServers: sessionCtx?.mcpServers,
         });
         logger.info({ name, acpOnly, providerType: meta.providerConfig?.type }, "ACP connection established");
 
@@ -282,7 +295,7 @@ export class AgentManager {
         });
       }
 
-      const running = await updateInstanceMeta(dir, { status: "running", pid });
+      const running = await updateInstanceMeta(dir, { status: "running", pid, startedAt: new Date().toISOString() });
       this.cache.set(name, running);
       if (pid) {
         this.watcher.watch(name, pid);
@@ -407,7 +420,7 @@ export class AgentManager {
       this.processes.delete(name);
     }
 
-    const stopped = await updateInstanceMeta(dir, { status: "stopped", pid: undefined });
+    const stopped = await updateInstanceMeta(dir, { status: "stopped", pid: undefined, startedAt: undefined });
     this.cache.set(name, stopped);
     this.eventBus?.emit("process:stop", { callerType: "system", callerId: "AgentManager" }, name, {
       pid: meta.pid ?? 0,
@@ -436,9 +449,11 @@ export class AgentManager {
     logger.info({ name }, "Agent destroyed");
   }
 
-  /** Get agent metadata by name. */
+  /** Get agent metadata by name, enriched with workspaceDir. */
   getAgent(name: string): AgentInstanceMeta | undefined {
-    return this.cache.get(name);
+    const meta = this.cache.get(name);
+    if (!meta) return undefined;
+    return { ...meta, workspaceDir: join(this.instancesBaseDir, meta.name) };
   }
 
   /** Get agent status by name. */
@@ -446,9 +461,12 @@ export class AgentManager {
     return this.cache.get(name)?.status;
   }
 
-  /** List all known agents. */
+  /** List all known agents, enriched with workspaceDir. */
   listAgents(): AgentInstanceMeta[] {
-    return Array.from(this.cache.values());
+    return Array.from(this.cache.values()).map((meta) => ({
+      ...meta,
+      workspaceDir: join(this.instancesBaseDir, meta.name),
+    }));
   }
 
   /** Get count of managed agents. */
@@ -575,6 +593,7 @@ export class AgentManager {
       pid,
       processOwnership: "external",
       metadata: mergedMetadata,
+      startedAt: new Date().toISOString(),
     });
     this.cache.set(name, updated);
     this.processes.set(name, { pid, workspaceDir: dir, instanceName: name });
@@ -749,7 +768,7 @@ export class AgentManager {
 
     const targetSessionId = sessionId ?? this.acpManager.getPrimarySessionId(name);
     if (!targetSessionId) {
-      throw new Error(`No session found for agent "${name}"`);
+      throw new Error(`Agent "${name}" is not ready to receive prompts. Ensure it is running and has an active session.`);
     }
 
     this.eventBus?.emit("prompt:before", { callerType: "system", callerId: "AgentManager" }, name, {

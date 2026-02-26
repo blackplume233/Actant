@@ -28,6 +28,15 @@ async function handleCanvasUpdate(
       code: RPC_ERROR_CODES.INVALID_PARAMS,
     });
   }
+
+  const meta = ctx.agentManager.getAgent(agentName);
+  if (meta && meta.archetype !== "employee") {
+    throw Object.assign(
+      new Error(`Canvas is only available for employee agents (got "${meta.archetype}")`),
+      { code: RPC_ERROR_CODES.INVALID_PARAMS },
+    );
+  }
+
   ctx.canvasStore.update(agentName, html, title as string | undefined);
   return { ok: true };
 }

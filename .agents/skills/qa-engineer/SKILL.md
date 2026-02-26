@@ -273,13 +273,23 @@ ACTANT_HOME="$TEST_DIR" ACTANT_SOCKET="$TEST_DIR/actant.sock" \
 1. 搜索已有 Issue
 2. 酌情创建新 Issue 或补充 Comment
 
-#### Step 8: 清理
+#### Step 8: 清理（关键！）
 
-无论测试成败都执行：
+无论测试成败都**必须**执行完整清理，不得跳过。残留进程会累积占用系统资源（曾发生 150+ 僵尸 node 进程的事故）。
 
-1. 执行场景 `cleanup` 中的命令（忽略错误）
-2. 停止 Daemon
-3. 删除临时目录：`rm -rf "$TEST_DIR"`
+清理步骤（按顺序执行，每步忽略错误继续下一步）：
+
+1. 执行场景 `cleanup` 中的命令
+2. 停止 Daemon：`ACTANT_HOME="$TEST_DIR" ACTANT_SOCKET="$TEST_DIR/actant.sock" node packages/cli/dist/bin/actant.js daemon stop`
+3. **杀死所有由本次测试启动的 Node 子进程**（通过记录的 PID 或进程树）：
+   - Windows: `taskkill /F /T /PID <daemon_pid>` （`/T` 杀死整个进程树）
+   - Unix: `kill -9 -<daemon_pgid>` 或 `pkill -P <daemon_pid>`
+4. 删除临时目录：`rm -rf "$TEST_DIR"`
+5. **验证清理**：确认无残留进程
+   - Windows: `tasklist /FI "IMAGENAME eq node.exe" /FO CSV /NH` 检查进程数是否回到测试前水平
+   - Unix: `ps aux | grep node | grep "$TEST_DIR"` 确认无匹配
+
+> **教训**: 2026-02-26 发现系统中积累了 150+ 个 QA 泄漏的 node.exe 进程，总内存占用超过 6GB。根因是 Daemon 启动的 Agent 子进程在 `daemon stop` 时未被完整回收。仅 `daemon stop` **不足以**杀死所有子进程，必须主动清理进程树。
 
 #### Step 9: 输出报告
 
@@ -423,11 +433,12 @@ exit_code: <code>
 ## 注意事项
 
 1. **环境隔离是第一优先级** — 每次测试必须使用临时目录，绝不影响用户的真实 Actant 环境。
-2. **真实环境优先** — 默认使用真实 launcher 模式运行测试（不设置 `ACTANT_LAUNCHER_MODE`），除非用户明确要求 mock 模式或场景文件 `setup.launcherMode` 显式为 `"mock"`。真实模式能覆盖进程生命周期、ACP 连接、Session Lease 等 mock 模式无法验证的场景。
-3. **每步即时写入日志** — 每执行一步就立即将原始输入、原始输出、判断追加到日志文件（`qa-log-roundN.md`）。严禁积攒到执行结束后再回忆填写。日志是给人类审查用的第一手证据链。
-4. **完整记录原始 I/O** — 日志中的 stdout 和 stderr 必须是执行时的原始全文，不得省略、截断或改写。
-5. **判断紧跟输出** — 每条日志的判断（PASS/WARN/FAIL + 理由）必须紧跟在该步的原始输出之后，方便人类逐条审查。
-6. **避免重复 Issue** — 创建前先搜索，已有相同问题的 Issue 则添加 Comment。
-7. **cleanup 必须执行** — 无论测试成败，cleanup 步骤都要执行。停止 Daemon、删除临时目录。
-8. **引用要精确** — 报告中提及文件路径、退出码、输出内容时必须是实际值，不可虚构。
-9. **保持客观** — 判断基于事实观察，分析基于技术推理，不做无根据的猜测。
+2. **清理是测试的一部分，不是可选项** — 测试完成（无论成败）后必须执行完整清理（Step 8）。包括：停止 Daemon、杀死进程树、删除临时目录、验证无残留进程。跳过清理等同于测试未完成。
+3. **真实环境优先** — 默认使用真实 launcher 模式运行测试（不设置 `ACTANT_LAUNCHER_MODE`），除非用户明确要求 mock 模式或场景文件 `setup.launcherMode` 显式为 `"mock"`。真实模式能覆盖进程生命周期、ACP 连接、Session Lease 等 mock 模式无法验证的场景。
+4. **每步即时写入日志** — 每执行一步就立即将原始输入、原始输出、判断追加到日志文件（`qa-log-roundN.md`）。严禁积攒到执行结束后再回忆填写。日志是给人类审查用的第一手证据链。
+5. **完整记录原始 I/O** — 日志中的 stdout 和 stderr 必须是执行时的原始全文，不得省略、截断或改写。
+6. **判断紧跟输出** — 每条日志的判断（PASS/WARN/FAIL + 理由）必须紧跟在该步的原始输出之后，方便人类逐条审查。
+7. **避免重复 Issue** — 创建前先搜索，已有相同问题的 Issue 则添加 Comment。
+8. **cleanup 必须执行且必须验证** — 无论测试成败，cleanup 步骤（Step 8 全部 5 步）都要执行。仅停止 Daemon 不够，必须杀死进程树并验证无残留。
+9. **引用要精确** — 报告中提及文件路径、退出码、输出内容时必须是实际值，不可虚构。
+10. **保持客观** — 判断基于事实观察，分析基于技术推理，不做无根据的猜测。

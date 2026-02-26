@@ -74,7 +74,17 @@ function assembleConversation(records: ActivityRecordLike[]): ConversationTurn[]
   let currentTurn: ConversationTurn | null = null;
 
   for (const r of records) {
-    if (r.type === "session_update") {
+    if (r.type === "prompt_sent") {
+      const data = r.data as Record<string, unknown>;
+      const content =
+        typeof data.content === "string"
+          ? data.content
+          : (data.contentRef as Record<string, unknown> | undefined)?.preview as string ?? "";
+      currentTurn = { role: "user", content, ts: r.ts, toolCalls: [], fileOps: [] };
+      turns.push(currentTurn);
+    } else if (r.type === "prompt_complete") {
+      currentTurn = null;
+    } else if (r.type === "session_update") {
       const data = r.data as Record<string, unknown>;
       const updateType = data.sessionUpdate as string;
 

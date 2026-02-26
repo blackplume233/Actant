@@ -1,0 +1,175 @@
+{
+  "common": {
+    "loading": "加载中…",
+    "back": "返回",
+    "search": "搜索",
+    "start": "启动",
+    "stop": "停止",
+    "destroy": "销毁",
+    "chat": "对话",
+    "details": "详情",
+    "cancel": "取消",
+    "confirm": "确认",
+    "retry": "重试",
+    "noData": "—",
+    "connected": "已连接",
+    "disconnected": "已断开",
+    "online": "在线",
+    "offline": "离线"
+  },
+
+  "status": {
+    "running": "运行中",
+    "starting": "启动中",
+    "stopping": "停止中",
+    "stopped": "已停止",
+    "created": "已创建",
+    "error": "异常",
+    "crashed": "已崩溃"
+  },
+
+  "nav": {
+    "dashboard": "控制台",
+    "canvas": "实时画布",
+    "agents": "智能体",
+    "activity": "活动",
+    "events": "事件",
+    "settings": "设置",
+    "brand": "Actant",
+    "agentCount_one": "{{count}} 个智能体",
+    "agentCount_other": "{{count}} 个智能体"
+  },
+
+  "dashboard": {
+    "title": "控制中心",
+    "subtitle": "从统一视图监控和管理所有智能体。",
+    "totalAgents": "智能体总数",
+    "running": "运行中",
+    "stopped": "已停止",
+    "error": "异常",
+    "agents": "智能体",
+    "recentEvents": "最近事件"
+  },
+
+  "canvas": {
+    "title": "实时画布",
+    "preview": "预览",
+    "subtitle": "由每个雇员智能体自主管理的实时流式工作区。",
+    "heading": "流式 AI 画布",
+    "description": "这是一个实时流式工作区，每个雇员智能体拥有独立的区域，可以推送富 HTML 组件 — 状态面板、图表、进度条和交互控件。",
+    "featureAgentTitle": "智能体专属区域",
+    "featureAgentDesc": "每个雇员管理自己的区域，拥有完整的 HTML/CSS/JS 自由度。",
+    "featureSandboxTitle": "安全沙箱",
+    "featureSandboxDesc": "内容在 iframe 沙箱中渲染，确保隔离与安全。",
+    "featureRealtimeTitle": "实时更新",
+    "featureRealtimeDesc": "画布更新通过 SSE 推送，无需刷新页面。",
+    "agentSlots": "智能体插槽",
+    "emptySlots": "没有正在运行的雇员智能体。只有雇员类型的智能体可以推送画布内容。",
+    "awaitingStream": "等待流连接…",
+    "updatedAt": "更新于 {{time}}"
+  },
+
+  "agents": {
+    "title": "智能体",
+    "subtitle": "查看和管理所有已注册的智能体实例。",
+    "searchPlaceholder": "搜索智能体…",
+    "noMatch": "没有符合当前筛选条件的智能体。",
+    "noAgents": "暂无智能体",
+    "createHint": "使用 actant agent create 创建智能体",
+    "all": "全部"
+  },
+
+  "agentDetail": {
+    "notFound": "未找到智能体 \"{{name}}\"，可能已被销毁。",
+    "tabOverview": "概览",
+    "tabSessions": "会话",
+    "tabLogs": "日志",
+    "fieldName": "名称",
+    "fieldStatus": "状态",
+    "fieldArchetype": "原型",
+    "fieldTemplate": "模板",
+    "fieldPid": "PID",
+    "fieldLaunchMode": "启动模式",
+    "fieldWorkspace": "工作目录",
+    "fieldUptime": "运行时长",
+    "loadingSessions": "加载会话中…",
+    "noSessions": "暂无会话。",
+    "startConversation": "开始对话",
+    "selectSession": "选择一个会话以查看对话内容。",
+    "loadingConversation": "加载中…",
+    "noConversation": "暂无对话数据。",
+    "msgs": "条消息",
+    "tools": "次工具调用",
+    "empty": "（空）",
+    "loadingLogs": "加载日志中…",
+    "noLogs": "暂无日志输出。"
+  },
+
+  "chat": {
+    "newChat": "新对话",
+    "newConversation": "已开始新对话。",
+    "historyBanner": "显示上一会话的 {{count}} 条消息",
+    "startFresh": "重新开始",
+    "continuingBanner": "继续对话（已加载 {{count}} 条历史消息）",
+    "loadingConversation": "加载对话中…",
+    "startPrompt": "与 {{name}} 开始对话",
+    "readyHint": "智能体正在运行，可以开始对话。",
+    "stoppedHint": "智能体已停止 — 请从详情页启动后再对话。",
+    "thinking": "思考中…",
+    "inputPlaceholder": "向 {{name}} 发送消息…",
+    "inputDisabled": "智能体未运行 — 请先启动",
+    "sendHint": "Enter 发送 · Shift+Enter 换行",
+    "notRunning": "智能体 \"{{name}}\" 未运行，请先启动后再对话。"
+  },
+
+  "activity": {
+    "title": "活动",
+    "subtitle": "智能体活动流 — 提示、会话和交互记录。",
+    "filterAll": "全部",
+    "activeAgents": "活跃智能体",
+    "recentEvents": "最近事件",
+    "prompts": "提示",
+    "sessions": "会话",
+    "timeline": "活动时间线",
+    "empty": "暂无活动记录。"
+  },
+
+  "events": {
+    "title": "事件",
+    "subtitle": "来自 Actant 事件总线的实时事件流。",
+    "searchPlaceholder": "搜索事件…",
+    "filterAll": "全部",
+    "logTitle": "事件日志",
+    "empty": "没有符合当前筛选条件的事件。",
+    "noRecent": "暂无最近事件",
+    "colTime": "时间",
+    "colEvent": "事件",
+    "colAgent": "智能体",
+    "colSource": "来源",
+    "colDetails": "详情"
+  },
+
+  "settings": {
+    "title": "设置",
+    "subtitle": "守护进程信息和控制台配置。",
+    "connectionTitle": "守护进程连接",
+    "connectionDesc": "与 Actant 守护进程的当前连接状态。",
+    "daemonInfo": "守护进程信息",
+    "version": "版本",
+    "uptime": "运行时长",
+    "managedAgents": "托管智能体",
+    "agentOverview": "智能体概览",
+    "agentOverviewDesc": "按状态汇总所有已注册智能体。",
+    "noAgents": "暂无已注册的智能体。",
+    "aboutTitle": "关于",
+    "aboutDesc": "Actant 控制台 — Actant 智能体平台的实时监控和管理界面。",
+    "aboutTransport": "传输协议：<code>WebTransport (HTTP + SSE)</code>",
+    "aboutTauri": "Tauri 就绪架构，优雅降级至 SSE"
+  },
+
+  "notFound": {
+    "code": "404",
+    "message": "页面未找到",
+    "backHome": "返回控制台"
+  }
+}

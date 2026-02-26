@@ -324,6 +324,8 @@ Provider 存在两个层次：
 | `effectivePermissions` | `PermissionsConfig` | 否 | — | 解析后的最终生效权限（创建时由 template + override 解析写入，运行时可通过 `agent.updatePermissions` RPC 更新） |
 | `archetype` | [`AgentArchetype`](#agentarchetype) | 否 | `"tool"` | 实例交互原型，驱动 launchMode/interactionModes/autoStart 的默认值 |
 | `autoStart` | `boolean` | 否 | `false` | Daemon 启动时是否自动启动此实例（employee/service 默认 true） |
+| `workspaceDir` | `string` | 否 | — | Agent workspace 的绝对路径。运行时由 AgentManager 在 `startAgent()` 时填充，持久化到 `.actant.json`，供 Dashboard 等外部系统读取 |
+| `startedAt` | `string` | 否 | — | ISO 8601 时间戳，记录 Agent 进程最近一次启动的时间。由 AgentManager 在 `startAgent()` 时写入 |
 | `metadata` | `Record<string, string>` | 否 | — | 任意元数据 |
 
 \* Zod Schema 中标记 optional 以兼容旧文件；读取时缺失则默认 `"cursor"`。`"pi"` 类型实例的 `processOwnership` 始终为 `"managed"`。

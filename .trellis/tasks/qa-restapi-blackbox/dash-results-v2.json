@@ -1,0 +1,122 @@
+[
+  {
+    "id": "D1",
+    "desc": "Main page loads with sidebar",
+    "status": "PASS",
+    "detail": "sidebar_links=5, header=True"
+  },
+  {
+    "id": "D2",
+    "desc": "Agents page shows all 3 agents via SSE",
+    "status": "PASS",
+    "detail": "reviewer=True qa=True doc=True"
+  },
+  {
+    "id": "D3",
+    "desc": "Agent cards show 'Created' status badges",
+    "status": "PASS",
+    "detail": "badges=3"
+  },
+  {
+    "id": "D4",
+    "desc": "Status filter buttons present",
+    "status": "PASS",
+    "detail": "filters=2, all_btn=True"
+  },
+  {
+    "id": "D5",
+    "desc": "Agent dropdown menu",
+    "status": "WARN",
+    "detail": "Could not find/trigger dropdown via SVG buttons"
+  },
+  {
+    "id": "D6",
+    "desc": "Click card navigates to agent detail",
+    "status": "PASS",
+    "detail": "url=http://localhost:3230/agents/reviewer, actions=True, tabs=True"
+  },
+  {
+    "id": "D7",
+    "desc": "Overview tab shows agent info",
+    "status": "PASS",
+    "detail": "info_visible=True"
+  },
+  {
+    "id": "D8",
+    "desc": "Sessions tab loads",
+    "status": "PASS",
+    "detail": "A\nActant\nDashboard\nLive Canvas\nAgents\nActivity\nEvents\nSettings\n\nv0.2.3\n\n3 agents\n\nActant\nv0.2.3\n|\n6m\nOnline\nreviewer\nCre"
+  },
+  {
+    "id": "D9",
+    "desc": "Logs tab loads",
+    "status": "PASS",
+    "detail": "A\nActant\nDashboard\nLive Canvas\nAgents\nActivity\nEvents\nSettings\n\nv0.2.3\n\n3 agents\n\nActant\nv0.2.3\n|\n6m\nOnline\nreviewer\nCre"
+  },
+  {
+    "id": "D10",
+    "desc": "Agent chat page with message input",
+    "status": "PASS",
+    "detail": "input=True, chat_ui=True"
+  },
+  {
+    "id": "D11",
+    "desc": "Chat send button",
+    "status": "WARN",
+    "detail": "No send button found"
+  },
+  {
+    "id": "D12",
+    "desc": "Events page shows event history",
+    "status": "PASS",
+    "detail": "event_data=True, page_title=True"
+  },
+  {
+    "id": "D13",
+    "desc": "Canvas page shows canvas data",
+    "status": "PASS",
+    "detail": "A\nActant\nDashboard\nLive Canvas\nAgents\nActivity\nEvents\nSettings\n\nv0.2.3\n\n3 agents\n\nActant\nv0.2.3\n|\n7m\nOnline\nLive Canvas\nPreview\n\nReal-time streaming workspace managed by each employee agent autonomous"
+  },
+  {
+    "id": "D14",
+    "desc": "Settings page loads with daemon info",
+    "status": "PASS",
+    "detail": "A\nActant\nDashboard\nLive Canvas\nAgents\nActivity\nEvents\nSettings\n\nv0.2.3\n\n3 agents\n\nActant\nv0.2.3\n|\n7m\nOnline\nSettings\n\nDaemon information and dashboard configuration.\n\nDaemon Connection\nCurrent connect"
+  },
+  {
+    "id": "D15",
+    "desc": "Activity page loads",
+    "status": "PASS",
+    "detail": "A\nActant\nDashboard\nLive Canvas\nAgents\nActivity\nEvents\nSettings\n\nv0.2.3\n\n3 agents\n\nActant\nv0.2.3\n|\n7m\nOnline\nActivity\n\nAgent activity feed — prompts, sessions, and interactions.\n\nAll\ndoc-writer\nqa-agen"
+  },
+  {
+    "id": "D16",
+    "desc": "Sidebar navigation links",
+    "status": "PASS",
+    "detail": "5 links: Dashboard(/), Live Canvas(/canvas), Agents(/agents), Activity(/activity), Events(/events)"
+  },
+  {
+    "id": "D17",
+    "desc": "Top bar shows version + online status",
+    "status": "PASS",
+    "detail": "version=True, online=True, uptime=False"
+  },
+  {
+    "id": "D18",
+    "desc": "Footer shows agent count",
+    "status": "PASS",
+    "detail": "found='3 agents' in footer"
+  },
+  {
+    "id": "D19",
+    "desc": "Not-found page for unknown routes",
+    "status": "PASS",
+    "detail": "A\nActant\nDashboard\nLive Canvas\nAgents\nActivity\nEvents\nSettings\n\nv0.2.3\n\n3 agents\n\nActant\nv0.2.3\n|\n7m\nOnline\n\n404\n\nPage not found\n\nBack to Dashboard"
+  },
+  {
+    "id": "D20",
+    "desc": "No critical JS console errors",
+    "status": "PASS",
+    "detail": "Total warnings: 0"
+  }
+]

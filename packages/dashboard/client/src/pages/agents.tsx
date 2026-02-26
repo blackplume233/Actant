@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Bot, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ const STATUS_FILTERS = ["all", "running", "stopped", "error", "crashed"] as cons
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
 export function AgentsPage() {
+  const { t } = useTranslation();
   const { agents, connected } = useSSEContext();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -41,9 +43,9 @@ export function AgentsPage() {
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div>
-        <h2 className="text-2xl font-bold tracking-tight">Agents</h2>
+        <h2 className="text-2xl font-bold tracking-tight">{t("agents.title")}</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          View and manage all registered agent instances.
+          {t("agents.subtitle")}
         </p>
       </div>
 
@@ -51,7 +53,7 @@ export function AgentsPage() {
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Search agents..."
+            placeholder={t("agents.searchPlaceholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
@@ -67,7 +69,7 @@ export function AgentsPage() {
               className="cursor-pointer select-none capitalize"
               onClick={() => setStatusFilter(f)}
             >
-              {f}
+              {f === "all" ? t("agents.all") : t(`status.${f}`)}
               {counts[f] != null && (
                 <span className="ml-1 opacity-60">{counts[f]}</span>
               )}
@@ -82,7 +84,7 @@ export function AgentsPage() {
         <div className="flex flex-col items-center py-8 text-center">
           <Bot className="mb-2 h-8 w-8 text-muted-foreground/40" />
           <p className="text-sm text-muted-foreground">
-            No agents match the current filter.
+            {t("agents.noMatch")}
           </p>
         </div>
       )}

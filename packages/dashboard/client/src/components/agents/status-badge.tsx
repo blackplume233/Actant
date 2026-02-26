@@ -1,13 +1,14 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
-const statusConfig: Record<string, { color: string; pulse: boolean; label: string }> = {
-  running: { color: "bg-emerald-500", pulse: true, label: "Running" },
-  starting: { color: "bg-amber-500", pulse: true, label: "Starting" },
-  stopping: { color: "bg-amber-500", pulse: true, label: "Stopping" },
-  stopped: { color: "bg-neutral-400", pulse: false, label: "Stopped" },
-  created: { color: "bg-neutral-400", pulse: false, label: "Created" },
-  error: { color: "bg-red-500", pulse: false, label: "Error" },
-  crashed: { color: "bg-red-500", pulse: true, label: "Crashed" },
+const statusConfig: Record<string, { color: string; pulse: boolean; labelKey: string }> = {
+  running: { color: "bg-emerald-500", pulse: true, labelKey: "status.running" },
+  starting: { color: "bg-amber-500", pulse: true, labelKey: "status.starting" },
+  stopping: { color: "bg-amber-500", pulse: true, labelKey: "status.stopping" },
+  stopped: { color: "bg-neutral-400", pulse: false, labelKey: "status.stopped" },
+  created: { color: "bg-neutral-400", pulse: false, labelKey: "status.created" },
+  error: { color: "bg-red-500", pulse: false, labelKey: "status.error" },
+  crashed: { color: "bg-red-500", pulse: true, labelKey: "status.crashed" },
 };
 
 interface StatusBadgeProps {
@@ -16,6 +17,7 @@ interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
+  const { t } = useTranslation();
   const config = statusConfig[status] ?? statusConfig.stopped;
 
   return (
@@ -31,7 +33,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
         )}
         <span className={cn("relative inline-flex h-2 w-2 rounded-full", config.color)} />
       </span>
-      <span className="text-xs font-medium text-muted-foreground">{config.label}</span>
+      <span className="text-xs font-medium text-muted-foreground">{t(config.labelKey)}</span>
     </span>
   );
 }

@@ -3,6 +3,14 @@
     "gitnexus": {
       "command": "npx",
       "args": ["-y", "gitnexus@latest", "mcp"]
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": ["-y", "chrome-devtools-mcp@latest"]
+    },
+    "webdev": {
+      "command": "npx",
+      "args": ["-y", "webdev-mcp@latest"]
     }
   }
 }

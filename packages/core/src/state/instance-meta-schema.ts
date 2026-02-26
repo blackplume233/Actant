@@ -80,4 +80,5 @@ export const AgentInstanceMetaSchema = z.object({
   autoStart: z.boolean().default(false),
   effectivePermissions: PermissionsConfigSchema.optional(),
   metadata: z.record(z.string(), z.string()).optional(),
+  startedAt: z.string().datetime().optional(),
 });

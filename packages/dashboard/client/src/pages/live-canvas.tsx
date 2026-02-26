@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Sparkles, Bot, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -5,29 +6,32 @@ import { Separator } from "@/components/ui/separator";
 import { useSSEContext, type CanvasEntry } from "@/hooks/use-sse";
 
 export function LiveCanvas() {
+  const { t } = useTranslation();
   const { agents, canvas } = useSSEContext();
-  const runningAgents = agents.filter((a) => a.status === "running");
+  const employeeAgents = agents.filter((a) => a.status === "running" && a.archetype === "employee");
+  const employeeNames = new Set(employeeAgents.map((a) => a.name));
 
   const canvasMap = new Map<string, CanvasEntry>();
   for (const entry of canvas) {
-    canvasMap.set(entry.agentName, entry);
+    if (employeeNames.has(entry.agentName)) {
+      canvasMap.set(entry.agentName, entry);
+    }
   }
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <div>
         <div className="flex items-center gap-2">
-          <h2 className="text-2xl font-bold tracking-tight">Live Canvas</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t("canvas.title")}</h2>
           <Badge variant="outline" className="bg-violet-50 text-violet-700 border-violet-200">
-            Preview
+            {t("canvas.preview")}
           </Badge>
         </div>
         <p className="mt-1 text-sm text-muted-foreground">
-          Real-time streaming workspace managed by each employee agent autonomously.
+          {t("canvas.subtitle")}
         </p>
       </div>
 
-      {/* Vision explanation */}
       <Card className="border-dashed">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
@@ -35,27 +39,26 @@ export function LiveCanvas() {
               <Sparkles className="h-5 w-5 text-violet-600" />
             </div>
             <div className="space-y-3">
-              <h3 className="font-semibold">Streaming AI Canvas</h3>
+              <h3 className="font-semibold">{t("canvas.heading")}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                This page is a live, streaming workspace where each employee agent owns a section
-                and can push rich HTML widgets — status panels, charts, progress bars, and interactive controls.
+                {t("canvas.description")}
               </p>
               <Separator />
               <div className="grid gap-3 sm:grid-cols-3">
                 <FeatureCard
                   icon={<Bot className="h-4 w-4 text-blue-600" />}
-                  title="Agent-Owned Sections"
-                  description="Each employee manages its own area with full HTML/CSS/JS freedom."
+                  title={t("canvas.featureAgentTitle")}
+                  description={t("canvas.featureAgentDesc")}
                 />
                 <FeatureCard
                   icon={<Sparkles className="h-4 w-4 text-violet-600" />}
-                  title="Secure Sandbox"
-                  description="Content renders in iframe sandbox for isolation and security."
+                  title={t("canvas.featureSandboxTitle")}
+                  description={t("canvas.featureSandboxDesc")}
                 />
                 <FeatureCard
                   icon={<Zap className="h-4 w-4 text-amber-600" />}
-                  title="Real-Time Updates"
-                  description="Canvas updates arrive via SSE, no page refresh needed."
+                  title={t("canvas.featureRealtimeTitle")}
+                  description={t("canvas.featureRealtimeDesc")}
                 />
               </div>
             </div>
@@ -63,19 +66,18 @@ export function LiveCanvas() {
         </CardContent>
       </Card>
 
-      {/* Agent canvas slots */}
       <section>
-        <h3 className="mb-4 text-lg font-semibold">Agent Slots</h3>
-        {runningAgents.length === 0 && canvas.length === 0 ? (
+        <h3 className="mb-4 text-lg font-semibold">{t("canvas.agentSlots")}</h3>
+        {employeeAgents.length === 0 && canvasMap.size === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed py-12 text-center">
             <Bot className="mb-3 h-10 w-10 text-muted-foreground/40" />
             <p className="text-sm text-muted-foreground">
-              No running agents. Start an employee agent to see its canvas slot.
+              {t("canvas.emptySlots")}
             </p>
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {runningAgents.map((agent) => {
+            {employeeAgents.map((agent) => {
               const entry = canvasMap.get(agent.name);
               return (
                 <Card key={agent.name} className="relative overflow-hidden">
@@ -103,7 +105,7 @@ export function LiveCanvas() {
                           title={`Canvas: ${agent.name}`}
                         />
                         <p className="mt-1 text-right text-[10px] text-muted-foreground/50">
-                          Updated {new Date(entry.updatedAt).toLocaleTimeString()}
+                          {t("canvas.updatedAt", { time: new Date(entry.updatedAt).toLocaleTimeString() })}
                         </p>
                       </div>
                     ) : (
@@ -114,7 +116,7 @@ export function LiveCanvas() {
                           <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
                         </div>
                         <p className="mt-4 text-center text-[11px] text-muted-foreground/60">
-                          Awaiting stream connection...
+                          {t("canvas.awaitingStream")}
                         </p>
                       </>
                     )}

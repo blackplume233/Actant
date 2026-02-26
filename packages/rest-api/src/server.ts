@@ -95,6 +95,15 @@ export function createApiHandler(config: ServerConfig): RequestListener {
         else if (code === -32601) httpStatus = 404;
       }
 
+      // Fallback: infer HTTP status from error message patterns when no RPC code
+      if (httpStatus === 500) {
+        const lower = message.toLowerCase();
+        if (/not found|does not exist|no such/.test(lower)) httpStatus = 404;
+        else if (/required|missing|invalid|must be|cannot be empty/.test(lower)) httpStatus = 400;
+        else if (/not running|no .* connection|already exists|no attached|has no/.test(lower)) httpStatus = 409;
+        else if (/not supported|not implemented/.test(lower)) httpStatus = 501;
+      }
+
       error(res, message, httpStatus);
     }
   };

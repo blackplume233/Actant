@@ -110,6 +110,18 @@ Plugin ──────────────────┘                
                                                                        └ tool     → direct → sync
 ```
 
+#### Archetype 决定 Dashboard 可用功能
+
+Archetype 不仅影响事件执行策略，还决定了 Dashboard UI 中哪些功能对该 Agent 可用：
+
+| Dashboard 功能 | tool | employee | service | 实现方式 |
+|---------------|------|----------|---------|---------|
+| Agent Card / Detail | ✅ | ✅ | ✅ | 无限制 |
+| Chat | ✅ | ✅ | ✅ | 需 `running` 状态，否则前端 disable |
+| Live Canvas（推送 HTML widget） | ❌ | ✅ | ❌ | 前端：只渲染 employee slot；后端：`canvas.update` 拒绝非 employee |
+
+> **Warning**: 后端 `canvas.update` RPC handler 会校验 agent archetype，非 employee 的 canvas 推送请求将返回 `INVALID_PARAMS` 错误。前端 Live Canvas 页面也会过滤掉非 employee 的 agent 和 canvas 条目。前后端双重校验缺一不可。
+
 #### Event-First 设计规则
 
 1. **Emit before extend** — 操作完成后先 emit 事件，由 listener 决定后续行为
