@@ -70,7 +70,17 @@ export const McpServerDefinitionSchema = z.object({
 
 export const WorkflowDefinitionSchema = z.object({
   ...VersionedComponentFields,
-  content: z.string().min(1, "content is required"),
+  content: z.string().min(1).optional(),
+  hooks: z.array(z.object({
+    on: z.string().min(1),
+    description: z.string().optional(),
+    allowedCallers: z.array(z.string()).optional(),
+    actions: z.array(z.object({
+      type: z.enum(["shell", "builtin", "agent"]),
+    }).passthrough()).min(1),
+  })).optional(),
+  enabled: z.boolean().optional(),
+  level: z.enum(["actant", "instance"]).optional(),
 });
 
 const PlatformCommandSchema = z.object({

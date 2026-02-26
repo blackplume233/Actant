@@ -6,7 +6,7 @@ const WorkflowDefinitionSchema = z
   .object({
     name: z.string().min(1),
     description: z.string().optional(),
-    content: z.string().min(1),
+    content: z.string().min(1).optional(),
   })
   .passthrough();
 
