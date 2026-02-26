@@ -2,7 +2,7 @@
 
 一个用于构建、管理和编排 AI Agent 的平台。面向游戏开发等复杂业务场景，让用户能够快速拼装、复用合适的 Agent，零成本地将 AI 嵌入工作流。
 
-> **当前版本**: [v0.2.2](https://github.com/blackplume233/Actant/releases/tag/v0.2.2) — Phase 4 进行中，核心功能可用
+> **当前版本**: [v0.2.3](https://github.com/blackplume233/Actant/releases/tag/v0.2.3) — Phase 4 进行中，核心功能可用
 
 ---
 
@@ -162,7 +162,7 @@ shared ← core ← pi
 | 语言 | TypeScript 5.9+（strict） |
 | 包管理 | pnpm 9+（workspace monorepo） |
 | 构建 | tsup |
-| 测试 | Vitest 4（669 tests, 56 suites） |
+| 测试 | Vitest 4（830 tests, 64 suites） |
 | Schema 校验 | Zod |
 | CLI 框架 | Commander.js v14 |
 | 日志 | pino |
@@ -250,7 +250,7 @@ Actant/
 |------|------|
 | `pnpm dev` | 开发模式启动 CLI |
 | `pnpm build` | 构建所有包 |
-| `pnpm test` | 运行全部测试（669 tests） |
+| `pnpm test` | 运行全部测试（830 tests） |
 | `pnpm test:changed` | 仅运行受变更影响的测试 |
 | `pnpm test:watch` | 测试监听模式 |
 | `pnpm lint` | ESLint 代码检查 |
@@ -295,9 +295,9 @@ cd docs/wiki && pnpm install && pnpm dev
 | [开发流程指南](docs/guides/dev-workflow-guide.md) | Plan → Code → Review → PR → Ship 全流程 |
 | [ActantHub 使用指南](docs/guides/actant-hub-usage.md) | 默认组件源的使用 |
 | [创建自定义 Hub](docs/guides/create-custom-hub.md) | 从零创建组件源仓库 |
-| [v0.2.2 架构文档](docs/stage/v0.2.2/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
-| [v0.2.2 API 接口](docs/stage/v0.2.2/api-surface.md) | 62 个 RPC 方法 + 68 个 CLI 命令 |
-| [v0.2.2 变更日志](docs/stage/v0.2.2/changelog.md) | v0.2.1 → v0.2.2 变更记录 |
+| [v0.2.3 架构文档](docs/stage/v0.2.3/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
+| [v0.2.3 API 接口](docs/stage/v0.2.3/api-surface.md) | 76 个 RPC 方法 + 62 个 CLI 命令 |
+| [v0.2.3 变更日志](docs/stage/v0.2.3/changelog.md) | v0.2.2 → v0.2.3 变更记录 |
 | [DomainContext 扩展指南](docs/design/domain-context-extension-guide.md) | 如何添加自定义组件类型 |
 | [ADR-001: 技术栈](docs/decisions/001-tech-stack.md) | TypeScript + pnpm monorepo 选型 |
 | [ADR-002: 目录结构](docs/decisions/002-directory-structure.md) | 项目目录规范 |

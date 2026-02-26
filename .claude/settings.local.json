@@ -49,7 +49,8 @@
       "Bash(./.trellis/scripts/issue.sh list:*)",
       "Bash(./.trellis/scripts/issue.sh pull:*)",
       "Bash(gh issue:*)",
-      "Bash(tail:*)"
+      "Bash(tail:*)",
+      "Bash(gh auth:*)"
     ]
   }
 }

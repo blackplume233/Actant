@@ -240,3 +240,93 @@ EventBus 核心功能测试完整，异常安全性（async reject / sync throw�
 
 ---
 
+### [Step 9] ActionRunner 单元测试覆盖检查
+**时间**: 2026-02-24T09:17:00
+
+#### 输入
+```
+rg "action-runner|ActionRunner|runActions" packages/core/src --glob "*.test.ts" --files-with-matches
+```
+
+#### 输出
+```
+No files with matches found
+```
+
+#### 判断: WARN
+ActionRunner（`packages/core/src/hooks/action-runner.ts`）**没有专门的单元测试**。该模块实现了三种动作类型（shell/builtin/agent）的执行逻辑、模板变量插值（`${agent.name}`、`${event}`、`${timestamp}`）、错误处理（best-effort 策略）。这些关键逻辑缺乏测试覆盖。
+
+---
+
+### [Step 10] HookRegistry 单元测试覆盖检查
+**时间**: 2026-02-24T09:17:30
+
+#### 输入
+```
+rg "registerWorkflow|HookRegistry" packages/core/src --glob "*.test.ts" --files-with-matches
+```
+
+#### 输出
+```
+No files with matches found
+```
+
+#### 判断: WARN
+HookRegistry（`packages/core/src/hooks/hook-registry.ts`）**没有单元测试**。该模块实现了 workflow hook 注册/注销、事件监听绑定、instance-level 过滤、allowedCallers 过滤等核心功能。虽然代码量不大，但作为 hook 触发链路的关键环节，缺乏测试覆盖是风险。
+
+---
+
+### [Step 11] Hook CLI 命令实现状态检查
+**时间**: 2026-02-24T09:18:00
+
+#### 输入
+```
+node packages/cli/dist/bin/actant.js hook subscribe --agent self --event heartbeat:tick --prompt "test"
+```
+
+#### 输出
+```
+exit_code: 1
+
+--- stderr ---
+error: unknown command 'hook'
+```
+
+#### 产物检查
+```
+API contracts §4.8 标记为 🚧 待实现：
+- hook subscribe / hook unsubscribe / hook list CLI 命令未实现
+- hook.subscribe / hook.unsubscribe / hook.list RPC handler 未实现
+- Agent 自注册 Hook（订阅模型 C）完全不可用
+```
+
+#### 判断: WARN
+`hook` CLI 命令及其对应的 RPC handler 均未实现。这在 API contracts 中已标记为 🚧（Phase 4），属于已知的规划中功能。但考虑到 PR #179 已经合并了统一事件系统的基础设施（EventBus、CategoryRegistry、BUILTIN_EVENT_META 等），上层集成（HookRegistry 连接和 hook CLI）是完成事件系统的关键缺失环节。
+
+---
+
+### [Step 12] EmitGuard 集成验证（通过 AppContext）
+**时间**: 2026-02-24T09:18:30
+
+#### 输入
+```
+检查 AppContext 构造函数中 EmitGuard 的设置
+```
+
+#### 输出
+```
+app-context.ts line 146:
+  this.eventBus.setEmitGuard(this.hookCategoryRegistry.buildEmitGuard());
+
+buildEmitGuard() 内部调用 canEmit()，验证:
+- actant:start/stop: 只有 system 可以 emit
+- agent:created/destroyed/modified: system 和 user 可以 emit，plugin/agent 不行
+- process:start/stop/crash/restart: 只有 system 可以 emit
+- heartbeat:tick/prompt:before/after/idle: 所有 callerType 可以 emit
+```
+
+#### 判断: PASS
+EmitGuard 正确集成到 AppContext 中。通过 HookCategoryRegistry.buildEmitGuard()，EventBus 会在每次 emit 时验证 callerType 权限。系统事件被正确保护，只有 system caller 可以触发。
+
+---
+
