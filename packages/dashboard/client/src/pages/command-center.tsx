@@ -4,11 +4,11 @@ import { Bot, Play, OctagonX, Pause } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { AgentGrid } from "@/components/agents/agent-grid";
 import { EventList } from "@/components/events/event-list";
-import { useSSEContext } from "@/hooks/use-sse";
+import { useRealtimeContext } from "@/hooks/use-realtime";
 
 export function CommandCenter() {
   const { t } = useTranslation();
-  const { agents, events, connected } = useSSEContext();
+  const { agents, events, connected } = useRealtimeContext();
 
   const stats = useMemo(() => {
     const running = agents.filter((a) => a.status === "running").length;

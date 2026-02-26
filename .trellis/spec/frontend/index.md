@@ -125,7 +125,7 @@ interface Transport {
 | `WebTransport` | HTTP fetch + EventSource (SSE) | 当前 Web 模式 |
 | `TauriTransport` | Tauri IPC Commands + Events | 未来桌面模式（尚未实现） |
 
-代码中使用 `useRealtimeContext()` hook 消费实时数据，不直接依赖具体传输实现。旧 hook `useSSEContext` 是 `useRealtimeContext` 的兼容别名。
+代码中统一使用 `useRealtimeContext()` hook 消费实时数据，不直接依赖具体传输实现。旧兼容别名 `useSSEContext` / `SSEProvider` 已在 v0.2.4+ 清除，所有消费者已迁移至 `useRealtimeContext` / `RealtimeProvider`。
 
 > 实现参考：`packages/dashboard/client/src/lib/transport.ts`，`packages/dashboard/client/src/hooks/use-realtime.tsx`
 

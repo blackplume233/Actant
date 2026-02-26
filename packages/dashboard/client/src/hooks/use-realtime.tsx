@@ -53,8 +53,6 @@ export function useRealtimeContext() {
   return useContext(RealtimeContext);
 }
 
-/** @deprecated Use useRealtimeContext() instead */
-export const useSSEContext = useRealtimeContext;
 
 const defaultTransport = new WebTransport();
 
@@ -120,6 +118,3 @@ export function RealtimeProvider({
 
   return <RealtimeContext.Provider value={state}>{children}</RealtimeContext.Provider>;
 }
-
-/** @deprecated Use RealtimeProvider instead */
-export const SSEProvider = RealtimeProvider;

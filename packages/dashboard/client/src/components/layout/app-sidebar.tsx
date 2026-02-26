@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
-import type { DaemonStatus } from "@/hooks/use-sse";
+import type { DaemonStatus } from "@/hooks/use-realtime";
 import { supportedLanguages, type SupportedLang } from "@/i18n";
 
 interface AppSidebarProps {

@@ -102,7 +102,9 @@
     "tools": "次工具调用",
     "empty": "（空）",
     "loadingLogs": "加载日志中…",
-    "noLogs": "暂无日志输出。"
+    "noLogs": "暂无日志输出。",
+    "crashedTitle": "智能体意外崩溃",
+    "errorTitle": "智能体遇到错误"
   },
 
   "chat": {

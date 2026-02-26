@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import {
@@ -10,17 +9,21 @@ import {
   Trash2,
   Loader2,
   MessageSquare,
+  AlertCircle,
+  RotateCcw,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "./status-badge";
-import { agentApi } from "@/lib/api";
-import type { AgentInfo } from "@/hooks/use-sse";
+import { useAgentActions } from "@/hooks/use-agent-actions";
+import type { AgentInfo } from "@/hooks/use-realtime";
+import type { AgentError } from "@/hooks/use-agent-error";
 
 interface AgentCardProps {
   agent: AgentInfo;
+  error?: AgentError | null;
 }
 
 const archetypeStyles: Record<string, string> = {
@@ -29,25 +32,13 @@ const archetypeStyles: Record<string, string> = {
   service: "bg-orange-50 text-orange-700 border-orange-200",
 };
 
-export function AgentCard({ agent }: AgentCardProps) {
+export function AgentCard({ agent, error }: AgentCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const archetype = agent.archetype ?? "tool";
   const isRunning = agent.status === "running";
-  const [loading, setLoading] = useState<string | null>(null);
-
-  const handleAction = async (action: "start" | "stop" | "destroy") => {
-    setLoading(action);
-    try {
-      if (action === "start") await agentApi.start(agent.name);
-      else if (action === "stop") await agentApi.stop(agent.name);
-      else if (action === "destroy") await agentApi.destroy(agent.name);
-    } catch {
-      // SSE will reflect actual state
-    } finally {
-      setLoading(null);
-    }
-  };
+  const isErrored = agent.status === "error" || agent.status === "crashed";
+  const { loading, execute } = useAgentActions(agent.name);
 
   return (
     <Card
@@ -82,14 +73,20 @@ export function AgentCard({ agent }: AgentCardProps) {
             }
           >
             {isRunning ? (
-              <DropdownMenuItem onClick={() => handleAction("stop")}>
+              <DropdownMenuItem onClick={() => void execute("stop")}>
                 <Square className="h-3.5 w-3.5" />
                 {t("common.stop")}
               </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onClick={() => handleAction("start")}>
+              <DropdownMenuItem onClick={() => void execute("start")}>
                 <Play className="h-3.5 w-3.5" />
                 {t("common.start")}
+              </DropdownMenuItem>
+            )}
+            {isErrored && (
+              <DropdownMenuItem onClick={() => void execute("start")}>
+                <RotateCcw className="h-3.5 w-3.5" />
+                {t("common.retry", "Retry")}
               </DropdownMenuItem>
             )}
             <DropdownMenuItem
@@ -106,13 +103,36 @@ export function AgentCard({ agent }: AgentCardProps) {
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-destructive hover:!bg-destructive/10 hover:!text-destructive"
-              onClick={() => handleAction("destroy")}
+              onClick={() => void execute("destroy")}
             >
               <Trash2 className="h-3.5 w-3.5" />
               {t("common.destroy")}
             </DropdownMenuItem>
           </DropdownMenu>
         </div>
+
+        {isErrored && error && (
+          <div className="mt-2 flex items-start gap-1.5 rounded-md bg-red-500/10 px-2.5 py-1.5">
+            <AlertCircle className="mt-0.5 h-3 w-3 shrink-0 text-red-500" />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-red-600 dark:text-red-400 line-clamp-2">{error.message}</p>
+              {error.code && (
+                <span className="text-[10px] text-red-500/70 font-mono">{error.code}</span>
+              )}
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-5 w-5 shrink-0 text-red-500 hover:text-red-600 hover:bg-red-500/10"
+              onClick={(e) => {
+                e.stopPropagation();
+                void execute("start");
+              }}
+            >
+              <RotateCcw className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <Badge

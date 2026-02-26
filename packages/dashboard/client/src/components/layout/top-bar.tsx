@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Activity, Wifi, WifiOff } from "lucide-react";
-import type { DaemonStatus } from "@/hooks/use-sse";
+import type { DaemonStatus } from "@/hooks/use-realtime";
 
 interface TopBarProps {
   status: DaemonStatus | null;

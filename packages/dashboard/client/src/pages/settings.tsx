@@ -3,11 +3,11 @@ import { Settings, Server, Clock, Cpu, HardDrive } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useSSEContext } from "@/hooks/use-sse";
+import { useRealtimeContext } from "@/hooks/use-realtime";
 
 export function SettingsPage() {
   const { t } = useTranslation();
-  const { status, agents, connected } = useSSEContext();
+  const { status, agents, connected } = useRealtimeContext();
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">

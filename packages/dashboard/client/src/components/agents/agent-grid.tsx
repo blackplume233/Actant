@@ -2,7 +2,8 @@ import { useTranslation } from "react-i18next";
 import { AgentCard } from "./agent-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Bot } from "lucide-react";
-import type { AgentInfo } from "@/hooks/use-sse";
+import { useAgentErrorMap } from "@/hooks/use-agent-error";
+import type { AgentInfo } from "@/hooks/use-realtime";
 
 interface AgentGridProps {
   agents: AgentInfo[];
@@ -11,6 +12,8 @@ interface AgentGridProps {
 
 export function AgentGrid({ agents, loading }: AgentGridProps) {
   const { t } = useTranslation();
+  const errorMap = useAgentErrorMap();
+
   if (loading) {
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -34,7 +37,11 @@ export function AgentGrid({ agents, loading }: AgentGridProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {agents.map((agent) => (
-        <AgentCard key={agent.name} agent={agent} />
+        <AgentCard
+          key={agent.name}
+          agent={agent}
+          error={errorMap.get(agent.name) ?? null}
+        />
       ))}
     </div>
   );
