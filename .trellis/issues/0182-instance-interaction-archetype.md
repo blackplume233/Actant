@@ -17,6 +17,7 @@ relatedFiles:
   - "packages/shared/src/types/template.types.ts"
   - "packages/shared/src/types/agent.types.ts"
   - "packages/core/src/manager/agent-manager.ts"
+githubRef: "blackplume233/Actant#194"
 ---
 
 ## 动机

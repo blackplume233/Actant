@@ -19,7 +19,7 @@ relatedFiles:
   - packages/core/src/hooks/hook-registry.ts
   - packages/core/src/hooks/action-runner.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#182"
 closedAs: null
 createdAt: "2026-02-25T00:00:00"
 updatedAt: "2026-02-25T00:00:00"

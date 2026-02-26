@@ -17,7 +17,7 @@ relatedFiles:
   - packages/memory/core/src/types.ts
   - packages/memory/core/src/store.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#185"
 closedAs: null
 createdAt: "2026-02-25T00:00:00"
 updatedAt: "2026-02-25T00:00:00"

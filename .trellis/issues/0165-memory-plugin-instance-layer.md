@@ -23,7 +23,7 @@ relatedFiles:
   - packages/actant-memory/src/extractor/rule-based.ts
   - packages/actant-memory/src/hooks/memory-hooks.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#188"
 closedAs: null
 createdAt: "2026-02-25T00:00:00"
 updatedAt: "2026-02-25T00:00:00"

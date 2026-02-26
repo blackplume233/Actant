@@ -19,7 +19,7 @@ relatedFiles:
   - packages/core/src/manager/agent-manager.ts
   - packages/cli/src/commands/plugin-commands.ts
 taskRef: null
-githubRef: null
+githubRef: "blackplume233/Actant#184"
 closedAs: null
 createdAt: "2026-02-25T00:00:00"
 updatedAt: "2026-02-25T00:00:00"
