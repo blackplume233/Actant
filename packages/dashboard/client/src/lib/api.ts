@@ -101,10 +101,14 @@ export const agentApi = {
 export const sessionApi = {
   list: (agentName?: string) =>
     get<SessionLease[]>(`sessions${agentName ? `?agentName=${encodeURIComponent(agentName)}` : ""}`),
-  create: (agentName: string, clientId: string) =>
-    post<SessionLease>(`sessions`, { agentName, clientId }),
+  /**
+   * Create a new session lease. Pass `conversationId` to continue an existing
+   * conversation thread (short reconnect / history resume). Omit to start fresh.
+   */
+  create: (agentName: string, clientId: string, conversationId?: string) =>
+    post<SessionLease>(`sessions`, { agentName, clientId, ...(conversationId ? { conversationId } : {}) }),
   prompt: (sessionId: string, message: string) =>
-    post<{ stopReason: string; text: string }>(
+    post<{ stopReason: string; text: string; conversationId: string }>(
       `sessions/${encodeURIComponent(sessionId)}/prompt`,
       { message },
     ),
@@ -113,6 +117,7 @@ export const sessionApi = {
 };
 
 export interface SessionLease {
+  /** Ephemeral lease ID — use for prompt/close calls. */
   sessionId: string;
   agentName: string;
   clientId: string;
@@ -120,6 +125,11 @@ export interface SessionLease {
   createdAt: string;
   lastActivityAt: string;
   idleTtlMs: number;
+  /**
+   * Stable conversation thread ID. Pass to agentApi.conversation() to load
+   * history, or back to sessionApi.create() to resume this conversation.
+   */
+  conversationId: string;
 }
 
 export interface SessionSummary {

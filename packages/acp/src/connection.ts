@@ -111,6 +111,19 @@ export class AcpConnection {
   private enforcer: PermissionPolicyEnforcer | null = null;
   private auditLogger: PermissionAuditLogger;
   private _earlyExitPromise: Promise<never> | null = null;
+  /**
+   * Periodic keepalive timer. Writes a blank NDJSON line (\n) to the child's
+   * stdin every few seconds so the pipe stays active and the child's Node.js
+   * event loop does not drain between prompts. The NDJSON parser in the agent
+   * silently ignores empty lines (trimmedLine is falsy), so this is protocol-safe.
+   *
+   * Background: on Windows, named-pipe handles become unreferenced when idle,
+   * letting the event loop exit even though process.stdin.resume() is set.
+   * A periodic write re-references the handle and prevents the ~14s idle exit.
+   */
+  private keepaliveTimer: ReturnType<typeof setInterval> | null = null;
+
+  private static readonly KEEPALIVE_INTERVAL_MS = 5_000;
 
   constructor(options?: AcpConnectionOptions) {
     this.options = options ?? {};
@@ -170,6 +183,7 @@ export class AcpConnection {
       stdio: ["pipe", "pipe", "pipe"],
       env,
       shell: isWindows(),
+      windowsHide: true,
     });
 
     if (!this.child.stdout || !this.child.stdin) {
@@ -237,6 +251,9 @@ export class AcpConnection {
 
     this._earlyExitPromise = null;
 
+    // Start keepalive after successful initialization.
+    this.startKeepalive();
+
     logger.info({
       agentName: this.initResponse.agentInfo?.name,
       protocolVersion: this.initResponse.protocolVersion,
@@ -244,6 +261,31 @@ export class AcpConnection {
     }, "ACP initialized");
 
     return this.initResponse;
+  }
+
+  private startKeepalive(): void {
+    if (this.keepaliveTimer) return;
+    this.keepaliveTimer = setInterval(() => {
+      if (!this.child?.stdin || this.child.stdin.destroyed) {
+        this.stopKeepalive();
+        return;
+      }
+      // Write a blank NDJSON line — silently ignored by the agent's parser.
+      this.child.stdin.write("\n", (err) => {
+        if (err) this.stopKeepalive();
+      });
+    }, AcpConnection.KEEPALIVE_INTERVAL_MS);
+
+    // Keep the timer unreferenced so it does NOT prevent the daemon from exiting
+    // if everything else is done. The child process is what we want to keep alive.
+    this.keepaliveTimer.unref();
+  }
+
+  private stopKeepalive(): void {
+    if (this.keepaliveTimer) {
+      clearInterval(this.keepaliveTimer);
+      this.keepaliveTimer = null;
+    }
   }
 
   /* ---------------------------------------------------------------- */
@@ -408,6 +450,7 @@ export class AcpConnection {
   /* ---------------------------------------------------------------- */
 
   async close(): Promise<void> {
+    this.stopKeepalive();
     this.terminalManager.disposeAll();
 
     if (this.child) {

@@ -194,6 +194,8 @@ pi-agent-core → LLM API
 
 ### Common Gotchas
 
+**三种 Session 不可混用（必读）**：Actant 中有三种 session 概念，名字相似但语义完全不同——**ACP Session**（ACP 协议运行时 Session，Daemon 内部）、**对话档案**（磁盘历史记录，`agentApi` 返回）、**聊天租约**（访问凭据，`sessionApi` 操作）。`agentApi.prompt()` 返回的 `sessionId` 是对话档案 ID，**不是**聊天租约 ID，不能传给 `sessionApi.prompt()`。Employee 类型不使用租约，消息路由始终走 `agentApi.prompt()`。详见 [Session 管理规范](../session-management.md) 和下方 [Agent Chat Session 路由规则](#agent-chat-session-路由规则按-archetype)。
+
 **shadcn/ui 组件缺失**：并非所有 shadcn/ui 组件都已安装。新建页面前先检查 `packages/dashboard/client/src/components/ui/` 目录中已有哪些组件。缺失的组件可通过 `npx shadcn@latest add <component>` 安装或手动创建。
 
 **Build Order**：Dashboard 依赖链为 `@actant/shared` → `@actant/rest-api` → `@actant/dashboard`。修改 shared 或 rest-api 包后，需按此顺序重新构建。
@@ -222,6 +224,30 @@ Dashboard 中某些功能仅对特定 archetype 的 Agent 开放：
 | **Agent Card / Detail** | 所有 | — |
 
 **前后端双重校验原则**：archetype 限制必须在前端（UI 不渲染/disable）和后端（RPC handler 拒绝）同时实施。仅靠前端过滤不安全（API 可直接调用），仅靠后端拒绝则 UX 不友好。
+
+### Agent Chat Session 路由规则（按 Archetype）
+
+> **Warning**: 对话档案 ID 和聊天租约 ID 是两种完全不同的 UUID，不可互换。详见 [Session 管理规范](../session-management.md)。
+
+| 概念 | 来源 | 前端用途 |
+|------|------|---------|
+| **对话档案 ID** | `agentApi.sessions()` / `agentApi.prompt()` 响应 | 展示历史对话、header 显示 |
+| **聊天租约 ID** | `sessionApi.create()` | `sessionApi.prompt()` 的路由键 |
+
+**各 archetype 的消息路由**：
+
+| Archetype | `canCreateSession` | 消息路由 | 前端 `sessionId` state 含义 |
+|-----------|-------------------|---------|--------------------------|
+| `service` | `true` | `sessionApi.prompt(leaseId)` | 聊天租约 ID（路由 + 展示） |
+| `employee` | `false` | `agentApi.prompt(name)` | 对话档案 ID（仅展示，不路由） |
+
+**`ensureSession()` 的设计**：
+- `employee`：永远返回 `""`，消息始终走 `agentApi.prompt()`
+- `service`：返回有效租约 ID（已有则复用，否则新建）
+
+**常见错误**：`agentApi.prompt()` 返回的 `sessionId` 是**对话档案 ID**，不能传给 `sessionApi.prompt()`。Employee 第一条消息后若将此 ID 存为 "active" 并用于路由，第二条消息必然报 `Session "xxx" not found`。
+
+**Service 的租约过期恢复**：若 `sessionApi.prompt()` 报 "not found"，说明租约已过期（30 分钟 idle TTL）。自动 `sessionApi.create()` 重建租约并重试，对用户透明。
 
 ### Internationalization (i18n)
 

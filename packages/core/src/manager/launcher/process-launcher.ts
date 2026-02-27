@@ -72,6 +72,7 @@ export class ProcessLauncher implements AgentLauncher {
       detached: !useAcp,
       stdio,
       shell: needsShell,
+      windowsHide: true,
     });
 
     const SPAWN_TIMEOUT_MS = 30_000;

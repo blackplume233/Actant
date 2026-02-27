@@ -314,9 +314,17 @@ export interface SessionCreateParams {
   agentName: string;
   clientId: string;
   idleTtlMs?: number;
+  /**
+   * Stable conversation thread ID to continue. When provided, the new lease
+   * will be linked to this conversation and activity will be recorded under it,
+   * enabling reconnection to an existing conversation after a disconnect or
+   * between separate client sessions. When omitted, a fresh conversation is started.
+   */
+  conversationId?: string;
 }
 
 export interface SessionLeaseInfo {
+  /** Ephemeral lease ID used for API calls (session.prompt, session.close, etc.). */
   sessionId: string;
   agentName: string;
   clientId: string | null;
@@ -324,6 +332,11 @@ export interface SessionLeaseInfo {
   createdAt: string;
   lastActivityAt: string;
   idleTtlMs: number;
+  /**
+   * Stable conversation thread ID. Use this to load history via agent.conversation()
+   * and to resume this conversation in future sessions via session.create({conversationId}).
+   */
+  conversationId: string;
 }
 
 export type SessionCreateResult = SessionLeaseInfo;
@@ -336,6 +349,8 @@ export interface SessionPromptParams {
 export interface SessionPromptResult {
   stopReason: string;
   text: string;
+  /** The conversationId that was updated. Matches the lease's conversationId. */
+  conversationId: string;
 }
 
 export interface SessionCancelParams {

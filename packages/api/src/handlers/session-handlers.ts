@@ -30,7 +30,7 @@ async function handleSessionCreate(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<SessionCreateResult> {
-  const { agentName, clientId, idleTtlMs } = params as unknown as SessionCreateParams;
+  const { agentName, clientId, idleTtlMs, conversationId } = params as unknown as SessionCreateParams;
 
   if (!agentName || typeof agentName !== 'string') {
     throw new Error('Required parameter "agentName" is missing or invalid');
@@ -50,7 +50,7 @@ async function handleSessionCreate(
     throw new Error(`Agent "${agentName}" has no ACP connection`);
   }
 
-  const lease = ctx.sessionRegistry.create({ agentName, clientId, idleTtlMs });
+  const lease = ctx.sessionRegistry.create({ agentName, clientId, idleTtlMs, conversationId });
 
   logger.info({ sessionId: lease.sessionId, agentName, clientId }, "Session lease created");
   return toLeaseInfo(lease);
@@ -82,6 +82,8 @@ async function handleSessionPrompt(
   const result = await ctx.agentManager.promptAgent(
     lease.agentName,
     text,
+    undefined,
+    lease.conversationId,
   );
 
   ctx.sessionRegistry.touch(sessionId);
@@ -89,6 +91,7 @@ async function handleSessionPrompt(
   return {
     stopReason: "end_turn",
     text: result.text,
+    conversationId: lease.conversationId,
   };
 }
 
@@ -164,5 +167,6 @@ function toLeaseInfo(lease: SessionLease): SessionLeaseInfo {
     createdAt: lease.createdAt,
     lastActivityAt: lease.lastActivityAt,
     idleTtlMs: lease.idleTtlMs,
+    conversationId: lease.conversationId,
   };
 }

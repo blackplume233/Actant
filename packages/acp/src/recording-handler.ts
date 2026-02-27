@@ -31,18 +31,43 @@ const logger = createLogger("recording-handler");
  *   AcpConnection → RecordingCallbackHandler → ClientCallbackRouter → Local/IDE
  *
  * Only injected for `processOwnership: "managed"` agents.
+ *
+ * ## Activity session routing
+ *
+ * The `currentSession` field determines which activity session all callbacks
+ * are recorded under. Callers update it via `setCurrentSession()`:
+ *
+ * - **Employee agents**: set once after connecting (stable, persists across
+ *   ACP restarts). Never cleared. All activity accumulates in one session.
+ * - **Service agents**: set to the chat lease ID before each prompt, then
+ *   cleared after. Each client lease maps to one conversation record.
+ *
+ * When `currentSession` is null (not yet set), callbacks fall back to the
+ * ACP session UUID from the callback parameters.
  */
 export class RecordingCallbackHandler implements ClientCallbackHandler {
+  /** Mutable activity session ID. See class doc for lifecycle details. */
+  private currentSession: string | null = null;
+
   constructor(
     private readonly inner: ClientCallbackHandler,
     private readonly recorder: ActivityRecorder,
     private readonly agentName: string,
   ) {}
 
+  /** Set the activity session ID for all subsequent recordings. */
+  setCurrentSession(id: string | null): void {
+    this.currentSession = id;
+  }
+
+  private activityId(acpSessionId: string): string {
+    return this.currentSession ?? acpSessionId;
+  }
+
   // ---- session/update (primary data stream) ----
 
   async sessionUpdate(params: SessionNotification): Promise<void> {
-    this.recorder.record(this.agentName, params.sessionId, {
+    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
       type: "session_update",
       data: params.update,
     }).catch((e: unknown) => logger.warn({ err: e }, "Failed to record session_update"));
@@ -54,7 +79,7 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
 
   async writeTextFile(params: WriteTextFileRequest): Promise<WriteTextFileResponse> {
     const packed = await this.recorder.packContent(this.agentName, params.content);
-    this.recorder.record(this.agentName, params.sessionId, {
+    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
       type: "file_write",
       data: { path: params.path, ...packed },
     }).catch((e: unknown) => logger.warn({ err: e }, "Failed to record file_write"));
@@ -65,7 +90,7 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
   // ---- fs/read_text_file ----
 
   async readTextFile(params: ReadTextFileRequest): Promise<ReadTextFileResponse> {
-    this.recorder.record(this.agentName, params.sessionId, {
+    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
       type: "file_read",
       data: { path: params.path },
     }).catch((e: unknown) => logger.warn({ err: e }, "Failed to record file_read"));
@@ -78,7 +103,7 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
   async requestPermission(params: RequestPermissionRequest): Promise<RequestPermissionResponse> {
     const result = await this.inner.requestPermission(params);
 
-    this.recorder.record(this.agentName, params.sessionId, {
+    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
       type: "permission_request",
       data: {
         toolCall: params.toolCall
@@ -98,7 +123,7 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
     if (!this.inner.createTerminal) throw new Error("Terminal not supported");
     const result = await this.inner.createTerminal(params);
 
-    this.recorder.record(this.agentName, params.sessionId, {
+    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
       type: "terminal_create",
       data: {
         terminalId: result.terminalId,
@@ -122,7 +147,7 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
       ? { terminalId: params.terminalId, output: packed.content, truncated: result.truncated }
       : { terminalId: params.terminalId, outputRef: packed.contentRef, truncated: result.truncated };
 
-    this.recorder.record(this.agentName, params.sessionId, {
+    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
       type: "terminal_output",
       data,
     }).catch((e: unknown) => logger.warn({ err: e }, "Failed to record terminal_output"));
@@ -136,7 +161,7 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
     if (!this.inner.waitForTerminalExit) throw new Error("Terminal not supported");
     const result = await this.inner.waitForTerminalExit(params);
 
-    this.recorder.record(this.agentName, params.sessionId, {
+    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
       type: "terminal_exit",
       data: {
         terminalId: params.terminalId,

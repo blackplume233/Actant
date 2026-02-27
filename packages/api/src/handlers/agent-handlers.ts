@@ -86,6 +86,13 @@ async function handleAgentStop(
 
   teardownScheduler(name, ctx);
 
+  // Close all chat leases for this agent before stopping so clients
+  // get "not found" immediately rather than waiting for idle TTL expiry.
+  const closed = ctx.sessionRegistry.closeByAgent(name);
+  if (closed > 0) {
+    logger.info({ name, closed }, "Chat leases closed on agent stop");
+  }
+
   await ctx.agentManager.stopAgent(name);
   const meta = ctx.agentManager.getAgent(name);
   if (!meta) throw new AgentNotFoundError(name);
@@ -99,6 +106,7 @@ async function handleAgentDestroy(
   const { name } = params as unknown as AgentDestroyParams;
 
   teardownScheduler(name, ctx);
+  ctx.sessionRegistry.closeByAgent(name);
 
   await ctx.agentManager.destroyAgent(name);
   return { success: true };

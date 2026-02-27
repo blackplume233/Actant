@@ -25,6 +25,8 @@ const logger = createLogger("activity-recorder");
 export class ActivityRecorder {
   private readonly instancesDir: string;
   private readonly sessionIndex = new Map<string, Map<string, SessionAccum>>();
+  /** Per-session write queue to serialize concurrent appends and preserve record order. */
+  private readonly writeQueues = new Map<string, Promise<void>>();
 
   constructor(instancesDir: string) {
     this.instancesDir = instancesDir;
@@ -34,7 +36,7 @@ export class ActivityRecorder {
   // Public API
   // ---------------------------------------------------------------------------
 
-  async record(
+  record(
     agentName: string,
     sessionId: string,
     entry: { type: ActivityRecordType; data: unknown },
@@ -46,6 +48,25 @@ export class ActivityRecorder {
       data: entry.data,
     };
 
+    const queueKey = `${agentName}:${sessionId}`;
+    const prev = this.writeQueues.get(queueKey) ?? Promise.resolve();
+
+    const next = prev.then(() => this._writeRecord(agentName, sessionId, record));
+    // Keep the queue alive only while there are pending writes.
+    this.writeQueues.set(queueKey, next.catch(() => {}).then(() => {
+      if (this.writeQueues.get(queueKey) === next) {
+        this.writeQueues.delete(queueKey);
+      }
+    }));
+
+    return next;
+  }
+
+  private async _writeRecord(
+    agentName: string,
+    sessionId: string,
+    record: ActivityRecord,
+  ): Promise<void> {
     const dir = this.activityDir(agentName);
     await mkdir(dir, { recursive: true });
     const filePath = join(dir, `${sessionId}.jsonl`);

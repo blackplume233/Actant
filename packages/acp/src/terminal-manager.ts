@@ -50,6 +50,7 @@ export class LocalTerminalManager {
       env: envEntries,
       stdio: ["ignore", "pipe", "pipe"],
       shell: true,
+      windowsHide: true,
     });
 
     const limit = params.outputByteLimit ?? 1024 * 1024; // 1MB default

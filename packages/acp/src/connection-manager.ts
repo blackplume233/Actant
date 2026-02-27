@@ -42,6 +42,8 @@ export class AcpConnectionManager {
   private routers = new Map<string, ClientCallbackRouter>();
   private gateways = new Map<string, AcpGateway>();
   private enforcers = new Map<string, PermissionPolicyEnforcer>();
+  /** RecordingCallbackHandler per agent — used to set the active activity session. */
+  private recordingHandlers = new Map<string, RecordingCallbackHandler>();
 
   /**
    * Spawn an ACP agent process, initialize, and create a default session.
@@ -84,9 +86,12 @@ export class AcpConnectionManager {
 
     // Wrap with RecordingCallbackHandler when activity recording is enabled.
     // Chain: AcpConnection → RecordingCallbackHandler → ClientCallbackRouter → Local/IDE
-    const finalHandler: ClientCallbackHandler = options.activityRecorder
-      ? new RecordingCallbackHandler(router, options.activityRecorder, name)
-      : router;
+    let finalHandler: ClientCallbackHandler = router;
+    if (options.activityRecorder) {
+      const rh = new RecordingCallbackHandler(router, options.activityRecorder, name);
+      this.recordingHandlers.set(name, rh);
+      finalHandler = rh;
+    }
 
     // Inject session token and system context into process environment
     const MAX_ENV_VALUE_BYTES = 128 * 1024; // 128 KB guard to stay well below OS ARG_MAX
@@ -202,11 +207,29 @@ export class AcpConnectionManager {
     return conn != null && conn.isConnected;
   }
 
+  /**
+   * Set the active activity session ID on the agent's RecordingCallbackHandler.
+   *
+   * - **Employee agents**: call once after connecting with the persistent stable
+   *   session ID (read from `meta.metadata.activitySessionId`). This routes ALL
+   *   activity (session updates, file ops, tool calls) to one long-lived session,
+   *   surviving ACP process restarts.
+   * - **Service agents**: call with the chat lease ID before each prompt, then
+   *   call with `null` after. This ensures all activity within one lease maps to
+   *   one conversation record, even if the agent restarts between prompts.
+   *
+   * No-op when no RecordingCallbackHandler is registered (non-managed agents).
+   */
+  setCurrentActivitySession(name: string, id: string | null): void {
+    this.recordingHandlers.get(name)?.setCurrentSession(id);
+  }
+
   async disconnect(name: string): Promise<void> {
     this.gateways.get(name)?.disconnectUpstream();
     this.gateways.delete(name);
     this.routers.delete(name);
     this.enforcers.delete(name);
+    this.recordingHandlers.delete(name);
 
     const conn = this.connections.get(name);
     if (!conn) return;

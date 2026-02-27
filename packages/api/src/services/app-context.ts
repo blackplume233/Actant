@@ -408,6 +408,18 @@ export class AppContext {
       this.hookRegistry.unregisterAgent(agentName);
       this.canvasStore.remove(agentName);
     });
+
+    // Close all chat leases when an agent stops (covers all paths:
+    // manual stop, budget keepAlive expiry, and process crash).
+    const closeLeases = (payload: { agentName?: string }) => {
+      if (!payload.agentName) return;
+      const closed = this.sessionRegistry.closeByAgent(payload.agentName);
+      if (closed > 0) {
+        logger.info({ agentName: payload.agentName, closed }, "Chat leases closed on agent stop/crash");
+      }
+    };
+    this.eventBus.on("process:stop", closeLeases);
+    this.eventBus.on("process:crash", closeLeases);
   }
 
   private async loadDomainComponents(): Promise<void> {

@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { rename, mkdir } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
 import type { AgentInstanceMeta, AgentStatus, ResolveResult, DetachResult, ModelProviderConfig } from "@actant/shared";
 import {
   AgentNotFoundError,
@@ -57,6 +58,11 @@ export interface AcpConnectionManagerLike {
     /** System context additions for the agent. */
     systemContext?: string[];
   }): Promise<{ sessionId: string }>;
+  /**
+   * Set the active activity session ID on the agent's RecordingCallbackHandler.
+   * Pass null to clear (falls back to ACP session UUID).
+   */
+  setCurrentActivitySession?(name: string, id: string | null): void;
   has(name: string): boolean;
   getPrimarySessionId(name: string): string | undefined;
   getConnection(name: string): AcpConnectionLike | undefined;
@@ -105,6 +111,29 @@ export class AgentManager {
   private readonly budgetManager?: SystemBudgetManager;
   private readonly employeeRestartTracker: RestartTracker;
   private readonly agentLocks = new Map<string, Promise<void>>();
+
+  /**
+   * Get the persistent conversation ID for an employee (acp-background) agent.
+   * Reads from `meta.metadata.conversationId`. If not present, generates a new
+   * UUID, persists it to disk, and returns it.
+   *
+   * Employee agents have ONE long-lived conversation that spans all ACP process
+   * restarts. The conversation only resets when explicitly cleared from metadata.
+   */
+  private async getOrCreateEmployeeConversation(agentName: string): Promise<string> {
+    const meta = this.requireAgent(agentName);
+    if (meta.metadata?.conversationId) {
+      return meta.metadata.conversationId;
+    }
+    const id = randomUUID();
+    const dir = join(this.instancesBaseDir, agentName);
+    const updated = await updateInstanceMeta(dir, {
+      metadata: { ...meta.metadata, conversationId: id },
+    });
+    this.cache.set(agentName, updated);
+    logger.info({ agentName, conversationId: id }, "Created new employee conversation ID");
+    return id;
+  }
 
   constructor(
     private readonly initializer: AgentInitializer,
@@ -326,6 +355,16 @@ export class AgentManager {
           sessionToken: sessionCtx?.token,
           systemContext: sessionCtx?.systemContextAdditions,
         });
+
+        // For employee agents, set the recording handler to use the persistent
+        // conversation ID immediately after connecting. This ensures even the
+        // agent's initial greeting is recorded under the stable conversation ID,
+        // and the session survives daemon restarts.
+        if (starting.launchMode === "acp-background" && meta.processOwnership === "managed") {
+          const conversationId = await this.getOrCreateEmployeeConversation(name);
+          this.acpManager.setCurrentActivitySession?.(name, conversationId);
+          logger.info({ name, conversationId }, "Employee conversation session set");
+        }
         logger.info({ name, acpOnly, providerType: meta.providerConfig?.type }, "ACP connection established");
 
         if (acpOnly && "pid" in connResult && typeof connResult.pid === "number") {
@@ -815,14 +854,21 @@ export class AgentManager {
   /**
    * Send a message to a running agent via its ACP session.
    * Unlike runPrompt, this requires the agent to be started with ACP.
+   *
+   * @param activitySessionOverride - When provided, all activity (prompt records
+   *   AND RecordingCallbackHandler callbacks) is stored under this ID instead of
+   *   the ACP session UUID. Pass the chat lease's `conversationId` for service
+   *   agents so each conversation thread stays in one on-disk record.
+   *
    * @throws {Error} if agent has no ACP connection
    */
   async promptAgent(
     name: string,
     message: string,
     sessionId?: string,
+    activitySessionOverride?: string,
   ): Promise<PromptResult> {
-    this.requireAgent(name);
+    const meta = this.requireAgent(name);
 
     if (!this.acpManager?.has(name)) {
       throw new Error(`Agent "${name}" has no ACP connection. Start it first with \`agent start\`.`);
@@ -838,6 +884,26 @@ export class AgentManager {
       throw new Error(`Agent "${name}" is not ready to receive prompts. Ensure it is running and has an active session.`);
     }
 
+    // Determine the stable activity session ID for recording.
+    // Priority: explicit override (from service lease's conversationId)
+    //         > employee's persistent conversation ID (from metadata)
+    //         > ACP session UUID (fallback for other agent types)
+    const isEmployee = meta.launchMode === "acp-background";
+    let activitySessionId: string;
+    if (activitySessionOverride) {
+      activitySessionId = activitySessionOverride;
+      // Update recording handler so callbacks (session_update, file ops) also
+      // go to this conversation ID during the prompt.
+      this.acpManager.setCurrentActivitySession?.(name, activitySessionId);
+    } else if (isEmployee) {
+      activitySessionId = await this.getOrCreateEmployeeConversation(name);
+      // Employee recording handler is already set to this ID from _startAgent;
+      // re-setting is a safe no-op.
+      this.acpManager.setCurrentActivitySession?.(name, activitySessionId);
+    } else {
+      activitySessionId = targetSessionId;
+    }
+
     this.eventBus?.emit("prompt:before", { callerType: "system", callerId: "AgentManager" }, name, {
       prompt: message,
       sessionId: targetSessionId,
@@ -845,7 +911,7 @@ export class AgentManager {
 
     if (this.activityRecorder) {
       const packed = await this.activityRecorder.packContent(name, message);
-      this.activityRecorder.record(name, targetSessionId, { type: "prompt_sent", data: packed })
+      this.activityRecorder.record(name, activitySessionId, { type: "prompt_sent", data: packed })
         .catch(() => {});
     }
 
@@ -870,10 +936,17 @@ export class AgentManager {
     }
 
     if (this.activityRecorder) {
-      this.activityRecorder.record(name, targetSessionId, {
+      this.activityRecorder.record(name, activitySessionId, {
         type: "prompt_complete",
         data: { stopReason: result.stopReason },
       }).catch(() => {});
+    }
+
+    // For service agents with a per-prompt override, clear the recording handler
+    // session so future callbacks (if any) fall back to the ACP session UUID.
+    // Employee sessions stay set (cleared only on agent restart/stop).
+    if (activitySessionOverride) {
+      this.acpManager.setCurrentActivitySession?.(name, null);
     }
 
     this.eventBus?.emit("prompt:after", { callerType: "system", callerId: "AgentManager" }, name, {
@@ -881,7 +954,7 @@ export class AgentManager {
       responseLength: result.text.length,
     });
 
-    return { text: result.text, sessionId: targetSessionId };
+    return { text: result.text, sessionId: activitySessionId };
   }
 
   /** Check if an agent has an active ACP connection. */

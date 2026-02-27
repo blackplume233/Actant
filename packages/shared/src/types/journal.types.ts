@@ -37,8 +37,15 @@ export interface JournalQueryFilter {
 /** Payload written for session lifecycle journal entries. */
 export interface SessionLifecycleData {
   action: "created" | "released" | "resumed" | "closed" | "expired";
+  /** The session lease ID (ephemeral runtime access token). */
   sessionId: string;
   agentName: string;
   clientId?: string | null;
   idleTtlMs?: number;
+  /**
+   * Stable conversation thread ID. This is what gets used as the activity
+   * recording session ID. Multiple leases (e.g. reconnections) can share the
+   * same conversationId to produce one continuous conversation record.
+   */
+  conversationId?: string;
 }
