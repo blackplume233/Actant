@@ -335,6 +335,8 @@ eventBus.emit(event, data);
 
 ### Documentation-First 开发模式
 
+> 治理原则见 [spec/index.md §Documentation-First 原则](../index.md#documentation-first-原则最高优先级)。本节提供后端实现层的具体操作指南。
+
 **文档、契约、接口、配置的优先级高于代码实现。** 这是本项目最重要的开发原则。
 
 任何功能扩展或修改必须按照以下顺序推进：
@@ -945,17 +947,17 @@ Before approving any feature:
 - [ ] **Documented**: Are non-obvious design decisions explained?
 - [ ] **Small scope**: Is the change small enough for one coherent commit?
 
-### Phase 4 专项审查（⚠️ 预定，待实施时确认）
+### 架构完整性（通用）
 
-> 以下审查项基于预定设计。Plugin / Hook / Memory 的具体方案在实际开发前须重新审查确认。
-> 详见 [Plugin 预定设计](./plugin-guidelines.md)。
-
-**架构完整性**（通用，已确认）:
 - [ ] 新增类型是否定义在 `@actant/shared`（共享类型）而非 `@actant/core`（实现）？
 - [ ] 接口是否足够抽象——能否不修改接口就添加新实现？
 - [ ] 依赖方向是否正确——`shared ← core ← cli`，无反向依赖？
 
-**Plugin / Hook / Memory 相关**（预定，待确认后启用）:
+### Phase 4 专项审查（⚠️ 待启用，Phase 4 Plugin/Hook/Memory 实施后生效）
+
+> 以下审查项基于 Phase 4 预定设计，在 Plugin / Hook / Memory 正式开发前**不适用**。
+> 详见 [Plugin 预定设计](./plugin-guidelines.md)。
+
 - [ ] Plugin 生命周期完整性（具体阶段待确认）
 - [ ] 事件命名一致性（`HookEventName` 类型约束）
 - [ ] Workflow 配置（JSON 格式）与 `WorkflowDefinition` schema 一致

@@ -746,7 +746,7 @@ interface PluginStatusDto {
 
 Agent 的 Live Canvas HTML 内容管理。Agent 通过内置 Actant MCP Server 的 `actant_canvas_update` 工具间接调用这些 RPC 方法。Dashboard 通过 SSE 实时广播 canvas 数据。
 
-**Archetype 限制**：Canvas 对 `service` 和 `employee` archetype 的 Agent 开放。`canvas.update` 在写入 CanvasStore 前校验 `agentName` 对应的 Agent archetype，`repo` 类型返回 `INVALID_PARAMS` 错误。Dashboard 侧同步过滤，仅展示 `service`/`employee` Agent 的 canvas slots。
+**Archetype 限制**：Canvas 仅对 `employee` archetype 的 Agent 开放。`canvas.update` 在写入 CanvasStore 前校验 `agentName` 对应的 Agent archetype，`repo` 和 `service` 类型均返回 `INVALID_PARAMS` 错误。Dashboard 侧同步过滤，仅展示 `employee` Agent 的 canvas slots。
 
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
@@ -1956,75 +1956,16 @@ E1[需求] → E2[方案A] → E3[实现] → E4[产出] → E5[发现问题]
 
 ## 9. REST API Server (`@actant/rest-api`)
 
-独立的 RESTful HTTP API 服务器，供 Dashboard、n8n、IM 机器人等外部系统访问。
+> **详细规格见 [§4A. REST API](#4a-rest-apiactantrest-api)**（端点列表、认证、Webhook 集成、错误映射、RpcBridge 超时约定均在 §4A 中）。
 
-**启动方式**：`actant api [-p 3100] [-k <api-key>]`
+本节仅作入口索引，避免重复。
 
-**认证**：可选 API Key，通过 `Authorization: Bearer <key>` 或 `X-API-Key` header 传递，或 `ACTANT_API_KEY` 环境变量配置。
+**启动方式**：`actant api [-p 3100] [-H 0.0.0.0] [-k <api-key>]`
 
-### 端点总览
-
-所有端点前缀 `/v1/`。
-
-| 分类 | 方法 | 路径 | RPC 映射 |
-|------|------|------|----------|
-| System | GET | `/v1/status` | `daemon.ping` |
-| System | POST | `/v1/shutdown` | `daemon.shutdown` |
-| System | GET | `/v1/sse` | SSE 实时流 |
-| System | GET | `/v1/openapi` | 自描述端点目录 |
-| Agents | GET | `/v1/agents?limit=N&page=N` | `agent.list`（分页） |
-| Agents | POST | `/v1/agents` | `agent.create` |
-| Agents | GET | `/v1/agents/:name` | `agent.status` |
-| Agents | DELETE | `/v1/agents/:name` | `agent.destroy` |
-| Agents | POST | `/v1/agents/:name/start` | `agent.start` |
-| Agents | POST | `/v1/agents/:name/stop` | `agent.stop` |
-| Agents | POST | `/v1/agents/:name/prompt` | `agent.prompt` |
-| Agents | POST | `/v1/agents/:name/run` | `agent.run` |
-| Agents | PUT | `/v1/agents/:name/permissions` | `agent.updatePermissions` |
-| Activity | GET | `/v1/agents/:name/sessions` | `activity.sessions` |
-| Activity | GET | `/v1/agents/:name/sessions/:id` | `activity.conversation` |
-| Activity | GET | `/v1/agents/:name/logs` | `agent.processLogs` |
-| Templates | GET | `/v1/templates` | `template.list` |
-| Templates | GET | `/v1/templates/:name` | `template.get` |
-| Domain | GET | `/v1/skills` | `skill.list` |
-| Domain | GET | `/v1/prompts` | `prompt.list` |
-| Domain | GET | `/v1/mcp-servers` | `mcp.list` |
-| Domain | GET | `/v1/workflows` | `workflow.list` |
-| Domain | GET | `/v1/plugins` | `plugin.list` |
-| Events | GET | `/v1/events` | `events.recent` |
-| Canvas | GET | `/v1/canvas` | `canvas.list` |
-| Canvas | GET | `/v1/canvas/:agent` | `canvas.get` |
-| Sessions | GET | `/v1/sessions` | `session.list` |
-| Sessions | POST | `/v1/sessions` | `session.create` |
-| Webhooks | POST | `/v1/webhooks/message` | `agent.prompt`（简化封装） |
-| Webhooks | POST | `/v1/webhooks/run` | `agent.run`（简化封装） |
-
-### Webhook 接口
-
-为 n8n / IM 集成设计的简化接口：
-
-**POST `/v1/webhooks/message`**
-```json
-{ "agent": "my-agent", "message": "Hello", "metadata": {} }
-→ { "agent": "my-agent", "response": "...", "sessionId": "..." }
-```
-
-**POST `/v1/webhooks/run`**
-```json
-{ "agent": "my-agent", "prompt": "Analyze this", "template": "analyst" }
-→ { "agent": "my-agent", "response": "...", "sessionId": null }
-```
-
-### 错误映射
-
-| RPC 错误码 | HTTP 状态码 | 含义 |
-|-----------|------------|------|
-| -32001 (TEMPLATE_NOT_FOUND) | 404 | 模板未找到 |
-| -32003 (AGENT_NOT_FOUND) | 404 | Agent 未找到 |
-| -32002 (CONFIG_VALIDATION) | 400 | 参数校验失败 |
-| -32004 (AGENT_ALREADY_RUNNING) | 409 | Agent 已在运行 |
-| -32601 (METHOD_NOT_FOUND) | 404 | 方法不存在 |
-| 其他 | 500 | 内部错误 |
+**核心特性**：
+- 覆盖所有 Daemon RPC 方法，供 Dashboard、n8n、IM 机器人等外部系统访问
+- Dashboard（`@actant/dashboard`）内部挂载同一套 handler，额外提供 SPA 静态文件
+- 可选 API Key 认证（`Authorization: Bearer <key>` 或 `X-API-Key`）
 
 ---
 

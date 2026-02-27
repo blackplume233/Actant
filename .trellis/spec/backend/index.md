@@ -99,7 +99,7 @@ Actant
 
 ## Development Principles
 
-1. **Documentation-First（文档先行）**: 任何功能扩展或修改，**必须先输出文档、定义接口、确定配置结构，再编写实现代码**。文档、契约、接口、配置是项目的主要产出，代码是对它们的实现。详见 [Documentation-First 开发模式](./quality-guidelines.md#documentation-first-开发模式)。
+1. **Documentation-First（文档先行）**: 治理原则见 [spec/index.md](../index.md#documentation-first-原则最高优先级)；后端实现操作指南见 [quality-guidelines.md §Documentation-First](./quality-guidelines.md#documentation-first-开发模式)。
 2. **CLI-First, UI-Ready**: All core functions must work via text config and CLI. CLI design should anticipate future UI integration.
 3. **Test-Driven**: All behaviors exposed as CLI operations or configurations must have comprehensive unit tests.
 4. **Contract-Driven（契约驱动）**: 模块间通信通过显式接口契约约束。接口先于实现定义，实现必须符合已发布的契约。接口变更需先更新 `api-contracts.md` 和类型定义。
@@ -148,40 +148,9 @@ Agent Templates use **name references** to Domain Context components rather than
 
 ### Dynamic Context Injection (SessionContextInjector)
 
-Agent 启动时的 ACP session 创建流程中，`SessionContextInjector` 从所有已注册的 `ContextProvider` 收集三类资源（MCP Servers、Internal Tools、System Context），经去重和 Scope 过滤后聚合为 `SessionContext`。
+Agent 启动时，`SessionContextInjector` 从所有已注册的 `ContextProvider` 收集 MCP Servers、Internal Tools、System Context 三类资源，经去重和 Scope 过滤后聚合为 `SessionContext` 交给 ACP 连接层。子系统（Canvas、Schedule、Memory 等）通过注册 `ContextProvider` 实现松耦合扩展。
 
-| 参与者 | 接口 | 职责 |
-|--------|------|------|
-| `SessionContextInjector` | 核心调度器 | 管理 `ContextProvider` 注册表，按注册序遍历 → 去重过滤 → Token 生成 → 输出 `SessionContext` |
-| `ContextProvider` | 扩展接口 | 各子系统实现，贡献 MCP servers、internal tools 和 system context 片段 |
-| `CoreContextProvider` | 内置 Provider | 注入 Actant 身份声明 + 平台能力介绍（所有 archetype） |
-| `CanvasContextProvider` | 内置 Provider | 注入 Canvas 工具 + 上下文（service/employee archetype） |
-| `SessionTokenStore` | Token 管理 | 为每个 session 生成唯一认证 token |
-| Template Engine | 模板渲染 | 从 `prompts/*.md` 加载模板 + `{{variable}}` 替换 |
-
-```
-AppContext.init()
-  → injector.register(CoreContextProvider)     ← 身份上下文
-  → injector.register(CanvasContextProvider)   ← Canvas 工具 + 上下文
-
-AgentManager.startAgent()
-  → SessionContextInjector.prepare(agentName, meta)
-    → emit "session:preparing"
-    → Phase 1: 遍历 Provider，收集 MCP servers / tools / system context
-    → Phase 2: 去重 (name-key, first wins) + Scope 过滤 (archetype >= scope)
-    → Phase 3: 生成 Token + 渲染 tool-instructions.md 模板
-    → emit "session:context-ready"
-    → return SessionContext { mcpServers, tools, systemContextAdditions, token }
-  → AcpConnectionManager.connect({ mcpServers, systemContextAdditions })
-```
-
-**设计原则**：
-- 子系统（Canvas、Schedule、未来的 Email/Memory）通过注册 `ContextProvider` 实现松耦合扩展
-- Provider 可根据 `meta.archetype` / `meta.backendType` 条件动态决定注入内容
-- 文本上下文模板从代码分离到 `packages/core/src/prompts/*.md`，支持 `{{variable}}` 替换
-- `AppContext.init()` 只负责注册顺序编排，不包含具体的上下文生成逻辑
-
-> 详细规格：[context-injector.md](./context-injector.md) — 数据格式、协议格式、接口格式、工作流
+> 完整规格（数据格式、接口定义、Scope 过滤规则、工作流）：[context-injector.md](./context-injector.md)
 > 实现参考：`packages/core/src/context-injector/`，`packages/api/src/services/app-context.ts`
 
 ### Multiple Launch Modes

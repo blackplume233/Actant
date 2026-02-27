@@ -242,14 +242,8 @@ Use the task management script:
 
 ### Code Quality Checklist
 
-**Impact & scope check (修改核心模块时)**:
-- [OK] `impact` 分析已执行，爆炸半径在预期内
-- [OK] `detect_changes` 确认变更只影响预期范围
-
-**Must pass before commit**:
-- [OK] Lint checks pass (project-specific command)
-- [OK] Type checks pass (if applicable)
-- [OK] Manual feature testing passes
+> 完整检查项见 [backend/quality-guidelines.md §Development Workflow](./spec/backend/quality-guidelines.md#development-workflow)（Impact 分析、lint/type/test 等）
+> 和 [frontend/quality-guidelines.md](./spec/frontend/quality-guidelines.md)。以下为 workflow 级补充项：
 
 **Doc sync (config / interface changes)**:
 - [OK] If configuration fields, schemas, or environment variables changed → update `spec/config-spec.md`
@@ -272,10 +266,6 @@ Use the task management script:
 - [OK] `pnpm test` 全部通过
 - [OK] Issue 无 dirty（`./.trellis/scripts/issue.sh check-dirty --strict`）
 - 详见 `spec/backend/quality-guidelines.md` §"Stage 前必须确保 GitHub Actions 通过"
-
-**Project-specific checks**:
-- See `.trellis/spec/frontend/quality-guidelines.md` for frontend
-- See `.trellis/spec/backend/quality-guidelines.md` for backend
 
 ---
 
@@ -546,18 +536,14 @@ gh issue comment <number> -b "comment"        # 添加评论
 
 1. **Before session start**:
    - Run `./.trellis/scripts/get-context.sh` for full context
-   - [!] **MUST read** relevant `.trellis/spec/` docs
+   - [!] **MUST read** relevant `.trellis/spec/` docs（见 Quick Reference Must-read 表）
 
 2. **During development**:
-   - [!] **Follow** `.trellis/spec/` guidelines
-   - [!] **修改核心模块前** 执行 `impact` 分析确认爆炸半径
+   - [!] **Follow** `.trellis/spec/` guidelines and Code Quality Checklist（上方）
    - For cross-layer features, use `/trellis:check-cross-layer`
    - Develop only one task at a time
-   - Run lint and tests frequently
-   - [!] If changing config schemas or external interfaces, update `spec/config-spec.md` / `spec/api-contracts.md` in the **same commit**
 
 3. **After development complete**:
-   - 执行 `detect_changes` 确认变更影响范围合理
    - Use `/trellis:finish-work` for completion checklist
    - After fix bug, use `/trellis:break-loop` for deep analysis
    - Human commits after testing passes

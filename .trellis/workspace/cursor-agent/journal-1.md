@@ -1538,3 +1538,41 @@ Reclassified the Agent archetype system from `tool | employee | service` to `rep
 - Step 4: Plugin 体系核心 (#14) — Phase 4 关键阻塞点
 - Step 5: HeartbeatPlugin + Plugin 系统集成 (#160, #161)
 - Step 6: 调度器四模式增强 (#122)
+
+---
+
+## Session 31 — 2026-02-27
+
+**标题**: Spec 文档深度审查与优化
+
+**Commit**: 4091252 (HEAD，文档变更待提交)
+
+### 完成内容
+
+| 任务 | 涉及文件 |
+|------|---------|
+| 修复 Canvas archetype 跨层冲突（统一为 employee only） | `agent-lifecycle.md`, `api-contracts.md` |
+| 合并 REST API 重复章节（§9 → 摘要引用 §4A） | `api-contracts.md` |
+| 修复 `directory-structure.md` 内容错位 | `frontend/directory-structure.md`, `frontend/index.md` |
+| 精简文档先行原则重复（改为引用 spec/index.md） | `backend/index.md`, `backend/quality-guidelines.md` |
+| SessionContextInjector 描述精简（36 行 → 3 行 + 引用） | `backend/index.md` |
+| `workflow.md` Code Quality Checklist 改为引用 | `workflow.md` |
+| 合并三个空占位文件为 `patterns-todo.md` | `frontend/index.md`, `frontend/patterns-todo.md`（新增） |
+| Phase 4 待启用审查项与通用架构审查项分离 | `backend/quality-guidelines.md` |
+| `endurance-testing.md` 添加实现状态说明 | `endurance-testing.md` |
+| `workflow.md` Best Practices 精简 | `workflow.md` |
+| 沉淀 Spec 维护规范（变更规则 7+8，常见错误章节） | `spec/index.md` |
+
+### 删除文件
+
+- `.trellis/spec/frontend/hook-guidelines.md`（纯占位）
+- `.trellis/spec/frontend/state-management.md`（纯占位）
+- `.trellis/spec/frontend/type-safety.md`（纯占位）
+
+### Status
+
+[OK] **Completed** — 纯文档维护，无代码变更
+
+### Next Steps
+
+- 提交本次文档变更：`docs(spec): deep review — fix conflicts, dedup, clarify phase boundaries`

@@ -46,14 +46,13 @@ When designing CLI commands, keep future UI integration in mind:
 
 | Guide | Description | Status |
 |-------|-------------|--------|
-| [Directory Structure](./directory-structure.md) | CLI and future UI file organization | Initial |
-| [Component Guidelines](./component-guidelines.md) | CLI output components, future UI components | Template |
-| [Hook Guidelines](./hook-guidelines.md) | CLI lifecycle hooks, future React hooks | Template |
-| [State Management](./state-management.md) | CLI session state, future UI state | Template |
-| [Quality Guidelines](./quality-guidelines.md) | Code standards for frontend layers | Template |
-| [Type Safety](./type-safety.md) | Type patterns for CLI and UI | Template |
+| [Core Roadmap (历史规划)](./directory-structure.md) | Core Agent 配置系统分阶段 Roadmap（非目录结构规范，历史文档） | Initial |
+| [Component Guidelines](./component-guidelines.md) | Dashboard 组件规范、Agent 交互模式、i18n | Active |
+| [Quality Guidelines](./quality-guidelines.md) | Code standards for frontend layers | Active |
+| [Site & Wiki](./site-and-wiki.md) | docs/site 与 docs/wiki 开发规范 | Active |
+| [Patterns (待补充)](./patterns-todo.md) | Hook 规范、状态管理、类型安全（待填写） | Todo |
 
-> **Note**: "Template" status means the file contains placeholder content from Trellis. It will be filled when the corresponding feature is actively developed.
+> **Note**: "Todo" 表示该主题尚无实质内容，欢迎补充。原 hook-guidelines.md、state-management.md、type-safety.md 已合并至 patterns-todo.md。
 
 ---
 

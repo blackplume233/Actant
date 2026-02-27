@@ -136,11 +136,11 @@ Archetype 不仅影响事件执行策略，还决定了 Dashboard UI 中哪些�
 |---------------|------|---------|----------|---------|
 | Agent Card / Detail | ✅ | ✅ | ✅ | 无限制 |
 | Chat | ✅（按需 acp direct） | ✅ | ✅ | repo 通过 acp direct 按需连接，service/employee 需 `running` 状态 |
-| Live Canvas（推送 HTML widget） | ❌ | ✅ | ✅ | 前端：渲染 service/employee slot；后端：`canvas.update` 拒绝 repo |
+| Live Canvas（推送 HTML widget） | ❌ | ❌ | ✅ | 前端：仅渲染 employee slot；后端：`canvas.update` 拒绝 repo 和 service |
 | 进程状态/重启 | ❌ | ✅ | ✅ | repo 不主动 spawn |
 | 调度器面板 | ❌ | ❌ | ✅ | 仅 employee 有 EmployeeScheduler |
 
-> **Warning**: 后端 `canvas.update` RPC handler 会校验 agent archetype，`repo` 类型的 canvas 推送请求将返回 `INVALID_PARAMS` 错误（service 和 employee 均可使用 Canvas）。前端 Live Canvas 页面也会过滤掉 `repo` 类型的 agent 和 canvas 条目。前后端双重校验缺一不可。
+> **Warning**: 后端 `canvas.update` RPC handler 会校验 agent archetype，仅 `employee` 类型可使用 Canvas，`repo` 和 `service` 类型的 canvas 推送请求将返回 `INVALID_PARAMS` 错误。前端 Live Canvas 页面也只渲染 `employee` 类型的 agent canvas 条目。前后端双重校验缺一不可。
 
 #### Event-First 设计规则
 
