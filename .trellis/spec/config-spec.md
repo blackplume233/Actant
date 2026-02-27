@@ -58,6 +58,7 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 | `permissions` | [`PermissionsInput`](#permissionsinput) | 否 | 工具/文件/网络权限控制 |
 | `initializer` | [`InitializerConfig`](#initializerconfig) | 否 | 自定义初始化流程 |
 | `archetype` | [`AgentArchetype`](#agentarchetype) | 否 | 交互原型声明，驱动实例默认的 launchMode/interactionModes/autoStart |
+| `launchMode` | [`LaunchMode`](#launchmode) | 否 | 模板级启动模式覆盖。设置后覆盖 archetype 推导的默认值，但仍可被 create-time override 覆盖。优先级：override > template.launchMode > archetype default |
 | `schedule` | [`ScheduleConfig`](#scheduleconfig) | 否 | 雇员型调度配置（Phase 3c 新增） |
 | `metadata` | `Record<string, string>` | 否 | 任意键值元数据 |
 
