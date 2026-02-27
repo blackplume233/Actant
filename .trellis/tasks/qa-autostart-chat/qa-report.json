@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "step": "S1",
+      "desc": "Service chat (created): orange banner, input enabled, new hint",
+      "status": "PASS",
+      "detail": "orange=True, disabled=False"
+    },
+    {
+      "step": "S2",
+      "desc": "Service chat: input accepts text, send enabled",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "step": "S3",
+      "desc": "Service chat (running): no orange banner, input enabled, New Chat",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "step": "S4",
+      "desc": "Employee chat (created): blue banner, no orange, input disabled",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "step": "S5",
+      "desc": "Service chat (error): orange banner, input enabled",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "summary": {
+    "pass": 5,
+    "warn": 0,
+    "fail": 0
+  }
+}

@@ -1,0 +1,59 @@
+{
+  "results": [
+    {
+      "id": "T1",
+      "desc": "Sidebar: Orchestration link between Agents and Activity, Workflow icon",
+      "status": "PASS",
+      "detail": "Link visible"
+    },
+    {
+      "id": "T2",
+      "desc": "Orchestration list: URL, title, Create Template, filters, search, view toggle",
+      "status": "PASS",
+      "detail": "search=True, filters=True, view=False"
+    },
+    {
+      "id": "T3",
+      "desc": "Create wizard Step 1: back, title, steps, 3 archetype cards, nav buttons",
+      "status": "PASS",
+      "detail": "next_disabled=True"
+    },
+    {
+      "id": "T4",
+      "desc": "Employee selected: card highlight, Next enabled, Scheduler step",
+      "status": "PASS",
+      "detail": "scheduler=True, next_enabled=True"
+    },
+    {
+      "id": "T5",
+      "desc": "Basic Info: Name, Backend, Description, Layer, Version, Prompt, Edit/Preview",
+      "status": "PASS",
+      "detail": "all_fields=True,True,True,True,True,True"
+    },
+    {
+      "id": "T6",
+      "desc": "Skills step: Available Skills, Selected Skills, search bar",
+      "status": "PASS",
+      "detail": "search=True"
+    },
+    {
+      "id": "T7a",
+      "desc": "Scheduler: Heartbeat, Cron Jobs, Event Hooks",
+      "status": "PASS",
+      "detail": "heartbeat=True, cron=True, hooks=True"
+    },
+    {
+      "id": "T7b",
+      "desc": "Preview: Summary cards, JSON Preview, Create button",
+      "status": "PASS",
+      "detail": "json=True, create_btn=True"
+    },
+    {
+      "id": "T8",
+      "desc": "Return to /orchestration list renders correctly",
+      "status": "PASS",
+      "detail": "Page loads"
+    }
+  ],
+  "console_errors": []
+}

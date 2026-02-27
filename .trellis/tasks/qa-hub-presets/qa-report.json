@@ -1,0 +1,63 @@
+{
+  "results": [
+    {
+      "step": "S1",
+      "desc": "Agents list: hub preset grouping",
+      "status": "PASS",
+      "detail": "emp=5/5, svc=4/4, repo=3/3"
+    },
+    {
+      "step": "S2",
+      "desc": "Steward: service, no Canvas, no Start/Stop, Chat",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "step": "S3",
+      "desc": "Maintainer: employee, Canvas tab, Start/Stop, Chat",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "step": "S4",
+      "desc": "Onboarder: repo, only Overview, Destroy only",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "step": "S5",
+      "desc": "Researcher chat: New Chat, no managed banner",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "step": "S6",
+      "desc": "Curator chat: no New Chat, managed banner",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "step": "S7",
+      "desc": "Onboarder chat: not available message",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "step": "S8",
+      "desc": "Live Canvas: mx-pi-employee-a2 slot (running), no created slots",
+      "status": "PASS",
+      "detail": "mx_pi=True, iframes=1"
+    },
+    {
+      "step": "S9",
+      "desc": "Settings page loads",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "summary": {
+    "pass": 9,
+    "warn": 0,
+    "fail": 0
+  }
+}

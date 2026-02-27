@@ -1,0 +1,207 @@
+{
+  "results": [
+    {
+      "phase": "P1",
+      "step": "mx-agents-visible",
+      "status": "PASS",
+      "detail": "Found 7/7: ['mx-cc-tool-a1', 'mx-cc-employee-a1', 'mx-cc-service-a1', 'mx-cursor-tool-a1', 'mx-pi-tool-a1', 'mx-pi-employee-a1', 'mx-pi-service-a1']"
+    },
+    {
+      "phase": "P1",
+      "step": "archetype-tool",
+      "status": "PASS",
+      "detail": "Archetype 'tool' displayed"
+    },
+    {
+      "phase": "P1",
+      "step": "archetype-employee",
+      "status": "PASS",
+      "detail": "Archetype 'employee' displayed"
+    },
+    {
+      "phase": "P1",
+      "step": "archetype-service",
+      "status": "PASS",
+      "detail": "Archetype 'service' displayed"
+    },
+    {
+      "phase": "P1",
+      "step": "backend-shown",
+      "status": "PASS",
+      "detail": "Backend in template/card"
+    },
+    {
+      "phase": "P1",
+      "step": "filter-grouping",
+      "status": "WARN",
+      "detail": "None"
+    },
+    {
+      "phase": "P2",
+      "step": "detail-mx-cc-tool-a1",
+      "status": "PASS",
+      "detail": "tabs=[]"
+    },
+    {
+      "phase": "P2",
+      "step": "detail-mx-cc-employee-a1",
+      "status": "PASS",
+      "detail": "tabs=[]"
+    },
+    {
+      "phase": "P2",
+      "step": "detail-mx-cc-service-a1",
+      "status": "PASS",
+      "detail": "tabs=[]"
+    },
+    {
+      "phase": "P2",
+      "step": "detail-mx-cursor-tool-a1",
+      "status": "PASS",
+      "detail": "tabs=[]"
+    },
+    {
+      "phase": "P2",
+      "step": "detail-mx-pi-tool-a1",
+      "status": "PASS",
+      "detail": "tabs=[]"
+    },
+    {
+      "phase": "P2",
+      "step": "detail-mx-pi-employee-a1",
+      "status": "PASS",
+      "detail": "tabs=[]"
+    },
+    {
+      "phase": "P2",
+      "step": "detail-mx-pi-service-a1",
+      "status": "PASS",
+      "detail": "tabs=[]"
+    },
+    {
+      "phase": "P2",
+      "step": "chat-interface",
+      "status": "PASS",
+      "detail": "Input=True"
+    },
+    {
+      "phase": "P3",
+      "step": "stop-agent",
+      "status": "PASS",
+      "detail": "Status changed after stop"
+    },
+    {
+      "phase": "P3",
+      "step": "start-agent",
+      "status": "PASS",
+      "detail": "Started back"
+    },
+    {
+      "phase": "P3",
+      "step": "chat-send",
+      "status": "PASS",
+      "detail": "Message sent"
+    },
+    {
+      "phase": "P4",
+      "step": "sidebar-nav",
+      "status": "PASS",
+      "detail": "Found ['/', '/canvas', '/agents', '/activity', '/events', '/settings']"
+    },
+    {
+      "phase": "P4",
+      "step": "settings",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "phase": "P4",
+      "step": "events",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "phase": "P4",
+      "step": "back-nav",
+      "status": "PASS",
+      "detail": "url=http://localhost:3200/events"
+    },
+    {
+      "phase": "P4",
+      "step": "responsive",
+      "status": "PASS",
+      "detail": "Content visible"
+    }
+  ],
+  "agent_details": {
+    "mx-cc-tool-a1": {
+      "tabs": [],
+      "metadata": {
+        "archetype": "tool",
+        "PID": true,
+        "Workspace": true
+      },
+      "issues": []
+    },
+    "mx-cc-employee-a1": {
+      "tabs": [],
+      "metadata": {
+        "archetype": "employee",
+        "PID": true,
+        "Workspace": true
+      },
+      "issues": []
+    },
+    "mx-cc-service-a1": {
+      "tabs": [],
+      "metadata": {
+        "archetype": "service",
+        "PID": true,
+        "Workspace": true
+      },
+      "issues": []
+    },
+    "mx-cursor-tool-a1": {
+      "tabs": [],
+      "metadata": {
+        "archetype": "tool",
+        "PID": true,
+        "Workspace": true,
+        "status_created": true
+      },
+      "issues": []
+    },
+    "mx-pi-tool-a1": {
+      "tabs": [],
+      "metadata": {
+        "archetype": "tool",
+        "PID": true,
+        "Workspace": true
+      },
+      "issues": []
+    },
+    "mx-pi-employee-a1": {
+      "tabs": [],
+      "metadata": {
+        "archetype": "employee",
+        "PID": true,
+        "Workspace": true
+      },
+      "issues": []
+    },
+    "mx-pi-service-a1": {
+      "tabs": [],
+      "metadata": {
+        "archetype": "service",
+        "PID": true,
+        "Workspace": true
+      },
+      "issues": []
+    }
+  },
+  "summary": {
+    "pass": 21,
+    "warn": 1,
+    "fail": 0
+  }
+}

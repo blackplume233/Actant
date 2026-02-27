@@ -1,0 +1,33 @@
+{
+  "results": [
+    {
+      "step": "S1",
+      "desc": "Live Canvas: iframe auto-resize, full content",
+      "status": "PASS",
+      "detail": "iframe_height=1264px, control_plane=True"
+    },
+    {
+      "step": "S2",
+      "desc": "Agent Detail Canvas: iframe auto-resize, full content",
+      "status": "PASS",
+      "detail": "iframe_height=1006px"
+    },
+    {
+      "step": "S3",
+      "desc": "Fullscreen overlay with full content",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "step": "S4",
+      "desc": "Scroll: Agent Roster table and footer visible",
+      "status": "PASS",
+      "detail": "iframe_h=1264px, roster=True, table=True"
+    }
+  ],
+  "summary": {
+    "pass": 4,
+    "warn": 0,
+    "fail": 0
+  }
+}
