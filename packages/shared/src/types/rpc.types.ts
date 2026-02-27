@@ -97,6 +97,14 @@ export interface TemplateValidateResult {
   warnings?: Array<{ path: string; message: string }>;
 }
 
+export interface TemplateCreateParams {
+  template: AgentTemplate;
+  /** When true, overwrites an existing template with the same name. Default: false. */
+  overwrite?: boolean;
+}
+
+export type TemplateCreateResult = AgentTemplate;
+
 // agent.*
 
 export type WorkDirConflict = "error" | "overwrite" | "append";
@@ -679,6 +687,33 @@ export interface EventsRecentResult {
   }>;
 }
 
+// internal.* — token-authenticated internal tool commands for managed agent processes
+
+export interface InternalValidateTokenParams {
+  token: string;
+}
+export interface InternalValidateTokenResult {
+  agentName: string;
+  sessionId: string;
+  pid?: number;
+}
+
+export interface InternalCanvasUpdateParams {
+  token: string;
+  html: string;
+  title?: string;
+}
+export interface InternalCanvasUpdateResult {
+  ok: true;
+}
+
+export interface InternalCanvasClearParams {
+  token: string;
+}
+export interface InternalCanvasClearResult {
+  ok: true;
+}
+
 // ---------------------------------------------------------------------------
 // Method registry type — maps method name to params/result for type safety
 // ---------------------------------------------------------------------------
@@ -689,6 +724,7 @@ export interface RpcMethodMap {
   "template.load": { params: TemplateLoadParams; result: TemplateLoadResult };
   "template.unload": { params: TemplateUnloadParams; result: TemplateUnloadResult };
   "template.validate": { params: TemplateValidateParams; result: TemplateValidateResult };
+  "template.create": { params: TemplateCreateParams; result: TemplateCreateResult };
   "agent.create": { params: AgentCreateParams; result: AgentCreateResult };
   "agent.start": { params: AgentStartParams; result: AgentStartResult };
   "agent.stop": { params: AgentStopParams; result: AgentStopResult };
@@ -770,6 +806,9 @@ export interface RpcMethodMap {
   "canvas.list": { params: CanvasListParams; result: CanvasListResult };
   "canvas.clear": { params: CanvasClearParams; result: CanvasClearResult };
   "events.recent": { params: EventsRecentParams; result: EventsRecentResult };
+  "internal.validateToken": { params: InternalValidateTokenParams; result: InternalValidateTokenResult };
+  "internal.canvasUpdate": { params: InternalCanvasUpdateParams; result: InternalCanvasUpdateResult };
+  "internal.canvasClear": { params: InternalCanvasClearParams; result: InternalCanvasClearResult };
 }
 
 export type RpcMethod = keyof RpcMethodMap;

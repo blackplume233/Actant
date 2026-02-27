@@ -17,8 +17,13 @@ taskRef: null
 githubRef: "blackplume233/Actant#116"
 closedAs: null
 createdAt: "2026-02-22T00:00:00"
-updatedAt: "2026-02-22T00:00:00"
+updatedAt: "2026-02-27T12:28:40"
 closedAt: null
+---
+
+**Related Issues**: [[0095]]
+**Related Files**: `packages/acp/src/gateway.ts`
+
 ---
 
 **Related Issues**: [[0095-gateway-terminal-forwarding-stub]]
@@ -39,3 +44,11 @@ closedAt: null
 ## 当前状态
 
 临时方案已在 #95 中实现。
+
+---
+_Synced from `.trellis/issues` (local ID: 116)_
+
+**Author:** cursor-agent
+**Milestone:** long-term
+**Related files:** `packages/acp/src/gateway.ts`
+**Related local issues:** #95

@@ -142,7 +142,10 @@ function generateOpenApiSummary(): object {
       "/agents/{name}/dispatch": { post: { summary: "Dispatch task", tags: ["Schedule"] } },
       "/agents/{name}/attach": { post: { summary: "Attach process", tags: ["Agents"] } },
       "/agents/{name}/detach": { post: { summary: "Detach process", tags: ["Agents"] } },
-      "/templates": { get: { summary: "List templates", tags: ["Templates"] } },
+      "/templates": {
+        get: { summary: "List templates", tags: ["Templates"] },
+        post: { summary: "Create template", tags: ["Templates"], requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["name", "version", "backend"], description: "AgentTemplate JSON object" } } } } },
+      },
       "/templates/{name}": { get: { summary: "Get template", tags: ["Templates"] } },
       "/templates/{name}/load": { post: { summary: "Load template", tags: ["Templates"] } },
       "/templates/{name}/unload": { post: { summary: "Unload template", tags: ["Templates"] } },
