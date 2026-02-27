@@ -18,7 +18,7 @@ import { requireMode, getInstallHint, getBackendManager, getBuildProviderEnv } f
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
 import { RestartTracker, type RestartPolicy } from "./restart-tracker";
-import { delay, isProcessAlive } from "./launcher/process-utils";
+import { delay, isProcessAlive, sendSignal, killProcessTree } from "./launcher/process-utils";
 import { scanInstances, updateInstanceMeta } from "../state/index";
 import type { InstanceRegistryAdapter } from "../state/instance-registry-types";
 import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
@@ -28,6 +28,7 @@ import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../provider/provid
 import type { HookEventBus } from "../hooks/hook-event-bus";
 import type { ActivityRecorder } from "../activity/activity-recorder";
 import type { SessionContextInjector } from "../context-injector/session-context-injector";
+import type { SystemBudgetManager } from "../budget/system-budget-manager";
 
 const logger = createLogger("agent-manager");
 
@@ -86,6 +87,8 @@ export interface ManagerOptions {
   activityRecorder?: ActivityRecorder;
   /** Session context injector for dynamic MCP server injection. */
   sessionContextInjector?: SessionContextInjector;
+  /** System budget manager for Service Agent keepAlive / auto-stop. */
+  budgetManager?: SystemBudgetManager;
 }
 
 export class AgentManager {
@@ -99,6 +102,8 @@ export class AgentManager {
   private readonly eventBus?: HookEventBus;
   private readonly activityRecorder?: ActivityRecorder;
   private readonly sessionContextInjector?: SessionContextInjector;
+  private readonly budgetManager?: SystemBudgetManager;
+  private readonly employeeRestartTracker: RestartTracker;
   private readonly agentLocks = new Map<string, Promise<void>>();
 
   constructor(
@@ -114,10 +119,26 @@ export class AgentManager {
       { pollIntervalMs: options?.watcherPollIntervalMs },
     );
     this.restartTracker = new RestartTracker(options?.restartPolicy);
+    this.employeeRestartTracker = new RestartTracker({
+      maxRestarts: 100,
+      backoffBaseMs: 2_000,
+      backoffMaxMs: 120_000,
+      resetAfterMs: 60_000,
+    });
     this.acpManager = options?.acpManager;
     this.eventBus = options?.eventBus;
     this.activityRecorder = options?.activityRecorder;
     this.sessionContextInjector = options?.sessionContextInjector;
+    this.budgetManager = options?.budgetManager;
+
+    if (this.budgetManager) {
+      this.budgetManager.setKeepAliveExpiredCallback((agentName) => {
+        logger.info({ agentName }, "Budget keepAlive expired — auto-stopping Service Agent");
+        this.stopAgent(agentName).catch((err) => {
+          logger.error({ agentName, error: err }, "Failed to auto-stop agent on keepAlive expiry");
+        });
+      });
+    }
   }
 
   /**
@@ -139,6 +160,13 @@ export class AgentManager {
       if (meta.status === "running" || meta.status === "starting" || meta.status === "stopping") {
         const handler = getLaunchModeHandler(meta.launchMode);
         const action = handler.getRecoveryAction(meta.name);
+
+        if (meta.pid != null && isProcessAlive(meta.pid)) {
+          logger.warn({ name: meta.name, pid: meta.pid }, "Killing orphaned agent process tree from previous daemon run");
+          killProcessTree(meta.pid);
+          await delay(1000);
+          if (isProcessAlive(meta.pid)) sendSignal(meta.pid, "SIGKILL");
+        }
 
         const dir = join(this.instancesBaseDir, meta.name);
         const fixed = await updateInstanceMeta(dir, { status: "stopped", pid: undefined });
@@ -316,6 +344,15 @@ export class AgentManager {
         this.watcher.watch(name, pid);
       }
       this.restartTracker.recordStart(name);
+      if (starting.launchMode === "acp-background") {
+        this.employeeRestartTracker.recordStart(name);
+      }
+
+      if (this.budgetManager && starting.launchMode === "acp-service") {
+        this.budgetManager.recordStart(name);
+        this.budgetManager.startKeepAliveTimer(name);
+      }
+
       this.eventBus?.emit("process:start", { callerType: "system", callerId: "AgentManager" }, name, {
         pid: pid ?? 0,
         backendType: meta.backendType,
@@ -331,7 +368,7 @@ export class AgentManager {
         });
         this.processes.delete(name);
       }
-      if (this.acpManager?.has(name)) {
+      if (this.acpManager?.getConnection(name)) {
         await this.acpManager.disconnect(name).catch(() => {});
       }
       const errored = await updateInstanceMeta(dir, { status: "error", pid: undefined });
@@ -425,10 +462,9 @@ export class AgentManager {
     const stopping = await updateInstanceMeta(dir, { status: "stopping" });
     this.cache.set(name, stopping);
 
-    // Revoke session tokens for this agent before disconnecting
     this.sessionContextInjector?.revokeTokens?.(name);
 
-    if (this.acpManager?.has(name)) {
+    if (this.acpManager?.getConnection(name)) {
       this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, name, {
         sessionId: "primary",
         reason: "agent-stop",
@@ -443,6 +479,8 @@ export class AgentManager {
       await this.launcher.terminate(proc);
       this.processes.delete(name);
     }
+
+    this.budgetManager?.recordStop(name);
 
     const stopped = await updateInstanceMeta(dir, { status: "stopped", pid: undefined, startedAt: undefined });
     this.cache.set(name, stopped);
@@ -468,6 +506,7 @@ export class AgentManager {
 
     this.watcher.unwatch(name);
     this.restartTracker.reset(name);
+    this.employeeRestartTracker.reset(name);
     await this.initializer.destroyInstance(name);
     this.cache.delete(name);
     this.processes.delete(name);
@@ -873,6 +912,8 @@ export class AgentManager {
   async dispose(): Promise<void> {
     this.watcher.dispose();
     this.restartTracker.dispose();
+    this.employeeRestartTracker.dispose();
+    this.budgetManager?.dispose();
 
     await Promise.all(Array.from(this.agentLocks.values())).catch(() => {});
 
@@ -903,7 +944,7 @@ export class AgentManager {
 
     this.sessionContextInjector?.revokeTokens?.(instanceName);
 
-    if (this.acpManager?.has(instanceName)) {
+    if (this.acpManager?.getConnection(instanceName)) {
       this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, instanceName, {
         sessionId: "primary",
         reason: "process-crash",
@@ -928,7 +969,18 @@ export class AgentManager {
 
     switch (action.type) {
       case "restart": {
-        const decision = this.restartTracker.shouldRestart(instanceName);
+        const isEmployee = meta.launchMode === "acp-background";
+        const isService = meta.launchMode === "acp-service";
+
+        this.budgetManager?.recordStop(instanceName);
+
+        if (isService && this.budgetManager && !this.budgetManager.shouldAllowRestart(instanceName)) {
+          logger.warn({ instanceName }, "Budget ceiling reached — Service Agent will not be restarted");
+          break;
+        }
+
+        const tracker = isEmployee ? this.employeeRestartTracker : this.restartTracker;
+        const decision = tracker.shouldRestart(instanceName);
         if (!decision.allowed) {
           const errored = await updateInstanceMeta(dir, { status: "error" });
           this.cache.set(instanceName, errored);
@@ -936,17 +988,17 @@ export class AgentManager {
             "error.message": `Restart limit exceeded after ${decision.attempt} attempts`,
             "error.code": "RESTART_LIMIT_EXCEEDED",
           });
-          logger.error({ instanceName, attempt: decision.attempt }, "Restart limit exceeded — marking as error");
+          logger.error({ instanceName, attempt: decision.attempt, launchMode: meta.launchMode }, "Restart limit exceeded — marking as error");
           break;
         }
 
-        logger.info({ instanceName, attempt: decision.attempt, delayMs: decision.delayMs }, "Scheduling crash restart with backoff");
+        logger.info({ instanceName, attempt: decision.attempt, delayMs: decision.delayMs, launchMode: meta.launchMode }, "Scheduling crash restart with backoff");
 
         if (decision.delayMs > 0) {
           await delay(decision.delayMs);
         }
 
-        this.restartTracker.recordRestart(instanceName);
+        tracker.recordRestart(instanceName);
         this.eventBus?.emit("process:restart", { callerType: "system", callerId: "RestartTracker" }, instanceName, {
           attempt: decision.attempt,
           delayMs: decision.delayMs,

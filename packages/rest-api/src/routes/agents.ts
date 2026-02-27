@@ -6,8 +6,18 @@ export function registerAgentRoutes(router: Router): void {
   // GET /v1/agents — List all agents
   // -----------------------------------------------------------------------
   router.get("/v1/agents", async (ctx, _req, res) => {
-    const result = await ctx.bridge.call("agent.list");
-    json(res, result);
+    const limit = Number(ctx.query.get("limit") ?? "100");
+    const page = Number(ctx.query.get("page") ?? "0");
+    if (!Number.isFinite(limit) || limit < 1 || limit > 500) {
+      return error(res, "limit must be between 1 and 500", 400);
+    }
+    if (!Number.isFinite(page) || page < 0) {
+      return error(res, "page must be >= 0", 400);
+    }
+    const all: unknown[] = await ctx.bridge.call("agent.list") as unknown[];
+    const start = page * limit;
+    const paged = all.slice(start, start + limit);
+    json(res, paged);
   });
 
   // -----------------------------------------------------------------------

@@ -7,10 +7,12 @@ export interface DaemonStatus {
   agents: number;
 }
 
+import type { AgentArchetype } from "@/lib/archetype-config";
+
 export interface AgentInfo {
   name: string;
   status: string;
-  archetype?: string;
+  archetype?: AgentArchetype;
   templateName?: string;
   pid?: number;
   startedAt?: string;

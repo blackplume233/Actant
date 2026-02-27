@@ -1,0 +1,39 @@
+{
+  "results": [
+    {
+      "step": "S1",
+      "desc": "Live Canvas dual canvases",
+      "status": "FAIL",
+      "detail": "iframes=False, a2=True, a1=False"
+    },
+    {
+      "step": "S2",
+      "desc": "mx-pi-employee-a2 Canvas: dark metrics dashboard",
+      "status": "PASS",
+      "detail": "iframe=True, metrics=True"
+    },
+    {
+      "step": "S3",
+      "desc": "mx-cc-employee-a1 Canvas: red error state",
+      "status": "PASS",
+      "detail": "iframe=True, error=True"
+    },
+    {
+      "step": "S4",
+      "desc": "Responsive: canvas cards stack vertically",
+      "status": "PASS",
+      "detail": "content_len=354"
+    },
+    {
+      "step": "S5",
+      "desc": "Agents list: archetype sections with counts",
+      "status": "PASS",
+      "detail": "employees=True, services=True, repos=True"
+    }
+  ],
+  "summary": {
+    "pass": 4,
+    "warn": 0,
+    "fail": 1
+  }
+}

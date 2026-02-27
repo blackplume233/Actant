@@ -1,0 +1,8 @@
+{
+  "name": "self-bootstrap",
+  "version": "1.0.0",
+  "description": "自举 — 自主 fork 仓库、搭建开发环境、理解代码库结构，具备独立开发能力",
+  "content": "# Self-Bootstrap\n\n## Overview\n\nIndependently fork repositories, set up development environments, and understand codebase structure to achieve autonomous development capability.\n\n## Repo Fork and Clone\n\n- Fork upstream repo to own namespace (if contributing externally)\n- Clone repo; configure remote (origin = fork, upstream = original)\n- Verify SSH/HTTPS access and permissions\n\n## Dependency Installation\n\n- Run package manager (npm, pnpm, yarn, pip, etc.) per project docs\n- Resolve version conflicts; use lockfiles when available\n- Verify install completes without errors\n\n## Codebase Exploration Strategy\n\n- Start with README, CONTRIBUTING, and architecture docs\n- Map entry points: main, CLI, API routes\n- Identify key modules and their dependencies\n\n## Architecture Understanding\n\n- Trace data flow: inputs → processing → outputs\n- Note configuration sources (env, config files)\n- Understand testing structure and fixtures\n\n## Development Environment Verification\n\n- Run build command; ensure successful compile\n- Run test suite; baseline pass rate\n- Run dev server or equivalent; confirm startup",
+  "tags": ["bootstrap", "setup", "autonomy", "spark"],
+  "license": "MIT"
+}

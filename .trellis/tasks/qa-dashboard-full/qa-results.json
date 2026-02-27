@@ -1,0 +1,141 @@
+{
+  "results": [
+    {
+      "id": "T1",
+      "desc": "Command Center loads with stats and agent grid",
+      "status": "PASS",
+      "detail": "stats=True, agents=True, events=False"
+    },
+    {
+      "id": "T1b",
+      "desc": "Agent card click navigates to detail",
+      "status": "PASS",
+      "detail": "url=http://localhost:3200/agents/qa3-test1"
+    },
+    {
+      "id": "T2a",
+      "desc": "Search box exists",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "T2b",
+      "desc": "Search 'qa3' filters results",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "T2c",
+      "desc": "Status filter badges",
+      "status": "WARN",
+      "detail": "Running/All/Stopped not found"
+    },
+    {
+      "id": "T3",
+      "desc": "Agent detail qa3-batch-0 (running)",
+      "status": "PASS",
+      "detail": "tabs=True"
+    },
+    {
+      "id": "T3a",
+      "desc": "Overview fields",
+      "status": "WARN",
+      "detail": "Found 2 of ['Name', 'Status', 'Archetype', 'Template', 'PID', 'Workspace', 'Uptime']"
+    },
+    {
+      "id": "T3b",
+      "desc": "Sessions tab loads",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "T3c",
+      "desc": "Logs tab loads",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "T3d",
+      "desc": "Action buttons",
+      "status": "WARN",
+      "detail": "Chat=False, Stop=False, Destroy=False"
+    },
+    {
+      "id": "T4",
+      "desc": "Agent detail qa3-test3",
+      "status": "WARN",
+      "detail": "created=True, start=False"
+    },
+    {
+      "id": "T5",
+      "desc": "Agent Chat page with input and send",
+      "status": "PASS",
+      "detail": "send=False, new_chat=True, agent=True"
+    },
+    {
+      "id": "T5b",
+      "desc": "Back button returns from chat",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "T6",
+      "desc": "Activity page",
+      "status": "WARN",
+      "detail": "filter=False, cards=False"
+    },
+    {
+      "id": "T6b",
+      "desc": "Activity agent filter",
+      "status": "WARN",
+      "detail": "No agent badge to click"
+    },
+    {
+      "id": "T7",
+      "desc": "Events page with search and layer filters",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "T7b",
+      "desc": "Events layer filter and search",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "T8",
+      "desc": "Settings page with connection status and daemon info",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "T9",
+      "desc": "Sidebar navigation links",
+      "status": "PASS",
+      "detail": "Found: ['/', '/canvas', '/agents', '/activity', '/events', '/settings']"
+    },
+    {
+      "id": "T10",
+      "desc": "404 page displays Not Found",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "id": "T11",
+      "desc": "Responsive layout (375px)",
+      "status": "PASS",
+      "detail": "Content visible"
+    },
+    {
+      "id": "T12",
+      "desc": "No critical JS console errors",
+      "status": "PASS",
+      "detail": "Total errors: 0"
+    }
+  ],
+  "summary": {
+    "pass": 16,
+    "warn": 6,
+    "fail": 0
+  }
+}

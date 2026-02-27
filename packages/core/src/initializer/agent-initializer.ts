@@ -155,6 +155,7 @@ export class AgentInitializer {
       const archetypeDefaults = getArchetypeDefaults(archetype);
 
       const launchMode = overrides?.launchMode
+        ?? template.launchMode
         ?? this.options?.defaultLaunchMode
         ?? archetypeDefaults.launchMode;
       const defaultPolicy: WorkspacePolicy = launchMode === "one-shot" ? "ephemeral" : "persistent";
@@ -263,10 +264,10 @@ export class AgentInitializer {
       } catch {
         // .actant.json may have been removed already
       }
-      await rm(entryPath, { recursive: true, force: true });
+      await rmWithRetry(entryPath);
       logger.info({ name, targetDir }, "Symlinked agent instance unregistered");
     } else {
-      await rm(entryPath, { recursive: true, force: true });
+      await rmWithRetry(entryPath);
       logger.info({ name }, "Agent instance destroyed");
     }
   }
@@ -332,5 +333,26 @@ async function isSymlink(path: string): Promise<boolean> {
     return stats.isSymbolicLink();
   } catch {
     return false;
+  }
+}
+
+const EBUSY_DELAYS_MS = [500, 1000, 2000, 4000];
+
+async function rmWithRetry(target: string): Promise<void> {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await rm(target, { recursive: true, force: true });
+      return;
+    } catch (err) {
+      const isTransient =
+        err instanceof Error &&
+        "code" in err &&
+        ((err as NodeJS.ErrnoException).code === "EBUSY" ||
+          (err as NodeJS.ErrnoException).code === "EPERM");
+      if (!isTransient || attempt >= EBUSY_DELAYS_MS.length) throw err;
+      const delay = EBUSY_DELAYS_MS[attempt];
+      logger.warn({ target, attempt: attempt + 1, delay }, "rm EBUSY/EPERM, retrying");
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
 }

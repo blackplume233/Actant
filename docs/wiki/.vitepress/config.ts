@@ -13,6 +13,8 @@ export default defineConfig({
   },
 
   head: [
+    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/wiki/favicon.svg' }],
+    ['meta', { property: 'og:image', content: '/wiki/og-image.png' }],
     ['meta', { name: 'robots', content: 'noai, noimageai' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],

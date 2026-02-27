@@ -1,0 +1,17 @@
+{
+  "name": "actant-lite",
+  "version": "1.0.0",
+  "description": "轻量预设 — 仅 Steward，Actant 平台的最小入口配置",
+  "skills": [
+    "intent-routing",
+    "conversation-management",
+    "task-delegation"
+  ],
+  "prompts": [
+    "steward-system-prompt"
+  ],
+  "mcpServers": [],
+  "templates": [
+    "actant-steward"
+  ]
+}

@@ -8,6 +8,7 @@ import {
   Sparkles,
   Settings,
   Languages,
+  Workflow,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
@@ -22,6 +23,7 @@ const navKeys = [
   { to: "/", icon: LayoutDashboard, labelKey: "nav.dashboard" },
   { to: "/canvas", icon: Sparkles, labelKey: "nav.canvas" },
   { to: "/agents", icon: Bot, labelKey: "nav.agents" },
+  { to: "/orchestration", icon: Workflow, labelKey: "nav.orchestration" },
   { to: "/activity", icon: Activity, labelKey: "nav.activity" },
   { to: "/events", icon: Radio, labelKey: "nav.events" },
 ];

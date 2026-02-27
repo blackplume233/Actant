@@ -1,0 +1,8 @@
+{
+  "name": "version-check",
+  "version": "1.0.0",
+  "description": "版本检查 — 检测 Actant 核心、Hub 组件、依赖包的可用更新，评估更新优先级",
+  "content": "# Version Check\n\n## Overview\n\nDetect available updates for Actant core, Hub components, and dependencies; assess update priority.\n\n## Version Comparison (Semver)\n\n- Parse and compare semantic versions (major.minor.patch)\n- Support pre-release tags (alpha, beta, rc) and build metadata\n- Handle version ranges (^, ~, >=) for dependency resolution\n\n## Update Source Scanning\n\n- **npm**: Query registry for package versions; check `latest`, `next` dist-tags\n- **GitHub releases**: Fetch release tags and assets; parse release notes\n- **Hub sources**: Scan local Hub manifests and remote Hub indexes for component updates\n\n## Priority Assessment\n\n| Priority | Condition | Action |\n|----------|-----------|--------|\n| **Security** | CVE, vulnerability fix | Recommend immediate update |\n| **Breaking** | Major version bump | Require migration review |\n| **Feature** | Minor version bump | Suggest update when convenient |\n| **Patch** | Patch version bump | Optional, low risk |\n\n## Changelog Parsing\n\n- Extract notable changes from CHANGELOG.md or release notes\n- Map changes to affected components; highlight breaking changes\n- Summarize for user decision-making",
+  "tags": ["version", "update", "dependency", "updater"],
+  "license": "MIT"
+}

@@ -3,7 +3,7 @@ import type { AgentInstanceMeta } from "@actant/shared";
 import { AgentLaunchError, createLogger } from "@actant/shared";
 import type { AgentLauncher, AgentProcess } from "./agent-launcher";
 import { resolveBackend, isAcpBackend } from "./backend-resolver";
-import { isProcessAlive, sendSignal, delay } from "./process-utils";
+import { isProcessAlive, sendSignal, killProcessTree, delay } from "./process-utils";
 import { ProcessLogWriter, type ProcessLogWriterOptions } from "./process-log-writer";
 
 const logger = createLogger("process-launcher");
@@ -192,14 +192,14 @@ export class ProcessLauncher implements AgentLauncher {
       }
     }
 
-    logger.warn({ instanceName, pid }, "Process did not exit after SIGTERM, sending SIGKILL");
-    sendSignal(pid, "SIGKILL");
+    logger.warn({ instanceName, pid }, "Process did not exit after SIGTERM, killing process tree");
+    killProcessTree(pid);
     await delay(500);
 
     if (isProcessAlive(pid)) {
-      logger.error({ instanceName, pid }, "Process still alive after SIGKILL");
+      logger.error({ instanceName, pid }, "Process still alive after tree kill");
     } else {
-      logger.info({ instanceName, pid }, "Process killed with SIGKILL");
+      logger.info({ instanceName, pid }, "Process tree killed");
     }
   }
 }

@@ -1,3 +1,5 @@
+import { execSync } from "node:child_process";
+
 /**
  * Check whether a process with the given PID is still alive.
  * Uses `kill(pid, 0)` which sends no signal but checks existence.
@@ -31,6 +33,23 @@ export function sendSignal(pid: number, signal: NodeJS.Signals): boolean {
     }
     throw err;
   }
+}
+
+/**
+ * Kill a process and its entire tree (children, grandchildren, etc.).
+ * On Windows, `process.kill()` only terminates the direct process.
+ * `taskkill /T /F` recursively kills the whole tree.
+ */
+export function killProcessTree(pid: number): boolean {
+  if (process.platform === "win32") {
+    try {
+      execSync(`taskkill /T /F /PID ${pid}`, { stdio: "ignore" });
+      return true;
+    } catch {
+      return sendSignal(pid, "SIGKILL");
+    }
+  }
+  return sendSignal(pid, "SIGKILL");
 }
 
 export function delay(ms: number): Promise<void> {

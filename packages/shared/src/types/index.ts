@@ -264,3 +264,9 @@ export {
   type EventsRecentParams,
   type EventsRecentResult,
 } from "./rpc.types";
+export type {
+  SystemBudgetConfig,
+  BudgetPeriod,
+  BudgetSnapshot,
+  AgentUptimeRecord,
+} from "./budget.types";

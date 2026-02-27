@@ -1,0 +1,8 @@
+{
+  "name": "web-research",
+  "version": "1.0.0",
+  "description": "网络研究 — 使用搜索引擎和网页抓取获取外部信息，支持多源交叉验证",
+  "content": "# Web Research\n\n## Overview\n\nUse search engines and web scraping to obtain external information; support multi-source cross-validation.\n\n## Search Strategy\n\n- **Query formulation**: Expand user query with synonyms, related terms; use Boolean operators when supported\n- **Source selection**: Choose engines (Google, Bing, DuckDuckGo) and verticals (docs, GitHub, Stack Overflow) by topic\n\n## Multi-Engine Search\n\n- Execute parallel searches across engines; merge and deduplicate results\n- Handle rate limits and fallbacks; respect robots.txt\n\n## Content Extraction and Summarization\n\n- Extract main content from pages; strip ads, nav, footers\n- Summarize long articles; preserve key facts and citations\n- Support structured data (JSON-LD, meta tags) when available\n\n## Source Credibility Assessment\n\n- Score sources by domain authority, recency, citation count\n- Flag low-quality or suspicious sources for user awareness\n\n## Result Deduplication\n\n- Detect near-duplicate content across sources; cluster by similarity\n- Present unique insights; cite multiple sources for corroboration",
+  "tags": ["research", "web", "search", "researcher"],
+  "license": "MIT"
+}

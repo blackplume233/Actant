@@ -1,0 +1,57 @@
+{
+  "results": [
+    {
+      "step": "S1",
+      "desc": "Agents list archetype grouping",
+      "status": "WARN",
+      "detail": "employees=True, services=True, repos=False, badges=False"
+    },
+    {
+      "step": "S2",
+      "desc": "Employee agent detail",
+      "status": "WARN",
+      "detail": "tabs=True,True,False,True start_stop=False chat=False"
+    },
+    {
+      "step": "S3",
+      "desc": "Service agent detail",
+      "status": "WARN",
+      "detail": "tabs=ov=True,sess=True,logs=True,canvas=False start_stop=False chat=False"
+    },
+    {
+      "step": "S4",
+      "desc": "Repo/Tool agent detail",
+      "status": "WARN",
+      "detail": "tabs=ov=True,sess=False,canvas=False start_stop=False chat=False destroy=False"
+    },
+    {
+      "step": "S5",
+      "desc": "Live Canvas page with employee slots",
+      "status": "PASS",
+      "detail": "content_len=324"
+    },
+    {
+      "step": "S6",
+      "desc": "Employee chat: NO New Chat, blue banner (managed by Actant)",
+      "status": "PASS",
+      "detail": ""
+    },
+    {
+      "step": "S7",
+      "desc": "Repo chat redirect",
+      "status": "WARN",
+      "detail": "no_chat_msg=False body_preview=A\nActant\n控制台\n实时画布\n智能体\n活动\n事件\n设置\nEnglish\n中文\n\nv0.2.3\n\n16 个智能体\n\nActant\nv0.2.3\n|\n2m\n在线\n\n仓库实例不支持对话。请使用 IDE"
+    },
+    {
+      "step": "S8",
+      "desc": "Command Center loads",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "summary": {
+    "pass": 3,
+    "warn": 5,
+    "fail": 0
+  }
+}

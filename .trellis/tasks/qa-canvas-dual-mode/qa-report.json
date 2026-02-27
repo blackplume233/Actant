@@ -1,0 +1,33 @@
+{
+  "results": [
+    {
+      "step": "S1",
+      "desc": "Live Canvas: fixed height ~320px, content overflow",
+      "status": "PASS",
+      "detail": "iframe_height=320px"
+    },
+    {
+      "step": "S2",
+      "desc": "Agent Detail Canvas: auto-resize, full content",
+      "status": "PASS",
+      "detail": "iframe_height=1006px"
+    },
+    {
+      "step": "S3",
+      "desc": "Height comparison: Live ~320px, Detail 1000+ px",
+      "status": "PASS",
+      "detail": "Live=320px, Detail=1006px, ratio=3.14"
+    },
+    {
+      "step": "S4",
+      "desc": "Scroll inside fixed iframe: Roster/table visible",
+      "status": "PASS",
+      "detail": "roster=True, height=320px"
+    }
+  ],
+  "summary": {
+    "pass": 4,
+    "warn": 0,
+    "fail": 0
+  }
+}

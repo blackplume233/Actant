@@ -1,6 +1,0 @@
-{
-  "name": "tdd-workflow",
-  "version": "1.0.0",
-  "description": "Test-driven development workflow",
-  "content": "# TDD Workflow\n\n1. Write a failing test\n2. Write minimal code to pass\n3. Refactor\n4. Repeat"
-}

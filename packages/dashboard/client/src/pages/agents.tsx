@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next";
 import { Bot, Search, Filter } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { AgentGrid } from "@/components/agents/agent-grid";
+import { ArchetypeSection } from "@/components/agents/archetype-section";
 import { useRealtimeContext } from "@/hooks/use-realtime";
+import { ARCHETYPE_ORDER, resolveArchetype, type AgentArchetype } from "@/lib/archetype-config";
 
 const STATUS_FILTERS = ["all", "running", "stopped", "error", "crashed"] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
@@ -32,6 +33,19 @@ export function AgentsPage() {
     return result;
   }, [agents, search, statusFilter]);
 
+  const grouped = useMemo(() => {
+    const groups: Record<AgentArchetype, typeof filtered> = {
+      repo: [],
+      service: [],
+      employee: [],
+    };
+    for (const agent of filtered) {
+      const arch = resolveArchetype(agent.archetype);
+      groups[arch].push(agent);
+    }
+    return groups;
+  }, [filtered]);
+
   const counts = useMemo(() => {
     const map: Record<string, number> = { all: agents.length };
     for (const a of agents) {
@@ -39,6 +53,8 @@ export function AgentsPage() {
     }
     return map;
   }, [agents]);
+
+  const loading = !connected && agents.length === 0;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -78,7 +94,28 @@ export function AgentsPage() {
         </div>
       </div>
 
-      <AgentGrid agents={filtered} loading={!connected && agents.length === 0} />
+      {loading ? (
+        <div className="space-y-6">
+          {ARCHETYPE_ORDER.map((arch) => (
+            <ArchetypeSection key={arch} archetype={arch} agents={[]} />
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {ARCHETYPE_ORDER.map((arch) => {
+            const group = grouped[arch];
+            if (group.length === 0 && filtered.length > 0) return null;
+            return (
+              <ArchetypeSection
+                key={arch}
+                archetype={arch}
+                agents={group}
+                defaultOpen={group.length > 0}
+              />
+            );
+          })}
+        </div>
+      )}
 
       {filtered.length === 0 && agents.length > 0 && (
         <div className="flex flex-col items-center py-8 text-center">

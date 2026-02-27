@@ -31,6 +31,51 @@ async function del<T>(path: string): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+const enc = encodeURIComponent;
+
+export interface TemplateListItem {
+  name: string;
+  version?: string;
+  description?: string;
+  archetype?: string;
+  metadata?: Record<string, string>;
+  domainContext?: { skills?: string[]; prompts?: string[]; mcpServers?: string[] };
+  schedule?: Record<string, unknown>;
+}
+
+export interface SkillListItem {
+  name: string;
+  version?: string;
+  description?: string;
+  content?: string;
+  tags?: string[];
+  origin?: { type: string; sourceName?: string };
+}
+
+export interface PromptListItem {
+  name: string;
+  version?: string;
+  description?: string;
+  content?: string;
+  variables?: string[];
+}
+
+export const templateApi = {
+  list: () => get<TemplateListItem[]>("templates"),
+  get: (name: string) => get<TemplateListItem>(`templates/${enc(name)}`),
+  create: (tpl: Record<string, unknown>) => post<TemplateListItem>("templates", tpl),
+};
+
+export const skillApi = {
+  list: () => get<SkillListItem[]>("skills"),
+  get: (name: string) => get<SkillListItem>(`skills/${enc(name)}`),
+};
+
+export const promptApi = {
+  list: () => get<PromptListItem[]>("prompts"),
+  get: (name: string) => get<PromptListItem>(`prompts/${enc(name)}`),
+};
+
 export const agentApi = {
   start: (name: string) => post(`agents/${encodeURIComponent(name)}/start`),
   stop: (name: string) => post(`agents/${encodeURIComponent(name)}/stop`),

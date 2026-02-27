@@ -35,15 +35,15 @@ describe("LaunchModeHandler", () => {
     });
   });
 
-  describe("acp-background", () => {
+  describe("acp-background (employee — unconditional restart)", () => {
     const handler = getLaunchModeHandler("acp-background");
 
-    it("should return mark-stopped on process exit", () => {
-      expect(handler.getProcessExitAction("agent-1")).toEqual({ type: "mark-stopped" });
+    it("should return restart on process exit", () => {
+      expect(handler.getProcessExitAction("agent-1")).toEqual({ type: "restart" });
     });
 
-    it("should return mark-stopped on recovery", () => {
-      expect(handler.getRecoveryAction("agent-1")).toEqual({ type: "mark-stopped" });
+    it("should return restart on recovery", () => {
+      expect(handler.getRecoveryAction("agent-1")).toEqual({ type: "restart" });
     });
   });
 

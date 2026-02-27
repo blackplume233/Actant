@@ -1,0 +1,8 @@
+{
+  "name": "guided-setup",
+  "version": "1.0.0",
+  "description": "引导设置 — 交互式引导新用户完成 Actant 安装、配置和首次使用",
+  "content": "# Guided Setup\n\n## Overview\n\nInteractive guidance for new users to complete Actant installation, configuration, and first use.\n\n## Environment Detection\n\n- Detect OS, shell, Node/npm version, existing tools (git, Docker)\n- Identify conflicts (e.g., old Actant install, incompatible deps)\n- Report prerequisites status; suggest fixes for missing items\n\n## Step-by-Step Configuration Wizard\n\n- Walk through: install → config → verify in logical order\n- Each step: explain purpose, show default, allow override\n- Support skip for advanced users; resume from last incomplete step\n\n## Prerequisite Checking\n\n- Verify Node version (e.g., >= 18); npm/yarn/pnpm availability\n- Check API keys or auth if required (e.g., Cursor, OpenAI)\n- Validate network access for package install\n\n## Personalized Recommendation\n\n- Infer user profile from responses (dev experience, use case)\n- Recommend presets, skills, or templates suited to profile\n- Adjust wizard complexity (minimal vs full) based on preference\n\n## Success Verification\n\n- Run smoke test: start Actant, execute sample command\n- Confirm config is valid; report any warnings\n- Offer next step: interactive-tutorial or quick start guide",
+  "tags": ["setup", "onboarding", "wizard", "onboarder"],
+  "license": "MIT"
+}

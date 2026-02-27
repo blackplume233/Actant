@@ -3,6 +3,7 @@ import { Sparkles, Bot, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { AgentCanvas } from "@/components/agents/agent-canvas";
 import { useRealtimeContext, type CanvasEntry } from "@/hooks/use-realtime";
 
 export function LiveCanvas() {
@@ -77,53 +78,13 @@ export function LiveCanvas() {
           </div>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {employeeAgents.map((agent) => {
-              const entry = canvasMap.get(agent.name);
-              return (
-                <Card key={agent.name} className="relative overflow-hidden">
-                  <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-violet-500 to-blue-500" />
-                  <CardContent className="p-5 pt-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-md bg-muted">
-                          <Bot className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                        <span className="text-sm font-semibold">{agent.name}</span>
-                      </div>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {entry ? (entry.title ?? "canvas") : (agent.archetype ?? "agent")}
-                      </Badge>
-                    </div>
-
-                    {entry ? (
-                      <div className="mt-3">
-                        <iframe
-                          srcDoc={entry.html}
-                          sandbox="allow-scripts"
-                          className="w-full rounded border bg-white"
-                          style={{ minHeight: 200, height: "auto" }}
-                          title={`Canvas: ${agent.name}`}
-                        />
-                        <p className="mt-1 text-right text-[10px] text-muted-foreground/50">
-                          {t("canvas.updatedAt", { time: new Date(entry.updatedAt).toLocaleTimeString() })}
-                        </p>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="mt-4 space-y-2">
-                          <div className="h-3 w-4/5 animate-pulse rounded bg-muted" />
-                          <div className="h-3 w-3/5 animate-pulse rounded bg-muted" />
-                          <div className="h-3 w-2/3 animate-pulse rounded bg-muted" />
-                        </div>
-                        <p className="mt-4 text-center text-[11px] text-muted-foreground/60">
-                          {t("canvas.awaitingStream")}
-                        </p>
-                      </>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+            {employeeAgents.map((agent) => (
+              <AgentCanvas
+                key={agent.name}
+                agentName={agent.name}
+                entry={canvasMap.get(agent.name)}
+              />
+            ))}
           </div>
         )}
       </section>

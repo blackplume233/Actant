@@ -41,6 +41,9 @@ async function handleDaemonPing(ctx: AppContext): Promise<DaemonPingResult> {
 async function handleDaemonShutdown(
   shutdownFn: () => Promise<void>,
 ): Promise<DaemonShutdownResult> {
-  setImmediate(() => shutdownFn());
+  setImmediate(async () => {
+    await shutdownFn();
+    process.exit(0);
+  });
   return { success: true };
 }

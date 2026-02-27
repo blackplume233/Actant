@@ -1,4 +1,4 @@
-import { spawn, type ChildProcess } from "node:child_process";
+import { spawn, execSync, type ChildProcess } from "node:child_process";
 import { Writable, Readable } from "node:stream";
 import {
   ClientSideConnection,
@@ -418,9 +418,12 @@ export class AcpConnection {
         child.stdin.end();
       }
       await new Promise<void>((resolve) => {
-        const timer = setTimeout(() => { child.kill("SIGKILL"); resolve(); }, 5000);
+        const timer = setTimeout(() => {
+          killProcessTree(child);
+          resolve();
+        }, 5000);
         child.once("exit", () => { clearTimeout(timer); resolve(); });
-        child.kill("SIGTERM");
+        killProcessTree(child);
       });
       logger.info("ACP agent subprocess terminated");
     }
@@ -572,5 +575,24 @@ export class AcpConnection {
       if (idx >= 0) existing.splice(idx, 1);
       if (existing.length === 0) this.updateListeners.delete(sessionId);
     }
+  }
+}
+
+/**
+ * Kill a child process and its entire process tree.
+ * On Windows, `child.kill()` only terminates the direct `cmd.exe` shell
+ * when `shell: true` was used, leaving the real backend process alive.
+ * `taskkill /T /F` recursively kills the whole tree.
+ */
+function killProcessTree(child: ChildProcess): void {
+  if (child.pid == null) return;
+  if (isWindows()) {
+    try {
+      execSync(`taskkill /T /F /PID ${child.pid}`, { stdio: "ignore" });
+    } catch {
+      child.kill("SIGKILL");
+    }
+  } else {
+    child.kill("SIGTERM");
   }
 }

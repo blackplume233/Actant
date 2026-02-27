@@ -32,6 +32,7 @@ import {
   SessionTokenStore,
   CanvasContextProvider,
   CoreContextProvider,
+  SystemBudgetManager,
   type ActionContext,
   type LauncherMode,
 } from "@actant/core";
@@ -103,6 +104,7 @@ export class AppContext {
   readonly eventJournal: EventJournal;
   readonly sessionContextInjector: SessionContextInjector;
   readonly sessionTokenStore: SessionTokenStore;
+  readonly budgetManager: SystemBudgetManager;
   readonly canvasStore: CanvasStore;
 
   private initialized = false;
@@ -166,6 +168,7 @@ export class AppContext {
     this.eventBus.setEmitGuard(this.hookCategoryRegistry.buildEmitGuard());
     const actionCtx: ActionContext = { cwd: this.homeDir };
     this.hookRegistry = new HookRegistry(this.eventBus, actionCtx);
+    this.budgetManager = new SystemBudgetManager();
     const launcherMode = resolvedLauncherMode;
     this.agentManager = new AgentManager(
       this.agentInitializer,
@@ -178,6 +181,7 @@ export class AppContext {
         eventBus: this.eventBus,
         activityRecorder: this.activityRecorder,
         sessionContextInjector: this.sessionContextInjector,
+        budgetManager: this.budgetManager,
       },
     );
     this.templateWatcher = new TemplateFileWatcher(this.templatesDir, this.templateRegistry);

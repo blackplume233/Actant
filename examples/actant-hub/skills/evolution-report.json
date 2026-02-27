@@ -1,0 +1,8 @@
+{
+  "name": "evolution-report",
+  "version": "1.0.0",
+  "description": "进化报告 — 分析系统运行趋势，识别改进机会，生成周度进化建议",
+  "content": "# Evolution Report\n\n## Overview\n\nAnalyze system operation trends, identify improvement opportunities, and generate weekly evolution recommendations.\n\n## Trend Analysis\n\n- **Performance**: Latency percentiles, throughput over time\n- **Stability**: Error rate, crash frequency, recovery time\n- **Usage**: Agent invocations, skill usage, template adoption\n- **Resource**: Disk growth, memory patterns, temp file accumulation\n\n## Performance Benchmarks\n\n- Compare current week vs prior week for key metrics\n- Flag regressions: \"Latency p99 increased 2x vs last week\"\n- Highlight improvements: \"Error rate down 30% after config fix\"\n\n## Error Pattern Aggregation\n\n- Group errors by type, Agent, and time window\n- Identify top N recurring issues\n- Correlate with deployments or config changes\n\n## Improvement Proposals\n\n- **Quick wins**: Low-effort fixes with high impact\n- **Technical debt**: Areas needing refactor or cleanup\n- **Capacity**: Scaling or resource limits to consider\n- **Skills**: Underused or overused skills; suggest additions/removals\n\n## Skill Effectiveness Scoring\n\n- Track: skill invocation count, success rate, user satisfaction (if available)\n- Recommend: deprecate low-value skills, promote high-value ones\n- Report: \"Skill X used 50x, 95% success; Skill Y used 2x, 30% success — consider deprecating Y\"",
+  "tags": ["evolution", "analytics", "improvement", "maintainer"],
+  "license": "MIT"
+}

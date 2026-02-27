@@ -10,6 +10,9 @@ import {
   AlertCircle,
   RotateCcw,
   History,
+  FolderGit2,
+  Info,
+  Zap,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +20,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatusBadge } from "@/components/agents/status-badge";
 import { useRealtimeContext } from "@/hooks/use-realtime";
 import { agentApi, sessionApi, type ConversationTurn, type SessionLease } from "@/lib/api";
+import { ARCHETYPE_CONFIG, resolveArchetype } from "@/lib/archetype-config";
 
 interface ChatMessage {
   id: string;
@@ -26,6 +30,8 @@ interface ChatMessage {
 }
 
 const CLIENT_ID = "dashboard-chat";
+const AUTO_START_POLL_INTERVAL = 800;
+const AUTO_START_TIMEOUT = 30_000;
 
 export function AgentChatPage() {
   const { t } = useTranslation();
@@ -35,6 +41,7 @@ export function AgentChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [autoStarting, setAutoStarting] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionState, setSessionState] = useState<"loading" | "active" | "history" | "new">("loading");
   const [historyCount, setHistoryCount] = useState(0);
@@ -47,7 +54,10 @@ export function AgentChatPage() {
     [agents, name],
   );
 
+  const archetype = resolveArchetype(agent?.archetype);
+  const config = ARCHETYPE_CONFIG[archetype];
   const isRunning = agent?.status === "running";
+  const canInteract = isRunning || config.autoStartOnChat;
 
   const scrollToBottom = useCallback(() => {
     requestAnimationFrame(() => {
@@ -62,9 +72,9 @@ export function AgentChatPage() {
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Session initialization: find active lease + load latest history
   useEffect(() => {
     if (!name || initRef.current) return;
+    if (!config.canChat) return;
     initRef.current = true;
 
     (async () => {
@@ -103,10 +113,14 @@ export function AgentChatPage() {
         setSessionState("new");
       }
     })();
-  }, [name]);
+  }, [name, config.canChat]);
 
   async function ensureSession(): Promise<string> {
     if (sessionId && sessionState === "active") return sessionId;
+
+    if (!config.canCreateSession) {
+      return sessionId ?? "";
+    }
 
     try {
       const lease = await sessionApi.create(name!, CLIENT_ID);
@@ -118,10 +132,50 @@ export function AgentChatPage() {
     }
   }
 
-  const handleSend = async () => {
-    if (!name || !input.trim() || sending) return;
+  async function ensureRunning(): Promise<boolean> {
+    if (isRunning) return true;
+    if (!config.autoStartOnChat || !name) return false;
 
-    if (!isRunning) {
+    setAutoStarting(true);
+    setMessages((prev) => [
+      ...prev,
+      { id: crypto.randomUUID(), role: "system", content: t("chat.autoStarting"), ts: Date.now() },
+    ]);
+
+    try {
+      await agentApi.start(name);
+
+      const deadline = Date.now() + AUTO_START_TIMEOUT;
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, AUTO_START_POLL_INTERVAL));
+        try {
+          const info = await agentApi.status(name) as { status?: string };
+          if (info.status === "running") return true;
+        } catch { /* poll again */ }
+      }
+      throw new Error("timeout");
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "error",
+          content: t("chat.autoStartFailed", {
+            error: err instanceof Error ? err.message : String(err),
+          }),
+          ts: Date.now(),
+        },
+      ]);
+      return false;
+    } finally {
+      setAutoStarting(false);
+    }
+  }
+
+  const handleSend = async () => {
+    if (!name || !input.trim() || sending || autoStarting) return;
+
+    if (!isRunning && !config.autoStartOnChat) {
       setMessages((prev) => [
         ...prev,
         {
@@ -147,6 +201,12 @@ export function AgentChatPage() {
     setSending(true);
 
     try {
+      const running = await ensureRunning();
+      if (!running) {
+        setSending(false);
+        return;
+      }
+
       const sid = await ensureSession();
 
       let responseText: string;
@@ -186,7 +246,7 @@ export function AgentChatPage() {
   };
 
   const handleNewChat = async () => {
-    if (!name) return;
+    if (!name || !config.canCreateSession) return;
 
     if (sessionId && sessionState === "active") {
       try { await sessionApi.close(sessionId); } catch { /* ignore */ }
@@ -218,6 +278,24 @@ export function AgentChatPage() {
     }
   };
 
+  if (!config.canChat) {
+    return (
+      <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-4xl flex-col items-center justify-center">
+        <FolderGit2 className="mb-4 h-12 w-12 text-muted-foreground/30" />
+        <p className="text-sm font-medium text-muted-foreground">{t("chat.noChat")}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-4"
+          onClick={() => navigate(`/agents/${encodeURIComponent(name ?? "")}`)}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {t("common.back")}
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex h-[calc(100vh-4rem)] max-w-4xl flex-col">
       {/* Header */}
@@ -243,31 +321,61 @@ export function AgentChatPage() {
               {sessionId.slice(0, 8)}...
             </span>
           )}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
-            onClick={handleNewChat}
-            disabled={sending || !isRunning}
-          >
-            <RotateCcw className="h-3 w-3" />
-            {t("chat.newChat")}
-          </Button>
+          {config.canCreateSession && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={handleNewChat}
+              disabled={sending || autoStarting || !isRunning}
+            >
+              <RotateCcw className="h-3 w-3" />
+              {t("chat.newChat")}
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Employee managed-sessions banner */}
+      {!config.canCreateSession && config.canChat && (
+        <div className="flex items-center justify-center gap-2 border-b bg-blue-50 dark:bg-blue-950/20 px-4 py-1.5 text-xs text-blue-700 dark:text-blue-400">
+          <Info className="h-3 w-3" />
+          <span>{t("chat.managedSessions")}</span>
+        </div>
+      )}
+
+      {/* Service auto-managed banner */}
+      {config.autoStartOnChat && !isRunning && !autoStarting && (
+        <div className="flex items-center justify-center gap-2 border-b bg-orange-50 dark:bg-orange-950/20 px-4 py-1.5 text-xs text-orange-700 dark:text-orange-400">
+          <Zap className="h-3 w-3" />
+          <span>{t("chat.serviceAutoStart")}</span>
+        </div>
+      )}
+
+      {/* Auto-starting indicator */}
+      {autoStarting && (
+        <div className="flex items-center justify-center gap-2 border-b bg-amber-50 dark:bg-amber-950/20 px-4 py-1.5 text-xs text-amber-700 dark:text-amber-400">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <span>{t("chat.autoStarting")}</span>
+        </div>
+      )}
 
       {/* Session banner */}
       {sessionState === "history" && historyCount > 0 && (
         <div className="flex items-center justify-center gap-2 border-b bg-muted/30 px-4 py-1.5 text-xs text-muted-foreground">
           <History className="h-3 w-3" />
           <span>{t("chat.historyBanner", { count: historyCount })}</span>
-          <span className="mx-1">·</span>
-          <button
-            className="text-primary hover:underline"
-            onClick={handleNewChat}
-          >
-            {t("chat.startFresh")}
-          </button>
+          {config.canCreateSession && (
+            <>
+              <span className="mx-1">·</span>
+              <button
+                className="text-primary hover:underline"
+                onClick={handleNewChat}
+              >
+                {t("chat.startFresh")}
+              </button>
+            </>
+          )}
         </div>
       )}
       {sessionState === "active" && historyCount > 0 && (
@@ -289,8 +397,12 @@ export function AgentChatPage() {
             <p className="text-sm font-medium text-muted-foreground">
               {t("chat.startPrompt", { name })}
             </p>
-            <p className={`mt-1 text-xs ${isRunning ? "text-muted-foreground/70" : "text-amber-600 dark:text-amber-400"}`}>
-              {isRunning ? t("chat.readyHint") : t("chat.stoppedHint")}
+            <p className={`mt-1 text-xs ${isRunning ? "text-muted-foreground/70" : config.autoStartOnChat ? "text-orange-600 dark:text-orange-400" : "text-amber-600 dark:text-amber-400"}`}>
+              {isRunning
+                ? t("chat.readyHint")
+                : config.autoStartOnChat
+                  ? t("chat.serviceReadyHint")
+                  : t("chat.stoppedHint")}
             </p>
           </div>
         ) : (
@@ -320,11 +432,15 @@ export function AgentChatPage() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isRunning ? t("chat.inputPlaceholder", { name }) : t("chat.inputDisabled")}
+                placeholder={
+                  canInteract
+                    ? t("chat.inputPlaceholder", { name })
+                    : t("chat.inputDisabled")
+                }
                 rows={1}
                 className="w-full resize-none bg-transparent px-4 py-3 text-sm outline-none placeholder:text-muted-foreground max-h-32"
                 style={{ minHeight: "44px" }}
-                disabled={sending || !isRunning}
+                disabled={sending || autoStarting || !canInteract}
               />
             </CardContent>
           </Card>
@@ -332,7 +448,7 @@ export function AgentChatPage() {
             size="icon"
             className="h-[44px] w-[44px] shrink-0"
             onClick={handleSend}
-            disabled={!input.trim() || sending || !isRunning}
+            disabled={!input.trim() || sending || autoStarting || !canInteract}
           >
             {sending ? (
               <Loader2 className="h-4 w-4 animate-spin" />

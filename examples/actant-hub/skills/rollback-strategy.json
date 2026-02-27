@@ -1,0 +1,8 @@
+{
+  "name": "rollback-strategy",
+  "version": "1.0.0",
+  "description": "回滚策略 — 更新失败时的安全回滚机制，保护系统状态不被破坏",
+  "content": "# Rollback Strategy\n\n## Overview\n\nSafe rollback mechanism when updates fail; protect system state from corruption.\n\n## Pre-Update Snapshot\n\n- Create full snapshot of config, state, and critical data before update\n- Store snapshot in versioned backup location (e.g., `.backups/pre-update-{timestamp}`)\n- Include checksums for integrity verification\n\n## Rollback Triggers\n\n| Trigger | Condition | Action |\n|---------|-----------|--------|\n| **Health check failure** | Post-update health probe fails | Immediate rollback |\n| **Test failure** | Smoke tests or regression tests fail | Rollback and alert |\n| **Timeout** | Update exceeds max allowed duration | Abort and rollback |\n| **User abort** | User cancels during update | Clean rollback |\n\n## Rollback Procedure\n\n1. **Config restore**: Revert config files to pre-update snapshot\n2. **Dependency downgrade**: Reinstall previous package versions from lockfile\n3. **State recovery**: Restore persisted state (sessions, caches) from backup\n4. **Verification**: Run post-rollback health check\n\n## Post-Rollback Verification\n\n- Confirm system is operational; run minimal smoke tests\n- Report rollback success/failure to user; suggest manual inspection if needed\n- Preserve rollback logs for debugging",
+  "tags": ["rollback", "safety", "recovery", "updater"],
+  "license": "MIT"
+}

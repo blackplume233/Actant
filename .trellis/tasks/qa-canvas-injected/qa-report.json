@@ -1,0 +1,45 @@
+{
+  "results": [
+    {
+      "step": "S1",
+      "desc": "Live Canvas: purple card with Canvas QA Test, no placeholder",
+      "status": "PASS",
+      "detail": "iframe=True, placeholder=False, content=True"
+    },
+    {
+      "step": "S2",
+      "desc": "Canvas tab",
+      "status": "WARN",
+      "detail": "iframe=True, qa=False"
+    },
+    {
+      "step": "S3a",
+      "desc": "Fullscreen overlay with back button",
+      "status": "WARN",
+      "detail": "back=False"
+    },
+    {
+      "step": "S3b",
+      "desc": "Back button",
+      "status": "WARN",
+      "detail": "Back button not found"
+    },
+    {
+      "step": "S4",
+      "desc": "Service should NOT have Canvas tab",
+      "status": "FAIL",
+      "detail": "canvas_tab=True"
+    },
+    {
+      "step": "S5",
+      "desc": "SSE: canvas content shown (not placeholder)",
+      "status": "PASS",
+      "detail": ""
+    }
+  ],
+  "summary": {
+    "pass": 2,
+    "warn": 3,
+    "fail": 1
+  }
+}

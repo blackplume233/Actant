@@ -1,0 +1,27 @@
+{
+  "name": "actant-kernel",
+  "version": "1.0.0",
+  "description": "内核预设 — Steward + Maintainer + Curator，Actant 平台的最小完整配置",
+  "skills": [
+    "intent-routing",
+    "conversation-management",
+    "task-delegation",
+    "self-diagnosis",
+    "self-repair",
+    "evolution-report",
+    "memory-governance",
+    "asset-registry",
+    "lifecycle-policy"
+  ],
+  "prompts": [
+    "steward-system-prompt",
+    "maintainer-system-prompt",
+    "curator-system-prompt"
+  ],
+  "mcpServers": [],
+  "templates": [
+    "actant-steward",
+    "actant-maintainer",
+    "actant-curator"
+  ]
+}
