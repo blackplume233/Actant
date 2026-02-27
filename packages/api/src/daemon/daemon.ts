@@ -82,6 +82,8 @@ export class Daemon {
     this.ctx.eventBus.emit("actant:start", { callerType: "system", callerId: "Daemon" }, undefined, {
       version: "0.1.0",
     });
+
+    this.installSignalHandlers();
     logger.info({ pid: process.pid, socket: this.ctx.socketPath, homeDir: this.ctx.homeDir }, "Daemon started");
   }
 
@@ -105,6 +107,7 @@ export class Daemon {
       }
     }
 
+    await this.ctx.agentManager.dispose();
     this.ctx.templateWatcher.stop();
     await disposeAllLeases();
     await this.server.close();
@@ -123,5 +126,22 @@ export class Daemon {
 
   get isRunning(): boolean {
     return this.running;
+  }
+
+  private installSignalHandlers(): void {
+    let shuttingDown = false;
+    const gracefulShutdown = async (signal: string) => {
+      if (shuttingDown) return;
+      shuttingDown = true;
+      logger.info({ signal }, "Received signal, shutting down gracefully");
+      try {
+        await this.stop();
+      } catch (err) {
+        logger.error({ error: err }, "Error during graceful shutdown");
+      }
+      process.exit(0);
+    };
+    process.on("SIGINT", () => void gracefulShutdown("SIGINT"));
+    process.on("SIGTERM", () => void gracefulShutdown("SIGTERM"));
   }
 }

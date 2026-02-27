@@ -18,7 +18,7 @@ import { requireMode, getInstallHint, getBackendManager, getBuildProviderEnv } f
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
 import { RestartTracker, type RestartPolicy } from "./restart-tracker";
-import { delay, isProcessAlive } from "./launcher/process-utils";
+import { delay, isProcessAlive, sendSignal, killProcessTree } from "./launcher/process-utils";
 import { scanInstances, updateInstanceMeta } from "../state/index";
 import type { InstanceRegistryAdapter } from "../state/instance-registry-types";
 import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
@@ -132,6 +132,13 @@ export class AgentManager {
       if (meta.status === "running" || meta.status === "starting" || meta.status === "stopping") {
         const handler = getLaunchModeHandler(meta.launchMode);
         const action = handler.getRecoveryAction(meta.name);
+
+        if (meta.pid != null && isProcessAlive(meta.pid)) {
+          logger.warn({ name: meta.name, pid: meta.pid }, "Killing orphaned agent process tree from previous daemon run");
+          killProcessTree(meta.pid);
+          await delay(1000);
+          if (isProcessAlive(meta.pid)) sendSignal(meta.pid, "SIGKILL");
+        }
 
         const dir = join(this.instancesBaseDir, meta.name);
         const fixed = await updateInstanceMeta(dir, { status: "stopped", pid: undefined });
@@ -315,7 +322,7 @@ export class AgentManager {
         });
         this.processes.delete(name);
       }
-      if (this.acpManager?.has(name)) {
+      if (this.acpManager?.getConnection(name)) {
         await this.acpManager.disconnect(name).catch(() => {});
       }
       const errored = await updateInstanceMeta(dir, { status: "error", pid: undefined });
@@ -405,7 +412,7 @@ export class AgentManager {
     const stopping = await updateInstanceMeta(dir, { status: "stopping" });
     this.cache.set(name, stopping);
 
-    if (this.acpManager?.has(name)) {
+    if (this.acpManager?.getConnection(name)) {
       this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, name, {
         sessionId: "primary",
         reason: "agent-stop",
@@ -844,7 +851,7 @@ export class AgentManager {
 
     logger.warn({ instanceName, pid, launchMode: meta.launchMode, action: action.type, previousStatus: meta.status }, "Agent process exited unexpectedly");
 
-    if (this.acpManager?.has(instanceName)) {
+    if (this.acpManager?.getConnection(instanceName)) {
       this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, instanceName, {
         sessionId: "primary",
         reason: "process-crash",

@@ -33,6 +33,23 @@ export function sendSignal(pid: number, signal: NodeJS.Signals): boolean {
   }
 }
 
+/**
+ * Kill a process and its entire tree (children, grandchildren, etc.).
+ * On Windows, `process.kill()` only terminates the direct process.
+ * `taskkill /T /F` recursively kills the whole tree.
+ */
+export function killProcessTree(pid: number): boolean {
+  if (process.platform === "win32") {
+    try {
+      require("node:child_process").execSync(`taskkill /T /F /PID ${pid}`, { stdio: "ignore" });
+      return true;
+    } catch {
+      return sendSignal(pid, "SIGKILL");
+    }
+  }
+  return sendSignal(pid, "SIGKILL");
+}
+
 export function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
