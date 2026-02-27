@@ -133,6 +133,44 @@ For pnpm commands, use `npx pnpm <cmd>` in PowerShell.
 - Write multi-line content to a temp file, then `git commit -F <file>`
 - Avoid `<` in inline strings (e.g. email addresses in git trailers)
 
+### Common Mistake: `node -e` 内联脚本在 PowerShell 中失败（非 ASCII / 复杂脚本）
+
+**症状**: `node -e "..."` 内联脚本含有中文字符或多行逻辑时，PowerShell 报 `SyntaxError: Invalid or unexpected token` 或字符乱码，即使代码本身语法正确。
+
+**原因 1 — 编码问题**: PowerShell 向 `node -e` 传递参数时，非 ASCII 字符（汉字、日文等）经过 PowerShell 的代码页转换，Node.js 收到的字节串已损坏。  
+**原因 2 — 转义冲突**: 反引号 `` ` ``（PS 转义符）、`$`（PS 变量前缀）与 JS 模板字符串冲突，导致参数在 Shell 层被截断。
+
+**Fix**: 将脚本写入 `.mjs` 文件，再通过 `node` 执行：
+
+```powershell
+# Bad — 中文 / 复杂逻辑直接内联
+node -e "console.log('验证 conversationId')"   # 可能输出乱码
+
+# Good — 写文件执行
+# 先 Write 工具写入 .mjs，再:
+node "path/to/script.mjs"
+```
+
+**原因 3 — `<` 重定向不支持**: PowerShell 中 `<` 不是 stdin 重定向符，执行 `node --input-type=module < script.mjs` 会报 `RedirectionNotSupported`。
+
+**Fix**: 始终以文件路径方式执行：`node "script.mjs"`。对于 `node --input-type=module`，改用临时文件而非 stdin 重定向。
+
+### Common Mistake: PowerShell 中缺少 Unix 命令（`tail`、`grep` 等）
+
+**症状**: `tail -n 5 file.txt` 报 `tail: command not found` 或 `CommandNotFoundException`。
+
+**常见 Unix → PowerShell 等价命令**:
+
+| Unix | PowerShell |
+|------|-----------|
+| `tail -n N file` | `Get-Content file \| Select-Object -Last N` |
+| `head -n N file` | `Get-Content file \| Select-Object -First N` |
+| `grep "pattern" file` | `Select-String -Path file -Pattern "pattern"` |
+| `cat a b > c` | `Get-Content a,b \| Out-File c` |
+| `wc -l file` | `(Get-Content file).Count` |
+
+**规则**: QA 脚本、测试辅助命令中的 Pipeline 命令应使用 PowerShell 原生 cmdlet，而非依赖 Git Bash 别名（Git Bash 在 PowerShell 中不总是可用）。
+
 ### Common Mistake: Bash scripts with CRLF on Windows
 
 **Symptom**: Running `.sh` scripts via `bash` on Windows Git Bash produces `$'\r': command not found` errors.
@@ -320,6 +358,66 @@ Before implementing any feature, verify:
 - [ ] Symlinks use `"junction"` type on Windows, `"dir"` on Unix (see Symlinks section)
 - [ ] Tests use `getIpcPath()` for socket paths
 - [ ] If spawning child processes, handle Windows `.cmd` / `.bat` extensions for npm scripts
+
+---
+
+## Windows Named Pipe Idle Exit (ACP Child Processes)
+
+> **Warning**: On Windows, a Node.js child process that communicates via named pipes will exit after ~5–15 seconds of **idleness**, even if `process.stdin.resume()` is called.
+>
+> **Root cause**: Windows named pipe handles become "unreferenced" when the pipe is idle (no bytes flowing). Once all handles are unreferenced, the Node.js event loop drains and the process exits naturally — despite `stdin.resume()` normally preventing this on Unix.
+
+### When It Occurs
+
+This affects any child process spawned by `AcpConnection` using named pipes as stdio, specifically `claude-agent-acp` and any other ACP bridge processes. The observable symptom is:
+
+1. Agent starts and initializes (~11s for `newSession`)
+2. ~5s later with no prompts → process exits silently
+3. Daemon logs show the agent immediately transitions from `running` to `error`
+4. User sees agent in `error` state before sending any message
+
+### Fix: Periodic Keepalive Write
+
+The solution is implemented in `packages/acp/src/connection.ts` (`AcpConnection`):
+
+```typescript
+// A blank NDJSON line written every 5s keeps the pipe's event loop reference alive.
+// The NDJSON parser silently ignores empty lines (trimmedLine is falsy).
+private startKeepalive(): void {
+  if (this.keepaliveTimer) return; // idempotent
+  this.keepaliveTimer = setInterval(() => {
+    if (!this.child?.stdin || this.child.stdin.destroyed) {
+      this.stopKeepalive();
+      return;
+    }
+    this.child.stdin.write("\n", (err) => {
+      if (err) this.stopKeepalive();
+    });
+  }, AcpConnection.KEEPALIVE_INTERVAL_MS); // 5_000ms
+
+  // IMPORTANT: unref() so the timer doesn't prevent the DAEMON from exiting.
+  // We only want to keep the CHILD alive, not block daemon shutdown.
+  this.keepaliveTimer.unref();
+}
+```
+
+**Protocol safety**: The blank `\n` is protocol-safe for NDJSON streams because every conformant parser checks `if (trimmedLine)` before attempting `JSON.parse()`. This has been verified with 7 test cases covering all positional combinations.
+
+**Timer management rules**:
+- Call `startKeepalive()` after successful ACP `initialize()` completes
+- Call `stopKeepalive()` at the start of `close()` — before terminating the child
+- The timer is `unref()`'d so daemon shutdown is not blocked
+- `startKeepalive()` is idempotent: the `if (this.keepaliveTimer) return` guard prevents double timers
+- Write errors (EPIPE) and `stdin.destroyed` both trigger automatic `stopKeepalive()`
+
+### Checklist for New ACP Connections
+
+When adding a new `AcpConnection`-like class that spawns a child process with pipe stdio:
+
+- [ ] Start keepalive after `initialize()` succeeds
+- [ ] Stop keepalive in `close()` before killing the child
+- [ ] Use `unref()` on the timer
+- [ ] Verify the child's NDJSON parser ignores blank lines
 
 ---
 

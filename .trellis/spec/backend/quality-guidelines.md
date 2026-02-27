@@ -807,6 +807,30 @@ Full CLI regression tests live in `.agents/skills/qa-engineer/scenarios/full-cli
 6. Fixes issues, rebuilds, and re-runs until 100% pass
 7. Cleans up (stops daemon, removes temp dirs, unlinks binary)
 
+#### QA 辅助脚本的 PowerShell 约定
+
+在 Windows 上通过 PowerShell 执行 QA 验证脚本时，**必须将脚本写入 `.mjs` 文件后执行**，而不是使用 `node -e "..."` 内联方式：
+
+```powershell
+# Bad — node -e 在 PowerShell 中与非 ASCII 字符不兼容，且 < 重定向不支持
+node -e "console.log('验证 conversationId')"   # 乱码
+node --input-type=module < script.mjs           # RedirectionNotSupported
+
+# Good — 写文件执行
+# 1. 用 Write 工具将脚本写入 .mjs
+# 2. node "path/to/script.mjs"
+```
+
+辅助脚本统一放在 `.trellis/tasks/<task-name>/` 目录下，随任务一起保存（不提交到 git）。
+
+**PowerShell 命令替代关系**（Unix → PowerShell）：
+
+| Unix 命令 | PowerShell 等价 |
+|-----------|----------------|
+| `tail -n N file` | `Get-Content file \| Select-Object -Last N` |
+| `head -n N file` | `Get-Content file \| Select-Object -First N` |
+| `grep pattern file` | `Select-String -Path file -Pattern pattern` |
+
 **Rule**: When changing unit test fixtures (e.g., hardcoded PIDs in `attachAgent` tests), ensure they reference real, existing processes. Use `process.pid` (the test runner's own PID) instead of made-up numbers like `99999`, since PID validation (`process.kill(pid, 0)`) is now enforced.
 
 **Rule**: When adding opt-in validation modes (e.g., `--compat agent-skills`), always include backward-compatibility tests that verify the same input passes without the flag. This ensures new modes don't silently change default behavior.

@@ -47,8 +47,10 @@
 | 场景 ID | 场景名称 | 覆盖内容 | 关停行为 |
 |---------|---------|---------|---------|
 | `E-RPC` | RPC 高频通信 | 连续 RPC 调用，验证无连接泄漏、无状态漂移 | 正常关闭连接 |
-| `E-ACP` | ACP Proxy 持续转发 | Proxy 长时间转发消息，验证 Agent 状态同步 | Proxy 断开后 Agent 状态正确 |
+| `E-ACP` | ACP Proxy 持续转发 | Proxy 长时间转发消息，验证 Agent 状态同步；**必须包含空闲期存活验证**（见注） | Proxy 断开后 Agent 状态正确 |
 | `E-MCP` | Agent 间 MCP 通信 | Agent A 反复通过 MCP 委派任务给 Agent B | one-shot Agent 自动清理 |
+
+> **`E-ACP` 实现注意**：测试中必须包含 >10s 的空闲窗口（两次 prompt 之间无活动），并验证 acp-background Agent 子进程在此期间保持存活（`INV-ALIVE`）。这覆盖了 Windows Named Pipe 空闲退出 bug 的回归。详见 `guides/cross-platform-guide.md §Windows Named Pipe Idle Exit`。
 
 #### Phase 3+: 扩展体系（待实现）
 
@@ -69,6 +71,8 @@
 | `INV-COUNT` | 缓存计数准确 | `manager.size` 等于实际存活 Agent 数量 |
 | `INV-PID` | PID 无残留 | stopped/error/created 状态的 Agent 没有 PID |
 | `INV-OWNER` | 所有权正确 | external 进程 detach 后 ownership 重置为 managed |
+| `INV-CONV` | 对话记录不碎片化 | employee Agent 历次重启后 `conversationId` 保持不变，activity 目录中只有一个 `.jsonl` 文件，不随重启产生新文件 |
+| `INV-ALIVE` | ACP 子进程保活 | acp-background Agent 在两次 prompt 之间的空闲期（>5s）不自动退出；Windows 上依赖 keepalive 机制（`AcpConnection.startKeepalive`）|
 
 ---
 
@@ -100,6 +104,8 @@
 | 新的 ProcessOwnership 模式 | 新增 attach/detach 循环场景 |
 | 插件/扩展系统 | 新增加载/卸载循环场景 |
 | 持久化存储变更 | 更新 `INV-DISK` 检查 |
+| **对话 ID / 活动记录逻辑变更** | 更新 `INV-CONV`：验证 employee conversationId 跨重启不变，activity 目录无碎片文件 |
+| **ACP 子进程保活机制变更** | 更新 `INV-ALIVE`：验证 acp-background 在空闲期（>10s）不退出，Windows 上 keepalive 写入可观测 |
 
 ### 4.2 维护清单
 
