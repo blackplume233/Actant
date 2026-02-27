@@ -121,6 +121,51 @@ div[class*="language-"] code { color: #d4d4d4 !important; }  /* 会消灭所有�
 
 ---
 
+## 品牌资产与图标管理
+
+### Logo 变体
+
+`logo/` 目录存放所有品牌资产。三个核心 PNG 变体由设计稿裁切而来（非程序生成），是**视觉权威源**：
+
+| 文件 | 尺寸 | 适用场景 |
+|------|------|---------|
+| `logo-full-brand.png` | 360×360 | 文档页脚、关于页、印刷品（含 icon + Actant + Nexus A） |
+| `logo-primary.png` | 551×551 | Hero 区域、README 头部、OG 社交预览（含 icon + Actant） |
+| `logo-icon-only.png` | 285×285 | Favicon、头像、工具栏、紧凑 UI（纯 Nexus A 图标） |
+
+### 部署位置
+
+| 用途 | 文件路径 | 格式 | 引用位置 |
+|------|---------|------|---------|
+| Wiki 导航栏 logo | `docs/wiki/public/logo.svg` | SVG (PNG 内嵌) | `.vitepress/config.ts` → `themeConfig.logo` |
+| Wiki favicon | `docs/wiki/public/favicon.svg` | SVG (PNG 内嵌) | `.vitepress/config.ts` → `head` |
+| Wiki OG 社交预览 | `docs/wiki/public/og-image.png` | PNG | `.vitepress/config.ts` → `head` meta |
+| Dashboard favicon | `packages/dashboard/client/public/actant.svg` | SVG (PNG 内嵌) | `client/index.html` → `<link rel="icon">` |
+
+### PNG→SVG 转换模式
+
+需要 SVG 格式但必须保持与设计稿像素级一致时，使用 base64 内嵌模式：
+
+```xml
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:xlink="http://www.w3.org/1999/xlink"
+     viewBox="0 0 {w} {h}" width="{w}" height="{h}">
+  <image width="{w}" height="{h}"
+         href="data:image/png;base64,{base64_data}"/>
+</svg>
+```
+
+> **禁止**用 `generate.py` 的程序化 SVG 替代设计稿裁切的 logo。`generate.py` 生成的 `nexus-a*.svg` 和 `icon-*.png` 仅用于开发参考和尺寸预览，不作为品牌交付物。
+
+### 更新 Logo 流程
+
+1. 修改 `logo/logo-*.png` 源文件
+2. 重新运行 PNG→SVG 内嵌转换
+3. 将产物复制到上表中的部署路径
+4. 确认 `config.ts` 和 `index.html` 的引用路径正确
+
+---
+
 ## 主页内容维护
 
 ### 内容更新流程
