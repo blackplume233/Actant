@@ -18,6 +18,7 @@ import { useRealtimeContext } from "@/hooks/use-realtime";
 const LAYER_PREFIXES = [
   "all",
   "agent:",
+  "template:",
   "process:",
   "session:",
   "prompt:",
@@ -28,6 +29,7 @@ const LAYER_PREFIXES = [
 
 const layerColors: Record<string, string> = {
   "agent:": "bg-blue-50 text-blue-700 border-blue-200",
+  "template:": "bg-cyan-50 text-cyan-700 border-cyan-200",
   "process:": "bg-emerald-50 text-emerald-700 border-emerald-200",
   "session:": "bg-violet-50 text-violet-700 border-violet-200",
   "prompt:": "bg-amber-50 text-amber-700 border-amber-200",

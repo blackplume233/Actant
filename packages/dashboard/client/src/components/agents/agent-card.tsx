@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { StatusBadge } from "./status-badge";
 import { useAgentActions } from "@/hooks/use-agent-actions";
+import { ARCHETYPE_CONFIG, resolveArchetype } from "@/lib/archetype-config";
 import type { AgentInfo } from "@/hooks/use-realtime";
 import type { AgentError } from "@/hooks/use-agent-error";
 
@@ -26,16 +27,12 @@ interface AgentCardProps {
   error?: AgentError | null;
 }
 
-const archetypeStyles: Record<string, string> = {
-  repo: "bg-purple-50 text-purple-700 border-purple-200",
-  service: "bg-orange-50 text-orange-700 border-orange-200",
-  employee: "bg-blue-50 text-blue-700 border-blue-200",
-};
-
 export function AgentCard({ agent, error }: AgentCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const archetype = agent.archetype ?? "repo";
+  const archetype = resolveArchetype(agent.archetype);
+  const config = ARCHETYPE_CONFIG[archetype];
+  const Icon = config.icon;
   const isRunning = agent.status === "running";
   const isErrored = agent.status === "error" || agent.status === "crashed";
   const { loading, execute } = useAgentActions(agent.name);
@@ -49,11 +46,16 @@ export function AgentCard({ agent, error }: AgentCardProps) {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted">
-              <Bot className="h-4.5 w-4.5 text-muted-foreground" />
+              <Icon className="h-4.5 w-4.5 text-muted-foreground" />
             </div>
             <div className="min-w-0">
               <h3 className="truncate text-sm font-semibold">{agent.name}</h3>
-              <StatusBadge status={agent.status} />
+              {config.hasProcessControl && <StatusBadge status={agent.status} />}
+              {!config.hasProcessControl && (
+                <span className="text-xs text-muted-foreground capitalize">
+                  {t(`archetype.${archetype}`)}
+                </span>
+              )}
             </div>
           </div>
 
@@ -72,29 +74,33 @@ export function AgentCard({ agent, error }: AgentCardProps) {
               </Button>
             }
           >
-            {isRunning ? (
-              <DropdownMenuItem onClick={() => void execute("stop")}>
-                <Square className="h-3.5 w-3.5" />
-                {t("common.stop")}
-              </DropdownMenuItem>
-            ) : (
-              <DropdownMenuItem onClick={() => void execute("start")}>
-                <Play className="h-3.5 w-3.5" />
-                {t("common.start")}
-              </DropdownMenuItem>
+            {config.hasProcessControl && (
+              isRunning ? (
+                <DropdownMenuItem onClick={() => void execute("stop")}>
+                  <Square className="h-3.5 w-3.5" />
+                  {t("common.stop")}
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem onClick={() => void execute("start")}>
+                  <Play className="h-3.5 w-3.5" />
+                  {t("common.start")}
+                </DropdownMenuItem>
+              )
             )}
-            {isErrored && (
+            {config.hasProcessControl && isErrored && (
               <DropdownMenuItem onClick={() => void execute("start")}>
                 <RotateCcw className="h-3.5 w-3.5" />
                 {t("common.retry", "Retry")}
               </DropdownMenuItem>
             )}
-            <DropdownMenuItem
-              onClick={() => navigate(`/agents/${encodeURIComponent(agent.name)}/chat`)}
-            >
-              <MessageSquare className="h-3.5 w-3.5" />
-              {t("common.chat")}
-            </DropdownMenuItem>
+            {config.canChat && (
+              <DropdownMenuItem
+                onClick={() => navigate(`/agents/${encodeURIComponent(agent.name)}/chat`)}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                {t("common.chat")}
+              </DropdownMenuItem>
+            )}
             <DropdownMenuItem
               onClick={() => navigate(`/agents/${encodeURIComponent(agent.name)}`)}
             >
@@ -135,11 +141,8 @@ export function AgentCard({ agent, error }: AgentCardProps) {
         )}
 
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
-          <Badge
-            variant="outline"
-            className={archetypeStyles[archetype] ?? archetypeStyles.repo}
-          >
-            {archetype}
+          <Badge variant="outline" className={config.color.badge}>
+            {t(`archetype.${archetype}`)}
           </Badge>
           {agent.templateName && (
             <Badge variant="secondary" className="font-normal">
@@ -154,6 +157,9 @@ export function AgentCard({ agent, error }: AgentCardProps) {
             <span>{formatElapsed(agent.startedAt)}</span>
           )}
           {agent.launchMode && <span>{agent.launchMode}</span>}
+          {archetype === "repo" && agent.workspaceDir && (
+            <span className="truncate font-mono text-[10px]">{agent.workspaceDir}</span>
+          )}
         </div>
       </CardContent>
     </Card>

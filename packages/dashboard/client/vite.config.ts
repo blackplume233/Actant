@@ -19,6 +19,7 @@ export default defineConfig({
   },
   server: {
     proxy: {
+      "/v1": "http://localhost:3200",
       "/sse": "http://localhost:3200",
       "/api": "http://localhost:3200",
     },

@@ -5,6 +5,10 @@ import { LiveCanvas } from "@/pages/live-canvas";
 import { AgentsPage } from "@/pages/agents";
 import { AgentDetailPage } from "@/pages/agent-detail";
 import { AgentChatPage } from "@/pages/agent-chat";
+import { OrchestrationPage } from "@/pages/orchestration";
+import { TemplateCreatePage } from "@/pages/orchestration/template-create";
+import { TemplateDetailPage } from "@/pages/orchestration/template-detail";
+import { InstanceCreatePage } from "@/pages/orchestration/instance-create";
 import { ActivityPage } from "@/pages/activity";
 import { EventsPage } from "@/pages/events";
 import { SettingsPage } from "@/pages/settings";
@@ -20,6 +24,10 @@ export function App() {
           <Route path="/agents" element={<AgentsPage />} />
           <Route path="/agents/:name" element={<AgentDetailPage />} />
           <Route path="/agents/:name/chat" element={<AgentChatPage />} />
+          <Route path="/orchestration" element={<OrchestrationPage />} />
+          <Route path="/orchestration/create" element={<TemplateCreatePage />} />
+          <Route path="/orchestration/:name" element={<TemplateDetailPage />} />
+          <Route path="/orchestration/:name/materialize" element={<InstanceCreatePage />} />
           <Route path="/activity" element={<ActivityPage />} />
           <Route path="/events" element={<EventsPage />} />
           <Route path="/settings" element={<SettingsPage />} />

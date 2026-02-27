@@ -14,30 +14,47 @@ import {
   ChevronRight,
   AlertCircle,
   RotateCcw,
+  Sparkles,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatusBadge } from "@/components/agents/status-badge";
+import { AgentCanvas } from "@/components/agents/agent-canvas";
 import { useRealtimeContext, type AgentInfo } from "@/hooks/use-realtime";
 import { useAgentError } from "@/hooks/use-agent-error";
 import { useAgentActions } from "@/hooks/use-agent-actions";
 import { agentApi, type SessionSummary, type ConversationTurn } from "@/lib/api";
+import {
+  ARCHETYPE_CONFIG,
+  resolveArchetype,
+  type DetailTab,
+} from "@/lib/archetype-config";
 
-type Tab = "overview" | "sessions" | "logs";
+const TAB_META: Record<DetailTab, { labelKey: string; icon: React.ReactNode }> = {
+  overview: { labelKey: "agentDetail.tabOverview", icon: <Bot className="h-4 w-4" /> },
+  sessions: { labelKey: "agentDetail.tabSessions", icon: <MessageSquare className="h-4 w-4" /> },
+  canvas: { labelKey: "agentDetail.tabCanvas", icon: <Sparkles className="h-4 w-4" /> },
+  logs: { labelKey: "agentDetail.tabLogs", icon: <Terminal className="h-4 w-4" /> },
+};
 
 export function AgentDetailPage() {
   const { t } = useTranslation();
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
   const { agents } = useRealtimeContext();
-  const [tab, setTab] = useState<Tab>("overview");
 
   const agent = useMemo(
     () => agents.find((a) => a.name === name),
     [agents, name],
   );
+
+  const archetype = resolveArchetype(agent?.archetype);
+  const config = ARCHETYPE_CONFIG[archetype];
+  const ArchetypeIcon = config.icon;
+
+  const [tab, setTab] = useState<DetailTab>(config.tabs[0]);
 
   const isRunning = agent?.status === "running";
   const isErrored = agent?.status === "error" || agent?.status === "crashed";
@@ -65,11 +82,13 @@ export function AgentDetailPage() {
     );
   }
 
-  const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: "overview", label: t("agentDetail.tabOverview"), icon: <Bot className="h-4 w-4" /> },
-    { key: "sessions", label: t("agentDetail.tabSessions"), icon: <MessageSquare className="h-4 w-4" /> },
-    { key: "logs", label: t("agentDetail.tabLogs"), icon: <Terminal className="h-4 w-4" /> },
-  ];
+  const availableTabs = config.tabs.map((key) => ({
+    key,
+    label: t(TAB_META[key].labelKey),
+    icon: TAB_META[key].icon,
+  }));
+
+  const activeTab = config.tabs.includes(tab) ? tab : config.tabs[0];
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -81,24 +100,37 @@ export function AgentDetailPage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3">
             <h2 className="text-2xl font-bold tracking-tight truncate">{agent.name}</h2>
-            <StatusBadge status={agent.status} />
+            {config.hasProcessControl ? (
+              <StatusBadge status={agent.status} />
+            ) : (
+              <Badge variant="outline" className={config.color.badge}>
+                {t(`archetype.${archetype}`)}
+              </Badge>
+            )}
           </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             {agent.templateName && <span>{agent.templateName}</span>}
-            {agent.archetype && <span className="ml-2 capitalize">{agent.archetype}</span>}
+            {agent.archetype && (
+              <span className="ml-2">
+                <ArchetypeIcon className="inline h-3 w-3 mr-0.5 -mt-0.5" />
+                {t(`archetype.${archetype}`)}
+              </span>
+            )}
             {agent.pid && <span className="ml-2">PID {agent.pid}</span>}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(`/agents/${encodeURIComponent(agent.name)}/chat`)}
-          >
-            <MessageSquare className="h-4 w-4" />
-            {t("common.chat")}
-          </Button>
-          {isErrored && (
+          {config.canChat && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate(`/agents/${encodeURIComponent(agent.name)}/chat`)}
+            >
+              <MessageSquare className="h-4 w-4" />
+              {t("common.chat")}
+            </Button>
+          )}
+          {config.hasProcessControl && isErrored && (
             <Button
               variant="outline"
               size="sm"
@@ -110,27 +142,29 @@ export function AgentDetailPage() {
               {t("common.retry", "Retry")}
             </Button>
           )}
-          {isRunning ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void execute("stop")}
-              disabled={loading === "stop"}
-            >
-              {loading === "stop" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
-              {t("common.stop")}
-            </Button>
-          ) : !isErrored ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => void execute("start")}
-              disabled={loading === "start"}
-            >
-              {loading === "start" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              {t("common.start")}
-            </Button>
-          ) : null}
+          {config.hasProcessControl && (
+            isRunning ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void execute("stop")}
+                disabled={loading === "stop"}
+              >
+                {loading === "stop" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
+                {t("common.stop")}
+              </Button>
+            ) : !isErrored ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => void execute("start")}
+                disabled={loading === "start"}
+              >
+                {loading === "start" ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                {t("common.start")}
+              </Button>
+            ) : null
+          )}
           <Button
             variant="destructive"
             size="sm"
@@ -182,11 +216,11 @@ export function AgentDetailPage() {
 
       {/* Tab bar */}
       <div className="flex gap-1 border-b">
-        {tabs.map((tb) => (
+        {availableTabs.map((tb) => (
           <button
             key={tb.key}
             className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tab === tb.key
+              activeTab === tb.key
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
@@ -199,29 +233,36 @@ export function AgentDetailPage() {
       </div>
 
       {/* Tab content */}
-      {tab === "overview" && <OverviewTab agent={agent} />}
-      {tab === "sessions" && <SessionsTab agentName={agent.name} />}
-      {tab === "logs" && <LogsTab agentName={agent.name} />}
+      {activeTab === "overview" && <OverviewTab agent={agent} />}
+      {activeTab === "sessions" && <SessionsTab agentName={agent.name} />}
+      {activeTab === "canvas" && <CanvasTab agentName={agent.name} />}
+      {activeTab === "logs" && <LogsTab agentName={agent.name} />}
     </div>
   );
 }
 
 function OverviewTab({ agent }: { agent: AgentInfo }) {
   const { t } = useTranslation();
+  const archetype = resolveArchetype(agent.archetype);
+
   const rows = [
     { label: t("agentDetail.fieldName"), value: agent.name },
     { label: t("agentDetail.fieldStatus"), value: agent.status },
-    { label: t("agentDetail.fieldArchetype"), value: agent.archetype ?? "—" },
+    { label: t("agentDetail.fieldArchetype"), value: t(`archetype.${archetype}`) },
     { label: t("agentDetail.fieldTemplate"), value: agent.templateName ?? "—" },
-    { label: t("agentDetail.fieldPid"), value: agent.pid ?? "—" },
-    { label: t("agentDetail.fieldLaunchMode"), value: agent.launchMode ?? "—" },
+    ...(archetype !== "repo" ? [
+      { label: t("agentDetail.fieldPid"), value: agent.pid ?? "—" },
+      { label: t("agentDetail.fieldLaunchMode"), value: agent.launchMode ?? "—" },
+    ] : []),
     { label: t("agentDetail.fieldWorkspace"), value: agent.workspaceDir ?? "—" },
-    {
-      label: t("agentDetail.fieldUptime"),
-      value: agent.startedAt && agent.status === "running"
-        ? formatElapsed(agent.startedAt)
-        : "—",
-    },
+    ...(archetype !== "repo" ? [
+      {
+        label: t("agentDetail.fieldUptime"),
+        value: agent.startedAt && agent.status === "running"
+          ? formatElapsed(agent.startedAt)
+          : "—",
+      },
+    ] : []),
   ];
 
   return (
@@ -302,7 +343,6 @@ function SessionsTab({ agentName }: { agentName: string }) {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
-      {/* Session list */}
       <Card>
         <CardContent className="p-2">
           <ScrollArea className="max-h-[500px]">
@@ -331,7 +371,6 @@ function SessionsTab({ agentName }: { agentName: string }) {
         </CardContent>
       </Card>
 
-      {/* Conversation */}
       <Card>
         <CardContent className="p-4">
           {!selectedSession ? (
@@ -355,6 +394,12 @@ function SessionsTab({ agentName }: { agentName: string }) {
       </Card>
     </div>
   );
+}
+
+function CanvasTab({ agentName }: { agentName: string }) {
+  const { canvas } = useRealtimeContext();
+  const entry = canvas.find((c) => c.agentName === agentName);
+  return <AgentCanvas agentName={agentName} entry={entry} showHeader={false} autoResize />;
 }
 
 function TurnBubble({ turn }: { turn: ConversationTurn }) {
