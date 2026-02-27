@@ -1,6 +1,7 @@
 import { EventEmitter } from "node:events";
 import { createLogger } from "@actant/shared";
 import type { HookEventName, HookCallerType, HookEmitContext } from "@actant/shared";
+import type { EventJournal } from "../journal/event-journal";
 
 const logger = createLogger("hook-event-bus");
 
@@ -40,12 +41,18 @@ export type EmitGuard = (
 export class HookEventBus {
   private readonly emitter = new EventEmitter();
   private emitGuard: EmitGuard | null = null;
+  private journal: EventJournal | null = null;
   private readonly recentBuffer: HookEventPayload[] = [];
   private readonly maxRecent: number;
 
   constructor(options?: { maxRecentEvents?: number }) {
     this.emitter.setMaxListeners(200);
     this.maxRecent = options?.maxRecentEvents ?? 500;
+  }
+
+  /** Attach an EventJournal so every emitted event is persisted to disk. */
+  setJournal(journal: EventJournal | null): void {
+    this.journal = journal;
   }
 
   /**
@@ -118,6 +125,12 @@ export class HookEventBus {
     this.recentBuffer.push(payload);
     if (this.recentBuffer.length > this.maxRecent) {
       this.recentBuffer.shift();
+    }
+
+    if (this.journal) {
+      this.journal.append("hook", event, payload).catch((err) => {
+        logger.warn({ err, event }, "Failed to journal hook event");
+      });
     }
 
     const listeners = this.emitter.listeners(event) as HookEventListener[];

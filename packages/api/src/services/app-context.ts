@@ -27,6 +27,7 @@ import {
   HookCategoryRegistry,
   HookRegistry,
   ActivityRecorder,
+  EventJournal,
   SessionContextInjector,
   SessionTokenStore,
   CanvasContextProvider,
@@ -38,7 +39,7 @@ import { CanvasStore } from "./canvas-store";
 import type { ModelApiProtocol } from "@actant/shared";
 import { AcpConnectionManager } from "@actant/acp";
 import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
-import { createLogger, getIpcPath } from "@actant/shared";
+import { createLogger, getIpcPath, initLogDir } from "@actant/shared";
 
 const logger = createLogger("app-context");
 
@@ -99,6 +100,7 @@ export class AppContext {
   readonly hookCategoryRegistry: HookCategoryRegistry;
   readonly hookRegistry: HookRegistry;
   readonly activityRecorder: ActivityRecorder;
+  readonly eventJournal: EventJournal;
   readonly sessionContextInjector: SessionContextInjector;
   readonly sessionTokenStore: SessionTokenStore;
   readonly canvasStore: CanvasStore;
@@ -155,6 +157,7 @@ export class AppContext {
     this.acpConnectionManager = new AcpConnectionManager();
     this.sessionRegistry = new SessionRegistry();
     this.activityRecorder = new ActivityRecorder(this.instancesDir);
+    this.eventJournal = new EventJournal(join(this.homeDir, "journal"));
     this.sessionContextInjector = new SessionContextInjector();
     this.sessionTokenStore = new SessionTokenStore();
     this.canvasStore = new CanvasStore();
@@ -202,6 +205,11 @@ export class AppContext {
     this.listenForInstanceHooks();
 
     await this.activityRecorder.rebuildIndex();
+
+    initLogDir(join(this.homeDir, "logs"));
+    this.eventBus.setJournal(this.eventJournal);
+    this.sessionRegistry.setJournal(this.eventJournal);
+    await this.sessionRegistry.rebuildFromJournal(this.eventJournal);
 
     this.sessionContextInjector.setEventBus(this.eventBus);
     this.sessionContextInjector.setTokenStore(this.sessionTokenStore);

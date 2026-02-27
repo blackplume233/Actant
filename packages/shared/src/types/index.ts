@@ -113,6 +113,12 @@ export type {
   ConversationFileOp,
 } from "./activity.types";
 export { INLINE_THRESHOLD, PREVIEW_LENGTH } from "./activity.types";
+export type {
+  JournalCategory,
+  JournalEntry,
+  JournalQueryFilter,
+  SessionLifecycleData,
+} from "./journal.types";
 export {
   RPC_ERROR_CODES,
   type RpcRequest,

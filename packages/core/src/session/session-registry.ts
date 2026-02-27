@@ -1,5 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { createLogger } from "@actant/shared";
+import type { SessionLifecycleData } from "@actant/shared";
+import type { EventJournal } from "../journal/event-journal";
 
 const logger = createLogger("session-registry");
 
@@ -41,12 +43,69 @@ export class SessionRegistry {
   private sweepTimer: ReturnType<typeof setInterval> | null = null;
   private readonly defaultIdleTtlMs: number;
   private onExpireCallback?: (session: SessionLease) => void;
+  private journal: EventJournal | null = null;
 
   constructor(options?: SessionRegistryOptions) {
     this.defaultIdleTtlMs = options?.defaultIdleTtlMs ?? DEFAULT_IDLE_TTL_MS;
     const interval = options?.ttlCheckIntervalMs ?? TTL_CHECK_INTERVAL_MS;
     this.sweepTimer = setInterval(() => this.sweepExpired(), interval);
     this.sweepTimer.unref();
+  }
+
+  /** Attach an EventJournal so session lifecycle events are persisted to disk. */
+  setJournal(journal: EventJournal | null): void {
+    this.journal = journal;
+  }
+
+  /**
+   * Rebuild in-memory session state by replaying journal entries.
+   * Should be called once at startup, before accepting new requests.
+   */
+  async rebuildFromJournal(journal: EventJournal): Promise<void> {
+    const count = await journal.replay("session", (entry) => {
+      const d = entry.data as SessionLifecycleData;
+      switch (d.action) {
+        case "created": {
+          const lease: SessionLease = {
+            sessionId: d.sessionId,
+            agentName: d.agentName,
+            clientId: d.clientId ?? null,
+            state: "active",
+            createdAt: new Date(entry.ts).toISOString(),
+            lastActivityAt: new Date(entry.ts).toISOString(),
+            idleTtlMs: d.idleTtlMs ?? this.defaultIdleTtlMs,
+          };
+          this.sessions.set(d.sessionId, lease);
+          break;
+        }
+        case "released": {
+          const s = this.sessions.get(d.sessionId);
+          if (s) {
+            s.clientId = null;
+            s.state = "idle";
+            s.lastActivityAt = new Date(entry.ts).toISOString();
+          }
+          break;
+        }
+        case "resumed": {
+          const s = this.sessions.get(d.sessionId);
+          if (s) {
+            s.clientId = d.clientId ?? null;
+            s.state = "active";
+            s.lastActivityAt = new Date(entry.ts).toISOString();
+          }
+          break;
+        }
+        case "closed":
+        case "expired":
+          this.sessions.delete(d.sessionId);
+          break;
+      }
+    });
+
+    if (count > 0) {
+      logger.info({ replayed: count, sessions: this.sessions.size }, "Session state rebuilt from journal");
+    }
   }
 
   /** Register a callback invoked when a session expires. */
@@ -68,6 +127,13 @@ export class SessionRegistry {
     };
     this.sessions.set(session.sessionId, session);
     logger.info({ sessionId: session.sessionId, agentName: opts.agentName, clientId: opts.clientId }, "Session created");
+    this.journalWrite({
+      action: "created",
+      sessionId: session.sessionId,
+      agentName: opts.agentName,
+      clientId: opts.clientId,
+      idleTtlMs: session.idleTtlMs,
+    });
     return session;
   }
 
@@ -104,6 +170,7 @@ export class SessionRegistry {
     session.state = "idle";
     session.lastActivityAt = new Date().toISOString();
     logger.info({ sessionId, agentName: session.agentName }, "Session released to idle");
+    this.journalWrite({ action: "released", sessionId, agentName: session.agentName });
   }
 
   /**
@@ -119,6 +186,7 @@ export class SessionRegistry {
     session.state = "active";
     session.lastActivityAt = new Date().toISOString();
     logger.info({ sessionId, clientId, agentName: session.agentName }, "Session resumed");
+    this.journalWrite({ action: "resumed", sessionId, agentName: session.agentName, clientId });
     return true;
   }
 
@@ -128,6 +196,7 @@ export class SessionRegistry {
     if (!session) return false;
     this.sessions.delete(sessionId);
     logger.info({ sessionId, agentName: session.agentName }, "Session closed");
+    this.journalWrite({ action: "closed", sessionId, agentName: session.agentName });
     return true;
   }
 
@@ -137,6 +206,7 @@ export class SessionRegistry {
     for (const [id, session] of this.sessions) {
       if (session.agentName === agentName) {
         this.sessions.delete(id);
+        this.journalWrite({ action: "closed", sessionId: id, agentName });
         count++;
       }
     }
@@ -170,8 +240,16 @@ export class SessionRegistry {
         session.state = "expired";
         this.sessions.delete(id);
         logger.info({ sessionId: id, agentName: session.agentName, idleMs: now - lastActivity }, "Session expired (TTL)");
+        this.journalWrite({ action: "expired", sessionId: id, agentName: session.agentName });
         this.onExpireCallback?.(session);
       }
     }
+  }
+
+  private journalWrite(data: SessionLifecycleData): void {
+    if (!this.journal) return;
+    this.journal.append("session", `session:${data.action}`, data).catch((err) => {
+      logger.warn({ err, action: data.action, sessionId: data.sessionId }, "Failed to journal session event");
+    });
   }
 }

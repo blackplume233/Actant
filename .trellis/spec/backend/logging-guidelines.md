@@ -134,6 +134,69 @@ const instanceLogger = createLogger(`agent:${instanceId}`);
 
 ---
 
+## Persistence
+
+Actant provides two complementary persistence layers for structured observability data.
+
+### Log File Persistence (pino)
+
+All pino log output is written to daily-rotated JSONL files via `initLogDir()`.
+
+| Item | Detail |
+|------|--------|
+| Storage | `{homeDir}/logs/YYYY-MM-DD.jsonl` |
+| Format | Standard pino JSON (one line per entry) |
+| Activation | `initLogDir(dir)` called in `AppContext.init()` |
+| Env override | Set `LOG_DIR` to override the directory |
+| Backward compat | If `initLogDir()` is never called, logs go to stdout only |
+
+```typescript
+import { initLogDir, createLogger } from "@actant/shared";
+
+// Enable file persistence early in startup
+initLogDir(join(homeDir, "logs"));
+
+// All loggers — existing and future — now write to both stdout and file
+const logger = createLogger("my-module");
+logger.info("This goes to stdout AND the daily JSONL file");
+```
+
+### EventJournal (hook events + session lifecycle)
+
+The `EventJournal` is an append-only JSONL store for system events that need to survive restarts. It records:
+
+- **Hook events** — every `HookEventBus.emit()` is persisted with full payload
+- **Session lifecycle** — `created / released / resumed / closed / expired` transitions
+
+| Item | Detail |
+|------|--------|
+| Storage | `{homeDir}/journal/YYYY-MM-DD.jsonl` |
+| Format | `JournalEntry` (seq, ts, category, event, data) |
+| Activation | Wired automatically in `AppContext.init()` |
+| Recovery | `SessionRegistry.rebuildFromJournal()` replays session events at startup |
+| Query | `EventJournal.query({ since, until, category, event, limit })` |
+
+```typescript
+// Reading recent session events
+const entries = await journal.query({
+  category: "session",
+  since: Date.now() - 3600_000,  // last hour
+});
+
+// Replay for state reconstruction
+await journal.replay("session", (entry) => {
+  console.log(entry.event, entry.data);
+});
+```
+
+**Design principles**:
+
+- **Non-blocking**: Journal writes are fire-and-forget; failures are logged but never disrupt the main event flow.
+- **Daily rotation**: Files are split by calendar date. No external rotation tool required.
+- **Backward compatible**: Components work identically without a journal attached (`setJournal(null)` or simply never calling it).
+
+---
+
 ## Common Mistakes
 
 ### Mistake: Logging Inside Hot Loops
