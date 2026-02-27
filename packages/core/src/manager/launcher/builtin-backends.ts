@@ -81,7 +81,7 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
     description: "Cursor IDE",
     origin: { type: "builtin" },
     supportedModes: ["resolve", "open"],
-    defaultInteractionModes: ["start"],
+    defaultInteractionModes: ["open"],
     resolveCommand: { win32: "cursor.cmd", default: "cursor" },
     openCommand: { win32: "cursor.cmd", default: "cursor" },
     openSpawnOptions: { shell: process.platform === "win32" },

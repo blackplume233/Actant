@@ -128,6 +128,8 @@ export function toAgentTemplate(output: AgentTemplateOutput): AgentTemplate {
     initializer: output.initializer,
     permissions: output.permissions,
     schedule: output.schedule,
+    archetype: output.archetype,
+    launchMode: output.launchMode,
     metadata: output.metadata,
   };
 }

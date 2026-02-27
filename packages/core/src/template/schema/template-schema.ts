@@ -1,5 +1,6 @@
 import { z } from "zod/v4";
 import { ScheduleConfigSchema } from "../../scheduler/schedule-config";
+import { AgentArchetypeSchema, LaunchModeSchema } from "../../state/instance-meta-schema";
 
 export const McpServerRefSchema = z.object({
   name: z.string().min(1),
@@ -139,6 +140,8 @@ export const AgentTemplateSchema = z.object({
   permissions: PermissionsInputSchema.optional(),
   initializer: InitializerSchema.optional(),
   schedule: ScheduleConfigSchema.optional(),
+  archetype: AgentArchetypeSchema.optional(),
+  launchMode: LaunchModeSchema.optional(),
   metadata: z.record(z.string(), z.string()).optional(),
 });
 
