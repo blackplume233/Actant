@@ -272,3 +272,13 @@ export type {
   BudgetSnapshot,
   AgentUptimeRecord,
 } from "./budget.types";
+export type {
+  PluginScope,
+  PluginRuntimeState,
+  PluginContext,
+  PluginRuntimeHooks,
+  PluginRef,
+  SubsystemScope,
+  SubsystemOrigin,
+  SubsystemDefinition,
+} from "./plugin.types";

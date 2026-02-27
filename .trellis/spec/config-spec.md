@@ -730,56 +730,49 @@ Agent 侧能力扩展（Claude Code 插件、Cursor 扩展等），通过 Backen
 
 > 实现参考：`packages/core/src/domain/plugin/plugin-manager.ts`，类型定义见 `packages/shared/src/types/domain-component.types.ts`
 
-### ActantPlugin 接口（Phase 4 #13 预定） 🚧
+### ActantPlugin 接口（Phase 4 #14 — 已实现）
 
-> **⚠️ 预定设计**：以下接口为设计草案，实际开发时须重新审查确认。
+> **✅ 已实现**：六插口接口已在 Step 4 完成，通过 27 个单元测试。详见 `spec/backend/plugin-guidelines.md`。
 
-Actant 系统级 Plugin，运行在 Daemon 进程内，具备三插口能力。与 Agent-side `PluginDefinition` (Phase 3a) 层级不同：
+Actant 系统级 Plugin，运行在 Daemon 进程内，具备六插口能力。与 Agent-side `PluginDefinition` (Phase 3a) 层级不同：
 
 ```
 ActantPlugin = Daemon-side 系统级插件（Phase 4）
-  ├─ domainContext 插口: 物化到 Agent workspace 的静态资源
+  ├─ domainContext 插口: 物化到 Agent workspace 的 DomainContextConfig
   ├─ runtime 插口: Daemon 运行时有状态逻辑（五阶段生命周期）
-  └─ hooks 插口: 事件消费/生产（注册到 HookEventBus）
+  ├─ hooks 插口: 注册 HookEventBus 事件监听器
+  ├─ contextProviders 插口: 注入 SessionContextInjector
+  ├─ subsystems 插口: 注册 SubsystemDefinition
+  └─ sources 插口: 注册 SourceConfig 到 SourceManager
 
 PluginDefinition = Agent-side 能力扩展（Phase 3a）
   └─ 通过 BackendBuilder 物化到 workspace（npm/file/config）
+  └─ 通过 adaptLegacyPlugin() 可自动升级为 ActantPlugin
 ```
 
-**ActantPlugin 类型定义**（待定义在 `@actant/shared/types/plugin.types.ts`）：
+**ActantPlugin 类型定义**（`@actant/core/plugin/types.ts` + `@actant/shared/types/plugin.types.ts`）：
 
 ```typescript
+// 完整接口见 packages/core/src/plugin/types.ts
 interface ActantPlugin {
-  name: string;
-  version: string;
-  scope: PluginScope;
+  readonly name: string;
+  readonly scope: PluginScope;            // "actant" | "instance"
+  readonly dependencies?: readonly string[];
 
-  // 三插口（均可选）
-  domainContext?: PluginDomainContext;
-  hooks?: HookDeclaration[];
-
-  // 五阶段生命周期（runtime 插口）
-  init?(ctx: PluginContext): Promise<void>;
-  start?(ctx: PluginContext): Promise<void>;
-  tick?(ctx: PluginContext): Promise<void>;
-  stop?(ctx: PluginContext): Promise<void>;
-  dispose?(ctx: PluginContext): Promise<void>;
+  domainContext?: (ctx: PluginContext) => DomainContextConfig | undefined;
+  runtime?: PluginRuntimeHooks;           // init/start/tick/stop/dispose
+  hooks?: (bus: HookEventBus, ctx: PluginContext) => void;
+  contextProviders?: (ctx: PluginContext) => ContextProvider[];
+  subsystems?: (ctx: PluginContext) => SubsystemDefinition[];
+  sources?: (ctx: PluginContext) => SourceConfig[];
 }
 
+// 基础类型在 packages/shared/src/types/plugin.types.ts
 type PluginScope = 'actant' | 'instance';
 
-interface PluginDomainContext {
-  files?: Record<string, string>;
-  mcpServers?: McpServerRef[];
-  rules?: string[];
-}
-
 interface PluginContext {
-  scope: PluginScope;
-  instanceName?: string;          // scope=instance 时有值
+  agentName?: string;          // scope=instance 时有值
   config: Record<string, unknown>;
-  dataDir: string;
-  logger: Logger;
   eventBus: HookEventBus;
   getPlugin<T extends ActantPlugin>(name: string): T | undefined;
 }

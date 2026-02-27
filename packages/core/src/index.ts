@@ -15,3 +15,4 @@ export * from "./activity/index";
 export * from "./journal/index";
 export * from "./context-injector/index";
 export * from "./budget/index";
+export * from "./plugin/index";
