@@ -1678,8 +1678,8 @@ Session Lease 模式使用以下 RPC 方法：
 | 方法 | 参数 | 返回 | 说明 |
 |------|------|------|------|
 | `gateway.lease` | `{ agentName }` | `{ socketPath }` | 创建 per-agent 命名管道/Unix socket，IDE 通过该 socket 与 ACP Gateway 通信 |
-| `session.create` | `{ agentName, clientId, idleTtlMs? }` | `SessionLeaseInfo` | 创建新会话 |
-| `session.prompt` | `{ sessionId, text }` | `SessionPromptResult` | 发送消息（同步） |
+| `session.create` | `{ agentName, clientId, idleTtlMs?, conversationId? }` | `SessionLeaseInfo` | 创建新会话。传入 `conversationId` 可续接已有会话 |
+| `session.prompt` | `{ sessionId, text }` | `SessionPromptResult` | 发送消息（同步），返回中包含 `conversationId` |
 | `session.cancel` | `{ sessionId }` | `{ ok }` | 取消正在进行的 prompt |
 | `session.close` | `{ sessionId }` | `{ ok }` | 关闭会话 |
 | `session.list` | `{ agentName? }` | `SessionLeaseInfo[]` | 列会话 |
@@ -1721,6 +1721,19 @@ interface SessionLeaseInfo {
   createdAt: string;
   lastActivityAt: string;
   idleTtlMs: number;
+  /** Stable conversation thread ID for activity recording. Use to resume conversations. */
+  conversationId: string;
+}
+```
+
+**SessionPromptResult** 结构：
+
+```typescript
+interface SessionPromptResult {
+  stopReason: string;
+  text: string;
+  /** The conversationId that was updated. Matches the lease's conversationId. */
+  conversationId: string;
 }
 ```
 
