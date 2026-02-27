@@ -44,12 +44,14 @@ class DirectModeHandler implements LaunchModeHandler {
 class AcpBackgroundModeHandler implements LaunchModeHandler {
   readonly mode = "acp-background" as const;
 
-  getProcessExitAction(_instanceName: string): ProcessExitAction {
-    return { type: "mark-stopped" };
+  getProcessExitAction(instanceName: string): ProcessExitAction {
+    logger.info({ instanceName }, "acp-background (employee) process exited — unconditional restart");
+    return { type: "restart" };
   }
 
-  getRecoveryAction(_instanceName: string): RecoveryAction {
-    return { type: "mark-stopped" };
+  getRecoveryAction(instanceName: string): RecoveryAction {
+    logger.info({ instanceName }, "acp-background (employee) stale instance — unconditional recovery restart");
+    return { type: "restart" };
   }
 }
 

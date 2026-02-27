@@ -10,8 +10,11 @@ import type {
   TemplateValidateParams,
   TemplateValidateResult,
 } from "@actant/shared";
+import { createLogger } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
+
+const logger = createLogger("template-handlers");
 
 export function registerTemplateHandlers(registry: HandlerRegistry): void {
   registry.register("template.list", handleTemplateList);
@@ -44,6 +47,15 @@ async function handleTemplateLoad(
   const template = await ctx.templateLoader.loadFromFile(resolve(filePath));
   ctx.templateRegistry.register(template);
   await ctx.templateRegistry.persist(template);
+
+  ctx.eventBus?.emit("template:loaded", { callerType: "user", callerId: "api" }, {
+    "template.name": template.name,
+    "template.version": template.version,
+    "template.backendType": template.backend?.type,
+    "template.archetype": template.archetype,
+  });
+  logger.info({ name: template.name }, "Template loaded (event emitted)");
+
   return template;
 }
 
@@ -53,6 +65,14 @@ async function handleTemplateUnload(
 ): Promise<TemplateUnloadResult> {
   const { name } = params as unknown as TemplateUnloadParams;
   const removed = ctx.templateRegistry.unregister(name);
+
+  if (removed) {
+    ctx.eventBus?.emit("template:unloaded", { callerType: "user", callerId: "api" }, {
+      "template.name": name,
+    });
+    logger.info({ name }, "Template unloaded (event emitted)");
+  }
+
   return { success: removed };
 }
 
@@ -65,6 +85,11 @@ async function handleTemplateValidate(
     const template = await ctx.templateLoader.loadFromFile(filePath);
     const { validateTemplate } = await import("@actant/core");
     const deep = validateTemplate(template);
+
+    ctx.eventBus?.emit("template:validated", { callerType: "user", callerId: "api" }, {
+      "template.name": template.name, valid: true, errorCount: 0,
+    });
+
     return {
       valid: true,
       template,
@@ -72,6 +97,11 @@ async function handleTemplateValidate(
     };
   } catch (err) {
     const validationErrors = (err as { validationErrors?: Array<{ path: string; message: string }> }).validationErrors;
+
+    ctx.eventBus?.emit("template:validated", { callerType: "user", callerId: "api" }, {
+      valid: false, errorCount: validationErrors?.length ?? 1,
+    });
+
     return {
       valid: false,
       errors: validationErrors ?? [{ path: "", message: err instanceof Error ? err.message : String(err) }],

@@ -30,7 +30,7 @@
  *  │  Layer      │ Scope    │ Categories                      │
  *  ├──────────────────────────────────────────────────────────┤
  *  │  System     │ Global   │ actant:*                        │
- *  │  Entity     │ Global   │ agent:* / source:*              │
+ *  │  Entity     │ Global   │ agent:* / source:* / template:* │
  *  │  Runtime    │ Instance │ process:* / session:* / prompt:*│
  *  │  Schedule   │ Config.  │ cron:* / heartbeat:*            │
  *  │  User       │ Config.  │ user:dispatch/run/prompt        │
@@ -178,6 +178,14 @@ export const HOOK_CATEGORIES = {
     builtinEvents: ["updated"],
     dynamic: false,
   },
+  template: {
+    name: "template",
+    prefix: "template",
+    layer: "entity",
+    description: "Agent template lifecycle events (load/unload/validate)",
+    builtinEvents: ["loaded", "unloaded", "validated"],
+    dynamic: false,
+  },
 
   // ── Runtime Layer (instance-scoped) ───────────────────────
   process: {
@@ -272,12 +280,15 @@ type SystemEvents =
   | "actant:start"
   | "actant:stop";
 
-/** Entity-layer events: agent & source CRUD. */
+/** Entity-layer events: agent, source & template CRUD. */
 type EntityEvents =
   | "agent:created"
   | "agent:destroyed"
   | "agent:modified"
-  | "source:updated";
+  | "source:updated"
+  | "template:loaded"
+  | "template:unloaded"
+  | "template:validated";
 
 /** Runtime-layer events: process, session, prompt + standalone. */
 type RuntimeEvents =
@@ -612,6 +623,44 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
       { name: "source.type", type: "string", required: false, description: "Source type (github/local/community)" },
     ],
     allowedEmitters: ["system"],
+    allowedListeners: [],
+    subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
+  },
+  {
+    event: "template:loaded",
+    description: "An agent template has been loaded/registered into the system",
+    emitters: ["TemplateHandlers.handleTemplateLoad"],
+    payloadSchema: [
+      { name: "template.name", type: "string", required: true, description: "Template name" },
+      { name: "template.version", type: "string", required: false, description: "Template version" },
+      { name: "template.backendType", type: "string", required: false, description: "Backend type" },
+      { name: "template.archetype", type: "string", required: false, description: "Agent archetype" },
+    ],
+    allowedEmitters: ["system", "user"],
+    allowedListeners: [],
+    subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
+  },
+  {
+    event: "template:unloaded",
+    description: "An agent template has been unregistered from the system",
+    emitters: ["TemplateHandlers.handleTemplateUnload"],
+    payloadSchema: [
+      { name: "template.name", type: "string", required: true, description: "Template name" },
+    ],
+    allowedEmitters: ["system", "user"],
+    allowedListeners: [],
+    subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
+  },
+  {
+    event: "template:validated",
+    description: "An agent template has been validated (with result)",
+    emitters: ["TemplateHandlers.handleTemplateValidate"],
+    payloadSchema: [
+      { name: "template.name", type: "string", required: false, description: "Template name (if valid)" },
+      { name: "valid", type: "boolean", required: true, description: "Validation result" },
+      { name: "errorCount", type: "number", required: false, description: "Number of validation errors" },
+    ],
+    allowedEmitters: ["system", "user"],
     allowedListeners: [],
     subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
   },
