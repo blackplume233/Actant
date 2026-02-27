@@ -979,6 +979,27 @@ Agent 后端的纯数据配置，JSON 可序列化。由 `BackendManager` 管理
 | `terminateTimeoutMs` | `number` | `5000` | SIGTERM 后等待多久发送 SIGKILL |
 | `spawnVerifyDelayMs` | `number` | `500` | spawn 后等待多久验证进程存活 |
 
+### SystemBudgetConfig（PR #253 新增）
+
+`SystemBudgetManager` 追踪 **Service Agent**（`acp-service`）的运行时长，动态调整 keepAlive 窗口并在预算耗尽时自动停止。Employee Agent（`acp-background`）不受预算管理，始终无条件重启。
+
+| 字段 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `ceilingHours` | `number` | `Infinity` | 每个周期允许的最大 agent-hours 总量。`Infinity` 禁用上限 |
+| `period` | `"daily" \| "monthly"` | `"daily"` | 预算统计周期 |
+| `baseKeepAliveMs` | `number` | `3_600_000`（1h） | Service Agent 基础存活时长（ms）。预算使用率 ≥ `extendThreshold` 时生效 |
+| `extendedKeepAliveMs` | `number` | `86_400_000`（1d） | 预算充足（使用率 < `extendThreshold`）时的扩展存活时长（ms） |
+| `extendThreshold` | `number` | `0.5` | 使用率阈值（0~1），低于此值时使用 `extendedKeepAliveMs` |
+| `hardCeilingThreshold` | `number` | `0.95` | 硬上限阈值。使用率 ≥ 此值时，Service Agent 不再重启且立即停止运行中实例 |
+
+**运行逻辑**：
+- `recordStart(name)` / `recordStop(name)` 追踪每个 Agent 的运行时段
+- `startKeepAliveTimer(name)` 在 Agent 启动时设置定时器，到期后触发 `onKeepAliveExpired` 回调由 `AgentManager` 处理自动停止
+- 周期切换时（日/月跨越），自动 roll over 重置消耗记录
+- `getSnapshot()` 返回 `BudgetSnapshot`（当前 periodKey、consumedHours、usageRatio、effectiveKeepAliveMs 等）
+
+> 实现参考：`packages/core/src/budget/system-budget-manager.ts`，类型定义：`packages/shared/src/types/budget.types.ts`
+
 ---
 
 ## 7. 平台与 IPC

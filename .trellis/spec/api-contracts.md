@@ -190,6 +190,18 @@ CLI `template validate <file>` 输出格式：
 
 > 实现参考：`packages/api/src/handlers/template-handlers.ts`，`packages/cli/src/commands/template/validate.ts`
 
+#### template 生命周期事件（PR #253 新增）
+
+`template.load`、`template.unload`、`template.validate` 操作成功后自动通过 `HookEventBus` 发送审计事件，供安全追踪和外部订阅使用。
+
+| 事件 | 触发时机 | 关键 payload 字段 |
+|------|---------|-----------------|
+| `template:loaded` | `template.load` 成功注册模板后 | `template.name`, `template.version`, `template.backendType`, `template.archetype` |
+| `template:unloaded` | `template.unload` 成功注销模板后 | `template.name` |
+| `template:validated` | `template.validate` 执行后（无论成功与否） | `template.name`（仅成功时）, `valid: boolean`, `errorCount: number` |
+
+事件使用 `callerType: "user", callerId: "api"` 作为发送者标识。属于 Entity 层（`template:*` category），支持用户订阅（`userConfigurable: true`）和 Agent 自注册（`agentSubscribable: true`）。
+
 ### 3.2 Agent 生命周期
 
 | 方法 | 参数 | 返回 | 可能错误 |
