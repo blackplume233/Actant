@@ -98,14 +98,19 @@ export class BackendManager extends BaseComponentManager<BackendDefinition> {
     }
     if (!def.supportedModes.includes(mode)) {
       const supported = def.supportedModes.join(", ");
+      let hint: string;
+      if (mode === "resolve") {
+        hint = `Use \`agent start\` or \`agent run\` instead.`;
+      } else if (mode === "open") {
+        hint = `This backend has no native TUI/UI to open.`;
+      } else {
+        hint = def.supportedModes.includes("open")
+          ? `Use \`agent open\` to launch the native UI, or \`agent resolve\` to get the spawn command.`
+          : `Use \`agent resolve\` to get the spawn command.`;
+      }
       throw new Error(
         `Backend "${backendName}" does not support "${mode}" mode. ` +
-        `Supported modes: [${supported}]. ` +
-        (mode === "resolve"
-          ? `Use \`agent start\` or \`agent run\` instead.`
-          : mode === "open"
-            ? `This backend has no native TUI/UI to open.`
-            : `Use \`agent resolve\` or \`agent open\` instead.`),
+        `Supported modes: [${supported}]. ` + hint,
       );
     }
   }
