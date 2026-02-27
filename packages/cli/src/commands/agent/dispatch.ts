@@ -6,13 +6,20 @@ export function createAgentDispatchCommand(client: RpcClient, printer: CliPrinte
   return new Command("dispatch")
     .description("Queue a one-off task for an agent's scheduler")
     .argument("<name>", "Agent name")
-    .requiredOption("-m, --message <message>", "The prompt/message to dispatch")
+    .argument("[message]", "The prompt/message to dispatch (alternative to -m)")
+    .option("-m, --message <message>", "The prompt/message to dispatch")
     .option("-p, --priority <priority>", "Task priority: low, normal, high, critical", "normal")
-    .action(async (name: string, opts: { message: string; priority: string }) => {
+    .action(async (name: string, positionalMsg: string | undefined, opts: { message?: string; priority: string }) => {
+      const prompt = opts.message ?? positionalMsg;
+      if (!prompt) {
+        printer.error("Message is required. Use: actant agent dispatch <name> \"<message>\" or -m \"<message>\"");
+        process.exitCode = 1;
+        return;
+      }
       try {
         const result = await client.call("agent.dispatch", {
           name,
-          prompt: opts.message,
+          prompt,
           priority: opts.priority,
         });
         if (result.queued) {
