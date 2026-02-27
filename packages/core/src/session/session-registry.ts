@@ -11,6 +11,7 @@ const TTL_CHECK_INTERVAL_MS = 60 * 1000; // 1 minute
 export type SessionState = "active" | "idle" | "expired";
 
 export interface SessionLease {
+  /** Ephemeral lease ID — used as the API session identifier for runtime calls. */
   sessionId: string;
   agentName: string;
   /** Currently-bound client identifier. null when idle (client disconnected). */
@@ -20,12 +21,21 @@ export interface SessionLease {
   lastActivityAt: string;
   /** Milliseconds of idle time before the session expires. */
   idleTtlMs: number;
+  /**
+   * Stable conversation thread ID used for activity recording.
+   * Multiple leases (reconnections) share the same conversationId so all
+   * messages accumulate in one continuous on-disk conversation record.
+   * Auto-generated if not provided on create().
+   */
+  conversationId: string;
 }
 
 export interface CreateSessionOptions {
   agentName: string;
   clientId: string;
   idleTtlMs?: number;
+  /** Provide to continue an existing conversation; omit to start a fresh one. */
+  conversationId?: string;
 }
 
 export interface SessionRegistryOptions {
@@ -74,6 +84,7 @@ export class SessionRegistry {
             createdAt: new Date(entry.ts).toISOString(),
             lastActivityAt: new Date(entry.ts).toISOString(),
             idleTtlMs: d.idleTtlMs ?? this.defaultIdleTtlMs,
+            conversationId: d.conversationId ?? d.sessionId,
           };
           this.sessions.set(d.sessionId, lease);
           break;
@@ -113,7 +124,7 @@ export class SessionRegistry {
     this.onExpireCallback = callback;
   }
 
-  /** Create a new session for an agent, bound to a client. */
+  /** Create a new session (lease) for an agent, bound to a client. */
   create(opts: CreateSessionOptions): SessionLease {
     const now = new Date().toISOString();
     const session: SessionLease = {
@@ -124,15 +135,20 @@ export class SessionRegistry {
       createdAt: now,
       lastActivityAt: now,
       idleTtlMs: opts.idleTtlMs ?? this.defaultIdleTtlMs,
+      conversationId: opts.conversationId ?? randomUUID(),
     };
     this.sessions.set(session.sessionId, session);
-    logger.info({ sessionId: session.sessionId, agentName: opts.agentName, clientId: opts.clientId }, "Session created");
+    logger.info(
+      { sessionId: session.sessionId, conversationId: session.conversationId, agentName: opts.agentName, clientId: opts.clientId, resumed: !!opts.conversationId },
+      "Session created",
+    );
     this.journalWrite({
       action: "created",
       sessionId: session.sessionId,
       agentName: opts.agentName,
       clientId: opts.clientId,
       idleTtlMs: session.idleTtlMs,
+      conversationId: session.conversationId,
     });
     return session;
   }

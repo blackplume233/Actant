@@ -12,13 +12,16 @@ import {
   History,
   FolderGit2,
   Zap,
+  MessageSquare,
+  Plus,
+  ChevronDown,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { StatusBadge } from "@/components/agents/status-badge";
 import { useRealtimeContext } from "@/hooks/use-realtime";
-import { agentApi, sessionApi, type ConversationTurn, type SessionLease } from "@/lib/api";
+import { agentApi, sessionApi, type ConversationTurn, type SessionLease, type SessionSummary } from "@/lib/api";
 import { ARCHETYPE_CONFIG, resolveArchetype } from "@/lib/archetype-config";
 
 interface ChatMessage {
@@ -37,15 +40,22 @@ export function AgentChatPage() {
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const requestedSessionId = searchParams.get("session");
+  // Support both ?conversation= (new) and ?session= (legacy) URL params
+  const requestedConversationId = searchParams.get("conversation") ?? searchParams.get("session");
   const { agents } = useRealtimeContext();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const [autoStarting, setAutoStarting] = useState(false);
+  /** Ephemeral lease ID — used for sessionApi.prompt() / sessionApi.close() calls. */
   const [sessionId, setSessionId] = useState<string | null>(null);
+  /** Stable conversation thread ID — used for activity recording and history lookup. */
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [sessionState, setSessionState] = useState<"loading" | "active" | "history" | "new">("loading");
   const [historyCount, setHistoryCount] = useState(0);
+  /** Past conversation threads for service agents (shown in the conversation picker). */
+  const [conversationList, setConversationList] = useState<SessionSummary[]>([]);
+  const [showConvPicker, setShowConvPicker] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const initRef = useRef(false);
@@ -80,105 +90,101 @@ export function AgentChatPage() {
 
     (async () => {
       try {
-        // If a specific session was requested via ?session= param, load its history.
-        // NOTE: requestedSessionId is a Conversation Record ID (activity), NOT a Chat Lease ID.
-        // - employee: store for display only; routing always uses agentApi.prompt()
-        // - service:  do NOT store as sessionId; ensureSession() will create a fresh lease lazily
-        if (requestedSessionId) {
-          const turns = await agentApi.conversation(name, requestedSessionId);
-          if (turns.length > 0) {
-            const restored = turnsToMessages(turns);
-            setMessages(restored);
-            setHistoryCount(restored.length);
-          }
-          if (!config.canCreateSession) {
-            // employee: track for display only
-            setSessionId(requestedSessionId);
-            setSessionState("active");
-          } else {
-            // service: leave sessionId null; new lease will be created on first message
-            setSessionState("history");
-          }
-          return;
-        }
-
-        // Employee agents: merge ALL session histories chronologically so the
-        // conversation appears continuous even across Daemon restarts.
-        // Each restart creates a new ACP session ID, but the agent's memory is
-        // preserved via loadSession:true — the frontend should mirror this.
+        // ── Employee agents (acp-background) ────────────────────────────────
+        // One persistent conversation thread, stored on disk via
+        // meta.metadata.conversationId. Merge all activity sessions
+        // chronologically for a continuous display.
         if (!config.canCreateSession) {
+          const targetId = requestedConversationId;
           const sessions = await agentApi.sessions(name);
           const withMessages = sessions
             .filter((s) => s.messageCount > 0)
             .sort((a, b) => a.startTs - b.startTs); // oldest → newest
 
           if (withMessages.length > 0) {
-            // Load all sessions' turns in parallel, then flatten in order
+            const toLoad = targetId
+              ? withMessages.filter((s) => s.sessionId === targetId)
+              : withMessages;
             const allTurnsNested = await Promise.all(
-              withMessages.map((s) => agentApi.conversation(name, s.sessionId)),
+              toLoad.map((s) => agentApi.conversation(name, s.sessionId)),
             );
             const allTurns = allTurnsNested.flat();
             if (allTurns.length > 0) {
               const restored = turnsToMessages(allTurns);
               setMessages(restored);
               setHistoryCount(restored.length);
-              // Track the latest session ID for display (not used for routing)
-              setSessionId(withMessages[withMessages.length - 1].sessionId);
-              setSessionState("active");
-              return;
             }
+            const latest = withMessages[withMessages.length - 1];
+            setConversationId(latest.sessionId);
+            setSessionState("active");
+            return;
           }
           setSessionState("new");
           return;
         }
 
-        // Service agents: check for an existing lease, then load latest session
-        let hasActiveLease = false;
-        try {
-          const leases = await sessionApi.list(name);
-          const activeLease = leases.find(
-            (l: SessionLease) => l.state === "active" && l.agentName === name,
-          );
-          if (activeLease) {
-            setSessionId(activeLease.sessionId);
-            hasActiveLease = true;
-          }
-        } catch {
-          // Session lease API may not be available
-        }
+        // ── Service agents (acp-service) ─────────────────────────────────────
+        // Each conversation thread = one conversationId on disk.
+        // On load: restore the requested or most-recent conversation, then
+        // reconnect the lease so the user can continue immediately.
+        const allSessions = await agentApi.sessions(name);
+        const withMessages = allSessions
+          .filter((s) => s.messageCount > 0)
+          .sort((a, b) => b.startTs - a.startTs); // newest first
 
-        const sessions = await agentApi.sessions(name);
-        const withMessages = sessions.filter((s) => s.messageCount > 0);
+        setConversationList(withMessages);
 
-        if (withMessages.length > 0) {
-          const latest = withMessages.reduce((a, b) => (a.startTs > b.startTs ? a : b));
-          const turns = await agentApi.conversation(name, latest.sessionId);
+        // Determine which conversation to open
+        const targetConvId = requestedConversationId
+          ?? (withMessages[0]?.sessionId ?? null);
+
+        if (targetConvId) {
+          const turns = await agentApi.conversation(name, targetConvId);
           if (turns.length > 0) {
             const restored = turnsToMessages(turns);
             setMessages(restored);
             setHistoryCount(restored.length);
-            setSessionState(hasActiveLease ? "active" : "history");
-            return;
           }
+          setConversationId(targetConvId);
         }
 
-        setSessionState(hasActiveLease ? "active" : "new");
+        // Check if there's an active lease for this conversation and reattach it
+        try {
+          const leases = await sessionApi.list(name);
+          const activeLease = leases.find(
+            (l: SessionLease) =>
+              l.state === "active" &&
+              l.agentName === name &&
+              (!targetConvId || l.conversationId === targetConvId),
+          );
+          if (activeLease) {
+            setSessionId(activeLease.sessionId);
+            setSessionState("active");
+            return;
+          }
+        } catch {
+          // Lease API unavailable — ensureSession() will create one lazily
+        }
+
+        setSessionState(targetConvId ? "history" : "new");
       } catch {
         setSessionState("new");
       }
     })();
-  }, [name, config.canChat, requestedSessionId]);
+  }, [name, config.canChat, requestedConversationId]);
 
   async function ensureSession(): Promise<string> {
-    // Employees don't use lease-based routing; agentApi.prompt handles session internally.
-    // sessionId for employees is only an activity session ID (for display), never a lease ID.
+    // Employees don't use lease-based routing.
     if (!config.canCreateSession) return "";
 
     if (sessionId && sessionState === "active") return sessionId;
 
     try {
-      const lease = await sessionApi.create(name!, CLIENT_ID);
+      // Pass current conversationId to continue the existing thread.
+      // If null, a fresh conversationId will be auto-generated by the server.
+      const lease = await sessionApi.create(name!, CLIENT_ID, conversationId ?? undefined);
       setSessionId(lease.sessionId);
+      setConversationId(lease.conversationId);
       setSessionState("active");
       return lease.sessionId;
     } catch {
@@ -277,11 +283,13 @@ export function AgentChatPage() {
           if (msg.includes("not found") && config.canCreateSession && isRunning) {
             setSessionId(null);
             setSessionState("new");
-            const freshLease = await sessionApi.create(name!, CLIENT_ID);
+            // Re-create lease, continuing the same conversation thread
+            const freshLease = await sessionApi.create(name!, CLIENT_ID, conversationId ?? undefined);
             setSessionId(freshLease.sessionId);
+            setConversationId(freshLease.conversationId);
             setSessionState("active");
             result = await sessionApi.prompt(freshLease.sessionId, text);
-            responseSid = freshLease.sessionId;
+            responseSid = freshLease.conversationId;
           } else {
             throw err;
           }
@@ -324,23 +332,36 @@ export function AgentChatPage() {
       try { await sessionApi.close(sessionId); } catch { /* ignore */ }
     }
 
+    // No conversationId → server generates a fresh one
+    setSessionId(null);
+    setConversationId(null);
+    setSessionState("new");
+    setMessages([]);
+    setHistoryCount(0);
+  };
+
+  const handleSwitchConversation = async (convId: string) => {
+    if (!name) return;
+    setShowConvPicker(false);
+
+    if (sessionId && sessionState === "active") {
+      try { await sessionApi.close(sessionId); } catch { /* ignore */ }
+    }
+    setSessionId(null);
+
     try {
-      const lease = await sessionApi.create(name, CLIENT_ID);
-      setSessionId(lease.sessionId);
-      setSessionState("active");
-      setMessages([{
-        id: crypto.randomUUID(),
-        role: "system",
-        content: t("chat.newConversation"),
-        ts: Date.now(),
-      }]);
-      setHistoryCount(0);
+      const turns = await agentApi.conversation(name, convId);
+      const restored = turns.length > 0 ? turnsToMessages(turns) : [];
+      setMessages(restored);
+      setHistoryCount(restored.length);
     } catch {
-      setSessionId(null);
-      setSessionState("new");
       setMessages([]);
       setHistoryCount(0);
     }
+    setConversationId(convId);
+    // Update URL without reload so this conversation can be bookmarked/shared
+    navigate(`/agents/${encodeURIComponent(name)}/chat?conversation=${encodeURIComponent(convId)}`, { replace: true });
+    setSessionState("history");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -388,10 +409,60 @@ export function AgentChatPage() {
           {agent && <StatusBadge status={agent.status} />}
         </div>
         <div className="flex items-center gap-2">
-          {sessionId && (
-            <span className="text-xs text-muted-foreground font-mono">
-              {sessionId.slice(0, 8)}...
+          {conversationId && (
+            <span className="text-xs text-muted-foreground font-mono hidden sm:inline">
+              {conversationId.slice(0, 8)}…
             </span>
+          )}
+          {/* Conversation picker for service agents */}
+          {config.canCreateSession && conversationList.length > 0 && (
+            <div className="relative">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 gap-1 text-xs"
+                onClick={() => setShowConvPicker((v) => !v)}
+              >
+                <MessageSquare className="h-3 w-3" />
+                {t("chat.conversations", { count: conversationList.length })}
+                <ChevronDown className="h-3 w-3 opacity-60" />
+              </Button>
+              {showConvPicker && (
+                <div className="absolute right-0 top-full z-50 mt-1 w-72 rounded-lg border bg-popover shadow-lg">
+                  <div className="flex items-center justify-between border-b px-3 py-2">
+                    <span className="text-xs font-medium text-muted-foreground">{t("chat.pastConversations")}</span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 gap-1 text-xs"
+                      onClick={handleNewChat}
+                    >
+                      <Plus className="h-3 w-3" />
+                      {t("chat.newChat")}
+                    </Button>
+                  </div>
+                  <ScrollArea className="max-h-64">
+                    {conversationList.map((conv) => (
+                      <button
+                        key={conv.sessionId}
+                        className={`flex w-full items-start gap-2 px-3 py-2 text-left text-sm hover:bg-muted/60 transition-colors ${conv.sessionId === conversationId ? "bg-muted/40" : ""}`}
+                        onClick={() => handleSwitchConversation(conv.sessionId)}
+                      >
+                        <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-mono text-[11px] text-muted-foreground">
+                            {conv.sessionId.slice(0, 8)}…
+                          </div>
+                          <div className="text-[11px] text-muted-foreground/70">
+                            {conv.messageCount} {t("chat.messages")} · {new Date(conv.startTs).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
           )}
           {config.canCreateSession && (
             <Button
@@ -401,7 +472,7 @@ export function AgentChatPage() {
               onClick={handleNewChat}
               disabled={sending || autoStarting || !isRunning}
             >
-              <RotateCcw className="h-3 w-3" />
+              <Plus className="h-3 w-3" />
               {t("chat.newChat")}
             </Button>
           )}
