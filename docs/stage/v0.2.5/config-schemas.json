@@ -1,0 +1,1562 @@
+{
+  "version": "v0.1.0",
+  "date": "2026-02-27T05:58:39.375Z",
+  "zodSchemas": {
+    "template": [
+      {
+        "name": "McpServerRefSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "name",
+            "zodType": "z.string().min(1)"
+          },
+          {
+            "name": "command",
+            "zodType": "z.string().min(1)"
+          },
+          {
+            "name": "args",
+            "zodType": "z.array(z.string()).optional().default([])"
+          },
+          {
+            "name": "env",
+            "zodType": "z.record(z.string(), z.string()).optional().default({})"
+          }
+        ]
+      },
+      {
+        "name": "DomainContextSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "skills",
+            "zodType": "z.array(z.string()).optional().default([])"
+          },
+          {
+            "name": "prompts",
+            "zodType": "z.array(z.string()).optional().default([])"
+          },
+          {
+            "name": "mcpServers",
+            "zodType": "z.array(McpServerRefSchema).optional().default([])"
+          },
+          {
+            "name": "workflow",
+            "zodType": "z.string().optional()"
+          },
+          {
+            "name": "subAgents",
+            "zodType": "z.array(z.string()).optional().default([])"
+          },
+          {
+            "name": "plugins",
+            "zodType": "z.array(z.string()).optional().default([])"
+          },
+          {
+            "name": "extensions",
+            "zodType": "z.record(z.string(), z.array(z.unknown())).optional()"
+          }
+        ]
+      },
+      {
+        "name": "AgentBackendSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "config",
+            "zodType": "z.record(z.string(), z.unknown()).optional()"
+          }
+        ]
+      },
+      {
+        "name": "InitializerStepSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "config",
+            "zodType": "z.record(z.string(), z.unknown()).optional()"
+          }
+        ]
+      },
+      {
+        "name": "InitializerSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "steps",
+            "zodType": "z.array(InitializerStepSchema).min(1)"
+          }
+        ]
+      },
+      {
+        "name": "PermissionModeSchema",
+        "kind": "enum",
+        "fields": [
+          {
+            "name": "_values",
+            "zodType": "default,acceptEdits,plan,dontAsk,bypassPermissions,"
+          }
+        ]
+      },
+      {
+        "name": "SandboxNetworkSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "allowedDomains",
+            "zodType": "z.array(z.string()).optional()"
+          },
+          {
+            "name": "allowLocalBinding",
+            "zodType": "z.boolean().optional()"
+          }
+        ]
+      },
+      {
+        "name": "SandboxSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "enabled",
+            "zodType": "z.boolean().optional().default(false)"
+          },
+          {
+            "name": "autoAllowBashIfSandboxed",
+            "zodType": "z.boolean().optional().default(false)"
+          },
+          {
+            "name": "network",
+            "zodType": "SandboxNetworkSchema.optional()"
+          }
+        ]
+      },
+      {
+        "name": "PermissionsObjectSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "allow",
+            "zodType": "z.array(z.string()).optional()"
+          },
+          {
+            "name": "deny",
+            "zodType": "z.array(z.string()).optional()"
+          },
+          {
+            "name": "ask",
+            "zodType": "z.array(z.string()).optional()"
+          },
+          {
+            "name": "defaultMode",
+            "zodType": "PermissionModeSchema.optional()"
+          },
+          {
+            "name": "sandbox",
+            "zodType": "SandboxSchema.optional()"
+          },
+          {
+            "name": "additionalDirectories",
+            "zodType": "z.array(z.string()).optional()"
+          }
+        ]
+      },
+      {
+        "name": "PermissionPresetSchema",
+        "kind": "enum",
+        "fields": [
+          {
+            "name": "_values",
+            "zodType": "permissive,standard,restricted,readonly,"
+          }
+        ]
+      },
+      {
+        "name": "ComponentOriginSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "sourceName",
+            "zodType": "z.string().optional()"
+          },
+          {
+            "name": "syncHash",
+            "zodType": "z.string().optional()"
+          },
+          {
+            "name": "syncedAt",
+            "zodType": "z.string().optional()"
+          },
+          {
+            "name": "modified",
+            "zodType": "z.boolean().optional()"
+          }
+        ]
+      },
+      {
+        "name": "AgentTemplateSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "name",
+            "zodType": "z.string().min(1).max(100)"
+          },
+          {
+            "name": "version",
+            "zodType": "z.string().regex(/^\\d+\\.\\d+\\.\\d+$/, \"Must be semver format (e.g. 1.0.0)\")"
+          },
+          {
+            "name": "description",
+            "zodType": "z.string().optional()"
+          },
+          {
+            "name": "version",
+            "zodType": "z.number().optional()"
+          },
+          {
+            "name": "origin",
+            "zodType": "ComponentOriginSchema.optional()"
+          },
+          {
+            "name": "tags",
+            "zodType": "z.array(z.string()).optional()"
+          },
+          {
+            "name": "backend",
+            "zodType": "AgentBackendSchema"
+          },
+          {
+            "name": "provider",
+            "zodType": "ModelProviderSchema.optional()"
+          },
+          {
+            "name": "domainContext",
+            "zodType": "DomainContextSchema"
+          },
+          {
+            "name": "permissions",
+            "zodType": "PermissionsInputSchema.optional()"
+          },
+          {
+            "name": "initializer",
+            "zodType": "InitializerSchema.optional()"
+          },
+          {
+            "name": "schedule",
+            "zodType": "ScheduleConfigSchema.optional()"
+          },
+          {
+            "name": "metadata",
+            "zodType": "z.record(z.string(), z.string()).optional()"
+          }
+        ]
+      }
+    ],
+    "instanceMeta": [
+      {
+        "name": "AgentStatusSchema",
+        "kind": "enum",
+        "fields": [
+          {
+            "name": "_values",
+            "zodType": "created,starting,running,stopping,stopped,error,crashed,"
+          }
+        ]
+      },
+      {
+        "name": "LaunchModeSchema",
+        "kind": "enum",
+        "fields": [
+          {
+            "name": "_values",
+            "zodType": "direct,acp-background,acp-service,one-shot,"
+          }
+        ]
+      },
+      {
+        "name": "AgentArchetypeSchema",
+        "kind": "enum",
+        "fields": [
+          {
+            "name": "_values",
+            "zodType": "repo,service,employee"
+          }
+        ]
+      },
+      {
+        "name": "ProcessOwnershipSchema",
+        "kind": "enum",
+        "fields": [
+          {
+            "name": "_values",
+            "zodType": "managed,external"
+          }
+        ]
+      },
+      {
+        "name": "WorkspacePolicySchema",
+        "kind": "enum",
+        "fields": [
+          {
+            "name": "_values",
+            "zodType": "persistent,ephemeral"
+          }
+        ]
+      },
+      {
+        "name": "AgentInstanceMetaSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "id",
+            "zodType": "z.string().min(1)"
+          },
+          {
+            "name": "name",
+            "zodType": "z.string().min(1)"
+          },
+          {
+            "name": "templateName",
+            "zodType": "z.string().min(1)"
+          },
+          {
+            "name": "templateVersion",
+            "zodType": "z.string().regex(/^\\d+\\.\\d+\\.\\d+$/)"
+          },
+          {
+            "name": "backendType",
+            "zodType": "AgentBackendTypeSchema.default(\"cursor\")"
+          },
+          {
+            "name": "backendConfig",
+            "zodType": "z.record(z.string(), z.unknown()).optional()"
+          },
+          {
+            "name": "interactionModes",
+            "zodType": "z.array(InteractionModeSchema).default([\"start\"])"
+          },
+          {
+            "name": "providerConfig",
+            "zodType": "ModelProviderConfigSchema.optional()"
+          },
+          {
+            "name": "status",
+            "zodType": "AgentStatusSchema"
+          },
+          {
+            "name": "launchMode",
+            "zodType": "LaunchModeSchema"
+          },
+          {
+            "name": "workspacePolicy",
+            "zodType": "WorkspacePolicySchema.default(\"persistent\")"
+          },
+          {
+            "name": "processOwnership",
+            "zodType": "ProcessOwnershipSchema.default(\"managed\")"
+          },
+          {
+            "name": "createdAt",
+            "zodType": "z.string().datetime()"
+          },
+          {
+            "name": "updatedAt",
+            "zodType": "z.string().datetime()"
+          },
+          {
+            "name": "pid",
+            "zodType": "z.number().int().positive().optional()"
+          },
+          {
+            "name": "archetype",
+            "zodType": "AgentArchetypeSchema.default(\"repo\")"
+          },
+          {
+            "name": "autoStart",
+            "zodType": "z.boolean().default(false)"
+          },
+          {
+            "name": "effectivePermissions",
+            "zodType": "PermissionsConfigSchema.optional()"
+          },
+          {
+            "name": "metadata",
+            "zodType": "z.record(z.string(), z.string()).optional()"
+          },
+          {
+            "name": "startedAt",
+            "zodType": "z.string().datetime().optional()"
+          }
+        ]
+      }
+    ],
+    "schedule": [
+      {
+        "name": "HeartbeatConfigSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "intervalMs",
+            "zodType": "z.number().min(1000)"
+          },
+          {
+            "name": "prompt",
+            "zodType": "z.string().min(1)"
+          },
+          {
+            "name": "priority",
+            "zodType": "z.enum([\"low\", \"normal\", \"high\", \"critical\"]).optional()"
+          }
+        ]
+      },
+      {
+        "name": "CronConfigSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "pattern",
+            "zodType": "z.string().min(1)"
+          },
+          {
+            "name": "prompt",
+            "zodType": "z.string().min(1)"
+          },
+          {
+            "name": "timezone",
+            "zodType": "z.string().optional()"
+          },
+          {
+            "name": "priority",
+            "zodType": "z.enum([\"low\", \"normal\", \"high\", \"critical\"]).optional()"
+          }
+        ]
+      },
+      {
+        "name": "HookConfigSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "eventName",
+            "zodType": "z.string().min(1)"
+          },
+          {
+            "name": "prompt",
+            "zodType": "z.string().min(1)"
+          },
+          {
+            "name": "priority",
+            "zodType": "z.enum([\"low\", \"normal\", \"high\", \"critical\"]).optional()"
+          }
+        ]
+      },
+      {
+        "name": "ScheduleConfigSchema",
+        "kind": "object",
+        "fields": [
+          {
+            "name": "heartbeat",
+            "zodType": "HeartbeatConfigSchema.optional()"
+          },
+          {
+            "name": "cron",
+            "zodType": "z.array(CronConfigSchema).optional().default([])"
+          },
+          {
+            "name": "hooks",
+            "zodType": "z.array(HookConfigSchema).optional().default([])"
+          }
+        ]
+      }
+    ]
+  },
+  "typeInterfaces": {
+    "agent": [
+      {
+        "name": "AgentInstanceMeta",
+        "fields": [
+          {
+            "name": "id",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "templateName",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "templateVersion",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "backendType",
+            "optional": false,
+            "type": "AgentBackendType"
+          },
+          {
+            "name": "backendConfig",
+            "optional": true,
+            "type": "Record<string, unknown>"
+          },
+          {
+            "name": "interactionModes",
+            "optional": false,
+            "type": "InteractionMode[]"
+          },
+          {
+            "name": "SECURITY",
+            "optional": false,
+            "type": "Never contains apiKey — secrets stay in ~/.actant/config.json * and are resolved at runtime from the in-memory registry. */ providerConfig?: ModelProviderConfig"
+          },
+          {
+            "name": "status",
+            "optional": false,
+            "type": "AgentStatus"
+          },
+          {
+            "name": "launchMode",
+            "optional": false,
+            "type": "LaunchMode"
+          },
+          {
+            "name": "workspacePolicy",
+            "optional": false,
+            "type": "WorkspacePolicy"
+          },
+          {
+            "name": "processOwnership",
+            "optional": false,
+            "type": "ProcessOwnership"
+          },
+          {
+            "name": "createdAt",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "pid",
+            "optional": true,
+            "type": "number"
+          },
+          {
+            "name": "archetype",
+            "optional": false,
+            "type": "AgentArchetype"
+          },
+          {
+            "name": "autoStart",
+            "optional": false,
+            "type": "boolean"
+          },
+          {
+            "name": "effectivePermissions",
+            "optional": true,
+            "type": "PermissionsConfig"
+          },
+          {
+            "name": "metadata",
+            "optional": true,
+            "type": "Record<string, string>"
+          },
+          {
+            "name": "workspaceDir",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "startedAt",
+            "optional": true,
+            "type": "string"
+          }
+        ],
+        "raw": "id: string;\r\n  name: string;\r\n  templateName: string;\r\n  templateVersion: string;\r\n  /** Backend type (cursor / claude-code / custom). Set from template when instance is created. */\r\n  backendType: AgentBackendType;\r\n  /** Backend config from template (e.g. executablePath). Persisted so launcher can use without template registry. */\r\n  backendConfig?: Record<string, unknown>;\r\n  /** CLI interaction modes this agent supports (resolved from template or backend defaults). */\r\n  interactionModes: InteractionMode[];\r\n  /**\r\n   * Provider config reference (type + protocol + baseUrl only).\r\n   * SECURITY: Never contains apiKey — secrets stay in ~/.actant/config.json\r\n   * and are resolved at runtime from the in-memory registry.\r\n   */\r\n  providerConfig?: ModelProviderConfig;\r\n  status: AgentStatus;\r\n  launchMode: LaunchMode;\r\n  /** Workspace lifecycle policy. \"persistent\" survives across spawns; \"ephemeral\" can be cleaned up after task. */\r\n  workspacePolicy: WorkspacePolicy;\r\n  /** Who owns/manages the agent process. \"managed\" = Actant, \"external\" = caller. */\r\n  processOwnership: ProcessOwnership;\r\n  createdAt: string;\r\n  updatedAt: string;\r\n  pid?: number;\r\n  /** High-level interaction archetype (repo / service / employee). Defaults to \"repo\". */\r\n  archetype: AgentArchetype;\r\n  /** Whether this instance should be auto-started when the daemon launches. */\r\n  autoStart: boolean;\r\n  /** Resolved permissions for this instance (after template + override resolution). */\r\n  effectivePermissions?: PermissionsConfig;\r\n  metadata?: Record<string, string>;\r\n  /** Absolute path to the agent's workspace directory. Populated at runtime by AgentManager. */\r\n  workspaceDir?: string;\r\n  /** ISO timestamp of when the agent process was last started. */\r\n  startedAt?: string;"
+      },
+      {
+        "name": "AgentStatus",
+        "fields": [],
+        "raw": "| \"created\"\r\n  | \"starting\"\r\n  | \"running\"\r\n  | \"stopping\"\r\n  | \"stopped\"\r\n  | \"error\"\r\n  | \"crashed\""
+      },
+      {
+        "name": "LaunchMode",
+        "fields": [],
+        "raw": "| \"direct\"\r\n  | \"acp-background\"\r\n  | \"acp-service\"\r\n  | \"one-shot\""
+      },
+      {
+        "name": "ProcessOwnership",
+        "fields": [],
+        "raw": "\"managed\" | \"external\""
+      },
+      {
+        "name": "WorkspacePolicy",
+        "fields": [],
+        "raw": "\"persistent\" | \"ephemeral\""
+      },
+      {
+        "name": "ResolveResult",
+        "fields": [
+          {
+            "name": "workspaceDir",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "command",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "args",
+            "optional": false,
+            "type": "string[]"
+          },
+          {
+            "name": "env",
+            "optional": true,
+            "type": "Record<string, string>"
+          },
+          {
+            "name": "instanceName",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "backendType",
+            "optional": false,
+            "type": "AgentBackendType"
+          },
+          {
+            "name": "created",
+            "optional": false,
+            "type": "boolean"
+          },
+          {
+            "name": "resolvePackage",
+            "optional": true,
+            "type": "string"
+          }
+        ],
+        "raw": "workspaceDir: string;\r\n  command: string;\r\n  args: string[];\r\n  env?: Record<string, string>;\r\n  instanceName: string;\r\n  backendType: AgentBackendType;\r\n  /** Whether a new instance was created by this resolve call. */\r\n  created: boolean;\r\n  /** npm package that provides the binary (for auto-resolution when not on PATH). */\r\n  resolvePackage?: string;"
+      },
+      {
+        "name": "DetachResult",
+        "fields": [
+          {
+            "name": "ok",
+            "optional": false,
+            "type": "boolean"
+          },
+          {
+            "name": "workspaceCleaned",
+            "optional": false,
+            "type": "boolean"
+          }
+        ],
+        "raw": "ok: boolean;\r\n  workspaceCleaned: boolean;"
+      }
+    ],
+    "template": [
+      {
+        "name": "PermissionMode",
+        "fields": [],
+        "raw": "| \"default\"\r\n  | \"acceptEdits\"\r\n  | \"plan\"\r\n  | \"dontAsk\"\r\n  | \"bypassPermissions\""
+      },
+      {
+        "name": "PermissionPreset",
+        "fields": [],
+        "raw": "\"permissive\" | \"standard\" | \"restricted\" | \"readonly\""
+      },
+      {
+        "name": "SandboxNetworkConfig",
+        "fields": [
+          {
+            "name": "allowedDomains",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "allowLocalBinding",
+            "optional": true,
+            "type": "boolean"
+          }
+        ],
+        "raw": "allowedDomains?: string[];\r\n  allowLocalBinding?: boolean;"
+      },
+      {
+        "name": "SandboxConfig",
+        "fields": [
+          {
+            "name": "enabled",
+            "optional": true,
+            "type": "boolean"
+          },
+          {
+            "name": "autoAllowBashIfSandboxed",
+            "optional": true,
+            "type": "boolean"
+          },
+          {
+            "name": "network",
+            "optional": true,
+            "type": "SandboxNetworkConfig"
+          }
+        ],
+        "raw": "enabled?: boolean;\r\n  autoAllowBashIfSandboxed?: boolean;\r\n  network?: SandboxNetworkConfig;"
+      },
+      {
+        "name": "PermissionsConfig",
+        "fields": [
+          {
+            "name": "allow",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "deny",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "ask",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "defaultMode",
+            "optional": true,
+            "type": "PermissionMode"
+          },
+          {
+            "name": "sandbox",
+            "optional": true,
+            "type": "SandboxConfig"
+          },
+          {
+            "name": "additionalDirectories",
+            "optional": true,
+            "type": "string[]"
+          }
+        ],
+        "raw": "allow?: string[];\r\n  deny?: string[];\r\n  ask?: string[];\r\n  defaultMode?: PermissionMode;\r\n  sandbox?: SandboxConfig;\r\n  additionalDirectories?: string[];"
+      },
+      {
+        "name": "PermissionsInput",
+        "fields": [],
+        "raw": "PermissionPreset | PermissionsConfig"
+      },
+      {
+        "name": "AgentArchetype",
+        "fields": [],
+        "raw": "\"repo\" | \"service\" | \"employee\""
+      },
+      {
+        "name": "InteractionMode",
+        "fields": [],
+        "raw": "\"open\" | \"start\" | \"chat\" | \"run\" | \"proxy\""
+      },
+      {
+        "name": "AgentBackendConfig",
+        "fields": [
+          {
+            "name": "type",
+            "optional": false,
+            "type": "AgentBackendType"
+          },
+          {
+            "name": "config",
+            "optional": true,
+            "type": "Record<string, unknown>"
+          },
+          {
+            "name": "interactionModes",
+            "optional": true,
+            "type": "InteractionMode[]"
+          }
+        ],
+        "raw": "type: AgentBackendType;\r\n  /** Optional backend-specific config (e.g. executablePath for launcher). Used in materialization and persisted on instance. */\r\n  config?: Record<string, unknown>;\r\n  /** Which CLI commands this agent supports. When omitted, defaults come from BackendDefinition. */\r\n  interactionModes?: InteractionMode[];"
+      },
+      {
+        "name": "KnownBackendType",
+        "fields": [],
+        "raw": "\"cursor\" | \"cursor-agent\" | \"claude-code\" | \"custom\" | \"pi\""
+      },
+      {
+        "name": "AgentOpenMode",
+        "fields": [],
+        "raw": "\"resolve\" | \"open\" | \"acp\""
+      },
+      {
+        "name": "PlatformCommand",
+        "fields": [
+          {
+            "name": "win32",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "default",
+            "optional": false,
+            "type": "string"
+          }
+        ],
+        "raw": "win32: string;\r\n  default: string;"
+      },
+      {
+        "name": "BackendExistenceCheck",
+        "fields": [
+          {
+            "name": "command",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "Default",
+            "optional": false,
+            "type": "[\"--version\"]. */ args?: string[]"
+          },
+          {
+            "name": "Default",
+            "optional": false,
+            "type": "0. */ expectedExitCode?: number"
+          },
+          {
+            "name": "versionPattern",
+            "optional": true,
+            "type": "string"
+          }
+        ],
+        "raw": "/** Command to run (e.g. \"claude\", \"cursor\"). Resolved via PATH. */\r\n  command: string;\r\n  /** Args passed to the command (e.g. [\"--version\"]). Default: [\"--version\"]. */\r\n  args?: string[];\r\n  /** Expected exit code. Default: 0. */\r\n  expectedExitCode?: number;\r\n  /** Regex applied to stdout; if set, the check passes only when it matches. */\r\n  versionPattern?: string;"
+      },
+      {
+        "name": "BackendInstallMethod",
+        "fields": [
+          {
+            "name": "type",
+            "optional": false,
+            "type": "\"npm\" | \"brew\" | \"winget\" | \"choco\" | \"url\" | \"manual\""
+          },
+          {
+            "name": "package",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "platforms",
+            "optional": true,
+            "type": "NodeJS.Platform[]"
+          },
+          {
+            "name": "label",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "instructions",
+            "optional": true,
+            "type": "string"
+          }
+        ],
+        "raw": "/** Install method type. */\r\n  type: \"npm\" | \"brew\" | \"winget\" | \"choco\" | \"url\" | \"manual\";\r\n  /** Package specifier or download URL (per type). */\r\n  package?: string;\r\n  /** Restrict this method to specific platforms. Omit for all platforms. */\r\n  platforms?: NodeJS.Platform[];\r\n  /** Human-readable label (e.g. \"Install via Homebrew\"). */\r\n  label?: string;\r\n  /** Human-readable fallback instructions if automated install isn't possible. */\r\n  instructions?: string;"
+      },
+      {
+        "name": "OpenSpawnOptions",
+        "fields": [
+          {
+            "name": "stdio",
+            "optional": true,
+            "type": "\"inherit\" | \"ignore\""
+          },
+          {
+            "name": "detached",
+            "optional": true,
+            "type": "boolean"
+          },
+          {
+            "name": "windowsHide",
+            "optional": true,
+            "type": "boolean"
+          },
+          {
+            "name": "shell",
+            "optional": true,
+            "type": "boolean"
+          }
+        ],
+        "raw": "stdio?: \"inherit\" | \"ignore\";\r\n  detached?: boolean;\r\n  windowsHide?: boolean;\r\n  shell?: boolean;"
+      },
+      {
+        "name": "ModelProviderConfig",
+        "fields": [
+          {
+            "name": "type",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "protocol",
+            "optional": true,
+            "type": "ModelApiProtocol"
+          },
+          {
+            "name": "baseUrl",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "config",
+            "optional": true,
+            "type": "Record<string, unknown>"
+          }
+        ],
+        "raw": "/** Provider type — any registered provider name (e.g. \"anthropic\", \"openai\", \"groq\"). */\r\n  type: string;\r\n  /** API protocol format. Inferred from `type` when omitted (e.g. \"deepseek\" → \"openai\"). */\r\n  protocol?: ModelApiProtocol;\r\n  baseUrl?: string;\r\n  config?: Record<string, unknown>;"
+      },
+      {
+        "name": "ModelProviderType",
+        "fields": [],
+        "raw": "| \"anthropic\"\r\n  | \"openai\"\r\n  | \"deepseek\"\r\n  | \"ollama\"\r\n  | \"azure\"\r\n  | \"bedrock\"\r\n  | \"vertex\"\r\n  | \"custom\""
+      },
+      {
+        "name": "ModelApiProtocol",
+        "fields": [],
+        "raw": "\"openai\" | \"anthropic\" | \"custom\""
+      },
+      {
+        "name": "ModelProviderDescriptor",
+        "fields": [
+          {
+            "name": "type",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "displayName",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "protocol",
+            "optional": false,
+            "type": "ModelApiProtocol"
+          },
+          {
+            "name": "defaultBaseUrl",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "apiKey",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "models",
+            "optional": true,
+            "type": "string[]"
+          }
+        ],
+        "raw": "type: string;\r\n  displayName: string;\r\n  protocol: ModelApiProtocol;\r\n  defaultBaseUrl?: string;\r\n  apiKey?: string;\r\n  models?: string[];"
+      },
+      {
+        "name": "InitializerConfig",
+        "fields": [
+          {
+            "name": "steps",
+            "optional": false,
+            "type": "InitializerStep[]"
+          }
+        ],
+        "raw": "steps: InitializerStep[];"
+      },
+      {
+        "name": "InitializerStep",
+        "fields": [
+          {
+            "name": "type",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "config",
+            "optional": true,
+            "type": "Record<string, unknown>"
+          }
+        ],
+        "raw": "type: string;\r\n  config?: Record<string, unknown>;"
+      },
+      {
+        "name": "MaterializationSpec",
+        "fields": [
+          {
+            "name": "configDir",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "components",
+            "optional": false,
+            "type": "{ skills?: SkillMaterializationStrategy"
+          },
+          {
+            "name": "prompts",
+            "optional": true,
+            "type": "PromptMaterializationStrategy"
+          },
+          {
+            "name": "mcpServers",
+            "optional": true,
+            "type": "McpMaterializationStrategy"
+          },
+          {
+            "name": "plugins",
+            "optional": true,
+            "type": "PluginMaterializationStrategy"
+          },
+          {
+            "name": "permissions",
+            "optional": true,
+            "type": "PermissionMaterializationStrategy"
+          },
+          {
+            "name": "workflow",
+            "optional": true,
+            "type": "WorkflowMaterializationStrategy"
+          }
+        ],
+        "raw": "/** Config root directory relative to workspaceDir (e.g. \".cursor\", \".claude\", \".pi\"). */\r\n  configDir: string;\r\n\r\n  /** Per-component-type materialization strategies. */\r\n  components: {\r\n    skills?: SkillMaterializationStrategy;\r\n    prompts?: PromptMaterializationStrategy;\r\n    mcpServers?: McpMaterializationStrategy;\r\n    plugins?: PluginMaterializationStrategy;\r\n    permissions?: PermissionMaterializationStrategy;\r\n    workflow?: WorkflowMaterializationStrategy;"
+      },
+      {
+        "name": "SkillMaterializationStrategy",
+        "fields": [
+          {
+            "name": "mode",
+            "optional": false,
+            "type": "\"single-file\" | \"per-file\" | \"dual\""
+          },
+          {
+            "name": "outputDir",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "extension",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "aggregateFiles",
+            "optional": true,
+            "type": "AggregateFileSpec[]"
+          },
+          {
+            "name": "frontmatterTemplate",
+            "optional": true,
+            "type": "string"
+          }
+        ],
+        "raw": "/**\r\n   * - \"single-file\": merge all skills into one AGENTS.md\r\n   * - \"per-file\": one file per skill in outputDir\r\n   * - \"dual\": both AGENTS.md and per-file output\r\n   */\r\n  mode: \"single-file\" | \"per-file\" | \"dual\";\r\n  /** Target directory for per-file output (relative to workspaceDir). */\r\n  outputDir?: string;\r\n  /** File extension for per-file output (e.g. \".mdc\", \".md\"). */\r\n  extension?: string;\r\n  /** Additional aggregate files to generate alongside per-file/single-file output. */\r\n  aggregateFiles?: AggregateFileSpec[];\r\n  /** Frontmatter template for per-file output (YAML between --- delimiters). */\r\n  frontmatterTemplate?: string;"
+      },
+      {
+        "name": "AggregateFileSpec",
+        "fields": [
+          {
+            "name": "path",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "format",
+            "optional": false,
+            "type": "\"agents-md\" | \"claude-md\""
+          }
+        ],
+        "raw": "/** Output path relative to workspaceDir. */\r\n  path: string;\r\n  /** Content format. */\r\n  format: \"agents-md\" | \"claude-md\";"
+      },
+      {
+        "name": "PromptMaterializationStrategy",
+        "fields": [
+          {
+            "name": "mode",
+            "optional": false,
+            "type": "\"merged\" | \"per-file\""
+          },
+          {
+            "name": "output",
+            "optional": false,
+            "type": "string"
+          }
+        ],
+        "raw": "/**\r\n   * - \"merged\": combine all prompts into a single file\r\n   * - \"per-file\": one file per prompt\r\n   */\r\n  mode: \"merged\" | \"per-file\";\r\n  /** Output path (merged) or directory (per-file), relative to workspaceDir. */\r\n  output: string;"
+      },
+      {
+        "name": "McpMaterializationStrategy",
+        "fields": [
+          {
+            "name": "enabled",
+            "optional": false,
+            "type": "boolean"
+          },
+          {
+            "name": "outputFile",
+            "optional": true,
+            "type": "string"
+          }
+        ],
+        "raw": "/** false = skip MCP materialization entirely (e.g. Pi). */\r\n  enabled: boolean;\r\n  /** Output file path relative to workspaceDir (e.g. \".cursor/mcp.json\"). */\r\n  outputFile?: string;"
+      },
+      {
+        "name": "PluginMaterializationStrategy",
+        "fields": [
+          {
+            "name": "enabled",
+            "optional": false,
+            "type": "boolean"
+          },
+          {
+            "name": "outputFile",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "format",
+            "optional": true,
+            "type": "\"recommendations\" | \"entries\""
+          }
+        ],
+        "raw": "/** false = skip plugin materialization entirely. */\r\n  enabled: boolean;\r\n  /** Output file path relative to workspaceDir. */\r\n  outputFile?: string;\r\n  /**\r\n   * - \"recommendations\": VSCode-style extension recommendations (Cursor)\r\n   * - \"entries\": full plugin entries with config (Claude Code)\r\n   */\r\n  format?: \"recommendations\" | \"entries\";"
+      },
+      {
+        "name": "PermissionMaterializationStrategy",
+        "fields": [
+          {
+            "name": "mode",
+            "optional": false,
+            "type": "\"full\" | \"tools-only\" | \"best-effort\""
+          },
+          {
+            "name": "outputFile",
+            "optional": false,
+            "type": "string"
+          }
+        ],
+        "raw": "/**\r\n   * - \"full\": complete allow/deny/ask + sandbox (Claude Code)\r\n   * - \"tools-only\": only tools allow list (Pi)\r\n   * - \"best-effort\": agent tools allow list (Cursor)\r\n   */\r\n  mode: \"full\" | \"tools-only\" | \"best-effort\";\r\n  /** Output file path relative to workspaceDir. */\r\n  outputFile: string;"
+      },
+      {
+        "name": "WorkflowMaterializationStrategy",
+        "fields": [
+          {
+            "name": "outputFile",
+            "optional": false,
+            "type": "string"
+          }
+        ],
+        "raw": "/** Output file path relative to workspaceDir. */\r\n  outputFile: string;"
+      },
+      {
+        "name": "VerifyCheckSpec",
+        "fields": [
+          {
+            "name": "path",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "optional": false,
+            "type": "\"file\" | \"dir\""
+          },
+          {
+            "name": "severity",
+            "optional": true,
+            "type": "\"error\" | \"warning\""
+          }
+        ],
+        "raw": "/** Path relative to workspaceDir. */\r\n  path: string;\r\n  /** Expected type. */\r\n  type: \"file\" | \"dir\";\r\n  /** \"error\" = build fails if missing, \"warning\" = advisory only. */\r\n  severity?: \"error\" | \"warning\";"
+      }
+    ],
+    "domainContext": [
+      {
+        "name": "DomainContextConfig",
+        "fields": [
+          {
+            "name": "skills",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "prompts",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "mcpServers",
+            "optional": true,
+            "type": "McpServerRef[]"
+          },
+          {
+            "name": "workflow",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "subAgents",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "plugins",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "extensions",
+            "optional": true,
+            "type": "Record<string, unknown[]>"
+          }
+        ],
+        "raw": "skills?: string[];\r\n  prompts?: string[];\r\n  mcpServers?: McpServerRef[];\r\n  workflow?: string;\r\n  subAgents?: string[];\r\n  plugins?: string[];\r\n  /** Extension point for custom component types (#54). */\r\n  extensions?: Record<string, unknown[]>;"
+      },
+      {
+        "name": "McpServerRef",
+        "fields": [
+          {
+            "name": "name",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "command",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "args",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "env",
+            "optional": true,
+            "type": "Record<string, string>"
+          }
+        ],
+        "raw": "name: string;\r\n  command: string;\r\n  args?: string[];\r\n  env?: Record<string, string>;"
+      }
+    ],
+    "domainComponent": [
+      {
+        "name": "ComponentOriginType",
+        "fields": [],
+        "raw": "\"builtin\" | \"source\" | \"local\""
+      },
+      {
+        "name": "ComponentOrigin",
+        "fields": [
+          {
+            "name": "type",
+            "optional": false,
+            "type": "ComponentOriginType"
+          },
+          {
+            "name": "components",
+            "optional": false,
+            "type": "the source package name */ sourceName?: string"
+          },
+          {
+            "name": "syncHash",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "syncedAt",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "modified",
+            "optional": true,
+            "type": "boolean"
+          }
+        ],
+        "raw": "type: ComponentOriginType;\r\n  /** For source-originated components: the source package name */\r\n  sourceName?: string;\r\n  /** Hash at the time of last sync */\r\n  syncHash?: string;\r\n  syncedAt?: string;\r\n  /** Whether the user has locally modified the synced copy */\r\n  modified?: boolean;"
+      },
+      {
+        "name": "VersionedComponent",
+        "fields": [
+          {
+            "name": "name",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "type",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "optional": true,
+            "type": "number"
+          },
+          {
+            "name": "origin",
+            "optional": true,
+            "type": "ComponentOrigin"
+          },
+          {
+            "name": "tags",
+            "optional": true,
+            "type": "string[]"
+          }
+        ],
+        "raw": "name: string;\r\n  /** Semver version string. Optional for backward compatibility; unset defaults to \"0.0.0\". */\r\n  version?: string;\r\n  description?: string;\r\n  /** Component type discriminator for manifest.json envelope (#58) */\r\n  $type?: string;\r\n  /** Manifest schema version (#58) */\r\n  $version?: number;\r\n  /** Tracks where this component originated from */\r\n  origin?: ComponentOrigin;\r\n  tags?: string[];"
+      }
+    ],
+    "source": [
+      {
+        "name": "SourceConfig",
+        "fields": [],
+        "raw": "| GitHubSourceConfig\r\n  | LocalSourceConfig\r\n  | CommunitySourceConfig"
+      },
+      {
+        "name": "GitHubSourceConfig",
+        "fields": [
+          {
+            "name": "type",
+            "optional": false,
+            "type": "\"github\""
+          },
+          {
+            "name": "url",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "branch",
+            "optional": true,
+            "type": "string"
+          }
+        ],
+        "raw": "type: \"github\";\r\n  url: string;\r\n  branch?: string;"
+      },
+      {
+        "name": "LocalSourceConfig",
+        "fields": [
+          {
+            "name": "type",
+            "optional": false,
+            "type": "\"local\""
+          },
+          {
+            "name": "path",
+            "optional": false,
+            "type": "string"
+          }
+        ],
+        "raw": "type: \"local\";\r\n  path: string;"
+      },
+      {
+        "name": "CommunitySourceConfig",
+        "fields": [
+          {
+            "name": "type",
+            "optional": false,
+            "type": "\"community\""
+          },
+          {
+            "name": "url",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "branch",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "filter",
+            "optional": true,
+            "type": "string"
+          }
+        ],
+        "raw": "type: \"community\";\r\n  url: string;\r\n  branch?: string;\r\n  /** Glob pattern to filter skills; defaults to '**' (import all). */\r\n  filter?: string;"
+      },
+      {
+        "name": "SourceEntry",
+        "fields": [
+          {
+            "name": "name",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "config",
+            "optional": false,
+            "type": "SourceConfig"
+          },
+          {
+            "name": "syncedAt",
+            "optional": true,
+            "type": "string"
+          }
+        ],
+        "raw": "name: string;\r\n  config: SourceConfig;\r\n  syncedAt?: string;"
+      },
+      {
+        "name": "PackageManifest",
+        "fields": [
+          {
+            "name": "name",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "components",
+            "optional": true,
+            "type": "{ skills?: string[]"
+          },
+          {
+            "name": "prompts",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "mcp",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "workflows",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "templates",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "backends",
+            "optional": true,
+            "type": "string[]"
+          }
+        ],
+        "raw": "name: string;\r\n  version?: string;\r\n  description?: string;\r\n  components?: {\r\n    skills?: string[];\r\n    prompts?: string[];\r\n    mcp?: string[];\r\n    workflows?: string[];\r\n    templates?: string[];\r\n    backends?: string[];"
+      },
+      {
+        "name": "PresetDefinition",
+        "fields": [
+          {
+            "name": "name",
+            "optional": false,
+            "type": "string"
+          },
+          {
+            "name": "version",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "optional": true,
+            "type": "string"
+          },
+          {
+            "name": "skills",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "prompts",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "mcpServers",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "workflows",
+            "optional": true,
+            "type": "string[]"
+          },
+          {
+            "name": "templates",
+            "optional": true,
+            "type": "string[]"
+          }
+        ],
+        "raw": "name: string;\r\n  version?: string;\r\n  description?: string;\r\n  skills?: string[];\r\n  prompts?: string[];\r\n  mcpServers?: string[];\r\n  workflows?: string[];\r\n  templates?: string[];"
+      }
+    ]
+  },
+  "enums": {
+    "agent": [
+      {
+        "name": "AgentStatus",
+        "values": [
+          "created",
+          "starting",
+          "running",
+          "stopping",
+          "stopped",
+          "error",
+          "crashed"
+        ]
+      },
+      {
+        "name": "LaunchMode",
+        "values": [
+          "direct",
+          "acp-background",
+          "acp-service",
+          "one-shot"
+        ]
+      },
+      {
+        "name": "ProcessOwnership",
+        "values": [
+          "managed",
+          "external"
+        ]
+      },
+      {
+        "name": "WorkspacePolicy",
+        "values": [
+          "persistent",
+          "ephemeral"
+        ]
+      }
+    ]
+  }
+}
