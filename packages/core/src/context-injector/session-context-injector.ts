@@ -1,6 +1,7 @@
 import type { AgentArchetype, AgentInstanceMeta } from "@actant/shared";
 import type { HookEventBus } from "../hooks/hook-event-bus";
 import type { SessionTokenStore } from "./session-token-store";
+import { loadTemplate, renderTemplate } from "../prompts/template-engine";
 
 /**
  * ACP McpServer (stdio variant) as expected by the ACP SDK's session/new.
@@ -172,6 +173,7 @@ export class SessionContextInjector {
 /**
  * Build a system context block describing available internal tools
  * and how to call them via the `actant internal` CLI with a session token.
+ * Template is loaded from `prompts/tool-instructions.md`.
  */
 function buildToolContextBlock(tools: ActantToolDefinition[], token: string): string {
   const toolList = tools.map((t) => {
@@ -187,14 +189,6 @@ function buildToolContextBlock(tools: ActantToolDefinition[], token: string): st
     return `${desc}\n${usage}${extra}`;
   }).join("\n");
 
-  return [
-    "## Actant Internal Tools",
-    "",
-    "You have access to the following internal tools via the actant CLI:",
-    toolList,
-    "",
-    `Your session token: ${token}`,
-    "This token is set in the ACTANT_SESSION_TOKEN environment variable.",
-    "IMPORTANT: This token is private to your session. Do not share or expose it.",
-  ].join("\n");
+  const template = loadTemplate("tool-instructions.md");
+  return renderTemplate(template, { toolList, token });
 }

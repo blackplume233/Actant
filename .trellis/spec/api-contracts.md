@@ -777,9 +777,17 @@ Agent Process → actant_canvas_update (MCP Tool)
 | `actant_canvas_update` | `{ html: string, title?: string }` | success/error text | 更新 Agent 的 Live Canvas HTML |
 | `actant_canvas_clear` | `{}` | success/error text | 清除 Canvas |
 
-**注入机制**：`SessionContextInjector` 在 ACP session 创建前收集所有 `ContextProvider` 注册的 MCP servers，通过 `newSession(cwd, mcpServers)` 传参。内置 MCP Server 以 stdio 模式运行，通过 `ACTANT_SOCKET` 环境变量连接回 Daemon RPC。
+**注入机制**：`SessionContextInjector` 在 ACP session 创建前，按注册序遍历所有 `ContextProvider` 收集三类资源（MCP Servers、Tools、System Context），经去重和 Scope 过滤后聚合为 `SessionContext`。内置 Provider：
 
-> 实现参考：`packages/mcp-server/src/index.ts`，`packages/core/src/context-injector/session-context-injector.ts`
+| Provider | name | 资源类型 | 说明 |
+|----------|------|---------|------|
+| `CoreContextProvider` | `"core-identity"` | SystemContext | Actant 身份声明 + 平台能力介绍 |
+| `CanvasContextProvider` | `"canvas"` | Tools + SystemContext | Canvas 工具注册 + 使用提示 |
+
+文本上下文模板存放于 `packages/core/src/prompts/*.md`，运行时通过 `loadTemplate()` + `renderTemplate()` 动态加载并替换 `{{variable}}` 占位符。
+
+> 详细规格：`.trellis/spec/backend/context-injector.md`
+> 实现参考：`packages/core/src/context-injector/`，`packages/mcp-server/src/index.ts`
 
 ### 3.12c Activity 查询（Phase 4 Step 3 新增） ✅ 已实现
 

@@ -881,6 +881,31 @@ backend: { type: "pi", config: { executablePath: process.execPath, args: [...] }
 > `MockLauncher` 已标记为 `@deprecated`。仅在状态机测试中保留使用，且必须配合 Pi 后端。
 > 参见 `packages/core/src/testing/test-launcher.ts`
 
+### Test Stubs: Use Type Assertion, Not Annotation
+
+```typescript
+// Good — `as Type` lets the stub omit optional fields without type errors
+const stubMeta = {
+  name: "test-agent",
+  templateName: "tpl",
+  status: "running",
+  backendType: "pi",
+  archetype: "employee",
+  launchMode: "direct",
+  createdAt: new Date().toISOString(),
+} as AgentInstanceMeta;
+
+// Bad — `: Type` annotation requires ALL fields or explicit optionals
+const stubMeta: AgentInstanceMeta = {
+  name: "test-agent",
+  // ... TS error: missing required fields like workspaceDir, processOwnership...
+};
+```
+
+**Why**: Test stubs intentionally provide only the fields the test cares about. Using `as Type` gives basic type checking on the provided fields while allowing omission of irrelevant ones. Direct annotation (`: Type`) forces you to either provide every field or add `Partial<>` wrappers that weaken downstream type safety.
+
+> **Gotcha**: Ensure the stub includes the specific fields that the code under test actually reads. If a test fails at runtime because a field is `undefined`, add it to the stub rather than making the type `Partial`.
+
 ### Test Structure
 
 ```
@@ -1088,6 +1113,40 @@ pnpm --filter @actant/cli exec tsx src/bin/actant.ts <command>
 ```
 
 **预防**: 日常开发使用 Link 模式（`pnpm install:local`）而非 standalone，或在 bundle 入口添加路径存在性检查的 fallback。
+
+### TSUP Non-TypeScript Asset Copying
+
+When a package contains non-TypeScript assets (e.g., `.md` templates, `.json` schemas) that must be available at runtime, use tsup's `onSuccess` hook with `cpSync` to copy them into `dist/`.
+
+```typescript
+// tsup.config.ts
+import { defineConfig } from "tsup";
+import { cpSync } from "node:fs";
+
+export default defineConfig({
+  // ... existing config
+  onSuccess: async () => {
+    cpSync("src/prompts", "dist/prompts", {
+      recursive: true,
+      filter: (src) => !src.endsWith(".ts"),
+    });
+  },
+});
+```
+
+```typescript
+// Runtime loading — resolve from both source and bundled layouts
+const thisDir = dirname(fileURLToPath(import.meta.url));
+const candidates = [
+  resolve(thisDir, "../prompts"),     // dist/index.js → dist/prompts/
+  resolve(thisDir, "prompts"),        // direct sibling
+  resolve(thisDir, "../src/prompts"), // source layout (vitest)
+];
+```
+
+**Why**: tsup only bundles `.ts`/`.js` files. Non-code assets like Markdown templates are silently dropped. Without the `onSuccess` copy step, `loadTemplate("core-identity.md")` will throw `ENOENT` in production while working fine in dev (where vitest runs from `src/`). The `filter` callback excludes `.ts` files to avoid shipping source alongside the bundle.
+
+> 发现于 Issue #249（Context Injector 重构）。适用于所有需要运行时加载非 TS 文件的包。
 
 ### DTS 生成注意事项
 

@@ -125,6 +125,7 @@ Actant
 | [Error Handling](./error-handling.md) | Error types and handling strategies | Initial |
 | [Quality Guidelines](./quality-guidelines.md) | Code standards, testing, review, monorepo publishing | Updated |
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging for agent lifecycle | Initial |
+| [Context Injector](./context-injector.md) | ContextProvider 注册/收集/过滤协议、内置 Provider、模板引擎 | Updated |
 | [Plugin 预定设计](./plugin-guidelines.md) | **[Phase 4 预定]** Plugin / Hook / Scheduler / Memory 预定设计草案，实施前须重新审查 | **Preliminary** |
 
 ---
@@ -147,31 +148,41 @@ Agent Templates use **name references** to Domain Context components rather than
 
 ### Dynamic Context Injection (SessionContextInjector)
 
-Agent 启动时的 ACP session 创建流程中，`SessionContextInjector` 负责收集并注入动态上下文：
+Agent 启动时的 ACP session 创建流程中，`SessionContextInjector` 从所有已注册的 `ContextProvider` 收集三类资源（MCP Servers、Internal Tools、System Context），经去重和 Scope 过滤后聚合为 `SessionContext`。
 
 | 参与者 | 接口 | 职责 |
 |--------|------|------|
-| `SessionContextInjector` | 核心调度器 | 管理 `ContextProvider` 注册表，在 session 创建前调用所有 providers |
-| `ContextProvider` | 扩展接口 | 各子系统实现，贡献 MCP servers 和 system prompt 片段 |
-| `HookEventBus` | 事件通知 | 发射 `session:preparing` / `session:context-ready` 事件 |
+| `SessionContextInjector` | 核心调度器 | 管理 `ContextProvider` 注册表，按注册序遍历 → 去重过滤 → Token 生成 → 输出 `SessionContext` |
+| `ContextProvider` | 扩展接口 | 各子系统实现，贡献 MCP servers、internal tools 和 system context 片段 |
+| `CoreContextProvider` | 内置 Provider | 注入 Actant 身份声明 + 平台能力介绍（所有 archetype） |
+| `CanvasContextProvider` | 内置 Provider | 注入 Canvas 工具 + 上下文（service/employee archetype） |
+| `SessionTokenStore` | Token 管理 | 为每个 session 生成唯一认证 token |
+| Template Engine | 模板渲染 | 从 `prompts/*.md` 加载模板 + `{{variable}}` 替换 |
 
 ```
+AppContext.init()
+  → injector.register(CoreContextProvider)     ← 身份上下文
+  → injector.register(CanvasContextProvider)   ← Canvas 工具 + 上下文
+
 AgentManager.startAgent()
-  → SessionContextInjector.prepare(agentName)
+  → SessionContextInjector.prepare(agentName, meta)
     → emit "session:preparing"
-    → forEach ContextProvider.collect()  ← 并行收集 MCP servers + system context
+    → Phase 1: 遍历 Provider，收集 MCP servers / tools / system context
+    → Phase 2: 去重 (name-key, first wins) + Scope 过滤 (archetype >= scope)
+    → Phase 3: 生成 Token + 渲染 tool-instructions.md 模板
     → emit "session:context-ready"
-  → AcpConnectionManager.connect({ mcpServers })
-    → ACP session/new({ mcpServers })   ← Agent 进程接收注入的 MCP servers
+    → return SessionContext { mcpServers, tools, systemContextAdditions, token }
+  → AcpConnectionManager.connect({ mcpServers, systemContextAdditions })
 ```
 
 **设计原则**：
 - 子系统（Canvas、Schedule、未来的 Email/Memory）通过注册 `ContextProvider` 实现松耦合扩展
-- 每个 provider 独立声明自己需要注入的 MCP Server `{ command, args, env }`
-- 内置 MCP Server 通过 `ACTANT_SOCKET` 环境变量连接回 Daemon RPC 层
-- Provider 也可注入 `systemContextAdditions`（追加到 system prompt 的文本）
+- Provider 可根据 `meta.archetype` / `meta.backendType` 条件动态决定注入内容
+- 文本上下文模板从代码分离到 `packages/core/src/prompts/*.md`，支持 `{{variable}}` 替换
+- `AppContext.init()` 只负责注册顺序编排，不包含具体的上下文生成逻辑
 
-> 实现参考：`packages/core/src/context-injector/session-context-injector.ts`，`packages/api/src/services/app-context.ts`
+> 详细规格：[context-injector.md](./context-injector.md) — 数据格式、协议格式、接口格式、工作流
+> 实现参考：`packages/core/src/context-injector/`，`packages/api/src/services/app-context.ts`
 
 ### Multiple Launch Modes
 

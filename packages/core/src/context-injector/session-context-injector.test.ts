@@ -5,15 +5,15 @@ import { HookEventBus } from "../hooks/hook-event-bus";
 import type { ContextProvider, ActantToolDefinition } from "./session-context-injector";
 import type { AgentInstanceMeta } from "@actant/shared";
 
-const stubMeta: AgentInstanceMeta = {
+const stubMeta = {
   name: "test-agent",
   templateName: "tpl",
   status: "running",
   backendType: "pi",
   archetype: "employee",
-  launchMode: "managed",
+  launchMode: "direct",
   createdAt: new Date().toISOString(),
-};
+} as AgentInstanceMeta;
 
 function makeProvider(name: string, servers: { name: string }[] = [], systemCtx?: string): ContextProvider {
   return {

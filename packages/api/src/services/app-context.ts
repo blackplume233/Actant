@@ -29,6 +29,8 @@ import {
   ActivityRecorder,
   SessionContextInjector,
   SessionTokenStore,
+  CanvasContextProvider,
+  CoreContextProvider,
   type ActionContext,
   type LauncherMode,
 } from "@actant/core";
@@ -203,36 +205,8 @@ export class AppContext {
 
     this.sessionContextInjector.setEventBus(this.eventBus);
     this.sessionContextInjector.setTokenStore(this.sessionTokenStore);
-    this.sessionContextInjector.register({
-      name: "canvas",
-      getTools: (_agentName, meta) => {
-        if (meta.archetype === "repo") return [];
-        return [
-          {
-            name: "actant_canvas_update",
-            description: "Update the agent's live HTML canvas displayed on the dashboard",
-            parameters: {
-              html: { type: "string", description: "HTML content to render" },
-              title: { type: "string", description: "Optional canvas title" },
-            },
-            rpcMethod: "canvas.update",
-            scope: "service" as const,
-            context: "Use this to display progress reports, visualizations, or status dashboards as HTML.",
-          },
-          {
-            name: "actant_canvas_clear",
-            description: "Clear the agent's live HTML canvas",
-            parameters: {},
-            rpcMethod: "canvas.clear",
-            scope: "service" as const,
-          },
-        ];
-      },
-      getSystemContext: (_agentName, meta) =>
-        meta.archetype !== "repo"
-          ? "You have a live canvas on the Actant dashboard. Use actant_canvas_update to display HTML content visible to the user."
-          : undefined,
-    });
+    this.sessionContextInjector.register(new CoreContextProvider());
+    this.sessionContextInjector.register(new CanvasContextProvider());
 
     await this.agentManager.initialize();
     this.templateWatcher.start();
