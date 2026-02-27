@@ -1203,7 +1203,7 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 
 | 命令 | 参数 | 选项 | 对应 RPC |
 |------|------|------|---------|
-| `agent dispatch <name>` | `name` | `-m, --message`（必填）, `-p, --priority` | `agent.dispatch` |
+| `agent dispatch <name> [message]` | `name`, `message`（位置参数，可选） | `-m, --message`（与位置参数二选一，至少提供一个）, `-p, --priority` | `agent.dispatch` |
 | `agent tasks <name>` | `name` | `-f, --format` | `agent.tasks` |
 | `agent logs <name>` | `name` | `--limit <n>`, `-f, --format` | `agent.logs` |
 
@@ -1314,7 +1314,7 @@ Dashboard（`@actant/dashboard`）在内部挂载 `@actant/rest-api` 的 handler
 | | POST | `/v1/shutdown` | `daemon.shutdown` |
 | | GET | `/v1/sse` | SSE 实时流（每 2s 轮询） |
 | | GET | `/v1/openapi` | 自描述 OpenAPI 路由目录 |
-| **Agents** | GET | `/v1/agents` | `agent.list` |
+| **Agents** | GET | `/v1/agents?limit=N&page=N` | `agent.list`（分页：limit 1-500 默认 100, page >= 0 默认 0） |
 | | POST | `/v1/agents` | `agent.create` |
 | | GET | `/v1/agents/:name` | `agent.status` |
 | | DELETE | `/v1/agents/:name` | `agent.destroy` |
@@ -1898,7 +1898,7 @@ E1[需求] → E2[方案A] → E3[实现] → E4[产出] → E5[发现问题]
 | System | POST | `/v1/shutdown` | `daemon.shutdown` |
 | System | GET | `/v1/sse` | SSE 实时流 |
 | System | GET | `/v1/openapi` | 自描述端点目录 |
-| Agents | GET | `/v1/agents` | `agent.list` |
+| Agents | GET | `/v1/agents?limit=N&page=N` | `agent.list`（分页） |
 | Agents | POST | `/v1/agents` | `agent.create` |
 | Agents | GET | `/v1/agents/:name` | `agent.status` |
 | Agents | DELETE | `/v1/agents/:name` | `agent.destroy` |
