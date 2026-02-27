@@ -687,6 +687,33 @@ export interface EventsRecentResult {
   }>;
 }
 
+// internal.* — token-authenticated internal tool commands for managed agent processes
+
+export interface InternalValidateTokenParams {
+  token: string;
+}
+export interface InternalValidateTokenResult {
+  agentName: string;
+  sessionId: string;
+  pid?: number;
+}
+
+export interface InternalCanvasUpdateParams {
+  token: string;
+  html: string;
+  title?: string;
+}
+export interface InternalCanvasUpdateResult {
+  ok: true;
+}
+
+export interface InternalCanvasClearParams {
+  token: string;
+}
+export interface InternalCanvasClearResult {
+  ok: true;
+}
+
 // ---------------------------------------------------------------------------
 // Method registry type — maps method name to params/result for type safety
 // ---------------------------------------------------------------------------
@@ -779,6 +806,9 @@ export interface RpcMethodMap {
   "canvas.list": { params: CanvasListParams; result: CanvasListResult };
   "canvas.clear": { params: CanvasClearParams; result: CanvasClearResult };
   "events.recent": { params: EventsRecentParams; result: EventsRecentResult };
+  "internal.validateToken": { params: InternalValidateTokenParams; result: InternalValidateTokenResult };
+  "internal.canvasUpdate": { params: InternalCanvasUpdateParams; result: InternalCanvasUpdateResult };
+  "internal.canvasClear": { params: InternalCanvasClearParams; result: InternalCanvasClearResult };
 }
 
 export type RpcMethod = keyof RpcMethodMap;
