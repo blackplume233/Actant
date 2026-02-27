@@ -56,6 +56,7 @@ spec/
 | [Agent 生命周期](./agent-lifecycle.md) | 运行模式、接入方式、使用场景、状态转换 | **强制** — 理解系统行为的核心文档 |
 | [配置规范](./config-spec.md) | 所有配置结构、Schema、枚举、环境变量 | **强制** — 任何配置变更必须先更新此文档 |
 | [接口契约](./api-contracts.md) | RPC 方法、CLI 命令、ACP Proxy、MCP Server、错误码 | **强制** — 任何接口变更必须先更新此文档 |
+| [Session 管理](./session-management.md) | 三种 session 的概念、生命周期、按 archetype 的路由规则 | **强制** — 涉及 Chat/Session 相关代码必读 |
 | [耐久测试规范](./endurance-testing.md) | 覆盖矩阵、不变量、演进策略、维护规范 | **强制** — 生命周期/通信变更必须同步更新耐久测试 |
 
 ### 重要设计文档
