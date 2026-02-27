@@ -24,7 +24,7 @@ function makeMeta(overrides?: Partial<AgentInstanceMeta>): AgentInstanceMeta {
     launchMode: "direct",
     workspacePolicy: "persistent",
     processOwnership: "managed",
-    archetype: "tool",
+    archetype: "repo",
     autoStart: false,
     createdAt: now,
     updatedAt: now,
@@ -106,6 +106,18 @@ describe("instance-meta-io", () => {
       );
       const result = await readInstanceMeta(tmpDir);
       expect(result.workspacePolicy).toBe("persistent");
+    });
+
+    it("should migrate legacy archetype 'tool' to 'repo' on read", async () => {
+      const legacy = makeMeta();
+      const raw = { ...legacy, archetype: "tool" };
+      await writeFile(
+        join(tmpDir, ".actant.json"),
+        JSON.stringify(raw, null, 2),
+        "utf-8",
+      );
+      const result = await readInstanceMeta(tmpDir);
+      expect(result.archetype).toBe("repo");
     });
   });
 

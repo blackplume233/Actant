@@ -8,7 +8,7 @@ import type { RpcClient } from "../../client/rpc-client";
 import { presentError, formatAgentDetail, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
 
 const VALID_LAUNCH_MODES = new Set(["direct", "acp-background", "acp-service", "one-shot"]);
-const VALID_ARCHETYPES = new Set(["tool", "employee", "service"]);
+const VALID_ARCHETYPES = new Set(["repo", "service", "employee"]);
 
 function askQuestion(question: string): Promise<string> {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
@@ -26,7 +26,7 @@ export function createAgentCreateCommand(client: RpcClient, printer: CliPrinter 
     .argument("<name>", "Agent instance name")
     .requiredOption("-t, --template <template>", "Template name to use")
     .option("--launch-mode <mode>", "Launch mode: direct, acp-background, acp-service, one-shot")
-    .option("--archetype <type>", "Agent archetype: tool, employee, service")
+    .option("--archetype <type>", "Agent archetype: repo, service, employee")
     .option("--no-auto-start", "Disable auto-start even if archetype implies it")
     .option("--work-dir <path>", "Custom workspace directory (absolute or relative path)")
     .option("--workspace <path>", "Same as --work-dir: create instance at external path instead of builtin location")

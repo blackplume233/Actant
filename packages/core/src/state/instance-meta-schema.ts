@@ -17,7 +17,9 @@ export const LaunchModeSchema = z.enum([
   "one-shot",
 ]);
 
-export const AgentArchetypeSchema = z.enum(["tool", "employee", "service"]);
+export const AgentArchetypeSchema = z.enum(["repo", "service", "employee"]).or(
+  z.literal("tool").transform(() => "repo" as const),
+);
 
 export const ProcessOwnershipSchema = z.enum(["managed", "external"]);
 
@@ -76,7 +78,7 @@ export const AgentInstanceMetaSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   pid: z.number().int().positive().optional(),
-  archetype: AgentArchetypeSchema.default("tool"),
+  archetype: AgentArchetypeSchema.default("repo"),
   autoStart: z.boolean().default(false),
   effectivePermissions: PermissionsConfigSchema.optional(),
   metadata: z.record(z.string(), z.string()).optional(),

@@ -1,4 +1,4 @@
-import type { AgentInstanceMeta } from "@actant/shared";
+import type { AgentArchetype, AgentInstanceMeta } from "@actant/shared";
 import type { HookEventBus } from "../hooks/hook-event-bus";
 import type { SessionTokenStore } from "./session-token-store";
 
@@ -13,6 +13,12 @@ export interface AcpMcpServerStdio {
   env?: Array<{ name: string; value: string }>;
 }
 
+/** Minimum archetype level required: "all" (any managed) < "service" < "employee". */
+export type ToolScope = "employee" | "service" | "all";
+
+const ARCHETYPE_LEVEL: Record<AgentArchetype, number> = { repo: 0, service: 1, employee: 2 };
+const SCOPE_MIN_LEVEL: Record<ToolScope, number> = { all: 0, service: 1, employee: 2 };
+
 /**
  * Definition of an internal tool that can be provided to managed agents.
  * Tools are registered by ContextProviders and delivered via ToolRegistry
@@ -25,8 +31,8 @@ export interface ActantToolDefinition {
   parameters: Record<string, unknown>;
   /** Daemon RPC method to invoke, e.g. "canvas.update" */
   rpcMethod: string;
-  /** Which agent archetypes can use this tool */
-  scope: "employee" | "all";
+  /** Minimum archetype level required to use this tool */
+  scope: ToolScope;
   /** Extended usage instructions injected into agent system context */
   context?: string;
 }
@@ -127,7 +133,8 @@ export class SessionContextInjector {
       const tools = provider.getTools?.(agentName, meta) ?? [];
       for (const tool of tools) {
         if (seenTools.has(tool.name)) continue;
-        if (tool.scope === "employee" && meta.archetype !== "employee") continue;
+        const level = ARCHETYPE_LEVEL[meta.archetype] ?? 0;
+        if (level < SCOPE_MIN_LEVEL[tool.scope]) continue;
         seenTools.set(tool.name, tool);
       }
 

@@ -734,7 +734,7 @@ interface PluginStatusDto {
 
 Agent 的 Live Canvas HTML 内容管理。Agent 通过内置 Actant MCP Server 的 `actant_canvas_update` 工具间接调用这些 RPC 方法。Dashboard 通过 SSE 实时广播 canvas 数据。
 
-**Archetype 限制**：Canvas 仅对 `employee` archetype 的 Agent 开放。`canvas.update` 在写入 CanvasStore 前校验 `agentName` 对应的 Agent archetype，非 `employee` 类型返回 `INVALID_PARAMS` 错误。Dashboard 侧同步过滤，仅展示 `employee` Agent 的 canvas slots。
+**Archetype 限制**：Canvas 对 `service` 和 `employee` archetype 的 Agent 开放。`canvas.update` 在写入 CanvasStore 前校验 `agentName` 对应的 Agent archetype，`repo` 类型返回 `INVALID_PARAMS` 错误。Dashboard 侧同步过滤，仅展示 `service`/`employee` Agent 的 canvas slots。
 
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
@@ -1851,8 +1851,8 @@ MCP (可选封装层, 非必需)
 
 | 工具类别 | CLI 命令 | RPC 方法 | 可用 archetype |
 |---------|---------|---------|---------------|
-| Canvas 更新 | `actant internal canvas update --token $T --html <h>` | `internal.canvasUpdate` | employee |
-| Canvas 清除 | `actant internal canvas clear --token $T` | `internal.canvasClear` | employee |
+| Canvas 更新 | `actant internal canvas update --token $T --html <h>` | `internal.canvasUpdate` | service, employee |
+| Canvas 清除 | `actant internal canvas clear --token $T` | `internal.canvasClear` | service, employee |
 | 延迟调度 | `actant internal schedule wait --token $T --delay <ms> --prompt <p>` | `schedule.wait` | employee |
 | Cron 调度 | `actant internal schedule cron --token $T --pattern <p> --prompt <p>` | `schedule.cron` | employee |
 | 取消调度 | `actant internal schedule cancel --token $T --task-id <id>` | `schedule.cancel` | employee |

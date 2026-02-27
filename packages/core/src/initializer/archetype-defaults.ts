@@ -7,19 +7,19 @@ export interface ArchetypeDefaults {
 }
 
 const ARCHETYPE_TABLE: Record<AgentArchetype, ArchetypeDefaults> = {
-  tool: {
+  repo: {
     launchMode: "direct",
     interactionModes: ["open", "start", "chat"],
     autoStart: false,
   },
-  employee: {
-    launchMode: "acp-background",
-    interactionModes: ["start", "run", "proxy"],
-    autoStart: true,
-  },
   service: {
     launchMode: "acp-service",
     interactionModes: ["proxy"],
+    autoStart: true,
+  },
+  employee: {
+    launchMode: "acp-background",
+    interactionModes: ["start", "run", "proxy"],
     autoStart: true,
   },
 };

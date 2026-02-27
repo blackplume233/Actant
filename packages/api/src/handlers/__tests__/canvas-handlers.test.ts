@@ -28,7 +28,8 @@ describe("canvas handlers", () => {
     registerCanvasHandlers(registry);
     ctx = createMockCtx({
       "emp-agent": { archetype: "employee" },
-      "std-agent": { archetype: "standard" },
+      "svc-agent": { archetype: "service" },
+      "repo-agent": { archetype: "repo" },
     });
   });
 
@@ -56,13 +57,22 @@ describe("canvas handlers", () => {
     expect(entry!.title).toBe("My Canvas");
   });
 
-  it("rejects canvas update for non-employee agent", async () => {
+  it("allows canvas update for service agent", async () => {
+    const handler = registry.get("canvas.update")!;
+    const result = await handler(
+      { agentName: "svc-agent", html: "<h1>Service</h1>" },
+      ctx,
+    );
+    expect(result).toEqual({ ok: true });
+  });
+
+  it("rejects canvas update for repo agent", async () => {
     const handler = registry.get("canvas.update")!;
     await expect(
-      handler({ agentName: "std-agent", html: "<p>nope</p>" }, ctx),
+      handler({ agentName: "repo-agent", html: "<p>nope</p>" }, ctx),
     ).rejects.toMatchObject({
       code: RPC_ERROR_CODES.INVALID_PARAMS,
-      message: expect.stringContaining("employee"),
+      message: expect.stringContaining("service/employee"),
     });
   });
 

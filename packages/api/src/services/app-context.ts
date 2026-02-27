@@ -206,7 +206,7 @@ export class AppContext {
     this.sessionContextInjector.register({
       name: "canvas",
       getTools: (_agentName, meta) => {
-        if (meta.archetype !== "employee") return [];
+        if (meta.archetype === "repo") return [];
         return [
           {
             name: "actant_canvas_update",
@@ -216,7 +216,7 @@ export class AppContext {
               title: { type: "string", description: "Optional canvas title" },
             },
             rpcMethod: "canvas.update",
-            scope: "employee" as const,
+            scope: "service" as const,
             context: "Use this to display progress reports, visualizations, or status dashboards as HTML.",
           },
           {
@@ -224,12 +224,12 @@ export class AppContext {
             description: "Clear the agent's live HTML canvas",
             parameters: {},
             rpcMethod: "canvas.clear",
-            scope: "employee" as const,
+            scope: "service" as const,
           },
         ];
       },
       getSystemContext: (_agentName, meta) =>
-        meta.archetype === "employee"
+        meta.archetype !== "repo"
           ? "You have a live canvas on the Actant dashboard. Use actant_canvas_update to display HTML content visible to the user."
           : undefined,
     });

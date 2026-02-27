@@ -261,6 +261,8 @@ function initSchedulerIfNeeded(name: string, ctx: AppContext): void {
   const meta = ctx.agentManager.getAgent(name);
   if (!meta?.templateName) return;
 
+  if (meta.archetype !== "employee") return;
+
   const template = ctx.templateRegistry.get(meta.templateName);
   if (!template?.schedule) return;
 

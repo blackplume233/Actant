@@ -41,7 +41,7 @@ function makeMeta(name: string, overrides?: Partial<AgentInstanceMeta>): AgentIn
     launchMode: "direct",
     workspacePolicy: "persistent",
     processOwnership: "managed",
-    archetype: "tool",
+    archetype: "repo",
     autoStart: false,
     createdAt: now,
     updatedAt: now,

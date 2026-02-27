@@ -112,7 +112,7 @@ with sync_playwright() as p:
         body = page.inner_text("body")
         page.screenshot(path=f"{SDIR}/34-overview-content.png")
         has_template = "code-reviewer" in body
-        has_archetype = "tool" in body
+        has_archetype = "repo" in body
         has_id = len(body) > 100
         record("F6", "Overview shows template, archetype", "PASS" if (has_template and has_archetype) else "WARN",
                f"template={has_template}, archetype={has_archetype}")

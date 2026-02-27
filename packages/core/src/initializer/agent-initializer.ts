@@ -151,7 +151,7 @@ export class AgentInitializer {
 
       const now = new Date().toISOString();
 
-      const archetype = overrides?.archetype ?? template.archetype ?? "tool";
+      const archetype = overrides?.archetype ?? template.archetype ?? "repo";
       const archetypeDefaults = getArchetypeDefaults(archetype);
 
       const launchMode = overrides?.launchMode

@@ -409,6 +409,7 @@ Archetype 驱动 `launchMode`、`interactionModes`、`autoStart` 的默认值；
 - **Session 模型由调用者控制**：是否创建新 session 取决于请求来源和 service 配置，调用者可通过 API 显式管理 session 生命周期
 - **不具备调度器**：无 heartbeat、cron、hooks —— 纯被动响应，无自主行为
 - **权限**：Actant 运行时强制执行 PermissionsConfig，受 PolicyEnforcer 管控
+- **工具**：`scope: "service"` 的工具对此类型开放（canvas、status、agent 间通信等）
 - **进程管理**：ProcessWatcher 监控 + auto-restart（crash recovery）
 - **`schedule` 字段**：不允许（校验时报错）
 
@@ -433,7 +434,8 @@ Archetype 驱动 `launchMode`、`interactionModes`、`autoStart` 的默认值；
 | Session 管理（调用者控制） | ❌ | ✅ | ✅ |
 | 调度器（heartbeat/cron/hooks） | ❌ | ❌ | ✅ |
 | TaskQueue 串行派发 | ❌ | ❌ | ✅ |
-| Employee-scope 工具 | ❌ | ❌ | ✅ |
+| Service-scope 工具（canvas、status 等） | ❌ | ✅ | ✅ |
+| Employee-scope 工具（schedule、self-status 等） | ❌ | ❌ | ✅ |
 | 权限运行时强制 | ❌ | ✅ | ✅ |
 
 #### 工具暴露策略（CLI-first，#228）
@@ -446,7 +448,20 @@ Archetype 驱动 `launchMode`、`interactionModes`、`autoStart` 的默认值；
 | `service` | canvas、status、agent 间通信 | `actant internal` CLI |
 | `employee` | service 全部 + schedule、email、self-status | `actant internal` CLI |
 
-> 实现参考：`packages/core/src/initializer/archetype-defaults.ts`
+#### ToolScope 层级化模型（#228 实现）
+
+工具通过 `scope` 属性声明最低访问层级。`SessionContextInjector` 使用数值层级比较过滤工具：
+
+```typescript
+type ToolScope = "employee" | "service" | "all";
+
+const ARCHETYPE_LEVEL = { repo: 0, service: 1, employee: 2 };
+const SCOPE_MIN_LEVEL = { all: 0, service: 1, employee: 2 };
+```
+
+过滤规则：`ARCHETYPE_LEVEL[agent.archetype] >= SCOPE_MIN_LEVEL[tool.scope]`。即 `scope: "service"` 的工具对 service 和 employee 均可用。
+
+> 实现参考：`packages/core/src/context-injector/session-context-injector.ts`、`packages/core/src/initializer/archetype-defaults.ts`
 >
 > 设计决策：#228 (RFC: Agent 三层分类重定义)
 

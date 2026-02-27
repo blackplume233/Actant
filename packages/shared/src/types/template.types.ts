@@ -61,8 +61,8 @@ export interface AgentTemplate extends VersionedComponent {
   metadata?: Record<string, string>;
 }
 
-/** High-level semantic archetype describing how an agent is intended to be used. */
-export type AgentArchetype = "tool" | "employee" | "service";
+/** High-level semantic archetype describing how an agent is intended to be used (management depth: repo < service < employee). */
+export type AgentArchetype = "repo" | "service" | "employee";
 
 /** CLI-level interaction modes that an agent supports. */
 export type InteractionMode = "open" | "start" | "chat" | "run" | "proxy";

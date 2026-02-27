@@ -31,7 +31,7 @@ export interface AgentInstanceMeta {
   createdAt: string;
   updatedAt: string;
   pid?: number;
-  /** High-level interaction archetype (tool / employee / service). Defaults to "tool". */
+  /** High-level interaction archetype (repo / service / employee). Defaults to "repo". */
   archetype: AgentArchetype;
   /** Whether this instance should be auto-started when the daemon launches. */
   autoStart: boolean;

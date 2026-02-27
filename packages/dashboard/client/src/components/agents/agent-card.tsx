@@ -27,15 +27,15 @@ interface AgentCardProps {
 }
 
 const archetypeStyles: Record<string, string> = {
-  employee: "bg-blue-50 text-blue-700 border-blue-200",
-  tool: "bg-purple-50 text-purple-700 border-purple-200",
+  repo: "bg-purple-50 text-purple-700 border-purple-200",
   service: "bg-orange-50 text-orange-700 border-orange-200",
+  employee: "bg-blue-50 text-blue-700 border-blue-200",
 };
 
 export function AgentCard({ agent, error }: AgentCardProps) {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const archetype = agent.archetype ?? "tool";
+  const archetype = agent.archetype ?? "repo";
   const isRunning = agent.status === "running";
   const isErrored = agent.status === "error" || agent.status === "crashed";
   const { loading, execute } = useAgentActions(agent.name);
@@ -137,7 +137,7 @@ export function AgentCard({ agent, error }: AgentCardProps) {
         <div className="mt-3 flex flex-wrap items-center gap-1.5">
           <Badge
             variant="outline"
-            className={archetypeStyles[archetype] ?? archetypeStyles.tool}
+            className={archetypeStyles[archetype] ?? archetypeStyles.repo}
           >
             {archetype}
           </Badge>

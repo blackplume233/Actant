@@ -43,9 +43,9 @@ async function handleCanvasUpdate(
       code: RPC_ERROR_CODES.AGENT_NOT_FOUND,
     });
   }
-  if (meta.archetype !== "employee") {
+  if (meta.archetype === "repo") {
     throw Object.assign(
-      new Error(`Canvas is only available for employee agents (got "${meta.archetype}")`),
+      new Error(`Canvas is only available for service/employee agents (got "${meta.archetype}")`),
       { code: RPC_ERROR_CODES.INVALID_PARAMS },
     );
   }

@@ -4,6 +4,7 @@ export {
   type SessionContext,
   type AcpMcpServerStdio,
   type ActantToolDefinition,
+  type ToolScope,
 } from "./session-context-injector";
 
 export {

@@ -183,7 +183,7 @@ describe("SessionContextInjector", () => {
   });
 
   it("filters tools by scope (employee tool skipped for non-employee)", async () => {
-    const nonEmployeeMeta: AgentInstanceMeta = { ...stubMeta, archetype: "assistant" };
+    const repoMeta: AgentInstanceMeta = { ...stubMeta, archetype: "repo" };
     injector.register({
       name: "canvas",
       getTools: () => [{
@@ -195,12 +195,62 @@ describe("SessionContextInjector", () => {
       }],
     });
 
-    const ctx = await injector.prepare("agent-assist", nonEmployeeMeta);
+    const ctx = await injector.prepare("agent-repo", repoMeta);
     expect(ctx.tools).toHaveLength(0);
   });
 
+  it("filters service-scope tools for repo archetype", async () => {
+    const repoMeta: AgentInstanceMeta = { ...stubMeta, archetype: "repo" };
+    injector.register({
+      name: "canvas",
+      getTools: () => [{
+        name: "actant_canvas_update",
+        description: "Update canvas",
+        parameters: {},
+        rpcMethod: "canvas.update",
+        scope: "service",
+      }],
+    });
+
+    const ctx = await injector.prepare("agent-repo-svc", repoMeta);
+    expect(ctx.tools).toHaveLength(0);
+  });
+
+  it("includes service-scope tools for service archetype", async () => {
+    const serviceMeta: AgentInstanceMeta = { ...stubMeta, archetype: "service" };
+    injector.register({
+      name: "canvas",
+      getTools: () => [{
+        name: "actant_canvas_update",
+        description: "Update canvas",
+        parameters: {},
+        rpcMethod: "canvas.update",
+        scope: "service",
+      }],
+    });
+
+    const ctx = await injector.prepare("agent-svc", serviceMeta);
+    expect(ctx.tools).toHaveLength(1);
+  });
+
+  it("includes service-scope tools for employee archetype", async () => {
+    injector.register({
+      name: "canvas",
+      getTools: () => [{
+        name: "actant_canvas_update",
+        description: "Update canvas",
+        parameters: {},
+        rpcMethod: "canvas.update",
+        scope: "service",
+      }],
+    });
+
+    const ctx = await injector.prepare("agent-emp", stubMeta);
+    expect(ctx.tools).toHaveLength(1);
+  });
+
   it("includes all-scope tools for any archetype", async () => {
-    const nonEmployeeMeta: AgentInstanceMeta = { ...stubMeta, archetype: "assistant" };
+    const repoMeta: AgentInstanceMeta = { ...stubMeta, archetype: "repo" };
     injector.register({
       name: "memory",
       getTools: () => [{
@@ -212,7 +262,7 @@ describe("SessionContextInjector", () => {
       }],
     });
 
-    const ctx = await injector.prepare("agent-all", nonEmployeeMeta);
+    const ctx = await injector.prepare("agent-all", repoMeta);
     expect(ctx.tools).toHaveLength(1);
   });
 
