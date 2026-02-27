@@ -49,6 +49,12 @@ export interface AcpConnectionManagerLike {
     activityRecorder?: unknown;
     /** MCP servers to inject into the ACP session via session/new. */
     mcpServers?: Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }>;
+    /** Internal tools from ToolRegistry (for interceptor observation). */
+    tools?: Array<{ name: string; description: string; parameters: Record<string, unknown>; rpcMethod: string; scope: string; context?: string }>;
+    /** Per-session token for internal tool auth. */
+    sessionToken?: string;
+    /** System context additions for the agent. */
+    systemContext?: string[];
   }): Promise<{ sessionId: string }>;
   has(name: string): boolean;
   getPrimarySessionId(name: string): string | undefined;
@@ -93,6 +99,7 @@ export class AgentManager {
   private readonly eventBus?: HookEventBus;
   private readonly activityRecorder?: ActivityRecorder;
   private readonly sessionContextInjector?: SessionContextInjector;
+  private readonly agentLocks = new Map<string, Promise<void>>();
 
   constructor(
     private readonly initializer: AgentInitializer,
@@ -237,6 +244,10 @@ export class AgentManager {
    * @throws {Error} if backend does not support "acp" mode
    */
   async startAgent(name: string, options?: { autoInstall?: boolean }): Promise<void> {
+    return this.withAgentLock(name, () => this._startAgent(name, options));
+  }
+
+  private async _startAgent(name: string, options?: { autoInstall?: boolean }): Promise<void> {
     const meta = this.requireAgent(name);
     requireInteractionMode(meta, "start");
     requireMode(meta.backendType, "acp");
@@ -283,6 +294,9 @@ export class AgentManager {
           },
           activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
           mcpServers: sessionCtx?.mcpServers,
+          tools: sessionCtx?.tools,
+          sessionToken: sessionCtx?.token,
+          systemContext: sessionCtx?.systemContextAdditions,
         });
         logger.info({ name, acpOnly, providerType: meta.providerConfig?.type }, "ACP connection established");
 
@@ -308,6 +322,8 @@ export class AgentManager {
       });
       logger.info({ name, pid, launchMode: starting.launchMode, acp: true }, "Agent started");
     } catch (err) {
+      this.sessionContextInjector?.revokeTokens?.(name);
+
       const proc = this.processes.get(name);
       if (proc) {
         await this.launcher.terminate(proc).catch((e) => {
@@ -390,6 +406,10 @@ export class AgentManager {
    * @throws {AgentNotFoundError} if agent is not in cache
    */
   async stopAgent(name: string): Promise<void> {
+    return this.withAgentLock(name, () => this._stopAgent(name));
+  }
+
+  private async _stopAgent(name: string): Promise<void> {
     const meta = this.requireAgent(name);
     const dir = join(this.instancesBaseDir, name);
 
@@ -404,6 +424,9 @@ export class AgentManager {
 
     const stopping = await updateInstanceMeta(dir, { status: "stopping" });
     this.cache.set(name, stopping);
+
+    // Revoke session tokens for this agent before disconnecting
+    this.sessionContextInjector?.revokeTokens?.(name);
 
     if (this.acpManager?.has(name)) {
       this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, name, {
@@ -431,12 +454,16 @@ export class AgentManager {
 
   /** Destroy an agent — stop it if running, then remove workspace. */
   async destroyAgent(name: string): Promise<void> {
+    return this.withAgentLock(name, () => this._destroyAgent(name));
+  }
+
+  private async _destroyAgent(name: string): Promise<void> {
     const meta = this.cache.get(name);
     if (!meta && !existsSync(join(this.instancesBaseDir, name))) {
       throw new AgentNotFoundError(name);
     }
     if (meta && (meta.status === "running" || meta.status === "starting")) {
-      await this.stopAgent(name);
+      await this._stopAgent(name);
     }
 
     this.watcher.unwatch(name);
@@ -823,10 +850,40 @@ export class AgentManager {
     return this.acpManager?.has(name) ?? false;
   }
 
-  /** Shut down the process watcher, ACP connections, and release resources. */
+  /**
+   * Serialize async operations on the same agent to prevent concurrent start/stop/destroy races.
+   */
+  private async withAgentLock<T>(name: string, fn: () => Promise<T>): Promise<T> {
+    const prev = this.agentLocks.get(name) ?? Promise.resolve();
+    let releaseFn!: () => void;
+    const next = new Promise<void>((resolve) => { releaseFn = resolve; });
+    this.agentLocks.set(name, next);
+    await prev;
+    try {
+      return await fn();
+    } finally {
+      releaseFn();
+      if (this.agentLocks.get(name) === next) {
+        this.agentLocks.delete(name);
+      }
+    }
+  }
+
+  /** Shut down the process watcher, ACP connections, terminate processes, and release resources. */
   async dispose(): Promise<void> {
     this.watcher.dispose();
     this.restartTracker.dispose();
+
+    await Promise.all(Array.from(this.agentLocks.values())).catch(() => {});
+
+    const procs = Array.from(this.processes.entries());
+    this.processes.clear();
+    for (const [name, proc] of procs) {
+      await this.launcher.terminate(proc).catch((err) => {
+        logger.warn({ name, pid: proc.pid, error: err }, "Failed to terminate process during dispose");
+      });
+    }
+
     await this.acpManager?.disposeAll();
   }
 
@@ -843,6 +900,8 @@ export class AgentManager {
     const action = handler.getProcessExitAction(instanceName, meta);
 
     logger.warn({ instanceName, pid, launchMode: meta.launchMode, action: action.type, previousStatus: meta.status }, "Agent process exited unexpectedly");
+
+    this.sessionContextInjector?.revokeTokens?.(instanceName);
 
     if (this.acpManager?.has(instanceName)) {
       this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, instanceName, {
@@ -893,8 +952,15 @@ export class AgentManager {
           delayMs: decision.delayMs,
         });
         try {
-          await this.startAgent(instanceName);
-          logger.info({ instanceName, attempt: decision.attempt }, "Crash restart succeeded");
+          await this.withAgentLock(instanceName, async () => {
+            const currentMeta = this.cache.get(instanceName);
+            if (currentMeta && (currentMeta.status === "running" || currentMeta.status === "starting")) {
+              logger.info({ instanceName }, "Agent already started by another caller, skipping crash restart");
+              return;
+            }
+            await this._startAgent(instanceName);
+            logger.info({ instanceName, attempt: decision.attempt }, "Crash restart succeeded");
+          });
         } catch (err) {
           logger.error({ instanceName, attempt: decision.attempt, error: err }, "Crash restart failed");
         }

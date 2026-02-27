@@ -1,7 +1,8 @@
 ---
 id: 122
 title: "Feature: Employee/Service Mode - continuous execution, scheduler types, inter-agent dispatch"
-status: open
+status: closed
+closedAs: absorbed-by-228
 labels:
   - core
   - feature

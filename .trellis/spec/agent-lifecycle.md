@@ -78,13 +78,23 @@ Instance 生命周期（持久化）       Process 生命周期（运行时）
 
 #### Archetype 决定执行策略
 
-**队列串行化仅限 employee archetype**，这是明确 Instance Archetype 的根本原因：
+Agent 三层分类（repo / service / employee）以管理深度递进排列（#228）。Archetype 是确定执行策略、进程管理、工具暴露的根本依据：
 
-| Archetype | `agent` 动作执行策略 | 原因 |
-|-----------|---------------------|------|
-| **tool** | **Immediate** — 直接 prompt，调用方同步等待 | 按需调用，用户主动触发 |
-| **employee** | **Queued** — 进入 TaskQueue，串行派发 | 多事件可能同时到达，需串行排队 |
-| **service** | **Concurrent** — 多 session 并发处理 | 面向多客户端，每个请求独立 session |
+```
+repo ──→ service ──→ employee
+(仅构建)  (进程管理)  (自治调度)
+```
+
+| Archetype | 管理深度 | `agent` 动作执行策略 | 原因 |
+|-----------|---------|---------------------|------|
+| **repo** | L1 — 持续管理 workspace | **N/A** — 通过 actant 命令 acp direct 连接 | 用户自行 open，或外部通过 actant 命令走 ACP |
+| **service** | L2 — 进程管理 | **Caller-controlled** — session 策略由调用者/配置决定 | 面向多客户端，纯被动响应，无调度器 |
+| **employee** | L3 — 自治调度 | **Queued** — 进入 TaskQueue，串行派发 | 多事件可能同时到达，需串行排队；具备 heartbeat/cron/hooks |
+
+> **关键约束**：
+> - `repo` workspace 由 Actant 持续管理（热重载模板变更、组件同步），外部可通过 `actant` 命令经 ACP 直接连接
+> - `service` 无调度器 —— 不允许配置 `schedule`，不初始化 EmployeeScheduler；session 生命周期由调用者控制
+> - `employee` 必须有 `schedule` 配置 —— 至少包含 heartbeat，是"有使命感的服务"
 
 #### 三种事件订阅模型
 
@@ -94,9 +104,17 @@ Instance 生命周期（持久化）       Process 生命周期（运行时）
 |------|--------|---------|------|
 | **A: 系统强制推送** | 系统代码硬编码 | 永久 | 系统内部 if-then，不走 HookRegistry |
 | **B: 用户配置 Action** | 人类操作者 | Agent 实例生命周期 | Workflow JSON → HookRegistry |
-| **C: Agent 自注册** | Agent 运行时决定 | Ephemeral（进程存活期间） | CLI `actant hook subscribe` → RPC → HookRegistry |
+| **C: Agent 自注册** | Agent 运行时决定 | Ephemeral（进程存活期间） | `actant internal hook subscribe --token $T` → RPC → HookRegistry |
 
-**通信通道**：Agent 动态订阅（模型 C）通过 **CLI**（`actant hook subscribe`）实现，而非 MCP。MCP 是 Agent 连接外部工具的协议，不用于管理自身运行时。
+**通信通道**：Agent 动态订阅（模型 C）与所有其他 Agent 系统能力一样，统一通过 `actant internal <command> --token` CLI 暴露（#228 CLI-first 设计决策），使用 session token 认证。MCP 仅作为可选封装层。
+
+```bash
+# Agent 在运行时动态订阅事件
+actant internal hook subscribe --token $ACTANT_SESSION_TOKEN --event "source:updated" --prompt "有组件更新，请检查"
+
+# Agent 取消订阅
+actant internal hook unsubscribe --token $ACTANT_SESSION_TOKEN --hook-id <id>
+```
 
 #### 统一数据流
 
@@ -106,19 +124,21 @@ System event ────────────┤
 User CLI/API ────────────┤→ EventBus → HookRegistry → ActionRunner ─┬→ shell/builtin (immediate)
 Plugin ──────────────────┘                                          └→ agent prompt
                                                                        ├ employee → TaskQueue → serial
-                                                                       ├ service  → session pool → concurrent
-                                                                       └ tool     → direct → sync
+                                                                       ├ service  → caller-controlled session
+                                                                       └ repo     → acp direct (on demand)
 ```
 
 #### Archetype 决定 Dashboard 可用功能
 
 Archetype 不仅影响事件执行策略，还决定了 Dashboard UI 中哪些功能对该 Agent 可用：
 
-| Dashboard 功能 | tool | employee | service | 实现方式 |
-|---------------|------|----------|---------|---------|
+| Dashboard 功能 | repo | service | employee | 实现方式 |
+|---------------|------|---------|----------|---------|
 | Agent Card / Detail | ✅ | ✅ | ✅ | 无限制 |
-| Chat | ✅ | ✅ | ✅ | 需 `running` 状态，否则前端 disable |
-| Live Canvas（推送 HTML widget） | ❌ | ✅ | ❌ | 前端：只渲染 employee slot；后端：`canvas.update` 拒绝非 employee |
+| Chat | ❌ | ✅ | ✅ | 需 `running` 状态；repo 无进程，永久 disable |
+| Live Canvas（推送 HTML widget） | ❌ | ❌ | ✅ | 前端：只渲染 employee slot；后端：`canvas.update` 拒绝非 employee |
+| 进程状态/重启 | ❌ | ✅ | ✅ | repo 无进程管理 |
+| 调度器面板 | ❌ | ❌ | ✅ | 仅 employee 有 EmployeeScheduler |
 
 > **Warning**: 后端 `canvas.update` RPC handler 会校验 agent archetype，非 employee 的 canvas 推送请求将返回 `INVALID_PARAMS` 错误。前端 Live Canvas 页面也会过滤掉非 employee 的 agent 和 canvas 条目。前后端双重校验缺一不可。
 
@@ -637,15 +657,20 @@ actant_create_agent   — 创建实例
 actant_list_agents    — 列出所有 Agent
 ```
 
-> **演进方向：Agent-to-Agent Email 范式（#136）**
+> **架构决策：CLI-first 工具暴露（#228）**
 >
-> Agent-to-Agent 通信优先通过 **CLI / JSON-RPC API / Email** 实现（#136），而非 MCP：
-> - Agent 间通过 Email 异步通信（发送后无需等待回复）
-> - 主要通道：`actant email send` CLI + `email.send` RPC handler
-> - 雇员 Agent 的主 Session 处理 Email，普通实例启动新进程处理
-> - 支持 CC/群发、跨时间线传递、Email Hub 持久化记录
+> 所有对 Agent 暴露的系统能力**统一通过 `actant internal <command> --token` CLI 暴露**，MCP 仅作为可选封装层：
+> - Agent 间通信：`actant internal email send --token $T --to <agent>`（CLI）→ `email.send` RPC
+> - 调度工具：`actant internal schedule wait --token $T --delay 30000`（CLI）→ Daemon RPC
+> - 状态查询：`actant internal status self --token $T`（CLI）→ Daemon RPC
+> - MCP Server (#16) 降为 P4 可选扩展，内部仍调 Daemon RPC（同路径）
 >
-> MCP Server (#16) 降为 P4 可选扩展，作为 Agent 从 IDE 内部发送 Email 的备选通道。
+> **理由**：CLI 适用于所有 backend（Cursor / Claude Code / Pi / Custom），零额外依赖，人/Agent/脚本均可测试。MCP 仅适用于支持 MCP 协议的 IDE Agent。
+>
+> 按 archetype 分层暴露：
+> - `repo`：无工具（不持有进程）
+> - `service`：canvas、status、agent 间通信
+> - `employee`：service 全部 + schedule、email、self-status
 
 ---
 

@@ -17,6 +17,7 @@ import {
   registerActivityHandlers,
   registerEventHandlers,
   registerCanvasHandlers,
+  registerInternalHandlers,
   disposeAllLeases,
 } from "../handlers/index";
 import { writePidFile, removePidFile, readPidFile, isProcessRunning } from "./pid-file";
@@ -47,6 +48,7 @@ export class Daemon {
     registerActivityHandlers(this.handlers);
     registerEventHandlers(this.handlers);
     registerCanvasHandlers(this.handlers);
+    registerInternalHandlers(this.handlers);
   }
 
   get socketPath(): string {

@@ -74,23 +74,32 @@ export class ProcessLauncher implements AgentLauncher {
       shell: needsShell,
     });
 
-    const spawnResult = await new Promise<{ pid: number } | { error: Error }>((resolve) => {
-      child.on("error", (err) => {
-        resolve({ error: err });
-      });
-
-      if (child.pid != null) {
-        resolve({ pid: child.pid });
-      } else {
-        child.once("spawn", () => {
-          if (child.pid == null) {
-            resolve({ error: new Error("spawn event fired but pid is null") });
-            return;
-          }
-          resolve({ pid: child.pid });
+    const SPAWN_TIMEOUT_MS = 30_000;
+    const spawnResult = await Promise.race([
+      new Promise<{ pid: number } | { error: Error }>((resolve) => {
+        child.on("error", (err) => {
+          resolve({ error: err });
         });
-      }
-    });
+
+        if (child.pid != null) {
+          resolve({ pid: child.pid });
+        } else {
+          child.once("spawn", () => {
+            if (child.pid == null) {
+              resolve({ error: new Error("spawn event fired but pid is null") });
+              return;
+            }
+            resolve({ pid: child.pid });
+          });
+        }
+      }),
+      new Promise<{ error: Error }>((resolve) => {
+        setTimeout(() => {
+          child.kill();
+          resolve({ error: new Error(`Spawn timed out after ${SPAWN_TIMEOUT_MS}ms (command=${command})`) });
+        }, SPAWN_TIMEOUT_MS);
+      }),
+    ]);
 
     if ("error" in spawnResult) {
       throw new AgentLaunchError(meta.name, spawnResult.error);

@@ -2,9 +2,11 @@ import type { Socket } from "node:net";
 import { createLogger } from "@actant/shared";
 import type { PermissionsConfig } from "@actant/shared";
 import { PermissionPolicyEnforcer, PermissionAuditLogger, type ActivityRecorder } from "@actant/core";
+import type { ActantToolDefinition } from "@actant/core";
 import { AcpConnection, type AcpConnectionOptions, type AcpSessionInfo, type ClientCallbackHandler } from "./connection";
 import { ClientCallbackRouter } from "./callback-router";
 import { RecordingCallbackHandler } from "./recording-handler";
+import { ToolCallInterceptor } from "./tool-call-interceptor";
 import { AcpGateway } from "./gateway";
 import { LocalTerminalManager } from "./terminal-manager";
 
@@ -21,6 +23,12 @@ export interface ConnectOptions {
   activityRecorder?: ActivityRecorder;
   /** MCP servers to inject into the ACP session via session/new. */
   mcpServers?: Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }>;
+  /** Internal tools registered via ToolRegistry (for interceptor observation). */
+  tools?: ActantToolDefinition[];
+  /** Per-session token for internal tool auth. Injected as ACTANT_SESSION_TOKEN env. */
+  sessionToken?: string;
+  /** System context additions to prepend to the agent's first prompt. */
+  systemContext?: string[];
 }
 
 /**
@@ -64,17 +72,65 @@ export class AcpConnectionManager {
     const localHandler: ClientCallbackHandler = buildLocalHandler(localConn, options.connectionOptions, enforcer, auditLogger);
     const router = new ClientCallbackRouter(localHandler);
 
+    // Attach ToolCallInterceptor for internal tool observation
+    if (options.tools && options.tools.length > 0) {
+      const interceptor = new ToolCallInterceptor(
+        options.tools.map((t) => t.name),
+        options.activityRecorder,
+        name,
+      );
+      router.setToolCallInterceptor(interceptor);
+    }
+
     // Wrap with RecordingCallbackHandler when activity recording is enabled.
     // Chain: AcpConnection → RecordingCallbackHandler → ClientCallbackRouter → Local/IDE
     const finalHandler: ClientCallbackHandler = options.activityRecorder
       ? new RecordingCallbackHandler(router, options.activityRecorder, name)
       : router;
 
-    // Now create the real connection with the final callback handler
-    const connWithRouter = new AcpConnection({
+    // Inject session token and system context into process environment
+    const MAX_ENV_VALUE_BYTES = 128 * 1024; // 128 KB guard to stay well below OS ARG_MAX
+    const extraEnv: Record<string, string> = {};
+    if (options.sessionToken) {
+      extraEnv["ACTANT_SESSION_TOKEN"] = options.sessionToken;
+    }
+    if (options.systemContext && options.systemContext.length > 0) {
+      const ctx = options.systemContext.join("\n\n---\n\n");
+      if (Buffer.byteLength(ctx, "utf-8") > MAX_ENV_VALUE_BYTES) {
+        logger.warn({ name, bytes: Buffer.byteLength(ctx, "utf-8") }, "ACTANT_SYSTEM_CONTEXT exceeds size limit, truncating");
+        const buf = Buffer.from(ctx, "utf-8");
+        extraEnv["ACTANT_SYSTEM_CONTEXT"] = buf.subarray(0, MAX_ENV_VALUE_BYTES).toString("utf-8");
+      } else {
+        extraEnv["ACTANT_SYSTEM_CONTEXT"] = ctx;
+      }
+    }
+    if (options.tools && options.tools.length > 0) {
+      let toolsToUse = options.tools;
+      let toolsJson = JSON.stringify(toolsToUse);
+      while (Buffer.byteLength(toolsJson, "utf-8") > MAX_ENV_VALUE_BYTES && toolsToUse.length > 1) {
+        toolsToUse = toolsToUse.slice(0, Math.max(1, Math.floor(toolsToUse.length / 2)));
+        toolsJson = JSON.stringify(toolsToUse);
+      }
+      if (Buffer.byteLength(toolsJson, "utf-8") > MAX_ENV_VALUE_BYTES) {
+        logger.warn({ name, bytes: Buffer.byteLength(toolsJson, "utf-8") }, "ACTANT_TOOLS single tool exceeds size limit, skipping injection");
+      } else {
+        if (toolsToUse.length < options.tools.length) {
+          logger.warn({ name, original: options.tools.length, kept: toolsToUse.length }, "ACTANT_TOOLS truncated to fit size limit");
+        }
+        extraEnv["ACTANT_TOOLS"] = toolsJson;
+      }
+    }
+
+    const mergedOptions: AcpConnectionOptions = {
       ...options.connectionOptions,
       callbackHandler: finalHandler,
-    });
+    };
+    if (Object.keys(extraEnv).length > 0) {
+      mergedOptions.env = { ...mergedOptions.env, ...extraEnv };
+    }
+
+    // Now create the real connection with the final callback handler
+    const connWithRouter = new AcpConnection(mergedOptions);
 
     this.connections.set(name, connWithRouter);
     this.routers.set(name, router);

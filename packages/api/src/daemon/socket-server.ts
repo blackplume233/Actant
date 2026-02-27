@@ -150,11 +150,17 @@ export class SocketServer {
             },
           });
         } else {
-          logger.error({ error: err }, "Unhandled handler error");
+          const errObj = err as Record<string, unknown>;
+          const explicitCode = typeof errObj?.code === "number" ? errObj.code : undefined;
+          const allCodes = new Set<number>(Object.values(RPC_ERROR_CODES));
+          const rpcCode = explicitCode && allCodes.has(explicitCode) ? explicitCode : RPC_ERROR_CODES.INTERNAL_ERROR;
+          if (rpcCode === RPC_ERROR_CODES.INTERNAL_ERROR) {
+            logger.error({ error: err }, "Unhandled handler error");
+          }
           this.sendResponse(socket, {
             jsonrpc: "2.0",
             id: request.id,
-            error: { code: RPC_ERROR_CODES.INTERNAL_ERROR, message: err instanceof Error ? err.message : "Internal error" },
+            error: { code: rpcCode, message: err instanceof Error ? err.message : "Internal error" },
           });
         }
       });

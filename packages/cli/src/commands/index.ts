@@ -15,3 +15,4 @@ export { createSelfUpdateCommand } from "./self-update";
 export { createSetupCommand } from "./setup/setup";
 export { createDashboardCommand } from "./dashboard/index";
 export { createApiCommand } from "./api/index";
+export { createInternalCommand } from "./internal/index";

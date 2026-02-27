@@ -513,7 +513,11 @@ export class AcpConnection {
     const listeners = this.updateListeners.get(params.sessionId);
     if (listeners) {
       for (const listener of listeners) {
-        listener(params);
+        try {
+          listener(params);
+        } catch (err) {
+          logger.warn({ sessionId: params.sessionId, error: err }, "Listener threw during dispatchToListeners");
+        }
       }
     }
   }

@@ -408,6 +408,8 @@ hooks:
 
 Every feature must be implementable and testable via CLI before any UI integration.
 
+> **Agent 工具暴露同样遵循 CLI-first 原则（#228）**：所有对 Agent 暴露的系统能力（调度、邮件、Agent 间通信等）统一通过 `actant internal <command> --token` CLI 暴露，MCP 仅作为可选封装层。新增 Agent-facing 工具时，必须先实现为 `actant internal` CLI 子命令 + Daemon RPC handler，MCP 包装可延后。
+
 ```typescript
 // Good — Command logic is separated from CLI parsing
 export class CreateTemplateCommand {

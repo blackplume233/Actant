@@ -1,10 +1,7 @@
-import { join, dirname } from "node:path";
-import { fileURLToPath } from "node:url";
+import { join } from "node:path";
 import { homedir } from "node:os";
 import { mkdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
-
-const __actantApiDir = dirname(fileURLToPath(import.meta.url));
 import {
   TemplateRegistry,
   TemplateLoader,
@@ -31,6 +28,7 @@ import {
   HookRegistry,
   ActivityRecorder,
   SessionContextInjector,
+  SessionTokenStore,
   type ActionContext,
   type LauncherMode,
 } from "@actant/core";
@@ -100,6 +98,7 @@ export class AppContext {
   readonly hookRegistry: HookRegistry;
   readonly activityRecorder: ActivityRecorder;
   readonly sessionContextInjector: SessionContextInjector;
+  readonly sessionTokenStore: SessionTokenStore;
   readonly canvasStore: CanvasStore;
 
   private initialized = false;
@@ -155,6 +154,7 @@ export class AppContext {
     this.sessionRegistry = new SessionRegistry();
     this.activityRecorder = new ActivityRecorder(this.instancesDir);
     this.sessionContextInjector = new SessionContextInjector();
+    this.sessionTokenStore = new SessionTokenStore();
     this.canvasStore = new CanvasStore();
     this.eventBus = new HookEventBus();
     this.hookCategoryRegistry = new HookCategoryRegistry();
@@ -202,14 +202,36 @@ export class AppContext {
     await this.activityRecorder.rebuildIndex();
 
     this.sessionContextInjector.setEventBus(this.eventBus);
+    this.sessionContextInjector.setTokenStore(this.sessionTokenStore);
     this.sessionContextInjector.register({
       name: "canvas",
-      getMcpServers: () => [{
-        name: "actant-builtin",
-        command: process.execPath,
-        args: [join(__actantApiDir, "..", "..", "..", "mcp-server", "dist", "index.js")],
-        env: [{ name: "ACTANT_SOCKET", value: this.socketPath }],
-      }],
+      getTools: (_agentName, meta) => {
+        if (meta.archetype !== "employee") return [];
+        return [
+          {
+            name: "actant_canvas_update",
+            description: "Update the agent's live HTML canvas displayed on the dashboard",
+            parameters: {
+              html: { type: "string", description: "HTML content to render" },
+              title: { type: "string", description: "Optional canvas title" },
+            },
+            rpcMethod: "canvas.update",
+            scope: "employee" as const,
+            context: "Use this to display progress reports, visualizations, or status dashboards as HTML.",
+          },
+          {
+            name: "actant_canvas_clear",
+            description: "Clear the agent's live HTML canvas",
+            parameters: {},
+            rpcMethod: "canvas.clear",
+            scope: "employee" as const,
+          },
+        ];
+      },
+      getSystemContext: (_agentName, meta) =>
+        meta.archetype === "employee"
+          ? "You have a live canvas on the Actant dashboard. Use actant_canvas_update to display HTML content visible to the user."
+          : undefined,
     });
 
     await this.agentManager.initialize();
@@ -377,6 +399,7 @@ export class AppContext {
       const agentName = payload.agentName;
       if (!agentName) return;
       this.hookRegistry.unregisterAgent(agentName);
+      this.canvasStore.remove(agentName);
     });
   }
 

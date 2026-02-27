@@ -210,7 +210,7 @@ CLI `template validate <file>` 输出格式：
 | `workspacePolicy` | `WorkspacePolicy` | 覆盖默认 workspace 策略 |
 | `workDir` | `string` | 自定义 workspace 绝对路径（省略则默认 `{instancesDir}/{name}`） |
 | `workDirConflict` | `"error" \| "overwrite" \| "append"` | workDir 已存在时的行为，默认 `"error"` |
-| `archetype` | `AgentArchetype` | 覆盖模板交互原型（`tool` / `employee` / `service`） |
+| `archetype` | `AgentArchetype` | 覆盖模板管理深度分类（`repo` / `service` / `employee`） |
 | `autoStart` | `boolean` | 覆盖 archetype 推导的 autoStart 默认值 |
 | `permissions` | `PermissionsInput` | 覆盖模板权限配置，完全替代 `template.permissions` |
 | `metadata` | `Record<string, string>` | 额外元数据 |
@@ -1819,15 +1819,64 @@ actant email show <email-id>
 - **`replyTo`**：覆盖回复投递目标。缺省时回复发往 `from`。
 - **`callback`**：`{ type: 'webhook' | 'rpc', endpoint: string, headers?: Record<string, string> }`。Email Hub 投递回复后额外触发通知。
 
-### 8.6 为什么 CLI/API 优先而非 MCP
+### 8.6 CLI-first 工具暴露原则（#228 设计决策）
 
-| 维度 | CLI / JSON-RPC | MCP |
-|------|----------------|-----|
-| 基础设施 | 已存在（Daemon RPC + CLI 框架） | 需要新建 packages/mcp-server |
-| 使用门槛 | Agent 可直接 `actant email send`（shell） | 需要 MCP Server 配置 |
-| 适用范围 | 人 + Agent + 脚本 + 外部应用 | 仅限 IDE 内 Agent |
-| 依赖关系 | 无额外依赖 | 依赖 MCP SDK + Server 进程 |
-| 实现成本 | 低（复用现有 RPC handler 注册模式） | 中（新包 + 新进程） |
+> **核心原则：所有对 Agent 暴露的系统能力统一通过 `actant internal <command> --token` CLI 暴露，MCP 仅作为可选封装层。**
+
+#### 为什么 CLI/API 优先而非 MCP
+
+| 维度 | CLI (`actant internal`) | MCP (`@actant/mcp-server`) |
+|------|------------------------|----------------------------|
+| 基础设施 | 复用现有 Daemon RPC + CLI 框架 | 需要额外的 mcp-server 进程 |
+| 适用范围 | **所有 backend**（Cursor / Claude Code / Pi / Custom） | 仅支持 MCP 协议的 backend |
+| 使用门槛 | Agent shell 内直接调用，零额外依赖 | 需 MCP SDK + Server 配置 |
+| 测试 | 人/Agent/脚本均可直接测试 | 需 MCP client 环境 |
+| 审计 | `ToolCallInterceptor` 已能捕获 Bash 调用 | 需额外 MCP 层审计 |
+| 实现成本 | 低（复用现有 RPC handler 注册模式） | 中（新包 + 新进程 + 新协议层） |
+
+#### `actant internal` 工具暴露体系
+
+所有 Agent 可调用的系统能力通过 `actant internal` 子命令暴露，使用 session token 认证：
+
+```
+Agent (Bash/Shell)
+  └─ actant internal <command> --token $ACTANT_SESSION_TOKEN [args]
+       └─ CLI → Daemon JSON-RPC
+            └─ RPC Handler → 业务逻辑
+
+MCP (可选封装层, 非必需)
+  └─ @actant/mcp-server 将 CLI 包装为 MCP tools
+       └─ 内部仍调 Daemon RPC（同路径）
+```
+
+| 工具类别 | CLI 命令 | RPC 方法 | 可用 archetype |
+|---------|---------|---------|---------------|
+| Canvas 更新 | `actant internal canvas update --token $T --html <h>` | `internal.canvasUpdate` | employee |
+| Canvas 清除 | `actant internal canvas clear --token $T` | `internal.canvasClear` | employee |
+| 延迟调度 | `actant internal schedule wait --token $T --delay <ms> --prompt <p>` | `schedule.wait` | employee |
+| Cron 调度 | `actant internal schedule cron --token $T --pattern <p> --prompt <p>` | `schedule.cron` | employee |
+| 取消调度 | `actant internal schedule cancel --token $T --task-id <id>` | `schedule.cancel` | employee |
+| 发送 Email | `actant internal email send --token $T --to <agent> --body <b>` | `email.send` | service, employee |
+| 查看收件箱 | `actant internal email inbox --token $T` | `email.inbox` | service, employee |
+| 回复 Email | `actant internal email reply --token $T --id <id> --body <b>` | `email.reply` | service, employee |
+| 自身状态 | `actant internal status self --token $T` | `internal.selfStatus` | service, employee |
+| 调度 Agent | `actant internal agent prompt --token $T --target <name> --message <m>` | `agent.prompt` | service, employee |
+
+#### 按 Archetype 分层暴露
+
+| 层级 | 可用系统工具 | 暴露方式 |
+|------|------------|---------|
+| `repo` | 无（Actant 不持有进程，不注入 token） | N/A |
+| `service` | canvas、status、email、agent 间通信 | `actant internal` CLI |
+| `employee` | service 全部 + schedule（wait/cron/cancel）、self-status | `actant internal` CLI |
+
+#### Session Token 安全模型
+
+- `SessionContextInjector.prepare()` 为每个 ACP session 生成唯一 token
+- Token 通过 `$ACTANT_SESSION_TOKEN` 环境变量注入 Agent 进程
+- `actant internal` 命令使用 `--token` 参数认证，Daemon 校验 token 合法性
+- Token 生命周期跟随 session，session 结束后 token 失效
+- Token 不写入 workspace 文件，仅存在于进程环境变量和 Daemon 内存
 
 ### 8.7 时间线分叉 — "发往过去的 Email"
 
@@ -1864,19 +1913,21 @@ E1[需求] → E2[方案A] → E3[实现] → E4[产出] → E5[发现问题]
                    (E3,E4,E5 marked obsolete)
 ```
 
-### 8.8 MCP Server（#16, P4 可选扩展）
+### 8.8 MCP Server（#16, P4 可选封装层）
 
-> 长期保留，当前阶段不实现。
+> 长期保留。MCP Server 不是主通道，而是对 `actant internal` CLI 的**可选封装层**，内部仍调 Daemon RPC（#228 CLI-first 设计决策）。
 
-当 Agent 需要从 IDE 内部通过 MCP tool call 发送 Email 时，可通过 #16 MCP Server 暴露：
+当 Agent 的 backend 原生支持 MCP（如 Pi），可通过 `@actant/mcp-server` 将 CLI 能力包装为 MCP tools：
 
-| Tool 名称 | 说明 |
-|-----------|------|
-| `actant_send_email` | 发送 Email |
-| `actant_check_inbox` | 查看收件箱 |
-| `actant_reply_email` | 回复 Email |
-| `actant_agent_status` | 查询 Agent 状态 |
-| `actant_list_agents` | 列出所有 Agent |
+| MCP Tool 名称 | 对应 CLI | 说明 |
+|---------------|---------|------|
+| `actant_send_email` | `actant internal email send` | 发送 Email |
+| `actant_check_inbox` | `actant internal email inbox` | 查看收件箱 |
+| `actant_reply_email` | `actant internal email reply` | 回复 Email |
+| `actant_agent_status` | `actant internal status self` | 查询 Agent 状态 |
+| `actant_schedule_wait` | `actant internal schedule wait` | 延迟调度 |
+
+> **实现约束**：每个 MCP tool 的 handler 内部必须调用对应的 Daemon RPC handler，不允许直接实现业务逻辑。确保 CLI 和 MCP 两条路径行为一致。
 
 ---
 

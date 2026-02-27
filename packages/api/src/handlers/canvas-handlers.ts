@@ -11,6 +11,8 @@ import { RPC_ERROR_CODES } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 
+const MAX_CANVAS_HTML_BYTES = 512 * 1024;
+
 export function registerCanvasHandlers(registry: HandlerRegistry): void {
   registry.register("canvas.update", handleCanvasUpdate);
   registry.register("canvas.get", handleCanvasGet);
@@ -29,8 +31,19 @@ async function handleCanvasUpdate(
     });
   }
 
+  if (Buffer.byteLength(html, "utf-8") > MAX_CANVAS_HTML_BYTES) {
+    throw Object.assign(new Error(`html exceeds maximum size of ${MAX_CANVAS_HTML_BYTES} bytes`), {
+      code: RPC_ERROR_CODES.INVALID_PARAMS,
+    });
+  }
+
   const meta = ctx.agentManager.getAgent(agentName);
-  if (meta && meta.archetype !== "employee") {
+  if (!meta) {
+    throw Object.assign(new Error(`Agent "${agentName}" not found`), {
+      code: RPC_ERROR_CODES.AGENT_NOT_FOUND,
+    });
+  }
+  if (meta.archetype !== "employee") {
     throw Object.assign(
       new Error(`Canvas is only available for employee agents (got "${meta.archetype}")`),
       { code: RPC_ERROR_CODES.INVALID_PARAMS },

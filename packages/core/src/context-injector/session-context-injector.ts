@@ -1,5 +1,6 @@
 import type { AgentInstanceMeta } from "@actant/shared";
 import type { HookEventBus } from "../hooks/hook-event-bus";
+import type { SessionTokenStore } from "./session-token-store";
 
 /**
  * ACP McpServer (stdio variant) as expected by the ACP SDK's session/new.
@@ -13,13 +14,35 @@ export interface AcpMcpServerStdio {
 }
 
 /**
- * A provider that contributes MCP servers and/or system context
+ * Definition of an internal tool that can be provided to managed agents.
+ * Tools are registered by ContextProviders and delivered via ToolRegistry
+ * (Pi: direct injection, ACP/Claude Code: CLI + token auth).
+ */
+export interface ActantToolDefinition {
+  name: string;
+  description: string;
+  /** JSON Schema for tool parameters */
+  parameters: Record<string, unknown>;
+  /** Daemon RPC method to invoke, e.g. "canvas.update" */
+  rpcMethod: string;
+  /** Which agent archetypes can use this tool */
+  scope: "employee" | "all";
+  /** Extended usage instructions injected into agent system context */
+  context?: string;
+}
+
+/**
+ * A provider that contributes MCP servers, internal tools, and/or system context
  * to be injected into ACP sessions.
+ *
+ * All methods are optional — implement only what the provider needs.
+ * `getMcpServers` is kept for backward compatibility / external MCP use cases.
  */
 export interface ContextProvider {
   readonly name: string;
-  getMcpServers(agentName: string, meta: AgentInstanceMeta): AcpMcpServerStdio[];
+  getMcpServers?(agentName: string, meta: AgentInstanceMeta): AcpMcpServerStdio[];
   getSystemContext?(agentName: string, meta: AgentInstanceMeta): string | undefined;
+  getTools?(agentName: string, meta: AgentInstanceMeta): ActantToolDefinition[];
 }
 
 /**
@@ -28,12 +51,18 @@ export interface ContextProvider {
 export interface SessionContext {
   mcpServers: AcpMcpServerStdio[];
   systemContextAdditions: string[];
+  tools: ActantToolDefinition[];
+  /** Per-session token for internal tool authentication */
+  token: string;
 }
 
 /**
  * Extensible module that collects dynamic context from registered providers
- * before an ACP session is created. Providers can contribute MCP servers
- * and system prompt additions.
+ * before an ACP session is created. Providers can contribute MCP servers,
+ * internal tools, and system prompt additions.
+ *
+ * When a SessionTokenStore is attached, `prepare()` generates a per-session
+ * token and includes tool usage instructions (with token) in system context.
  *
  * EventBus integration:
  * - Emits `session:preparing` before collection starts
@@ -42,9 +71,14 @@ export interface SessionContext {
 export class SessionContextInjector {
   private providers = new Map<string, ContextProvider>();
   private eventBus: HookEventBus | null = null;
+  private tokenStore: SessionTokenStore | null = null;
 
   setEventBus(eventBus: HookEventBus): void {
     this.eventBus = eventBus;
+  }
+
+  setTokenStore(tokenStore: SessionTokenStore): void {
+    this.tokenStore = tokenStore;
   }
 
   register(provider: ContextProvider): void {
@@ -59,11 +93,18 @@ export class SessionContextInjector {
     return Array.from(this.providers.keys());
   }
 
+  /** Revoke all session tokens for an agent (called on stopAgent). */
+  revokeTokens(agentName: string): void {
+    this.tokenStore?.revokeByAgent(agentName);
+  }
+
   /**
-   * Collect MCP servers and system context from all registered providers.
-   * De-duplicates MCP servers by name (first registration wins).
+   * Collect MCP servers, tools, and system context from all providers.
+   * De-duplicates MCP servers and tools by name (first registration wins).
+   * Filters tools by scope against the agent's archetype.
+   * Generates a per-session token when a TokenStore is attached.
    */
-  async prepare(agentName: string, meta: AgentInstanceMeta): Promise<SessionContext> {
+  async prepare(agentName: string, meta: AgentInstanceMeta, sessionId?: string): Promise<SessionContext> {
     this.eventBus?.emit(
       "session:preparing",
       { callerType: "system", callerId: "SessionContextInjector" },
@@ -72,14 +113,22 @@ export class SessionContextInjector {
     );
 
     const seenServers = new Map<string, AcpMcpServerStdio>();
+    const seenTools = new Map<string, ActantToolDefinition>();
     const systemContextAdditions: string[] = [];
 
     for (const provider of this.providers.values()) {
-      const servers = provider.getMcpServers(agentName, meta);
+      const servers = provider.getMcpServers?.(agentName, meta) ?? [];
       for (const srv of servers) {
         if (!seenServers.has(srv.name)) {
           seenServers.set(srv.name, srv);
         }
+      }
+
+      const tools = provider.getTools?.(agentName, meta) ?? [];
+      for (const tool of tools) {
+        if (seenTools.has(tool.name)) continue;
+        if (tool.scope === "employee" && meta.archetype !== "employee") continue;
+        seenTools.set(tool.name, tool);
       }
 
       const ctx = provider.getSystemContext?.(agentName, meta);
@@ -89,14 +138,56 @@ export class SessionContextInjector {
     }
 
     const mcpServers = Array.from(seenServers.values());
+    const tools = Array.from(seenTools.values());
+
+    const sid = sessionId ?? `${agentName}-${Date.now()}`;
+    const token = this.tokenStore?.generate(agentName, sid) ?? "";
+
+    if (tools.length > 0 && token) {
+      systemContextAdditions.push(buildToolContextBlock(tools, token));
+    }
 
     this.eventBus?.emit(
       "session:context-ready",
       { callerType: "system", callerId: "SessionContextInjector" },
       agentName,
-      { mcpServerCount: mcpServers.length, contextAdditions: systemContextAdditions.length },
+      {
+        mcpServerCount: mcpServers.length,
+        toolCount: tools.length,
+        contextAdditions: systemContextAdditions.length,
+      },
     );
 
-    return { mcpServers, systemContextAdditions };
+    return { mcpServers, systemContextAdditions, tools, token };
   }
+}
+
+/**
+ * Build a system context block describing available internal tools
+ * and how to call them via the `actant internal` CLI with a session token.
+ */
+function buildToolContextBlock(tools: ActantToolDefinition[], token: string): string {
+  const toolList = tools.map((t) => {
+    const params = Object.entries(t.parameters ?? {})
+      .map(([k, v]) => {
+        const vType = typeof v === "object" && v !== null ? (v as Record<string, string>).type : undefined;
+        return `--${k} <${vType ?? "value"}>`;
+      })
+      .join(" ");
+    const desc = `  - ${t.name}: ${t.description}`;
+    const usage = `    Usage: actant internal ${t.name.replace(/_/g, " ")} --token $ACTANT_SESSION_TOKEN ${params}`;
+    const extra = t.context ? `\n    ${t.context}` : "";
+    return `${desc}\n${usage}${extra}`;
+  }).join("\n");
+
+  return [
+    "## Actant Internal Tools",
+    "",
+    "You have access to the following internal tools via the actant CLI:",
+    toolList,
+    "",
+    `Your session token: ${token}`,
+    "This token is set in the ACTANT_SESSION_TOKEN environment variable.",
+    "IMPORTANT: This token is private to your session. Do not share or expose it.",
+  ].join("\n");
 }

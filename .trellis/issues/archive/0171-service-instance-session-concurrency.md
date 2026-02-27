@@ -1,7 +1,8 @@
 ---
 id: 171
 title: "Service Instance 多 Session 与并发模型设计"
-status: open
+status: closed
+closedAs: absorbed-by-228
 labels:
   - architecture
   - discussion

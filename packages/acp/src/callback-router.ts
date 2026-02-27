@@ -21,6 +21,7 @@ import type {
 import { createLogger } from "@actant/shared";
 import type { PermissionPolicyEnforcer } from "@actant/core";
 import type { ClientCallbackHandler } from "./connection";
+import type { ToolCallInterceptor } from "./tool-call-interceptor";
 
 const logger = createLogger("acp-callback-router");
 
@@ -52,12 +53,18 @@ export class ClientCallbackRouter implements ClientCallbackHandler {
   private upstream: UpstreamHandler | null = null;
   private ideCapabilities: ClientCapabilities | null = null;
   private enforcer: PermissionPolicyEnforcer | null = null;
+  private toolCallInterceptor: ToolCallInterceptor | null = null;
 
   constructor(private readonly local: ClientCallbackHandler) {}
 
   /** Attach a PermissionPolicyEnforcer for pre-filtering in lease mode. */
   setEnforcer(enforcer: PermissionPolicyEnforcer | null): void {
     this.enforcer = enforcer;
+  }
+
+  /** Attach a ToolCallInterceptor for observing internal tool calls. */
+  setToolCallInterceptor(interceptor: ToolCallInterceptor | null): void {
+    this.toolCallInterceptor = interceptor;
   }
 
   /**
@@ -122,6 +129,13 @@ export class ClientCallbackRouter implements ClientCallbackHandler {
   }
 
   async sessionUpdate(params: SessionNotification): Promise<void> {
+    // Observe internal tool calls for audit (non-blocking)
+    if (this.toolCallInterceptor) {
+      this.toolCallInterceptor.onToolCall(params).catch((err) => {
+        logger.warn({ err }, "ToolCallInterceptor.onToolCall failed");
+      });
+    }
+
     // Always notify local listeners (for internal state tracking)
     await this.local.sessionUpdate(params);
     // Also forward to IDE when lease is active

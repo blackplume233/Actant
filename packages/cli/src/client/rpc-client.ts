@@ -43,6 +43,11 @@ export class RpcClient {
       ?? (process.env["ACTANT_RPC_TIMEOUT_MS"] ? Number(process.env["ACTANT_RPC_TIMEOUT_MS"]) : 10_000);
 
     return new Promise((resolve, reject) => {
+      let settled = false;
+      const settle = <T>(fn: (v: T) => void, v: T) => {
+        if (!settled) { settled = true; fn(v); }
+      };
+
       const socket = createConnection(this.socketPath, () => {
         socket.write(JSON.stringify(request) + "\n");
       });
@@ -57,8 +62,9 @@ export class RpcClient {
           if (!trimmed) continue;
           try {
             const response = JSON.parse(trimmed) as RpcResponse;
+            socket.setTimeout(0);
             socket.end();
-            resolve(response);
+            settle(resolve, response);
             return;
           } catch {
             // partial data, continue
@@ -67,12 +73,12 @@ export class RpcClient {
       });
 
       socket.on("error", (err) => {
-        reject(new ConnectionError(this.socketPath, err));
+        settle(reject, new ConnectionError(this.socketPath, err));
       });
 
       socket.setTimeout(effectiveTimeout, () => {
         socket.destroy();
-        reject(new Error(`RPC call timed out after ${effectiveTimeout}ms`));
+        settle(reject, new Error(`RPC call timed out after ${effectiveTimeout}ms`));
       });
     });
   }

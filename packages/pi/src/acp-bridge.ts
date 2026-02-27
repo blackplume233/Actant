@@ -11,7 +11,7 @@ import {
 } from "@agentclientprotocol/sdk";
 import { Agent as PiAgent } from "@mariozechner/pi-agent-core";
 // @mariozechner/pi-ai imports removed — SDK API drift (#121)
-import { createPiAgent, type PiAgentOptions } from "./pi-tool-bridge";
+import { createPiAgent, buildInternalTools, type PiAgentOptions } from "./pi-tool-bridge";
 
 interface SessionState {
   agent: PiAgent;
@@ -39,6 +39,12 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
       const sessionId = `pi-session-${++sessionCounter}`;
       const cwd = params.cwd ?? process.cwd();
 
+      let systemPrompt = "You are a helpful coding assistant. You have access to file and command tools.";
+      const systemCtxEnv = process.env["ACTANT_SYSTEM_CONTEXT"];
+      if (systemCtxEnv) {
+        systemPrompt += "\n\n" + systemCtxEnv;
+      }
+
       const agentOpts: PiAgentOptions = {
         workspaceDir: cwd,
         provider: process.env["ACTANT_PROVIDER"] ?? "anthropic",
@@ -46,8 +52,24 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
         apiKey: process.env["ACTANT_API_KEY"] ?? process.env["ANTHROPIC_API_KEY"] ?? process.env["OPENAI_API_KEY"],
         baseUrl: process.env["ACTANT_BASE_URL"] ?? undefined,
         thinkingLevel: (process.env["ACTANT_THINKING_LEVEL"] as PiAgentOptions["thinkingLevel"]) ?? undefined,
-        systemPrompt: "You are a helpful coding assistant. You have access to file and command tools.",
+        systemPrompt,
       };
+
+      // Inject internal tools from ToolRegistry via env
+      const socketPath = process.env["ACTANT_SOCKET"];
+      const sessionToken = process.env["ACTANT_SESSION_TOKEN"];
+      const toolsJson = process.env["ACTANT_TOOLS"];
+      let extraTools: string[] | undefined;
+      if (socketPath && sessionToken && toolsJson) {
+        try {
+          const toolDefs = JSON.parse(toolsJson);
+          const internalTools = buildInternalTools(socketPath, sessionToken, toolDefs);
+          extraTools = internalTools.map((t) => t.name);
+          agentOpts.extraTools = internalTools;
+        } catch (err) {
+          console.error("[pi-acp-bridge] Failed to parse ACTANT_TOOLS:", (err as Error).message);
+        }
+      }
 
       const agent = createPiAgent(agentOpts);
       sessions.set(sessionId, {
@@ -147,6 +169,7 @@ process.on("SIGTERM", () => {
   for (const session of sessions.values()) {
     session.agent.abort();
   }
+  sessions.clear();
   process.exit(0);
 });
 
@@ -154,5 +177,6 @@ process.on("SIGINT", () => {
   for (const session of sessions.values()) {
     session.agent.abort();
   }
+  sessions.clear();
   process.exit(0);
 });

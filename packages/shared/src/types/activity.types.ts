@@ -49,7 +49,8 @@ export type ActivityRecordType =
   | "terminal_exit"
   | "permission_request"
   | "prompt_sent"
-  | "prompt_complete";
+  | "prompt_complete"
+  | "internal_tool_call";
 
 // ---------------------------------------------------------------------------
 // Per-type data shapes
@@ -115,6 +116,20 @@ export type PromptSentData =
 /** prompt_complete */
 export interface PromptCompleteData {
   stopReason: string;
+}
+
+/** internal_tool_call — records internal tool invocations by managed agents. */
+export interface InternalToolCallData {
+  /** RPC method or tool name, e.g. "canvas.update" */
+  tool: string;
+  params: Record<string, unknown>;
+  callerPid?: number;
+  /** First 8 chars of session token (safe for audit, not full token) */
+  tokenPrefix: string;
+  result: unknown;
+  durationMs: number;
+  /** How the tool was called */
+  source: "cli" | "rpc" | "observed";
 }
 
 // ---------------------------------------------------------------------------

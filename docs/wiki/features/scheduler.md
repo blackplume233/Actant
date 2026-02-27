@@ -10,6 +10,8 @@ generated: true
 
 传统 Agent 需要人类主动发指令。雇员调度器让 Agent 像一个"数字雇员"一样 7×24 自动运行。
 
+> **Archetype 约束**：调度器**仅限 `archetype: "employee"` 的 Agent** 使用。`repo`（仅构建工作目录）和 `service`（被动响应型）不允许配置 `schedule` 字段。详见[核心概念 — Agent 三层分类](/guide/concepts#agent-三层分类)。
+
 ## 三种输入源
 
 | 输入 | 触发方式 | 场景 |

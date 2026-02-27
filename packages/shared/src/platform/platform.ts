@@ -1,5 +1,6 @@
 import { join } from "node:path";
 import { homedir } from "node:os";
+import { createHash } from "node:crypto";
 
 const IS_WINDOWS = process.platform === "win32";
 
@@ -23,7 +24,11 @@ export function getDefaultIpcPath(homeDir?: string): string {
  */
 export function getIpcPath(homeDir: string): string {
   if (IS_WINDOWS) {
-    const safeName = homeDir.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const raw = homeDir.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const MAX_SAFE_LEN = 80;
+    const safeName = raw.length > MAX_SAFE_LEN
+      ? raw.slice(0, 48) + "-" + createHash("md5").update(homeDir).digest("hex").slice(0, 16)
+      : raw;
     return `\\\\.\\pipe\\actant-${safeName}`;
   }
   return join(homeDir, "actant.sock");

@@ -106,6 +106,7 @@ export type {
   PermissionRequestData,
   PromptSentData,
   PromptCompleteData,
+  InternalToolCallData,
   ActivitySessionSummary,
   ConversationTurn,
   ConversationToolCall,

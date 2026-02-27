@@ -1,7 +1,8 @@
 ---
 id: 182
 title: "RFC: Instance Interaction Archetype (tool / employee / service)"
-status: open
+status: closed
+closedAs: superseded-by-228
 labels:
   - rfc
   - architecture

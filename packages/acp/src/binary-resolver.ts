@@ -1,7 +1,7 @@
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { readFileSync } from "node:fs";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { createLogger, isWindows } from "@actant/shared";
 
 const logger = createLogger("binary-resolver");
@@ -48,7 +48,7 @@ export function resolveAcpBinary(command: string, resolvePackage?: string): Reso
 function isOnPath(command: string): boolean {
   try {
     const which = isWindows() ? "where.exe" : "which";
-    execSync(`${which} ${command}`, { stdio: "ignore" });
+    execFileSync(which, [command], { stdio: "ignore" });
     return true;
   } catch {
     return false;

@@ -57,7 +57,7 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 | `domainContext` | [`DomainContextConfig`](#domaincontextconfig) | **是** | 领域上下文组合 |
 | `permissions` | [`PermissionsInput`](#permissionsinput) | 否 | 工具/文件/网络权限控制 |
 | `initializer` | [`InitializerConfig`](#initializerconfig) | 否 | 自定义初始化流程 |
-| `archetype` | [`AgentArchetype`](#agentarchetype) | 否 | 交互原型声明，驱动实例默认的 launchMode/interactionModes/autoStart |
+| `archetype` | [`AgentArchetype`](#agentarchetype) | 否 | 管理深度分类声明（repo / service / employee），驱动实例默认的 launchMode/interactionModes/autoStart |
 | `schedule` | [`ScheduleConfig`](#scheduleconfig) | 否 | 雇员型调度配置（Phase 3c 新增） |
 | `metadata` | `Record<string, string>` | 否 | 任意键值元数据 |
 
@@ -228,7 +228,7 @@ Provider 存在两个层次：
 > TaskDispatcher 在队列排空时 emit `idle` 事件。EmployeeScheduler 接受可选 `hookEventBus` 参数完成集成。
 > 详见 [event-system-unified-design.md](../../docs/design/event-system-unified-design.md)。
 
-定义雇员型 Agent 的自动调度策略。当模板包含 `schedule` 字段时，Agent 启动后自动初始化 EmployeeScheduler。
+定义雇员型 Agent 的自动调度策略。**仅 `archetype: "employee"` 的 Agent 允许配置此字段**。`repo` 和 `service` 类型配置 `schedule` 时校验将报错。当模板包含 `schedule` 字段时，Agent 启动后自动初始化 EmployeeScheduler。
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
@@ -325,7 +325,7 @@ Provider 存在两个层次：
 | `updatedAt` | `string` | **是** | — | ISO 8601 更新时间 |
 | `pid` | `number` | 否 | — | 运行时 OS 进程 ID |
 | `effectivePermissions` | `PermissionsConfig` | 否 | — | 解析后的最终生效权限（创建时由 template + override 解析写入，运行时可通过 `agent.updatePermissions` RPC 更新） |
-| `archetype` | [`AgentArchetype`](#agentarchetype) | 否 | `"tool"` | 实例交互原型，驱动 launchMode/interactionModes/autoStart 的默认值 |
+| `archetype` | [`AgentArchetype`](#agentarchetype) | 否 | `"repo"` | 实例管理深度分类，驱动 launchMode/interactionModes/autoStart 的默认值（L1: repo / L2: service / L3: employee） |
 | `autoStart` | `boolean` | 否 | `false` | Daemon 启动时是否自动启动此实例（employee/service 默认 true） |
 | `workspaceDir` | `string` | 否 | — | Agent workspace 的绝对路径。运行时由 AgentManager 在 `startAgent()` 时填充，持久化到 `.actant.json`，供 Dashboard 等外部系统读取 |
 | `startedAt` | `string` | 否 | — | ISO 8601 时间戳，记录 Agent 进程最近一次启动的时间。由 AgentManager 在 `startAgent()` 时写入 |
@@ -378,15 +378,77 @@ Provider 存在两个层次：
 
 ### AgentArchetype
 
-高层语义字段，描述 Agent 的交互范式。Archetype 驱动 `launchMode`、`interactionModes`、`autoStart` 的默认值；用户 override 始终优先。
+高层语义字段，描述 Actant 对该 Agent 的**管理深度**。三层分类以管理程度递进排列：
 
-| 值 | 默认 launchMode | 默认 interactionModes | 默认 autoStart | 典型场景 |
-|----|----------------|----------------------|---------------|---------|
-| `"tool"` | `direct` | `open, start, chat` | `false` | 按需调用的工具型 Agent |
-| `"employee"` | `acp-background` | `start, run, proxy` | `true` | 后台雇员型 Agent，调度器驱动 |
-| `"service"` | `acp-service` | `proxy` | `true` | 持久化服务型 Agent，崩溃自动重启 |
+```
+repo ──→ service ──→ employee
+(L1)      (L2)       (L3)
+```
+
+Archetype 驱动 `launchMode`、`interactionModes`、`autoStart` 的默认值；用户 override 始终优先。
+
+| 值 | 管理深度 | 默认 launchMode | 默认 interactionModes | 默认 autoStart | 典型场景 |
+|----|---------|----------------|----------------------|---------------|---------|
+| `"repo"` | L1 — 仅构建 | `direct` | `open, start, chat` | `false` | Actant 仅构建工作目录，用户自行 open / acp direct |
+| `"service"` | L2 — 进程管理 | `acp-service` | `proxy` | `true` | Actant 管理完整进程生命周期，被动响应请求，无调度器 |
+| `"employee"` | L3 — 自治调度 | `acp-background` | `start, run, proxy` | `true` | service 超集 + heartbeat + 调度器 + 自主执行使命 |
+
+#### 三层详细定义
+
+**L1: `repo`（仓库型）**
+- Actant **持续管理工作目录**：解析模板 → 物化组件（skills / prompts / mcp / permissions） → 持续响应模板/组件变更（热重载）
+- Actant **不主动 spawn 进程**，但工作目录始终由 Actant 维护和管理
+- 用户通过 `actant agent open` 在原生 IDE 中打开；外部也可通过 actant 命令经 ACP 直接连接（`acp direct`）
+- **权限**：物化时写入 workspace 配置文件，Actant 不在运行时强制执行
+- **进程管理**：不主动 spawn，但支持外部连接后的状态追踪（attach）
+- **`schedule` 字段**：不允许（校验时报错）
+
+**L2: `service`（服务型）**
+- Actant **完全管理进程生命周期**：spawn、health check、crash recovery、graceful shutdown
+- 具备完整的 ACP 通信能力，可通过 `proxy` 模式接收外部请求
+- **Session 模型由调用者控制**：是否创建新 session 取决于请求来源和 service 配置，调用者可通过 API 显式管理 session 生命周期
+- **不具备调度器**：无 heartbeat、cron、hooks —— 纯被动响应，无自主行为
+- **权限**：Actant 运行时强制执行 PermissionsConfig，受 PolicyEnforcer 管控
+- **进程管理**：ProcessWatcher 监控 + auto-restart（crash recovery）
+- **`schedule` 字段**：不允许（校验时报错）
+
+**L3: `employee`（雇员型）**
+- 在 `service` 全部能力基础上，增加：
+  - **心跳**：HeartbeatInput 定期 tick，汇报存活并驱动 prompt
+  - **调度器**：EmployeeScheduler 管理 heartbeat + cron + hooks 三种 InputSource
+  - **自我意识**：持续执行使命（mission prompt），具备主动行为能力
+- 雇员是"有使命感的服务" —— 不仅响应请求，还主动巡检、执行定时任务
+- **权限**：最严格的管控层级，`scope: "employee"` 的工具仅对此类型开放
+- **进程管理**：ProcessWatcher + EmployeeScheduler + TaskQueue + TaskDispatcher
+- **`schedule` 字段**：必须配置（至少包含 heartbeat）
+
+#### 各层级能力矩阵
+
+| 能力 | `repo` | `service` | `employee` |
+|------|--------|-----------|------------|
+| 工作目录构建 | ✅ | ✅ | ✅ |
+| 进程生命周期管理 | ❌ | ✅ | ✅ |
+| ACP 通信 | ❌ | ✅ | ✅ |
+| 崩溃自动重启 | ❌ | ✅ | ✅ |
+| Session 管理（调用者控制） | ❌ | ✅ | ✅ |
+| 调度器（heartbeat/cron/hooks） | ❌ | ❌ | ✅ |
+| TaskQueue 串行派发 | ❌ | ❌ | ✅ |
+| Employee-scope 工具 | ❌ | ❌ | ✅ |
+| 权限运行时强制 | ❌ | ✅ | ✅ |
+
+#### 工具暴露策略（CLI-first，#228）
+
+所有对 Agent 暴露的系统能力统一通过 `actant internal <command> --token` CLI 暴露，MCP 仅作为可选封装层。
+
+| 层级 | 可用工具 | 暴露方式 |
+|------|---------|---------|
+| `repo` | 无（Actant 不持有进程） | N/A |
+| `service` | canvas、status、agent 间通信 | `actant internal` CLI |
+| `employee` | service 全部 + schedule、email、self-status | `actant internal` CLI |
 
 > 实现参考：`packages/core/src/initializer/archetype-defaults.ts`
+>
+> 设计决策：#228 (RFC: Agent 三层分类重定义)
 
 ---
 
@@ -468,6 +530,8 @@ VersionedComponent           ← 基类
 | `EMPTY_DOMAIN_WITH_SUBAGENTS` | `domainContext` | 定义了 subAgents 但无 skills/prompts |
 | `CUSTOM_BACKEND_NO_CONFIG` | `backend.config` | 自定义后端类型但未提供 config |
 | `CUSTOM_PROVIDER_NO_CONFIG` | `provider.config` | 自定义提供商但未提供 config |
+| `SCHEDULE_NOT_ALLOWED` | `schedule` | repo/service 类型 Agent 不允许配置 schedule |
+| `EMPLOYEE_MISSING_SCHEDULE` | `schedule` | employee 类型 Agent 必须配置 schedule（至少 heartbeat） |
 
 ### 独立子配置校验器
 
@@ -571,9 +635,9 @@ VersionedComponent           ← 基类
 | `params` | `Record<string, unknown>` | (builtin) 动作参数 |
 
 > **Archetype 感知**：当 `type: "agent"` 时，ActionRunner 根据目标 Agent 的 archetype 决定执行策略：
-> - `tool` → 直接 prompt（同步）
+> - `repo` → 不可调度（repo 不持有进程，ActionRunner 跳过）
+> - `service` → session 策略由调用者/配置决定（可复用现有 session 或创建新 session）
 > - `employee` → 进入 TaskQueue 串行派发
-> - `service` → 创建新 session 并发处理
 
 **Actant-level Workflow 示例**：
 

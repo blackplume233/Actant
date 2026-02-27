@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { readFile, writeFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
 import { promisify } from "node:util";
+import { connect } from "node:net";
 import { Agent, type AgentTool } from "@mariozechner/pi-agent-core";
 import { getModel, Type } from "@mariozechner/pi-ai";
 
@@ -16,6 +17,8 @@ export interface PiAgentOptions {
   baseUrl?: string;
   thinkingLevel?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
   tools?: string[];
+  /** Pre-built AgentTool instances to merge (e.g. internal tools from ToolRegistry). */
+  extraTools?: AgentTool[];
   systemPrompt?: string;
 }
 
@@ -113,6 +116,102 @@ function buildTools(workspaceDir: string, toolNames?: string[]): AgentTool[] {
   return tools;
 }
 
+interface InternalToolDef {
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+  rpcMethod: string;
+}
+
+/**
+ * Map a public rpcMethod (e.g. "canvas.update") to the token-authenticated
+ * internal handler (e.g. "internal.canvasUpdate").
+ */
+function toInternalRpcMethod(rpcMethod: string): string {
+  const [namespace, action] = rpcMethod.split(".");
+  if (!action) return `internal.${namespace}`;
+  return `internal.${namespace}${action.charAt(0).toUpperCase()}${action.slice(1)}`;
+}
+
+/**
+ * Build AgentTool wrappers for actant internal tools.
+ * Each tool calls the Daemon RPC via Unix socket with token auth.
+ */
+export function buildInternalTools(
+  socketPath: string,
+  token: string,
+  toolDefs: InternalToolDef[],
+): AgentTool[] {
+  return toolDefs.map((def) => ({
+    name: def.name,
+    label: def.description,
+    description: def.description,
+    parameters: Type.Object(
+      Object.fromEntries(
+        Object.entries(def.parameters ?? {}).map(([k, v]) => {
+          const vObj = typeof v === "object" && v !== null ? (v as Record<string, unknown>) : {};
+          return [k, vObj.type === "string" ? Type.String({ description: k }) : Type.Unknown()];
+        }),
+      ),
+    ),
+    execute: (async (_toolCallId: string, params: Record<string, unknown>) => {
+      const method = toInternalRpcMethod(def.rpcMethod);
+      const result = await rpcCall(socketPath, method, { token, ...params });
+      return {
+        content: [{ type: "text" as const, text: JSON.stringify(result) }],
+        details: undefined,
+      };
+    }) as AgentTool["execute"],
+  }));
+}
+
+const RPC_TIMEOUT_MS = 30_000;
+
+function rpcCall(socketPath: string, method: string, params: Record<string, unknown>): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+
+    const socket = connect(socketPath);
+    const reqId = Date.now();
+    const req = JSON.stringify({ jsonrpc: "2.0", id: reqId, method, params }) + "\n";
+    let buffer = "";
+
+    const timer = setTimeout(() => {
+      settle(() => {
+        socket.destroy();
+        reject(new Error(`RPC call to ${method} timed out after ${RPC_TIMEOUT_MS}ms`));
+      });
+    }, RPC_TIMEOUT_MS);
+
+    socket.on("data", (chunk) => {
+      buffer += chunk.toString();
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        try {
+          const resp = JSON.parse(trimmed);
+          clearTimeout(timer);
+          socket.destroy();
+          settle(() => {
+            if (resp.error) reject(new Error(resp.error.message ?? "RPC error"));
+            else resolve(resp.result);
+          });
+          return;
+        } catch { /* partial data, keep buffering */ }
+      }
+    });
+    socket.on("error", (err) => {
+      clearTimeout(timer);
+      socket.destroy();
+      settle(() => reject(err));
+    });
+    socket.write(req);
+  });
+}
+
 export function createPiAgent(options: PiAgentOptions): Agent {
   const {
     workspaceDir,
@@ -121,16 +220,22 @@ export function createPiAgent(options: PiAgentOptions): Agent {
     apiKey,
     thinkingLevel,
     tools: toolNames,
+    extraTools,
     systemPrompt = "You are a helpful coding assistant. You have access to file and command tools.",
   } = options;
 
   const modelInstance = getModel(provider as never, model);
 
+  const allTools = [
+    ...buildTools(workspaceDir, toolNames),
+    ...(extraTools ?? []),
+  ];
+
   const agentOptions: Record<string, unknown> = {
     initialState: {
       systemPrompt,
       model: modelInstance,
-      tools: buildTools(workspaceDir, toolNames),
+      tools: allTools,
     },
   };
 

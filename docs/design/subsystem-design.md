@@ -423,7 +423,7 @@ ActantSubsystem.init()
       }
     },
     "session.context-broker": {
-      "enabled": "${agent.archetype} !== 'tool'",
+      "enabled": "${agent.archetype} !== 'repo'",
       "config": {
         "maxContextTokens": 8000,
         "memoryStrategy": "sliding-window"

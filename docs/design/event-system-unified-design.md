@@ -157,7 +157,7 @@ ActionRunner 决策流:
 action.type == "agent"?
   ├─ target archetype == "employee"  → TaskQueue → serial dispatch
   ├─ target archetype == "service"   → new session / pool session → concurrent
-  └─ target archetype == "tool"      → direct prompt → return result
+  └─ target archetype == "repo"      → skip (no process, not schedulable)
 ```
 
 > **Service 多 session 问题**: Service Instance 接收指令时是否默认创建新 session？
@@ -435,7 +435,7 @@ actant hook list --agent self --dynamic
 | `HookEventBus` | **保留 → 升级为统一 EventBus** | +EmitContext, +EmitGuard |
 | `HookRegistry` | **保留** | +allowedCallers 过滤 |
 | `HookCategoryRegistry` | **保留** | +EventMeta, +canEmit/canListen |
-| `ActionRunner` | **保留 → 增加 archetype 感知** | employee→queue, service→concurrent, tool→direct |
+| `ActionRunner` | **保留 → 增加 archetype 感知** | employee→queue, service→concurrent, repo→skip |
 | `TaskQueue` | **保留 → 降级为 ActionRunner 内部子策略** | 仅 employee 使用 |
 | `TaskDispatcher` | **保留 → 同上** | |
 | `ExecutionLog` | **保留** | |
