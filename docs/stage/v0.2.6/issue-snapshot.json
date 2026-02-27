@@ -1,0 +1,512 @@
+{
+  "version": "v0.2.6",
+  "date": "2026-02-27T16:11:33.820Z",
+  "summary": {
+    "open": 49,
+    "closed": 51,
+    "total": 100,
+    "github": 100
+  },
+  "issues": [
+    {
+      "id": 255,
+      "title": "Enhancement: Schedule tools MCP Server injection path (reduce CLI fork latency)",
+      "status": "OPEN"
+    },
+    {
+      "id": 252,
+      "title": "feat(rest-api): add POST /v1/templates route for template creation",
+      "status": "OPEN"
+    },
+    {
+      "id": 251,
+      "title": "feat(core): emit agent:resolved event on resolve completion",
+      "status": "OPEN"
+    },
+    {
+      "id": 250,
+      "title": "feat(api): implement hooks.subscriptions and hooks.categories RPC methods",
+      "status": "OPEN"
+    },
+    {
+      "id": 249,
+      "title": "Refactor: 缁熶竴涓婁笅鏂囨敞鍏ユā鍧?鈥?娉ㄥ唽寮?Provider + 妯℃澘鏂囦欢澶栫疆",
+      "status": "CLOSED"
+    },
+    {
+      "id": 248,
+      "title": "RFC: Virtual File System (VFS) - Registry-based VFS Design",
+      "status": "OPEN"
+    },
+    {
+      "id": 247,
+      "title": "feat(dashboard): Agent Orchestration UI - Template Creation / Instance Materialization / Skill Selection Tab",
+      "status": "CLOSED"
+    },
+    {
+      "id": 246,
+      "title": "feat(dashboard): Instance layered display - repo/service/employee differentiated UI",
+      "status": "OPEN"
+    },
+    {
+      "id": 242,
+      "title": "bug(acp): ToolCallInterceptor token redaction regex edge case",
+      "status": "OPEN"
+    },
+    {
+      "id": 241,
+      "title": "bug(pi): acp-bridge sessions Map no auto-expiry, memory leak risk",
+      "status": "OPEN"
+    },
+    {
+      "id": 240,
+      "title": "bug(acp): AcpConnectionManager.connect() 澶辫触鏃?enforcer/gateway 鏉＄洰娉勬紡",
+      "status": "OPEN"
+    },
+    {
+      "id": 239,
+      "title": "bug(core): spawn 瓒呮椂鍚?orphan 瀛愯繘绋嬫湭瀹屽叏娓呯悊",
+      "status": "OPEN"
+    },
+    {
+      "id": 238,
+      "title": "bug(core): AgentManager.dispose() 绔炴€佺獥鍙?鈥?寤惰繜 handleProcessExit lock 涓嶈绛夊緟",
+      "status": "OPEN"
+    },
+    {
+      "id": 237,
+      "title": "fix: handleProcessExit restart races with manual startAgent",
+      "status": "CLOSED"
+    },
+    {
+      "id": 236,
+      "title": "fix: token redaction regex misses --token=xxx format",
+      "status": "CLOSED"
+    },
+    {
+      "id": 235,
+      "title": "fix: Windows named pipe path may exceed 256-char limit",
+      "status": "CLOSED"
+    },
+    {
+      "id": 234,
+      "title": "fix: acp-bridge sessions Map grows indefinitely (memory leak)",
+      "status": "CLOSED"
+    },
+    {
+      "id": 233,
+      "title": "fix: environment variable injection has no size limit",
+      "status": "CLOSED"
+    },
+    {
+      "id": 232,
+      "title": "fix: Object.assign(new Error) loses RPC error codes in socket-server",
+      "status": "CLOSED"
+    },
+    {
+      "id": 231,
+      "title": "fix(sec): binary-resolver command injection via execSync",
+      "status": "CLOSED"
+    },
+    {
+      "id": 230,
+      "title": "fix: dispatchToListeners breaks on single listener error",
+      "status": "CLOSED"
+    },
+    {
+      "id": 229,
+      "title": "fix: process-launcher spawn has no timeout",
+      "status": "CLOSED"
+    },
+    {
+      "id": 228,
+      "title": "RFC: Agent 三层分类重定义 — repo / service / employee",
+      "status": "CLOSED"
+    },
+    {
+      "id": 227,
+      "title": "fix: dispose() does not terminate running agent processes",
+      "status": "CLOSED"
+    },
+    {
+      "id": 226,
+      "title": "fix: startAgent/stopAgent lack concurrency control",
+      "status": "CLOSED"
+    },
+    {
+      "id": 224,
+      "title": "Security: Agent name missing path traversal and character validation",
+      "status": "OPEN"
+    },
+    {
+      "id": 223,
+      "title": "RFC: Skill 组件模型重构 — 扩增 MCP 依赖、去除 Presets、合并 Workflow",
+      "status": "OPEN"
+    },
+    {
+      "id": 221,
+      "title": "PI agent prompt hangs on Dashboard 鈥?ACP connection drops without status update",
+      "status": "CLOSED"
+    },
+    {
+      "id": 220,
+      "title": "PI backend defaultInteractionModes missing chat/run/proxy",
+      "status": "CLOSED"
+    },
+    {
+      "id": 219,
+      "title": "feat(api): Service Agent Session 管理接口 — 用户可自由选择/创建 Session，Employee 由 Actant 托管",
+      "status": "OPEN"
+    },
+    {
+      "id": 218,
+      "title": "feat(core): Dynamic Tool Injection System — runtime tool set evolution based on SessionContextInjector",
+      "status": "CLOSED"
+    },
+    {
+      "id": 217,
+      "title": "feat(mcp-server): activate built-in Actant MCP Server with actant_canvas_update tool",
+      "status": "CLOSED"
+    },
+    {
+      "id": 216,
+      "title": "feat(core): SessionContextInjector — extensible dynamic context injection for ACP sessions",
+      "status": "CLOSED"
+    },
+    {
+      "id": 215,
+      "title": "feat: REST API 流式聊天 + RPC 并发 multiplexing",
+      "status": "OPEN"
+    },
+    {
+      "id": 214,
+      "title": "fix(rest-api): webhook /event exposes 'undefined' and /run hangs for stopped agents",
+      "status": "CLOSED"
+    },
+    {
+      "id": 213,
+      "title": "fix(rest-api): RPC errors without standard codes map to HTTP 500 instead of 4xx",
+      "status": "CLOSED"
+    },
+    {
+      "id": 212,
+      "title": "feat(core): Dynamic Tool Injection System 鈥?runtime tool set evolution based on SessionContextInjector",
+      "status": "CLOSED"
+    },
+    {
+      "id": 211,
+      "title": "feat(mcp-server): activate built-in Actant MCP Server with actant_canvas_update tool",
+      "status": "CLOSED"
+    },
+    {
+      "id": 210,
+      "title": "feat(core): SessionContextInjector 鈥?extensible dynamic context injection for ACP sessions",
+      "status": "CLOSED"
+    },
+    {
+      "id": 209,
+      "title": "RFC: ACP Workspace Control Boundary - Virtual Addressing at ACP Layer",
+      "status": "OPEN"
+    },
+    {
+      "id": 208,
+      "title": "QA scenarios: fix template backend type and assertion accuracy",
+      "status": "CLOSED"
+    },
+    {
+      "id": 207,
+      "title": "RFC: Agent 级 Token 预算熔断机制与可观测性网关",
+      "status": "OPEN"
+    },
+    {
+      "id": 206,
+      "title": "RFC: Memory Promotion 清洗层 — LLM-as-Judge 知识验证管道",
+      "status": "OPEN"
+    },
+    {
+      "id": 205,
+      "title": "RFC: Agent 实例无状态化与分布式 State Server 架构",
+      "status": "OPEN"
+    },
+    {
+      "id": 204,
+      "title": "actant-hub core agent kernel: steward / maintainer / curator + auxiliary + spark",
+      "status": "OPEN"
+    },
+    {
+      "id": 203,
+      "title": "[Refactor] Simplify HookEventBus.emit method signature",
+      "status": "OPEN"
+    },
+    {
+      "id": 202,
+      "title": "[Feature] Validate cron expression in CronInput constructor",
+      "status": "OPEN"
+    },
+    {
+      "id": 201,
+      "title": "[Feature] Implement HookDeclaration timeoutMs",
+      "status": "OPEN"
+    },
+    {
+      "id": 200,
+      "title": "[Security] Shell command injection risk in action-runner",
+      "status": "OPEN"
+    },
+    {
+      "id": 199,
+      "title": "[Test] Add unit tests for ActionRunner",
+      "status": "OPEN"
+    },
+    {
+      "id": 198,
+      "title": "[Test] Add unit tests for HookRegistry",
+      "status": "OPEN"
+    },
+    {
+      "id": 197,
+      "title": "[Code Review] PR #179 Hooks System - Test Coverage and Improvements",
+      "status": "CLOSED"
+    },
+    {
+      "id": 195,
+      "title": "Bug: Zed AgentServer 妯″紡涓?Agent 鏃犳硶鎰熺煡 Zed 宸ヤ綔鐩綍鍐呭",
+      "status": "OPEN"
+    },
+    {
+      "id": 194,
+      "title": "RFC: Instance Interaction Archetype (tool / employee / service)",
+      "status": "CLOSED"
+    },
+    {
+      "id": 193,
+      "title": "Service Instance 多 Session 与并发模型设计",
+      "status": "CLOSED"
+    },
+    {
+      "id": 192,
+      "title": "Actant Layer + Memory Curator Agent (替代 #12)",
+      "status": "OPEN"
+    },
+    {
+      "id": 191,
+      "title": "GPU Embedding Sidecar — CUDA 加速 (可选)",
+      "status": "OPEN"
+    },
+    {
+      "id": 190,
+      "title": "Template 记忆共享 — 导出/导入/隐私声明",
+      "status": "OPEN"
+    },
+    {
+      "id": 189,
+      "title": "Template Layer + 自审查 Promote 机制 (替代 #11)",
+      "status": "OPEN"
+    },
+    {
+      "id": 188,
+      "title": "@actant/memory MemoryPlugin — Instance Layer 实现 (替代 #10)",
+      "status": "OPEN"
+    },
+    {
+      "id": 187,
+      "title": "@agent-memory/embedding — 多后端 Embedding 客户端",
+      "status": "OPEN"
+    },
+    {
+      "id": 186,
+      "title": "@agent-memory/store-lancedb — LanceDB 嵌入式向量存储实现",
+      "status": "OPEN"
+    },
+    {
+      "id": 185,
+      "title": "@agent-memory/core — 独立记忆核心包 (零 Actant 依赖)",
+      "status": "OPEN"
+    },
+    {
+      "id": 184,
+      "title": "Plugin AppContext + AgentManager 集成 + CLI 命令",
+      "status": "OPEN"
+    },
+    {
+      "id": 183,
+      "title": "HeartbeatPlugin — 首个内置插件，验证 Plugin 架构",
+      "status": "OPEN"
+    },
+    {
+      "id": 182,
+      "title": "补全 Hook 类型定义 — HookEventName / HookDeclaration / HookAction",
+      "status": "CLOSED"
+    },
+    {
+      "id": 181,
+      "title": "Integration: HookRegistry not wired up in Daemon startup flow",
+      "status": "CLOSED"
+    },
+    {
+      "id": 180,
+      "title": "Bug: WorkflowDefinitionSchema requires content but TypeScript type allows optional",
+      "status": "CLOSED"
+    },
+    {
+      "id": 178,
+      "title": "RFC: Actant 通过 ACP 向雇员 Agent 提供的工具与能力清单",
+      "status": "OPEN"
+    },
+    {
+      "id": 173,
+      "title": "Epic: Plugin 体系 + 统一记忆系统 — Actant 自治 Agent 平台核心能力",
+      "status": "OPEN"
+    },
+    {
+      "id": 166,
+      "title": "fix: install.ps1 瀹夎鑴氭湰瀛樺湪澶氶」缂洪櫡闇€淇",
+      "status": "CLOSED"
+    },
+    {
+      "id": 158,
+      "title": "feat(core): Backend-aware buildProviderEnv + DeclarativeBuilder for existing backends (#141/#150)",
+      "status": "OPEN"
+    },
+    {
+      "id": 155,
+      "title": "Bug: Agent instance status stuck on error while actually running - state sync defect",
+      "status": "CLOSED"
+    },
+    {
+      "id": 154,
+      "title": "feat: Instance Interaction Archetype 鈥?鍖哄垎浜や簰绫诲瀷锛岄泧鍛樺瀷鏀寔鑷姩鍚姩",
+      "status": "CLOSED"
+    },
+    {
+      "id": 153,
+      "title": "feat(core): 鍚庣 CLI 渚濊禆鑷姩瀹夎 鈥?resolvePackage / install 鑷姩鎵ц",
+      "status": "OPEN"
+    },
+    {
+      "id": 152,
+      "title": "EmployeeScheduler never created: agent start does not initialize scheduler from template schedule config",
+      "status": "CLOSED"
+    },
+    {
+      "id": 151,
+      "title": "agent adopt: adopted agent not visible via agent status (registry/manager cache desync)",
+      "status": "OPEN"
+    },
+    {
+      "id": 150,
+      "title": "RFC: Backend Materialization Plugin System",
+      "status": "OPEN"
+    },
+    {
+      "id": 149,
+      "title": "Plugin materialization: .cursor/extensions.json not created",
+      "status": "CLOSED"
+    },
+    {
+      "id": 148,
+      "title": "agent create --overwrite silently ignored without --work-dir",
+      "status": "CLOSED"
+    },
+    {
+      "id": 147,
+      "title": "Pi backend ACP bridge fails on Windows when node.exe path contains spaces",
+      "status": "CLOSED"
+    },
+    {
+      "id": 146,
+      "title": "agent destroy --force should be idempotent for nonexistent agents",
+      "status": "CLOSED"
+    },
+    {
+      "id": 145,
+      "title": "feat(source): 兼容社区 Agent Skills 仓库作为 source 类型",
+      "status": "OPEN"
+    },
+    {
+      "id": 144,
+      "title": "Explore Hub format compatibility with Agent Skills open standard (agentskills.io)",
+      "status": "CLOSED"
+    },
+    {
+      "id": 143,
+      "title": "enhancement: ActantHub 文档完善与数据校验功能",
+      "status": "CLOSED"
+    },
+    {
+      "id": 142,
+      "title": "Source sync: domainContext refs not namespaced in hub templates",
+      "status": "CLOSED"
+    },
+    {
+      "id": 141,
+      "title": "RFC: ModelProvider registry - extensible provider system",
+      "status": "OPEN"
+    },
+    {
+      "id": 140,
+      "title": "CLI exit code inconsistency: dispatch and schedule list return 0 on failure",
+      "status": "CLOSED"
+    },
+    {
+      "id": 139,
+      "title": "agent attach --pid should validate PID existence",
+      "status": "CLOSED"
+    },
+    {
+      "id": 138,
+      "title": "chore(deps): 清理已弃用的传递依赖 node-domexception 和 glob",
+      "status": "OPEN"
+    },
+    {
+      "id": 137,
+      "title": "Runtime MCP Manager — Actant 托管 Agent 的 MCP 运行时管理与 CLI 桥接",
+      "status": "OPEN"
+    },
+    {
+      "id": 136,
+      "title": "Agent-to-Agent Email 通信 — 异步消息范式",
+      "status": "OPEN"
+    },
+    {
+      "id": 135,
+      "title": "Workflow 重定义为 Hook Package — 事件驱动自动化",
+      "status": "CLOSED"
+    },
+    {
+      "id": 134,
+      "title": "feat(cli): agent open + interactionModes — 前台 TUI 与模板交互模式声明",
+      "status": "CLOSED"
+    },
+    {
+      "id": 133,
+      "title": "Actant: support reading environment variables as default provider configuration",
+      "status": "OPEN"
+    },
+    {
+      "id": 132,
+      "title": "refactor: deprecate Workflow type and merge into Skill (Strategy A)",
+      "status": "CLOSED"
+    },
+    {
+      "id": 131,
+      "title": "feat: 支持的 Agent 后端类型增强扩展性 — 插件化 Backend Registry",
+      "status": "CLOSED"
+    },
+    {
+      "id": 130,
+      "title": "feat: 鍒涘缓瀹樻柟 DomainContext 缁勪欢涓?AgentTemplate 棰勮浠撳簱",
+      "status": "CLOSED"
+    },
+    {
+      "id": 129,
+      "title": "All @actant/* packages must be published as 0.1.3 to fix IPC path mismatch",
+      "status": "CLOSED"
+    },
+    {
+      "id": 128,
+      "title": "agent start: spawn EINVAL error message should indicate missing backend CLI",
+      "status": "CLOSED"
+    }
+  ]
+}
