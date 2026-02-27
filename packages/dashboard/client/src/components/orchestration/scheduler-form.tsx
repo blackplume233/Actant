@@ -9,6 +9,7 @@ import { useState } from "react";
 export interface HeartbeatConfig {
   enabled: boolean;
   intervalMs: number;
+  /** Custom prompt override. Leave empty to use the built-in `.heartbeat` file convention. */
   prompt: string;
   priority: string;
 }
@@ -124,6 +125,7 @@ export function SchedulerForm({ data, onChange }: SchedulerFormProps) {
                 <textarea
                   value={data.heartbeat.prompt}
                   onChange={(e) => setHeartbeat({ prompt: e.target.value })}
+                  placeholder="留空则使用内置 .heartbeat 文件约定（推荐）"
                   rows={3}
                   className="w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring font-mono"
                 />

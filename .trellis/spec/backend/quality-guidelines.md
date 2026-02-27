@@ -266,6 +266,25 @@ kill -9 -<daemon_pgid>
 
 > 参考：2026-02-26 事故 — 多轮 QA 测试后系统累积 150+ 僵尸 node.exe，总内存 >6GB。
 
+### Common Mistake: Pi 后端 baseUrl 未透传到 pi-ai 模型实例
+
+**症状**: Agent 启动正常，但心跳任务产出空结果（LLM 返回空 content、usage 0/0）。ACP 连接频繁断开重连。`PiCommunicator` fallback 同样返回空值。直接 `curl` 到 API 端点工作正常。
+
+**原因**: `@mariozechner/pi-ai` 的 `getModel()` 内部硬编码了每个模型的 `baseUrl`（如 Anthropic 模型固定为 `https://api.anthropic.com`），`createPiAgent` 的 `baseUrl` 选项不会覆盖模型对象的内部 `baseUrl`。当使用兼容 API（如 Kimi、OpenRouter 等第三方端点）时，请求仍然发往 Anthropic 官方端点，返回空响应。
+
+**修复链路**（两处必须同步修改）：
+
+1. `packages/pi/src/pi-tool-bridge.ts`：`createPiAgent()` 中在 `getModel()` 之后强制 patch `modelInstance.baseUrl`
+2. `packages/pi/src/pi-communicator.ts`：`PiCommunicatorConfig` 添加 `baseUrl` 字段，`configFromBackend()` 从 `ACTANT_BASE_URL` 读取并传递给 `createPiAgent`
+
+**预防**:
+
+- 第三方 LLM 库的 model registry 可能硬编码 baseUrl，引入新库时必须验证 baseUrl 是否可运行时覆盖
+- 两条 Pi 执行路径（ACP bridge / PiCommunicator fallback）必须保持配置一致性
+- 新增 provider 环境变量时同步更新 `config-spec.md §11`
+
+> 参考：2026-02-27 心跳 QA — Agent 17 次心跳全部返回空结果，根因为 pi-ai 硬编码 baseUrl。修复后 13/13 心跳成功调用 LLM 并更新 `.heartbeat` 文件。
+
 ### Don't: `any` Types
 
 ```typescript

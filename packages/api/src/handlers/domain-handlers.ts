@@ -6,6 +6,8 @@ import type {
   WorkflowGetParams,
   PluginGetParams,
   PluginDefinition,
+  PluginRef,
+  PluginRuntimeStatusParams,
   ComponentAddParams,
   ComponentUpdateParams,
   ComponentRemoveParams,
@@ -16,6 +18,7 @@ import type {
   McpServerDefinition,
   WorkflowDefinition,
 } from "@actant/shared";
+import type { HeartbeatPlugin } from "@actant/core";
 import type { BaseComponentManager, NamedComponent } from "@actant/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry, RpcHandler } from "./handler-registry";
@@ -80,6 +83,8 @@ export function registerDomainHandlers(registry: HandlerRegistry): void {
   registry.register("workflow.get", handleWorkflowGet);
   registry.register("plugin.list", handlePluginList);
   registry.register("plugin.get", handlePluginGet);
+  registry.register("plugin.runtimeList", handlePluginRuntimeList);
+  registry.register("plugin.runtimeStatus", handlePluginRuntimeStatus);
 
   const skillCrud = createCrudHandlers<SkillDefinition>((ctx) => ctx.skillManager);
   const promptCrud = createCrudHandlers<PromptDefinition>((ctx) => ctx.promptManager);
@@ -201,4 +206,41 @@ async function handlePluginGet(
     throw new ConfigNotFoundError(`Plugin "${name}" not found`);
   }
   return plugin;
+}
+
+async function handlePluginRuntimeList(
+  _params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<PluginRef[]> {
+  const refs = ctx.pluginHost.list();
+  return refs.map((ref) => enrichPluginRef(ctx, ref));
+}
+
+async function handlePluginRuntimeStatus(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<PluginRef> {
+  const { name } = params as unknown as PluginRuntimeStatusParams;
+  const state = ctx.pluginHost.getState(name);
+  if (state === undefined) {
+    throw new ConfigNotFoundError(`Runtime plugin "${name}" not found`);
+  }
+  const ref = ctx.pluginHost.list().find((r) => r.name === name);
+  if (!ref) {
+    throw new ConfigNotFoundError(`Runtime plugin "${name}" not found`);
+  }
+  return enrichPluginRef(ctx, ref);
+}
+
+/**
+ * Augments a PluginRef with plugin-specific runtime data (e.g. consecutiveFailures
+ * from HeartbeatPlugin). Falls back gracefully when the plugin does not expose
+ * these fields.
+ */
+function enrichPluginRef(ctx: AppContext, ref: PluginRef): PluginRef {
+  const plugin = ctx.pluginHost.getPlugin(ref.name) as Partial<HeartbeatPlugin> | undefined;
+  if (plugin && typeof plugin.consecutiveFailures === "number") {
+    return { ...ref, consecutiveFailures: plugin.consecutiveFailures };
+  }
+  return ref;
 }

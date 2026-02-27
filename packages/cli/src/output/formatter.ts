@@ -1,6 +1,6 @@
 import Table from "cli-table3";
 import chalk from "chalk";
-import type { AgentTemplate, AgentInstanceMeta, SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "@actant/shared";
+import type { AgentTemplate, AgentInstanceMeta, SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition, PluginRef } from "@actant/shared";
 
 export type OutputFormat = "table" | "json" | "quiet";
 
@@ -391,6 +391,64 @@ export function formatPluginDetail(plugin: PluginDefinition, format: OutputForma
     for (const [k, v] of Object.entries(plugin.config)) {
       lines.push(`  ${k}: ${JSON.stringify(v)}`);
     }
+  }
+
+  return lines.join("\n");
+}
+
+// ── Runtime Plugin formatting ─────────────────────────────────
+
+function runtimeStateColor(state: PluginRef["state"]): string {
+  switch (state) {
+    case "running": return chalk.green(state);
+    case "error":   return chalk.red(state);
+    case "stopped": return chalk.dim(state);
+    default:        return chalk.yellow(state);
+  }
+}
+
+export function formatPluginRuntimeList(plugins: PluginRef[], format: OutputFormat): string {
+  if (format === "json") return JSON.stringify(plugins, null, 2);
+  if (format === "quiet") return plugins.map((p) => p.name).join("\n");
+  if (plugins.length === 0) return chalk.dim("No runtime plugins registered.");
+
+  const table = new Table({
+    head: [
+      chalk.cyan("Name"),
+      chalk.cyan("Scope"),
+      chalk.cyan("State"),
+      chalk.cyan("Last Tick"),
+      chalk.cyan("Failures"),
+    ],
+  });
+
+  for (const p of plugins) {
+    table.push([
+      p.name,
+      p.scope,
+      runtimeStateColor(p.state),
+      p.lastTickAt ? new Date(p.lastTickAt).toLocaleTimeString() : chalk.dim("—"),
+      p.consecutiveFailures != null ? String(p.consecutiveFailures) : chalk.dim("—"),
+    ]);
+  }
+
+  return table.toString();
+}
+
+export function formatPluginRuntimeDetail(plugin: PluginRef, format: OutputFormat): string {
+  if (format === "json") return JSON.stringify(plugin, null, 2);
+  if (format === "quiet") return plugin.name;
+
+  const lines = [
+    `${chalk.bold("Plugin:")}             ${plugin.name}`,
+    `${chalk.bold("Scope:")}              ${plugin.scope}`,
+    `${chalk.bold("State:")}              ${runtimeStateColor(plugin.state)}`,
+    `${chalk.bold("Last Tick:")}          ${plugin.lastTickAt ? new Date(plugin.lastTickAt).toLocaleString() : chalk.dim("—")}`,
+    `${chalk.bold("Consec. Failures:")}   ${plugin.consecutiveFailures ?? 0}`,
+  ];
+
+  if (plugin.errorMessage) {
+    lines.push(`${chalk.bold("Error:")}              ${chalk.red(plugin.errorMessage)}`);
   }
 
   return lines.join("\n");

@@ -1,13 +1,31 @@
 import { randomUUID } from "node:crypto";
 import { createLogger } from "@actant/shared";
+import { loadTemplate, renderTemplate } from "../../prompts/template-engine";
 import type { InputSource, TaskCallback } from "./input-source";
 import type { HookEventBus } from "../../hooks/hook-event-bus";
 
 const logger = createLogger("heartbeat-input");
 
+export const HEARTBEAT_FILENAME = ".heartbeat";
+
+let _defaultPromptCache: string | null = null;
+
+function getDefaultHeartbeatPrompt(): string {
+  if (!_defaultPromptCache) {
+    const template = loadTemplate("heartbeat-default.md");
+    _defaultPromptCache = renderTemplate(template, { heartbeatFilename: HEARTBEAT_FILENAME }).trim();
+  }
+  return _defaultPromptCache;
+}
+
 export interface HeartbeatConfig {
   intervalMs: number;
-  prompt: string;
+  /**
+   * Initial content for the `.heartbeat` file. Written once when the scheduler
+   * starts if the file does not already exist. The actual prompt sent to the
+   * agent on each tick is always the built-in instruction to read `.heartbeat`.
+   */
+  prompt?: string;
   priority?: "low" | "normal" | "high" | "critical";
 }
 
@@ -51,7 +69,7 @@ export class HeartbeatInput implements InputSource {
       onTask({
         id: randomUUID(),
         agentName,
-        prompt: this.config.prompt,
+        prompt: getDefaultHeartbeatPrompt(),
         priority: this.config.priority ?? "normal",
         source: `heartbeat:${this.id}`,
         createdAt: new Date().toISOString(),

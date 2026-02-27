@@ -81,6 +81,12 @@ export interface PluginRef {
   lastTickAt?: string;
   /** Error message if state === "error". */
   errorMessage?: string;
+  /**
+   * Number of consecutive unhealthy signals detected by the plugin.
+   * Populated by plugins that perform liveness checks (e.g. HeartbeatPlugin).
+   * 0 means healthy.
+   */
+  consecutiveFailures?: number;
 }
 
 // ─────────────────────────────────────────────────────────────

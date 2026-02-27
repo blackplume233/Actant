@@ -15,6 +15,7 @@ export interface PiCommunicatorConfig {
   provider?: string;
   model?: string;
   apiKey?: string;
+  baseUrl?: string;
   thinkingLevel?: "off" | "minimal" | "low" | "medium" | "high" | "xhigh";
   tools?: string[];
 }
@@ -28,6 +29,7 @@ export function configFromBackend(backendConfig?: Record<string, unknown>): PiCo
     provider: asString(backendConfig?.["provider"]) ?? process.env["ACTANT_PROVIDER"],
     model: asString(backendConfig?.["model"]) ?? process.env["ACTANT_MODEL"],
     apiKey: asString(backendConfig?.["apiKey"]) ?? process.env["ACTANT_API_KEY"],
+    baseUrl: asString(backendConfig?.["baseUrl"]) ?? process.env["ACTANT_BASE_URL"],
     thinkingLevel: asString(backendConfig?.["thinkingLevel"]) as PiCommunicatorConfig["thinkingLevel"] ?? (process.env["ACTANT_THINKING_LEVEL"] as PiCommunicatorConfig["thinkingLevel"]),
     tools: Array.isArray(backendConfig?.["tools"]) ? (backendConfig["tools"] as string[]) : undefined,
   };
@@ -175,6 +177,7 @@ export class PiCommunicator implements AgentCommunicator {
       provider: this.config.provider,
       model: options?.model ?? this.config.model,
       apiKey: this.config.apiKey,
+      baseUrl: this.config.baseUrl,
       thinkingLevel: this.config.thinkingLevel,
       tools: this.config.tools,
       systemPrompt,

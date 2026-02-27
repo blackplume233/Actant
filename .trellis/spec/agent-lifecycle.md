@@ -159,6 +159,35 @@ Schedule 层组件（HeartbeatInput、CronInput）是**纯事件源**，emit 到
 
 EmployeeScheduler 双路输出：既 emit 到 EventBus（供 Workflow Hook 响应），又通过 TaskQueue 串行派发内置 prompt（向后兼容）。
 
+#### Heartbeat `.heartbeat` 文件约定
+
+Employee Agent 的心跳机制通过 **`.heartbeat` 文件约定**实现自适应：
+
+```
+创建时                         每次心跳
+seedHeartbeatFile()            HeartbeatInput → DEFAULT_HEARTBEAT_PROMPT
+  │                              │
+  ▼                              ▼
+.heartbeat (种子内容)   →   Agent 读取 .heartbeat → 执行任务 → 写回 .heartbeat
+                                                              ↑
+                                                     Agent 自主演进关注点
+```
+
+**核心设计**：
+
+| 组件 | 职责 |
+|------|------|
+| `heartbeat-default.md` | 固定系统 prompt 模板，指示 Agent 读取 `.heartbeat` 文件 |
+| `HeartbeatInput` | 始终发送 `DEFAULT_HEARTBEAT_PROMPT`（从模板加载），不使用用户配置的 prompt |
+| `seedHeartbeatFile()` | Agent 创建时，将 template `schedule.heartbeat.prompt` 写入 `.heartbeat` 作为种子值（`wx` 模式，不覆盖已有文件） |
+| Agent（运行时） | 每次心跳读取 `.heartbeat` → 执行检查/推进工作 → 写回最新状态和计划 |
+
+**为什么不在 HeartbeatInput 里拼入 prompt**：将 prompt 内容硬编码到 HeartbeatInput 会导致 Agent 无法自主调整关注点。文件约定让 Agent 成为自己心跳内容的唯一控制者，实现真正的自治。
+
+> **Gotcha**: `.heartbeat` 文件使用 `HEARTBEAT_FILENAME` 常量（`packages/core/src/scheduler/inputs/heartbeat-input.ts`），模板变量 `{{heartbeatFilename}}` 在加载时替换。修改文件名需同步更新常量和模板。
+>
+> 实现参考：`packages/core/src/prompts/heartbeat-default.md`，`packages/core/src/scheduler/inputs/heartbeat-input.ts`，`packages/api/src/handlers/agent-handlers.ts`（`seedHeartbeatFile`）
+
 #### Subsystem 子系统
 
 > 完整设计文档：[subsystem-design.md](../../docs/design/subsystem-design.md)

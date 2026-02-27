@@ -53,7 +53,6 @@ describe("HeartbeatInput", () => {
     const onTask = vi.fn();
     const input = new HeartbeatInput({
       intervalMs: 100,
-      prompt: "check status",
       priority: "high",
     });
     input.start("my-agent", onTask);
@@ -62,7 +61,7 @@ describe("HeartbeatInput", () => {
     const task = onTask.mock.calls[0]?.[0];
     expect(task).toBeDefined();
     expect(task?.agentName).toBe("my-agent");
-    expect(task?.prompt).toBe("check status");
+    expect(task?.prompt).toContain(".heartbeat");
     expect(task?.priority).toBe("high");
     expect(task?.source).toMatch(/^heartbeat:/);
     expect(task?.id).toBeDefined();
@@ -228,7 +227,7 @@ describe("InputRouter", () => {
 
     const task = queue.dequeue("agent-q");
     expect(task).toBeDefined();
-    expect(task?.prompt).toBe("hello");
+    expect(task?.prompt).toContain(".heartbeat");
     expect(task?.agentName).toBe("agent-q");
     vi.useRealTimers();
   });

@@ -1,5 +1,5 @@
 import { join } from "node:path";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import type {
   AgentCreateParams,
   AgentCreateResult,
@@ -30,7 +30,7 @@ import type {
   AgentUpdatePermissionsResult,
 } from "@actant/shared";
 import { AgentNotFoundError } from "@actant/shared";
-import { resolvePermissionsWithMcp, PermissionAuditLogger, EmployeeScheduler, type ScheduleConfigInput } from "@actant/core";
+import { resolvePermissionsWithMcp, PermissionAuditLogger, EmployeeScheduler, HEARTBEAT_FILENAME, type ScheduleConfigInput } from "@actant/core";
 import { updateInstanceMeta, readInstanceMeta } from "@actant/core";
 import { createLogger } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
@@ -271,6 +271,10 @@ function initSchedulerIfNeeded(name: string, ctx: AppContext): void {
     || (template.schedule.hooks && template.schedule.hooks.length > 0);
   if (!hasConfig) return;
 
+  if (template.schedule.heartbeat && meta.workspaceDir) {
+    seedHeartbeatFile(meta.workspaceDir, template.schedule.heartbeat.prompt);
+  }
+
   const promptFn = async (agentName: string, prompt: string) => {
     const result = await ctx.agentManager.runPrompt(agentName, prompt);
     return result.text;
@@ -285,6 +289,19 @@ function initSchedulerIfNeeded(name: string, ctx: AppContext): void {
 
   ctx.schedulers.set(name, scheduler);
   logger.info({ name, sources: scheduler.getSources().length }, "EmployeeScheduler initialized for agent");
+}
+
+/**
+ * Write the initial `.heartbeat` file into the agent workspace if it does not
+ * already exist. When the template provides a `prompt`, it becomes the seed
+ * content; otherwise a sensible default is written.
+ */
+function seedHeartbeatFile(workspaceDir: string, templatePrompt?: string): void {
+  const filePath = join(workspaceDir, HEARTBEAT_FILENAME);
+  const content = templatePrompt || "# Heartbeat Focus\n\n- (no tasks yet — update this file to set your priorities)";
+  writeFile(filePath, content, { flag: "wx" }).catch(() => {
+    // "wx" fails if file exists — that's expected and intentional.
+  });
 }
 
 function teardownScheduler(name: string, ctx: AppContext): void {

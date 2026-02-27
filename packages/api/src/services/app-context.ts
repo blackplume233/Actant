@@ -33,6 +33,8 @@ import {
   CanvasContextProvider,
   CoreContextProvider,
   SystemBudgetManager,
+  PluginHost,
+  HeartbeatPlugin,
   type ActionContext,
   type LauncherMode,
 } from "@actant/core";
@@ -106,9 +108,11 @@ export class AppContext {
   readonly sessionTokenStore: SessionTokenStore;
   readonly budgetManager: SystemBudgetManager;
   readonly canvasStore: CanvasStore;
+  readonly pluginHost: PluginHost;
 
   private initialized = false;
   private startTime = Date.now();
+  private pluginTickInterval?: ReturnType<typeof setInterval>;
 
   constructor(config?: AppConfig) {
     this.homeDir = config?.homeDir ?? process.env.ACTANT_HOME ?? DEFAULT_HOME;
@@ -186,6 +190,8 @@ export class AppContext {
     );
     this.templateWatcher = new TemplateFileWatcher(this.templatesDir, this.templateRegistry);
     this.schedulers = new Map();
+    this.pluginHost = new PluginHost();
+    this.pluginHost.register(new HeartbeatPlugin());
   }
 
   async init(): Promise<void> {
@@ -222,6 +228,12 @@ export class AppContext {
 
     await this.agentManager.initialize();
     this.templateWatcher.start();
+
+    await this.pluginHost.start({ config: {} }, this.eventBus);
+    this.pluginTickInterval = setInterval(() => {
+      void this.pluginHost.tick({ config: {} });
+    }, 30_000);
+
     this.initialized = true;
     this.startTime = Date.now();
     logger.info("AppContext initialized");
@@ -231,6 +243,15 @@ export class AppContext {
 
   get uptime(): number {
     return Math.floor((Date.now() - this.startTime) / 1000);
+  }
+
+  /** Stop the PluginHost and clear the tick interval. Called by Daemon.stop(). */
+  async stopPlugins(): Promise<void> {
+    if (this.pluginTickInterval) {
+      clearInterval(this.pluginTickInterval);
+      this.pluginTickInterval = undefined;
+    }
+    await this.pluginHost.stop({ config: {} });
   }
 
   /**

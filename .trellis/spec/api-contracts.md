@@ -732,31 +732,20 @@ interface SourceValidateResult {
 | `daemon.ping` | `{}` | `{ version, uptime, agents }` | 健康检查 |
 | `daemon.shutdown` | `{}` | `{ success }` | 优雅关闭 |
 
-### 3.11 Plugin 管理（Phase 4 新增） 🚧
+### 3.11 Plugin 运行时管理（Phase 4 新增） ✅ 已实现
 
-> 状态：**待实现** — Step 3 (PluginHost + PluginRegistry)
+> 状态：**已实现** — Step 5 (PluginHost + HeartbeatPlugin)
 
-管理 Actant-level 和 Instance-level 的 Plugin 生命周期状态。
+查询 PluginHost 管理的运行时 Plugin 状态。与 §3.6 的 `plugin.list`/`plugin.get`（CRUD 管理 `PluginDefinition` 文件）不同，`plugin.runtime*` 查询的是 Daemon 进程内存中活跃的 `ActantPlugin` 实例。
 
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
-| `plugin.list` | `{ scope? }` | `PluginStatusDto[]` | — |
-| `plugin.status` | `{ name }` | `PluginStatusDto` | `PLUGIN_NOT_FOUND` |
+| `plugin.runtimeList` | `{}` | `PluginRef[]` | — |
+| `plugin.runtimeStatus` | `{ name }` | `PluginRef` | `CONFIG_NOT_FOUND` |
 
-#### PluginStatusDto
-
-```typescript
-interface PluginStatusDto {
-  name: string;
-  version: string;
-  scope: 'actant' | 'instance';
-  state: 'inactive' | 'initializing' | 'running' | 'error' | 'stopped';
-  instanceName?: string;         // scope=instance 时绑定的 Agent 名
-  lastTickAt?: string;           // ISO timestamp
-  consecutiveFailures: number;
-  config: Record<string, unknown>;
-}
-```
+> **方法命名说明**：使用 `runtime` 前缀区分 CRUD 操作（`plugin.list` 管理定义文件）和运行时查询（`plugin.runtimeList` 查询 PluginHost 内存状态）。返回类型为 `PluginRef`（`@actant/shared/types/plugin.types.ts`），而非最初预定的 `PluginStatusDto`。`enrichPluginRef()` 会为支持的 plugin（如 `HeartbeatPlugin`）附加 `consecutiveFailures` 等运行时字段。
+>
+> 实现参考：`packages/api/src/handlers/domain-handlers.ts`（`handlePluginRuntimeList`、`handlePluginRuntimeStatus`）
 
 ### 3.12 Canvas 管理（Phase 4 Step 3b 新增） ✅ 已实现
 
@@ -1192,6 +1181,8 @@ CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方
 | `plugin add <file>` | `file` | — | `plugin.add` |
 | `plugin remove <name>` | `name` | — | `plugin.remove` |
 | `plugin export <name>` | `name` | `-o, --output <file>` | `plugin.export` |
+| `plugin status` | — | `-f, --format` | `plugin.runtimeList` |
+| `plugin status <name>` | `name` | `-f, --format` | `plugin.runtimeStatus` |
 
 组件定义文件从 `~/.actant/configs/` 目录加载（可通过 `--configs-dir` 覆盖）：
 

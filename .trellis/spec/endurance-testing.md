@@ -203,6 +203,18 @@ packages/
 | 不变量 | (1) 单 Plugin 异常不影响其他 Plugin 的 tick (2) consecutiveFailures 计数准确 (3) 无内存泄漏 (4) stop/dispose 全部幂等 |
 | 统计 | tick 总次数、隔离成功次数、平均 tick 延迟 |
 
+### E-HEART — Heartbeat `.heartbeat` 文件演进
+
+**目标**: 验证 HeartbeatInput 在连续多次心跳后，`.heartbeat` 文件被 Agent 正确读取和更新，内容持续演进。
+
+| 维度 | 设计 |
+|------|------|
+| 操作 | 创建 Employee Agent（10s 心跳），连续运行 ≥10 次心跳，收集 `.heartbeat` 文件快照 |
+| 不变量 | (1) `.heartbeat` 文件由 `seedHeartbeatFile()` 正确创建 (2) 每次心跳的 prompt 为 `DEFAULT_HEARTBEAT_PROMPT`（不含用户 prompt） (3) `.heartbeat` 文件内容在多次心跳后有变化（Agent 实际写回） (4) 种子内容不覆盖已有文件 |
+| 统计 | 心跳总次数、LLM 成功调用次数、`.heartbeat` 文件更新次数、平均心跳耗时 |
+
+> **经验教训（2026-02-27 QA）**：首次 E2E 测试需确保 Pi 后端的 `baseUrl` 正确透传，否则所有心跳会静默返回空结果（任务状态仍为 "completed"）。建议验证首次心跳的 LLM 响应非空后再开始计数。
+
 ### E-SCHED — Scheduler 多输入源压力
 
 **目标**: 验证 EmployeeScheduler 在 Heartbeat + Cron + DelayInput + EmailInput 同时运行时的正确性。

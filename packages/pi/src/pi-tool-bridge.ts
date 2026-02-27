@@ -232,6 +232,9 @@ export function createPiAgent(options: PiAgentOptions): Agent {
   } = options;
 
   const modelInstance = getModel(provider as never, model);
+  if (modelInstance && options.baseUrl) {
+    (modelInstance as unknown as Record<string, unknown>).baseUrl = options.baseUrl;
+  }
 
   const allTools = [
     ...buildTools(workspaceDir, toolNames),

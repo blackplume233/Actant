@@ -249,6 +249,15 @@ export class PluginHost {
     return this.records.get(name)?.state;
   }
 
+  /**
+   * Return the registered plugin instance by name.
+   * Useful for handlers that need to read plugin-specific runtime data
+   * (e.g. HeartbeatPlugin.consecutiveFailures).
+   */
+  getPlugin(name: string): ActantPlugin | undefined {
+    return this.records.get(name)?.plugin;
+  }
+
   // ── Plug 4/5/6 Collection Accessors ─────────────────────────
 
   /** Returns all ContextProviders collected from plug-4 registrations. */

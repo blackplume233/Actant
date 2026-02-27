@@ -1,0 +1,14 @@
+{
+  "name": "heartbeat-qa-test",
+  "version": "1.0.0",
+  "description": "QA: heartbeat .heartbeat file convention test with real LLM",
+  "archetype": "employee",
+  "backend": { "type": "pi" },
+  "domainContext": { "skills": [], "prompts": [], "mcpServers": [] },
+  "schedule": {
+    "heartbeat": {
+      "intervalMs": 10000,
+      "prompt": "- 检查工作目录中有哪些文件\n- 报告当前时间\n- 更新 .heartbeat 文件写入你下一步计划"
+    }
+  }
+}

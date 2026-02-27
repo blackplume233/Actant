@@ -21,9 +21,7 @@
   },
   "schedule": {
     "heartbeat": {
-      "intervalMs": 600000,
-      "prompt": "检查当前任务进度，继续编码或选择新任务",
-      "priority": "normal"
+      "intervalMs": 600000
     },
     "cron": [
       {

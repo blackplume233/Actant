@@ -242,8 +242,12 @@ Provider 存在两个层次：
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | `intervalMs` | `number` | **是** | 间隔毫秒数（≥1000） |
-| `prompt` | `string` | **是** | 每次心跳发送的 prompt |
+| `prompt` | `string` | 否 | `.heartbeat` 文件的初始内容（种子值）。省略时使用内置默认种子 |
 | `priority` | `"low" \| "normal" \| "high" \| "critical"` | 否 | 任务优先级 |
+
+> **`.heartbeat` 文件约定**：HeartbeatInput **始终**发送固定的系统 prompt（来自 `heartbeat-default.md` 模板），指示 Agent 读取工作目录下的 `.heartbeat` 文件了解当前关注点，执行后写回最新状态。`prompt` 字段不再直接作为心跳 prompt，而是在 Agent 创建时写入 `.heartbeat` 文件作为种子内容（通过 `seedHeartbeatFile()`）。这允许 Agent 通过修改 `.heartbeat` 文件自主演进其关注点，无需修改调度器配置。
+>
+> 详见 [agent-lifecycle.md §1.3 Schedule 作为事件源](#heartbeat-文件约定)
 
 #### CronConfig
 
@@ -1156,9 +1160,11 @@ Registry descriptor.defaultBaseUrl
 
 | 后端 | 注入的变量 | 注册位置 |
 |------|-----------|---------|
-| Pi（自有 bridge） | `ACTANT_PROVIDER`、`ACTANT_MODEL`、`ACTANT_API_KEY`、`ACTANT_BASE_URL` | `app-context.ts` |
+| Pi（自有 bridge） | `ACTANT_PROVIDER`、`ACTANT_MODEL`、`ACTANT_API_KEY`、`ACTANT_BASE_URL` + `ANTHROPIC_API_KEY`、`ANTHROPIC_BASE_URL`（兼容 fallback） | `app-context.ts` |
 | Claude Code（第三方） | `ANTHROPIC_API_KEY`、`ANTHROPIC_BASE_URL` | `builtin-backends.ts` |
 | 未注册 `buildProviderEnv` 的后端 | `ACTANT_*`（默认 fallback `buildDefaultProviderEnv`） | `agent-manager.ts` |
+
+> **Pi 后端双层环境变量**：Pi 的 ACP bridge（`acp-bridge.ts`）优先读 `ACTANT_API_KEY`，fallback 到 `ANTHROPIC_API_KEY`。但底层 `pi-ai` 库的模型 registry 可能硬编码 `baseUrl`，`createPiAgent` 的 `baseUrl` 选项必须在 `getModel()` 之后强制 patch 到 model 实例上。详见 [quality-guidelines.md §Common Mistake: Pi 后端 baseUrl 未透传](./backend/quality-guidelines.md)。
 
 > **自动注入**：`actant setup` 配置的 Provider 信息（type、apiKey、baseUrl）持久化到 `~/.actant/config.json`。Daemon 启动时将 `config.json` 中的密钥加载到内存 Registry，启动 ACP 子进程时通过 `getBuildProviderEnv(backendType)`（或 fallback `buildDefaultProviderEnv`）注入环境变量。**密钥安全模型**：API Key 仅存在于 `config.json`（用户目录）和 Daemon 进程内存（Registry），不写入 Agent workspace 的任何文件（template、`.actant.json`），确保 LLM Agent 无法通过文件系统读取密钥。
 

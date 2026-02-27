@@ -110,6 +110,7 @@ export class Daemon {
     }
 
     await this.ctx.agentManager.dispose();
+    await this.ctx.stopPlugins();
     this.ctx.templateWatcher.stop();
     await disposeAllLeases();
     await this.server.close();

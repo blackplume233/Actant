@@ -265,6 +265,10 @@ export {
   type CanvasClearResult,
   type EventsRecentParams,
   type EventsRecentResult,
+  type PluginRuntimeListParams,
+  type PluginRuntimeListResult,
+  type PluginRuntimeStatusParams,
+  type PluginRuntimeStatusResult,
 } from "./rpc.types";
 export type {
   SystemBudgetConfig,

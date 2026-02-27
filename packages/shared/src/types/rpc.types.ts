@@ -4,6 +4,7 @@ import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, Det
 import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "./domain-component.types";
 import type { SourceEntry, SourceConfig, PresetDefinition } from "./source.types";
 import type { ActivityRecord, ActivitySessionSummary, ConversationTurn } from "./activity.types";
+import type { PluginRef } from "./plugin.types";
 
 // ---------------------------------------------------------------------------
 // JSON-RPC 2.0 base types
@@ -440,6 +441,16 @@ export interface PluginGetParams {
 }
 export type PluginGetResult = PluginDefinition;
 
+// plugin.runtime* — runtime state from PluginHost
+
+export type PluginRuntimeListParams = Record<string, never>;
+export type PluginRuntimeListResult = PluginRef[];
+
+export interface PluginRuntimeStatusParams {
+  name: string;
+}
+export type PluginRuntimeStatusResult = PluginRef;
+
 // daemon.*
 
 export type DaemonPingParams = Record<string, never>;
@@ -786,6 +797,8 @@ export interface RpcMethodMap {
   "plugin.remove": { params: ComponentRemoveParams; result: ComponentRemoveResult };
   "plugin.import": { params: ComponentImportParams; result: ComponentImportResult };
   "plugin.export": { params: ComponentExportParams; result: ComponentExportResult };
+  "plugin.runtimeList": { params: PluginRuntimeListParams; result: PluginRuntimeListResult };
+  "plugin.runtimeStatus": { params: PluginRuntimeStatusParams; result: PluginRuntimeStatusResult };
   "source.list": { params: SourceListParams; result: SourceListResult };
   "source.add": { params: SourceAddParams; result: SourceAddResult };
   "source.remove": { params: SourceRemoveParams; result: SourceRemoveResult };

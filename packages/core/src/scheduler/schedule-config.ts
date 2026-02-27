@@ -2,7 +2,8 @@ import { z } from "zod/v4";
 
 export const HeartbeatConfigSchema = z.object({
   intervalMs: z.number().min(1000),
-  prompt: z.string().min(1),
+  /** Initial content for the `.heartbeat` file. Written once on first start if the file does not exist. */
+  prompt: z.string().min(1).optional(),
   priority: z.enum(["low", "normal", "high", "critical"]).optional(),
 });
 

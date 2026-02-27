@@ -113,11 +113,12 @@ export function buildTemplateJson(
   if (hasScheduler) {
     const schedule: Record<string, unknown> = {};
     if (scheduler.heartbeat.enabled) {
-      schedule.heartbeat = {
+      const hb: Record<string, unknown> = {
         intervalMs: scheduler.heartbeat.intervalMs,
-        prompt: scheduler.heartbeat.prompt,
-        priority: scheduler.heartbeat.priority,
       };
+      if (scheduler.heartbeat.prompt) hb.prompt = scheduler.heartbeat.prompt;
+      if (scheduler.heartbeat.priority) hb.priority = scheduler.heartbeat.priority;
+      schedule.heartbeat = hb;
     }
     if (scheduler.crons.length > 0) {
       schedule.cron = scheduler.crons.map((c) => ({
