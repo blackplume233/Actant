@@ -97,6 +97,14 @@ export interface TemplateValidateResult {
   warnings?: Array<{ path: string; message: string }>;
 }
 
+export interface TemplateCreateParams {
+  template: AgentTemplate;
+  /** When true, overwrites an existing template with the same name. Default: false. */
+  overwrite?: boolean;
+}
+
+export type TemplateCreateResult = AgentTemplate;
+
 // agent.*
 
 export type WorkDirConflict = "error" | "overwrite" | "append";
@@ -689,6 +697,7 @@ export interface RpcMethodMap {
   "template.load": { params: TemplateLoadParams; result: TemplateLoadResult };
   "template.unload": { params: TemplateUnloadParams; result: TemplateUnloadResult };
   "template.validate": { params: TemplateValidateParams; result: TemplateValidateResult };
+  "template.create": { params: TemplateCreateParams; result: TemplateCreateResult };
   "agent.create": { params: AgentCreateParams; result: AgentCreateResult };
   "agent.start": { params: AgentStartParams; result: AgentStartResult };
   "agent.stop": { params: AgentStopParams; result: AgentStopResult };

@@ -59,12 +59,10 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
       const socketPath = process.env["ACTANT_SOCKET"];
       const sessionToken = process.env["ACTANT_SESSION_TOKEN"];
       const toolsJson = process.env["ACTANT_TOOLS"];
-      let extraTools: string[] | undefined;
       if (socketPath && sessionToken && toolsJson) {
         try {
           const toolDefs = JSON.parse(toolsJson);
           const internalTools = buildInternalTools(socketPath, sessionToken, toolDefs);
-          extraTools = internalTools.map((t) => t.name);
           agentOpts.extraTools = internalTools;
         } catch (err) {
           console.error("[pi-acp-bridge] Failed to parse ACTANT_TOOLS:", (err as Error).message);

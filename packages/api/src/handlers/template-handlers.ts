@@ -9,8 +9,10 @@ import type {
   TemplateUnloadResult,
   TemplateValidateParams,
   TemplateValidateResult,
+  TemplateCreateParams,
+  TemplateCreateResult,
 } from "@actant/shared";
-import { createLogger } from "@actant/shared";
+import { createLogger, ConfigValidationError } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 
@@ -22,6 +24,7 @@ export function registerTemplateHandlers(registry: HandlerRegistry): void {
   registry.register("template.load", handleTemplateLoad);
   registry.register("template.unload", handleTemplateUnload);
   registry.register("template.validate", handleTemplateValidate);
+  registry.register("template.create", handleTemplateCreate);
 }
 
 async function handleTemplateList(
@@ -107,4 +110,44 @@ async function handleTemplateValidate(
       errors: validationErrors ?? [{ path: "", message: err instanceof Error ? err.message : String(err) }],
     };
   }
+}
+
+async function handleTemplateCreate(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<TemplateCreateResult> {
+  const { template: raw, overwrite } = params as unknown as TemplateCreateParams;
+
+  const validation = ctx.templateRegistry.validate(raw, "api");
+  if (!validation.valid) {
+    throw new ConfigValidationError(
+      "Template validation failed",
+      validation.errors?.map((e) => ({ path: e.path, message: e.message })) ?? [],
+    );
+  }
+
+  const template = validation.data;
+  if (!template) {
+    throw new ConfigValidationError("Template validation returned no data", []);
+  }
+
+  if (ctx.templateRegistry.has(template.name)) {
+    if (!overwrite) {
+      throw new Error(`Template "${template.name}" already exists`);
+    }
+    ctx.templateRegistry.unregister(template.name);
+  }
+
+  ctx.templateRegistry.register(template);
+  await ctx.templateRegistry.persist(template);
+
+  ctx.eventBus?.emit("template:loaded", { callerType: "user", callerId: "api" }, {
+    "template.name": template.name,
+    "template.version": template.version,
+    "template.backendType": template.backend?.type,
+    "template.archetype": template.archetype,
+  });
+  logger.info({ name: template.name }, "Template created via API");
+
+  return template;
 }

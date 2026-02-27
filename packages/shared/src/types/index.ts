@@ -137,6 +137,8 @@ export {
   type TemplateUnloadResult,
   type TemplateValidateParams,
   type TemplateValidateResult,
+  type TemplateCreateParams,
+  type TemplateCreateResult,
   type WorkDirConflict,
   type AgentCreateParams,
   type AgentCreateResult,
