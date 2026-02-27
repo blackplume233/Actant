@@ -80,6 +80,11 @@ async function handleCanvasClear(
   ctx: AppContext,
 ): Promise<CanvasClearResult> {
   const { agentName } = params as unknown as CanvasClearParams;
+  if (!agentName) {
+    throw Object.assign(new Error("agentName is required"), {
+      code: RPC_ERROR_CODES.INVALID_PARAMS,
+    });
+  }
   ctx.canvasStore.remove(agentName);
   return { ok: true };
 }

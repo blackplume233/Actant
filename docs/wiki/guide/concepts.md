@@ -39,8 +39,8 @@ repo ──→ service ──→ employee
 
 | 类型 | Actant 做什么 | 你怎么用 |
 |------|-------------|---------|
-| **repo** | 仅构建工作目录 | `actant agent open` 打开 IDE，自己操作 |
-| **service** | 管理整个进程生命周期 | 通过 API 发请求，Agent 被动响应 |
+| **repo** | 持续管理工作目录 | `actant agent open` 打开 IDE，或通过 `actant` 命令 ACP 直连 |
+| **service** | 管理整个进程生命周期 | 通过 API 发请求，Agent 被动响应，session 由你控制 |
 | **employee** | 管理进程 + 调度 + 心跳 | 自主巡检、定时任务、持续监控 |
 
 在模板中通过 `archetype` 字段声明：
@@ -53,7 +53,7 @@ repo ──→ service ──→ employee
 }
 ```
 
-- **repo** 适合开发者日常使用 —— Actant 帮你配好工作目录，你在 IDE 里自由操作
+- **repo** 适合开发者日常使用 —— Actant 持续管理工作目录（模板变更自动同步），你在 IDE 里自由操作，也可通过 actant 命令直接 ACP 连接
 - **service** 适合后台服务 —— 像 API 一样被动响应请求，崩溃自动重启
 - **employee** 适合自治 Agent —— 像员工一样主动执行任务，有心跳和调度器
 

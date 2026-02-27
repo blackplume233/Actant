@@ -73,10 +73,16 @@ export class SocketServer {
 
   private handleConnection(socket: Socket): void {
     this.connections.add(socket);
+    const MAX_BUFFER_BYTES = 1024 * 1024; // 1 MB guard against DoS
     let buffer = "";
 
     socket.on("data", (chunk) => {
       buffer += chunk.toString();
+      if (buffer.length > MAX_BUFFER_BYTES) {
+        logger.warn("Client buffer exceeded 1MB, dropping connection");
+        socket.destroy();
+        return;
+      }
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
 

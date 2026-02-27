@@ -847,7 +847,7 @@ interface HookEventDto {
 
 > 状态：**待实现** — 统一事件系统 (event-system-unified-design.md)
 
-Agent 运行时通过 CLI（`actant hook subscribe`）动态注册/取消事件订阅。这是**事件订阅模型 C（Agent 自注册）**的 RPC 入口。
+Agent 运行时通过 `actant internal hook subscribe --token` CLI 动态注册/取消事件订阅（遵循 CLI-first 原则，使用 session token 认证）。这是**事件订阅模型 C（Agent 自注册）**的 RPC 入口。
 
 | 方法 | 参数 | 返回 | 可能错误 |
 |------|------|------|---------|
@@ -857,7 +857,7 @@ Agent 运行时通过 CLI（`actant hook subscribe`）动态注册/取消事件�
 
 #### hook.subscribe
 
-Agent（通过 `Bash("actant hook subscribe ...")`）或用户在运行时动态注册事件监听。
+Agent（通过 `Bash("actant internal hook subscribe --token $T ...")`）或用户在运行时动态注册事件监听。
 
 **参数：**
 
@@ -900,12 +900,12 @@ interface HookSubscriptionDto {
 **CLI 映射：**
 
 ```bash
-actant hook subscribe --agent self --event heartbeat:tick \
+actant internal hook subscribe --token $ACTANT_SESSION_TOKEN --event heartbeat:tick \
   --interval 300000 --prompt "Check for new PRs"
 
-actant hook unsubscribe --agent self --id <subscriptionId>
+actant internal hook unsubscribe --token $ACTANT_SESSION_TOKEN --id <subscriptionId>
 
-actant hook list --agent self --dynamic
+actant internal hook list --token $ACTANT_SESSION_TOKEN --dynamic
 ```
 
 > 设计依据：事件订阅模型 C。通信通道选择 CLI 而非 MCP。详见 [event-system-unified-design.md §7](../../docs/design/event-system-unified-design.md)。
@@ -1234,9 +1234,9 @@ Agent 和用户在运行时管理事件订阅。Agent 通过 shell 工具调用�
 
 | 命令 | 参数 | 选项 | 对应 RPC |
 |------|------|------|---------|
-| `hook subscribe` | — | `--agent <name>`, `--event <name>`（必填）, `--prompt <text>`（必填）, `--interval <ms>`, `--condition <expr>` | `hook.subscribe` |
-| `hook unsubscribe` | — | `--agent <name>`, `--id <subscriptionId>`（必填） | `hook.unsubscribe` |
-| `hook list` | — | `--agent <name>`, `--dynamic`, `-f, --format` | `hook.list` |
+| `internal hook subscribe` | — | `--token <t>`（必填）, `--event <name>`（必填）, `--prompt <text>`（必填）, `--interval <ms>`, `--condition <expr>` | `hook.subscribe` |
+| `internal hook unsubscribe` | — | `--token <t>`（必填）, `--id <subscriptionId>`（必填） | `hook.unsubscribe` |
+| `internal hook list` | — | `--token <t>`（必填）, `--dynamic`, `-f, --format` | `hook.list` |
 
 `--agent self` 在 Agent 进程内部调用时自动解析为当前 Agent 实例名。
 
@@ -1861,6 +1861,9 @@ MCP (可选封装层, 非必需)
 | 回复 Email | `actant internal email reply --token $T --id <id> --body <b>` | `email.reply` | service, employee |
 | 自身状态 | `actant internal status self --token $T` | `internal.selfStatus` | service, employee |
 | 调度 Agent | `actant internal agent prompt --token $T --target <name> --message <m>` | `agent.prompt` | service, employee |
+| 动态订阅事件 | `actant internal hook subscribe --token $T --event <e> --prompt <p>` | `hook.subscribe` | service, employee |
+| 取消订阅 | `actant internal hook unsubscribe --token $T --id <id>` | `hook.unsubscribe` | service, employee |
+| 查看订阅 | `actant internal hook list --token $T --dynamic` | `hook.list` | service, employee |
 
 #### 按 Archetype 分层暴露
 

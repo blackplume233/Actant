@@ -99,7 +99,9 @@ export class AcpConnectionManager {
       if (Buffer.byteLength(ctx, "utf-8") > MAX_ENV_VALUE_BYTES) {
         logger.warn({ name, bytes: Buffer.byteLength(ctx, "utf-8") }, "ACTANT_SYSTEM_CONTEXT exceeds size limit, truncating");
         const buf = Buffer.from(ctx, "utf-8");
-        extraEnv["ACTANT_SYSTEM_CONTEXT"] = buf.subarray(0, MAX_ENV_VALUE_BYTES).toString("utf-8");
+        let end = MAX_ENV_VALUE_BYTES;
+        while (end > 0 && ((buf[end] ?? 0) & 0xC0) === 0x80) end--;
+        extraEnv["ACTANT_SYSTEM_CONTEXT"] = buf.subarray(0, end).toString("utf-8");
       } else {
         extraEnv["ACTANT_SYSTEM_CONTEXT"] = ctx;
       }

@@ -142,8 +142,8 @@ export class ClientCallbackRouter implements ClientCallbackHandler {
     if (this.upstream) {
       try {
         await this.upstream.sessionUpdate(params);
-      } catch {
-        // Best-effort: IDE might have disconnected
+      } catch (err) {
+        logger.debug({ error: err }, "Upstream sessionUpdate failed (IDE may have disconnected)");
       }
     }
   }

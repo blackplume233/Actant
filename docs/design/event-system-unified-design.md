@@ -156,8 +156,8 @@ ActionRunner 决策流:
 
 action.type == "agent"?
   ├─ target archetype == "employee"  → TaskQueue → serial dispatch
-  ├─ target archetype == "service"   → new session / pool session → concurrent
-  └─ target archetype == "repo"      → skip (no process, not schedulable)
+  ├─ target archetype == "service"   → caller-controlled session
+  └─ target archetype == "repo"      → acp direct (on demand, workspace always managed)
 ```
 
 > **Service 多 session 问题**: Service Instance 接收指令时是否默认创建新 session？

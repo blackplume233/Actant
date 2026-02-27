@@ -172,6 +172,7 @@ function rpcCall(socketPath: string, method: string, params: Record<string, unkn
     let settled = false;
     const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
 
+    const MAX_BUFFER = 1024 * 1024;
     const socket = connect(socketPath);
     const reqId = Date.now();
     const req = JSON.stringify({ jsonrpc: "2.0", id: reqId, method, params }) + "\n";
@@ -186,6 +187,12 @@ function rpcCall(socketPath: string, method: string, params: Record<string, unkn
 
     socket.on("data", (chunk) => {
       buffer += chunk.toString();
+      if (buffer.length > MAX_BUFFER) {
+        clearTimeout(timer);
+        socket.destroy();
+        settle(() => reject(new Error("RPC response exceeded 1MB buffer limit")));
+        return;
+      }
       const lines = buffer.split("\n");
       buffer = lines.pop() ?? "";
       for (const line of lines) {

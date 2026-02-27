@@ -39,8 +39,8 @@ export class RpcClient {
   }
 
   private send(request: RpcRequest, timeoutMs?: number): Promise<RpcResponse> {
-    const effectiveTimeout = timeoutMs
-      ?? (process.env["ACTANT_RPC_TIMEOUT_MS"] ? Number(process.env["ACTANT_RPC_TIMEOUT_MS"]) : 10_000);
+    const envTimeout = process.env["ACTANT_RPC_TIMEOUT_MS"] ? Number(process.env["ACTANT_RPC_TIMEOUT_MS"]) : NaN;
+    const effectiveTimeout = timeoutMs ?? (Number.isFinite(envTimeout) ? envTimeout : 10_000);
 
     return new Promise((resolve, reject) => {
       let settled = false;
@@ -52,10 +52,16 @@ export class RpcClient {
         socket.write(JSON.stringify(request) + "\n");
       });
 
+      const MAX_BUFFER = 1024 * 1024;
       let buffer = "";
 
       socket.on("data", (chunk) => {
         buffer += chunk.toString();
+        if (buffer.length > MAX_BUFFER) {
+          socket.destroy();
+          settle(reject, new Error("RPC response exceeded 1MB buffer limit"));
+          return;
+        }
         const lines = buffer.split("\n");
         for (const line of lines) {
           const trimmed = line.trim();
