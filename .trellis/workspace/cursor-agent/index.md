@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 26
-- **Last Active**: 2026-02-26
+- **Total Sessions**: 27
+- **Last Active**: 2026-02-27
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1410 | Active |
+| `journal-1.md` | ~1486 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 27 | 2026-02-27 | Archetype Reclassification #228 + v0.2.5 Release | `b08eaf8`, `bf6f684`, `98f3c52`, `5fa3b31` |
 | 26 | 2026-02-26 | Fix deploy-site CI workflow failure | `dc0e36f` |
 | 25 | 2026-02-26 | fix scripts install.sh pipe-safety | pending |
 | 24 | 2026-02-26 | fix scripts install.sh pipe-safety | pending |

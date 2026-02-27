@@ -1406,3 +1406,71 @@ Fixed the `Deploy Site + Wiki` CI workflow that failed because `vitepress` was n
 ### Next Steps
 
 - None - task complete
+
+## Session 27: Archetype Reclassification #228 + v0.2.5 Release
+
+**Date**: 2026-02-27
+**Task**: Agent 三层分类重定义（#228） — 完整实施 + QA + 版本发布
+
+### Summary
+
+Reclassified the Agent archetype system from `tool | employee | service` to `repo | service | employee` ordered by management depth. Implemented the full change across 10+ packages (types, schemas, CLI, dashboard, context-injector, initializer, handlers), added backward-compatible Zod migration for legacy `"tool"` → `"repo"`, introduced hierarchical ToolScope filtering, ran 2 rounds of deep QA, staged v0.2.5 version snapshot, and updated planning docs.
+
+### Main Changes
+
+| Item | Detail |
+|------|--------|
+| Core Refactor | `AgentArchetype` union reordered to `repo \| service \| employee` by management depth |
+| Zod Migration | `z.literal("tool").transform(() => "repo")` in `instance-meta-schema.ts` for backward compat |
+| ToolScope Model | Hierarchical tool access: `ARCHETYPE_LEVEL` + `SCOPE_MIN_LEVEL` in `session-context-injector.ts` |
+| Canvas Access | Changed from employee-only to `service + employee` (repo excluded) |
+| Scheduler Guard | `EmployeeScheduler` restricted to `employee` archetype only |
+| Dashboard UI | Updated `agent-card.tsx` styles and fallback from `"tool"` to `"repo"` |
+| CLI | Updated `create.ts` valid archetypes, `formatter.ts` display |
+| QA Round 1 | Found 4 issues: dashboard stale refs, missing undefined guard, missing migration test, QA script assertion |
+| QA Round 2 | Full regression — 943/943 tests passed, all issues verified fixed |
+| Spec Updates | `config-spec.md`, `agent-lifecycle.md`, `api-contracts.md` updated with ToolScope model |
+| Version Staging | Generated v0.2.5 snapshot (architecture, API surface, config schemas, metrics, changelog, test report, diff) |
+| README/Pages | Updated version badge, test counts, LOC, feature descriptions |
+| Phase 4 Tracking | Marked 8/15 steps completed, added plan-external items, updated Mermaid diagram |
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `b08eaf8` | feat(core): reclassify agent archetypes by management depth (#228) |
+| `bf6f684` | chore: stage v0.2.5 version snapshot |
+| `98f3c52` | docs: update README and landing page for v0.2.5 |
+| `5fa3b31` | docs(planning): update phase4-employee-steps progress — 8/15 completed |
+
+### Testing
+
+- [OK] 943/943 unit tests passed (72 suites)
+- [OK] QA Round 1: identified 4 issues, all fixed inline
+- [OK] QA Round 2: full regression green
+- [OK] Legacy `"tool"` → `"repo"` migration test added and passing
+- [OK] ToolScope filtering verified for all 3 archetype levels
+
+### Files Changed (key files)
+
+- `packages/shared/src/types/template.types.ts` — AgentArchetype union
+- `packages/core/src/state/instance-meta-schema.ts` — Zod schema + migration
+- `packages/core/src/context-injector/session-context-injector.ts` — ToolScope model
+- `packages/core/src/initializer/archetype-defaults.ts` — ARCHETYPE_TABLE
+- `packages/api/src/handlers/canvas-handlers.ts` — canvas access guard
+- `packages/api/src/services/app-context.ts` — tool scope registration
+- `packages/cli/src/commands/agent/create.ts` — CLI validation
+- `packages/dashboard/client/src/components/agents/agent-card.tsx` — UI styles
+- `docs/stage/v0.2.5/` — 11 versioned snapshot files
+- `docs/planning/phase4-employee-steps.md` — progress tracking
+- `.trellis/spec/config-spec.md`, `agent-lifecycle.md`, `api-contracts.md` — spec updates
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- Step 4: Plugin 体系核心 (#14) — Phase 4 关键阻塞点
+- Step 5: HeartbeatPlugin + Plugin 系统集成 (#160, #161)
+- Step 6: 调度器四模式增强 (#122)
