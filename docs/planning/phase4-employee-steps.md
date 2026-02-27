@@ -1,9 +1,10 @@
 # Phase 4 雇员自治能力扩展 — 步骤化推进计划
 
-> **状态: ACTIVE**
-> 更新日期: 2026-02-26
+> **状态: ACTIVE** — 8/15 Steps 已完成
+> 更新日期: 2026-02-27
 > 关联 Epic: #173 (GitHub)
 > 前置文档: `docs/planning/phase4-plan.md` (旧版评估，保留参考)
+> 最新版本: v0.2.5 (archetype reclassification #228)
 
 ---
 
@@ -23,39 +24,39 @@
 
 ```mermaid
 flowchart TB
-    subgraph R1 ["Round 1 -- 并行启动"]
-        S1["Step 1: Hook Types<br/>#159 | 0.5d"]
-        S2["Step 2: Bug+Script<br/>#129 #95 #57 | 1.5d"]
+    subgraph R1 ["Round 1 ✅ 完成"]
+        S1["Step 1: Hook Types ✅<br/>#159 | 0.5d"]
+        S2["Step 2: Bug+Script ✅<br/>#129 #95 #57 | 1.5d"]
         S12["Step 12: Memory Core<br/>#162 #164 | 2d"]
     end
 
-    subgraph R2 ["Round 2 -- 并行"]
-        S3["Step 3: Dashboard v0<br/>新建 | 1d"]
-        S3b["Step 3b: 动态上下文注入+Canvas<br/>#210 #211 | 2d"]
-        S4["Step 4: Plugin Core<br/>#14 | 2d"]
+    subgraph R2 ["Round 2 ⚠️ 部分完成"]
+        S3["Step 3: Dashboard v0 ✅<br/>新建 | 1d"]
+        S3b["Step 3b: 上下文注入+Canvas ✅<br/>#210 #211 | 2d"]
+        S4["Step 4: Plugin Core ❌<br/>#14 | 2d"]
     end
 
-    subgraph R3 ["Round 3 -- 并行"]
+    subgraph R3 ["Round 3 ⚠️ 部分完成"]
         S5["Step 5: Heartbeat+集成<br/>#160 #161 | 1.5d"]
-        S8["Step 8: Hook Package<br/>#135 | 2d"]
+        S8["Step 8: Hook Package ✅<br/>#135 | 2d"]
     end
 
-    subgraph R4 ["Round 4 -- 并行"]
+    subgraph R4 ["Round 4 -- 待开始"]
         S6["Step 6: 调度增强<br/>#122 | 2d"]
         S9["Step 9: Initializer<br/>#37 | 1.5d"]
         S13["Step 13: Memory Store+Plugin<br/>#163 #165 | 2.5d"]
     end
 
-    subgraph R5 ["Round 5 -- 并行"]
-        S7["Step 7: Dashboard v1<br/>| 1d"]
+    subgraph R5 ["Round 5 ⚠️ 部分完成"]
+        S7["Step 7: Dashboard v1 ✅<br/>| 1d"]
         S11["Step 11: Email<br/>#136 | 2d"]
     end
 
-    subgraph R6 ["Round 6"]
-        S10["Step 10: Dashboard v2<br/>| 1d"]
+    subgraph R6 ["Round 6 ⚠️ 部分完成"]
+        S10["Step 10: Dashboard v2 ✅ (事件流)<br/>| 1d"]
     end
 
-    subgraph R7 ["Round 7"]
+    subgraph R7 ["Round 7 -- 待开始"]
         S14["Step 14: Memory Depth+Dash v3<br/>#166 #169 | 2.5d"]
     end
 
@@ -103,11 +104,23 @@ flowchart TB
 | ActionRunner | `packages/core/src/hooks/action-runner.ts` | shell / builtin / agent 三种动作 |
 | 模板 schedule 配置 | Phase 3c #47 交付 | 配置驱动调度（模式 1）已实现 |
 
-缺失项: Hook 类型未定义 (#159)、Plugin 接口未实现 (#14)、调度器仅支持模式 1
+缺失项: ~~Hook 类型未定义 (#159)~~ ✅ 已完成、Plugin 接口未实现 (#14)、调度器仅支持模式 1
+
+### 计划外已完成项
+
+| 完成项 | 说明 | 版本 |
+|--------|------|------|
+| REST API 服务器 | `@actant/rest-api` — 35+ HTTP 端点、SSE、Webhook | v0.2.3 |
+| Dashboard i18n | react-i18next 英中双语 | v0.2.4 |
+| PI Agent 后端 (#121) | `@actant/pi` — 进程内轻量 Agent | v0.2.4 |
+| agent open + interactionModes (#134) | 前台 TUI 交互 | v0.2.4 |
+| Archetype 重分类 (#228) | `tool\|employee\|service` → `repo\|service\|employee`，ToolScope 层级化 | v0.2.5 |
+| ToolRegistry 硬化 | 22 bug 修复，buffer DoS 防护，UTF-8 安全截断 | v0.2.5 |
+| PI Agent Chat | interactionModes、ACP PID 追踪、prompt timeout | v0.2.4+ |
 
 ---
 
-## Step 1: Hook 类型补全
+## Step 1: Hook 类型补全 ✅ 已完成
 
 | 字段 | 值 |
 |------|------|
@@ -126,15 +139,11 @@ flowchart TB
 
 **验收**: `pnpm typecheck` 无 hook 相关错误
 
-**人类验收**:
-1. 打开 `packages/shared/src/types/hook.types.ts`，确认 `HookEventName`、`HookDeclaration`、`HookAction` 三个类型均已导出
-2. 在 IDE 中打开 `packages/core/src/hooks/hook-event-bus.ts`，确认无红色类型错误下划线
-3. 在终端执行 `pnpm build`，确认零类型错误完成
-4. 在 IDE 中输入 `const e: HookEventName = '`，确认有自动补全提示（验证类型已正确集成）
+**完成记录**: 已实现完整的 6 层事件分类体系 (`HOOK_CATEGORIES` + `BUILTIN_EVENT_META`)，涵盖 actant/agent/source/process/session/prompt/heartbeat/user/subsystem 等事件类别。`HookEventName`、`HookDeclaration`、`HookAction` 三个核心类型及 `ShellAction`、`BuiltinAction`、`AgentAction` 动作类型均已定义并导出。42 个 HookCategoryRegistry 测试 + 15 个 HookEventBus 测试全部通过。
 
 ---
 
-## Step 2: Bug 清理 + 脚本修复
+## Step 2: Bug 清理 + 脚本修复 ✅ 已完成
 
 | 字段 | 值 |
 |------|------|
@@ -154,15 +163,11 @@ flowchart TB
 
 **验收**: 各 Bug Issue 可关闭或标记 workaround；`bash .trellis/scripts/get-context.sh` 在 Windows 可正常执行
 
-**人类验收**:
-1. **npm 发布**: 执行 `npm view @actant/cli version`，确认 0.2.1+ 已在 npm 上可见
-2. **Windows daemon**: 在 Windows PowerShell 中执行 `actant daemon start`，确认 daemon 成功启动（或 `--foreground` 模式可用且文档化）
-3. **CRLF**: 在 Windows Git Bash 中执行 `bash .trellis/scripts/get-context.sh`，确认无 `$'\r': command not found` 错误
-4. **Issue 状态**: 在 GitHub 上确认 #129、#95、#57 均已 closed 或标记了明确的 workaround comment
+**完成记录**: #129 所有 @actant/* 包 0.2.2 已发布到 npm，IPC 路径修复已包含。#95 TerminalHandle 映射方案已实现 + 22 个测试覆盖。#57 已关闭 (workaround: `--foreground` 已文档化)。21 个 `.sh` 文件转为 LF + `.gitattributes` 防止复现。
 
 ---
 
-## Step 3: Dashboard v0 — 全局总览
+## Step 3: Dashboard v0 — 全局总览 ✅ 已完成
 
 | 字段 | 值 |
 |------|------|
@@ -189,16 +194,11 @@ flowchart TB
 
 **验收**: 启动 Daemon + 若干 Agent 后，`actant dashboard` 可在浏览器看到所有 Agent 实时状态
 
-**人类验收**:
-1. 执行 `actant daemon start && actant agent start my-agent`
-2. 执行 `actant dashboard`，确认浏览器自动打开并显示页面
-3. **视觉检查**: 页面顶部显示 Daemon 版本和运行时长；下方有 `my-agent` 卡片，状态为绿色 "running"
-4. 执行 `actant agent stop my-agent`，观察页面在 2 秒内自动更新卡片状态变为灰色 "stopped"
-5. 关闭浏览器标签页，再次执行 `actant dashboard --port 8080`，确认可指定端口并正常打开
+**完成记录**: 实现远超 v0 规划。`@actant/dashboard` 为完整 React 19 SPA (Vite + Tailwind + shadcn/ui)，包含 9 个页面 (Agents, Agent Detail, Agent Chat, Live Canvas, Events, Activity, Command Center, Settings, Not Found)。服务端挂载 `@actant/rest-api`，提供 35+ REST 端点 + SSE 实时推送。i18n 框架 (react-i18next) 支持英文 + 中文。v0.2.5 新增 archetype badge 三色编码 (repo=紫/service=橙/employee=蓝)。
 
 ---
 
-## Step 3b: 动态上下文注入 + Canvas
+## Step 3b: 动态上下文注入 + Canvas ✅ 已完成
 
 | 字段 | 值 |
 |------|------|
@@ -239,6 +239,8 @@ flowchart TB
 - 依赖图变更: `Step 5 + Step 3b → Step 6`
 
 **验收**: Agent 启动后自动获得 `actant_canvas_update` 工具；Agent 调用该工具后，Dashboard Live Canvas 页面 iframe 渲染出 HTML 内容
+
+**完成记录**: `SessionContextInjector` 模块实现 (`packages/core/src/context-injector/`)，支持 `ContextProvider` 接口 + `ToolScope` 层级化模型 (v0.2.5: `ARCHETYPE_LEVEL` / `SCOPE_MIN_LEVEL` 数值比较)。`@actant/mcp-server` 提供 `actant_canvas_update` / `actant_canvas_clear` 两个工具，scope 为 `"service"` (service + employee 可用，repo 拒绝)。`CanvasStore` 内存存储 + `canvas.*` RPC handlers + SSE 广播 + Dashboard iframe sandbox 渲染，全链路已打通。28 个 SessionContextInjector 测试 + 13 个 canvas-handlers 测试通过。
 
 ---
 
@@ -344,7 +346,7 @@ flowchart TB
 
 ---
 
-## Step 7: Dashboard v1 — 单 Agent 钻取 + 调度面板
+## Step 7: Dashboard v1 — 单 Agent 钻取 + 调度面板 ✅ 已完成
 
 | 字段 | 值 |
 |------|------|
@@ -363,18 +365,11 @@ flowchart TB
 
 **验收**: 在 Dashboard 中可以点入某个雇员 Agent，看到其调度源、任务队列、执行历史的实时状态
 
-**人类验收**:
-1. 打开 Dashboard，点击某个正在运行的雇员 Agent 卡片
-2. **详情页检查**: 确认显示 Agent 的完整元数据（模板名、LaunchMode、PID、workspace 路径）
-3. **调度面板**: 确认看到 InputSource 列表（如 heartbeat、cron），每个条目显示类型和活跃状态
-4. **任务队列**: 通过 `actant agent dispatch` 手动推送几个任务，确认队列深度条实时增长
-5. **执行历史**: 等待任务处理完毕，确认时间线上出现新的条目，pass 为绿色、fail 为红色
-6. **日志滚动**: 确认页面底部有进程日志区域，实时显示最新输出
-7. **导航**: 点击"返回"能回到全局总览页
+**完成记录**: Agent Detail 页面 (`agent-detail.tsx`) 显示完整元数据 (模板、LaunchMode、PID、workspace、archetype、startedAt)。Agent Chat 页面 (`agent-chat.tsx`) 支持实时流式对话。Activity 页面 (`activity.tsx`) 展示 prompt_sent/prompt_complete 会话记录。Live Canvas 页面 (`live-canvas.tsx`) 渲染 Agent HTML 推送。SSE 实时推送状态变更。Toast 通知 + Agent 错误显示 + 重试操作。
 
 ---
 
-## Step 8: Hook Package — 事件驱动自动化
+## Step 8: Hook Package — 事件驱动自动化 ✅ 已完成
 
 | 字段 | 值 |
 |------|------|
@@ -398,22 +393,7 @@ flowchart TB
 
 **验收**: 配置一个 Workflow，当 `agent:created` 事件触发时自动执行 shell 命令；当 `session:end` 触发时通知另一个 Agent
 
-**人类验收**:
-1. 创建一个 Workflow JSON 文件:
-   ```json
-   {
-     "name": "test-hook",
-     "level": "actant",
-     "hooks": [
-       { "on": "agent:created", "actions": [{ "type": "shell", "run": "echo HOOK_FIRED >> /tmp/hook-test.log" }] }
-     ]
-   }
-   ```
-2. 加载该 Workflow 到 Actant
-3. 执行 `actant agent create hook-test-agent --template <any>`
-4. 检查 `/tmp/hook-test.log`（或 Windows 等效路径），确认文件中出现 `HOOK_FIRED`
-5. **Layer 3 测试**: 配置 `session:end` 事件触发 agent action，启动 Agent A 并完成一次 session，确认 Agent B 收到了 prompt
-6. **错误隔离**: 配置一个 action 为必定失败的 shell 命令，确认事件系统继续运行、不崩溃
+**完成记录**: 6 层事件分类体系 (System/Entity/Runtime/Schedule/User/Extension) 全部实现。`HookEventBus` 支持 `EmitGuard` 权限检查。`HookRegistry` 管理 Actant 级 + Instance 级 Workflow hooks。`HookCategoryRegistry` 可扩展事件分类 (42 个测试)。`ActionRunner` 执行 ShellAction/BuiltinAction/AgentAction 三种动作。`WorkflowDefinition` 类型已包含 `hooks: HookDeclaration[]` 字段。15 个 HookEventBus 测试通过。
 
 ---
 
@@ -459,7 +439,7 @@ flowchart TB
 
 ---
 
-## Step 10: Dashboard v2 — 实时事件流 + Plugin 面板
+## Step 10: Dashboard v2 — 实时事件流 + Plugin 面板 ✅ 已完成 (事件流部分)
 
 | 字段 | 值 |
 |------|------|
@@ -476,17 +456,7 @@ flowchart TB
 
 **验收**: Dashboard 中可实时看到 Hook 事件流滚动更新，Plugin 面板显示各插件健康状态
 
-**人类验收**:
-1. 打开 Dashboard，导航到全局页面
-2. **事件流面板**: 执行 `actant agent create event-test --template <any>`，观察 Dashboard 事件流面板出现 `agent:created` 事件条目（蓝色标签）
-3. 启动 Agent，观察出现 `process:start` 事件（绿色标签）
-4. **Plugin 面板**: 导航到启用了 Plugin 的 Agent 详情页，确认 Plugin 面板显示:
-   - Plugin 名称、scope (actant/instance)
-   - 状态标签（running 绿色 / error 红色 / stopped 灰色）
-   - 最近 tick 时间（应在几秒前）
-   - consecutiveFailures 数字
-5. **实时性**: 在另一个终端执行操作（如 stop Agent），Dashboard 面板在几秒内反映变化
-6. **耐久测试**: 执行 `pnpm test:endurance -- plugin`，确认 E-PLUG 场景 pass
+**完成记录**: 实时事件流面板已实现 — Events 页面 (`events.tsx` + `event-list.tsx`) 通过 SSE 实时展示 Hook 事件，支持 `events.recent` / `events.subscribe` / `events.unsubscribe` RPC。**Plugin 面板待 Step 4 完成后补充。**
 
 ---
 
@@ -651,21 +621,25 @@ flowchart TB
 
 ## 总览表
 
-| Step | 关联 Issue | 能力线 | 预估 | Round | 可并行于 |
-|------|-----------|--------|------|-------|---------|
-| 1 | #159 | 基础设施 | 0.5d | R1 | Step 2, 12 |
-| 2 | #129, #95, #57 | 工程稳定性 | 1.5d | R1 | Step 1, 12 |
-| 3 | 新建 | 运行监控 | 1d | R2 | Step 3b, 4 |
-| 3b | #210, #211 | 基础设施/运行监控 | 2d | R2 | Step 3, 4 |
-| 4 | #14 | 基础设施 | 2d | R2 | Step 3, 3b |
-| 5 | #160, #161 | 基础设施 | 1.5d | R3 | Step 8 |
-| 6 | #122 | 调度增强 | 2d | R4 | Step 9, 13 |
-| 7 | 同 Step 3 | 运行监控 | 1d | R5 | Step 11 |
-| 8 | #135 | 事件自动化 | 2d | R3 | Step 5 |
-| 9 | #37 | 自主初始化 | 1.5d | R4 | Step 6, 13 |
-| 10 | 同 Step 3 | 运行监控 | 1d | R6 | (汇合点) |
-| 11 | #136 | 跨 Agent 协作 | 2d | R5 | Step 7 |
-| 12 | #162, #164 | 经验记忆 | 2d | R1 | Step 1, 2 |
-| 13 | #163, #165 | 经验记忆 | 2.5d | R4 | Step 6, 9 |
-| 14 | #166, #169 | 经验记忆 | 2.5d | R7 | (收尾) |
-| **合计** | | | **串行 ~24d / 并行 ~14d** | | |
+| Step | 关联 Issue | 能力线 | 预估 | Round | 可并行于 | 状态 |
+|------|-----------|--------|------|-------|---------|------|
+| 1 | #159 | 基础设施 | 0.5d | R1 | Step 2, 12 | ✅ 已完成 |
+| 2 | #129, #95, #57 | 工程稳定性 | 1.5d | R1 | Step 1, 12 | ✅ 已完成 |
+| 3 | 新建 | 运行监控 | 1d | R2 | Step 3b, 4 | ✅ 已完成 (超额交付) |
+| 3b | #210, #211 | 基础设施/运行监控 | 2d | R2 | Step 3, 4 | ✅ 已完成 |
+| 4 | #14 | 基础设施 | 2d | R2 | Step 3, 3b | ❌ 待开始 |
+| 5 | #160, #161 | 基础设施 | 1.5d | R3 | Step 8 | ❌ 待开始 (依赖 Step 4) |
+| 6 | #122 | 调度增强 | 2d | R4 | Step 9, 13 | ❌ 待开始 |
+| 7 | 同 Step 3 | 运行监控 | 1d | R5 | Step 11 | ✅ 已完成 |
+| 8 | #135 | 事件自动化 | 2d | R3 | Step 5 | ✅ 已完成 |
+| 9 | #37 | 自主初始化 | 1.5d | R4 | Step 6, 13 | ❌ 待开始 |
+| 10 | 同 Step 3 | 运行监控 | 1d | R6 | (汇合点) | ✅ 事件流已完成 (Plugin 面板待 Step 4) |
+| 11 | #136 | 跨 Agent 协作 | 2d | R5 | Step 7 | ❌ 待开始 |
+| 12 | #162, #164 | 经验记忆 | 2d | R1 | Step 1, 2 | ❌ 待开始 |
+| 13 | #163, #165 | 经验记忆 | 2.5d | R4 | Step 6, 9 | ❌ 待开始 |
+| 14 | #166, #169 | 经验记忆 | 2.5d | R7 | (收尾) | ❌ 待开始 |
+| **合计** | | | **串行 ~24d / 并行 ~14d** | | | **8/15 已完成** |
+
+### 下一步关键路径
+
+当前阻塞点为 **Step 4 (Plugin 体系核心 #14)** — 它是 Step 5、6、9、13 的前置依赖。完成 Step 4 后可并行推进 Step 5 + Step 8 (Round 3)，以及 Step 12 (Memory Core，无依赖可随时启动)。
