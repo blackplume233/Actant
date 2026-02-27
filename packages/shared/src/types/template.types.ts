@@ -1,5 +1,6 @@
 import type { DomainContextConfig } from "./domain-context.types";
 import type { VersionedComponent } from "./domain-component.types";
+import type { LaunchMode } from "./agent.types";
 
 // ---------------------------------------------------------------------------
 // Permission types — aligned with Claude Code permissions structure (#51)
@@ -58,6 +59,8 @@ export interface AgentTemplate extends VersionedComponent {
   };
   /** High-level interaction archetype that drives default launchMode, interactionModes, and autoStart. */
   archetype?: AgentArchetype;
+  /** Preferred launch mode. When set, overrides archetype-derived default. */
+  launchMode?: LaunchMode;
   metadata?: Record<string, string>;
 }
 
