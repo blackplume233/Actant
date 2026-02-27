@@ -168,6 +168,7 @@ Actant 的接口架构（三层协议分工）：
 | `template.load` | `{ filePath }` | `AgentTemplate` | `CONFIG_VALIDATION` |
 | `template.unload` | `{ name }` | `{ success }` | — |
 | `template.validate` | `{ filePath }` | `{ valid, template?, errors?, warnings? }` | — |
+| `template.create` | `{ template: AgentTemplate, overwrite?: boolean }` | `AgentTemplate` | `CONFIG_VALIDATION`（400）、`TEMPLATE_EXISTS`（409） |
 
 #### template.validate 返回值（#119 增强）
 
@@ -201,6 +202,24 @@ CLI `template validate <file>` 输出格式：
 | `template:validated` | `template.validate` 执行后（无论成功与否） | `template.name`（仅成功时）, `valid: boolean`, `errorCount: number` |
 
 事件使用 `callerType: "user", callerId: "api"` 作为发送者标识。属于 Entity 层（`template:*` category），支持用户订阅（`userConfigurable: true`）和 Agent 自注册（`agentSubscribable: true`）。
+
+#### template.create（PR #254 新增）
+
+接受 JSON 格式的 `AgentTemplate` 对象，直接注册并持久化，无需读取本地文件。对应 REST `POST /v1/templates`。
+
+```typescript
+interface TemplateCreateParams {
+  template: AgentTemplate;   // 完整模板对象（JSON body）
+  overwrite?: boolean;       // true = 覆盖已有同名模板（对应 ?overwrite=true）
+}
+type TemplateCreateResult = AgentTemplate;
+```
+
+错误行为：
+- 模板 JSON 不合法（Schema 验证失败）→ `ConfigValidationError`（HTTP 400）
+- 同名模板已存在且 `overwrite` 未设置 → `Error("Template already exists")`（HTTP 409）
+
+注册成功后同样发送 `template:loaded` 事件（与 `template.load` 一致）。
 
 ### 3.2 Agent 生命周期
 
@@ -1352,6 +1371,7 @@ Dashboard（`@actant/dashboard`）在内部挂载 `@actant/rest-api` 的 handler
 | | GET | `/v1/agents/:name/tasks` | `agent.tasks` |
 | | GET | `/v1/agents/:name/schedule` | `schedule.list` |
 | **Templates** | GET | `/v1/templates` | `template.list` |
+| | POST | `/v1/templates` | `template.create`（`?overwrite=true` 支持覆盖） |
 | | GET | `/v1/templates/:name` | `template.get` |
 | **Domain** | GET | `/v1/skills`, `prompts`, `mcp-servers`, `workflows`, `plugins` | 各 `*.list` |
 | **Sources** | GET | `/v1/sources` | `source.list` |
@@ -1871,6 +1891,7 @@ MCP (可选封装层, 非必需)
 
 | 工具类别 | CLI 命令 | RPC 方法 | 可用 archetype |
 |---------|---------|---------|---------------|
+| Token 验证 | —（系统内部调用） | `internal.validateToken` | 系统 |
 | Canvas 更新 | `actant internal canvas update --token $T --html <h>` | `internal.canvasUpdate` | service, employee |
 | Canvas 清除 | `actant internal canvas clear --token $T` | `internal.canvasClear` | service, employee |
 | 延迟调度 | `actant internal schedule wait --token $T --delay <ms> --prompt <p>` | `schedule.wait` | employee |
