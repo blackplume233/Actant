@@ -170,6 +170,7 @@ export class AcpConnection {
       stdio: ["pipe", "pipe", "pipe"],
       env,
       shell: isWindows(),
+      windowsHide: true,
     });
 
     if (!this.child.stdout || !this.child.stdin) {

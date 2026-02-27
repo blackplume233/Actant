@@ -234,7 +234,9 @@ export function AgentDetailPage() {
 
       {/* Tab content */}
       {activeTab === "overview" && <OverviewTab agent={agent} />}
-      {activeTab === "sessions" && <SessionsTab agentName={agent.name} />}
+      {activeTab === "sessions" && (
+        <SessionsTab agentName={agent.name} canResume={config.canResumeSession} />
+      )}
       {activeTab === "canvas" && <CanvasTab agentName={agent.name} />}
       {activeTab === "logs" && <LogsTab agentName={agent.name} />}
     </div>
@@ -281,7 +283,7 @@ function OverviewTab({ agent }: { agent: AgentInfo }) {
   );
 }
 
-function SessionsTab({ agentName }: { agentName: string }) {
+function SessionsTab({ agentName, canResume }: { agentName: string; canResume: boolean }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
@@ -295,7 +297,8 @@ function SessionsTab({ agentName }: { agentName: string }) {
     setLoadingSessions(true);
     agentApi.sessions(agentName).then((data) => {
       if (!cancelled) {
-        setSessions(data);
+        const sorted = [...data].sort((a, b) => b.startTs - a.startTs);
+        setSessions(sorted);
         setLoadingSessions(false);
       }
     }).catch(() => {
@@ -319,6 +322,14 @@ function SessionsTab({ agentName }: { agentName: string }) {
     return () => { cancelled = true; };
   }, [agentName, selectedSession]);
 
+  const handleSessionClick = (sessionId: string) => {
+    if (canResume) {
+      navigate(`/agents/${encodeURIComponent(agentName)}/chat?session=${sessionId}`);
+    } else {
+      setSelectedSession(sessionId);
+    }
+  };
+
   if (loadingSessions) {
     return <div className="py-8 text-center text-sm text-muted-foreground">{t("agentDetail.loadingSessions")}</div>;
   }
@@ -328,70 +339,85 @@ function SessionsTab({ agentName }: { agentName: string }) {
       <div className="flex flex-col items-center py-12 text-center">
         <MessageSquare className="mb-3 h-8 w-8 text-muted-foreground/40" />
         <p className="text-sm text-muted-foreground">{t("agentDetail.noSessions")}</p>
-        <Button
-          variant="outline"
-          size="sm"
-          className="mt-4"
-          onClick={() => navigate(`/agents/${encodeURIComponent(agentName)}/chat`)}
-        >
-          <MessageSquare className="h-4 w-4" />
-          {t("agentDetail.startConversation")}
-        </Button>
+        {canResume && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-4"
+            onClick={() => navigate(`/agents/${encodeURIComponent(agentName)}/chat`)}
+          >
+            <MessageSquare className="h-4 w-4" />
+            {t("agentDetail.startConversation")}
+          </Button>
+        )}
       </div>
     );
   }
 
   return (
     <div className="grid gap-4 lg:grid-cols-[280px_1fr]">
+      {/* Session list */}
       <Card>
         <CardContent className="p-2">
+          {!canResume && (
+            <p className="px-3 py-1.5 text-xs text-muted-foreground border-b mb-1">
+              {t("agentDetail.historyReadOnly")}
+            </p>
+          )}
           <ScrollArea className="max-h-[500px]">
             {sessions.map((s) => (
               <button
                 key={s.sessionId}
                 className={`w-full flex items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors ${
-                  selectedSession === s.sessionId
+                  !canResume && selectedSession === s.sessionId
                     ? "bg-accent text-accent-foreground"
                     : "hover:bg-muted"
                 }`}
-                onClick={() => setSelectedSession(s.sessionId)}
+                onClick={() => handleSessionClick(s.sessionId)}
               >
                 <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{s.sessionId.slice(0, 8)}...</div>
+                  <div className="truncate font-medium">{s.sessionId.slice(0, 8)}…</div>
                   <div className="text-xs text-muted-foreground">
-                    {new Date(s.startTs).toLocaleString()} &middot; {s.messageCount} {t("agentDetail.msgs")}
+                    {new Date(s.startTs).toLocaleString()} · {s.messageCount} {t("agentDetail.msgs")}
                     {s.toolCallCount > 0 && ` · ${s.toolCallCount} ${t("agentDetail.tools")}`}
                   </div>
                 </div>
-                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                {canResume ? (
+                  <MessageSquare className="h-3.5 w-3.5 text-primary shrink-0" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                )}
               </button>
             ))}
           </ScrollArea>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardContent className="p-4">
-          {!selectedSession ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">
-              {t("agentDetail.selectSession")}
-            </div>
-          ) : loadingTurns ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">{t("agentDetail.loadingConversation")}</div>
-          ) : turns.length === 0 ? (
-            <div className="py-8 text-center text-sm text-muted-foreground">{t("agentDetail.noConversation")}</div>
-          ) : (
-            <ScrollArea className="max-h-[500px]">
-              <div className="space-y-4">
-                {turns.map((turn, i) => (
-                  <TurnBubble key={i} turn={turn} />
-                ))}
+      {/* Conversation preview (read-only, only for non-resumable archetypes) */}
+      {!canResume && (
+        <Card>
+          <CardContent className="p-4">
+            {!selectedSession ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">
+                {t("agentDetail.selectSession")}
               </div>
-            </ScrollArea>
-          )}
-        </CardContent>
-      </Card>
+            ) : loadingTurns ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">{t("agentDetail.loadingConversation")}</div>
+            ) : turns.length === 0 ? (
+              <div className="py-8 text-center text-sm text-muted-foreground">{t("agentDetail.noConversation")}</div>
+            ) : (
+              <ScrollArea className="max-h-[500px]">
+                <div className="space-y-4">
+                  {turns.map((turn, i) => (
+                    <TurnBubble key={i} turn={turn} />
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

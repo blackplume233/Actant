@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
@@ -11,7 +11,6 @@ import {
   RotateCcw,
   History,
   FolderGit2,
-  Info,
   Zap,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -37,6 +36,8 @@ export function AgentChatPage() {
   const { t } = useTranslation();
   const { name } = useParams<{ name: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const requestedSessionId = searchParams.get("session");
   const { agents } = useRealtimeContext();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -79,6 +80,28 @@ export function AgentChatPage() {
 
     (async () => {
       try {
+        // If a specific session was requested via ?session= param, load its history.
+        // NOTE: requestedSessionId is a Conversation Record ID (activity), NOT a Chat Lease ID.
+        // - employee: store for display only; routing always uses agentApi.prompt()
+        // - service:  do NOT store as sessionId; ensureSession() will create a fresh lease lazily
+        if (requestedSessionId) {
+          const turns = await agentApi.conversation(name, requestedSessionId);
+          if (turns.length > 0) {
+            const restored = turnsToMessages(turns);
+            setMessages(restored);
+            setHistoryCount(restored.length);
+          }
+          if (!config.canCreateSession) {
+            // employee: track for display only
+            setSessionId(requestedSessionId);
+            setSessionState("active");
+          } else {
+            // service: leave sessionId null; new lease will be created on first message
+            setSessionState("history");
+          }
+          return;
+        }
+
         let hasActiveLease = false;
         try {
           const leases = await sessionApi.list(name);
@@ -113,14 +136,14 @@ export function AgentChatPage() {
         setSessionState("new");
       }
     })();
-  }, [name, config.canChat]);
+  }, [name, config.canChat, requestedSessionId]);
 
   async function ensureSession(): Promise<string> {
-    if (sessionId && sessionState === "active") return sessionId;
+    // Employees don't use lease-based routing; agentApi.prompt handles session internally.
+    // sessionId for employees is only an activity session ID (for display), never a lease ID.
+    if (!config.canCreateSession) return "";
 
-    if (!config.canCreateSession) {
-      return sessionId ?? "";
-    }
+    if (sessionId && sessionState === "active") return sessionId;
 
     try {
       const lease = await sessionApi.create(name!, CLIENT_ID);
@@ -213,9 +236,27 @@ export function AgentChatPage() {
       let responseSid: string;
 
       if (sid) {
-        const result = await sessionApi.prompt(sid, text);
+        let result: { text: string };
+        try {
+          result = await sessionApi.prompt(sid, text);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          // Lease expired/cleaned up (e.g. agent was stopped and restarted).
+          // Only attempt recovery if the agent is currently running and can create sessions.
+          if (msg.includes("not found") && config.canCreateSession && isRunning) {
+            setSessionId(null);
+            setSessionState("new");
+            const freshLease = await sessionApi.create(name!, CLIENT_ID);
+            setSessionId(freshLease.sessionId);
+            setSessionState("active");
+            result = await sessionApi.prompt(freshLease.sessionId, text);
+            responseSid = freshLease.sessionId;
+          } else {
+            throw err;
+          }
+        }
         responseText = result.text;
-        responseSid = sid;
+        responseSid ??= sid;
       } else {
         const result = await agentApi.prompt(name, text);
         responseText = result.response;
@@ -335,14 +376,6 @@ export function AgentChatPage() {
           )}
         </div>
       </div>
-
-      {/* Employee managed-sessions banner */}
-      {!config.canCreateSession && config.canChat && (
-        <div className="flex items-center justify-center gap-2 border-b bg-blue-50 dark:bg-blue-950/20 px-4 py-1.5 text-xs text-blue-700 dark:text-blue-400">
-          <Info className="h-3 w-3" />
-          <span>{t("chat.managedSessions")}</span>
-        </div>
-      )}
 
       {/* Service auto-managed banner */}
       {config.autoStartOnChat && !isRunning && !autoStarting && (
