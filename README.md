@@ -2,7 +2,7 @@
 
 一个用于构建、管理和编排 AI Agent 的平台。面向游戏开发等复杂业务场景，让用户能够快速拼装、复用合适的 Agent，零成本地将 AI 嵌入工作流。
 
-> **当前版本**: [v0.2.4](https://github.com/blackplume233/Actant/releases/tag/v0.2.4) — Phase 4 进行中，Dashboard i18n / Live Canvas / Activity
+> **当前版本**: [v0.2.5](https://github.com/blackplume233/Actant/releases/tag/v0.2.5) — Phase 4 进行中，Agent Archetype 重分类 / ToolScope 层级化 / 硬化修复
 
 ---
 
@@ -27,7 +27,7 @@
 | **Web Dashboard** | React SPA 实时监控 Agent、Chat、Live Canvas、事件、活动 | ✅ |
 | **REST API** | 35+ HTTP 端点 + SSE 实时推送 + Webhook 集成 | ✅ |
 | **Dashboard i18n** | react-i18next 多语言框架，内置英文 + 中文 | ✅ |
-| **Live Canvas** | Employee Agent 通过 MCP 工具推送实时 HTML 到 Dashboard | ✅ |
+| **Live Canvas** | Service/Employee Agent 通过 MCP 工具推送实时 HTML 到 Dashboard | ✅ |
 | **安装与自更新** | 一键安装脚本 + self-update 机制 | ✅ |
 | **Hook/Plugin 体系** | 事件驱动 Workflow、系统级 Plugin、Agent 间通信 | 🔧 Phase 4 |
 | **记忆系统** | 实例记忆、合并、上下文分层 | 🔲 Phase 5 |
@@ -168,7 +168,7 @@ shared ← core ← pi
 | 语言 | TypeScript 5.9+（strict） |
 | 包管理 | pnpm 9+（workspace monorepo） |
 | 构建 | tsup |
-| 测试 | Vitest 4（852 tests, 65 suites） |
+| 测试 | Vitest 4（943 tests, 72 suites） |
 | Schema 校验 | Zod |
 | CLI 框架 | Commander.js v14 |
 | 日志 | pino |
@@ -258,7 +258,7 @@ Actant/
 |------|------|
 | `pnpm dev` | 开发模式启动 CLI |
 | `pnpm build` | 构建所有包 |
-| `pnpm test` | 运行全部测试（852 tests） |
+| `pnpm test` | 运行全部测试（943 tests） |
 | `pnpm test:changed` | 仅运行受变更影响的测试 |
 | `pnpm test:watch` | 测试监听模式 |
 | `pnpm lint` | ESLint 代码检查 |
@@ -303,9 +303,9 @@ cd docs/wiki && pnpm install && pnpm dev
 | [开发流程指南](docs/guides/dev-workflow-guide.md) | Plan → Code → Review → PR → Ship 全流程 |
 | [ActantHub 使用指南](docs/guides/actant-hub-usage.md) | 默认组件源的使用 |
 | [创建自定义 Hub](docs/guides/create-custom-hub.md) | 从零创建组件源仓库 |
-| [v0.2.4 架构文档](docs/stage/v0.2.4/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
-| [v0.2.4 API 接口](docs/stage/v0.2.4/api-surface.md) | 85 个 RPC 方法 + 62 个 CLI 命令 |
-| [v0.2.4 变更日志](docs/stage/v0.2.4/changelog.md) | v0.2.3 → v0.2.4 变更记录 |
+| [v0.2.5 架构文档](docs/stage/v0.2.5/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
+| [v0.2.5 API 接口](docs/stage/v0.2.5/api-surface.md) | 85 个 RPC 方法 + 62 个 CLI 命令 |
+| [v0.2.5 变更日志](docs/stage/v0.2.5/changelog.md) | v0.2.4 → v0.2.5 变更记录 |
 | [DomainContext 扩展指南](docs/design/domain-context-extension-guide.md) | 如何添加自定义组件类型 |
 | [ADR-001: 技术栈](docs/decisions/001-tech-stack.md) | TypeScript + pnpm monorepo 选型 |
 | [ADR-002: 目录结构](docs/decisions/002-directory-structure.md) | 项目目录规范 |
