@@ -102,6 +102,37 @@ export function AgentChatPage() {
           return;
         }
 
+        // Employee agents: merge ALL session histories chronologically so the
+        // conversation appears continuous even across Daemon restarts.
+        // Each restart creates a new ACP session ID, but the agent's memory is
+        // preserved via loadSession:true — the frontend should mirror this.
+        if (!config.canCreateSession) {
+          const sessions = await agentApi.sessions(name);
+          const withMessages = sessions
+            .filter((s) => s.messageCount > 0)
+            .sort((a, b) => a.startTs - b.startTs); // oldest → newest
+
+          if (withMessages.length > 0) {
+            // Load all sessions' turns in parallel, then flatten in order
+            const allTurnsNested = await Promise.all(
+              withMessages.map((s) => agentApi.conversation(name, s.sessionId)),
+            );
+            const allTurns = allTurnsNested.flat();
+            if (allTurns.length > 0) {
+              const restored = turnsToMessages(allTurns);
+              setMessages(restored);
+              setHistoryCount(restored.length);
+              // Track the latest session ID for display (not used for routing)
+              setSessionId(withMessages[withMessages.length - 1].sessionId);
+              setSessionState("active");
+              return;
+            }
+          }
+          setSessionState("new");
+          return;
+        }
+
+        // Service agents: check for an existing lease, then load latest session
         let hasActiveLease = false;
         try {
           const leases = await sessionApi.list(name);
