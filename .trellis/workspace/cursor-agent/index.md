@@ -8,7 +8,7 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 27
+- **Total Sessions**: 28
 - **Last Active**: 2026-02-27
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1486 | Active |
+| `journal-1.md` | ~1540 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 28 | 2026-02-27 | Issue #249 — ContextProvider 重构 + CoreContextProvider | `f3308e3` |
 | 27 | 2026-02-27 | Archetype Reclassification #228 + v0.2.5 Release | `b08eaf8`, `bf6f684`, `98f3c52`, `5fa3b31` |
 | 26 | 2026-02-26 | Fix deploy-site CI workflow failure | `dc0e36f` |
 | 25 | 2026-02-26 | fix scripts install.sh pipe-safety | pending |

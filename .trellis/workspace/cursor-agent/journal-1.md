@@ -1474,3 +1474,67 @@ Reclassified the Agent archetype system from `tool | employee | service` to `rep
 - Step 4: Plugin 体系核心 (#14) — Phase 4 关键阻塞点
 - Step 5: HeartbeatPlugin + Plugin 系统集成 (#160, #161)
 - Step 6: 调度器四模式增强 (#122)
+
+---
+
+## Session 28: Issue #249 — ContextProvider 重构 + CoreContextProvider + Spec 文档化
+
+**Date**: 2026-02-27
+**Task**: Issue #249 统一上下文注入模块重构
+**Commit**: `f3308e3`
+
+### Summary
+
+完成 Issue #249 的全部需求：将 `SessionContextInjector` 中的内联上下文逻辑抽取为独立的 `ContextProvider` 模块，外部化硬编码 prompt 为 Markdown 模板。额外新增 `CoreContextProvider` 为所有托管 Agent 提供身份声明和平台能力介绍。
+
+### Changes
+
+| Feature | Description |
+|---------|-------------|
+| `CanvasContextProvider` | 从 `app-context.ts` 提取 Canvas 工具注册 + 上下文，独立为 Provider 类 |
+| `CoreContextProvider` | 新增核心身份 Provider：注入 agent name、archetype、backend、workspace 信息 |
+| Template Engine | 新建 `loadTemplate()` / `renderTemplate()` 工具，支持 `{{variable}}` 替换 |
+| Prompt 外部化 | 3 个 `.md` 模板文件：`core-identity.md`、`canvas-context.md`、`tool-instructions.md` |
+| TSUP 资产复制 | `tsup.config.ts` 添加 `onSuccess` 钩子，构建后复制 `.md` 文件到 `dist/prompts/` |
+| Spec 文档 | 新建 `context-injector.md` 完整规格；更新 `api-contracts.md`、`backend/index.md` |
+| Quality Guidelines | 新增 2 个 pattern：Test Stub Type Assertion、TSUP Asset Copying |
+| Type fix | 修复 3 个测试文件中 `launchMode: "managed"` 的预存类型错误 |
+
+### Commits
+
+| Hash | Message |
+|------|---------|
+| `f3308e3` | refactor(core): extract ContextProviders and template engine (#249) |
+
+### Testing
+
+- [OK] 977/977 unit tests passed (75 suites) — 新增 34 个测试 (vs 上次 943)
+- [OK] QA 回归验证 Round 1: 6/6 步骤全部 PASS
+- [OK] 黑盒验证：dist/ 产物 Provider 行为、模板引擎、3 archetype×3 backend fuzz
+- [OK] 构建验证：11 packages 全部构建成功，prompts/ 复制正确
+- [OK] Type-check：@actant/core 及所有下游包通过
+
+### Files Changed (18 files, +800, -57)
+
+- `packages/core/src/context-injector/canvas-context-provider.ts` — 新建
+- `packages/core/src/context-injector/core-context-provider.ts` — 新建
+- `packages/core/src/prompts/template-engine.ts` — 新建
+- `packages/core/src/prompts/*.md` — 3 个模板文件
+- `packages/core/src/context-injector/session-context-injector.ts` — 重构 buildToolContextBlock
+- `packages/core/src/context-injector/index.ts` — 新增导出
+- `packages/core/tsup.config.ts` — onSuccess 资产复制
+- `packages/api/src/services/app-context.ts` — 替换内联逻辑为 register()
+- `.trellis/spec/backend/context-injector.md` — 新建完整规格
+- `.trellis/spec/backend/index.md` — 刷新 Dynamic Context Injection 章节
+- `.trellis/spec/api-contracts.md` — 更新 §3.12b
+- `.trellis/spec/backend/quality-guidelines.md` — 新增 2 个 pattern
+
+### Status
+
+[OK] **Completed** — Issue #249 已关闭
+
+### Next Steps
+
+- Step 4: Plugin 体系核心 (#14) — Phase 4 关键阻塞点
+- Step 5: HeartbeatPlugin + Plugin 系统集成 (#160, #161)
+- Step 6: 调度器四模式增强 (#122)
