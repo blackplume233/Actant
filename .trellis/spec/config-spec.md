@@ -389,8 +389,8 @@ Archetype 驱动 `launchMode`、`interactionModes`、`autoStart` 的默认值；
 
 | 值 | 管理深度 | 默认 launchMode | 默认 interactionModes | 默认 autoStart | 典型场景 |
 |----|---------|----------------|----------------------|---------------|---------|
-| `"repo"` | L1 — 仅构建 | `direct` | `open, start, chat` | `false` | Actant 仅构建工作目录，用户自行 open / acp direct |
-| `"service"` | L2 — 进程管理 | `acp-service` | `proxy` | `true` | Actant 管理完整进程生命周期，被动响应请求，无调度器 |
+| `"repo"` | L1 — 持续管理 workspace | `direct` | `open, start, chat` | `false` | Actant 持续管理工作目录，用户自行 open 或外部通过 actant 命令 acp direct 连接 |
+| `"service"` | L2 — 进程管理 | `acp-service` | `proxy` | `true` | Actant 管理完整进程生命周期，被动响应请求，session 由调用者控制 |
 | `"employee"` | L3 — 自治调度 | `acp-background` | `start, run, proxy` | `true` | service 超集 + heartbeat + 调度器 + 自主执行使命 |
 
 #### 三层详细定义
@@ -426,9 +426,9 @@ Archetype 驱动 `launchMode`、`interactionModes`、`autoStart` 的默认值；
 
 | 能力 | `repo` | `service` | `employee` |
 |------|--------|-----------|------------|
-| 工作目录构建 | ✅ | ✅ | ✅ |
-| 进程生命周期管理 | ❌ | ✅ | ✅ |
-| ACP 通信 | ❌ | ✅ | ✅ |
+| 工作目录持续管理 | ✅ | ✅ | ✅ |
+| 主动 spawn 进程 | ❌ | ✅ | ✅ |
+| ACP 通信（外部可 direct 连接） | ✅（按需） | ✅（常驻） | ✅（常驻） |
 | 崩溃自动重启 | ❌ | ✅ | ✅ |
 | Session 管理（调用者控制） | ❌ | ✅ | ✅ |
 | 调度器（heartbeat/cron/hooks） | ❌ | ❌ | ✅ |
