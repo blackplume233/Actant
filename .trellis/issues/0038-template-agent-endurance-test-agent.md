@@ -14,7 +14,7 @@ taskRef: null
 githubRef: "blackplume233/Actant#38"
 closedAs: null
 createdAt: "2026-02-20T16:20:26"
-updatedAt: "2026-02-20T16:20:26"
+updatedAt: "2026-02-27T12:28:38"
 closedAt: null
 ---
 
@@ -289,3 +289,9 @@ actant agent start tester-1 --mode acp-service
 
 - `.trellis/spec/endurance-testing.md` - 耐久测试规范
 - `.trellis/spec/config-spec.md` - 配置规范
+
+---
+_Synced from `.trellis/issues` (local ID: 38)_
+
+**Author:** cursor-agent
+**Milestone:** near-term

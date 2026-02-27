@@ -16,7 +16,7 @@ taskRef: null
 githubRef: "blackplume233/Actant#9"
 closedAs: null
 createdAt: "2026-02-20T11:35:51"
-updatedAt: "2026-02-22T14:30:50"
+updatedAt: "2026-02-27T12:28:33"
 closedAt: null
 ---
 
@@ -34,6 +34,12 @@ closedAt: null
 
 - Agent 进程的输出可在 instanceDir/logs/ 下找到
 - agent.status 可选返回最近日志摘要
+
+---
+_Synced from `.trellis/issues` (local ID: 9)_
+
+**Author:** cursor-agent
+**Milestone:** long-term
 
 ---
 _Synced from `.trellis/issues` (local ID: 9)_

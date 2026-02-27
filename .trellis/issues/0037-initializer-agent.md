@@ -14,7 +14,7 @@ taskRef: null
 githubRef: "blackplume233/Actant#37"
 closedAs: null
 createdAt: "2026-02-20T16:18:19"
-updatedAt: "2026-02-20T16:18:19"
+updatedAt: "2026-02-27T12:28:36"
 closedAt: null
 ---
 
@@ -204,3 +204,9 @@ async createInstance(...) {
 - 当前实现：`packages/core/src/initializer/`
 - Trellis Workflow：`.trellis/workflow.md`
 - 配置规范：`.trellis/spec/config-spec.md` §5 InitializerConfig
+
+---
+_Synced from `.trellis/issues` (local ID: 37)_
+
+**Author:** cursor-agent
+**Milestone:** mid-term

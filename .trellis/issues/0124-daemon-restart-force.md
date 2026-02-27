@@ -14,11 +14,16 @@ taskRef: null
 githubRef: "blackplume233/Actant#124"
 closedAs: null
 createdAt: "2026-02-23T12:41:18Z"
-updatedAt: "2026-02-24T15:18:42"
+updatedAt: "2026-02-27T12:28:42"
 closedAt: null
 ---
 
 About adding restart and --force to daemon commands
+
+---
+_Synced from `.trellis/issues` (local ID: 124)_
+
+**Author:** cursor-agent
 
 ---
 _Synced from `.trellis/issues` (local ID: 124)_

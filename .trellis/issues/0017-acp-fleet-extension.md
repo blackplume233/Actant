@@ -19,8 +19,12 @@ taskRef: null
 githubRef: "blackplume233/Actant#17"
 closedAs: null
 createdAt: "2026-02-20T19:00:00"
-updatedAt: "2026-02-20T19:00:00"
+updatedAt: "2026-02-27T12:28:35"
 closedAt: null
+---
+
+**Related Issues**: [[0013]], [[0015]], [[0016]]
+
 ---
 
 **Related Issues**: [[0013-acp-endpoint]], [[0015-acp-proxy]], [[0016-mcp-server]]
@@ -129,3 +133,10 @@ Client 先绑定目标 Agent，之后用标准 session/prompt，标准 ACP Clien
 - [ ] actant connect (stdio shim) 替代 actant proxy
 - [ ] fleet/session.create + session/prompt 路由可用
 - [ ] ACP-Fleet Extension Spec 文档发布
+
+---
+_Synced from `.trellis/issues` (local ID: 17)_
+
+**Author:** cursor-agent
+**Milestone:** long-term
+**Related local issues:** #13, #15, #16
