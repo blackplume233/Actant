@@ -1,3 +1,5 @@
+import { execSync } from "node:child_process";
+
 /**
  * Check whether a process with the given PID is still alive.
  * Uses `kill(pid, 0)` which sends no signal but checks existence.
@@ -41,7 +43,7 @@ export function sendSignal(pid: number, signal: NodeJS.Signals): boolean {
 export function killProcessTree(pid: number): boolean {
   if (process.platform === "win32") {
     try {
-      require("node:child_process").execSync(`taskkill /T /F /PID ${pid}`, { stdio: "ignore" });
+      execSync(`taskkill /T /F /PID ${pid}`, { stdio: "ignore" });
       return true;
     } catch {
       return sendSignal(pid, "SIGKILL");
