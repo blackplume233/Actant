@@ -2,7 +2,7 @@
 
 一个用于构建、管理和编排 AI Agent 的平台。面向游戏开发等复杂业务场景，让用户能够快速拼装、复用合适的 Agent，零成本地将 AI 嵌入工作流。
 
-> **当前版本**: [v0.2.5](https://github.com/blackplume233/Actant/releases/tag/v0.2.5) — Phase 4 进行中，Agent Archetype 重分类 / ToolScope 层级化 / 硬化修复
+> **当前版本**: [v0.2.6](https://github.com/blackplume233/Actant/releases/tag/v0.2.6) — Phase 4 进行中，Plugin 系统 / Heartbeat 文件约定 / 稳定 conversationId / ACP Keepalive
 
 ---
 
@@ -22,14 +22,15 @@
 | **可扩展架构** | ComponentTypeHandler 注册模式，可添加自定义组件类型 | ✅ |
 | **实例注册表** | 集中管理所有 Agent 实例，支持 adopt/reconcile 孤立实例 | ✅ |
 | **雇员调度器** | Heartbeat/Cron/Hook 三种输入源，优先级任务队列 | ✅ |
-| **交互式 CLI** | 68 子命令，覆盖模板、Agent、组件、源、调度全部操作 | ✅ |
+| **交互式 CLI** | 65 子命令，覆盖模板、Agent、组件、源、调度、插件全部操作 | ✅ |
 | **ACP 协议集成** | Direct Bridge + Session Lease 双模式 Agent 通信 | ✅ |
 | **Web Dashboard** | React SPA 实时监控 Agent、Chat、Live Canvas、事件、活动 | ✅ |
 | **REST API** | 35+ HTTP 端点 + SSE 实时推送 + Webhook 集成 | ✅ |
 | **Dashboard i18n** | react-i18next 多语言框架，内置英文 + 中文 | ✅ |
 | **Live Canvas** | Service/Employee Agent 通过 MCP 工具推送实时 HTML 到 Dashboard | ✅ |
 | **安装与自更新** | 一键安装脚本 + self-update 机制 | ✅ |
-| **Hook/Plugin 体系** | 事件驱动 Workflow、系统级 Plugin、Agent 间通信 | 🔧 Phase 4 |
+| **ActantPlugin 系统** | 6-plug 插件接口 + PluginHost 生命周期 + HeartbeatPlugin 内置 | ✅ |
+| **Hook/事件驱动** | 事件驱动 Workflow、Agent 间通信 | 🔧 Phase 4 |
 | **记忆系统** | 实例记忆、合并、上下文分层 | 🔲 Phase 5 |
 | **ACP-Fleet** | 多 Agent 集群编排 | 🔲 Phase 6 |
 
@@ -145,7 +146,7 @@ Actant
 ├── @actant/pi           Pi Agent 后端（pi-agent-core、pi-ai）
 ├── @actant/api          Daemon 服务层、RPC Handlers、AppContext
 ├── @actant/acp          ACP 协议集成（连接、网关、回调路由）
-├── @actant/cli          CLI 前端（68 命令、REPL、流式输出）
+├── @actant/cli          CLI 前端（65 命令、REPL、流式输出）
 ├── @actant/rest-api     RESTful API 服务器（35+ 端点、SSE、Webhook）
 ├── @actant/dashboard    Web Dashboard（React SPA + 服务端）
 └── @actant/mcp-server   MCP 协议服务端（Canvas 工具）
@@ -168,7 +169,7 @@ shared ← core ← pi
 | 语言 | TypeScript 5.9+（strict） |
 | 包管理 | pnpm 9+（workspace monorepo） |
 | 构建 | tsup |
-| 测试 | Vitest 4（943 tests, 72 suites） |
+| 测试 | Vitest 4（1,027 tests, 78 suites） |
 | Schema 校验 | Zod |
 | CLI 框架 | Commander.js v14 |
 | 日志 | pino |
@@ -234,7 +235,7 @@ Actant/
 │   ├── pi/                Pi Agent 后端
 │   ├── api/               Daemon + RPC Handlers + AppContext
 │   ├── acp/               ACP 协议（Connection/Gateway/Callback）
-│   ├── cli/               CLI 命令（17 组 68 子命令）
+│   ├── cli/               CLI 命令（17 组 65 子命令）
 │   ├── rest-api/          RESTful API 服务器（35+ 端点、SSE）
 │   ├── dashboard/         Web Dashboard（React SPA + i18n）
 │   ├── mcp-server/        MCP 服务端（Canvas 工具）
@@ -258,7 +259,7 @@ Actant/
 |------|------|
 | `pnpm dev` | 开发模式启动 CLI |
 | `pnpm build` | 构建所有包 |
-| `pnpm test` | 运行全部测试（943 tests） |
+| `pnpm test` | 运行全部测试（1,027 tests） |
 | `pnpm test:changed` | 仅运行受变更影响的测试 |
 | `pnpm test:watch` | 测试监听模式 |
 | `pnpm lint` | ESLint 代码检查 |
@@ -303,9 +304,9 @@ cd docs/wiki && pnpm install && pnpm dev
 | [开发流程指南](docs/guides/dev-workflow-guide.md) | Plan → Code → Review → PR → Ship 全流程 |
 | [ActantHub 使用指南](docs/guides/actant-hub-usage.md) | 默认组件源的使用 |
 | [创建自定义 Hub](docs/guides/create-custom-hub.md) | 从零创建组件源仓库 |
-| [v0.2.5 架构文档](docs/stage/v0.2.5/architecture.md) | 完整架构（模块、数据流、CLI、配置体系） |
-| [v0.2.5 API 接口](docs/stage/v0.2.5/api-surface.md) | 85 个 RPC 方法 + 62 个 CLI 命令 |
-| [v0.2.5 变更日志](docs/stage/v0.2.5/changelog.md) | v0.2.4 → v0.2.5 变更记录 |
+| [v0.2.6 架构文档](docs/stage/v0.2.6/architecture.md) | 完整架构（模块、数据流、CLI、配置体系、Plugin 系统） |
+| [v0.2.6 API 接口](docs/stage/v0.2.6/api-surface.md) | 92 个 RPC 方法 + 65 个 CLI 命令 |
+| [v0.2.6 变更日志](docs/stage/v0.2.6/changelog.md) | v0.2.5 → v0.2.6 变更记录 |
 | [DomainContext 扩展指南](docs/design/domain-context-extension-guide.md) | 如何添加自定义组件类型 |
 | [ADR-001: 技术栈](docs/decisions/001-tech-stack.md) | TypeScript + pnpm monorepo 选型 |
 | [ADR-002: 目录结构](docs/decisions/002-directory-structure.md) | 项目目录规范 |
