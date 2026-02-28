@@ -22,7 +22,7 @@ taskRef: null
 githubRef: "blackplume233/Actant#117"
 closedAs: null
 createdAt: "2026-02-22T00:00:00"
-updatedAt: "2026-02-27T12:28:41"
+updatedAt: "2026-02-28T04:50:50"
 closedAt: null
 ---
 
@@ -34,7 +34,6 @@ closedAt: null
 **Related Issues**: [[0095-gateway-terminal-forwarding-stub]], [[0116-sdk-flat-terminal-methods]]
 **Related Files**: `packages/api/src/handlers/index.ts`, `packages/shared/src/types/rpc.types.ts`, `packages/cli/src/commands/proxy.ts`
 
----
 
 ## 问题
 
@@ -47,10 +46,18 @@ closedAt: null
 3. Handler 从 `AcpConnectionManager.getGateway(agentName)` 取 Gateway → 创建 socket → `gateway.acceptSocket(socket)` → 返回 `{ socketPath }`
 4. 在 `handlers/index.ts` 导出注册
 
----
+
 _Synced from `.trellis/issues` (local ID: 117)_
 
 **Author:** cursor-agent
 **Milestone:** near-term
 **Related files:** `packages/api/src/handlers/index.ts`, `packages/shared/src/types/rpc.types.ts`, `packages/cli/src/commands/proxy.ts`, `packages/acp/src/connection-manager.ts`, `packages/acp/src/gateway.ts`
 **Related local issues:** #95, #116
+
+---
+
+## Comments
+
+### cursor-agent — 2026-02-28T04:50:50
+
+[Review] 复查发现 #117 描述的缺失项已在代码中落地：packages/api/src/handlers/gateway-handlers.ts 已实现 registerGatewayHandlers 并注册 gateway.lease；packages/api/src/daemon/daemon.ts 已调用该注册函数。建议补一次端到端 lease 模式验证后评估关闭该 Issue。

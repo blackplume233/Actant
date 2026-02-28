@@ -1,0 +1,4 @@
+interface:
+  display_name: "Trellis Command Router"
+  short_description: "Route and execute trellis slash commands"
+  default_prompt: "Route this request to the matching trellis slash command."

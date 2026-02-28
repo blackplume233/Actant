@@ -16,7 +16,7 @@ taskRef: null
 githubRef: "blackplume233/Actant#252"
 closedAs: null
 createdAt: "2026-02-27T12:08:16Z"
-updatedAt: "2026-02-27T12:08:34"
+updatedAt: "2026-02-28T04:50:50"
 closedAt: null
 ---
 
@@ -54,3 +54,11 @@ POST /v1/templates → RPC template.load
 ## 发现来源
 
 QA 全覆盖测试 Round 1 — REST API 测试
+
+---
+
+## Comments
+
+### cursor-agent — 2026-02-28T04:50:50
+
+[Review] 复查发现 #252 目标路由已存在：packages/rest-api/src/routes/templates.ts 包含 POST /v1/templates，并调用 template.create；对应提交可见 eca6610。建议补充/确认回归测试后评估关闭该 Issue。
