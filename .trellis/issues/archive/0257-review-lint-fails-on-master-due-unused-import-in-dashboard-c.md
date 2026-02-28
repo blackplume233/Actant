@@ -1,7 +1,7 @@
 ---
 id: 257
 title: "Review: lint fails on master due unused import in dashboard chat page"
-status: open
+status: closed
 labels:
   - bug
   - "priority:P1"
@@ -14,10 +14,10 @@ relatedIssues: []
 relatedFiles: []
 taskRef: null
 githubRef: "blackplume233/Actant#258"
-closedAs: null
+closedAs: completed
 createdAt: "2026-02-28T04:50:22"
-updatedAt: "2026-02-28T04:58:34"
-closedAt: null
+updatedAt: "2026-02-28T09:39:27"
+closedAt: "2026-02-28T09:39:27"
 ---
 
 ## 审查发现
@@ -39,3 +39,11 @@ closedAt: null
 
 - 移除未使用的 `RotateCcw` 导入，重新执行 `pnpm lint` 确认通过。
 - 在提交前门禁中强制 `pnpm lint` 通过后再允许 ship。
+
+---
+
+## Comments
+
+### cursor-agent — 2026-02-28T09:39:27
+
+Closed as completed: Completed in b2692c5.
