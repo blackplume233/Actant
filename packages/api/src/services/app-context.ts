@@ -111,6 +111,8 @@ export class AppContext {
   readonly pluginHost: PluginHost;
 
   private initialized = false;
+  private workflowHooksRegistered = false;
+  private instanceHooksRegistered = false;
   private startTime = Date.now();
   private pluginTickInterval?: ReturnType<typeof setInterval>;
 
@@ -369,6 +371,7 @@ export class AppContext {
    * Instance-level hooks are registered per-agent at creation time via listenForInstanceHooks.
    */
   private registerWorkflowHooks(): void {
+    if (this.workflowHooksRegistered) return;
     const workflows = this.workflowManager.list();
     let registered = 0;
     for (const wf of workflows) {
@@ -382,6 +385,7 @@ export class AppContext {
     if (registered > 0) {
       logger.info({ count: registered, totalHooks: this.hookRegistry.hookCount }, "Actant-level workflow hooks registered");
     }
+    this.workflowHooksRegistered = true;
   }
 
   /**
@@ -389,6 +393,8 @@ export class AppContext {
    * for the newly created agent.
    */
   private listenForInstanceHooks(): void {
+    if (this.instanceHooksRegistered) return;
+
     this.eventBus.on("agent:created", (payload) => {
       const agentName = payload.agentName;
       if (!agentName) return;
@@ -420,6 +426,7 @@ export class AppContext {
     };
     this.eventBus.on("process:stop", closeLeases);
     this.eventBus.on("process:crash", closeLeases);
+    this.instanceHooksRegistered = true;
   }
 
   private async loadDomainComponents(): Promise<void> {

@@ -1,2 +1,23 @@
-# Force LF for shell scripts (prevents CRLF on Windows checkout)
+# Normalize text files by default
+* text=auto
+
+# POSIX shell scripts must stay LF (required by bash)
 *.sh text eol=lf
+*.bash text eol=lf
+*.zsh text eol=lf
+
+# Windows scripts use CRLF
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Common source and config files should be LF
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf

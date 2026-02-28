@@ -35,7 +35,7 @@ cat .trellis/workflow.md  # Development process, conventions, and quick start gu
 ### Step 2: Get Current Status `[AI]`
 
 ```bash
-./.trellis/scripts/get-context.sh
+bash ./.trellis/scripts/get-context.sh
 ```
 
 ### Step 3: Read Project Guidelines `[AI]`
@@ -68,7 +68,7 @@ Use when:
 - Unclear scope that needs research
 
 ```bash
-./.trellis/scripts/multi-agent/plan.sh \
+bash ./.trellis/scripts/multi-agent/plan.sh \
   --name "<feature-name>" \
   --type "<backend|frontend|fullstack>" \
   --requirement "<user requirement description>"
@@ -84,7 +84,7 @@ Plan Agent will:
 After plan.sh completes, start the worktree agent:
 
 ```bash
-./.trellis/scripts/multi-agent/trellis:start.sh "$TASK_DIR"
+bash ./.trellis/scripts/multi-agent/trellis:start.sh "$TASK_DIR"
 ```
 
 ### Option B: Manual Configuration (For simple/clear features) `[AI]`
@@ -98,25 +98,25 @@ Use when:
 
 ```bash
 # title is task description, --slug for task directory name
-TASK_DIR=$(./.trellis/scripts/task.sh create "<title>" --slug <task-name>)
+TASK_DIR=$(bash ./.trellis/scripts/task.sh create "<title>" --slug <task-name>)
 ```
 
 #### Step 2: Configure Task
 
 ```bash
 # Initialize jsonl context files
-./.trellis/scripts/task.sh init-context "$TASK_DIR" <dev_type>
+bash ./.trellis/scripts/task.sh init-context "$TASK_DIR" <dev_type>
 
 # Set branch and scope
-./.trellis/scripts/task.sh set-branch "$TASK_DIR" feature/<name>
-./.trellis/scripts/task.sh set-scope "$TASK_DIR" <scope>
+bash ./.trellis/scripts/task.sh set-branch "$TASK_DIR" feature/<name>
+bash ./.trellis/scripts/task.sh set-scope "$TASK_DIR" <scope>
 ```
 
 #### Step 3: Add Context (optional: use research agent)
 
 ```bash
-./.trellis/scripts/task.sh add-context "$TASK_DIR" implement "<path>" "<reason>"
-./.trellis/scripts/task.sh add-context "$TASK_DIR" check "<path>" "<reason>"
+bash ./.trellis/scripts/task.sh add-context "$TASK_DIR" implement "<path>" "<reason>"
+bash ./.trellis/scripts/task.sh add-context "$TASK_DIR" check "<path>" "<reason>"
 ```
 
 #### Step 4: Create prd.md
@@ -136,8 +136,8 @@ EOF
 #### Step 5: Validate and Start
 
 ```bash
-./.trellis/scripts/task.sh validate "$TASK_DIR"
-./.trellis/scripts/multi-agent/trellis:start.sh "$TASK_DIR"
+bash ./.trellis/scripts/task.sh validate "$TASK_DIR"
+bash ./.trellis/scripts/multi-agent/trellis:start.sh "$TASK_DIR"
 ```
 
 ---
@@ -166,10 +166,10 @@ The following slash commands are for users (not AI):
 Tell the user they can use these commands to monitor:
 
 ```bash
-./.trellis/scripts/multi-agent/status.sh                    # Overview
-./.trellis/scripts/multi-agent/status.sh --log <name>       # View log
-./.trellis/scripts/multi-agent/status.sh --watch <name>     # Real-time monitoring
-./.trellis/scripts/multi-agent/cleanup.sh <branch>          # Cleanup worktree
+bash ./.trellis/scripts/multi-agent/status.sh                    # Overview
+bash ./.trellis/scripts/multi-agent/status.sh --log <name>       # View log
+bash ./.trellis/scripts/multi-agent/status.sh --watch <name>     # Real-time monitoring
+bash ./.trellis/scripts/multi-agent/cleanup.sh <branch>          # Cleanup worktree
 ```
 
 ---
@@ -178,10 +178,10 @@ Tell the user they can use these commands to monitor:
 
 The dispatch agent in worktree will automatically execute:
 
-1. implement → Implement feature
-2. check → Check code quality
-3. finish → Final verification
-4. create-pr → Create PR
+1. implement 鈫?Implement feature
+2. check 鈫?Check code quality
+3. finish 鈫?Final verification
+4. create-pr 鈫?Create PR
 
 ---
 

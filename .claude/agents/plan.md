@@ -79,7 +79,7 @@ PLAN_REQUIREMENT = <the requirement from environment>
       rm -rf $PLAN_TASK_DIR
    
    2. Run with revised requirement:
-      ./.trellis/scripts/multi-agent/plan.sh --name "<name>" --type "<type>" --requirement "<revised requirement>"
+      bash ./.trellis/scripts/multi-agent/plan.sh --name "<name>" --type "<type>" --requirement "<revised requirement>"
    EOF
    ```
 
@@ -152,7 +152,7 @@ ${PLAN_TASK_DIR}/
 ### Step 1: Initialize Context Files
 
 ```bash
-./.trellis/scripts/task.sh init-context "$PLAN_TASK_DIR" "$PLAN_DEV_TYPE"
+bash ./.trellis/scripts/task.sh init-context "$PLAN_TASK_DIR" "$PLAN_DEV_TYPE"
 ```
 
 This creates base jsonl files with standard specs for the dev type.
@@ -201,13 +201,13 @@ Parse research agent output and add entries to jsonl files:
 
 ```bash
 # For each entry in implement.jsonl section:
-./.trellis/scripts/task.sh add-context "$PLAN_TASK_DIR" implement "<path>" "<reason>"
+bash ./.trellis/scripts/task.sh add-context "$PLAN_TASK_DIR" implement "<path>" "<reason>"
 
 # For each entry in check.jsonl section:
-./.trellis/scripts/task.sh add-context "$PLAN_TASK_DIR" check "<path>" "<reason>"
+bash ./.trellis/scripts/task.sh add-context "$PLAN_TASK_DIR" check "<path>" "<reason>"
 
 # For each entry in debug.jsonl section:
-./.trellis/scripts/task.sh add-context "$PLAN_TASK_DIR" debug "<path>" "<reason>"
+bash ./.trellis/scripts/task.sh add-context "$PLAN_TASK_DIR" debug "<path>" "<reason>"
 ```
 
 ### Step 4: Write prd.md
@@ -249,10 +249,10 @@ EOF
 
 ```bash
 # Set branch name
-./.trellis/scripts/task.sh set-branch "$PLAN_TASK_DIR" "feature/${PLAN_TASK_NAME}"
+bash ./.trellis/scripts/task.sh set-branch "$PLAN_TASK_DIR" "feature/${PLAN_TASK_NAME}"
 
 # Set scope (from research agent suggestion)
-./.trellis/scripts/task.sh set-scope "$PLAN_TASK_DIR" "<scope>"
+bash ./.trellis/scripts/task.sh set-scope "$PLAN_TASK_DIR" "<scope>"
 
 # Update dev_type in task.json
 jq --arg type "$PLAN_DEV_TYPE" '.dev_type = $type' \
@@ -263,7 +263,7 @@ jq --arg type "$PLAN_DEV_TYPE" '.dev_type = $type' \
 ### Step 6: Validate Configuration
 
 ```bash
-./.trellis/scripts/task.sh validate "$PLAN_TASK_DIR"
+bash ./.trellis/scripts/task.sh validate "$PLAN_TASK_DIR"
 ```
 
 If validation fails, fix the invalid paths and re-validate.
@@ -280,9 +280,9 @@ echo "Files created:"
 ls -la "$PLAN_TASK_DIR"
 echo ""
 echo "Context summary:"
-./.trellis/scripts/task.sh list-context "$PLAN_TASK_DIR"
+bash ./.trellis/scripts/task.sh list-context "$PLAN_TASK_DIR"
 echo ""
-echo "Ready for: ./.trellis/scripts/multi-agent/start.sh $PLAN_TASK_DIR"
+echo "Ready for: bash ./.trellis/scripts/multi-agent/start.sh $PLAN_TASK_DIR"
 ```
 
 ---

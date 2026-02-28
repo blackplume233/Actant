@@ -32,7 +32,7 @@ cat .trellis/workflow.md
 ### Step 2: Get Current Context
 
 ```bash
-./.trellis/scripts/get-context.sh
+bash ./.trellis/scripts/get-context.sh
 ```
 
 This shows: developer identity, git status, current task (if any), active tasks.
@@ -135,7 +135,7 @@ Task(
 Based on research results:
 
 ```bash
-TASK_DIR=$(./.trellis/scripts/task.sh create "<title from research>" --slug <suggested-slug>)
+TASK_DIR=$(bash ./.trellis/scripts/task.sh create "<title from research>" --slug <suggested-slug>)
 ```
 
 ### Step 4: Configure Context `[AI]`
@@ -143,7 +143,7 @@ TASK_DIR=$(./.trellis/scripts/task.sh create "<title from research>" --slug <sug
 Initialize default context:
 
 ```bash
-./.trellis/scripts/task.sh init-context "$TASK_DIR" <type>
+bash ./.trellis/scripts/task.sh init-context "$TASK_DIR" <type>
 # type: backend | frontend | fullstack
 ```
 
@@ -151,8 +151,8 @@ Add specs found by Research Agent:
 
 ```bash
 # For each relevant spec and code pattern:
-./.trellis/scripts/task.sh add-context "$TASK_DIR" implement "<path>" "<reason>"
-./.trellis/scripts/task.sh add-context "$TASK_DIR" check "<path>" "<reason>"
+bash ./.trellis/scripts/task.sh add-context "$TASK_DIR" implement "<path>" "<reason>"
+bash ./.trellis/scripts/task.sh add-context "$TASK_DIR" check "<path>" "<reason>"
 ```
 
 ### Step 5: Write Requirements `[AI]`
@@ -180,7 +180,7 @@ Create `prd.md` in the task directory with:
 ### Step 6: Activate Task `[AI]`
 
 ```bash
-./.trellis/scripts/task.sh start "$TASK_DIR"
+bash ./.trellis/scripts/task.sh start "$TASK_DIR"
 ```
 
 This sets `.current-task` so hooks can inject context.

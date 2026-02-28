@@ -163,6 +163,9 @@ export class AcpConnectionManager {
       this.connections.delete(name);
       this.primarySessions.delete(name);
       this.routers.delete(name);
+      this.gateways.delete(name);
+      this.enforcers.delete(name);
+      this.recordingHandlers.delete(name);
       throw err;
     }
   }

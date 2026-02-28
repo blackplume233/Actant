@@ -1036,9 +1036,15 @@ export class AgentManager {
     this.cache.set(instanceName, stopped);
     this.processes.delete(instanceName);
 
-    this.eventBus?.emit("process:crash", { callerType: "system", callerId: "ProcessWatcher" }, instanceName, {
-      pid,
-    });
+    if (action.type === "restart" || exitStatus === "crashed") {
+      this.eventBus?.emit("process:crash", { callerType: "system", callerId: "ProcessWatcher" }, instanceName, {
+        pid,
+      });
+    } else {
+      this.eventBus?.emit("process:stop", { callerType: "system", callerId: "ProcessWatcher" }, instanceName, {
+        pid,
+      });
+    }
 
     switch (action.type) {
       case "restart": {

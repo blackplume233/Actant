@@ -21,6 +21,7 @@ import {
   disposeAllLeases,
 } from "../handlers/index";
 import { writePidFile, removePidFile, readPidFile, isProcessRunning } from "./pid-file";
+import { getApiPackageVersion } from "../services/package-version";
 
 const logger = createLogger("daemon");
 
@@ -82,7 +83,7 @@ export class Daemon {
     this.running = true;
 
     this.ctx.eventBus.emit("actant:start", { callerType: "system", callerId: "Daemon" }, undefined, {
-      version: "0.1.0",
+      version: getApiPackageVersion(),
     });
 
     this.installSignalHandlers();

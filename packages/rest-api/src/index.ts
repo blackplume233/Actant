@@ -8,6 +8,27 @@ export { RpcBridge } from "./rpc-bridge";
 export { Router } from "./router";
 
 const logger = createLogger("rest-api");
+const managedServers = new Set<import("node:http").Server>();
+let signalHandlersInstalled = false;
+
+function installSignalHandlersOnce(): void {
+  if (signalHandlersInstalled) return;
+  signalHandlersInstalled = true;
+
+  const signals: NodeJS.Signals[] = ["SIGINT", "SIGTERM"];
+  for (const sig of signals) {
+    process.on(sig, () => {
+      for (const server of managedServers) {
+        try {
+          server.close();
+        } catch {
+          // best-effort shutdown
+        }
+      }
+      process.exit(0);
+    });
+  }
+}
 
 export interface ApiServerOptions {
   port?: number;
@@ -35,6 +56,8 @@ export async function startApiServer(options: ApiServerOptions): Promise<{
     apiKey: options.apiKey,
   });
   const server = createServer(handler);
+  managedServers.add(server);
+  installSignalHandlersOnce();
 
   return new Promise((resolve) => {
     server.listen(port, host, () => {
@@ -47,18 +70,12 @@ export async function startApiServer(options: ApiServerOptions): Promise<{
         logger.info("Auth: API key required (X-API-Key header)");
       }
 
-      // Graceful shutdown
-      const signals: NodeJS.Signals[] = ["SIGINT", "SIGTERM"];
-      for (const sig of signals) {
-        process.on(sig, () => {
-          server.close();
-          process.exit(0);
-        });
-      }
-
       resolve({
         url,
-        close: () => server.close(),
+        close: () => {
+          managedServers.delete(server);
+          server.close();
+        },
       });
     });
   });

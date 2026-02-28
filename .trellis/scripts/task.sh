@@ -1,4 +1,4 @@
-#!/bin/bash
+nih#!/bin/bash
 # Task Management Script for Multi-Agent Pipeline
 #
 # Usage:

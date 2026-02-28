@@ -104,9 +104,52 @@ Windows directory symlinks (`"dir"`) require Administrator or Developer Mode. Ju
 The `.trellis/scripts/*.sh` files are Bash scripts for the development workflow (not runtime).
 
 **Windows requirements**:
-- **Git Bash** (included with Git for Windows) — recommended
-- **WSL** (Windows Subsystem for Linux) — also works
+- **Git Bash** (included with Git for Windows) - recommended
+- **WSL** (Windows Subsystem for Linux) - also works
 - These scripts are not needed for running Actant itself, only for the Trellis development workflow
+
+### Rule: Always invoke Trellis `.sh` scripts via `bash` on Windows
+
+**Symptom**: Running `./.trellis/scripts/task.sh` directly from PowerShell fails or behaves inconsistently.
+
+**Cause**: PowerShell does not execute Bash scripts natively; shebang and shell features (`source`, heredoc, Bash arrays) are not interpreted as expected.
+
+**Required pattern**:
+
+```powershell
+# Good
+bash ./.trellis/scripts/get-context.sh
+bash ./.trellis/scripts/task.sh list
+
+# Bad
+./.trellis/scripts/get-context.sh
+./.trellis/scripts/task.sh list
+```
+
+**Scope**: Applies to command docs under `.claude/commands/` and `.cursor/commands/` as well as manual terminal usage.
+
+### Rule: Keep docs and command markdown in UTF-8 (no BOM)
+
+**Symptom**: Markdown tables/box-drawing characters appear as garbled text (mojibake), especially after cross-platform edits.
+
+**Cause**: Mixed encodings (UTF-8 with BOM, local code page fallback, or non-UTF8 files) across tools.
+
+**Required policy**:
+- All docs (`*.md`, `*.mdx`, `*.txt`, `*.rst`, `*.adoc`) must be `UTF-8` without BOM.
+- Keep `.sh` files LF and rely on `.gitattributes` for line-ending normalization.
+- Prefer file-based scripting (`node script.mjs`) over large inline `node -e` snippets in PowerShell.
+
+**Repository check command**:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check-doc-encoding.ps1
+```
+
+**Auto-fix command**:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check-doc-encoding.ps1 -Fix
+```
 
 ### Common Mistake: pnpm/node not found in Git Bash
 

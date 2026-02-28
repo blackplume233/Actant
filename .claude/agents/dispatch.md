@@ -82,7 +82,7 @@ Hook will auto-inject:
 - Requirements document (prd.md)
 - Technical design (info.md)
 
-Implement receives complete context and autonomously: read → understand → implement.
+Implement receives complete context and autonomously: read 鈫?understand 鈫?implement.
 
 ### action: "check"
 
@@ -142,7 +142,7 @@ This is different from regular "check" which has full specs for self-fix loop.
 This action creates a Pull Request from the feature branch. Run it via Bash:
 
 ```bash
-./.trellis/scripts/multi-agent/create-pr.sh
+bash ./.trellis/scripts/multi-agent/create-pr.sh
 ```
 
 This will:

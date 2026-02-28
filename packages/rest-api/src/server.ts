@@ -4,6 +4,7 @@ import type { RpcBridge } from "./rpc-bridge";
 import { applyCors, handlePreflight, checkAuth } from "./middleware";
 import { registerAllRoutes } from "./routes/index";
 import { handleSSE } from "./routes/sse";
+import { getRestApiPackageVersion } from "./package-version";
 
 export interface ServerConfig {
   bridge: RpcBridge;
@@ -13,6 +14,7 @@ export interface ServerConfig {
 export function createApiHandler(config: ServerConfig): RequestListener {
   const { bridge, apiKey } = config;
   const router = new Router();
+  const packageVersion = getRestApiPackageVersion();
   registerAllRoutes(router);
 
   return async (req: IncomingMessage, res: ServerResponse) => {
@@ -24,8 +26,15 @@ export function createApiHandler(config: ServerConfig): RequestListener {
 
     if (handlePreflight(req, res)) return;
 
-    // Auth check (skip for SSE — browsers can't set headers on EventSource)
-    if (pathname !== "/v1/sse") {
+    // Auth check (SSE supports query token for EventSource clients)
+    if (pathname === "/v1/sse" || pathname === "/sse") {
+      if (apiKey) {
+        const sseToken = url.searchParams.get("api_key") ?? url.searchParams.get("token");
+        if (sseToken !== apiKey) {
+          return error(res, "Unauthorized SSE request. Provide ?api_key=<key>.", 401);
+        }
+      }
+    } else {
       const auth = checkAuth(req, apiKey);
       if (!auth.ok) {
         return error(res, auth.message ?? "Unauthorized", 401);
@@ -66,7 +75,7 @@ export function createApiHandler(config: ServerConfig): RequestListener {
 
       // OpenAPI spec (minimal self-describing)
       if (pathname === "/v1/openapi") {
-        return json(res, generateOpenApiSummary());
+        return json(res, generateOpenApiSummary(packageVersion));
       }
 
       // Route matching
@@ -109,12 +118,12 @@ export function createApiHandler(config: ServerConfig): RequestListener {
   };
 }
 
-function generateOpenApiSummary(): object {
+function generateOpenApiSummary(version: string): object {
   return {
     openapi: "3.0.3",
     info: {
       title: "Actant REST API",
-      version: "1.0.0",
+      version,
       description: "RESTful API for the Actant AI agent platform. Serves dashboard, n8n, and IM integrations.",
     },
     servers: [{ url: "/v1", description: "API v1" }],
