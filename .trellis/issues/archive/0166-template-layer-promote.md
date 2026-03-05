@@ -1,6 +1,6 @@
 ---
 id: 166
-title: "fix: install.ps1 瀹夎鑴氭湰瀛樺湪澶氶」缂洪櫡闇€淇"
+title: "fix: install.ps1 安装脚本存在多项缺陷需修复"
 status: closed
 labels:
   - bug

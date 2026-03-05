@@ -1,6 +1,6 @@
 ---
 id: 239
-title: "bug(core): spawn 瓒呮椂鍚?orphan 瀛愯繘绋嬫湭瀹屽叏娓呯悊"
+title: "bug(core): spawn 超时后 orphan 子进程未完全清理"
 status: open
 labels:
   - bug
