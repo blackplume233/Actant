@@ -92,6 +92,7 @@ interface ContextProvider {
 |-------------|------|---------|---------|------|
 | `CoreContextProvider` | `"core-identity"` | `getSystemContext` | `core-identity.md` | 身份声明 + 平台能力介绍 |
 | `CanvasContextProvider` | `"canvas"` | `getTools` + `getSystemContext` | `canvas-context.md` | Canvas 工具注册 + 上下文提示 |
+| `VfsContextProvider` | `"vfs"` | `getSystemContext` | (动态生成) | 注入 VFS 挂载点列表和能力摘要，Agent 通过标准 Read/Write 访问虚拟路径 |
 
 ### 2.3 SessionContextInjector
 

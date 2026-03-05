@@ -77,6 +77,17 @@ packages/core/src/
 │   ├── mcp/            # MCP configuration management
 │   ├── plugin/         # Plugin system (memory, scheduler, etc.)
 │   └── index.ts
+├── vfs/                # Virtual File System (#248)
+│   ├── sources/        # Source implementations (workspace, memory, config, canvas, process, vcs)
+│   ├── storage/        # Data persistence (VfsDataStore)
+│   ├── index/          # Path index for lookup acceleration
+│   ├── vfs-registry.ts           # Central mount point registry
+│   ├── vfs-path-resolver.ts      # Longest-prefix path resolution
+│   ├── vfs-lifecycle-manager.ts  # Automatic unmount by lifecycle policy
+│   ├── vfs-permission-manager.ts # Identity-based access control
+│   ├── vfs-context-provider.ts   # Injects VFS mount info into agent context
+│   ├── source-factory-registry.ts # Declarative spec → registration conversion
+│   └── index.ts
 └── index.ts            # Package barrel export
 ```
 
