@@ -22,7 +22,9 @@ export class RpcClient {
     const response = await this.send(request, options?.timeoutMs);
 
     if (response.error) {
-      const err = new RpcCallError(response.error.message, response.error.code, response.error.data);
+      const rawMsg = response.error.message;
+      const message = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg) ?? "Unknown error";
+      const err = new RpcCallError(message, response.error.code, response.error.data);
       throw err;
     }
 

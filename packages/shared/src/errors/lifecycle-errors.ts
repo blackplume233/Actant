@@ -61,6 +61,19 @@ export class InstanceCorruptedError extends ActantError {
   }
 }
 
+export class InvalidAgentNameError extends ActantError {
+  readonly code = "INVALID_AGENT_NAME";
+  readonly category: ErrorCategory = "lifecycle";
+
+  constructor(name: string) {
+    super(
+      `Invalid agent name "${name}". Names must start with alphanumeric, ` +
+      `contain only [a-zA-Z0-9._-], and be 1-128 characters.`,
+      { name },
+    );
+  }
+}
+
 export class WorkspaceInitError extends ActantError {
   readonly code = "WORKSPACE_INIT_ERROR";
   readonly category: ErrorCategory = "lifecycle";

@@ -10,6 +10,7 @@ import {
   AgentNotAttachedError,
   AgentLaunchError,
   createLogger,
+  validateAgentName,
 } from "@actant/shared";
 import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
@@ -111,6 +112,7 @@ export class AgentManager {
   private readonly budgetManager?: SystemBudgetManager;
   private readonly employeeRestartTracker: RestartTracker;
   private readonly agentLocks = new Map<string, Promise<void>>();
+  private _disposing = false;
 
   /**
    * Get the persistent conversation ID for an employee (acp-background) agent.
@@ -258,6 +260,7 @@ export class AgentManager {
     templateName: string,
     overrides?: Partial<InstanceOverrides>,
   ): Promise<AgentInstanceMeta> {
+    validateAgentName(name);
     const meta = await this.initializer.createInstance(name, templateName, overrides);
     this.cache.set(name, meta);
     this.eventBus?.emit("agent:created", { callerType: "system", callerId: "AgentManager" }, name, {
@@ -983,6 +986,7 @@ export class AgentManager {
 
   /** Shut down the process watcher, ACP connections, terminate processes, and release resources. */
   async dispose(): Promise<void> {
+    this._disposing = true;
     this.watcher.dispose();
     this.restartTracker.dispose();
     this.employeeRestartTracker.dispose();
@@ -1002,6 +1006,8 @@ export class AgentManager {
   }
 
   private async handleProcessExit(info: ProcessExitInfo): Promise<void> {
+    if (this._disposing) return;
+
     const { instanceName, pid } = info;
     const meta = this.cache.get(instanceName);
     if (!meta) return;

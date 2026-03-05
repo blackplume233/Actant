@@ -97,6 +97,7 @@ export class ProcessLauncher implements AgentLauncher {
       new Promise<{ error: Error }>((resolve) => {
         setTimeout(() => {
           child.kill();
+          child.unref();
           resolve({ error: new Error(`Spawn timed out after ${SPAWN_TIMEOUT_MS}ms (command=${command})`) });
         }, SPAWN_TIMEOUT_MS);
       }),

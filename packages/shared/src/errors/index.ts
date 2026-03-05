@@ -13,6 +13,7 @@ export {
   AgentAlreadyRunningError,
   AgentAlreadyAttachedError,
   AgentNotAttachedError,
+  InvalidAgentNameError,
   InstanceCorruptedError,
   WorkspaceInitError,
 } from "./lifecycle-errors";

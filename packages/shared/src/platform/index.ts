@@ -5,4 +5,5 @@ export {
   onShutdownSignal,
   isWindows,
   isSingleExecutable,
+  validateAgentName,
 } from "./platform";

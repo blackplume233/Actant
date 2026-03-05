@@ -59,16 +59,24 @@ async function runSingleAction(
   }
 }
 
+/**
+ * Escape a value for safe interpolation into a shell command string.
+ * Strips characters that could allow command injection.
+ */
+function escapeShellValue(s: string): string {
+  return s.replace(/[;&|`$(){}[\]!#~<>*?\\'""\n\r]/g, "");
+}
+
 function interpolate(template: string, payload: HookEventPayload, vars?: Record<string, string>): string {
   let result = template;
   if (payload.agentName) {
-    result = result.replace(/\$\{agent\.name\}/g, payload.agentName);
+    result = result.replace(/\$\{agent\.name\}/g, escapeShellValue(payload.agentName));
   }
-  result = result.replace(/\$\{event\}/g, payload.event);
-  result = result.replace(/\$\{timestamp\}/g, payload.timestamp);
+  result = result.replace(/\$\{event\}/g, escapeShellValue(payload.event));
+  result = result.replace(/\$\{timestamp\}/g, escapeShellValue(payload.timestamp));
   if (vars) {
     for (const [key, value] of Object.entries(vars)) {
-      result = result.replace(new RegExp(`\\$\\{${key}\\}`, "g"), value);
+      result = result.replace(new RegExp(`\\$\\{${key}\\}`, "g"), escapeShellValue(value));
     }
   }
   return result;

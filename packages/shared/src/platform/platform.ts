@@ -1,8 +1,26 @@
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { homedir } from "node:os";
 import { createHash } from "node:crypto";
+import { InvalidAgentNameError } from "../errors/index";
 
 const IS_WINDOWS = process.platform === "win32";
+
+const AGENT_NAME_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,127}$/;
+
+/**
+ * Validates an agent name against a strict allowlist pattern.
+ * Prevents path traversal, shell injection, and filesystem issues.
+ *
+ * @throws {InvalidAgentNameError} if the name is invalid
+ */
+export function validateAgentName(name: string): void {
+  if (!name || typeof name !== "string") {
+    throw new InvalidAgentNameError(name ?? "");
+  }
+  if (!AGENT_NAME_PATTERN.test(name)) {
+    throw new InvalidAgentNameError(name);
+  }
+}
 
 /**
  * Returns the platform-appropriate IPC path for daemon communication.
@@ -14,24 +32,26 @@ const IS_WINDOWS = process.platform === "win32";
  * resolve to the same path for a given homeDir.
  */
 export function getDefaultIpcPath(homeDir?: string): string {
-  const base = homeDir ?? join(homedir(), ".actant");
+  const base = homeDir ? resolve(homeDir) : join(homedir(), ".actant");
   return getIpcPath(base);
 }
 
 /**
  * Returns the IPC path for a given home directory.
  * Used by AppContext when homeDir is explicitly provided.
+ * Always resolves to an absolute path to avoid EACCES on relative Unix sockets.
  */
 export function getIpcPath(homeDir: string): string {
+  const resolvedHome = resolve(homeDir);
   if (IS_WINDOWS) {
-    const raw = homeDir.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const raw = resolvedHome.replace(/[^a-zA-Z0-9._-]/g, "_");
     const MAX_SAFE_LEN = 80;
     const safeName = raw.length > MAX_SAFE_LEN
-      ? raw.slice(0, 48) + "-" + createHash("md5").update(homeDir).digest("hex").slice(0, 16)
+      ? raw.slice(0, 48) + "-" + createHash("md5").update(resolvedHome).digest("hex").slice(0, 16)
       : raw;
     return `\\\\.\\pipe\\actant-${safeName}`;
   }
-  return join(homeDir, "actant.sock");
+  return join(resolvedHome, "actant.sock");
 }
 
 /**

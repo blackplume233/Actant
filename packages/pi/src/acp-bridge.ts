@@ -17,10 +17,26 @@ interface SessionState {
   agent: PiAgent;
   cwd: string;
   abortController: AbortController;
+  lastActiveAt: number;
 }
 
 const sessions = new Map<string, SessionState>();
 let sessionCounter = 0;
+
+const SESSION_TTL_MS = 10 * 60 * 1000; // 10 minutes idle TTL
+const SESSION_SWEEP_INTERVAL_MS = 60 * 1000;
+const MAX_SESSIONS = 100;
+
+const sweepTimer = setInterval(() => {
+  const now = Date.now();
+  for (const [id, state] of sessions) {
+    if (now - state.lastActiveAt > SESSION_TTL_MS) {
+      state.agent.abort();
+      sessions.delete(id);
+    }
+  }
+}, SESSION_SWEEP_INTERVAL_MS);
+sweepTimer.unref();
 
 function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
   return {
@@ -69,11 +85,27 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
         }
       }
 
+      if (sessions.size >= MAX_SESSIONS) {
+        let oldestId: string | undefined;
+        let oldestTime = Infinity;
+        for (const [id, s] of sessions) {
+          if (s.lastActiveAt < oldestTime) {
+            oldestTime = s.lastActiveAt;
+            oldestId = id;
+          }
+        }
+        if (oldestId) {
+          sessions.get(oldestId)?.agent.abort();
+          sessions.delete(oldestId);
+        }
+      }
+
       const agent = createPiAgent(agentOpts);
       sessions.set(sessionId, {
         agent,
         cwd,
         abortController: new AbortController(),
+        lastActiveAt: Date.now(),
       });
 
       return { sessionId } as NewSessionResponse;
@@ -84,6 +116,7 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
       if (!session) {
         throw new Error(`Session "${params.sessionId}" not found`);
       }
+      session.lastActiveAt = Date.now();
 
       const promptText = params.prompt
         ?.filter((b) => b.type === "text")
@@ -163,18 +196,14 @@ new AgentSideConnection(
   stream,
 );
 
-process.on("SIGTERM", () => {
+function gracefulShutdown(): void {
+  clearInterval(sweepTimer);
   for (const session of sessions.values()) {
     session.agent.abort();
   }
   sessions.clear();
   process.exit(0);
-});
+}
 
-process.on("SIGINT", () => {
-  for (const session of sessions.values()) {
-    session.agent.abort();
-  }
-  sessions.clear();
-  process.exit(0);
-});
+process.on("SIGTERM", gracefulShutdown);
+process.on("SIGINT", gracefulShutdown);

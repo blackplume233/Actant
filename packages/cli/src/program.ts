@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { getDefaultIpcPath } from "@actant/shared";
 import { RpcClient } from "./client/rpc-client";
 import {
@@ -28,7 +28,11 @@ import { presentError, type CliPrinter } from "./output/index";
 
 export function defaultSocketPath(): string {
   const home = process.env["ACTANT_HOME"];
-  return process.env["ACTANT_SOCKET"] ?? getDefaultIpcPath(home);
+  const socketOverride = process.env["ACTANT_SOCKET"];
+  if (socketOverride) {
+    return resolve(socketOverride);
+  }
+  return getDefaultIpcPath(home);
 }
 
 export function createProgram(socketPath?: string, printer?: CliPrinter): Command {

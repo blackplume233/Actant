@@ -15,7 +15,12 @@ export function presentError(err: unknown, printer: CliPrinter = defaultPrinter)
     if (err.data && typeof err.data === "object") {
       const data = err.data as Record<string, unknown>;
       if (data.context) {
-        printer.error(`${chalk.dim("  Context:")} ${JSON.stringify(data.context)}`);
+        const ctx = data.context;
+        const text = typeof ctx === "string" ? ctx : JSON.stringify(ctx, null, 2);
+        printer.error(`${chalk.dim("  Context:")} ${text}`);
+      }
+      if (data.errorCode) {
+        printer.errorDim(`  Code: ${String(data.errorCode)}`);
       }
     }
     return;

@@ -55,7 +55,7 @@ export class ToolCallInterceptor {
     const title = (update.title as string) ?? "";
     if (!this.isInternalTool(title)) return;
 
-    const safeTitle = title.replace(/--token[\s=]+(?:"[^"]*"|'[^']*'|\S+)/gi, "--token [REDACTED]");
+    const safeTitle = title.replace(/--token[\s=]+(?:"[^"]*"|'[^']*'|\S+)|--token=/gi, "--token [REDACTED]");
     logger.debug(
       { agentName: this.agentName, title: safeTitle, sessionId: notification.sessionId },
       "Internal tool call observed",

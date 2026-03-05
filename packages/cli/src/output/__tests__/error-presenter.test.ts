@@ -60,7 +60,22 @@ describe("presentError", () => {
     );
     expect(printer.error).toHaveBeenNthCalledWith(
       2,
-      `${chalk.dim("  Context:")} ${JSON.stringify({ foo: "bar" })}`,
+      `${chalk.dim("  Context:")} ${JSON.stringify({ foo: "bar" }, null, 2)}`,
+    );
+  });
+
+  it("RpcCallError with data.errorCode shows code via errorDim", () => {
+    const err = new RpcCallError("RPC failed", 500, { errorCode: "AGENT_LAUNCH_ERROR" });
+    presentError(err, printer as never);
+    expect(printer.errorDim).toHaveBeenCalledWith("  Code: AGENT_LAUNCH_ERROR");
+  });
+
+  it("RpcCallError with string context shows it as-is", () => {
+    const err = new RpcCallError("RPC failed", 500, { context: "plain text info" });
+    presentError(err, printer as never);
+    expect(printer.error).toHaveBeenNthCalledWith(
+      2,
+      `${chalk.dim("  Context:")} plain text info`,
     );
   });
 
