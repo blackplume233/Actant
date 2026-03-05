@@ -22,6 +22,7 @@ import {
   createDashboardCommand,
   createApiCommand,
   createInternalCommand,
+  createVfsCommand,
 } from "./commands/index";
 import { presentError, type CliPrinter } from "./output/index";
 
@@ -59,6 +60,7 @@ export function createProgram(socketPath?: string, printer?: CliPrinter): Comman
   program.addCommand(createDashboardCommand(printer));
   program.addCommand(createApiCommand(printer));
   program.addCommand(createInternalCommand(printer));
+  program.addCommand(createVfsCommand(client, printer));
 
   program.exitOverride();
 

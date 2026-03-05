@@ -22,6 +22,7 @@ import { createLogger } from "@actant/shared";
 import type { PermissionPolicyEnforcer } from "@actant/core";
 import type { ClientCallbackHandler } from "./connection";
 import type { ToolCallInterceptor } from "./tool-call-interceptor";
+import type { VfsInterceptor } from "./vfs-interceptor";
 
 const logger = createLogger("acp-callback-router");
 
@@ -54,6 +55,7 @@ export class ClientCallbackRouter implements ClientCallbackHandler {
   private ideCapabilities: ClientCapabilities | null = null;
   private enforcer: PermissionPolicyEnforcer | null = null;
   private toolCallInterceptor: ToolCallInterceptor | null = null;
+  private vfsInterceptor: VfsInterceptor | null = null;
 
   constructor(private readonly local: ClientCallbackHandler) {}
 
@@ -65,6 +67,11 @@ export class ClientCallbackRouter implements ClientCallbackHandler {
   /** Attach a ToolCallInterceptor for observing internal tool calls. */
   setToolCallInterceptor(interceptor: ToolCallInterceptor | null): void {
     this.toolCallInterceptor = interceptor;
+  }
+
+  /** Attach a VFS interceptor for virtual path routing. */
+  setVfsInterceptor(interceptor: VfsInterceptor | null): void {
+    this.vfsInterceptor = interceptor;
   }
 
   /**
@@ -149,6 +156,16 @@ export class ClientCallbackRouter implements ClientCallbackHandler {
   }
 
   async readTextFile(params: ReadTextFileRequest): Promise<ReadTextFileResponse> {
+    if (this.vfsInterceptor) {
+      try {
+        const vfsResult = await this.vfsInterceptor.readTextFile(params);
+        if (vfsResult) return vfsResult;
+      } catch (err) {
+        logger.warn({ path: params.path, error: err }, "VFS readTextFile failed");
+        throw err;
+      }
+    }
+
     if (this.upstream && this.ideCapabilities?.fs?.readTextFile) {
       try {
         return await this.upstream.readTextFile(params);
@@ -160,6 +177,16 @@ export class ClientCallbackRouter implements ClientCallbackHandler {
   }
 
   async writeTextFile(params: WriteTextFileRequest): Promise<WriteTextFileResponse> {
+    if (this.vfsInterceptor) {
+      try {
+        const vfsResult = await this.vfsInterceptor.writeTextFile(params);
+        if (vfsResult) return vfsResult;
+      } catch (err) {
+        logger.warn({ path: params.path, error: err }, "VFS writeTextFile failed");
+        throw err;
+      }
+    }
+
     if (this.upstream && this.ideCapabilities?.fs?.writeTextFile) {
       try {
         return await this.upstream.writeTextFile(params);

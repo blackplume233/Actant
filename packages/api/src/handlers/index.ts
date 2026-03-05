@@ -13,3 +13,4 @@ export { registerActivityHandlers } from "./activity-handlers";
 export { registerEventHandlers } from "./event-handlers";
 export { registerCanvasHandlers } from "./canvas-handlers";
 export { registerInternalHandlers } from "./internal-handlers";
+export { registerVfsHandlers } from "./vfs-handlers";

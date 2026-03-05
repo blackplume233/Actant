@@ -7,4 +7,5 @@ export { AcpGateway, type GatewayOptions } from "./gateway";
 export { resolveAcpBinary, type ResolvedAcpBinary } from "./binary-resolver";
 export { RecordingCallbackHandler } from "./recording-handler";
 export { ToolCallInterceptor } from "./tool-call-interceptor";
+export { VfsInterceptor } from "./vfs-interceptor";
 export type { SessionNotification, ContentBlock } from "@agentclientprotocol/sdk";
