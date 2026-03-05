@@ -322,7 +322,8 @@ function printTree(node: TreeNode, prefix: string, isLast: boolean, printer: Cli
   if (node.children) {
     const childPrefix = prefix + (isLast ? "    " : "│   ");
     for (let i = 0; i < node.children.length; i++) {
-      printTree(node.children[i]!, childPrefix, i === node.children.length - 1, printer);
+      const child = node.children[i];
+      if (child) printTree(child, childPrefix, i === node.children.length - 1, printer);
     }
   }
 }

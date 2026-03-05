@@ -44,10 +44,11 @@ function createHandlers(
       throw new Error("Memory source size limit exceeded");
     }
 
-    const created = !files.has(filePath);
+    const existing2 = files.get(filePath);
+    const created = !existing2;
     files.set(filePath, {
       content,
-      createdAt: created ? Date.now() : files.get(filePath)!.createdAt,
+      createdAt: created ? Date.now() : existing2.createdAt,
       updatedAt: Date.now(),
     });
     return { bytesWritten: Buffer.byteLength(content), created };
@@ -60,7 +61,7 @@ function createHandlers(
     for (const [key, file] of files) {
       const parts = key.split("/");
       if (parts.length > 1) {
-        const dir = parts[0]!;
+        const dir = parts[0] ?? "";
         if (!dirs.has(dir)) {
           dirs.add(dir);
           entries.push({ name: dir, path: dir, type: "directory" });
@@ -85,8 +86,9 @@ function createHandlers(
     for (const [filePath, file] of files) {
       const lines = file.content.split("\n");
       for (let i = 0; i < lines.length; i++) {
-        if (regex.test(lines[i]!)) {
-          matches.push({ path: filePath, line: i + 1, content: lines[i]! });
+        const line = lines[i] ?? "";
+        if (regex.test(line)) {
+          matches.push({ path: filePath, line: i + 1, content: line });
           regex.lastIndex = 0;
         }
       }
@@ -108,7 +110,7 @@ function parseMaxSize(str?: string): number {
   if (!str) return 10 * 1024 * 1024;
   const match = str.match(/^(\d+)\s*(kb|mb|gb)?$/i);
   if (!match) return 10 * 1024 * 1024;
-  const num = parseInt(match[1]!, 10);
+  const num = parseInt(match[1] ?? "0", 10);
   const unit = (match[2] ?? "mb").toLowerCase();
   const multipliers: Record<string, number> = { kb: 1024, mb: 1024 * 1024, gb: 1024 * 1024 * 1024 };
   return num * (multipliers[unit] ?? 1024 * 1024);

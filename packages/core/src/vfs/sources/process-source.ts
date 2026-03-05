@@ -49,8 +49,9 @@ class OutputBuffer {
   search(pattern: RegExp): VfsGrepMatch[] {
     const matches: VfsGrepMatch[] = [];
     for (let i = 0; i < this.lines.length; i++) {
-      if (pattern.test(this.lines[i]!)) {
-        matches.push({ path: "stdout", line: i + 1, content: this.lines[i]! });
+      const line = this.lines[i] ?? "";
+      if (pattern.test(line)) {
+        matches.push({ path: "stdout", line: i + 1, content: line });
         pattern.lastIndex = 0;
       }
     }

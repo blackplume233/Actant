@@ -191,7 +191,7 @@ function matchParts(
       }
       return false;
     }
-    if (!segmentMatch(seg!, ip[ii]!)) return false;
+    if (!segmentMatch(seg ?? "", ip[ii] ?? "")) return false;
     pi++;
     ii++;
   }

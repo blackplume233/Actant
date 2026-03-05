@@ -8,7 +8,6 @@ import {
   Loader2,
   User,
   AlertCircle,
-  RotateCcw,
   History,
   FolderGit2,
   Zap,

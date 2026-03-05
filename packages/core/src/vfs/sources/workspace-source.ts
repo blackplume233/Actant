@@ -123,7 +123,9 @@ function createHandlers(rootDir: string, readOnly: boolean): VfsHandlerMap {
     if (opts?.recursive) {
       const dirs = result.filter((e) => e.type === "directory");
       for (const dir of dirs) {
-        const subEntries = await handlers.list!(dir.path, { ...opts, recursive: true });
+        const listHandler = handlers.list;
+        if (!listHandler) continue;
+        const subEntries = await listHandler(dir.path, { ...opts, recursive: true });
         result.push(...subEntries);
       }
     }
@@ -224,11 +226,12 @@ function createHandlers(rootDir: string, readOnly: boolean): VfsHandlerMap {
             const content = await fs.readFile(abs, "utf-8");
             const lines = content.split("\n");
             for (let i = 0; i < lines.length && matches.length < maxResults; i++) {
-              if (regex.test(lines[i]!)) {
+              const line = lines[i] ?? "";
+              if (regex.test(line)) {
                 matches.push({
                   path: rel,
                   line: i + 1,
-                  content: lines[i]!,
+                  content: line,
                 });
                 regex.lastIndex = 0;
               }

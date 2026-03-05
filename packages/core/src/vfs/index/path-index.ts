@@ -97,7 +97,7 @@ export class PathIndex {
   byMountPoint(mountPoint: string): PathIndexEntry[] {
     const paths = this.byMount.get(mountPoint);
     if (!paths) return [];
-    return Array.from(paths).map((p) => this.entries.get(p)!).filter(Boolean);
+    return Array.from(paths).map((p) => this.entries.get(p)).filter((e): e is PathIndexEntry => e != null);
   }
 
   /**

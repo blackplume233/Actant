@@ -195,9 +195,8 @@ export class VfsLifecycleManager {
   }
 
   private getAllSources(): VfsSourceRegistration[] {
-    return this.registry.listMounts().map((m) => {
-      const source = this.registry.getSource(m.name);
-      return source!;
-    }).filter(Boolean);
+    return this.registry.listMounts()
+      .map((m) => this.registry.getSource(m.name))
+      .filter((s): s is VfsSourceRegistration => s != null);
   }
 }

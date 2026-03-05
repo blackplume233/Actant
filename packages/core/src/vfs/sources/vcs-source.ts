@@ -37,7 +37,7 @@ async function git(repoPath: string, args: string[]): Promise<string> {
     return stdout;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    throw new Error(`git ${args.join(" ")} failed: ${msg}`);
+    throw new Error(`git ${args.join(" ")} failed: ${msg}`, { cause: err });
   }
 }
 
@@ -45,23 +45,23 @@ function parseStatusLine(line: string): VfsStatusEntry | null {
   if (line.length < 4) return null;
   return {
     path: line.slice(3).trim(),
-    indexStatus: line[0]!,
-    workTreeStatus: line[1]!,
+    indexStatus: line[0] ?? " ",
+    workTreeStatus: line[1] ?? " ",
   };
 }
 
 function parseDiffStat(raw: string): VfsDiffResult {
   const entries: VfsDiffEntry[] = [];
   const lines = raw.split("\n");
-  let added = 0;
+  const added = 0;
   let modified = 0;
-  let deleted = 0;
+  const deleted = 0;
 
   for (const line of lines) {
     if (line.startsWith("diff --git")) {
       const pathMatch = line.match(/b\/(.+)$/);
       if (pathMatch) {
-        entries.push({ path: pathMatch[1]!, status: "modified" });
+        entries.push({ path: pathMatch[1] ?? "", status: "modified" });
         modified++;
       }
     }
