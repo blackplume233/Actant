@@ -1170,7 +1170,44 @@ Registry descriptor.defaultBaseUrl
 
 ---
 
-## 12. Memory 配置（Phase 4/5 预定） 🚧
+## 12. VFS 配置与类型（#248）
+
+> 状态：**已实现**
+>
+> 实现参考：`packages/shared/src/types/vfs.types.ts`，`packages/core/src/vfs/`，`packages/api/src/services/app-context.ts`
+
+VFS（Virtual File System）将多数据域统一映射为虚拟路径（如 `/workspace/<agent>/...`、`/memory/...`、`/config/...`）。
+
+### VfsSourceSpec（挂载源声明）
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `type` | `"filesystem" \| "memory" \| "config" \| "canvas" \| "process" \| "vcs" \| string` | **是** | 源类型 |
+| `path` | `string` | 否 | 文件系统源根路径（`filesystem`） |
+| `agentName` | `string` | 否 | agent 绑定信息（`process` / agent 生命周期挂载） |
+| `maxSize` | `string` | 否 | 内存源容量上限（示例：`"16MB"`） |
+
+### VfsLifecycle（生命周期策略）
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `type` | `"daemon" \| "agent" \| "session" \| "ttl" \| "manual"` | **是** | 生命周期策略 |
+| `agentName` | `string` | 否 | `agent` 生命周期下的归属 Agent |
+| `sessionId` | `string` | 否 | `session` 生命周期下的会话 ID |
+| `ttlMs` | `number` | 否 | `ttl` 生命周期自动回收时长（毫秒） |
+
+### 默认挂载（Daemon 初始化）
+
+| 挂载点 | 源类型 | 生命周期 |
+|--------|--------|---------|
+| `/config` | `config` | `daemon` |
+| `/memory` | `memory` | `daemon` |
+| `/canvas` | `canvas` | `daemon` |
+| `/workspace/<agentName>` | `filesystem` | `agent`（随 agent create/destroy 自动挂卸载） |
+
+---
+
+## 13. Memory 配置（Phase 4/5 预定） 🚧
 
 > 状态：**预定设计** — 实际开发前须重新审查
 >

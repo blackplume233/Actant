@@ -46,6 +46,7 @@ export default tseslint.config(
       ".trellis/**",
       "scripts/**",
       "packages/*/scripts/**",
+      "docs/site/**",
     ],
   },
 );
