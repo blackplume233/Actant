@@ -104,9 +104,52 @@ Windows directory symlinks (`"dir"`) require Administrator or Developer Mode. Ju
 The `.trellis/scripts/*.sh` files are Bash scripts for the development workflow (not runtime).
 
 **Windows requirements**:
-- **Git Bash** (included with Git for Windows) — recommended
-- **WSL** (Windows Subsystem for Linux) — also works
+- **Git Bash** (included with Git for Windows) - recommended
+- **WSL** (Windows Subsystem for Linux) - also works
 - These scripts are not needed for running Actant itself, only for the Trellis development workflow
+
+### Rule: Always invoke Trellis `.sh` scripts via `bash` on Windows
+
+**Symptom**: Running `./.trellis/scripts/task.sh` directly from PowerShell fails or behaves inconsistently.
+
+**Cause**: PowerShell does not execute Bash scripts natively; shebang and shell features (`source`, heredoc, Bash arrays) are not interpreted as expected.
+
+**Required pattern**:
+
+```powershell
+# Good
+bash ./.trellis/scripts/get-context.sh
+bash ./.trellis/scripts/task.sh list
+
+# Bad
+./.trellis/scripts/get-context.sh
+./.trellis/scripts/task.sh list
+```
+
+**Scope**: Applies to command docs under `.claude/commands/` and `.cursor/commands/` as well as manual terminal usage.
+
+### Rule: Keep docs and command markdown in UTF-8 (no BOM)
+
+**Symptom**: Markdown tables/box-drawing characters appear as garbled text (mojibake), especially after cross-platform edits.
+
+**Cause**: Mixed encodings (UTF-8 with BOM, local code page fallback, or non-UTF8 files) across tools.
+
+**Required policy**:
+- All docs (`*.md`, `*.mdx`, `*.txt`, `*.rst`, `*.adoc`) must be `UTF-8` without BOM.
+- Keep `.sh` files LF and rely on `.gitattributes` for line-ending normalization.
+- Prefer file-based scripting (`node script.mjs`) over large inline `node -e` snippets in PowerShell.
+
+**Repository check command**:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check-doc-encoding.ps1
+```
+
+**Auto-fix command**:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/check-doc-encoding.ps1 -Fix
+```
 
 ### Common Mistake: pnpm/node not found in Git Bash
 
@@ -192,6 +235,64 @@ node "path/to/script.mjs"
 [System.IO.File]::WriteAllText("$env:TEMP\issue-body.md", $content, [System.Text.UTF8Encoding]::new($false))
 gh issue create --title "..." --body-file "$env:TEMP\issue-body.md"
 ```
+
+### Common Mistake: `gh` CLI 中文参数在 PowerShell 中被静默损坏（Mojibake）
+
+**症状**: `gh issue edit --title "中文标题"` 或 `gh issue create --title "中文标题"` 在 PowerShell 中执行后，GitHub 上的 issue 标题变成乱码（如 `鍚庣 CLI 渚濊禆鑷姩瀹夎`），但命令本身返回成功（exit code 0）。
+
+**原因**: Windows PowerShell 默认代码页为 CP936 (GBK)。当 UTF-8 中文字符串作为命令行参数传递给 `gh.exe` 时，PowerShell 会将参数通过系统代码页（GBK）编码再传递，导致 UTF-8 字节被误解为 GBK，产生 mojibake。这是**静默数据损坏**——没有错误提示，`gh` 也返回成功。
+
+**编码链路**:
+```
+原始 UTF-8 中文 → PowerShell GBK 转码 → gh 收到损坏的字节 → GitHub 存储乱码
+```
+
+**Fix**: 通过 Python `subprocess` 调用 `gh`，绕过 PowerShell 编码层：
+
+```python
+import subprocess, json
+
+new_title = "bug(core): 竞态窗口 — 延迟 handleProcessExit lock 不被等待"
+proc = subprocess.run(
+    ['gh', 'issue', 'edit', '238', '--title', new_title],
+    capture_output=True, encoding='utf-8',
+)
+# 验证
+verify = subprocess.run(
+    ['gh', 'issue', 'view', '238', '--json', 'title'],
+    capture_output=True,
+)
+actual = json.loads(verify.stdout.decode('utf-8'))['title']
+assert actual == new_title, f"Title mismatch: {actual}"
+```
+
+**适用范围**: 所有通过 PowerShell 向外部 CLI 传递 CJK / 非 ASCII 参数的场景（`gh`、`git commit -m`、`curl` 等）。
+
+**同样受影响的操作**:
+- `gh issue edit --title / --body`
+- `gh issue create --title / --body`
+- `gh pr create --title / --body`
+- PowerShell 输出重定向 (`> file.txt`) 会将 UTF-8 输出转为 UTF-16-LE
+
+**教训 (Issue 乱码事件)**: 项目中 11 个 GitHub Issue 标题因此问题被损坏，涵盖 `issue.sh` 脚本创建和 AI Agent 通过 PowerShell 调用 `gh` 两种路径。部分损坏不可逆（UTF-8→GBK 映射中的 PUA 字符和 `?` 替换），只能通过阅读 issue body 人工还原。
+
+### Common Mistake: `bash.exe` 在 Windows 上指向 WSL 而非 Git Bash
+
+**症状**: `bash ./.trellis/scripts/get-context.sh` 报错 `/mnt/g/Workspace/.../common/git-context.sh: No such file or directory`，路径被转换为 WSL 格式（`/mnt/g/...`）。
+
+**原因**: Windows 安装 WSL 后，`C:\Users\<user>\AppData\Local\Microsoft\WindowsApps\bash.exe` 优先于 Git Bash 的 `bash.exe`。该 `bash.exe` 启动的是 WSL 环境，Windows 路径被自动映射为 `/mnt/<drive>/...`，但 WSL 中可能没有安装对应的依赖。
+
+**验证**:
+```powershell
+where.exe bash
+# 如果输出 ...\WindowsApps\bash.exe → 是 WSL
+# 如果输出 ...\Git\bin\bash.exe → 是 Git Bash
+```
+
+**Fix**:
+- 显式使用 Git Bash 完整路径：`& "C:\Program Files\Git\bin\bash.exe" ./.trellis/scripts/get-context.sh`
+- 或调整 PATH 顺序，将 Git Bash 路径放在 WindowsApps 之前
+- 或改用 Node.js 脚本（`.mjs`）替代 bash 脚本
 
 ### Common Mistake: pnpm bin link `EINVAL` on Windows
 

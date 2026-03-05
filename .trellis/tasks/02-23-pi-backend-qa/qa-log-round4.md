@@ -1,4 +1,4 @@
-﻿# Pi Backend Comprehensive QA Round 4 鈥?Full Log
+# Pi Backend Comprehensive QA Round 4 鈥?Full Log
 
 **Date:** 2026-02-23  
 **Environment:**

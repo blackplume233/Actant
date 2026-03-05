@@ -1,4 +1,4 @@
-﻿# QA 鏃ュ織 Round 2 鈥?Pi Backend 鍏ㄩ摼璺獙璇?
+# QA 鏃ュ織 Round 2 鈥?Pi Backend 鍏ㄩ摼璺獙璇?
 **鍦烘櫙**: pi-backend-comprehensive
 **鐜**: Real (kimi-coding / k2p5)
 **寮€濮嬫椂闂?*: 2026-02-23

@@ -1,4 +1,4 @@
-﻿# QA Log - pi-backend-comprehensive Round 1
+# QA Log - pi-backend-comprehensive Round 1
 
 **Scenario**: pi-backend-comprehensive
 **Environment**: ACTANT_HOME=C:\Users\black\AppData\Local\Temp\tmp9A33.tmp, ACTANT_SOCKET=\\.\pipe\actant-qa-pi-WhkbUjJK

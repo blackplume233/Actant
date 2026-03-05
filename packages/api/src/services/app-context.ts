@@ -35,6 +35,16 @@ import {
   SystemBudgetManager,
   PluginHost,
   HeartbeatPlugin,
+  VfsRegistry,
+  SourceFactoryRegistry,
+  VfsContextProvider,
+  VfsLifecycleManager,
+  workspaceSourceFactory,
+  memorySourceFactory,
+  configSourceFactory,
+  canvasSourceFactory,
+  vcsSourceFactory,
+  processSourceFactory,
   type ActionContext,
   type LauncherMode,
 } from "@actant/core";
@@ -109,8 +119,13 @@ export class AppContext {
   readonly budgetManager: SystemBudgetManager;
   readonly canvasStore: CanvasStore;
   readonly pluginHost: PluginHost;
+  readonly vfsRegistry: VfsRegistry;
+  readonly sourceFactoryRegistry: SourceFactoryRegistry;
+  private vfsLifecycleManager?: VfsLifecycleManager;
 
   private initialized = false;
+  private workflowHooksRegistered = false;
+  private instanceHooksRegistered = false;
   private startTime = Date.now();
   private pluginTickInterval?: ReturnType<typeof setInterval>;
 
@@ -192,6 +207,15 @@ export class AppContext {
     this.schedulers = new Map();
     this.pluginHost = new PluginHost();
     this.pluginHost.register(new HeartbeatPlugin());
+
+    this.vfsRegistry = new VfsRegistry();
+    this.sourceFactoryRegistry = new SourceFactoryRegistry();
+    this.sourceFactoryRegistry.register(workspaceSourceFactory);
+    this.sourceFactoryRegistry.register(memorySourceFactory);
+    this.sourceFactoryRegistry.register(configSourceFactory);
+    this.sourceFactoryRegistry.register(canvasSourceFactory);
+    this.sourceFactoryRegistry.register(vcsSourceFactory);
+    this.sourceFactoryRegistry.register(processSourceFactory);
   }
 
   async init(): Promise<void> {
@@ -225,6 +249,9 @@ export class AppContext {
     this.sessionContextInjector.setTokenStore(this.sessionTokenStore);
     this.sessionContextInjector.register(new CoreContextProvider());
     this.sessionContextInjector.register(new CanvasContextProvider());
+    this.sessionContextInjector.register(new VfsContextProvider(this.vfsRegistry));
+
+    this.initializeVfs();
 
     await this.agentManager.initialize();
     this.templateWatcher.start();
@@ -245,12 +272,13 @@ export class AppContext {
     return Math.floor((Date.now() - this.startTime) / 1000);
   }
 
-  /** Stop the PluginHost and clear the tick interval. Called by Daemon.stop(). */
+  /** Stop the PluginHost, clear the tick interval, and dispose VFS. Called by Daemon.stop(). */
   async stopPlugins(): Promise<void> {
     if (this.pluginTickInterval) {
       clearInterval(this.pluginTickInterval);
       this.pluginTickInterval = undefined;
     }
+    this.vfsLifecycleManager?.dispose();
     await this.pluginHost.stop({ config: {} });
   }
 
@@ -369,6 +397,7 @@ export class AppContext {
    * Instance-level hooks are registered per-agent at creation time via listenForInstanceHooks.
    */
   private registerWorkflowHooks(): void {
+    if (this.workflowHooksRegistered) return;
     const workflows = this.workflowManager.list();
     let registered = 0;
     for (const wf of workflows) {
@@ -382,6 +411,7 @@ export class AppContext {
     if (registered > 0) {
       logger.info({ count: registered, totalHooks: this.hookRegistry.hookCount }, "Actant-level workflow hooks registered");
     }
+    this.workflowHooksRegistered = true;
   }
 
   /**
@@ -389,6 +419,8 @@ export class AppContext {
    * for the newly created agent.
    */
   private listenForInstanceHooks(): void {
+    if (this.instanceHooksRegistered) return;
+
     this.eventBus.on("agent:created", (payload) => {
       const agentName = payload.agentName;
       if (!agentName) return;
@@ -420,6 +452,62 @@ export class AppContext {
     };
     this.eventBus.on("process:stop", closeLeases);
     this.eventBus.on("process:crash", closeLeases);
+    this.instanceHooksRegistered = true;
+  }
+
+  private initializeVfs(): void {
+    const reg = this.vfsRegistry;
+    const factory = this.sourceFactoryRegistry;
+
+    reg.mount(factory.create({
+      name: "config",
+      mountPoint: "/config",
+      spec: { type: "config" },
+      lifecycle: { type: "daemon" },
+    }));
+
+    reg.mount(factory.create({
+      name: "memory",
+      mountPoint: "/memory",
+      spec: { type: "memory", maxSize: "16MB" },
+      lifecycle: { type: "daemon" },
+    }));
+
+    reg.mount(factory.create({
+      name: "canvas",
+      mountPoint: "/canvas",
+      spec: { type: "canvas" },
+      lifecycle: { type: "daemon" },
+    }));
+
+    this.vfsLifecycleManager = new VfsLifecycleManager(reg);
+
+    this.eventBus.on("agent:created", (payload) => {
+      const name = payload.agentName;
+      if (!name) return;
+      const agent = this.agentManager.listAgents().find((a) => a.name === name);
+      if (!agent?.workspaceDir) return;
+
+      try {
+        reg.mount(factory.create({
+          name: `workspace-${name}`,
+          mountPoint: `/workspace/${name}`,
+          spec: { type: "filesystem", path: agent.workspaceDir },
+          lifecycle: { type: "agent", agentName: name },
+          metadata: { agentName: name },
+        }));
+      } catch (err) {
+        logger.warn({ agent: name, error: err }, "Failed to mount agent workspace in VFS");
+      }
+    });
+
+    this.eventBus.on("agent:destroyed", (payload) => {
+      if (payload.agentName) {
+        reg.unmountByPrefix(`workspace-${payload.agentName}`);
+      }
+    });
+
+    logger.info({ mounts: reg.size }, "VFS initialized with default mounts");
   }
 
   private async loadDomainComponents(): Promise<void> {

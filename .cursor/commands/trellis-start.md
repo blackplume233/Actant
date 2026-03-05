@@ -28,7 +28,7 @@ cat .trellis/workflow.md  # Development process, conventions, and quick start gu
 ### Step 2: Get Current Status `[AI]`
 
 ```bash
-./.trellis/scripts/get-context.sh
+bash ./.trellis/scripts/get-context.sh
 ```
 
 This returns:
@@ -61,7 +61,7 @@ cat .trellis/spec/guides/cross-layer-thinking-guide.md
 ### Step 4: Check Active Tasks `[AI]`
 
 ```bash
-./.trellis/scripts/task.sh list
+bash ./.trellis/scripts/task.sh list
 ```
 
 If continuing previous work, review the task file.
@@ -99,7 +99,7 @@ Ready for your task. What would you like to work on?
 #### Step 1: Create Task `[AI]`
 
 ```bash
-./.trellis/scripts/task.sh create "<title>" --slug <name>
+bash ./.trellis/scripts/task.sh create "<title>" --slug <name>
 ```
 
 #### Step 2: Implement and Verify `[AI]`
@@ -116,7 +116,7 @@ Ready for your task. What would you like to work on?
 4. Remind user to run `/trellis-record-session` `[USER]`
 5. Archive task `[AI]`:
    ```bash
-   ./.trellis/scripts/task.sh archive <task-name>
+   bash ./.trellis/scripts/task.sh archive <task-name>
    ```
 
 ---

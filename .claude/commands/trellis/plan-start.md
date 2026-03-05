@@ -1,6 +1,6 @@
 # Plan & Start Session
 
-Enhanced version of `trellis:start` — adds a **Plan Phase** before execution.
+Enhanced version of `trellis:start` 鈥?adds a **Plan Phase** before execution.
 First builds a structured plan document for user review, then executes confirmed tasks through the standard trellis workflow.
 
 ---
@@ -25,22 +25,22 @@ Same as `/trellis:start`:
 cat .trellis/workflow.md
 ```
 
-**Follow the instructions in workflow.md** — it contains core principles, file system structure, and best practices.
+**Follow the instructions in workflow.md** 鈥?it contains core principles, file system structure, and best practices.
 
 ### Step 0.2: Initialize Developer Identity (Actant Agent)
 
 Ensure your Actant Agent identity is initialized. Check if already set, if not, initialize:
 
 ```bash
-./.trellis/scripts/get-developer.sh || ./.trellis/scripts/init-developer.sh actant-claude-agent
+bash ./.trellis/scripts/get-developer.sh || bash ./.trellis/scripts/init-developer.sh actant-claude-agent
 ```
 
-> **Actant Agent 身份**: AI 开发者是一个 Actant Agent 实例。Claude Code 使用 `actant-claude-agent` 作为身份标识。
+> **Actant Agent 韬唤**: AI 寮€鍙戣€呮槸涓€涓?Actant Agent 瀹炰緥銆侰laude Code 浣跨敤 `actant-claude-agent` 浣滀负韬唤鏍囪瘑銆?
 
 ### Step 0.3: Get Current Context
 
 ```bash
-./.trellis/scripts/get-context.sh
+bash ./.trellis/scripts/get-context.sh
 ```
 
 This shows: developer identity, git status, current task (if any), active tasks.
@@ -56,14 +56,14 @@ cat .trellis/spec/guides/index.md
 ### Step 0.5: Check Active Tasks
 
 ```bash
-./.trellis/scripts/task.sh list
+bash ./.trellis/scripts/task.sh list
 ```
 
 ### Step 0.6: Report Ready Status
 
 Report what you learned, then:
 
-> Initialization complete. Please describe your task — I'll create a plan for us to review before starting.
+> Initialization complete. Please describe your task 鈥?I'll create a plan for us to review before starting.
 
 ---
 
@@ -141,15 +141,15 @@ isProject: false
 
 ---
 
-## 一、背景分析
+## 涓€銆佽儗鏅垎鏋?
 
 <Why this task is needed>
 
-## 二、方案设计
+## 浜屻€佹柟妗堣璁?
 
 <Technical approach, architecture decisions>
 
-## 三、实施计划
+## 涓夈€佸疄鏂借鍒?
 
 ### Phase 1: <Phase Name>
 
@@ -163,7 +163,7 @@ isProject: false
 |---|------|----------|--------------|-----------------|
 | 2 | <task> | P1 | Phase 1 | <effort> |
 
-## 四、影响范围
+## 鍥涖€佸奖鍝嶈寖鍥?
 
 ### Files to Modify
 - `<path>`: <what changes>
@@ -174,12 +174,12 @@ isProject: false
 ### Risk Assessment
 - <risk>: <mitigation>
 
-## 五、验收标准
+## 浜斻€侀獙鏀舵爣鍑?
 
 - [ ] <Criterion 1>
 - [ ] <Criterion 2>
 
-## 六、相关参考
+## 鍏€佺浉鍏冲弬鑰?
 
 - <spec/code/doc references>
 ```
@@ -189,7 +189,7 @@ isProject: false
 - **Todos in frontmatter** map 1:1 to actionable implementation steps
 - **Priority levels**: P0 (must-have), P1 (important), P2 (nice-to-have)
 - **Status values**: `pending`, `in_progress`, `completed`
-- **Dependencies** must be explicit — no circular references
+- **Dependencies** must be explicit 鈥?no circular references
 
 ### Step 1.4: Present Plan to User `[COLLAB]`
 
@@ -214,17 +214,17 @@ Once the user approves, execute using the standard trellis task workflow.
 ### Step 2.1: Create Task from Plan `[AI]`
 
 ```bash
-TASK_DIR=$(./.trellis/scripts/task.sh create "<plan title>" --slug <plan-slug>)
+TASK_DIR=$(bash ./.trellis/scripts/task.sh create "<plan title>" --slug <plan-slug>)
 ```
 
 ### Step 2.2: Configure Context `[AI]`
 
 ```bash
-./.trellis/scripts/task.sh init-context "$TASK_DIR" <type>
+bash ./.trellis/scripts/task.sh init-context "$TASK_DIR" <type>
 
 # Add specs found during research:
-./.trellis/scripts/task.sh add-context "$TASK_DIR" implement "<path>" "<reason>"
-./.trellis/scripts/task.sh add-context "$TASK_DIR" check "<path>" "<reason>"
+bash ./.trellis/scripts/task.sh add-context "$TASK_DIR" implement "<path>" "<reason>"
+bash ./.trellis/scripts/task.sh add-context "$TASK_DIR" check "<path>" "<reason>"
 ```
 
 ### Step 2.3: Write PRD from Plan `[AI]`
@@ -238,22 +238,22 @@ Convert the approved plan into `prd.md` in the task directory:
 <From plan overview>
 
 ## Requirements
-<From plan - section 二>
+<From plan - section 浜?
 
 ## Acceptance Criteria
-<From plan - section 五>
+<From plan - section 浜?
 
 ## Implementation Plan
-<From plan - section 三>
+<From plan - section 涓?
 
 ## Technical Notes
-<From plan - section 二 technical approach>
+<From plan - section 浜?technical approach>
 ```
 
 ### Step 2.4: Activate Task `[AI]`
 
 ```bash
-./.trellis/scripts/task.sh start "$TASK_DIR"
+bash ./.trellis/scripts/task.sh start "$TASK_DIR"
 ```
 
 ### Step 2.5: Execute Todos Sequentially `[AI]`
@@ -262,9 +262,9 @@ For each todo in the plan (ordered by priority, respecting dependencies):
 
 1. **Update todo status** to `in_progress` in the plan file
 2. **Implement** the todo item:
-   - For code tasks → call Implement Agent with specific scope
-   - For config tasks → make changes directly
-   - For doc tasks → write documentation
+   - For code tasks 鈫?call Implement Agent with specific scope
+   - For config tasks 鈫?make changes directly
+   - For doc tasks 鈫?write documentation
 3. **Run quality checks** after each significant todo
 4. **Update todo status** to `completed` in the plan file
 5. **Report progress** to user

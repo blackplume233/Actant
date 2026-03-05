@@ -1,6 +1,6 @@
 ---
 id: 240
-title: "bug(acp): AcpConnectionManager.connect() 澶辫触鏃?enforcer/gateway 鏉＄洰娉勬紡"
+title: "bug(acp): AcpConnectionManager.connect() 失败时 enforcer/gateway 条目泄漏"
 status: open
 labels:
   - bug

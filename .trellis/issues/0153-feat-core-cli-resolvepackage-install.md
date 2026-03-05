@@ -1,6 +1,6 @@
 ---
 id: 153
-title: "feat(core): 鍚庣 CLI 渚濊禆鑷姩瀹夎 鈥?resolvePackage / install 鑷姩鎵ц"
+title: "feat(core): 后端 CLI 依赖自动安装 — resolvePackage / install 自动执行"
 status: open
 labels:
   - feature

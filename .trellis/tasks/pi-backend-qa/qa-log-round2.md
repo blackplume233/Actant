@@ -1,4 +1,4 @@
-﻿# QA Round 2: pi-backend-comprehensive
+# QA Round 2: pi-backend-comprehensive
 
 **Date:** 2026-02-24  
 **Scenario:** pi-backend-comprehensive  

@@ -1,4 +1,4 @@
-﻿# QA Round 4: pi-backend-comprehensive
+# QA Round 4: pi-backend-comprehensive
 
 **Date:** 2026-02-24  
 **Critical fix:** acp-bridge now reads `params.prompt` instead of `params.content`, which was causing the ACP prompt to silently fail with empty text.

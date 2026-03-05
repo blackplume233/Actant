@@ -837,6 +837,178 @@ export interface RpcMethodMap {
   "internal.validateToken": { params: InternalValidateTokenParams; result: InternalValidateTokenResult };
   "internal.canvasUpdate": { params: InternalCanvasUpdateParams; result: InternalCanvasUpdateResult };
   "internal.canvasClear": { params: InternalCanvasClearParams; result: InternalCanvasClearResult };
+  "vfs.read": { params: VfsReadParams; result: VfsReadResult };
+  "vfs.write": { params: VfsWriteParams; result: VfsWriteRpcResult };
+  "vfs.edit": { params: VfsEditParams; result: VfsEditRpcResult };
+  "vfs.delete": { params: VfsDeleteParams; result: VfsDeleteResult };
+  "vfs.list": { params: VfsListRpcParams; result: VfsListRpcResult };
+  "vfs.stat": { params: VfsStatParams; result: VfsStatRpcResult };
+  "vfs.tree": { params: VfsTreeParams; result: VfsTreeRpcResult };
+  "vfs.glob": { params: VfsGlobRpcParams; result: VfsGlobRpcResult };
+  "vfs.grep": { params: VfsGrepRpcParams; result: VfsGrepRpcResult };
+  "vfs.describe": { params: VfsDescribeParams; result: VfsDescribeRpcResult };
+  "vfs.mount": { params: VfsMountRpcParams; result: VfsMountRpcResult };
+  "vfs.unmount": { params: VfsUnmountParams; result: VfsUnmountResult };
+  "vfs.mountList": { params: VfsMountListParams; result: VfsMountListResult };
 }
 
 export type RpcMethod = keyof RpcMethodMap;
+
+// ---------------------------------------------------------------------------
+// vfs.* RPC parameter / result types
+// ---------------------------------------------------------------------------
+
+export interface VfsReadParams {
+  path: string;
+  startLine?: number;
+  endLine?: number;
+  token?: string;
+}
+export interface VfsReadResult {
+  content: string;
+  mimeType?: string;
+}
+
+export interface VfsWriteParams {
+  path: string;
+  content: string;
+  token?: string;
+}
+export interface VfsWriteRpcResult {
+  bytesWritten: number;
+  created: boolean;
+}
+
+export interface VfsEditParams {
+  path: string;
+  oldStr: string;
+  newStr: string;
+  replaceAll?: boolean;
+  token?: string;
+}
+export interface VfsEditRpcResult {
+  replacements: number;
+}
+
+export interface VfsDeleteParams {
+  path: string;
+  token?: string;
+}
+export interface VfsDeleteResult {
+  ok: true;
+}
+
+export interface VfsListRpcParams {
+  path?: string;
+  recursive?: boolean;
+  showHidden?: boolean;
+  long?: boolean;
+  token?: string;
+}
+export type VfsListRpcResult = Array<{
+  name: string;
+  path: string;
+  type: "file" | "directory" | "symlink";
+  size?: number;
+  mtime?: string;
+}>;
+
+export interface VfsStatParams {
+  path: string;
+  token?: string;
+}
+export interface VfsStatRpcResult {
+  size: number;
+  mtime: string;
+  type: "file" | "directory" | "symlink";
+  permissions?: string;
+}
+
+export interface VfsTreeParams {
+  path?: string;
+  depth?: number;
+  pattern?: string;
+  token?: string;
+}
+export interface VfsTreeRpcResult {
+  name: string;
+  path: string;
+  type: "file" | "directory";
+  children?: VfsTreeRpcResult[];
+}
+
+export interface VfsGlobRpcParams {
+  pattern: string;
+  cwd?: string;
+  type?: "file" | "directory" | "all";
+  token?: string;
+}
+export interface VfsGlobRpcResult {
+  matches: string[];
+}
+
+export interface VfsGrepRpcParams {
+  pattern: string;
+  path?: string;
+  caseInsensitive?: boolean;
+  contextLines?: number;
+  glob?: string;
+  maxResults?: number;
+  token?: string;
+}
+export interface VfsGrepRpcResult {
+  matches: Array<{ path: string; line: number; content: string }>;
+  totalMatches: number;
+  truncated: boolean;
+}
+
+export interface VfsDescribeParams {
+  path: string;
+  token?: string;
+}
+export interface VfsDescribeRpcResult {
+  path: string;
+  mountPoint: string;
+  sourceName: string;
+  sourceType: string;
+  capabilities: string[];
+  metadata: Record<string, unknown>;
+}
+
+export interface VfsMountRpcParams {
+  name: string;
+  mountPoint: string;
+  spec: {
+    type: string;
+    [key: string]: unknown;
+  };
+  lifecycle: {
+    type: string;
+    [key: string]: unknown;
+  };
+  metadata?: Record<string, unknown>;
+  token?: string;
+}
+export interface VfsMountRpcResult {
+  name: string;
+  mountPoint: string;
+}
+
+export interface VfsUnmountParams {
+  name: string;
+  token?: string;
+}
+export interface VfsUnmountResult {
+  ok: boolean;
+}
+
+export type VfsMountListParams = Record<string, never>;
+export interface VfsMountListResult {
+  mounts: Array<{
+    name: string;
+    mountPoint: string;
+    sourceType: string;
+    capabilities: string[];
+    fileCount: number;
+  }>;
+}

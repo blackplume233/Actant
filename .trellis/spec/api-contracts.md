@@ -1067,6 +1067,56 @@ interface MemoryStatsDto {
 
 ---
 
+### 3.18 VFS (Virtual File System) ✅ 已实现
+
+> 状态：**已实现** — #248 VFS Registry-Based Design
+
+统一虚拟文件系统，将 workspace、memory、config、canvas、process、VCS 等数据域映射为虚拟路径。Daemon 启动时自动挂载默认源（`/config`、`/memory`、`/canvas`）；Agent 创建时自动挂载 workspace 到 `/workspace/<agentName>`，销毁时自动卸载。
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `vfs.read` | `{ path, startLine?, endLine? }` | `{ content, mimeType? }` | INVALID_PARAMS (path not found) |
+| `vfs.write` | `{ path, content }` | `{ bytesWritten, created }` | INVALID_PARAMS, INTERNAL_ERROR |
+| `vfs.edit` | `{ path, oldStr, newStr, replaceAll? }` | `{ replacements }` | INVALID_PARAMS |
+| `vfs.delete` | `{ path }` | `{ ok }` | INVALID_PARAMS |
+| `vfs.list` | `{ path?, recursive?, showHidden?, long? }` | `VfsEntry[]` | INVALID_PARAMS |
+| `vfs.stat` | `{ path }` | `{ size, mtime, type }` | INVALID_PARAMS |
+| `vfs.tree` | `{ path?, depth?, pattern? }` | `VfsTreeNode` | INVALID_PARAMS |
+| `vfs.glob` | `{ pattern, cwd?, type? }` | `{ matches: string[] }` | INVALID_PARAMS |
+| `vfs.grep` | `{ pattern, path?, caseInsensitive?, contextLines?, glob?, maxResults? }` | `{ matches, totalMatches, truncated }` | INVALID_PARAMS |
+| `vfs.describe` | `{ path }` | `{ path, mountPoint, sourceName, sourceType, capabilities, metadata }` | INVALID_PARAMS |
+| `vfs.mount` | `{ name, mountPoint, spec, lifecycle, metadata? }` | `{ name, mountPoint }` | INVALID_PARAMS |
+| `vfs.unmount` | `{ name }` | `{ ok }` | — |
+| `vfs.mountList` | `{}` | `{ mounts: VfsMountInfo[] }` | — |
+
+#### VFS 能力体系
+
+| 能力 | 说明 |
+|------|------|
+| `read` | 读取文件内容 |
+| `read_range` | 按行范围读取 |
+| `write` | 写入/创建文件 |
+| `edit` | 搜索替换编辑 |
+| `delete` | 删除文件 |
+| `list` | 列出目录内容 |
+| `stat` | 获取文件元数据 |
+| `tree` | 目录树展示 |
+| `glob` | 文件名模式匹配 |
+| `grep` | 内容正则搜索 |
+| `git_status` | Git 状态查询 |
+| `git_diff` | Git diff 查询 |
+
+#### 默认挂载点
+
+| 挂载点 | 源类型 | 生命周期 | 能力 |
+|--------|--------|---------|------|
+| `/config` | config | daemon | read, write, edit, list, stat |
+| `/memory` | memory | daemon | read, write, list, grep |
+| `/canvas` | canvas | daemon | read, write, list |
+| `/workspace/<name>` | filesystem | agent (自动) | read, read_range, write, edit, delete, list, stat, tree, glob, grep |
+
+---
+
 ## 4. CLI 命令
 
 CLI 是 RPC 方法的用户端映射。每条命令内部调用对应的 RPC 方法。
@@ -1294,6 +1344,23 @@ actant proxy my-agent -t review-template # 不存在则自动创建
 | `daemon start` | `--foreground` | 启动守护进程；`--foreground` 在当前进程运行 |
 | `daemon stop` | — | 发送 `daemon.shutdown` RPC |
 | `daemon status` | `-f, --format` | 发送 `daemon.ping` RPC |
+
+### 4.11 VFS 命令 (`actant vfs`) ✅ 已实现
+
+| 命令 | 选项 | 行为 |
+|------|------|------|
+| `vfs read <path>` | `--start <n>`, `--end <n>`, `--json` | 读取虚拟文件内容 |
+| `vfs write <path>` | `--content <text>`, `--file <path>` | 写入内容（或从 stdin/文件读取） |
+| `vfs edit <path>` | `--old <text>` (必填), `--new <text>` (必填), `--all` | 搜索替换编辑 |
+| `vfs delete <path>` | — | 删除虚拟文件 |
+| `vfs ls [path]` | `-r`, `-l`, `--hidden`, `--json` | 列出目录内容 |
+| `vfs stat <path>` | `--json` | 显示文件元数据 |
+| `vfs tree [path]` | `--depth <n>`, `--pattern <p>`, `--json` | 显示目录树 |
+| `vfs find <pattern>` | `--cwd <path>`, `--type <t>` | 按 glob 查找文件 |
+| `vfs grep <pattern> [path]` | `-i`, `-C <n>`, `--glob <p>`, `--count`, `--files`, `--max <n>` | 按正则搜索内容 |
+| `vfs describe <path>` | `--json` | 描述路径的源类型、能力、元数据 |
+| `vfs mount list` | `--json` | 列出所有挂载点 |
+| `vfs unmount <name>` | — | 按名称卸载源 |
 
 ### 4.12 Dashboard 和 API 服务器
 

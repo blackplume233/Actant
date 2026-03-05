@@ -150,6 +150,18 @@ These guides help you **ask the right questions before coding**.
 
 → See [SessionContextInjector](../../packages/core/src/context-injector/session-context-injector.ts), [AppContext CanvasProvider registration](../../packages/api/src/services/app-context.ts)
 
+### When to Think About Encoding / i18n on Windows
+
+- [ ] Feature passes CJK (Chinese/Japanese/Korean) text as CLI arguments
+- [ ] Feature creates or edits GitHub issues/PRs with non-ASCII titles
+- [ ] Feature redirects CLI output to files on Windows
+- [ ] Feature runs `.sh` scripts via `bash` on Windows
+- [ ] Feature uses `gh` CLI with Chinese content in PowerShell
+
+→ Consider: PowerShell's default encoding (CP936/GBK) silently corrupts UTF-8 non-ASCII arguments. Use Python subprocess or write to file + `--body-file` instead of inline arguments. Verify results after `gh` operations.
+
+→ Read [Cross-Platform Guide — gh CLI 中文参数 Mojibake](./cross-platform-guide.md#common-mistake-gh-cli-中文参数在-powershell-中被静默损坏mojibake)
+
 ### When to Think About CLI ↔ API Parity
 
 - [ ] Adding a new CLI command

@@ -1,4 +1,4 @@
-﻿# QA Round 3: pi-backend-comprehensive
+# QA Round 3: pi-backend-comprehensive
 
 **Date:** 2026-02-24  
 **Retry after fixes:**

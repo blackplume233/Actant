@@ -58,7 +58,8 @@ Actant
 │   ├── Plugin Module       # [Phase 4] PluginHost + 三插口 Plugin 体系
 │   ├── Hook Module         # [Phase 4] HookEventBus + HookRegistry + ActionRunner
 │   ├── Scheduler Module    # [Phase 3c+4] EmployeeScheduler + 四模式调度
-│   └── Email Module        # [Phase 4] EmailHub + Agent-to-Agent 通信
+│   ├── Email Module        # [Phase 4] EmailHub + Agent-to-Agent 通信
+│   └── VFS Module          # [#248] VfsRegistry + Source Factories + Path Resolution
 │
 ├── Actant ACP          # Agent Client Protocol server
 │
@@ -127,6 +128,37 @@ Actant
 | [Logging Guidelines](./logging-guidelines.md) | Structured logging for agent lifecycle | Initial |
 | [Context Injector](./context-injector.md) | ContextProvider 注册/收集/过滤协议、内置 Provider、模板引擎 | Updated |
 | [Plugin 预定设计](./plugin-guidelines.md) | **[Phase 4 预定]** Plugin / Hook / Scheduler / Memory 预定设计草案，实施前须重新审查 | **Preliminary** |
+| VFS (see [api-contracts §3.18](../api-contracts.md)) | VFS Registry、Source Factories、默认挂载点、能力体系 | **Implemented** |
+
+---
+
+## Common Mistakes
+
+### New Subsystem Missing Daemon Initialization
+
+**Symptom**: 新子系统的所有 RPC 调用返回 "XXX not initialized" 错误，但代码逻辑、类型、handlers、CLI 均已实现且单元测试通过。
+
+**Cause**: 子系统组件全部就绪但未在 `AppContext.init()` 中完成初始化注入。仅在 `AppContext` 中声明属性（`vfsRegistry?: VfsRegistry`）和在 handler registry 中注册 RPC handler 是不够的。
+
+**Fix**: 必须在 `AppContext.init()` 或构造函数中实例化子系统并完成接线。
+
+**Prevention**: 遵循以下检查清单。
+
+### New Subsystem Integration Checklist
+
+添加新子系统时必须完成以下全部 7 步，缺一步都会导致运行时故障：
+
+| # | 步骤 | 位置 | 验证方式 |
+|---|------|------|---------|
+| 1 | 定义类型 | `@actant/shared` types | `tsc --noEmit` |
+| 2 | 实现核心逻辑 | `@actant/core` | 单元测试 |
+| 3 | 注册 RPC handlers | `@actant/api` handlers | handler 文件 + daemon.ts import |
+| 4 | **初始化实例** | `AppContext` 构造函数/`init()` | **E2E 测试（易遗漏！）** |
+| 5 | 注册 ContextProvider（如需） | `AppContext.init()` → `sessionContextInjector.register()` | Agent 启动时 context 检查 |
+| 6 | 注册 CLI 命令 | `@actant/cli` commands + `program.ts` | `actant <cmd> --help` |
+| 7 | 接入生命周期事件 | `AppContext.init()` → `eventBus.on(...)` | Agent create/destroy 时验证 |
+
+> **教训 (#248 VFS)**: Types、Registry、Handlers、CLI、6 个 Source Factory、57 个单元测试全部实现并通过，但 QA 测试发现所有 RPC 调用返回 "VFS not initialized"——因为 Step 4 被遗漏，`AppContext.init()` 从未实例化 `VfsRegistry`。
 
 ---
 
@@ -152,6 +184,23 @@ Agent 启动时，`SessionContextInjector` 从所有已注册的 `ContextProvide
 
 > 完整规格（数据格式、接口定义、Scope 过滤规则、工作流）：[context-injector.md](./context-injector.md)
 > 实现参考：`packages/core/src/context-injector/`，`packages/api/src/services/app-context.ts`
+
+### Virtual File System (VFS)
+
+所有数据域（workspace、memory、config、canvas、process、VCS）统一通过虚拟路径（如 `/workspace/agent-a/AGENTS.md`）访问。Agent 使用标准 Read/Write 操作即可访问 VFS 路径，无需了解底层存储细节。
+
+核心组件：
+- `VfsRegistry` — 中央挂载点管理器，longest-prefix 路径解析
+- `SourceFactoryRegistry` — 声明式 spec → 挂载注册 转换
+- `VfsLifecycleManager` — 按生命周期策略自动卸载（daemon/agent/session/TTL/manual）
+- `VfsContextProvider` — 注入 VFS 挂载信息到 agent 系统上下文
+
+Daemon 启动时自动挂载 `/config`、`/memory`、`/canvas`；Agent 创建时自动挂载 `/workspace/<name>`。
+
+> 类型定义：`packages/shared/src/types/vfs.types.ts`
+> 核心实现：`packages/core/src/vfs/`
+> 初始化入口：`packages/api/src/services/app-context.ts` → `initializeVfs()`
+> RPC 契约：[api-contracts.md §3.18](../api-contracts.md)
 
 ### Multiple Launch Modes
 

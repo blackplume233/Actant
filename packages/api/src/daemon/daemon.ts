@@ -18,9 +18,11 @@ import {
   registerEventHandlers,
   registerCanvasHandlers,
   registerInternalHandlers,
+  registerVfsHandlers,
   disposeAllLeases,
 } from "../handlers/index";
 import { writePidFile, removePidFile, readPidFile, isProcessRunning } from "./pid-file";
+import { getApiPackageVersion } from "../services/package-version";
 
 const logger = createLogger("daemon");
 
@@ -49,6 +51,7 @@ export class Daemon {
     registerEventHandlers(this.handlers);
     registerCanvasHandlers(this.handlers);
     registerInternalHandlers(this.handlers);
+    registerVfsHandlers(this.handlers);
   }
 
   get socketPath(): string {
@@ -82,7 +85,7 @@ export class Daemon {
     this.running = true;
 
     this.ctx.eventBus.emit("actant:start", { callerType: "system", callerId: "Daemon" }, undefined, {
-      version: "0.1.0",
+      version: getApiPackageVersion(),
     });
 
     this.installSignalHandlers();

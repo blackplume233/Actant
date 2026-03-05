@@ -1,4 +1,4 @@
-﻿# Pi Backend Comprehensive QA 鈥?Round 5
+# Pi Backend Comprehensive QA 鈥?Round 5
 
 **Date:** 2026-02-23  
 **Environment:**

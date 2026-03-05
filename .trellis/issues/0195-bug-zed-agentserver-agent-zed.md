@@ -1,6 +1,6 @@
 ---
 id: 195
-title: "Bug: Zed AgentServer 妯″紡涓?Agent 鏃犳硶鎰熺煡 Zed 宸ヤ綔鐩綍鍐呭"
+title: "Bug: Zed AgentServer 模式下 Agent 无法感知 Zed 工作目录内容"
 status: open
 labels:
   - bug

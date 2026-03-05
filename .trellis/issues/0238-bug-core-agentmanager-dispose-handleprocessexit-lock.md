@@ -1,6 +1,6 @@
 ---
 id: 238
-title: "bug(core): AgentManager.dispose() 绔炴€佺獥鍙?鈥?寤惰繜 handleProcessExit lock 涓嶈绛夊緟"
+title: "bug(core): AgentManager.dispose() 竞态窗口 — 延迟 handleProcessExit lock 不被等待"
 status: open
 labels:
   - bug

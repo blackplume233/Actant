@@ -1,6 +1,6 @@
 ---
 id: 22
-title: ProcessWatcher锛氳繘绋嬮€€鍑烘娴嬩笌蹇冭烦鐩戞帶
+title: "ProcessWatcher：进程退出检测与心跳监控"
 status: closed
 labels:
   - core

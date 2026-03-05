@@ -42,3 +42,7 @@ docs/wiki/node_modules/
 
 # QA Alpha persistent environment
 .trellis/qa-alpha/
+
+# Local npm cache
+.npm-cache/
+.npm-cache-local/
