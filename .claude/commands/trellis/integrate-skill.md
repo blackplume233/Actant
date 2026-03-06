@@ -5,13 +5,13 @@ Adapt and integrate a Claude global skill into your project's development guidel
 ## Usage
 
 ```
-/trellis:integrate-skill <skill-name>
+/trellis-integrate-skill <skill-name>
 ```
 
 **Examples**:
 ```
-/trellis:integrate-skill frontend-design
-/trellis:integrate-skill mcp-builder
+/trellis-integrate-skill frontend-design
+/trellis-integrate-skill mcp-builder
 ```
 
 ## Core Principle
@@ -169,7 +169,7 @@ yarn add <package>
 If this skill is frequently used, create a shortcut command:
 
 ```bash
-/trellis:create-command use-<skill-name> Use <skill-name> skill following project guidelines
+/trellis-create-command use-<skill-name> Use <skill-name> skill following project guidelines
 ```
 
 ## Common Skill Integration Reference

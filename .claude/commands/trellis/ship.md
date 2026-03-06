@@ -1,6 +1,6 @@
 # Ship - 审查、提交、推送、同步 Issue 一站式流程
 
-编排 `/trellis:finish-work` 的审查清单，并追加 Commit、Push、Issue 同步操作，一次完成交付。
+编排 `/trellis-finish-work` 的审查清单，并追加 Commit、Push、Issue 同步操作，一次完成交付。
 
 **时机**: 代码编写完成后，准备交付时执行。
 
@@ -10,7 +10,7 @@
 
 ### Phase 1: Review（执行 finish-work 审查清单）
 
-**执行 `/trellis:finish-work` 中定义的全部检查项**，包括：
+**执行 `/trellis-finish-work` 中定义的全部检查项**，包括：
 
 1. **代码质量** — 运行 `pnpm lint`、`pnpm type-check`、`pnpm test`
 2. **代码模式扫描** — 检查 `console.log`、`any` 类型、非空断言
@@ -44,7 +44,7 @@ Spec 文档同步是 **必选项**（❌ 级别），不通过则阻止提交。
 4. 若 spec 文档未更新，标记为 **❌ spec 未同步**，列出需要更新的文档和触发原因
 5. **立即中止 ship 流程**，不进入 Phase 2
 
-**重要：ship 不负责修改 spec 文件。** 检测到不同步时，输出诊断信息后终止，要求用户先通过 `/trellis:update-spec` 或手动更新 spec 文档，然后重新执行 `/trellis:ship`。
+**重要：ship 不负责修改 spec 文件。** 检测到不同步时，输出诊断信息后终止，要求用户先通过 `/trellis-update-spec` 或手动更新 spec 文档，然后重新执行 `/trellis-ship`。
 
 **输出格式（中止时）**：
 ```
@@ -53,7 +53,7 @@ spec 文档同步检查：
   - api-contracts.md: ✅ 已同步
 
 ❌ Ship 已中止：spec 文档未同步。
-请先更新以上标记为 ❌ 的 spec 文档，然后重新执行 /trellis:ship。
+请先更新以上标记为 ❌ 的 spec 文档，然后重新执行 /trellis-ship。
 ```
 
 #### 输出审查报告
@@ -85,18 +85,7 @@ git diff --stat
 git log --oneline -5
 ```
 
-#### 2.2 Issue 同步检查
-
-确保所有本地 Issue 变更已推送到 GitHub，避免提交时本地缓存与远端不一致：
-
-```bash
-./.agents/skills/issue-manager/scripts/issue.sh check-dirty --strict
-```
-
-- 如果有 dirty Issue，先执行 `issue.sh sync --all` 再继续
-- 如果 `gh` CLI 不可用，标记为 "⚠️ 跳过" 并继续
-
-#### 2.3 暂存并提交
+#### 2.2 暂存并提交
 
 ```bash
 git add -A
@@ -107,9 +96,8 @@ Commit message 规则：
 - 使用 **英文**，遵循 Conventional Commits（`feat` / `fix` / `docs` / `refactor` / `test` / `chore`）
 - 简洁描述 "why" 而非 "what"
 - **不要提交** `.env`、`credentials.json` 等敏感文件（发现时警告并排除）
-- 如修复 Issue，在 message 中引用编号（如 `(#118)`），以便 Phase 4 自动关联
 
-#### 2.4 验证
+#### 2.3 验证
 
 ```bash
 git status
@@ -134,8 +122,6 @@ git push origin <当前分支>
 从以下来源识别本次变更关联的 Issue：
 
 1. **Commit message** — 解析 `#N` 引用（如 `fix(acp): ... (#95)`）
-   - `(#NNN)` — 关联引用（不自动关闭，仅添加评论）
-   - `fixes #NNN` / `closes #NNN` / `resolves #NNN` — 自动关闭
 2. **变更文件** — 检查 `.trellis/issues/` 目录下是否有新建或修改的 issue 文件
 3. **代码注释** — 检查变更代码中引用的 `#N`（如 `// see #116`）
 
@@ -143,7 +129,7 @@ git push origin <当前分支>
 
 **必须直接使用 `gh` CLI 操作 GitHub（权威源），再更新本地缓存。** 不依赖 `issue.sh` 的 bash 脚本（在 Windows 环境下不可靠）。
 
-对于每个引用的 Issue：
+对识别到的每个 Issue：
 
 ```bash
 # 1. 先确认 GitHub 上的实际状态
@@ -182,7 +168,9 @@ gh issue view <N> --json state,closedAt
 
 | Issue | 操作 | 状态 |
 |-------|------|------|
-| #118  | 关闭 + 评论 | ✅ 已同步 / ⚠️ 跳过 |
+| #95 | 添加评论 (progress) | ✅ 已同步 |
+| #116 | 确认 GitHub 已创建 | ✅ |
+| #117 | 确认 GitHub 已创建 | ✅ |
 ```
 
 ---
@@ -214,12 +202,12 @@ gh issue view <N> --json state,closedAt
 
 ```
 开发流程:
-  编写代码 → 测试 → /trellis:ship → /trellis:record-session
+  编写代码 → 测试 → /trellis-ship → /trellis-record-session
                       |
-          ┌───────────┼──────────────┬──────────┐
-          ↓           ↓              ↓          ↓
-   Phase 1: Review    Phase 2:     Phase 3:   Phase 4:
-   ├─ 代码质量        Commit       Push       Issue Sync
+          ┌───────────┼──────────────┬────────────┐
+          ↓           ↓              ↓            ↓
+   Phase 1: Review    Phase 2:     Phase 3:    Phase 4:
+   ├─ 代码质量        Commit       Push        Issue Sync
    ├─ 模式扫描
    └─ Spec 同步 (❌ 阻断)
        ├─ config-spec.md
@@ -228,7 +216,7 @@ gh issue view <N> --json state,closedAt
 
 | 命令 | 职责 |
 |------|------|
-| `/trellis:finish-work` | 审查清单（被本命令调用） |
-| `/trellis:ship` | 审查 + Spec 同步 + 提交 + 推送 + Issue 同步（本命令） |
-| `/trellis:record-session` | 记录会话和进度 |
-| `/trellis:update-spec` | 更新规范文档 |
+| `/trellis-finish-work` | 审查清单（被本命令调用） |
+| `/trellis-ship` | 审查 + Spec 同步 + 提交 + 推送 + Issue 同步（本命令） |
+| `/trellis-record-session` | 记录会话和进度 |
+| `/trellis-update-spec` | 更新规范文档 |

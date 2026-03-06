@@ -5,12 +5,12 @@ Create a new slash command in both `.cursor/commands/` (with `trellis-` prefix) 
 ## Usage
 
 ```
-/trellis:create-command <command-name> <description>
+/trellis-create-command <command-name> <description>
 ```
 
 **Example**:
 ```
-/trellis:create-command review-pr Check PR code changes against project guidelines
+/trellis-create-command review-pr Check PR code changes against project guidelines
 ```
 
 ## Execution Steps
@@ -75,7 +75,7 @@ File paths:
 - .claude/commands/trellis/<command-name>.md
 
 Usage:
-/trellis:<command-name>
+/trellis-<command-name>
 
 Description:
 <description>
@@ -112,7 +112,7 @@ Description:
 
 ### Input
 ```
-/trellis:create-command review-pr Check PR code changes against project guidelines
+/trellis-create-command review-pr Check PR code changes against project guidelines
 ```
 
 ### Generated Command Content

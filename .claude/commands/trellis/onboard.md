@@ -41,7 +41,7 @@ Every AI session starts with a blank slate. Unlike human engineers who accumulat
 
 **The Problem**: Without memory, AI asks the same questions repeatedly, makes the same mistakes, and can't build on previous work.
 
-**The Solution**: The `.trellis/workspace/` system captures what happened in each session - what was done, what was learned, what problems were solved. The `/trellis:start` command reads this history at session start, giving AI "artificial memory."
+**The Solution**: The `.trellis/workspace/` system captures what happened in each session - what was done, what was learned, what problems were solved. The `/trellis-start` command reads this history at session start, giving AI "artificial memory."
 
 ### Challenge 2: AI Has Generic Knowledge, Not Project-Specific Knowledge
 
@@ -57,7 +57,7 @@ Even after injecting guidelines, AI has limited context window. As conversation 
 
 **The Problem**: AI starts following guidelines, but as the session progresses and context fills up, it "forgets" the rules and reverts to generic patterns.
 
-**The Solution**: The `/check-*` commands re-verify code against guidelines AFTER writing, catching drift that occurred during development. The `/trellis:finish-work` command does a final holistic review.
+**The Solution**: The `/check-*` commands re-verify code against guidelines AFTER writing, catching drift that occurred during development. The `/trellis-finish-work` command does a final holistic review.
 
 ---
 
@@ -106,7 +106,7 @@ Even after injecting guidelines, AI has limited context window. As conversation 
 
 ## COMMAND DEEP DIVE
 
-### /trellis:start - Restore AI Memory
+### /trellis-start - Restore AI Memory
 
 **WHY IT EXISTS**:
 When a human engineer joins a project, they spend days/weeks learning: What is this project? What's been built? What's in progress? What's the current state?
@@ -121,12 +121,12 @@ AI needs the same onboarding - but compressed into seconds at session start.
 5. Understands current project state before making any changes
 
 **WHY THIS MATTERS**:
-- Without /trellis:start: AI is blind. It might work on wrong branch, conflict with others' work, or redo already-completed work.
-- With /trellis:start: AI knows project context, can continue where previous session left off, avoids conflicts.
+- Without /trellis-start: AI is blind. It might work on wrong branch, conflict with others' work, or redo already-completed work.
+- With /trellis-start: AI knows project context, can continue where previous session left off, avoids conflicts.
 
 ---
 
-### /trellis:before-frontend-dev and /trellis:before-backend-dev - Inject Specialized Knowledge
+### /trellis-before-frontend-dev and /trellis-before-backend-dev - Inject Specialized Knowledge
 
 **WHY IT EXISTS**:
 AI models have "pre-trained knowledge" - general patterns from millions of codebases. But YOUR project has specific conventions that differ from generic patterns.
@@ -145,7 +145,7 @@ AI models have "pre-trained knowledge" - general patterns from millions of codeb
 
 ---
 
-### /trellis:check-frontend and /trellis:check-backend - Combat Context Drift
+### /trellis-check-frontend and /trellis-check-backend - Combat Context Drift
 
 **WHY IT EXISTS**:
 AI context window has limited capacity. As conversation progresses, guidelines injected at session start become less influential. This causes "context drift."
@@ -162,7 +162,7 @@ AI context window has limited capacity. As conversation progresses, guidelines i
 
 ---
 
-### /trellis:check-cross-layer - Multi-Dimension Verification
+### /trellis-check-cross-layer - Multi-Dimension Verification
 
 **WHY IT EXISTS**:
 Most bugs don't come from lack of technical skill - they come from "didn't think of it":
@@ -180,7 +180,7 @@ Most bugs don't come from lack of technical skill - they come from "didn't think
 
 ---
 
-### /trellis:finish-work - Holistic Pre-Commit Review
+### /trellis-finish-work - Holistic Pre-Commit Review
 
 **WHY IT EXISTS**:
 The `/check-*` commands focus on code quality within a single layer. But real changes often have cross-cutting concerns.
@@ -193,10 +193,10 @@ The `/check-*` commands focus on code quality within a single layer. But real ch
 
 ---
 
-### /trellis:record-session - Persist Memory for Future
+### /trellis-record-session - Persist Memory for Future
 
 **WHY IT EXISTS**:
-All the context AI built during this session will be lost when session ends. The next session's `/trellis:start` needs this information.
+All the context AI built during this session will be lost when session ends. The next session's `/trellis-start` needs this information.
 
 **WHAT IT ACTUALLY DOES**:
 1. Records session summary to `workspace/{developer}/journal-N.md`
@@ -209,47 +209,47 @@ All the context AI built during this session will be lost when session ends. The
 
 ### Example 1: Bug Fix Session
 
-**[1/8] /trellis:start** - AI needs project context before touching code
+**[1/8] /trellis-start** - AI needs project context before touching code
 **[2/8] bash ./.trellis/scripts/task.sh create "Fix bug" --slug fix-bug** - Track work for future reference
-**[3/8] /trellis:before-frontend-dev** - Inject project-specific frontend knowledge
+**[3/8] /trellis-before-frontend-dev** - Inject project-specific frontend knowledge
 **[4/8] Investigate and fix the bug** - Actual development work
-**[5/8] /trellis:check-frontend** - Re-verify code against guidelines
-**[6/8] /trellis:finish-work** - Holistic cross-layer review
+**[5/8] /trellis-check-frontend** - Re-verify code against guidelines
+**[6/8] /trellis-finish-work** - Holistic cross-layer review
 **[7/8] Human tests and commits** - Human validates before code enters repo
-**[8/8] /trellis:record-session** - Persist memory for future sessions
+**[8/8] /trellis-record-session** - Persist memory for future sessions
 
 ### Example 2: Planning Session (No Code)
 
-**[1/4] /trellis:start** - Context needed even for non-coding work
+**[1/4] /trellis-start** - Context needed even for non-coding work
 **[2/4] bash ./.trellis/scripts/task.sh create "Planning task" --slug planning-task** - Planning is valuable work
 **[3/4] Review docs, create subtask list** - Actual planning work
-**[4/4] /trellis:record-session (with --summary)** - Planning decisions must be recorded
+**[4/4] /trellis-record-session (with --summary)** - Planning decisions must be recorded
 
 ### Example 3: Code Review Fixes
 
-**[1/6] /trellis:start** - Resume context from previous session
-**[2/6] /trellis:before-backend-dev** - Re-inject guidelines before fixes
+**[1/6] /trellis-start** - Resume context from previous session
+**[2/6] /trellis-before-backend-dev** - Re-inject guidelines before fixes
 **[3/6] Fix each CR issue** - Address feedback with guidelines in context
-**[4/6] /trellis:check-backend** - Verify fixes didn't introduce new issues
-**[5/6] /trellis:finish-work** - Document lessons from CR
-**[6/6] Human commits, then /trellis:record-session** - Preserve CR lessons
+**[4/6] /trellis-check-backend** - Verify fixes didn't introduce new issues
+**[5/6] /trellis-finish-work** - Document lessons from CR
+**[6/6] Human commits, then /trellis-record-session** - Preserve CR lessons
 
 ### Example 4: Large Refactoring
 
-**[1/5] /trellis:start** - Clear baseline before major changes
+**[1/5] /trellis-start** - Clear baseline before major changes
 **[2/5] Plan phases** - Break into verifiable chunks
 **[3/5] Execute phase by phase with /check-* after each** - Incremental verification
-**[4/5] /trellis:finish-work** - Check if new patterns should be documented
+**[4/5] /trellis-finish-work** - Check if new patterns should be documented
 **[5/5] Record with multiple commit hashes** - Link all commits to one feature
 
 ### Example 5: Debug Session
 
-**[1/6] /trellis:start** - See if this bug was investigated before
-**[2/6] /trellis:before-backend-dev** - Guidelines might document known gotchas
+**[1/6] /trellis-start** - See if this bug was investigated before
+**[2/6] /trellis-before-backend-dev** - Guidelines might document known gotchas
 **[3/6] Investigation** - Actual debugging work
-**[4/6] /trellis:check-backend** - Verify debug changes don't break other things
-**[5/6] /trellis:finish-work** - Debug findings might need documentation
-**[6/6] Human commits, then /trellis:record-session** - Debug knowledge is valuable
+**[4/6] /trellis-check-backend** - Verify debug changes don't break other things
+**[5/6] /trellis-finish-work** - Debug findings might need documentation
+**[6/6] Human commits, then /trellis-record-session** - Debug knowledge is valuable
 
 ---
 
@@ -258,7 +258,7 @@ All the context AI built during this session will be lost when session ends. The
 1. **AI NEVER commits** - Human tests and approves. AI prepares, human validates.
 2. **Guidelines before code** - /before-*-dev commands inject project knowledge.
 3. **Check after code** - /check-* commands catch context drift.
-4. **Record everything** - /trellis:record-session persists memory.
+4. **Record everything** - /trellis-record-session persists memory.
 
 ---
 
@@ -351,7 +351,7 @@ After covering all three parts, summarize:
 - Part 3: Guidelines status (empty templates need filling / already customized)
 
 **Next steps** (tell user):
-1. Run `/trellis:record-session` to record this onboard session
+1. Run `/trellis-record-session` to record this onboard session
 2. [If guidelines empty] Start filling in `.trellis/spec/` guidelines
 3. [If guidelines ready] Start your first development task
 

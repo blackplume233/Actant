@@ -1,6 +1,6 @@
 # Plan & Start Session
 
-Enhanced version of `trellis:start` 鈥?adds a **Plan Phase** before execution.
+Enhanced version of `trellis-start` 鈥?adds a **Plan Phase** before execution.
 First builds a structured plan document for user review, then executes confirmed tasks through the standard trellis workflow.
 
 ---
@@ -9,7 +9,7 @@ First builds a structured plan document for user review, then executes confirmed
 
 | Marker | Meaning | Executor |
 |--------|---------|----------|
-| `[AI]` | Bash scripts or Task calls executed by AI | You (AI) |
+| `[AI]` | Bash scripts or file reads executed by AI | You (AI) |
 | `[USER]` | Decisions or slash commands by user | User |
 | `[COLLAB]` | AI proposes, user confirms/adjusts | Both |
 
@@ -17,35 +17,33 @@ First builds a structured plan document for user review, then executes confirmed
 
 ## Phase 0: Initialization `[AI]`
 
-Same as `/trellis:start`:
+Same as `/trellis-start`:
 
-### Step 0.1: Understand Development Workflow
+### Step 0.1: Understand Trellis Workflow
 
 ```bash
 cat .trellis/workflow.md
 ```
-
-**Follow the instructions in workflow.md** 鈥?it contains core principles, file system structure, and best practices.
 
 ### Step 0.2: Initialize Developer Identity (Actant Agent)
 
 Ensure your Actant Agent identity is initialized. Check if already set, if not, initialize:
 
 ```bash
-bash ./.trellis/scripts/get-developer.sh || bash ./.trellis/scripts/init-developer.sh actant-claude-agent
+bash ./.trellis/scripts/get-developer.sh || bash ./.trellis/scripts/init-developer.sh actant-cursor-agent
 ```
 
-> **Actant Agent 韬唤**: AI 寮€鍙戣€呮槸涓€涓?Actant Agent 瀹炰緥銆侰laude Code 浣跨敤 `actant-claude-agent` 浣滀负韬唤鏍囪瘑銆?
+> **Actant Agent 韬唤**: AI 寮€鍙戣€呮槸涓€涓?Actant Agent 瀹炰緥銆侰ursor AI 浣跨敤 `actant-cursor-agent` 浣滀负韬唤鏍囪瘑銆?
 
-### Step 0.3: Get Current Context
+### Step 0.3: Get Current Status
 
 ```bash
 bash ./.trellis/scripts/get-context.sh
 ```
 
-This shows: developer identity, git status, current task (if any), active tasks.
+### Step 0.4: Read Project Guidelines
 
-### Step 0.4: Read Guidelines Index
+Read relevant spec docs based on context:
 
 ```bash
 cat .trellis/spec/frontend/index.md
@@ -61,7 +59,7 @@ bash ./.trellis/scripts/task.sh list
 
 ### Step 0.6: Report Ready Status
 
-Report what you learned, then:
+Output initialization summary (same as trellis-start), then:
 
 > Initialization complete. Please describe your task 鈥?I'll create a plan for us to review before starting.
 
@@ -79,45 +77,16 @@ When user describes their task:
 
 ### Step 1.2: Research Codebase `[AI]`
 
-Call Research Agent:
+Perform deep analysis:
 
-```
-Task(
-  subagent_type: "research",
-  prompt: "Analyze the codebase for this task:
-
-  Task: <user's task description>
-  Type: <frontend/backend/fullstack>
-
-  Please find:
-  1. Relevant spec files in .trellis/spec/
-  2. Existing code patterns to follow (2-3 examples)
-  3. Files that will need modification
-  4. Potential risks and dependencies
-  5. Suggested task slug name
-
-  Output:
-  ## Relevant Specs
-  - <path>: <why relevant>
-
-  ## Code Patterns Found
-  - <pattern>: <example file>
-
-  ## Files to Modify
-  - <path>: <what change>
-
-  ## Risks
-  - <risk>: <mitigation>
-
-  ## Suggested Task Name
-  - <slug>",
-  model: "opus"
-)
-```
+1. Search for relevant spec files in `.trellis/spec/`
+2. Find existing code patterns (2-3 representative examples)
+3. Identify files that need modification
+4. Identify potential risks and dependencies
 
 ### Step 1.3: Generate Plan Document `[AI]`
 
-Create a plan file at the Cursor plans directory.
+Create a plan file at: `c:\Users\{user}\.cursor\plans\{slug}_{hash}.plan.md`
 
 The plan document uses the following format:
 
@@ -132,22 +101,23 @@ todos:
   - id: <kebab-case-id>
     content: "<Priority>: <Task description>"
     status: pending
+  # ... more todos
 isProject: false
 ---
 
 # <Plan Title>
 
-<Brief context paragraph>
+<Brief context paragraph explaining the goal and scope>
 
 ---
 
 ## 涓€銆佽儗鏅垎鏋?
 
-<Why this task is needed>
+<Why this task is needed, what problem it solves>
 
 ## 浜屻€佹柟妗堣璁?
 
-<Technical approach, architecture decisions>
+<Technical approach, architecture decisions, alternatives considered>
 
 ## 涓夈€佸疄鏂借鍒?
 
@@ -156,12 +126,13 @@ isProject: false
 | # | Task | Priority | Dependencies | Estimated Effort |
 |---|------|----------|--------------|-----------------|
 | 1 | <task> | P0 | - | <effort> |
+| 2 | <task> | P1 | #1 | <effort> |
 
 ### Phase 2: <Phase Name>
 
 | # | Task | Priority | Dependencies | Estimated Effort |
 |---|------|----------|--------------|-----------------|
-| 2 | <task> | P1 | Phase 1 | <effort> |
+| 3 | <task> | P1 | Phase 1 | <effort> |
 
 ## 鍥涖€佸奖鍝嶈寖鍥?
 
@@ -172,7 +143,8 @@ isProject: false
 - `<path>`: <purpose>
 
 ### Risk Assessment
-- <risk>: <mitigation>
+- <risk 1>: <mitigation>
+- <risk 2>: <mitigation>
 
 ## 浜斻€侀獙鏀舵爣鍑?
 
@@ -186,30 +158,55 @@ isProject: false
 
 **Plan Document Rules:**
 
-- **Todos in frontmatter** map 1:1 to actionable implementation steps
+- **Todos in frontmatter** must map 1:1 to actionable implementation steps
 - **Priority levels**: P0 (must-have), P1 (important), P2 (nice-to-have)
 - **Status values**: `pending`, `in_progress`, `completed`
 - **Dependencies** must be explicit 鈥?no circular references
+- Keep the plan **concise but complete** 鈥?the user should be able to understand the full scope at a glance
 
 ### Step 1.4: Present Plan to User `[COLLAB]`
 
-Output the plan summary and ask user to review:
+Output the plan and ask:
 
+```markdown
+## 馃搵 Plan Ready for Review
+
+I've created the plan document: `<plan-file-path>`
+
+### Summary
+- **Total tasks**: {count}
+- **P0 (must-have)**: {count}
+- **P1 (important)**: {count}
+- **P2 (nice-to-have)**: {count}
+- **Estimated scope**: {files} files, {phases} phases
+
+### Key Decisions
+1. <decision 1 鈥?why this approach>
+2. <decision 2 鈥?trade-off made>
+
+---
+
+Please review the plan. You can:
 - **Approve**: "LGTM" or "approved" to start execution
-- **Adjust**: Tell me what to change
-- **Reject**: "reject" to start over
+- **Adjust**: Tell me what to change (add/remove/reorder tasks, change priorities)
+- **Reject**: "reject" to start over with different requirements
+```
 
 ### Step 1.5: Iterate on Plan `[COLLAB]`
 
-If user requests changes, update plan and re-present.
+If user requests changes:
 
-**Important**: Do NOT proceed to Phase 2 until user explicitly approves.
+1. Update the plan document with requested modifications
+2. Re-present the updated summary
+3. Repeat until user approves
+
+**Important**: Do NOT proceed to Phase 2 until the user explicitly approves.
 
 ---
 
 ## Phase 2: Execute Plan `[AI]`
 
-Once the user approves, execute using the standard trellis task workflow.
+Once the user approves the plan, execute using the standard trellis task workflow.
 
 ### Step 2.1: Create Task from Plan `[AI]`
 
@@ -219,10 +216,16 @@ TASK_DIR=$(bash ./.trellis/scripts/task.sh create "<plan title>" --slug <plan-sl
 
 ### Step 2.2: Configure Context `[AI]`
 
+Initialize context based on task type identified in the plan:
+
 ```bash
 bash ./.trellis/scripts/task.sh init-context "$TASK_DIR" <type>
+# type: backend | frontend | fullstack
+```
 
-# Add specs found during research:
+Add specs discovered during research:
+
+```bash
 bash ./.trellis/scripts/task.sh add-context "$TASK_DIR" implement "<path>" "<reason>"
 bash ./.trellis/scripts/task.sh add-context "$TASK_DIR" check "<path>" "<reason>"
 ```
@@ -238,16 +241,16 @@ Convert the approved plan into `prd.md` in the task directory:
 <From plan overview>
 
 ## Requirements
-<From plan - section 浜?
+<From plan body - section 浜?
 
 ## Acceptance Criteria
-<From plan - section 浜?
+<From plan body - section 浜?
 
 ## Implementation Plan
-<From plan - section 涓?
+<From plan body - section 涓? include todo references>
 
 ## Technical Notes
-<From plan - section 浜?technical approach>
+<From plan body - section 浜?technical approach>
 ```
 
 ### Step 2.4: Activate Task `[AI]`
@@ -265,44 +268,22 @@ For each todo in the plan (ordered by priority, respecting dependencies):
    - For code tasks 鈫?call Implement Agent with specific scope
    - For config tasks 鈫?make changes directly
    - For doc tasks 鈫?write documentation
-3. **Run quality checks** after each significant todo
+3. **Run quality checks** after each significant todo:
+   ```bash
+   # Lint + typecheck
+   pnpm lint
+   pnpm typecheck
+   ```
 4. **Update todo status** to `completed` in the plan file
-5. **Report progress** to user
-
-Implementation via sub-agents (specs auto-injected by hook):
-
-```
-Task(
-  subagent_type: "implement",
-  prompt: "Implement this specific todo:
-
-  Todo: <todo content>
-  Context: <relevant plan sections>
-
-  Follow all specs injected into your context.
-  Run lint and typecheck before finishing.",
-  model: "opus"
-)
-```
-
-Quality verification via sub-agents:
-
-```
-Task(
-  subagent_type: "check",
-  prompt: "Review code changes for this todo:
-
-  Todo: <todo content>
-
-  Fix any issues found directly.
-  Ensure lint and typecheck pass.",
-  model: "opus"
-)
-```
+5. **Report progress** to user:
+   ```
+   鉁?Completed: <todo content>
+   Progress: {completed}/{total} tasks
+   ```
 
 ### Step 2.6: Final Quality Check `[AI]`
 
-After all todos completed:
+After all todos are completed:
 
 1. Run full lint and typecheck
 2. Run incremental tests (`pnpm test:changed`)
@@ -310,18 +291,36 @@ After all todos completed:
 
 ### Step 2.7: Complete `[AI]`
 
-1. Update all todo statuses in plan file
-2. Report final summary (tasks completed, files modified, test/lint status)
+1. Update all todo statuses to `completed` in the plan file
+2. Report final summary:
+
+```markdown
+## Plan Execution Complete
+
+| Metric | Value |
+|--------|-------|
+| Tasks Completed | {completed}/{total} |
+| Files Modified | {count} |
+| Tests Passing | Yes/No |
+| Lint Clean | Yes/No |
+
+### What Was Done
+- <summary of changes>
+
+### Remaining (if any)
+- <deferred P2 items>
+```
+
 3. Remind user to:
    - Test the changes
    - Commit when ready
-   - Run `/trellis:record-session`
+   - Run `/trellis-record-session`
 
 ---
 
 ## Continuing a Plan
 
-If user returns with an existing plan:
+If user returns and mentions an existing plan:
 
 1. Read the plan file to check todo statuses
 2. Identify next `pending` todo
@@ -334,12 +333,12 @@ If user returns with an existing plan:
 
 ### User Commands `[USER]`
 
-| Command | When to Use |
+| Command | Description |
 |---------|-------------|
-| `/trellis:plan-start` | Plan-first session (this command) |
-| `/trellis:start` | Quick start without planning |
-| `/trellis:finish-work` | Before committing changes |
-| `/trellis:record-session` | After completing a task |
+| `/trellis-plan-start` | Plan-first session (this command) |
+| `/trellis-start` | Quick start without planning |
+| `/trellis-finish-work` | Pre-commit checklist |
+| `/trellis-record-session` | Record session progress |
 
 ### AI Scripts `[AI]`
 
@@ -353,27 +352,18 @@ If user returns with an existing plan:
 | `task.sh finish` | Clear current task |
 | `task.sh archive` | Archive completed task |
 
-### Sub Agents `[AI]`
-
-| Agent | Purpose | Hook Injection |
-|-------|---------|----------------|
-| research | Analyze codebase for plan | No |
-| implement | Write code per todo | Yes (implement.jsonl) |
-| check | Review & fix per todo | Yes (check.jsonl) |
-| debug | Fix specific issues | Yes (debug.jsonl) |
-
 ---
 
-## When to Use This vs `/trellis:start`
+## When to Use This vs `/trellis-start`
 
-| Scenario | Command |
-|----------|---------|
-| Quick bug fix, typo, small change | `/trellis:start` |
-| New feature with unclear scope | `/trellis:plan-start` |
-| Multi-phase refactoring | `/trellis:plan-start` |
-| Cross-layer changes (frontend + backend) | `/trellis:plan-start` |
-| Exploratory task (research first) | `/trellis:plan-start` |
-| Continuing from a previous plan | `/trellis:plan-start` |
+| Scenario | Recommended Command |
+|----------|-------------------|
+| Quick bug fix, typo, small change | `/trellis-start` |
+| New feature with unclear scope | `/trellis-plan-start` |
+| Multi-phase refactoring | `/trellis-plan-start` |
+| Cross-layer changes (frontend + backend) | `/trellis-plan-start` |
+| Exploratory task (need to research first) | `/trellis-plan-start` |
+| Continuing from a previous plan | `/trellis-plan-start` |
 
 ---
 
