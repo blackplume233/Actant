@@ -619,8 +619,10 @@ describe("Endurance tests — Phase 1", () => {
       console.log(`[endurance] shutdown/one-shot-ephemeral: ${cycles} cycles in ${Date.now() - startTime}ms`);
     });
 
-    it(`acp-service: crash → restart, stop → no restart — ${DURATION_MS}ms`, async () => {
-      const manager = new AgentManager(initializer, launcher, tmpDir, makeManagerOpts());
+    it(`acp-service: crash → crashed → restart, stop → no restart — ${DURATION_MS}ms`, async () => {
+      const manager = new AgentManager(initializer, launcher, tmpDir, makeManagerOpts({
+        restartPolicy: { maxRestarts: 100, backoffBaseMs: 500, backoffMaxMs: 500, resetAfterMs: 5_000 },
+      }));
       await manager.initialize();
       const ctl = await createPidController();
 
@@ -633,9 +635,13 @@ describe("Endurance tests — Phase 1", () => {
 
       while (Date.now() - startTime < DURATION_MS) {
         if (Math.random() < 0.5) {
-          // Crash → should auto-restart with new PID
+          // Crash → should first enter crashed, then auto-restart with new PID
           const oldPid = manager.getAgent("svc-sh")!.pid!;
           ctl.kill(oldPid);
+          await vi.waitFor(() => {
+            expect(manager.getStatus("svc-sh")).toBe("crashed");
+          }, { timeout: 3000, interval: 50 });
+          expect(manager.getAgent("svc-sh")?.pid).toBeUndefined();
           await vi.waitFor(() => {
             const p = manager.getAgent("svc-sh")?.pid;
             expect(p).toBeDefined();

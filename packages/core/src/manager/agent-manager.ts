@@ -1033,7 +1033,11 @@ export class AgentManager {
 
     const dir = join(this.instancesBaseDir, instanceName);
     const exitedAt = new Date().toISOString();
-    const exitStatus: AgentStatus = meta.processOwnership === "external" ? "crashed" : "stopped";
+    const exitStatus: AgentStatus = meta.processOwnership === "external"
+      ? "crashed"
+      : action.type === "restart"
+        ? "crashed"
+        : "stopped";
     const stopped = await updateInstanceMeta(dir, {
       status: exitStatus,
       pid: undefined,

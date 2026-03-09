@@ -394,6 +394,33 @@ describe("AgentManager", () => {
       spy.mockRestore();
       watcherManager.dispose();
     });
+
+    it("should mark acp-service agent as crashed before restart handling", async () => {
+      const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+        restartPolicy: { maxRestarts: 1, backoffBaseMs: 500, backoffMaxMs: 500 },
+      });
+      await watcherManager.initialize();
+
+      await watcherManager.createAgent("svc-crash", "test-tpl", { launchMode: "acp-service" });
+      await watcherManager.startAgent("svc-crash");
+
+      const processUtils = await import("./launcher/process-utils");
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(false);
+
+      await vi.waitFor(() => {
+        expect(watcherManager.getStatus("svc-crash")).toBe("crashed");
+      }, { timeout: 1000, interval: 20 });
+
+      expect(watcherManager.getAgent("svc-crash")?.pid).toBeUndefined();
+
+      await vi.waitFor(() => {
+        expect(["crashed", "error", "running"]).toContain(watcherManager.getStatus("svc-crash") ?? "");
+      }, { timeout: 5000, interval: 50 });
+
+      spy.mockRestore();
+      watcherManager.dispose();
+    });
   });
 
   describe("ProcessWatcher integration", () => {
