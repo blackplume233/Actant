@@ -1,7 +1,5 @@
-import { join } from "node:path";
-import { homedir } from "node:os";
 import { describe, it, expect } from "vitest";
-import { getDefaultIpcPath, getIpcPath, ipcRequiresFileCleanup, isWindows } from "./platform";
+import { getDefaultIpcPath, getIpcPath, ipcRequiresFileCleanup, isWindows, normalizeIpcPath } from "./platform";
 
 describe("platform utilities", () => {
   it("getDefaultIpcPath returns a non-empty string", () => {
@@ -47,8 +45,17 @@ describe("platform utilities", () => {
     expect(getDefaultIpcPath(homeDir)).toBe(getIpcPath(homeDir));
   });
 
+  it("normalizes ACTANT_SOCKET-style .sock override on Windows", () => {
+    if (isWindows()) {
+      const input = ".trellis/tmp/demo/actant.sock";
+      expect(normalizeIpcPath(input, ".trellis/tmp/demo")).toBe(getIpcPath(".trellis/tmp/demo"));
+    } else {
+      expect(normalizeIpcPath(".trellis/tmp/demo/actant.sock")).toContain("actant.sock");
+    }
+  });
+
   it("getDefaultIpcPath without args matches getIpcPath with default home", () => {
-    const defaultHome = join(homedir(), ".actant");
-    expect(getDefaultIpcPath()).toBe(getIpcPath(defaultHome));
+    const defaultHome = process.env.HOME ?? process.env.USERPROFILE ?? ".";
+    expect(getDefaultIpcPath()).toBe(getIpcPath(defaultHome.endsWith(".actant") ? defaultHome : `${defaultHome}/.actant`));
   });
 });

@@ -1,6 +1,7 @@
 export {
   getDefaultIpcPath,
   getIpcPath,
+  normalizeIpcPath,
   ipcRequiresFileCleanup,
   onShutdownSignal,
   isWindows,

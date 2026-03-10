@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { readFileSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { getDefaultIpcPath } from "@actant/shared";
+import { join } from "node:path";
+import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared";
 import { RpcClient } from "./client/rpc-client";
 import {
   createTemplateCommand,
@@ -30,7 +30,7 @@ export function defaultSocketPath(): string {
   const home = process.env["ACTANT_HOME"];
   const socketOverride = process.env["ACTANT_SOCKET"];
   if (socketOverride) {
-    return resolve(socketOverride);
+    return normalizeIpcPath(socketOverride, home);
   }
   return getDefaultIpcPath(home);
 }

@@ -3,6 +3,25 @@ import { ActantError } from "@actant/shared";
 import { RpcCallError, ConnectionError } from "../client/rpc-client";
 import { type CliPrinter, defaultPrinter } from "./printer";
 
+function formatContextValue(value: unknown): string {
+  if (typeof value === "string") return value;
+
+  return JSON.stringify(
+    value,
+    (_key, nestedValue) => {
+      if (nestedValue instanceof Error) {
+        return {
+          name: nestedValue.name,
+          message: nestedValue.message,
+          ...(nestedValue.cause !== undefined ? { cause: nestedValue.cause } : {}),
+        };
+      }
+      return nestedValue;
+    },
+    2,
+  );
+}
+
 export function presentError(err: unknown, printer: CliPrinter = defaultPrinter): void {
   if (err instanceof ConnectionError) {
     printer.errorStyled("Cannot connect to daemon.");
@@ -15,9 +34,7 @@ export function presentError(err: unknown, printer: CliPrinter = defaultPrinter)
     if (err.data && typeof err.data === "object") {
       const data = err.data as Record<string, unknown>;
       if (data.context) {
-        const ctx = data.context;
-        const text = typeof ctx === "string" ? ctx : JSON.stringify(ctx, null, 2);
-        printer.error(`${chalk.dim("  Context:")} ${text}`);
+        printer.error(`${chalk.dim("  Context:")} ${formatContextValue(data.context)}`);
       }
       if (data.errorCode) {
         printer.errorDim(`  Code: ${String(data.errorCode)}`);
@@ -29,7 +46,7 @@ export function presentError(err: unknown, printer: CliPrinter = defaultPrinter)
   if (err instanceof ActantError) {
     printer.error(`${chalk.red(`[${err.code}]`)} ${err.message}`);
     if (err.context && Object.keys(err.context).length > 0) {
-      printer.error(`${chalk.dim("  Context:")} ${JSON.stringify(err.context)}`);
+      printer.error(`${chalk.dim("  Context:")} ${formatContextValue(err.context)}`);
     }
     return;
   }

@@ -1,34 +1,28 @@
 ---
-id: 256
+id: 261
 title: "[Review] 核心架构深度审查汇总：语义一致性、可扩展性与安全边界问题"
 status: closed
 labels:
   - bug
-  - "priority:P1"
-  - review
   - quality
-  - architecture
-  - acp
-  - api
   - core
+  - acp
+  - architecture
+  - "priority:P1"
+  - api
+  - review
   - rest-api
 milestone: null
 author: cursor-agent
 assignees: []
 relatedIssues: []
-relatedFiles:
-  - packages/acp/src/connection-manager.ts
-  - packages/core/src/manager/agent-manager.ts
-  - packages/api/src/services/app-context.ts
-  - packages/api/src/daemon/daemon.ts
-  - packages/rest-api/src/server.ts
-  - packages/rest-api/src/index.ts
+relatedFiles: []
 taskRef: null
 githubRef: "blackplume233/Actant#261"
 closedAs: completed
-createdAt: "2026-02-28T06:07:38"
-updatedAt: "2026-03-10T15:14:54Z"
-closedAt: "2026-03-10T15:14:54Z"
+createdAt: "2026-02-28T06:13:58Z"
+updatedAt: "2026-03-10T14:41:21Z"
+closedAt: "2026-03-10T14:41:21Z"
 ---
 
 **Related Files**: `packages/acp/src/connection-manager.ts`, `packages/core/src/manager/agent-manager.ts`, `packages/api/src/services/app-context.ts`, `packages/api/src/daemon/daemon.ts`, `packages/rest-api/src/server.ts`, `packages/rest-api/src/index.ts`
@@ -102,16 +96,8 @@ closedAt: "2026-03-10T15:14:54Z"
 
 ---
 
-## Comments
+---
+_Synced from `.trellis/issues` (local ID: 256)_
 
-### ### ### cursor-agent — 2026-02-28T06:26:27
-
-修复者声明：codex（本次问题修复与提交由 codex 执行）
-
-### cursor-agent — 2026-02-28T06:55:13
-
-修复进展（codex）：已在分支 codex/review-256-fixes 落地实现。\n- 修复 ACP connect 失败分支资源清理（enforcers/recordingHandlers/gateways）\n- 修复 REST API SSE 鉴权豁免，改为支持 query token（api_key/token）\n- 修复 AgentManager 退出事件语义（stop/crash 区分）\n- 修复 AppContext init 重入导致重复注册监听\n- 统一版本来源（api daemon event + daemon.ping + rest-api openapi）\n- 修复 rest-api 多次启动重复注册信号监听\n验证：@actant/core test 通过；@actant/acp test（无测试文件，exit 0）；@actant/core/@actant/api/@actant/rest-api type-check 通过。
-
-### cursor-agent — 2026-02-28T15:54:34
-
-[QA Loop] Round3 PASS（codex）\n- 场景：review-256 daemon/rest-api regression\n- 结果：5/5 通过\n- 关键验证：\n  1) daemon status 正常（version=0.2.3）\n  2) /v1/sse 未带 token 返回 401\n  3) /v1/sse 带 api_key 返回 200\n  4) SSE events 中 actant:start payload.version=0.2.3（无 0.1.0 陈旧值）\n- 日志：.trellis/tasks/qa-loop-review256/qa-log-round3.md\n- 报告：.trellis/tasks/qa-loop-review256/qa-report-round3.md
+**Author:** cursor-agent
+**Related files:** `packages/acp/src/connection-manager.ts`, `packages/core/src/manager/agent-manager.ts`, `packages/api/src/services/app-context.ts`, `packages/api/src/daemon/daemon.ts`, `packages/rest-api/src/server.ts`, `packages/rest-api/src/index.ts`

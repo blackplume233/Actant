@@ -54,6 +54,25 @@ export function getIpcPath(homeDir: string): string {
   return join(resolvedHome, "actant.sock");
 }
 
+export function normalizeIpcPath(inputPath: string, homeDir?: string): string {
+  if (!IS_WINDOWS) {
+    return resolve(inputPath);
+  }
+
+  if (inputPath.startsWith("\\\\.\\pipe\\")) {
+    return inputPath;
+  }
+
+  const normalized = inputPath.replace(/\\/g, "/").toLowerCase();
+  const looksLikeUnixSocketPath = normalized.endsWith(".sock") || normalized.includes("/actant.sock");
+  if (looksLikeUnixSocketPath) {
+    const baseDir = homeDir ?? inputPath.replace(/[\\/][^\\/]+$/, "");
+    return getIpcPath(baseDir);
+  }
+
+  return resolve(inputPath);
+}
+
 /**
  * Whether the current platform uses file-based IPC (Unix sockets)
  * that may need cleanup (unlink) before listening.

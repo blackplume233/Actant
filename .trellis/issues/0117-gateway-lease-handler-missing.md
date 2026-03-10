@@ -1,7 +1,7 @@
 ---
 id: 117
 title: gateway.lease RPC handler missing in Daemon — Session Lease Gateway mode broken
-status: open
+status: closed
 labels:
   - bug
   - acp
@@ -20,10 +20,10 @@ relatedFiles:
   - packages/acp/src/gateway.ts
 taskRef: null
 githubRef: "blackplume233/Actant#117"
-closedAs: null
+closedAs: completed
 createdAt: "2026-02-22T00:00:00"
-updatedAt: "2026-02-28T04:50:50"
-closedAt: null
+updatedAt: "2026-03-10T15:14:54Z"
+closedAt: "2026-03-10T15:14:54Z"
 ---
 
 **Related Issues**: [[0095]], [[0116-sdk-flat-terminal-methods]]

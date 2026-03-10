@@ -70,12 +70,20 @@ describe("presentError", () => {
     expect(printer.errorDim).toHaveBeenCalledWith("  Code: AGENT_LAUNCH_ERROR");
   });
 
-  it("RpcCallError with string context shows it as-is", () => {
-    const err = new RpcCallError("RPC failed", 500, { context: "plain text info" });
+  it("RpcCallError with nested error-like context preserves useful cause details", () => {
+    const err = new RpcCallError("RPC failed", 500, {
+      context: {
+        instanceName: "qa-dash-a",
+        cause: { message: "spawn ENOENT", code: "ENOENT", path: "claude" },
+      },
+    });
     presentError(err, printer as never);
     expect(printer.error).toHaveBeenNthCalledWith(
       2,
-      `${chalk.dim("  Context:")} plain text info`,
+      `${chalk.dim("  Context:")} ${JSON.stringify({
+        instanceName: "qa-dash-a",
+        cause: { message: "spawn ENOENT", code: "ENOENT", path: "claude" },
+      }, null, 2)}`,
     );
   });
 
@@ -98,7 +106,7 @@ describe("presentError", () => {
     );
     expect(printer.error).toHaveBeenNthCalledWith(
       2,
-      `${chalk.dim("  Context:")} ${JSON.stringify({ key: "value" })}`,
+      `${chalk.dim("  Context:")} ${JSON.stringify({ key: "value" }, null, 2)}`,
     );
   });
 

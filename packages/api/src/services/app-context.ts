@@ -1,4 +1,4 @@
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { homedir } from "node:os";
 import { mkdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
@@ -52,7 +52,7 @@ import { CanvasStore } from "./canvas-store";
 import type { ModelApiProtocol } from "@actant/shared";
 import { AcpConnectionManager } from "@actant/acp";
 import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
-import { createLogger, getIpcPath, initLogDir } from "@actant/shared";
+import { createLogger, getIpcPath, initLogDir, normalizeIpcPath } from "@actant/shared";
 
 const logger = createLogger("app-context");
 
@@ -137,7 +137,9 @@ export class AppContext {
     this.instancesDir = join(this.homeDir, "instances");
     this.registryPath = join(this.homeDir, "instances", "registry.json");
     this.builtinInstancesDir = join(this.homeDir, "instances");
-    this.socketPath = process.env.ACTANT_SOCKET ? resolve(process.env.ACTANT_SOCKET) : getIpcPath(this.homeDir);
+    this.socketPath = process.env.ACTANT_SOCKET
+      ? normalizeIpcPath(process.env.ACTANT_SOCKET, this.homeDir)
+      : getIpcPath(this.homeDir);
     this.pidFilePath = join(this.homeDir, "daemon.pid");
 
     this.instanceRegistry = new InstanceRegistry(this.registryPath, this.builtinInstancesDir);
