@@ -1,7 +1,7 @@
 ---
 id: 258
 title: "cli: agent start launch error context collapses to [object Object]"
-status: open
+status: closed
 labels:
   - bug
   - "priority:P1"
@@ -14,10 +14,10 @@ relatedIssues:
 relatedFiles: []
 taskRef: null
 githubRef: "blackplume233/Actant#263"
-closedAs: null
+closedAs: completed
 createdAt: "2026-02-28T16:47:26"
-updatedAt: "2026-02-28T16:57:58"
-closedAt: null
+updatedAt: "2026-03-05T16:03:34Z"
+closedAt: "2026-03-05T16:03:34Z"
 ---
 
 **Related Issues**: [[0259-cli-daemon-actant-socket-relative-sock-path-fails-with-eacce]]

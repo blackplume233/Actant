@@ -1,7 +1,7 @@
 ---
 id: 259
 title: "cli/daemon: ACTANT_SOCKET relative .sock path fails with EACCES on Windows"
-status: open
+status: closed
 labels:
   - bug
   - "priority:P1"
@@ -17,10 +17,10 @@ relatedFiles:
   - packages/cli/src/commands/daemon/start.ts
 taskRef: null
 githubRef: "blackplume233/Actant#264"
-closedAs: null
+closedAs: completed
 createdAt: "2026-02-28T16:56:06"
-updatedAt: "2026-02-28T16:57:59"
-closedAt: null
+updatedAt: "2026-03-05T16:03:33Z"
+closedAt: "2026-03-05T16:03:33Z"
 ---
 
 **Related Issues**: [[0258-cli-agent-start-launch-error-context-collapses-to-object-obj]]
