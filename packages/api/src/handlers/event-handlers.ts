@@ -1,12 +1,15 @@
 import type {
   EventsRecentParams,
   EventsRecentResult,
+  EventsEmitParams,
+  EventsEmitResult,
 } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 
 export function registerEventHandlers(registry: HandlerRegistry): void {
   registry.register("events.recent", handleEventsRecent);
+  registry.register("events.emit", handleEventsEmit);
 }
 
 async function handleEventsRecent(
@@ -24,4 +27,24 @@ async function handleEventsRecent(
       payload: e.data ?? {},
     })),
   };
+}
+
+async function handleEventsEmit(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<EventsEmitResult> {
+  const { event, agentName, payload } = params as unknown as EventsEmitParams;
+
+  if (!event || typeof event !== "string") {
+    throw new Error('Required parameter "event" is missing or invalid');
+  }
+
+  ctx.eventBus.emit(
+    event,
+    { callerType: "user", callerId: "webhook" },
+    agentName,
+    payload,
+  );
+
+  return { ok: true };
 }

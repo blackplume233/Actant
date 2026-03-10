@@ -101,10 +101,10 @@ export function registerWebhookRoutes(router: Router): void {
     }
 
     try {
-      const result = await ctx.bridge.call("gateway.lease", {
+      const result = await ctx.bridge.call("events.emit", {
         event: String(event),
         agentName: String(agentName),
-        ...(payload ? { payload } : {}),
+        ...(payload && typeof payload === "object" ? { payload } : {}),
       });
       json(res, result);
     } catch (err) {

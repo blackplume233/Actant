@@ -713,6 +713,16 @@ export interface EventsRecentResult {
   }>;
 }
 
+export interface EventsEmitParams {
+  event: string;
+  agentName?: string;
+  payload?: Record<string, unknown>;
+}
+
+export interface EventsEmitResult {
+  ok: true;
+}
+
 // internal.* — token-authenticated internal tool commands for managed agent processes
 
 export interface InternalValidateTokenParams {
@@ -834,6 +844,7 @@ export interface RpcMethodMap {
   "canvas.list": { params: CanvasListParams; result: CanvasListResult };
   "canvas.clear": { params: CanvasClearParams; result: CanvasClearResult };
   "events.recent": { params: EventsRecentParams; result: EventsRecentResult };
+  "events.emit": { params: EventsEmitParams; result: EventsEmitResult };
   "internal.validateToken": { params: InternalValidateTokenParams; result: InternalValidateTokenResult };
   "internal.canvasUpdate": { params: InternalCanvasUpdateParams; result: InternalCanvasUpdateResult };
   "internal.canvasClear": { params: InternalCanvasClearParams; result: InternalCanvasClearResult };

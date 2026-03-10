@@ -43,6 +43,33 @@ describe("createApiHandler", () => {
     }));
   });
 
+  it("routes webhook event ingress to events.emit instead of gateway.lease", async () => {
+    const call = vi.fn().mockResolvedValue({ ok: true });
+    const handler = createApiHandler({
+      bridge: { call } as never,
+    });
+
+    const req = {
+      url: "/v1/webhooks/event",
+      method: "POST",
+      headers: { host: "localhost" },
+      on: vi.fn((event: string, cb: (chunk?: Buffer) => void) => {
+        if (event === "data") cb(Buffer.from(JSON.stringify({ event: "custom:hook", agentName: "agent-a", payload: { x: 1 } })));
+        if (event === "end") cb();
+      }),
+    } as never;
+
+    const res = createMockResponse();
+    await handler(req, res as never);
+
+    expect(call).toHaveBeenCalledWith("events.emit", {
+      event: "custom:hook",
+      agentName: "agent-a",
+      payload: { x: 1 },
+    });
+    expect(res.writeHead).toHaveBeenCalledWith(200, { "Content-Type": "application/json" });
+  });
+
   it("reports package version in OpenAPI summary", async () => {
     const handler = createApiHandler({
       bridge: createMockBridge() as never,
