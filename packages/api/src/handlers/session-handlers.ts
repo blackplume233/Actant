@@ -11,7 +11,15 @@ import type {
   SessionListResult,
   SessionLeaseInfo,
 } from "@actant/shared";
-import { createLogger } from "@actant/shared";
+import {
+  createLogger,
+  SessionValidationError,
+  SessionNotFoundError,
+  SessionExpiredError,
+  AcpConnectionMissingError,
+  AgentNotRunningError,
+  AgentNotFoundError,
+} from "@actant/shared";
 import type { SessionLease } from "@actant/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
@@ -33,21 +41,21 @@ async function handleSessionCreate(
   const { agentName, clientId, idleTtlMs, conversationId } = params as unknown as SessionCreateParams;
 
   if (!agentName || typeof agentName !== 'string') {
-    throw new Error('Required parameter "agentName" is missing or invalid');
+    throw new SessionValidationError("agentName");
   }
   if (!clientId || typeof clientId !== 'string') {
-    throw new Error('Required parameter "clientId" is missing or invalid');
+    throw new SessionValidationError("clientId");
   }
 
   const meta = ctx.agentManager.getAgent(agentName);
   if (!meta) {
-    throw new Error(`Agent "${agentName}" not found`);
+    throw new AgentNotFoundError(agentName);
   }
   if (meta.status !== "running") {
-    throw new Error(`Agent "${agentName}" is not running (status: ${meta.status}). Start it with: actant agent start ${agentName}`);
+    throw new AgentNotRunningError(agentName, meta.status);
   }
   if (!ctx.agentManager.hasAcpConnection(agentName)) {
-    throw new Error(`Agent "${agentName}" has no ACP connection`);
+    throw new AcpConnectionMissingError(agentName);
   }
 
   const lease = ctx.sessionRegistry.create({ agentName, clientId, idleTtlMs, conversationId });
@@ -63,18 +71,18 @@ async function handleSessionPrompt(
   const { sessionId, text } = params as unknown as SessionPromptParams;
 
   if (!sessionId || typeof sessionId !== 'string') {
-    throw new Error('Required parameter "sessionId" is missing or invalid');
+    throw new SessionValidationError("sessionId");
   }
   if (!text || typeof text !== 'string') {
-    throw new Error('Required parameter "text" is missing or invalid');
+    throw new SessionValidationError("text");
   }
 
   const lease = ctx.sessionRegistry.get(sessionId);
   if (!lease) {
-    throw new Error(`Session "${sessionId}" not found`);
+    throw new SessionNotFoundError(sessionId);
   }
   if (lease.state === "expired") {
-    throw new Error(`Session "${sessionId}" has expired`);
+    throw new SessionExpiredError(sessionId);
   }
 
   ctx.sessionRegistry.touch(sessionId);
@@ -102,23 +110,23 @@ async function handleSessionCancel(
   const { sessionId } = params as unknown as SessionCancelParams;
 
   if (!sessionId || typeof sessionId !== 'string') {
-    throw new Error('Required parameter "sessionId" is missing or invalid');
+    throw new SessionValidationError("sessionId");
   }
 
   const lease = ctx.sessionRegistry.get(sessionId);
   if (!lease) {
-    throw new Error(`Session "${sessionId}" not found`);
+    throw new SessionNotFoundError(sessionId);
   }
 
   const conn = ctx.acpConnectionManager.getConnection(lease.agentName);
   if (!conn) {
-    throw new Error(`Agent "${lease.agentName}" has no ACP connection`);
+    throw new AcpConnectionMissingError(lease.agentName);
   }
 
   // Use the Agent's primary ACP session ID, not the lease session ID
   const acpSessionId = ctx.acpConnectionManager.getPrimarySessionId(lease.agentName);
   if (!acpSessionId) {
-    throw new Error(`Agent "${lease.agentName}" has no primary ACP session`);
+    throw new AcpConnectionMissingError(lease.agentName);
   }
 
   try {
@@ -139,12 +147,12 @@ async function handleSessionClose(
   const { sessionId } = params as unknown as SessionCloseParams;
 
   if (!sessionId || typeof sessionId !== 'string') {
-    throw new Error('Required parameter "sessionId" is missing or invalid');
+    throw new SessionValidationError("sessionId");
   }
 
   const closed = ctx.sessionRegistry.close(sessionId);
   if (!closed) {
-    throw new Error(`Session "${sessionId}" not found`);
+    throw new SessionNotFoundError(sessionId);
   }
 
   return { ok: true };

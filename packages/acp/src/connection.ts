@@ -27,7 +27,7 @@ import {
   type ReleaseTerminalRequest,
   type ReleaseTerminalResponse,
 } from "@agentclientprotocol/sdk";
-import { createLogger, isWindows } from "@actant/shared";
+import { createLogger, isWindows, AcpConnectionStateError } from "@actant/shared";
 import { resolveAcpBinary } from "./binary-resolver";
 import type { PermissionsConfig } from "@actant/shared";
 import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/core";
@@ -165,7 +165,7 @@ export class AcpConnection {
   /* ---------------------------------------------------------------- */
 
   async spawn(command: string, args: string[], cwd: string, resolvePackage?: string): Promise<void> {
-    if (this.child) throw new Error("AcpConnection already spawned");
+    if (this.child) throw new AcpConnectionStateError("AcpConnection already spawned");
 
     const resolved = resolveAcpBinary(command, resolvePackage);
     const finalCommand = resolved.command;
@@ -187,7 +187,7 @@ export class AcpConnection {
     });
 
     if (!this.child.stdout || !this.child.stdin) {
-      throw new Error("Failed to create stdio pipes for ACP agent");
+      throw new AcpConnectionStateError("Failed to create stdio pipes for ACP agent");
     }
 
     const stderrChunks: string[] = [];
@@ -230,7 +230,7 @@ export class AcpConnection {
   }
 
   async initialize(): Promise<InitializeResponse> {
-    if (!this.conn) throw new Error("AcpConnection not spawned");
+    if (!this.conn) throw new AcpConnectionStateError("AcpConnection not spawned");
 
     const initPromise = this.conn.initialize({
       protocolVersion: 1,
@@ -293,7 +293,7 @@ export class AcpConnection {
   /* ---------------------------------------------------------------- */
 
   async newSession(cwd: string, mcpServers: NewSessionResponse["modes"] extends unknown ? unknown[] : never[] = []): Promise<AcpSessionInfo> {
-    if (!this.conn) throw new Error("AcpConnection not initialized");
+    if (!this.conn) throw new AcpConnectionStateError("AcpConnection not initialized");
 
     const response = await this.conn.newSession({
       cwd,
@@ -311,29 +311,29 @@ export class AcpConnection {
   }
 
   async loadSession(sessionId: string, cwd: string): Promise<void> {
-    if (!this.conn) throw new Error("AcpConnection not initialized");
+    if (!this.conn) throw new AcpConnectionStateError("AcpConnection not initialized");
     if (!this.initResponse?.agentCapabilities?.loadSession) {
-      throw new Error("Agent does not support loadSession capability");
+      throw new AcpConnectionStateError("Agent does not support loadSession capability", { sessionId, cwd });
     }
     await this.conn.loadSession({ sessionId, cwd, mcpServers: [] });
     logger.info({ sessionId }, "ACP session loaded");
   }
 
   async setSessionMode(sessionId: string, modeId: string): Promise<void> {
-    if (!this.conn) throw new Error("AcpConnection not initialized");
+    if (!this.conn) throw new AcpConnectionStateError("AcpConnection not initialized");
     await this.conn.setSessionMode({ sessionId, modeId });
     logger.info({ sessionId, modeId }, "Session mode set");
   }
 
   async setSessionConfigOption(sessionId: string, configId: string, value: string): Promise<unknown> {
-    if (!this.conn) throw new Error("AcpConnection not initialized");
+    if (!this.conn) throw new AcpConnectionStateError("AcpConnection not initialized");
     const result = await this.conn.setSessionConfigOption({ sessionId, configId, value });
     logger.info({ sessionId, configId, value }, "Session config option set");
     return result;
   }
 
   async authenticate(methodId: string): Promise<void> {
-    if (!this.conn) throw new Error("AcpConnection not initialized");
+    if (!this.conn) throw new AcpConnectionStateError("AcpConnection not initialized");
     await this.conn.authenticate({ methodId });
     logger.info({ methodId }, "Authenticated");
   }
@@ -350,7 +350,7 @@ export class AcpConnection {
     sessionId: string,
     content: string | ContentBlock[],
   ): Promise<{ stopReason: string; text: string }> {
-    if (!this.conn) throw new Error("AcpConnection not initialized");
+    if (!this.conn) throw new AcpConnectionStateError("AcpConnection not initialized");
 
     const promptBlocks: ContentBlock[] = typeof content === "string"
       ? [{ type: "text", text: content }]
@@ -383,7 +383,7 @@ export class AcpConnection {
     sessionId: string,
     content: string | ContentBlock[],
   ): AsyncIterable<SessionNotification> {
-    if (!this.conn) throw new Error("AcpConnection not initialized");
+    if (!this.conn) throw new AcpConnectionStateError("AcpConnection not initialized");
 
     const promptBlocks: ContentBlock[] = typeof content === "string"
       ? [{ type: "text", text: content }]

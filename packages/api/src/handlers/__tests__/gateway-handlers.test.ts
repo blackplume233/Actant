@@ -40,7 +40,7 @@ describe("gateway-handlers", () => {
     (ctx.agentManager.getAgent as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
     const handler = registry.get("gateway.lease")!;
 
-    await expect(handler({ agentName: "missing" }, ctx)).rejects.toThrow('Agent "missing" not found');
+    await expect(handler({ agentName: "missing" }, ctx)).rejects.toMatchObject({ code: "AGENT_NOT_FOUND" });
   });
 
   it("rejects lease when agent is not running", async () => {
@@ -51,6 +51,6 @@ describe("gateway-handlers", () => {
     });
     const handler = registry.get("gateway.lease")!;
 
-    await expect(handler({ agentName: "stopped-agent" }, ctx)).rejects.toThrow("Session Lease requires a running agent");
+    await expect(handler({ agentName: "stopped-agent" }, ctx)).rejects.toMatchObject({ code: "AGENT_NOT_RUNNING" });
   });
 });

@@ -1,6 +1,10 @@
 import type { Socket } from "node:net";
 import { createLogger } from "@actant/shared";
 import type { PermissionsConfig } from "@actant/shared";
+import {
+  AcpConnectionAlreadyExistsError,
+  AcpGatewayNotFoundError,
+} from "@actant/shared";
 import { PermissionPolicyEnforcer, PermissionAuditLogger, type ActivityRecorder } from "@actant/core";
 import type { ActantToolDefinition } from "@actant/core";
 import { AcpConnection, type AcpConnectionOptions, type AcpSessionInfo, type ClientCallbackHandler } from "./connection";
@@ -62,7 +66,7 @@ export class AcpConnectionManager {
    */
   async connect(name: string, options: ConnectOptions): Promise<AcpSessionInfo & { pid?: number }> {
     if (this.connections.has(name)) {
-      throw new Error(`ACP connection for "${name}" already exists`);
+      throw new AcpConnectionAlreadyExistsError(name);
     }
 
     // Create enforcer if permission policy is provided
@@ -181,7 +185,7 @@ export class AcpConnectionManager {
   acceptLeaseSocket(name: string, socket: Socket): void {
     const gateway = this.gateways.get(name);
     if (!gateway) {
-      throw new Error(`No gateway for agent "${name}". Is the agent connected via ACP?`);
+      throw new AcpGatewayNotFoundError(name);
     }
     gateway.acceptSocket(socket);
   }

@@ -4,7 +4,15 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { unlink } from "node:fs/promises";
 import type { GatewayLeaseParams, GatewayLeaseResult } from "@actant/shared";
-import { createLogger, ipcRequiresFileCleanup, isWindows } from "@actant/shared";
+import {
+  createLogger,
+  ipcRequiresFileCleanup,
+  isWindows,
+  AgentNotFoundError,
+  AgentNotRunningError,
+  AcpConnectionMissingError,
+  GatewayUnavailableError,
+} from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 
@@ -35,28 +43,19 @@ async function handleGatewayLease(
 
   const meta = ctx.agentManager.getAgent(agentName);
   if (!meta) {
-    throw new Error(`Agent "${agentName}" not found`);
+    throw new AgentNotFoundError(agentName);
   }
   if (meta.status !== "running") {
-    throw new Error(
-      `Agent "${agentName}" is not running (status: ${meta.status}). ` +
-      `Session Lease requires a running agent.`,
-    );
+    throw new AgentNotRunningError(agentName, meta.status);
   }
 
   if (!ctx.acpConnectionManager.has(agentName)) {
-    throw new Error(
-      `Agent "${agentName}" has no ACP connection. ` +
-      `Session Lease requires an ACP-capable backend.`,
-    );
+    throw new AcpConnectionMissingError(agentName);
   }
 
   const gateway = ctx.acpConnectionManager.getGateway(agentName);
   if (!gateway) {
-    throw new Error(
-      `No ACP Gateway found for agent "${agentName}". ` +
-      `This is unexpected — the gateway should be pre-created when the agent connects.`,
-    );
+    throw new GatewayUnavailableError(agentName);
   }
 
   // Reuse existing lease if the gateway doesn't have an active upstream

@@ -12,6 +12,10 @@ import {
   type SetSessionConfigOptionResponse,
 } from "@agentclientprotocol/sdk";
 import { createLogger } from "@actant/shared";
+import {
+  AcpGatewayStateError,
+  AcpConnectionStateError,
+} from "@actant/shared";
 import type { AcpConnection } from "./connection";
 import { ClientCallbackRouter, type UpstreamHandler } from "./callback-router";
 
@@ -69,7 +73,7 @@ export class AcpGateway {
    */
   acceptSocket(socket: Socket): void {
     if (this.upstream && !this.upstream.signal.aborted) {
-      throw new Error("Gateway already has an active upstream connection");
+      throw new AcpGatewayStateError("Gateway already has an active upstream connection");
     }
 
     const { readable, writable } = Duplex.toWeb(socket as unknown as Duplex);
@@ -133,17 +137,17 @@ export class AcpGateway {
       },
       terminalOutput: async (p) => {
         const handle = this.terminalHandles.get(p.terminalId);
-        if (!handle) throw new Error(`Terminal "${p.terminalId}" not found in Gateway handle map`);
+        if (!handle) throw new AcpGatewayStateError(`Terminal "${p.terminalId}" not found in Gateway handle map`, { terminalId: p.terminalId });
         return handle.currentOutput();
       },
       waitForTerminalExit: async (p) => {
         const handle = this.terminalHandles.get(p.terminalId);
-        if (!handle) throw new Error(`Terminal "${p.terminalId}" not found in Gateway handle map`);
+        if (!handle) throw new AcpGatewayStateError(`Terminal "${p.terminalId}" not found in Gateway handle map`, { terminalId: p.terminalId });
         return handle.waitForExit();
       },
       killTerminal: async (p) => {
         const handle = this.terminalHandles.get(p.terminalId);
-        if (!handle) throw new Error(`Terminal "${p.terminalId}" not found in Gateway handle map`);
+        if (!handle) throw new AcpGatewayStateError(`Terminal "${p.terminalId}" not found in Gateway handle map`, { terminalId: p.terminalId });
         return handle.kill();
       },
       releaseTerminal: async (p) => {
@@ -200,7 +204,7 @@ export class AcpGateway {
 
       prompt: async (params) => {
         const conn = this.downstream.rawConnection;
-        if (!conn) throw new Error("Downstream not connected");
+        if (!conn) throw new AcpConnectionStateError("Downstream not connected");
         return conn.prompt(params);
       },
 

@@ -2,7 +2,8 @@ export type ErrorCategory =
   | "configuration"
   | "lifecycle"
   | "communication"
-  | "cli";
+  | "cli"
+  | "session";
 
 export abstract class ActantError extends Error {
   abstract readonly code: string;

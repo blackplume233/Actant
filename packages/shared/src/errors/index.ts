@@ -17,3 +17,17 @@ export {
   InstanceCorruptedError,
   WorkspaceInitError,
 } from "./lifecycle-errors";
+export {
+  SessionValidationError,
+  SessionNotFoundError,
+  SessionExpiredError,
+  AcpConnectionMissingError,
+  AgentNotRunningError,
+  GatewayUnavailableError,
+} from "./session-errors";
+export {
+  AcpConnectionAlreadyExistsError,
+  AcpGatewayNotFoundError,
+  AcpConnectionStateError,
+  AcpGatewayStateError,
+} from "./acp-errors";
