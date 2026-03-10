@@ -1,6 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { AcpConnectionManager } from "../connection-manager";
 import { AcpConnection } from "../connection";
+import type { PermissionsConfig } from "@actant/shared";
+
+function getManagerInternals(manager: AcpConnectionManager): {
+  getGateway: (name: string) => unknown;
+  getRouter: (name: string) => unknown;
+  enforcers: Map<string, unknown>;
+  recordingHandlers: Map<string, unknown>;
+} {
+  return manager as unknown as {
+    getGateway: (name: string) => unknown;
+    getRouter: (name: string) => unknown;
+    enforcers: Map<string, unknown>;
+    recordingHandlers: Map<string, unknown>;
+  };
+}
 
 vi.mock("../connection", () => {
   const AcpConnection = vi.fn();
@@ -92,6 +107,56 @@ describe("AcpConnectionManager", () => {
 
     const missing = manager.getConnection("nonexistent");
     expect(missing).toBeUndefined();
+  });
+
+  it("should clean up connection state when initialize fails", async () => {
+    vi.mocked(AcpConnection.prototype.initialize).mockRejectedValueOnce(new Error("init failed"));
+
+    const permissionPolicy: PermissionsConfig = {
+      defaultMode: "acceptEdits",
+      allow: ["Read(*)"],
+      ask: [],
+      deny: [],
+    };
+
+    await expect(
+      manager.connect("broken-agent", {
+        command: "echo",
+        args: [],
+        cwd: "/tmp",
+        connectionOptions: { permissionPolicy },
+        activityRecorder: {
+          append: vi.fn().mockResolvedValue(undefined),
+        } as never,
+      }),
+    ).rejects.toThrow("init failed");
+
+    expect(manager.getConnection("broken-agent")).toBeUndefined();
+    expect(manager.getPrimarySessionId("broken-agent")).toBeUndefined();
+    const internals = getManagerInternals(manager);
+    expect(internals.getGateway("broken-agent")).toBeUndefined();
+    expect(internals.getRouter("broken-agent")).toBeUndefined();
+    expect(internals.enforcers.size).toBe(0);
+    expect(internals.recordingHandlers.size).toBe(0);
+    expect(AcpConnection.prototype.close).toHaveBeenCalled();
+  });
+
+  it("should clean up connection state when session creation fails", async () => {
+    vi.mocked(AcpConnection.prototype.newSession).mockRejectedValueOnce(new Error("session failed"));
+
+    await expect(
+      manager.connect("session-fail", {
+        command: "echo",
+        args: [],
+        cwd: "/tmp",
+      }),
+    ).rejects.toThrow("session failed");
+
+    expect(manager.getConnection("session-fail")).toBeUndefined();
+    expect(manager.getPrimarySessionId("session-fail")).toBeUndefined();
+    const internals = getManagerInternals(manager);
+    expect(internals.getGateway("session-fail")).toBeUndefined();
+    expect(internals.getRouter("session-fail")).toBeUndefined();
   });
 
   it("should disposeAll", async () => {

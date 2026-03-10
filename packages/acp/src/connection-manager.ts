@@ -45,6 +45,15 @@ export class AcpConnectionManager {
   /** RecordingCallbackHandler per agent — used to set the active activity session. */
   private recordingHandlers = new Map<string, RecordingCallbackHandler>();
 
+  private cleanupConnectionState(name: string): void {
+    this.connections.delete(name);
+    this.primarySessions.delete(name);
+    this.routers.delete(name);
+    this.gateways.delete(name);
+    this.enforcers.delete(name);
+    this.recordingHandlers.delete(name);
+  }
+
   /**
    * Spawn an ACP agent process, initialize, and create a default session.
    * Uses ClientCallbackRouter so Gateway can later attach an IDE upstream.
@@ -160,12 +169,7 @@ export class AcpConnectionManager {
       return { ...session, pid };
     } catch (err) {
       await connWithRouter.close().catch(() => {});
-      this.connections.delete(name);
-      this.primarySessions.delete(name);
-      this.routers.delete(name);
-      this.gateways.delete(name);
-      this.enforcers.delete(name);
-      this.recordingHandlers.delete(name);
+      this.cleanupConnectionState(name);
       throw err;
     }
   }
@@ -229,16 +233,14 @@ export class AcpConnectionManager {
 
   async disconnect(name: string): Promise<void> {
     this.gateways.get(name)?.disconnectUpstream();
-    this.gateways.delete(name);
-    this.routers.delete(name);
-    this.enforcers.delete(name);
-    this.recordingHandlers.delete(name);
 
     const conn = this.connections.get(name);
-    if (!conn) return;
+    if (!conn) {
+      this.cleanupConnectionState(name);
+      return;
+    }
     await conn.close();
-    this.connections.delete(name);
-    this.primarySessions.delete(name);
+    this.cleanupConnectionState(name);
     logger.info({ name }, "ACP agent disconnected");
   }
 
