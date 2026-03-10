@@ -1,5 +1,5 @@
-import { createConnection } from "node:net";
 import type { RpcRequest, RpcResponse } from "@actant/shared";
+import { sendJsonRpcRequest } from "@actant/shared";
 
 let requestId = 0;
 
@@ -30,38 +30,11 @@ export class RpcBridge {
 
   private send(request: RpcRequest, timeoutMs?: number): Promise<RpcResponse> {
     const effectiveTimeout = timeoutMs ?? 30_000;
-    return new Promise((resolve, reject) => {
-      const socket = createConnection(this.socketPath, () => {
-        socket.write(JSON.stringify(request) + "\n");
-      });
-
-      let buffer = "";
-
-      socket.on("data", (chunk) => {
-        buffer += chunk.toString();
-        const lines = buffer.split("\n");
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          try {
-            const response = JSON.parse(trimmed) as RpcResponse;
-            socket.end();
-            resolve(response);
-            return;
-          } catch {
-            // partial data, keep buffering
-          }
-        }
-      });
-
-      socket.on("error", (err) => {
-        reject(new Error(`Cannot connect to daemon at ${this.socketPath}: ${err.message}`));
-      });
-
-      socket.setTimeout(effectiveTimeout, () => {
-        socket.destroy();
-        reject(new Error(`RPC call timed out after ${effectiveTimeout / 1000}s`));
-      });
+    return sendJsonRpcRequest(this.socketPath, request, { timeoutMs: effectiveTimeout }).catch((err) => {
+      if (err instanceof Error && /Cannot connect|ECONNREFUSED|ENOENT|EPIPE|socket/i.test(err.message)) {
+        throw new Error(`Cannot connect to daemon at ${this.socketPath}: ${err.message}`);
+      }
+      throw err;
     });
   }
 }

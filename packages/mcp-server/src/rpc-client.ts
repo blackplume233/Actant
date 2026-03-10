@@ -1,18 +1,4 @@
-import { connect, type Socket } from "node:net";
-
-interface RpcRequest {
-  jsonrpc: "2.0";
-  id: number;
-  method: string;
-  params: Record<string, unknown>;
-}
-
-interface RpcResponse {
-  jsonrpc: "2.0";
-  id: number;
-  result?: unknown;
-  error?: { code: number; message: string; data?: unknown };
-}
+import { sendJsonRpcRequest, type RpcRequest } from "@actant/shared";
 
 export interface RpcClient {
   call(method: string, params: Record<string, unknown>): Promise<unknown>;
@@ -28,51 +14,22 @@ export function createRpcClient(socketPath: string): RpcClient {
 
   return {
     async call(method: string, params: Record<string, unknown>): Promise<unknown> {
-      return new Promise<unknown>((resolve, reject) => {
-        const id = nextId++;
-        const req: RpcRequest = { jsonrpc: "2.0", id, method, params };
-        const payload = JSON.stringify(req) + "\n";
+      const id = nextId++;
+      const req: RpcRequest = { jsonrpc: "2.0", id, method, params };
 
-        let socket: Socket;
-        try {
-          socket = connect(socketPath);
-        } catch (err) {
-          reject(new Error(`Failed to connect to daemon: ${err}`));
-          return;
+      try {
+        const resp = await sendJsonRpcRequest(socketPath, req, { timeoutMs: 10_000 });
+        if (resp.error) {
+          throw new Error(resp.error.message);
         }
-
-        let buffer = "";
-
-        socket.on("data", (chunk: Buffer) => {
-          buffer += chunk.toString("utf-8");
-          const newlineIdx = buffer.indexOf("\n");
-          if (newlineIdx === -1) return;
-
-          const line = buffer.slice(0, newlineIdx);
-          buffer = buffer.slice(newlineIdx + 1);
-
-          try {
-            const resp: RpcResponse = JSON.parse(line);
-            if (resp.error) {
-              reject(new Error(resp.error.message));
-            } else {
-              resolve(resp.result);
-            }
-          } catch (parseErr) {
-            reject(new Error(`Invalid RPC response: ${parseErr}`));
-          }
-          socket.end();
-        });
-
-        socket.on("error", (err) => reject(new Error(`RPC socket error: ${err.message}`)));
-        socket.on("timeout", () => {
-          socket.destroy();
-          reject(new Error("RPC call timed out"));
-        });
-        socket.setTimeout(10_000);
-
-        socket.write(payload);
-      });
+        return resp.result;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (/ECONNREFUSED|ENOENT|EPIPE|socket|Cannot connect/i.test(msg)) {
+          throw new Error(`RPC socket error: ${msg}`, { cause: err });
+        }
+        throw err;
+      }
     },
 
     dispose() {

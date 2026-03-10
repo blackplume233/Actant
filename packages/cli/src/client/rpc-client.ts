@@ -1,5 +1,5 @@
-import { createConnection } from "node:net";
 import type { RpcRequest, RpcResponse, RpcMethodMap, RpcMethod } from "@actant/shared";
+import { sendJsonRpcRequest } from "@actant/shared";
 
 let requestId = 0;
 
@@ -44,50 +44,11 @@ export class RpcClient {
     const envTimeout = process.env["ACTANT_RPC_TIMEOUT_MS"] ? Number(process.env["ACTANT_RPC_TIMEOUT_MS"]) : NaN;
     const effectiveTimeout = timeoutMs ?? (Number.isFinite(envTimeout) ? envTimeout : 10_000);
 
-    return new Promise((resolve, reject) => {
-      let settled = false;
-      const settle = <T>(fn: (v: T) => void, v: T) => {
-        if (!settled) { settled = true; fn(v); }
-      };
-
-      const socket = createConnection(this.socketPath, () => {
-        socket.write(JSON.stringify(request) + "\n");
-      });
-
-      const MAX_BUFFER = 1024 * 1024;
-      let buffer = "";
-
-      socket.on("data", (chunk) => {
-        buffer += chunk.toString();
-        if (buffer.length > MAX_BUFFER) {
-          socket.destroy();
-          settle(reject, new Error("RPC response exceeded 1MB buffer limit"));
-          return;
-        }
-        const lines = buffer.split("\n");
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed) continue;
-          try {
-            const response = JSON.parse(trimmed) as RpcResponse;
-            socket.setTimeout(0);
-            socket.end();
-            settle(resolve, response);
-            return;
-          } catch {
-            // partial data, continue
-          }
-        }
-      });
-
-      socket.on("error", (err) => {
-        settle(reject, new ConnectionError(this.socketPath, err));
-      });
-
-      socket.setTimeout(effectiveTimeout, () => {
-        socket.destroy();
-        settle(reject, new Error(`RPC call timed out after ${effectiveTimeout}ms`));
-      });
+    return sendJsonRpcRequest(this.socketPath, request, { timeoutMs: effectiveTimeout }).catch((err: unknown) => {
+      if (err instanceof Error && /Cannot connect|ECONNREFUSED|ENOENT|EPIPE|socket/i.test(err.message)) {
+        throw new ConnectionError(this.socketPath, err);
+      }
+      throw err;
     });
   }
 }

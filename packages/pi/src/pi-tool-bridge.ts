@@ -1,8 +1,8 @@
-import { execFile } from "node:child_process";
 import { readFile, writeFile, readdir } from "node:fs/promises";
 import { resolve } from "node:path";
+import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { connect } from "node:net";
+import { sendJsonRpcRequest, type RpcRequest } from "@actant/shared";
 import { Agent, type AgentTool } from "@mariozechner/pi-agent-core";
 import { getModel, Type } from "@mariozechner/pi-ai";
 
@@ -168,54 +168,17 @@ export function buildInternalTools(
 const RPC_TIMEOUT_MS = 30_000;
 
 function rpcCall(socketPath: string, method: string, params: Record<string, unknown>): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    let settled = false;
-    const settle = (fn: () => void) => { if (!settled) { settled = true; fn(); } };
+  const reqId = Date.now();
+  const request: RpcRequest = { jsonrpc: "2.0", id: reqId, method, params };
 
-    const MAX_BUFFER = 1024 * 1024;
-    const socket = connect(socketPath);
-    const reqId = Date.now();
-    const req = JSON.stringify({ jsonrpc: "2.0", id: reqId, method, params }) + "\n";
-    let buffer = "";
-
-    const timer = setTimeout(() => {
-      settle(() => {
-        socket.destroy();
-        reject(new Error(`RPC call to ${method} timed out after ${RPC_TIMEOUT_MS}ms`));
-      });
-    }, RPC_TIMEOUT_MS);
-
-    socket.on("data", (chunk) => {
-      buffer += chunk.toString();
-      if (buffer.length > MAX_BUFFER) {
-        clearTimeout(timer);
-        socket.destroy();
-        settle(() => reject(new Error("RPC response exceeded 1MB buffer limit")));
-        return;
-      }
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed) continue;
-        try {
-          const resp = JSON.parse(trimmed);
-          clearTimeout(timer);
-          socket.destroy();
-          settle(() => {
-            if (resp.error) reject(new Error(resp.error.message ?? "RPC error"));
-            else resolve(resp.result);
-          });
-          return;
-        } catch { /* partial data, keep buffering */ }
-      }
-    });
-    socket.on("error", (err) => {
-      clearTimeout(timer);
-      socket.destroy();
-      settle(() => reject(err));
-    });
-    socket.write(req);
+  return sendJsonRpcRequest(socketPath, request, {
+    timeoutMs: RPC_TIMEOUT_MS,
+    maxBufferBytes: 1024 * 1024,
+  }).then((resp) => {
+    if (resp.error) {
+      throw new Error(resp.error.message ?? "RPC error");
+    }
+    return resp.result;
   });
 }
 
