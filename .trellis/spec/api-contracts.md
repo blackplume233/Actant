@@ -865,11 +865,42 @@ interface HookEventDto {
 
 #### events.recent
 
+返回最近的事件总线记录，按时间倒序排列。
+
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `limit` | `number` | 否 | 返回最近 N 条，默认 50，最大 500 |
-| `since` | `string` | 否 | ISO timestamp，只返回此时间之后的事件 |
-| `scope` | `'actant' \| 'instance'` | 否 | 过滤作用域 |
+| `limit` | `number` | 否 | 返回最近 N 条，默认 100 |
+
+**返回结构**：
+
+```typescript
+interface EventsRecentResult {
+  events: Array<{
+    ts: number;                     // Unix epoch milliseconds
+    event: string;
+    agentName?: string;
+    caller: string;                 // `<callerType>` 或 `<callerType>:<callerId>`
+    payload: Record<string, unknown>;
+  }>;
+}
+```
+
+> `caller` 由事件总线中的 `callerType` 和可选 `callerId` 拼接而成，例如 `user:webhook`。当前实现未支持 `since` 或 `scope` 过滤，契约应以 `packages/shared/src/types/rpc.types.ts` 和 `packages/api/src/handlers/event-handlers.ts` 为准。
+
+#### events.emit
+
+向 EventBus 注入一个外部事件，供 webhook / 集成入口写入统一事件流。
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `event` | `string` | **是** | 事件名；缺失或非字符串时报错 |
+| `agentName` | `string` | 否 | 关联的 Agent 名称 |
+| `payload` | `Record<string, unknown>` | 否 | 自定义事件数据 |
+
+**行为约束**：
+- Handler 使用 `callerType: "user"`、`callerId: "webhook"` 写入事件来源
+- 成功时返回 `{ ok: true }`
+- 典型用途是 REST webhook 路由将外部输入统一转发到 `events.emit`
 
 ### 3.13 Hook 订阅管理（Phase 4 新增） 🚧
 

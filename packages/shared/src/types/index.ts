@@ -265,6 +265,8 @@ export {
   type CanvasClearResult,
   type EventsRecentParams,
   type EventsRecentResult,
+  type EventsEmitParams,
+  type EventsEmitResult,
   type PluginRuntimeListParams,
   type PluginRuntimeListResult,
   type PluginRuntimeStatusParams,

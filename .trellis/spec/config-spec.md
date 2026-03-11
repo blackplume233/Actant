@@ -801,7 +801,33 @@ interface PluginContext {
 
 > 预定设计详见：[Plugin 预定设计](./backend/plugin-guidelines.md)（实施前须重新审查）
 
-### HookEventName（#159 已定义）
+### Events RPC 类型导出
+
+`packages/shared/src/types/index.ts` 必须继续重导出 `rpc.types.ts` 中的事件 RPC 类型，供 API / REST 层通过 `@actant/shared` 直接引用。
+
+| 导出名 | 来源 | 用途 |
+|--------|------|------|
+| `EventsRecentParams` | `./rpc.types` | `events.recent` 请求参数 |
+| `EventsRecentResult` | `./rpc.types` | `events.recent` 响应结构 |
+| `EventsEmitParams` | `./rpc.types` | `events.emit` 请求参数 |
+| `EventsEmitResult` | `./rpc.types` | `events.emit` 响应结构 |
+
+**Why**：事件 handler 位于 `packages/api/src/handlers/`，REST 路由位于 `packages/rest-api/src/routes/`。它们都通过 `@actant/shared` 消费这些 RPC 契约；如果 barrel export 漏掉事件相关类型，调用方会退回到本地重复定义或失去统一的端到端类型约束。
+
+**Example**:
+```typescript
+// Good
+export {
+  type EventsRecentParams,
+  type EventsRecentResult,
+  type EventsEmitParams,
+  type EventsEmitResult,
+} from "./rpc.types";
+
+// Bad
+// events.* 已在 rpc.types.ts 中定义，但未从 index.ts 重导出
+```
+
 
 事件名称联合类型，定义在 `@actant/shared/types/hook.types.ts`。
 

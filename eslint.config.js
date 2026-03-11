@@ -43,6 +43,7 @@ export default tseslint.config(
       "**/*.config.ts",
       "**/*.config.js",
       ".agents/**",
+      ".claude/worktrees/**",
       ".trellis/**",
       "scripts/**",
       "packages/*/scripts/**",

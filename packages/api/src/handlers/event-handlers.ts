@@ -3,6 +3,7 @@ import type {
   EventsRecentResult,
   EventsEmitParams,
   EventsEmitResult,
+  HookEventName,
 } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
@@ -40,7 +41,7 @@ async function handleEventsEmit(
   }
 
   ctx.eventBus.emit(
-    event,
+    event as HookEventName,
     { callerType: "user", callerId: "webhook" },
     agentName,
     payload,
