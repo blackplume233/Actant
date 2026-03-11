@@ -126,24 +126,55 @@ export const ComponentOriginSchema = z.object({
 // Agent Template schema — includes VersionedComponent fields (#119)
 // ---------------------------------------------------------------------------
 
-export const AgentTemplateSchema = z.object({
-  name: z.string().min(1).max(100),
-  version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be semver format (e.g. 1.0.0)"),
-  description: z.string().optional(),
-  $type: z.string().optional(),
-  $version: z.number().optional(),
-  origin: ComponentOriginSchema.optional(),
-  tags: z.array(z.string()).optional(),
-  backend: AgentBackendSchema,
-  provider: ModelProviderSchema.optional(),
-  domainContext: DomainContextSchema,
-  permissions: PermissionsInputSchema.optional(),
-  initializer: InitializerSchema.optional(),
-  schedule: ScheduleConfigSchema.optional(),
-  archetype: AgentArchetypeSchema.optional(),
-  launchMode: LaunchModeSchema.optional(),
-  metadata: z.record(z.string(), z.string()).optional(),
-});
+export const AgentTemplateSchema = z
+  .object({
+    name: z.string().min(1).max(100),
+    version: z.string().regex(/^\d+\.\d+\.\d+$/, "Must be semver format (e.g. 1.0.0)"),
+    description: z.string().optional(),
+    $type: z.string().optional(),
+    $version: z.number().optional(),
+    origin: ComponentOriginSchema.optional(),
+    tags: z.array(z.string()).optional(),
+    backend: AgentBackendSchema,
+    provider: ModelProviderSchema.optional(),
+    domainContext: DomainContextSchema,
+    permissions: PermissionsInputSchema.optional(),
+    initializer: InitializerSchema.optional(),
+    schedule: ScheduleConfigSchema.optional(),
+    archetype: AgentArchetypeSchema.optional(),
+    launchMode: LaunchModeSchema.optional(),
+    metadata: z.record(z.string(), z.string()).optional(),
+  })
+  .refine(
+    (data) => {
+      // service archetype should not have heartbeat or cron (periodic scheduling)
+      // but can have hooks (event subscriptions)
+      if (data.archetype === "service" && data.schedule) {
+        if (data.schedule.heartbeat || (data.schedule.cron && data.schedule.cron.length > 0)) {
+          return false;
+        }
+      }
+      return true;
+    },
+    {
+      message: "Service archetype does not support heartbeat or cron scheduling",
+      path: ["schedule"],
+    },
+  )
+  .refine(
+    (data) => {
+      // employee archetype with schedule must have at least heartbeat or cron
+      // hooks alone are not sufficient for employee
+      if (data.archetype === "employee" && data.schedule) {
+        return data.schedule.heartbeat || (data.schedule.cron && data.schedule.cron.length > 0);
+      }
+      return true;
+    },
+    {
+      message: "Employee schedule must include at least heartbeat or cron configuration",
+      path: ["schedule"],
+    },
+  );
 
 export type AgentTemplateInput = z.input<typeof AgentTemplateSchema>;
 export type AgentTemplateOutput = z.output<typeof AgentTemplateSchema>;

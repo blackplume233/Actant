@@ -22,6 +22,7 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
     name: "test-tpl",
     version: "1.0.0",
     backend: { type: "claude-code" },
+    archetype: "service",
     provider: { type: "openai", protocol: "openai" },
     domainContext: { skills: ["skill-a"] },
     ...overrides,
@@ -41,8 +42,8 @@ function makeMeta(name: string, overrides?: Partial<AgentInstanceMeta>): AgentIn
     launchMode: "direct",
     workspacePolicy: "persistent",
     processOwnership: "managed",
-    archetype: "repo",
-    autoStart: false,
+    archetype: "service",
+    autoStart: true,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -376,12 +377,19 @@ describe("AgentManager", () => {
     });
 
     it("should mark direct agent as stopped on crash (no restart)", async () => {
+      // Register a repo template with direct launch mode (no auto-restart)
+      registry.register(makeTemplate({
+        name: "direct-tpl",
+        archetype: "repo",
+        backend: { type: "claude-code" },
+      }));
+
       const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
         watcherPollIntervalMs: 50,
       });
       await watcherManager.initialize();
 
-      await watcherManager.createAgent("direct-agent", "test-tpl");
+      await watcherManager.createAgent("direct-agent", "direct-tpl", { launchMode: "direct" });
       await watcherManager.startAgent("direct-agent");
 
       const processUtils = await import("./launcher/process-utils");
@@ -425,12 +433,19 @@ describe("AgentManager", () => {
 
   describe("ProcessWatcher integration", () => {
     it("should update status when watched process exits unexpectedly", async () => {
+      // Register a repo template with direct launch mode (no auto-restart)
+      registry.register(makeTemplate({
+        name: "direct-tpl",
+        archetype: "repo",
+        backend: { type: "claude-code" },
+      }));
+
       const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
         watcherPollIntervalMs: 50,
       });
       await watcherManager.initialize();
 
-      await watcherManager.createAgent("watched-agent", "test-tpl");
+      await watcherManager.createAgent("watched-agent", "direct-tpl", { launchMode: "direct" });
       await watcherManager.startAgent("watched-agent");
       expect(watcherManager.getStatus("watched-agent")).toBe("running");
       expect(watcherManager.getAgent("watched-agent")?.pid).toBeDefined();
@@ -462,6 +477,13 @@ describe("AgentManager", () => {
     });
 
     it("should start watcher on initialize", async () => {
+      // Register a repo template with direct launch mode (no auto-restart)
+      registry.register(makeTemplate({
+        name: "direct-tpl",
+        archetype: "repo",
+        backend: { type: "claude-code" },
+      }));
+
       const newManager = new AgentManager(initializer, launcher, tmpDir, {
         watcherPollIntervalMs: 50,
       });
@@ -469,7 +491,7 @@ describe("AgentManager", () => {
 
       // Watcher is running — verify by creating + starting an agent
       // and then simulating crash
-      await newManager.createAgent("init-watch", "test-tpl");
+      await newManager.createAgent("init-watch", "direct-tpl", { launchMode: "direct" });
       await newManager.startAgent("init-watch");
 
       const processUtils = await import("./launcher/process-utils");

@@ -215,11 +215,17 @@ describe("Agent lifecycle scenarios", () => {
 
   describe("Scenario: external spawn full workflow", () => {
     it("resolve → spawn → attach → crash → detach cleanup", async () => {
+      // Register a repo template for ephemeral + direct mode testing
+      registry.register(makeTemplate({
+        name: "repo-tpl",
+        archetype: "repo",
+      }));
+
       const manager = createWatcherManager(initializer, launcher, tmpDir);
       await manager.initialize();
 
       // Step 1: resolve (auto-creates instance)
-      const resolved = await manager.resolveAgent("ext-agent", "test-tpl", {
+      const resolved = await manager.resolveAgent("ext-agent", "repo-tpl", {
         workspacePolicy: "ephemeral",
       });
       expect(resolved.created).toBe(true);
@@ -316,10 +322,16 @@ describe("Agent lifecycle scenarios", () => {
     });
 
     it("should NOT recover direct-mode agents after daemon restart", async () => {
+      // Register a repo template for direct mode testing
+      registry.register(makeTemplate({
+        name: "repo-tpl",
+        archetype: "repo",
+      }));
+
       const manager1 = createWatcherManager(initializer, launcher, tmpDir);
       await manager1.initialize();
 
-      await manager1.createAgent("user-agent", "test-tpl", { launchMode: "direct" });
+      await manager1.createAgent("user-agent", "repo-tpl", { launchMode: "direct" });
       await manager1.startAgent("user-agent");
       manager1.dispose();
 
@@ -336,13 +348,19 @@ describe("Agent lifecycle scenarios", () => {
 
   describe("Scenario: mixed concurrent agents", () => {
     it("should manage multiple agents with different modes simultaneously", async () => {
+      // Register a repo template for direct mode testing
+      registry.register(makeTemplate({
+        name: "repo-tpl",
+        archetype: "repo",
+      }));
+
       const manager = createWatcherManager(initializer, launcher, tmpDir, {
         restartMaxRestarts: 1,
       });
       await manager.initialize();
 
       await manager.createAgent("svc-a", "test-tpl", { launchMode: "acp-service" });
-      await manager.createAgent("direct-b", "test-tpl", { launchMode: "direct" });
+      await manager.createAgent("direct-b", "repo-tpl", { launchMode: "direct" });
       await manager.createAgent("oneshot-c", "test-tpl", {
         launchMode: "one-shot",
         metadata: { autoDestroy: "true" },

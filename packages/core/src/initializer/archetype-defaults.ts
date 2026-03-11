@@ -1,4 +1,4 @@
-import type { AgentArchetype, InteractionMode, LaunchMode, BackendDefinition } from "@actant/shared";
+import type { AgentArchetype, InteractionMode, LaunchMode, BackendDefinition, WorkspacePolicy } from "@actant/shared";
 import { validateBackendForArchetype } from "../manager/launcher/backend-resolver";
 
 export interface ArchetypeDefaults {
@@ -13,10 +13,19 @@ export interface ResolvedArchetypeConfig extends ArchetypeDefaults {
   error?: string;
 }
 
+/**
+ * Validation result for archetype combination checks.
+ */
+export interface ArchetypeValidationResult {
+  valid: boolean;
+  error?: string;
+}
+
 const ARCHETYPE_TABLE: Record<AgentArchetype, ArchetypeDefaults> = {
   repo: {
     launchMode: "direct",
-    interactionModes: ["open", "start", "chat"],
+    // repo supports open (IDE) and start (launch IDE) but not chat/run/proxy (no ACP)
+    interactionModes: ["open", "start"],
     autoStart: false,
   },
   service: {
@@ -30,6 +39,54 @@ const ARCHETYPE_TABLE: Record<AgentArchetype, ArchetypeDefaults> = {
     autoStart: true,
   },
 };
+
+/**
+ * Allowed launch modes for each archetype per specification.
+ * @see agent-lifecycle.md §1.3 Archetype execution strategy
+ *
+ * Note: one-shot is allowed for all archetypes as it's a task execution mode,
+ * not a persistent runtime mode.
+ */
+const ARCHETYPE_ALLOWED_LAUNCH_MODES: Record<AgentArchetype, LaunchMode[]> = {
+  repo: ["direct", "one-shot"],
+  service: ["acp-service", "one-shot"],
+  employee: ["acp-background", "acp-service", "one-shot"],
+};
+
+/**
+ * Validate that the launch mode is compatible with the archetype.
+ */
+export function validateLaunchModeForArchetype(
+  launchMode: LaunchMode,
+  archetype: AgentArchetype,
+): ArchetypeValidationResult {
+  const allowedModes = ARCHETYPE_ALLOWED_LAUNCH_MODES[archetype];
+  if (!allowedModes.includes(launchMode)) {
+    return {
+      valid: false,
+      error: `Launch mode "${launchMode}" is not allowed for "${archetype}" archetype. ` +
+        `Allowed modes: ${allowedModes.join(", ")}.`,
+    };
+  }
+  return { valid: true };
+}
+
+/**
+ * Validate that the workspace policy is compatible with the launch mode.
+ * @see agent-lifecycle.md §3.3: acp-service requires persistent workspace
+ */
+export function validateWorkspacePolicyForLaunchMode(
+  workspacePolicy: WorkspacePolicy,
+  launchMode: LaunchMode,
+): ArchetypeValidationResult {
+  if (launchMode === "acp-service" && workspacePolicy !== "persistent") {
+    return {
+      valid: false,
+      error: `Launch mode "acp-service" requires "persistent" workspace policy.`,
+    };
+  }
+  return { valid: true };
+}
 
 /**
  * Resolve defaults for an archetype. Returns a frozen snapshot so callers
@@ -75,8 +132,8 @@ export function resolveArchetypeConfig(
     // Use explicit overrides if provided
     interactionModes = options.explicitInteractionModes;
   } else if (profile === "openOnly") {
-    // Open-only backends: only open mode
-    interactionModes = ["open"];
+    // Open-only backends: open mode only, but repo archetype may also use 'start' (for IDE launch)
+    interactionModes = archetype === "repo" ? ["open", "start"] : ["open"];
   } else if (profile === "managedExperimental" || profile === "managedPrimary") {
     // Managed backends: filter base archetype modes by capabilities
     interactionModes = baseDefaults.interactionModes.filter((mode) => {
@@ -100,10 +157,9 @@ export function resolveArchetypeConfig(
     interactionModes = baseDefaults.interactionModes;
   }
 
-  // Adjust launch mode for openOnly backends
+  // For repo archetype, always use direct launch mode
   let launchMode = baseDefaults.launchMode;
-  if (profile === "openOnly" && archetype !== "repo") {
-    // This should have been caught by validation, but handle defensively
+  if (archetype === "repo") {
     launchMode = "direct";
   }
 

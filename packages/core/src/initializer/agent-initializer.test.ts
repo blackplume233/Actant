@@ -125,10 +125,16 @@ describe("AgentInitializer", () => {
     });
 
     it("should use defaultLaunchMode from options when no override", async () => {
+      // Register a template that supports acp-service (claude-code backend + service archetype)
+      registry.register(makeTemplate({
+        name: "service-template",
+        backend: { type: "claude-code" },
+        archetype: "service",
+      }));
       initializer = new AgentInitializer(registry, tmpDir, {
         defaultLaunchMode: "acp-service",
       });
-      const meta = await initializer.createInstance("my-agent", "test-template");
+      const meta = await initializer.createInstance("my-agent", "service-template");
       expect(meta.launchMode).toBe("acp-service");
     });
 
@@ -252,8 +258,8 @@ describe("AgentInitializer", () => {
         archetype: "repo",
       }));
       const meta = await initializer.createInstance("cursor-repo-agent", "cursor-repo");
-      // openOnly backend should only have 'open' mode
-      expect(meta.interactionModes).toEqual(["open"]);
+      // openOnly backend with repo archetype should have 'open' and 'start' (for IDE launch)
+      expect(meta.interactionModes).toEqual(["open", "start"]);
     });
 
     it("should derive interaction modes from backend capabilities for claude-code (managedPrimary)", async () => {

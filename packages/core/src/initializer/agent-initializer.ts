@@ -19,7 +19,7 @@ import type { StepContext } from "./pipeline/types";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveProviderFromEnv } from "../provider/provider-env-resolver";
 import { getBackendDescriptor } from "../manager/launcher/backend-registry";
-import { resolveArchetypeConfig } from "./archetype-defaults";
+import { resolveArchetypeConfig, validateLaunchModeForArchetype, validateWorkspacePolicyForLaunchMode } from "./archetype-defaults";
 import { validateBackendForArchetype } from "../manager/launcher/backend-resolver";
 
 const logger = createLogger("agent-initializer");
@@ -185,7 +185,27 @@ export class AgentInitializer {
         ?? template.launchMode
         ?? this.options?.defaultLaunchMode
         ?? archetypeConfig.launchMode;
+
+      // Validate launchMode + archetype combination
+      const launchModeValidation = validateLaunchModeForArchetype(launchMode, archetype);
+      if (!launchModeValidation.valid) {
+        throw new ConfigValidationError(
+          `Invalid launch mode for archetype`,
+          [{ path: "launchMode", message: launchModeValidation.error ?? "Invalid launch mode" }],
+        );
+      }
+
       const defaultPolicy: WorkspacePolicy = launchMode === "one-shot" ? "ephemeral" : "persistent";
+      const workspacePolicy = overrides?.workspacePolicy ?? defaultPolicy;
+
+      // Validate launchMode + workspacePolicy combination
+      const policyValidation = validateWorkspacePolicyForLaunchMode(workspacePolicy, launchMode);
+      if (!policyValidation.valid) {
+        throw new ConfigValidationError(
+          `Invalid workspace policy for launch mode`,
+          [{ path: "workspacePolicy", message: policyValidation.error ?? "Invalid workspace policy" }],
+        );
+      }
 
       // Use interaction modes from capability-aware resolution
       const interactionModes = archetypeConfig.interactionModes;
@@ -203,7 +223,7 @@ export class AgentInitializer {
         providerConfig: resolvedProvider,
         status: "created",
         launchMode,
-        workspacePolicy: overrides?.workspacePolicy ?? defaultPolicy,
+        workspacePolicy,
         processOwnership: "managed",
         createdAt: now,
         updatedAt: now,
