@@ -19,7 +19,8 @@ import type { StepContext } from "./pipeline/types";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveProviderFromEnv } from "../provider/provider-env-resolver";
 import { getBackendDescriptor } from "../manager/launcher/backend-registry";
-import { getArchetypeDefaults } from "./archetype-defaults";
+import { resolveArchetypeConfig } from "./archetype-defaults";
+import { validateBackendForArchetype } from "../manager/launcher/backend-resolver";
 
 const logger = createLogger("agent-initializer");
 
@@ -152,25 +153,44 @@ export class AgentInitializer {
       const now = new Date().toISOString();
 
       const archetype = overrides?.archetype ?? template.archetype ?? "repo";
-      const archetypeDefaults = getArchetypeDefaults(archetype);
+      const backendDef = getBackendDescriptor(template.backend.type);
+
+      // Validate backend/archetype compatibility
+      const validation = validateBackendForArchetype(backendDef, archetype);
+      if (!validation.valid) {
+        throw new ConfigValidationError(
+          `Backend "${template.backend.type}" is not compatible with "${archetype}" archetype`,
+          [{ path: "backend.type", message: validation.error! }],
+        );
+      }
+
+      // Use capability-aware config resolution
+      const archetypeConfig = resolveArchetypeConfig(archetype, backendDef, {
+        explicitInteractionModes: template.backend.interactionModes,
+      });
+
+      if (archetypeConfig.error) {
+        throw new ConfigValidationError(
+          `Configuration error for "${archetype}" archetype`,
+          [{ path: "archetype", message: archetypeConfig.error }],
+        );
+      }
+
+      // Log warnings if any
+      for (const warning of archetypeConfig.warnings) {
+        logger.warn({ name, backend: template.backend.type, archetype }, warning);
+      }
 
       const launchMode = overrides?.launchMode
         ?? template.launchMode
         ?? this.options?.defaultLaunchMode
-        ?? archetypeDefaults.launchMode;
+        ?? archetypeConfig.launchMode;
       const defaultPolicy: WorkspacePolicy = launchMode === "one-shot" ? "ephemeral" : "persistent";
 
-      let defaultModes: import("@actant/shared").InteractionMode[] | undefined;
-      try {
-        defaultModes = getBackendDescriptor(template.backend.type).defaultInteractionModes;
-      } catch {
-        // Backend may not be registered yet (e.g. in tests)
-      }
-      const interactionModes = template.backend.interactionModes
-        ?? defaultModes
-        ?? archetypeDefaults.interactionModes;
+      // Use interaction modes from capability-aware resolution
+      const interactionModes = archetypeConfig.interactionModes;
 
-      const autoStart = overrides?.autoStart ?? archetypeDefaults.autoStart;
+      const autoStart = overrides?.autoStart ?? archetypeConfig.autoStart;
 
       const meta: AgentInstanceMeta = {
         id: randomUUID(),

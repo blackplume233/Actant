@@ -27,6 +27,14 @@ const InstallMethodSchema = z.object({
   instructions: z.string().optional(),
 });
 
+const BackendCapabilitiesSchema = z.object({
+  supportsOpen: z.boolean().optional(),
+  supportsManagedSessions: z.boolean().optional(),
+  supportsServiceArchetype: z.boolean().optional(),
+  supportsEmployeeArchetype: z.boolean().optional(),
+  supportsPromptApi: z.boolean().optional(),
+});
+
 export const BackendDefinitionSchema = z
   .object({
     name: z.string().min(1),
@@ -34,6 +42,9 @@ export const BackendDefinitionSchema = z
     description: z.string().optional(),
     tags: z.array(z.string()).optional(),
     supportedModes: z.array(z.enum(["resolve", "open", "acp"])).min(1),
+    runtimeProfile: z.enum(["openOnly", "managedPrimary", "managedExperimental", "custom"]).optional(),
+    maturity: z.enum(["stable", "experimental", "internal"]).optional(),
+    capabilities: BackendCapabilitiesSchema.optional(),
     resolveCommand: PlatformCommandSchema.optional(),
     openCommand: PlatformCommandSchema.optional(),
     acpCommand: PlatformCommandSchema.optional(),

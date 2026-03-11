@@ -162,6 +162,110 @@ describe("AgentInitializer", () => {
       expect(meta.name).toBe("minimal-agent");
       await expect(access(join(tmpDir, "minimal-agent", ".actant.json"))).resolves.toBeUndefined();
     });
+
+    // -------------------------------------------------------------------------
+    // Capability-Driven Backend/Archetype Validation Tests (#plan)
+    // -------------------------------------------------------------------------
+
+    it("should allow repo + cursor (openOnly backend)", async () => {
+      registry.register(makeTemplate({
+        name: "repo-cursor",
+        backend: { type: "cursor" },
+        archetype: "repo",
+      }));
+      const meta = await initializer.createInstance("repo-cursor-agent", "repo-cursor");
+      expect(meta.backendType).toBe("cursor");
+      expect(meta.archetype).toBe("repo");
+    });
+
+    it("should allow service + claude-code (managedPrimary)", async () => {
+      registry.register(makeTemplate({
+        name: "service-claude",
+        backend: { type: "claude-code" },
+        archetype: "service",
+      }));
+      const meta = await initializer.createInstance("service-claude-agent", "service-claude");
+      expect(meta.backendType).toBe("claude-code");
+      expect(meta.archetype).toBe("service");
+    });
+
+    it("should allow employee + claude-code (managedPrimary)", async () => {
+      registry.register(makeTemplate({
+        name: "employee-claude",
+        backend: { type: "claude-code" },
+        archetype: "employee",
+      }));
+      const meta = await initializer.createInstance("employee-claude-agent", "employee-claude");
+      expect(meta.backendType).toBe("claude-code");
+      expect(meta.archetype).toBe("employee");
+    });
+
+    it("should reject service + cursor (openOnly cannot do managed)", async () => {
+      registry.register(makeTemplate({
+        name: "service-cursor",
+        backend: { type: "cursor" },
+        archetype: "service",
+      }));
+      await expect(
+        initializer.createInstance("service-cursor-agent", "service-cursor"),
+      ).rejects.toThrow(ConfigValidationError);
+    });
+
+    it("should reject employee + cursor (openOnly cannot do managed)", async () => {
+      registry.register(makeTemplate({
+        name: "employee-cursor",
+        backend: { type: "cursor" },
+        archetype: "employee",
+      }));
+      await expect(
+        initializer.createInstance("employee-cursor-agent", "employee-cursor"),
+      ).rejects.toThrow(ConfigValidationError);
+    });
+
+    it("should reject repo + pi (managedExperimental doesn't support repo)", async () => {
+      registry.register(makeTemplate({
+        name: "repo-pi",
+        backend: { type: "pi" },
+        archetype: "repo",
+      }));
+      await expect(
+        initializer.createInstance("repo-pi-agent", "repo-pi"),
+      ).rejects.toThrow(ConfigValidationError);
+    });
+
+    it("should allow service + pi with warning (managedExperimental)", async () => {
+      registry.register(makeTemplate({
+        name: "service-pi",
+        backend: { type: "pi" },
+        archetype: "service",
+      }));
+      // Pi + service is valid but experimental - should not throw
+      const meta = await initializer.createInstance("service-pi-agent", "service-pi");
+      expect(meta.backendType).toBe("pi");
+      expect(meta.archetype).toBe("service");
+    });
+
+    it("should derive interaction modes from backend capabilities for cursor (openOnly)", async () => {
+      registry.register(makeTemplate({
+        name: "cursor-repo",
+        backend: { type: "cursor" },
+        archetype: "repo",
+      }));
+      const meta = await initializer.createInstance("cursor-repo-agent", "cursor-repo");
+      // openOnly backend should only have 'open' mode
+      expect(meta.interactionModes).toEqual(["open"]);
+    });
+
+    it("should derive interaction modes from backend capabilities for claude-code (managedPrimary)", async () => {
+      registry.register(makeTemplate({
+        name: "claude-service",
+        backend: { type: "claude-code" },
+        archetype: "service",
+      }));
+      const meta = await initializer.createInstance("claude-service-agent", "claude-service");
+      // managedPrimary backend should have managed modes
+      expect(meta.interactionModes).toContain("proxy");
+    });
   });
 
   describe("findOrCreateInstance", () => {

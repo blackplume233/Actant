@@ -348,7 +348,56 @@ requestPermission(params: RequestPermissionRequest): RequestPermissionResponse {
 }
 ```
 
-### 5.2 后端命令行对照
+### 5.2 后端运行时能力与分类
+
+Actant 采用 **Capability-Driven Backend Model**（能力驱动后端模型），将后端按运行时能力和产品成熟度分类：
+
+#### 运行时配置文件 (Runtime Profile)
+
+| Profile | 说明 | 支持的原型 | 代表后端 |
+|---------|------|-----------|---------|
+| `openOnly` | 仅支持原生 UI/TUI 打开 | `repo` | `cursor`, `cursor-agent` |
+| `managedPrimary` | 完全托管支持，产品级稳定 | `repo`, `service`, `employee` | `claude-code` |
+| `managedExperimental` | 托管支持，实验性 | `service`, `employee` | `pi` |
+| `custom` | 用户自定义，需显式配置 | 取决于配置 | `custom` |
+
+#### 后端能力声明
+
+每个后端显式声明其能力：
+
+```typescript
+interface BackendCapabilities {
+  supportsOpen?: boolean;              // 支持 open 模式
+  supportsManagedSessions?: boolean;   // 支持托管会话
+  supportsServiceArchetype?: boolean;  // 支持 service 原型
+  supportsEmployeeArchetype?: boolean; // 支持 employee 原型
+  supportsPromptApi?: boolean;         // 支持 prompt/run API
+}
+```
+
+#### 内置后端对照表
+
+| 后端类型 | Profile | Maturity | 能力 | 适用场景 |
+|---------|---------|----------|------|---------|
+| `claude-code` | `managedPrimary` | stable | Open + 完整托管 API | 所有原型首选 |
+| `cursor` | `openOnly` | stable | 仅 Open | repo 原型 |
+| `cursor-agent` | `openOnly` | experimental | 仅 Open | repo 原型（实验性） |
+| `pi` | `managedExperimental` | experimental | 托管 API（无 Open） | service/employee（实验性） |
+| `custom` | `custom` | stable | 用户配置 | 自定义需求 |
+
+#### 后端/原型兼容性矩阵
+
+| Backend | repo | service | employee |
+|---------|------|---------|----------|
+| `claude-code` | ✅ | ✅ 推荐 | ✅ 推荐 |
+| `cursor` | ✅ | ❌ | ❌ |
+| `cursor-agent` | ✅ | ❌ | ❌ |
+| `pi` | ❌ | ⚠️ 实验性 | ⚠️ 实验性 |
+| `custom` | ⚙️ | ⚙️ | ⚙️ |
+
+**兼容性验证**：在实例创建时，`AgentInitializer` 会调用 `validateBackendForArchetype()` 进行校验，不兼容的组合会立即返回明确错误。
+
+### 5.3 后端命令行对照
 
 | 后端类型 | ACP 支持 | 命令 | 参数 | 说明 |
 |---------|---------|------|------|------|
@@ -356,7 +405,7 @@ requestPermission(params: RequestPermissionRequest): RequestPermissionResponse {
 | `cursor` | 否 | `cursor` / `cursor.cmd` | `[workspaceDir]` | 不支持 ACP，打开 Cursor IDE |
 | `custom` | 取决于配置 | 用户指定 | 用户指定 | 需 `backend.executablePath` |
 
-### 5.3 外部客户端 spawn 流程
+### 5.4 外部客户端 spawn 流程
 
 ```bash
 # 1. Resolve 获取启动信息

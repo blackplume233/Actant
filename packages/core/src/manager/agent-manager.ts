@@ -15,7 +15,7 @@ import {
 import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
-import { resolveBackend, resolveAcpBackend, openBackend, isAcpOnlyBackend, requireInteractionMode, type ResolvedBackend } from "./launcher/backend-resolver";
+import { resolveBackend, resolveAcpBackend, openBackend, isAcpOnlyBackend, requireInteractionMode, supportsManagedOperation, type ResolvedBackend } from "./launcher/backend-resolver";
 import { requireMode, getInstallHint, getBackendManager, getBuildProviderEnv } from "./launcher/backend-registry";
 import { ProcessWatcher, type ProcessExitInfo } from "./launcher/process-watcher";
 import { getLaunchModeHandler } from "./launch-mode-handler";
@@ -311,6 +311,17 @@ export class AgentManager {
     const meta = this.requireAgent(name);
     requireInteractionMode(meta, "start");
     requireMode(meta.backendType, "acp");
+
+    // Capability check: verify backend supports managed start operation
+    if (!supportsManagedOperation(meta.backendType, "start")) {
+      throw new AgentLaunchError(
+        name,
+        new Error(
+          `Backend "${meta.backendType}" does not support managed start. ` +
+          `Use "open" mode instead, or switch to a managed backend like "claude-code".`,
+        ),
+      );
+    }
 
     if (meta.status === "running" || meta.status === "starting") {
       throw new AgentAlreadyRunningError(name);

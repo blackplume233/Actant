@@ -70,6 +70,18 @@ export type AgentArchetype = "repo" | "service" | "employee";
 /** CLI-level interaction modes that an agent supports. */
 export type InteractionMode = "open" | "start" | "chat" | "run" | "proxy";
 
+export type BackendRuntimeProfile = "openOnly" | "managedPrimary" | "managedExperimental" | "custom";
+
+export type BackendMaturity = "stable" | "experimental" | "internal";
+
+export interface BackendCapabilities {
+  supportsOpen?: boolean;
+  supportsManagedSessions?: boolean;
+  supportsServiceArchetype?: boolean;
+  supportsEmployeeArchetype?: boolean;
+  supportsPromptApi?: boolean;
+}
+
 export interface AgentBackendConfig {
   type: AgentBackendType;
   /** Optional backend-specific config (e.g. executablePath for launcher). Used in materialization and persisted on instance. */
@@ -112,6 +124,12 @@ export interface PlatformCommand {
 export interface BackendDefinition extends VersionedComponent {
   /** Which open modes this backend supports. */
   supportedModes: AgentOpenMode[];
+  /** Runtime contract used by product-facing flows. */
+  runtimeProfile?: BackendRuntimeProfile;
+  /** Product maturity used for UX messaging and gating. */
+  maturity?: BackendMaturity;
+  /** Explicit product capabilities, separate from low-level launch commands. */
+  capabilities?: BackendCapabilities;
   /** Default CLI interaction modes for agents using this backend. Used when template omits interactionModes. */
   defaultInteractionModes?: InteractionMode[];
   /** Command for `resolve` mode (returns spawn info to external callers). */

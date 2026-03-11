@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import type { BackendDefinition } from "@actant/shared";
 import { getBackendManager } from "./backend-registry";
 import * as backendRegistry from "./backend-registry";
 import {
@@ -7,6 +8,9 @@ import {
   openBackend,
   isAcpBackend,
   isAcpOnlyBackend,
+  validateBackendForArchetype,
+  resolveRuntimeContract,
+  supportsManagedOperation,
 } from "./backend-resolver";
 
 describe("resolveBackend", () => {
@@ -184,5 +188,183 @@ describe("isAcpOnlyBackend", () => {
 
   it("should return false for cursor", () => {
     expect(isAcpOnlyBackend("cursor")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Capability-Driven Validation Tests (#plan)
+// ---------------------------------------------------------------------------
+
+describe("validateBackendForArchetype", () => {
+  it("repo + cursor (openOnly) => valid", () => {
+    const backend = getBackendManager().get("cursor")!;
+    const result = validateBackendForArchetype(backend, "repo");
+    expect(result.valid).toBe(true);
+    expect(result.error).toBeUndefined();
+  });
+
+  it("repo + claude-code (managedPrimary) => valid", () => {
+    const backend = getBackendManager().get("claude-code")!;
+    const result = validateBackendForArchetype(backend, "repo");
+    expect(result.valid).toBe(true);
+  });
+
+  it("service + claude-code (managedPrimary) => valid", () => {
+    const backend = getBackendManager().get("claude-code")!;
+    const result = validateBackendForArchetype(backend, "service");
+    expect(result.valid).toBe(true);
+  });
+
+  it("employee + claude-code (managedPrimary) => valid", () => {
+    const backend = getBackendManager().get("claude-code")!;
+    const result = validateBackendForArchetype(backend, "employee");
+    expect(result.valid).toBe(true);
+  });
+
+  it("service + cursor (openOnly) => invalid with clear error", () => {
+    const backend = getBackendManager().get("cursor")!;
+    const result = validateBackendForArchetype(backend, "service");
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("Open-only");
+    expect(result.error).toContain("repo");
+    expect(result.error).toContain("claude-code");
+  });
+
+  it("employee + cursor (openOnly) => invalid with clear error", () => {
+    const backend = getBackendManager().get("cursor")!;
+    const result = validateBackendForArchetype(backend, "employee");
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("Open-only");
+  });
+
+  it("service + cursor-agent (openOnly/experimental) => invalid", () => {
+    const backend = getBackendManager().get("cursor-agent")!;
+    const result = validateBackendForArchetype(backend, "service");
+    expect(result.valid).toBe(false);
+  });
+
+  it("service + pi (managedExperimental) => valid with warning", () => {
+    const backend = getBackendManager().get("pi")!;
+    const result = validateBackendForArchetype(backend, "service");
+    expect(result.valid).toBe(true);
+    expect(result.warning).toContain("experimental");
+  });
+
+  it("employee + pi (managedExperimental) => valid with warning", () => {
+    const backend = getBackendManager().get("pi")!;
+    const result = validateBackendForArchetype(backend, "employee");
+    expect(result.valid).toBe(true);
+    expect(result.warning).toContain("experimental");
+  });
+
+  it("repo + pi (managedExperimental) => invalid (Pi doesn't support repo)", () => {
+    const backend = getBackendManager().get("pi")!;
+    const result = validateBackendForArchetype(backend, "repo");
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("does not support");
+  });
+
+  it("custom backend without managed support => invalid for service", () => {
+    const backend: BackendDefinition = {
+      name: "custom-test",
+      version: "1.0.0",
+      origin: { type: "builtin" },
+      supportedModes: ["resolve", "acp"],
+      runtimeProfile: "custom",
+      maturity: "stable",
+      capabilities: {
+        supportsOpen: false,
+        supportsManagedSessions: false,
+        supportsServiceArchetype: false,
+        supportsEmployeeArchetype: false,
+        supportsPromptApi: false,
+      },
+    };
+    const result = validateBackendForArchetype(backend, "service");
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain("does not declare managed session support");
+  });
+
+  it("custom backend with managed support => valid for service", () => {
+    const backend: BackendDefinition = {
+      name: "custom-test",
+      version: "1.0.0",
+      origin: { type: "builtin" },
+      supportedModes: ["resolve", "acp"],
+      runtimeProfile: "custom",
+      maturity: "stable",
+      capabilities: {
+        supportsOpen: false,
+        supportsManagedSessions: true,
+        supportsServiceArchetype: true,
+        supportsEmployeeArchetype: false,
+        supportsPromptApi: true,
+      },
+    };
+    const result = validateBackendForArchetype(backend, "service");
+    expect(result.valid).toBe(true);
+  });
+});
+
+describe("resolveRuntimeContract", () => {
+  it("claude-code + repo => allows open, managed modes", () => {
+    const contract = resolveRuntimeContract("claude-code", "repo");
+    expect(contract.allowedArchetypes).toContain("repo");
+    expect(contract.allowedArchetypes).toContain("service");
+    expect(contract.allowedArchetypes).toContain("employee");
+    expect(contract.allowedInteractionModes).toContain("open");
+    expect(contract.allowedInteractionModes).toContain("start");
+    expect(contract.allowedInteractionModes).toContain("chat");
+    expect(contract.allowedInteractionModes).toContain("run");
+    expect(contract.allowedInteractionModes).toContain("proxy");
+    expect(contract.requiresExperimentalFlag).toBe(false);
+  });
+
+  it("cursor + repo => allows only open mode", () => {
+    const contract = resolveRuntimeContract("cursor", "repo");
+    expect(contract.allowedArchetypes).toContain("repo");
+    expect(contract.allowedArchetypes).not.toContain("service");
+    expect(contract.allowedArchetypes).not.toContain("employee");
+    expect(contract.allowedInteractionModes).toContain("open");
+    expect(contract.allowedInteractionModes).not.toContain("start");
+  });
+
+  it("throws for invalid combinations (service + cursor)", () => {
+    expect(() => resolveRuntimeContract("cursor", "service")).toThrow("Open-only");
+  });
+
+  it("pi + service => marks as experimental", () => {
+    const contract = resolveRuntimeContract("pi", "service");
+    expect(contract.requiresExperimentalFlag).toBe(true);
+    expect(contract.warnings.length).toBeGreaterThan(0);
+  });
+});
+
+describe("supportsManagedOperation", () => {
+  it("claude-code supports all managed operations", () => {
+    expect(supportsManagedOperation("claude-code", "start")).toBe(true);
+    expect(supportsManagedOperation("claude-code", "prompt")).toBe(true);
+    expect(supportsManagedOperation("claude-code", "run")).toBe(true);
+    expect(supportsManagedOperation("claude-code", "session")).toBe(true);
+  });
+
+  it("pi supports all managed operations (experimental)", () => {
+    expect(supportsManagedOperation("pi", "start")).toBe(true);
+    expect(supportsManagedOperation("pi", "prompt")).toBe(true);
+    expect(supportsManagedOperation("pi", "run")).toBe(true);
+  });
+
+  it("cursor does not support managed operations", () => {
+    expect(supportsManagedOperation("cursor", "start")).toBe(false);
+    expect(supportsManagedOperation("cursor", "prompt")).toBe(false);
+    expect(supportsManagedOperation("cursor", "run")).toBe(false);
+  });
+
+  it("cursor-agent does not support managed operations", () => {
+    expect(supportsManagedOperation("cursor-agent", "start")).toBe(false);
+  });
+
+  it("custom backend defaults to false", () => {
+    expect(supportsManagedOperation("custom", "start")).toBe(false);
   });
 });

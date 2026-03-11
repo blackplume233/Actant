@@ -1576,3 +1576,57 @@ Reclassified the Agent archetype system from `tool | employee | service` to `rep
 ### Next Steps
 
 - 提交本次文档变更：`docs(spec): deep review — fix conflicts, dedup, clarify phase boundaries`
+
+## Session 29: Ship lint worktree ignore
+
+**Date**: 2026-03-11
+**Task**: Ship lint worktree ignore
+
+### Summary
+
+Shipped the intended tooling fix that excludes Claude-managed worktrees from root ESLint traversal, kept unrelated local changes out of the commit, synced event RPC specs to current contracts, and posted a progress update on issue #276.
+
+### Main Changes
+
+| Area | Description |
+|------|-------------|
+| Tooling | Added `.claude/worktrees/**` to the root ESLint ignore list so `pnpm lint` remains stable in Claude-managed developer workspaces. |
+| Shared/API contract | Kept `events.emit` RPC types exported from `@actant/shared` and aligned `packages/api/src/handlers/event-handlers.ts` with `HookEventName` typing. |
+| Specs | Updated `.trellis/spec/config-spec.md` and `.trellis/spec/api-contracts.md` to document the shared event RPC exports and the actual `events.recent` / `events.emit` contract. |
+| Delivery | Committed only the intended files as `8ca69e4 fix(tooling): ignore Claude worktrees during lint`, pushed `master`, and added a progress comment to issue `#276`. |
+
+**Verification**:
+- `pnpm lint`
+- `pnpm type-check`
+- `pnpm test`
+
+**Committed Files**:
+- `eslint.config.js`
+- `packages/api/src/handlers/event-handlers.ts`
+- `packages/shared/src/types/index.ts`
+- `.trellis/spec/config-spec.md`
+- `.trellis/spec/api-contracts.md`
+
+**Left Uncommitted**:
+- `packages/shared/src/types/template.types.ts`
+- `.claude/worktrees/`
+- `.trellis/tasks/03-11-capability-backend-runtime/`
+- `.trellis/tasks/03-11-issue276-daemon-socket-normalization/`
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `8ca69e4` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

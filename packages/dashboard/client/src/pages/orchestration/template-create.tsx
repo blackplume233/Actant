@@ -92,15 +92,15 @@ export function TemplateCreatePage() {
   useEffect(() => {
     const stepKey = steps[currentStep]?.key;
     if (stepKey === "basic" && basicTouched) {
-      setBasicErrors(validateBasicForm(state.basic, t));
+      setBasicErrors(validateBasicForm(state.basic, t, { archetypes: state.archetypes }));
     }
-  }, [state.basic, currentStep, steps, basicTouched, t]);
+  }, [state.basic, currentStep, steps, basicTouched, t, state.archetypes]);
 
   const canAdvance = useMemo(() => {
     const stepKey = steps[currentStep]?.key;
     if (stepKey === "archetype") return state.archetypes.length > 0;
     if (stepKey === "basic") {
-      const errs = validateBasicForm(state.basic, t);
+      const errs = validateBasicForm(state.basic, t, { archetypes: state.archetypes });
       return Object.keys(errs).length === 0;
     }
     return true;
@@ -120,13 +120,13 @@ export function TemplateCreatePage() {
   const handleNext = useCallback(() => {
     const stepKey = steps[currentStep]?.key;
     if (stepKey === "basic") {
-      const errs = validateBasicForm(state.basic, t);
+      const errs = validateBasicForm(state.basic, t, { archetypes: state.archetypes });
       setBasicErrors(errs);
       if (Object.keys(errs).length > 0) return;
     }
     markCompleted(currentStep);
     setCurrentStep((s) => Math.min(s + 1, steps.length - 1));
-  }, [currentStep, steps, state.basic, t, markCompleted]);
+  }, [currentStep, steps, state.basic, t, markCompleted, state.archetypes]);
 
   const handlePrev = useCallback(() => {
     setCurrentStep((s) => Math.max(s - 1, 0));

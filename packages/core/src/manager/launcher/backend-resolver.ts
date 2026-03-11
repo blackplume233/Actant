@@ -1,4 +1,4 @@
-import type { AgentBackendType, AgentInstanceMeta, InteractionMode, OpenSpawnOptions } from "@actant/shared";
+import type { AgentBackendType, AgentInstanceMeta, InteractionMode, OpenSpawnOptions, AgentArchetype, BackendDefinition } from "@actant/shared";
 import {
   getBackendDescriptor,
   getAcpResolver,
@@ -195,5 +195,200 @@ export function requireInteractionMode(
       `Agent "${meta.name}" (${meta.backendType}) does not support "${mode}" mode. ` +
       `Supported modes: ${supported}`,
     );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Runtime Contract / Capability-Driven Validation (#plan)
+// ---------------------------------------------------------------------------
+
+export interface RuntimeContract {
+  allowedArchetypes: AgentArchetype[];
+  allowedInteractionModes: InteractionMode[];
+  requiresExperimentalFlag: boolean;
+  warnings: string[];
+}
+
+export interface BackendValidationResult {
+  valid: boolean;
+  error?: string;
+  warning?: string;
+}
+
+/**
+ * Validate that a backend supports the specified archetype.
+ * Returns validation result with optional error/warning messages.
+ */
+export function validateBackendForArchetype(
+  backendDef: BackendDefinition,
+  archetype: AgentArchetype,
+): BackendValidationResult {
+  const profile = backendDef.runtimeProfile;
+  const caps = backendDef.capabilities;
+
+  // openOnly backends only support repo archetype
+  if (profile === "openOnly") {
+    if (archetype === "repo") {
+      return { valid: true };
+    }
+    return {
+      valid: false,
+      error: `Backend "${backendDef.name}" is Open-only and does not support "${archetype}" archetype. ` +
+        `Use "repo" archetype, or switch to a managed backend like "claude-code".`,
+    };
+  }
+
+  // custom backends require explicit capability configuration
+  if (profile === "custom") {
+    const supportsManaged = caps?.supportsManagedSessions ?? false;
+    if (archetype !== "repo" && !supportsManaged) {
+      return {
+        valid: false,
+        error: `Custom backend "${backendDef.name}" does not declare managed session support. ` +
+          `Set capabilities.supportsManagedSessions=true to use "${archetype}" archetype.`,
+      };
+    }
+    return { valid: true };
+  }
+
+  // managedExperimental requires explicit opt-in for service/employee
+  if (profile === "managedExperimental") {
+    if (archetype === "repo") {
+      return {
+        valid: false,
+        error: `Backend "${backendDef.name}" is managed-experimental and does not support "repo" archetype. ` +
+          `Use "claude-code" for repo archetype, or use a managed archetype (service/employee).`,
+      };
+    }
+
+    const supportsArchetype = archetype === "service"
+      ? (caps?.supportsServiceArchetype ?? false)
+      : (caps?.supportsEmployeeArchetype ?? false);
+
+    if (!supportsArchetype) {
+      return {
+        valid: false,
+        error: `Backend "${backendDef.name}" does not support "${archetype}" archetype.`,
+      };
+    }
+
+    return {
+      valid: true,
+      warning: `Backend "${backendDef.name}" is experimental for "${archetype}" archetype. ` +
+        `Some features may be unstable.`,
+    };
+  }
+
+  // managedPrimary (claude-code) supports all archetypes
+  if (profile === "managedPrimary") {
+    return { valid: true };
+  }
+
+  // Fallback for backends without runtimeProfile set (backward compatibility)
+  // Use capabilities as fallback
+  if (archetype === "repo") {
+    return caps?.supportsOpen !== false
+      ? { valid: true }
+      : { valid: false, error: `Backend "${backendDef.name}" does not support open mode.` };
+  }
+
+  const supportsManaged = caps?.supportsManagedSessions ?? false;
+  if (!supportsManaged) {
+    return {
+      valid: false,
+      error: `Backend "${backendDef.name}" does not support managed sessions for "${archetype}" archetype.`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * Resolve the runtime contract for a backend/archetype combination.
+ * @throws when the combination is invalid
+ */
+export function resolveRuntimeContract(
+  backendType: AgentBackendType,
+  archetype: AgentArchetype,
+  options?: { allowExperimental?: boolean },
+): RuntimeContract {
+  const backendDef = getBackendDescriptor(backendType);
+  if (!backendDef) {
+    throw new Error(`Unknown backend type: "${backendType}"`);
+  }
+
+  const validation = validateBackendForArchetype(backendDef, archetype);
+  if (!validation.valid) {
+    throw new Error(validation.error);
+  }
+
+  const profile = backendDef.runtimeProfile ?? "custom";
+  const caps = backendDef.capabilities ?? {};
+
+  // Determine allowed archetypes
+  const allowedArchetypes: AgentArchetype[] = [];
+  if (profile === "openOnly" || caps.supportsOpen) {
+    allowedArchetypes.push("repo");
+  }
+  if (profile === "managedPrimary" || profile === "managedExperimental" || caps.supportsManagedSessions) {
+    if (caps.supportsServiceArchetype) allowedArchetypes.push("service");
+    if (caps.supportsEmployeeArchetype) allowedArchetypes.push("employee");
+  }
+
+  // Determine allowed interaction modes based on profile + capabilities
+  const allowedInteractionModes: InteractionMode[] = [];
+
+  if (profile === "openOnly" || caps.supportsOpen) {
+    allowedInteractionModes.push("open");
+  }
+
+  if (profile === "managedPrimary" || profile === "managedExperimental" || caps.supportsManagedSessions) {
+    allowedInteractionModes.push("start", "chat", "proxy");
+    if (caps.supportsPromptApi) {
+      allowedInteractionModes.push("run");
+    }
+  }
+
+  // Deduplicate
+  const uniqueModes = [...new Set(allowedInteractionModes)];
+
+  return {
+    allowedArchetypes,
+    allowedInteractionModes: uniqueModes,
+    requiresExperimentalFlag: profile === "managedExperimental" && !options?.allowExperimental,
+    warnings: validation.warning ? [validation.warning] : [],
+  };
+}
+
+/**
+ * Check if a backend supports a specific operation in managed context.
+ * Used by AgentManager to gate managed lifecycle operations.
+ */
+export function supportsManagedOperation(
+  backendType: AgentBackendType,
+  operation: "start" | "prompt" | "run" | "session",
+): boolean {
+  const backendDef = getBackendDescriptor(backendType);
+  if (!backendDef) return false;
+
+  const profile = backendDef.runtimeProfile;
+  const caps = backendDef.capabilities ?? {};
+
+  // openOnly backends never support managed operations
+  if (profile === "openOnly") return false;
+
+  // Check base managed session support
+  if (!caps.supportsManagedSessions) return false;
+
+  // Check specific operation
+  switch (operation) {
+    case "start":
+    case "session":
+      return caps.supportsManagedSessions;
+    case "prompt":
+    case "run":
+      return caps.supportsPromptApi ?? false;
+    default:
+      return false;
   }
 }

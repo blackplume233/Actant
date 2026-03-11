@@ -29,6 +29,45 @@
 6. Agent Instance: 一个真正可以运行的Agent，包含使用什么样的Provider， Backend，自身的Domain Context，特定的在执行的Hook，自动化流程，插件等。Agent Instance可以用来进行一次性的任务处理，也可以作为一个服务器持续长期执行
 7. Employee:一个持续运行的Agent
 
+## 后端架构 (Capability-Driven Backend Model)
+
+Actant 采用**能力驱动后端模型**，根据后端的功能能力和产品成熟度进行分类管理：
+
+### 运行时配置文件 (Runtime Profile)
+
+| Profile | 说明 | 适用场景 |
+|---------|------|---------|
+| `openOnly` | 仅支持原生 UI/TUI 打开 | 需要人工交互的场景 |
+| `managedPrimary` | 完全托管支持，产品级稳定 | 生产环境托管 Agent |
+| `managedExperimental` | 托管支持，实验性 | 实验性托管场景 |
+| `custom` | 用户自定义 | 特殊需求定制 |
+
+### 后端能力声明
+
+每个后端显式声明其支持的能力：
+
+- **supportsOpen**: 支持 open 模式（打开原生界面）
+- **supportsManagedSessions**: 支持托管会话
+- **supportsServiceArchetype**: 支持 service 原型
+- **supportsEmployeeArchetype**: 支持 employee 原型
+- **supportsPromptApi**: 支持 prompt/run API
+
+### 后端/原型兼容性
+
+| Backend | repo | service | employee | 说明 |
+|---------|------|---------|----------|------|
+| `claude-code` | ✅ | ✅ 推荐 | ✅ 推荐 | 稳定托管首选 |
+| `cursor` | ✅ | ❌ | ❌ | 仅支持 open |
+| `cursor-agent` | ✅ | ❌ | ❌ | 实验性，仅 open |
+| `pi` | ❌ | ⚠️ 实验性 | ⚠️ 实验性 | 实验性托管 |
+| `custom` | ⚙️ | ⚙️ | ⚙️ | 需配置 |
+
+### 后端成熟度
+
+- **stable**: 产品级稳定，推荐生产使用
+- **experimental**: 实验性，功能可能不稳定
+- **internal**: 内部使用
+
 ## 开发准则
 
 1. 该项目作为一个Agent工坊，他本身应当能够充分和不同的Agent前端，后端结合因此要具备极强的兼容性，因此要进行前后端分析，其所有核心功能都应当可以通过文本配置和CLI操作调用执行，但CLI操作的封装也应当考虑到后续需要兼顾交互UI的诉求。
