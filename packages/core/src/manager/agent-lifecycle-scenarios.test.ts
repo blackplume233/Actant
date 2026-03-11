@@ -13,8 +13,8 @@ import { readInstanceMeta } from "../state/instance-meta-io";
  * State-machine scenario tests for agent lifecycle correctness.
  *
  * Uses MockLauncher (fake PIDs) to isolate state transitions from real
- * process management.  The Pi backend type is used to validate it works
- * as a first-class builtin.
+ * process management. Uses claude-code backend (managedPrimary) for full
+ * archetype support.
  *
  * For integration tests with real processes, see `@actant/core/testing`
  * helpers (`createTestManager`, `makeSleeperTemplate`).
@@ -24,9 +24,10 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
   return {
     name: "test-tpl",
     version: "1.0.0",
-    backend: { type: "pi" },
+    backend: { type: "claude-code" },
     provider: { type: "openai", protocol: "openai" },
     domainContext: { skills: ["skill-a"] },
+    archetype: "service",
     ...overrides,
   };
 }

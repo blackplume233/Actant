@@ -78,13 +78,17 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 
 **已知后端**：
 
-| 值 | 说明 | 支持 Backend Mode | ACP 通信 |
-|----|------|------------------|---------|
-| `"cursor"` | Cursor IDE（编辑器模式） | open, resolve | 否 |
-| `"cursor-agent"` | Cursor Agent 模式 | open, resolve, acp | 是 |
-| `"claude-code"` | Claude Code CLI | open, resolve, acp | 是（`open` → `claude` TUI；`resolve`/`acp` → `claude-agent-acp`） |
-| `"pi"` | Pi Agent（基于 pi-agent-core） | acp | 是（ACP-only, in-process） |
-| `"custom"` | 用户自定义可执行程序 | resolve | 否 |
+| 值 | 说明 | 支持 Backend Mode | runtimeProfile | maturity | ACP 通信 |
+|----|------|------------------|----------------|----------|---------|
+| `"cursor"` | Cursor IDE（编辑器模式） | open, resolve | `openOnly` | stable | 否 |
+| `"cursor-agent"` | Cursor Agent 模式 | open, resolve, acp | `openOnly` | experimental | 是 |
+| `"claude-code"` | Claude Code CLI | open, resolve, acp | `managedPrimary` | stable | 是 |
+| `"pi"` | Pi Agent（基于 pi-agent-core） | acp | `managedExperimental` | experimental | 是（ACP-only） |
+| `"custom"` | 用户自定义可执行程序 | resolve, acp | `custom` | stable | 取决于配置 |
+
+> **注意**：`cursor-agent` 和 `pi` 的 `acp` 支持不代表完整托管能力。实际能力由 `runtimeProfile` 和 `capabilities` 字段决定。
+> - `cursor-agent` (openOnly)：支持 ACP 协议但仅用于 open 模式，不支持托管会话
+> - `pi` (managedExperimental)：支持完整托管 API，但标记为实验性
 
 > **开放类型说明**：`AgentBackendType` 不再是严格枚举。通过 actant-hub 或用户本地注册的自定义后端可使用任意字符串作为 `type`。Zod Schema 使用 `z.string().min(1)` 校验。已知值通过 `KnownBackendType` 类型别名提供 IDE 补全。
 
@@ -871,6 +875,9 @@ Agent 后端的纯数据配置，JSON 可序列化。由 `BackendManager` 管理
 |------|------|------|------|
 | *(继承)* | — | — | 见 [VersionedComponent](#3-versionedcomponent--组件基类119) |
 | `supportedModes` | `AgentOpenMode[]` | **是** | 支持的交互模式（`open`, `resolve`, `acp`） |
+| `runtimeProfile` | [`BackendRuntimeProfile`](#backendruntimeprofile) | 否 | 运行时配置文件（能力驱动模型） |
+| `maturity` | [`BackendMaturity`](#backendmaturity) | 否 | 产品成熟度（`stable`, `experimental`, `internal`） |
+| `capabilities` | [`BackendCapabilities`](#backendcapabilities) | 否 | 显式能力声明 |
 | `resolveCommand` | [`PlatformCommand`](#platformcommand) | 否 | resolve/acp 模式的可执行命令 |
 | `openCommand` | [`PlatformCommand`](#platformcommand) | 否 | open 模式的可执行命令 |
 | `acpCommand` | [`PlatformCommand`](#platformcommand) | 否 | ACP 模式的可执行命令（省略时 fallback 到 `resolveCommand`） |
@@ -881,6 +888,62 @@ Agent 后端的纯数据配置，JSON 可序列化。由 `BackendManager` 管理
 | `existenceCheck` | [`BackendExistenceCheck`](#backendexistencecheck) | 否 | 后端可执行文件的存在性验证规则 |
 | `install` | [`BackendInstallMethod[]`](#backendinstallmethod) | 否 | 安装方式列表（按平台过滤） |
 | `materialization` | [`MaterializationSpec`](#materializationspec158-新增) | 否 | 声明式 workspace 物化规范（#158 新增） |
+
+#### BackendRuntimeProfile
+
+运行时配置文件，定义后端的使用场景和能力范围。
+
+| 值 | 说明 | 支持原型 | 代表后端 |
+|----|------|---------|---------|
+| `"openOnly"` | 仅支持原生 UI/TUI 打开 | `repo` | `cursor`, `cursor-agent` |
+| `"managedPrimary"` | 完全托管支持，产品级稳定 | `repo`, `service`, `employee` | `claude-code` |
+| `"managedExperimental"` | 托管支持，实验性 | `service`, `employee` | `pi` |
+| `"custom"` | 用户自定义，需显式配置 | 取决于配置 | `custom` |
+
+#### BackendMaturity
+
+产品成熟度等级，用于 UX 展示和功能门控。
+
+| 值 | 说明 |
+|----|------|
+| `"stable"` | 产品级稳定，推荐生产使用 |
+| `"experimental"` | 实验性，功能可能不稳定 |
+| `"internal"` | 内部使用 |
+
+#### BackendCapabilities
+
+后端显式能力声明。产品行为应由此派生，而非仅依赖 `supportedModes`。
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `supportsOpen` | `boolean` | 支持 open 模式（打开原生界面） |
+| `supportsManagedSessions` | `boolean` | 支持托管会话（start/chat/proxy） |
+| `supportsServiceArchetype` | `boolean` | 支持 service 原型 |
+| `supportsEmployeeArchetype` | `boolean` | 支持 employee 原型 |
+| `supportsPromptApi` | `boolean` | 支持 prompt/run API |
+
+**内置后端能力对照表**：
+
+| 后端 | runtimeProfile | maturity | supportsOpen | supportsManagedSessions | supportsServiceArchetype | supportsEmployeeArchetype | supportsPromptApi |
+|------|---------------|----------|--------------|------------------------|-------------------------|--------------------------|-------------------|
+| `cursor` | `openOnly` | `stable` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `cursor-agent` | `openOnly` | `experimental` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `claude-code` | `managedPrimary` | `stable` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `pi` | `managedExperimental` | `experimental` | ❌ | ✅ | ✅ | ✅ | ✅ |
+| `custom` | `custom` | `stable` | ❌ | ❌ | ❌ | ❌ | ❌ |
+
+**后端/原型兼容性矩阵**：
+
+| Backend | repo | service | employee |
+|---------|------|---------|----------|
+| `claude-code` | ✅ | ✅ 推荐 | ✅ 推荐 |
+| `cursor` | ✅ | ❌ | ❌ |
+| `cursor-agent` | ✅ | ❌ | ❌ |
+| `pi` | ❌ | ⚠️ 实验性 | ⚠️ 实验性 |
+| `custom` | ⚙️ | ⚙️ | ⚙️ |
+
+> **兼容性验证**：`AgentInitializer.createInstance()` 会调用 `validateBackendForArchetype()` 进行校验，不兼容的组合会立即返回明确错误。详见 `packages/core/src/manager/launcher/backend-resolver.ts`。
+
 
 > **数据与行为分离**：`BackendDefinition` 是纯数据对象，不含函数。非序列化的行为扩展（如 `acpResolver`、`buildProviderEnv` 函数）通过 `BackendManager.registerAcpResolver()` / `registerBuildProviderEnv()` 单独注册。旧版 `BackendDescriptor` 作为兼容层保留，但新代码应使用 `BackendDefinition` + `BackendManager`。
 >

@@ -86,6 +86,11 @@ export function resolveArchetypeConfig(
       return caps.supportsManagedSessions ?? false;
     });
 
+    // Ensure 'start' is available for managed backends (needed for startAgent)
+    if (caps.supportsManagedSessions && !interactionModes.includes("start")) {
+      interactionModes.unshift("start");
+    }
+
     // Ensure at least one mode is available
     if (interactionModes.length === 0) {
       interactionModes = caps.supportsManagedSessions ? ["start"] : ["open"];

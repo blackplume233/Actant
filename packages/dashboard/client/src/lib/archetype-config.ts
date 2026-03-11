@@ -230,7 +230,6 @@ export function getBackendCompatibilityWarning(backendName: string, archetype: A
   }
 
   const backend = BACKEND_METADATA[backendName];
-  const config = ARCHETYPE_CONFIG[archetype];
 
   if (backend?.runtimeProfile === "openOnly") {
     return `${backend.displayName} only supports "repo" archetype. Please select a managed backend for "${archetype}".`;

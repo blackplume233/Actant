@@ -160,7 +160,7 @@ export class AgentInitializer {
       if (!validation.valid) {
         throw new ConfigValidationError(
           `Backend "${template.backend.type}" is not compatible with "${archetype}" archetype`,
-          [{ path: "backend.type", message: validation.error! }],
+          [{ path: "backend.type", message: validation.error ?? "Backend not compatible with archetype" }],
         );
       }
 
