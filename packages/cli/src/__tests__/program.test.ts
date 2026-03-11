@@ -14,8 +14,15 @@ describe("defaultSocketPath behavior", () => {
     }
   });
 
-  it("falls back to the default IPC path when no override is provided", () => {
+  it("resolves bare .sock overrides the same way as the CLI entrypoint logic", () => {
     const home = ".trellis/tmp/demo-home";
-    expect(getDefaultIpcPath(home)).toBeTruthy();
+
+    const actual = normalizeIpcPath(".sock", home);
+    if (process.platform === "win32") {
+      expect(actual).toBe(getDefaultIpcPath(home));
+    } else {
+      expect(actual).toContain(".sock");
+    }
   });
+
 });

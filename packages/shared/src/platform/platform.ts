@@ -64,10 +64,14 @@ export function normalizeIpcPath(inputPath: string, homeDir?: string): string {
   }
 
   const normalized = inputPath.replace(/\\/g, "/").toLowerCase();
-  const looksLikeUnixSocketPath = normalized.endsWith(".sock") || normalized.includes("/actant.sock");
+  const trimmed = normalized.trim();
+  const isSockShorthand = trimmed === ".sock" || trimmed === "actant.sock" || trimmed === "./actant.sock";
+  const looksLikeUnixSocketPath = isSockShorthand || normalized.endsWith(".sock") || normalized.includes("/actant.sock");
   if (looksLikeUnixSocketPath) {
     const baseDir = homeDir ?? inputPath.replace(/[\\/][^\\/]+$/, "");
-    return getIpcPath(baseDir);
+    if (baseDir) {
+      return getIpcPath(baseDir);
+    }
   }
 
   return resolve(inputPath);

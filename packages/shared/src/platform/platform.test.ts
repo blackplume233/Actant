@@ -54,6 +54,15 @@ describe("platform utilities", () => {
     }
   });
 
+  it("normalizes bare .sock override on Windows", () => {
+    const homeDir = ".trellis/tmp/demo-home";
+    if (isWindows()) {
+      expect(normalizeIpcPath(".sock", homeDir)).toBe(getIpcPath(homeDir));
+    } else {
+      expect(normalizeIpcPath(".sock", homeDir)).toContain(".sock");
+    }
+  });
+
   it("getDefaultIpcPath without args matches getIpcPath with default home", () => {
     const defaultHome = process.env.HOME ?? process.env.USERPROFILE ?? ".";
     expect(getDefaultIpcPath()).toBe(getIpcPath(defaultHome.endsWith(".actant") ? defaultHome : `${defaultHome}/.actant`));

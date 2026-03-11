@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import chalk from "chalk";
-import { getDefaultIpcPath } from "@actant/shared";
+import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared";
 import { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 import {
@@ -67,7 +67,10 @@ export function createSetupCommand(printer: CliPrinter = defaultPrinter): Comman
         let daemonStartedBySetup = false;
 
         if (daemonNeeded) {
-          const socketPath = process.env["ACTANT_SOCKET"] ?? getDefaultIpcPath(actantHome);
+          const socketOverride = process.env["ACTANT_SOCKET"];
+          const socketPath = socketOverride
+            ? normalizeIpcPath(socketOverride, actantHome)
+            : getDefaultIpcPath(actantHome);
           client = new RpcClient(socketPath);
 
           const alive = await client.ping();

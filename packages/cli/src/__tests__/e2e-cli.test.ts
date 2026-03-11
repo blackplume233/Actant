@@ -1,17 +1,24 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtemp, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, writeFile, rm, access } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { once } from "node:events";
 import { Daemon } from "@actant/api";
+import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared";
 
 const CLI_BIN = join(import.meta.dirname, "..", "..", "dist", "bin", "actant.js");
 
-function runCli(args: string[], socketPath: string): Promise<{ stdout: string; stderr: string; exitCode: number }> {
+function runCli(
+  args: string[],
+  socketPath: string,
+  extraEnv?: Record<string, string | undefined>,
+): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve) => {
     const child: ChildProcess = spawn("node", [CLI_BIN, ...args], {
       env: {
         ...process.env,
+        ...extraEnv,
         ACTANT_SOCKET: socketPath,
         LOG_LEVEL: "silent",
       },
@@ -84,6 +91,70 @@ describe("CLI E2E (stdio)", () => {
     const result = JSON.parse(stdout);
     expect(result.running).toBe(true);
     expect(result.version).toMatch(/^\d+\.\d+\.\d+/);
+  });
+
+  it("daemon status shows running after foreground start with .sock override", async () => {
+    if (process.platform !== "win32") {
+      return;
+    }
+
+    const foregroundHome = await mkdtemp(join(tmpdir(), "ac-cli-foreground-"));
+    const socketOverride = ".sock";
+    const expectedSocketPath = getDefaultIpcPath(foregroundHome);
+    const normalizedOverride = normalizeIpcPath(socketOverride, foregroundHome);
+    expect(normalizedOverride).toBe(expectedSocketPath);
+    const pidFile = join(foregroundHome, "daemon.pid");
+    const child = spawn("node", [CLI_BIN, "daemon", "start", "--foreground"], {
+      env: {
+        ...process.env,
+        ACTANT_HOME: foregroundHome,
+        ACTANT_SOCKET: normalizedOverride,
+        ACTANT_LAUNCHER_MODE: "mock",
+        LOG_LEVEL: "silent",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    let stdout = "";
+    let stderr = "";
+    child.stdout?.on("data", (chunk) => { stdout += chunk.toString(); });
+    child.stderr?.on("data", (chunk) => { stderr += chunk.toString(); });
+
+    try {
+      await Promise.race([
+        once(child.stdout!, "data"),
+        once(child.stderr!, "data"),
+      ]);
+
+      for (let i = 0; i < 20; i++) {
+        try {
+          await access(pidFile);
+          break;
+        } catch {
+          if (i === 19) {
+            throw new Error(`Foreground daemon did not create pid file. stdout: ${stdout} stderr: ${stderr}`);
+          }
+          await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+      }
+
+      const { stdout: statusOut, stderr: statusErr, exitCode } = await runCli(
+        ["daemon", "status", "-f", "json"],
+        normalizedOverride,
+        { ACTANT_HOME: foregroundHome },
+      );
+      expect(exitCode, JSON.stringify({ statusErr, statusOut, stdout, stderr, expectedSocketPath }, null, 2)).toBe(0);
+      const result = JSON.parse(statusOut);
+      expect(result.running).toBe(true);
+      expect(expectedSocketPath).toContain("actant-");
+    } finally {
+      child.kill("SIGINT");
+      await once(child, "exit");
+      await rm(foregroundHome, { recursive: true, force: true });
+    }
+
+    expect(stdout).toContain("Daemon started (foreground).");
+    expect(stderr).toBe("");
   });
 
   it("template list shows empty list", async () => {

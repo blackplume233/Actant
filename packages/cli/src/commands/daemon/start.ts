@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { join } from "node:path";
 import { fork, spawn } from "node:child_process";
 import chalk from "chalk";
-import { onShutdownSignal, isWindows, isSingleExecutable } from "@actant/shared";
+import { onShutdownSignal, isWindows, isSingleExecutable, normalizeIpcPath } from "@actant/shared";
 import { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 import { defaultSocketPath } from "../../program";
@@ -90,6 +90,11 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
       if (opts.foreground) {
         try {
           const { Daemon } = await import("@actant/api");
+          const homeDir = process.env["ACTANT_HOME"];
+          const socketOverride = process.env["ACTANT_SOCKET"];
+          if (socketOverride) {
+            process.env["ACTANT_SOCKET"] = normalizeIpcPath(socketOverride, homeDir);
+          }
           const daemon = new Daemon();
 
           onShutdownSignal(async () => {
