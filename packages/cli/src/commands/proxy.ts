@@ -82,15 +82,13 @@ async function runDirectBridge(
       template: opts.template,
     });
 
-    instanceName = resolved.instanceName;
-
-    // Validate interaction mode
+    let baseMeta;
     try {
-      const meta = await client.call("agent.status", { name: instanceName });
-      if (meta.interactionModes && !meta.interactionModes.includes("proxy")) {
+      baseMeta = await client.call("agent.status", { name: resolved.instanceName });
+      if (baseMeta.interactionModes && !baseMeta.interactionModes.includes("proxy")) {
         printer.error(
-          `Agent "${instanceName}" (${meta.backendType}) does not support "proxy" mode. ` +
-          `Supported modes: ${meta.interactionModes.join(", ")}`,
+          `Agent "${resolved.instanceName}" (${baseMeta.backendType}) does not support "proxy" mode. ` +
+          `Supported modes: ${baseMeta.interactionModes.join(", ")}`,
         );
         process.exitCode = 1;
         return;
@@ -99,11 +97,19 @@ async function runDirectBridge(
       // status check is best-effort; proceed if it fails
     }
 
+    if (baseMeta?.archetype === "service" && baseMeta?.status === "running") {
+      printer.dim(
+        `Agent "${resolved.instanceName}" is a running shared service → using Session Lease mode`,
+      );
+      await runSessionLease(resolved.instanceName, printer);
+      return;
+    }
+
     // Check if instance is already occupied → auto-instantiate ephemeral copy
     const targetInstance = await resolveAvailableInstance(
       client,
-      instanceName,
       resolved,
+      baseMeta,
       printer,
     );
     if (!targetInstance) {
@@ -120,6 +126,8 @@ async function runDirectBridge(
       cwd: workspaceDir,
       stdio: ["pipe", "pipe", "pipe"],
       env,
+      shell: process.platform === "win32" && /\.(cmd|bat)$/i.test(command),
+      windowsHide: true,
     });
 
     if (!child.stdin || !child.stdout || child.pid == null) {
@@ -184,7 +192,6 @@ interface AvailableInstance {
  */
 async function resolveAvailableInstance(
   client: RpcClient,
-  instanceName: string,
   resolved: {
     workspaceDir: string;
     command: string;
@@ -192,41 +199,56 @@ async function resolveAvailableInstance(
     env?: Record<string, string>;
     instanceName: string;
   },
+  baseMeta: { status?: string; pid?: number | null; templateName?: string } | undefined,
   printer: CliPrinter,
 ): Promise<AvailableInstance | null> {
-  try {
-    const status = await client.call("agent.status", { name: instanceName });
-    if (status.status === "running" && status.pid != null) {
-      // Instance is occupied — try auto-instantiation from the same template
-      const templateName = status.templateName;
-      if (!templateName) {
-        printer.error(
-          `Agent "${instanceName}" is already running (pid ${status.pid}) and has no template for auto-instantiation.`,
-        );
-        return null;
-      }
+  if (baseMeta?.status === "running" && baseMeta.pid != null) {
+    const templateName = baseMeta.templateName;
+    if (!templateName) {
+      printer.error(
+        `Agent "${resolved.instanceName}" is already running (pid ${baseMeta.pid}) and has no template for auto-instantiation.`,
+      );
+      return null;
+    }
 
-      const ephemeralName = `${instanceName}-proxy-${Date.now()}`;
-      const ephemeral = await client.call("agent.resolve", {
+    const ephemeralName = `${resolved.instanceName}-proxy-${Date.now()}`;
+    let freshEphemeral;
+    try {
+      freshEphemeral = await client.call("agent.resolve", {
         name: ephemeralName,
         template: templateName,
-        overrides: { workspacePolicy: "ephemeral" },
+        overrides: {
+          workspacePolicy: "ephemeral",
+          launchMode: "acp-service",
+        },
       });
-
-      printer.dim(
-        `Instance "${instanceName}" occupied → created ephemeral "${ephemeralName}"`,
-      );
-
-      return {
-        instanceName: ephemeral.instanceName,
-        workspaceDir: ephemeral.workspaceDir,
-        command: ephemeral.command,
-        args: ephemeral.args,
-        env: ephemeral.env,
-      };
+    } catch {
+      try {
+        await client.call("agent.destroy", { name: ephemeralName });
+      } catch {
+        // Ignore cleanup failure for stale/nonexistent instance.
+      }
+      freshEphemeral = await client.call("agent.resolve", {
+        name: ephemeralName,
+        template: templateName,
+        overrides: {
+          workspacePolicy: "ephemeral",
+          launchMode: "acp-service",
+        },
+      });
     }
-  } catch {
-    // agent.status throws when instance was just created via resolve — that's fine
+
+    printer.dim(
+      `Instance "${resolved.instanceName}" occupied → created ephemeral "${ephemeralName}"`,
+    );
+
+    return {
+      instanceName: freshEphemeral.instanceName,
+      workspaceDir: freshEphemeral.workspaceDir,
+      command: freshEphemeral.command,
+      args: freshEphemeral.args,
+      env: freshEphemeral.env,
+    };
   }
 
   return {

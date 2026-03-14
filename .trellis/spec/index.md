@@ -61,11 +61,14 @@ spec/
 > - 若发现历史 design / planning / wiki 与上述入口冲突，应优先修正周边文档或补充状态说明，而不是回退规范基线
 >
 > **#278 冲突项映射状态**：C-01 / C-02 / C-04 / C-05 已在 vision、roadmap、wiki、design 与 spec 索引中建立统一基线；C-08 由 `endurance-testing.md` 中的 archetype-oriented baseline 与 Phase 4 endurance 组织口径承接，后续新增验证资产必须继续围绕 `repo / service / employee` 建立验收入口。
+>
+> **统一通信层基线（2026-03-14）**：`service` 是共享 runtime communication target，统一通信语义由 `communication-layer.md` 负责收口。生命周期文档保留 product/runtime 总览，接口契约文档描述可调用 surface，配置规范描述 `communicationPolicy` 等声明面；若出现 `agent.prompt`、`proxy`、`run`、session/lease、Dashboard Chat 或 agent-to-agent communication 的口径分裂，应优先修正这三个入口的交叉引用，而不是继续在 design/wiki 中新增平行定义。
 
 | 文档 | 内容 | 约束力 |
 |------|------|--------|
 | [愿景](./vision.md) | 产品定位、目标场景、核心特性、演进路线 | **指南** — 理解项目长期方向与决策依据 |
-| [Agent 生命周期](./agent-lifecycle.md) | 运行模式、接入方式、使用场景、状态转换 | **强制** — 理解系统行为的核心文档 |
+| [Agent 生命周期](./agent-lifecycle.md) | 运行模式、接入方式、使用场景、状态转换；产品/runtime 总览，引用统一通信层定义 | **强制** — 理解系统行为的核心文档 |
+| [统一通信层](./communication-layer.md) | service/shared runtime 通信模型、lease/session/conversation 术语、路由规则、readiness、外部/内部通信统一抽象 | **强制** — 任何 communication / session / proxy / prompt / facade 语义变更必须先更新此文档 |
 | [配置规范](./config-spec.md) | 所有配置结构、Schema、枚举、环境变量 | **强制** — 任何配置变更必须先更新此文档；`Agent App` 的正式配置定义见其中的 `AgentAppManifest` |
 | [接口契约](./api-contracts.md) | RPC 方法、CLI 命令、ACP Proxy、MCP Server、VFS、错误码 | **强制** — 任何接口变更必须先更新此文档；`Agent App` 的产品层 API 边界见其中的 Agent App Contracts |
 | [Session 管理](./session-management.md) | 三种 session 的概念、生命周期、按 archetype 的路由规则 | **强制** — 涉及 Chat/Session 相关代码必读 |

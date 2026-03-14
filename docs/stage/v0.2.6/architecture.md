@@ -136,9 +136,18 @@ All domain components are `VersionedComponent`s managed by `BaseComponentManager
 #### Archetype Defaults (`src/initializer/archetype-defaults.ts`) — v0.2.5
 
 - **`ARCHETYPE_TABLE`** — Maps each archetype to default `launchMode`, `interactionModes`, and `autoStart`:
-  - `repo`: `direct`, `["open", "start", "run"]`, `false`
-  - `service`: `acp-service`, `["start", "chat", "run", "proxy"]`, `true`
-  - `employee`: `acp-background`, `["start", "chat", "run", "proxy"]`, `true`
+  - `repo`: `direct`, `["open", "start"]`, `false`
+  - `service`: `acp-service`, `["proxy"]`, `true`
+  - `employee`: `acp-background`, `["start", "run", "proxy"]`, `true`
+- Important semantic note: these defaults describe the archetype baseline, not every compatibility command. For `service`, the primary communication contract is the shared runtime facade surfaced through lease/session/prompt routing.
+
+#### Communication Layer Baseline — 2026-03-14 spec sync
+
+- Actant externally presents a **stable runtime facade**; backend engines such as `claude-code` are internal backend adapters
+- `service` is the shared runtime communication target across CLI, Dashboard, ACP proxy, REST/RPC, and future internal agent-to-agent routes
+- For a running `service`, `proxy` should default to lease/shared-session semantics rather than direct-bridge-first fallback
+- `running service` is intended to imply communication readiness for the default route, not only process liveness
+- Authoritative details live in `.trellis/spec/communication-layer.md`; stage/wiki docs should mirror that contract rather than redefine it
 
 #### Session Management (`src/session/`) — v0.2.6
 

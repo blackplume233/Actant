@@ -8,48 +8,31 @@ generated: true
 
 > 基于 v0.2.2 (2026-02-24)
 
-# Actant v0.2.2 — Architecture Document
+# Actant v0.2.6 — Architecture Document
 
-> **Actant** is an AI agent platform: a lower runtime and composition layer that materializes workspaces, manages agent processes, bridges protocols, and provides the base for higher-level Agent Apps, SOP automation, CI operators, and engine/toolchain integrations.
 
-## 产品分层
-
-Actant 当前最重要的架构理解方式不是先看包结构，而是先看产品层次：
-
-```text
-Product Layer
-  -> Archetype Layer
-    -> Template / Domain Context Layer
-      -> Platform Runtime Layer
-        -> Protocol Layer
-```
-
-| 层级 | 作用 | 当前事实 |
-|------|------|---------|
-| **Product Layer** | 承载 Agent App、SOP、CI、引擎集成等上层交付形态 | Dashboard、REST API、外部客户端都在消费平台能力 |
-| **Archetype Layer** | 用 `repo -> service -> employee` 表达管理深度递进 | Dashboard 已按 archetype 组织交互与视图 |
-| **Template / Domain Context Layer** | 声明 Agent 蓝图与可复用组件引用 | Template 通过 `domainContext` 组合 skills/prompts/mcp/workflow/plugins |
-| **Platform Runtime Layer** | 提供实例、进程、调度、上下文注入、初始化、状态恢复 | AgentManager、Scheduler、SessionContextInjector、Initializer 已落地 |
-| **Protocol Layer** | 把平台能力暴露给 CLI / ACP / MCP / HTTP | CLI、JSON-RPC、ACP、MCP、REST/SSE 已形成多入口 |
-
-**当前主交付形态**：`service` 是平台默认承载面；`employee` 是在 service 之上叠加调度与自治能力的增强层；`repo` 则是最浅层的工作区承载形态。
+> **Actant** is "Docker for AI Agents" — a platform to build, manage, and compose AI agents with pluggable backends, declarative configuration, and a component ecosystem.
 
 ## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Runtime | Node.js 20+ / TypeScript 5.7 |
+| Runtime | Node.js 22+ / TypeScript 5.7 |
 | Build | tsup (ESM) + pnpm workspaces |
 | Validation | Zod |
 | CLI | Commander.js |
 | IPC | JSON-RPC 2.0 over Unix socket / Windows named pipe |
 | Agent Protocol | ACP (Agent Client Protocol) |
+| Dashboard | React 19 + Vite + Tailwind CSS + shadcn/ui |
+| i18n | react-i18next + i18next-browser-languagedetector |
+| REST API | Custom HTTP router (zero-dependency) |
 | Testing | Vitest |
 | Package Manager | pnpm 10 |
+| Docs | VitePress (wiki), GitHub Pages (landing) |
 
 ## Monorepo Structure
 
-```text
+```
 packages/
 ├── shared/       @actant/shared      Types, logger, config helpers (foundation)
 ├── core/         @actant/core        Runtime engine (managers, builders, domain)
@@ -57,13 +40,15 @@ packages/
 ├── cli/          @actant/cli         CLI frontend (commander-based)
 ├── acp/          @actant/acp         Agent Client Protocol adapter
 ├── pi/           @actant/pi          Pi — in-process lightweight agent backend
-├── mcp-server/   @actant/mcp-server  MCP server integration
+├── mcp-server/   @actant/mcp-server  Built-in MCP server with canvas tools
+├── rest-api/     @actant/rest-api    Standalone RESTful API server
+├── dashboard/    @actant/dashboard   Web dashboard SPA + server
 └── actant/       actant              Meta-package + global binary
 ```
 
 ### Package Dependency Graph
 
-```text
+```
                     ┌──────────┐
                     │  actant  │  (meta-package)
                     └────┬─────┘
@@ -71,59 +56,13 @@ packages/
           ▼      ▼       ▼       ▼      ▼      ▼
         cli    api     core    acp    pi    mcp-server
           │      │       │       │      │      │
-          ├──────┤       │       ├──────┘      │
-          │      ├───────┤       │             │
+          │      │       │       ├──────┘      │
+          │      │       │       │             │
+          │    rest-api  │       │             │
           │      │       │       ▼             │
-          └──────┴───────┴──► shared ◄─────────┘
+          │  dashboard   └──► shared ◄─────────┘
+          └──────┘
 ```
-
-## 架构基线
-
-### 1. Archetype 不是产品线，而是管理深度模型
-
-`repo -> service -> employee` 表示平台对 Agent 的管理深度逐层增强：
-
-- **repo**: 平台物化 workspace，但不承担长期运行时控制
-- **service**: 平台承担进程、会话、keepAlive 与 API 交互，是当前主交付形态
-- **employee**: 在 service 之上增加调度、事件驱动与自治执行，是增强层
-
-Dashboard 已按 archetype-first 组织交互：`packages/dashboard/client/src/lib/archetype-config.ts` 中，`service` 具备 session / chat 能力，`employee` 额外具备 canvas 与运行控制视图。
-
-### 2. Template / Domain Context Layer 负责声明，不负责运行
-
-Template 是声明式蓝图，`domainContext` 负责引用 Skill、Prompt、MCP、Workflow、Plugin 等组件。它们回答的是“Agent 需要什么上下文”，而不是“平台如何运行这些能力”。
-
-当前实现中：
-- Context materialization 会把被引用组件写入 workspace
-- Initializer pipeline 提供可扩展步骤注册与顺序执行能力
-- `StepRegistry` + `InitializationPipeline` 已为后续 initializer 扩展提供基础
-
-### 3. Platform Runtime Layer 才是 Actant 的真正底座
-
-Runtime 层承担实例生命周期、上下文注入、运行时恢复、调度和系统能力挂载：
-
-- **AgentManager**: 管理实例、进程、状态恢复和 launch mode
-- **SessionContextInjector**: 在 ACP 会话建立前聚合 MCP servers / system context additions
-- **InitializationPipeline**: 运行有序初始化步骤，并支持 dry-run、timeout、rollback
-- **EmployeeScheduler**: 只对 `employee` archetype 生效，负责 heartbeat / cron / hook 输入
-- **Dashboard / REST / SSE**: 作为平台观测与控制入口，而不是独立 runtime
-
-当前实现事实包括：
-- `AgentManager` 已为 service agent 提供 keepAlive / auto-stop 预算回调
-- `AgentManager` 已为 employee archetype 维持持久 `conversationId`，避免重启后会话碎片化
-- `SessionContextInjector` 已用于动态注入 MCP servers 与 system context additions
-- Dashboard 已按 archetype 展示不同交互能力，而非单一 agent 模式 UI
-
-### 4. Plugin 目前存在双层语义，必须区分
-
-当前代码中存在两个“plugin”语义：
-
-| 层级 | 当前实现 | 含义 |
-|------|---------|------|
-| **agent-side / workspace-side plugin** | `packages/core/src/domain/plugin/plugin-manager.ts` | 管理被 template 引用并物化到 workspace 的插件定义，例如 Claude Code `plugins.json` |
-| **actant-side / system plugin** | `#14 PluginHost`（目标态） | 平台侧的系统级扩展入口，用于承载 scheduler / memory / hook / runtime capabilities |
-
-因此，当前 `PluginManager` **不是**未来的 System PluginHost。`#14` 要解决的是 actant-side 平台扩展统一入口，而不是继续扩展现有 plugin CRUD。
 
 ## Module Architecture
 
@@ -131,9 +70,11 @@ Runtime 层承担实例生命周期、上下文注入、运行时恢复、调度
 
 Pure type definitions and shared utilities. No runtime logic.
 
-- **Types**: `AgentInstanceMeta`, `AgentTemplate`, `BackendDefinition`, `VersionedComponent`, `DomainContextConfig`, `SourceConfig`, `RPC method map`
+- **Types**: `AgentInstanceMeta` (v0.2.4: +`workspaceDir`, +`startedAt`), `AgentTemplate`, `BackendDefinition`, `VersionedComponent`, `DomainContextConfig`, `SourceConfig`, `RPC method map`, `ActivityRecord`
+- **AgentArchetype** (v0.2.5): `"repo" | "service" | "employee"` — reclassified by management depth (repo < service < employee). Replaces the former `"tool" | "employee" | "service"`.
+- **Hook Types**: `HookEventName`, `HookDeclaration`, `HookAction`, `HOOK_CATEGORIES`, `BUILTIN_EVENT_META` — unified 6-layer event taxonomy
 - **Utilities**: Logger (pino), IPC helpers, platform detection
-- **Error hierarchy**: `ActantError` -> `AgentNotFoundError`, `ConfigValidationError`, `ComponentReferenceError`, etc.
+- **Error hierarchy**: `ActantError` → `AgentNotFoundError`, `ConfigValidationError`, `ComponentReferenceError`, etc.
 
 ### 2. `@actant/core` — Runtime Engine
 
@@ -142,17 +83,45 @@ The core logic layer containing all business rules.
 #### Manager (`src/manager/`)
 
 - **AgentManager** — The central orchestrator for agent lifecycle
-  - State machine: `created -> starting -> running -> stopping -> stopped`
+  - State machine: `created → starting → running → stopping → stopped`
   - Launch modes: `direct`, `acp-background`, `acp-service`, `one-shot`
   - Process ownership: `managed` (Actant spawns) or `external` (user spawns, Actant attaches)
   - Workspace policy: `persistent` or `ephemeral`
-  - Methods: `createAgent`, `startAgent`, `stopAgent`, `destroyAgent`, `runPrompt`, `streamPrompt`, `resolveAgent`, `openAgent`, `attachAgent`, `detachAgent`
-  - Runtime facts: service keepAlive budget callback, employee conversation continuity, stale-state recovery on daemon init
+  - Archetypes (v0.2.5): `repo`, `service`, `employee` — classified by management depth
+  - v0.2.4: Populates `workspaceDir` and `startedAt` on start; improved prompt error messages for stopped agents
+  - v0.2.6: Integrates `SystemBudgetManager` for service agent keepAlive; employee agents get persistent `conversationId` in `meta.metadata`
+  - Methods: `createAgent`, `startAgent`, `stopAgent`, `destroyAgent`, `runPrompt`, `streamPrompt`, `resolveAgent`, `openAgent`, `attachAgent`, `detachAgent`, `promptAgent`
 
 - **ProcessLauncher** — Spawns backend processes
 - **LaunchModeHandler** — Determines behavior on process exit per launch mode
 - **RestartTracker** — Manages restart policies for `acp-service` mode
 - **ProcessWatcher** — Monitors process health via PID polling
+- **BackendResolver** — Resolves backend commands with platform-aware logic
+
+#### Plugin System (`src/plugin/`) — v0.2.6
+
+- **ActantPlugin** — Six-plug extension interface with 6 hooks:
+  - **Plug 1 `domainContext`** — Inject `DomainContextConfig` into agent workspace during build
+  - **Plug 2 `runtime`** — Lifecycle: `init` → `start` → `tick`* → `stop` → `dispose`
+  - **Plug 3 `hooks`** — Register `HookEventBus` listeners
+  - **Plug 4 `contextProviders`** — Register `SessionContextInjector` providers
+  - **Plug 5 `subsystems`** — Register `SubsystemDefinition`s
+  - **Plug 6 `sources`** — Register `SourceConfig`s
+
+- **PluginHost** — Manages plugin lifecycle
+  - Dependency-ordered init (Kahn's topological sort)
+  - Per-plugin exception isolation (one failure does not cascade)
+  - Tick re-entrancy guard (slow tick cannot stack with itself)
+  - Collects plugs 4/5/6 for external wiring via `getContextProviders()`, `getSubsystems()`, `getSources()`
+  - Methods: `register()`, `start()`, `tick()`, `stop()`, `list()`, `getState()`, `getPlugin()`
+
+- **HeartbeatPlugin** (builtin) — First actant-scoped plugin
+  - Emits `plugin:heartbeat:healthy` on each successful tick
+  - Listens for `process:crash`; increments `consecutiveFailures`, emits `plugin:heartbeat:unhealthy`
+  - Resets `consecutiveFailures` on clean tick
+  - Bridges daemon health monitoring with PluginHost tick loop (30s interval in AppContext)
+
+- **Files**: `packages/core/src/plugin/plugin-host.ts`, `packages/core/src/plugin/types.ts`, `packages/core/src/plugin/builtins/heartbeat-plugin.ts`
 
 #### Domain (`src/domain/`)
 
@@ -167,22 +136,57 @@ All domain components are `VersionedComponent`s managed by `BaseComponentManager
 | `PluginManager` | `PluginDefinition` | `configs/plugins/` |
 | `BackendManager` | `BackendDefinition` | `configs/backends/` |
 
-`BaseComponentManager` provides: `register`, `unregister`, `get`, `has`, `list`, `add`, `update`, `remove`, `importFromFile`, `exportToFile`, `search`, `filter`, `loadFromDirectory`, `validate`.
+#### Context Injector (`src/context-injector/`) — v0.2.4+
 
-`BackendManager` adds: `registerAcpResolver`, `getAcpResolver`, `supportsMode`, `requireMode`, `checkAvailability`, `getInstallMethods`.
+- **SessionContextInjector** — Extensible dynamic context injection for ACP sessions
+  - Collects MCP servers from registered `ContextProvider` instances
+  - Injects the built-in Actant MCP Server into ACP `session/new` automatically
+  - Providers can register additional MCP tools, environment variables, or session options
+  - v0.2.5: **ToolScope hierarchical model** — tool filtering based on `ARCHETYPE_LEVEL` / `SCOPE_MIN_LEVEL` numeric comparison with nullish-coalescing guard for undefined archetypes
+
+#### Archetype Defaults (`src/initializer/archetype-defaults.ts`) — v0.2.5
+
+- **`ARCHETYPE_TABLE`** — Maps each archetype to default `launchMode`, `interactionModes`, and `autoStart`:
+  - `repo`: `direct`, `["open", "start"]`, `false`
+  - `service`: `acp-service`, `["proxy"]`, `true`
+  - `employee`: `acp-background`, `["start", "run", "proxy"]`, `true`
+- Important semantic note: these defaults describe the archetype baseline, not every compatibility command. For `service`, the primary communication contract is the shared runtime facade surfaced through lease/session/prompt routing.
+
+#### Communication Layer Baseline — 2026-03-14 spec sync
+
+- Actant externally presents a **stable runtime facade**; backend engines such as `claude-code` are internal backend adapters
+- `service` is the shared runtime communication target across CLI, Dashboard, ACP proxy, REST/RPC, and future internal agent-to-agent routes
+- For a running `service`, `proxy` should default to lease/shared-session semantics rather than direct-bridge-first fallback
+- `running service` is intended to imply communication readiness for the default route, not only process liveness
+- Authoritative details live in `.trellis/spec/communication-layer.md`; stage/wiki docs should mirror that contract rather than redefine it
+
+#### Session Management (`src/session/`) — v0.2.6
+
+- **SessionRegistry** — In-memory registry of `SessionLease` objects
+  - **SessionLease** now includes `conversationId: string` — stable conversation thread ID for activity recording
+  - Multiple leases (reconnections) share the same `conversationId`; messages accumulate in one continuous on-disk record
+  - `create({ conversationId? })` — auto-generated if omitted; user-provided for resuming conversations
+  - **SessionPromptResult** includes `conversationId` for frontend history
+  - Spec: `.trellis/spec/session-management.md`
+
+#### Budget System (`src/budget/`) — v0.2.6
+
+- **SystemBudgetManager** — Tracks service agent runtime, dynamic keepAlive windows
+  - Per-agent uptime tracking; computes effective keepAlive (1h base, 24h extended when usage &lt; 50%)
+  - Fires `onKeepAliveExpired` callback when Service Agent's keepAlive timer expires → AgentManager auto-stops
+  - Employee agents NOT tracked — restart unconditionally
+  - Config: `ceilingHours`, `period` (daily/monthly), `baseKeepAliveMs`, `extendedKeepAliveMs`, `extendThreshold`, `hardCeilingThreshold`
 
 #### Backend System (`src/domain/backend/` + `src/manager/launcher/`)
-
-Backends are `VersionedComponent`s (JSON-serializable) with behavioral extensions.
 
 Built-in backends:
 
 | Backend | Modes | Binary | Notes |
 |---------|-------|--------|-------|
 | `cursor` | resolve, open | `cursor.cmd` / `cursor` | IDE; shell spawn |
-| `cursor-agent` | resolve, open, acp | `agent` | TUI; open-oriented experimental backend |
-| `claude-code` | resolve, open, acp | `claude-agent-acp.cmd` / `claude` | managed primary backend; recommended for service / employee |
-| `pi` | acp | in-process | managed experimental backend |
+| `cursor-agent` | resolve, open, acp | `agent` | TUI; cwd-based open |
+| `claude-code` | resolve, open, acp | `claude-agent-acp.cmd` / `claude` | resolvePackage for ACP |
+| `pi` | resolve, acp | in-process | First-class builtin, ACP bridge; v0.2.6: baseUrl fix |
 | `custom` | resolve | user-defined | Fallback |
 
 #### Source System (`src/source/`)
@@ -190,33 +194,49 @@ Built-in backends:
 - **SourceManager** — Manages external component repositories
 - **GitHubSource** — Shallow clone from GitHub
 - **LocalSource** — Reads from local directory
-- **Namespacing**: Components from sources get `packageName@componentName` prefix
-- **Default source**: `actant-hub` at `github.com/blackplume233/actant-hub.git`
+- **CommunitySource** — Agent Skills Open Standard compatible repositories
+- Default source: `actant-hub` at `github.com/blackplume233/actant-hub.git`
 
-Supports: skills, prompts, mcp, workflows, backends, presets, templates.
+#### Builder System (`src/builder/`)
 
-#### Builder / Initializer System (`src/builder/` + `src/initializer/`)
+Materializes agent workspaces from domain context:
 
-These subsystems bridge template declarations into runnable workspaces:
+- **WorkspaceBuilder** — Orchestrates 6-step pipeline: Resolve → Validate → Scaffold → Materialize → Inject → Verify
+- **DeclarativeBuilder** — Driven by `MaterializationSpec` on `BackendDefinition`
+- Backend-specific builders: `CursorBuilder`, `ClaudeCodeBuilder`, `PiBuilder`
 
-- **WorkspaceBuilder** — Orchestrates backend-aware materialization
-- **ContextMaterializer** — Writes resolved domain context into workspace
-- **StepRegistry** — Runtime registry for initializer step executors
-- **InitializationPipeline** — Sequential initializer execution with timeout and rollback
+#### Hook & Event System (`src/hooks/`)
 
-This is why initializer work should be seen as a platform/runtime extension point, not just a doc-level bootstrap helper.
+Unified 6-layer event taxonomy:
+
+| Layer | Category | Events |
+|-------|----------|--------|
+| System | actant | `actant:start`, `actant:stop`, `actant:error` |
+| Entity | agent | `agent:created`, `agent:destroyed`, `agent:started`, `agent:stopped` |
+| Runtime | process, session, prompt | `process:spawn`, `process:exit`, `session:start`, `session:end`, `prompt:sent`, `prompt:received` |
+| Schedule | heartbeat | `heartbeat:tick` |
+| User | user | `user:*` (custom events) |
+| Extension | subsystem | `subsystem:*` (plugin-defined events) |
+
+- **HookEventBus** — Central pub/sub with `EmitGuard`
+- **HookRegistry** — Actant-level and instance-level workflow hooks
+- **HookCategoryRegistry** — Extensible event taxonomy
+- **ActionRunner** — Executes `ShellAction`, `BuiltinAction`, `AgentAction`
 
 #### Scheduler (`src/scheduler/`)
 
-- **EmployeeScheduler** — Manages heartbeat, cron, hook triggers
+- **EmployeeScheduler** — Per-agent scheduler for heartbeat, cron, hook triggers (v0.2.5: explicit `employee`-only guard)
 - **TaskDispatcher** — Priority queue, sequential execution
 - **ExecutionLog** — Per-agent execution history
-- `schedule` is intentionally employee-only; service remains the passive runtime baseline
+- **InputSources**: `HeartbeatInput`, `CronInput`, `HookInput`
 
-#### Provider (`src/provider/`)
+#### Heartbeat `.heartbeat` File Convention (v0.2.6)
 
-- **ModelProviderRegistry** — Manages AI provider configs
-- Built-in providers are registered centrally and injected at runtime
+- **HeartbeatInput** always sends `DEFAULT_HEARTBEAT_PROMPT` (from `heartbeat-default.md`) — instructs agent to read `.heartbeat` file
+- Template `schedule.heartbeat.prompt` is now **optional**; used as seed content for `.heartbeat` file (not the tick prompt)
+- **seedHeartbeatFile()** in `agent-handlers.ts` — writes initial content on agent create / scheduler init (wx mode, no overwrite)
+- Agent reads/updates `.heartbeat` each tick, self-directing its focus
+- **Files**: `packages/core/src/prompts/heartbeat-default.md`, `packages/core/src/scheduler/inputs/heartbeat-input.ts`
 
 ### 3. `@actant/api` — Daemon & Handlers
 
@@ -229,83 +249,233 @@ This is why initializer work should be seen as a platform/runtime extension poin
 
 #### Handlers (`src/handlers/`)
 
-RPC surface exposes platform capabilities to CLI, Dashboard, and external integrations.
+69+ RPC methods across 12 handler groups:
 
-#### AppContext (`src/services/`)
+| Handler | Method Count | Key Methods |
+|---------|-------------|-------------|
+| template | 6 | list, get, load, unload, validate, **create** |
+| agent | 16 | create, start, stop, destroy, status, list, resolve, open, attach, detach, run, prompt, adopt, dispatch, tasks, logs |
+| session | 5 | create, prompt, cancel, close, list |
+| domain (×5) | 25 | list, get, add, update, remove, import, export (per type) |
+| plugin | 7 | list, get, add, update, remove, **runtimeList**, **runtimeStatus** |
+| source | 5 | list, add, remove, sync, validate |
+| preset | 3 | list, show, apply |
+| daemon | 2 | ping, shutdown |
+| proxy | 3 | connect, disconnect, forward |
+| gateway | 1 | lease |
+| schedule | 1 | list |
+| canvas | 4 | update, get, list, clear |
+| activity | 2 | sessions, conversation |
+| events | 3 | recent, subscribe, unsubscribe |
 
-- Initializes all managers, registries, and services
-- Registers built-in backends, providers, context providers
-- Loads domain components from disk and sources
-- Connects template/domain declarations to runtime services
+v0.2.5: `canvas.update` gating changed from employee-only to rejecting `repo` archetypes (service + employee allowed). `activity.conversation` assembles `prompt_sent`/`prompt_complete` records.
 
-### 4. `@actant/cli` — Command-Line Interface
+v0.2.6: `template.create` — accepts JSON `AgentTemplate`, registers and persists; `plugin.runtimeList` / `plugin.runtimeStatus` — query PluginHost runtime state; `session.create` accepts `conversationId` for resuming conversations.
 
-CLI is one protocol entry, not the whole product. It is how operators access platform capabilities locally.
+### 4. `@actant/rest-api` — RESTful HTTP Server
 
-### 5. `@actant/acp` — Agent Client Protocol
+Standalone HTTP server bridging REST requests to daemon JSON-RPC.
 
-ACP layer is a transport/protocol bridge, not the home of business semantics.
+- **RpcBridge** — REST → JSON-RPC 2.0 translation via Unix socket
+- **Router** — Zero-dependency HTTP router with middleware support
+- **CORS + Auth** — Optional API key authentication (`Bearer` / `X-API-Key`)
+- **SSE** — Server-Sent Events for real-time agent status, canvas, and event streaming
+- 35+ REST endpoints covering agents, templates, domain, events, canvas, sessions, webhooks
+- **v0.2.6: POST /v1/templates** — Creates template via `template.create` RPC; accepts JSON body, `?overwrite=true` for overwrite
+
+### 5. `@actant/dashboard` — Web Dashboard
+
+React SPA for monitoring and interacting with agents.
+
+- **Server**: HTTP server hosting SPA static files + mounting `@actant/rest-api`
+- **Client Pages**: Agents, Agent Detail, Agent Chat, Live Canvas, Events, Activity, Command Center, Settings, **Orchestration**, Not Found
+- **Real-time**: SSE-based `useSSEContext` for live agent status and canvas updates
+- **i18n** (v0.2.4): `react-i18next` with English and Chinese (`zh-CN`) support, language switcher in sidebar
+- **Archetype display** (v0.2.5): Agent cards use `repo`/`service`/`employee` badges with purple/orange/blue color coding
+- **Canvas gating** (v0.2.5): Live Canvas available to `service` and `employee` agents (was employee-only)
+- **Chat UX** (v0.2.4): Stopped agent pre-validation, disabled inputs, user-friendly error messages
+- **Toast notifications** (v0.2.4+): Error display with retry actions
+- **Orchestration UI** (v0.2.6): Budget-aware lifecycle, template event auditing
+  - Template list, create wizard, detail, materialize flow
+  - Scheduler form (heartbeat, cron, hooks) with `.heartbeat` seed prompt placeholder
+  - Instance create wizard with skill picker, archetype selector, preview
+
+### 6. `@actant/cli` — Command-Line Interface
+
+68 subcommands organized into 17 command groups:
+
+| Group | Commands | Description |
+|-------|----------|-------------|
+| agent | 17 | Full lifecycle management |
+| template | 5 | Template CRUD |
+| skill | 5 | Skill CRUD |
+| prompt | 5 | Prompt CRUD |
+| mcp | 5 | MCP server config CRUD |
+| workflow | 5 | Workflow CRUD |
+| plugin | 5 | Plugin CRUD + **status** |
+| source | 5 | Source management |
+| preset | 3 | Preset management |
+| schedule | 1 | Schedule listing |
+| daemon | 3 | Daemon control |
+| proxy | 1 | ACP proxy |
+| setup | 1 | Interactive wizard |
+| self-update | 1 | Auto-update |
+| dashboard | 1 | Web dashboard |
+| api | 1 | REST API server |
+| help | 1 | Help display |
+
+v0.2.5: `agent create --archetype` accepts `repo | service | employee` (rejects legacy `tool`).
+
+v0.2.6: **`plugin status`** — Shows PluginHost runtime status; `plugin status [name]` for single plugin detail; uses `plugin.runtimeList` / `plugin.runtimeStatus` RPC; `-f table|json|quiet`.
+
+### 7. `@actant/acp` — Agent Client Protocol
 
 - **AcpConnection** — Manages lifecycle of one agent subprocess via ACP SDK
+  - **v0.2.6: ACP keepalive ping** — `startKeepalive()` sends periodic `\n` to stdin (5s interval)
+  - Prevents Windows named pipe idle exit (~14s); NDJSON parser silently ignores empty lines
+  - Timer is `unref()`d; auto-stops on stdin error/destroy
 - **AcpConnectionManager** — Pool of connections by agent name
 - **AcpCommunicator** — Implements `AgentCommunicator` over ACP
-- **ClientCallbackRouter** — Intercepts and routes client callbacks
+- **AcpGateway** — IDE ↔ Agent bridge
+- **ClientCallbackRouter** — Routes permission requests, file operations, terminal ops
+- **RecordingCallbackHandler** — Records activity for Dashboard replay
 
-### 6. `@actant/mcp-server` — Platform-to-Agent Capability Bridge
+### 8. `@actant/mcp-server` — Built-in MCP Server (v0.2.4)
 
-MCP server is where platform capabilities become agent-consumable tools/resources. It sits below product shells and above runtime services.
+No longer a stub — fully functional MCP server injected into agent ACP sessions.
+
+- **Tools**: `actant_canvas_update` (push HTML to Live Canvas), `actant_canvas_clear`
+- **Tool Scope** (v0.2.5): Both tools scoped to `"service"` level — available to `service` and `employee` agents
+- **RPC Client** (v0.2.4): Connects to daemon via `ACTANT_SOCKET` to execute canvas RPC
+- Injected automatically via `SessionContextInjector`
+
+### 9. `@actant/pi` — Lightweight In-Process Agent
+
+- **PiBuilder** — Workspace builder for Pi agents
+- **PiCommunicator** — Direct LLM communication (Anthropic, OpenAI, etc.)
+  - **v0.2.6: baseUrl fix** — `configFromBackend()` extracts `baseUrl`; passes to `createPiAgent`
+- **pi-tool-bridge** — Patches `modelInstance.baseUrl` after `getModel()` when `options.baseUrl` provided
+- **ACP Bridge** — `pi-acp-bridge` binary for ACP protocol compliance
 
 ## Core Data Flows
 
 ### Agent Creation Flow
 
-```text
-CLI / API / Dashboard
-  -> RPC: agent.create
-  -> AgentManager.createAgent()
-     -> TemplateRegistry.get(templateName)
-     -> AgentInitializer.initialize()
-        -> InitializationPipeline.run()
-        -> ContextMaterializer.materialize()
-           -> WorkspaceBuilder writes Domain Context artifacts
-     -> persist AgentInstanceMeta
+```
+CLI: actant agent create myagent -t template [--archetype employee]
+  │
+  ▼
+RPC: agent.create { name, template, archetype? }
+  │
+  ▼
+AgentManager.createAgent()
+  ├── TemplateRegistry.get(templateName)
+  ├── Determine archetype (explicit > template.archetype > 'repo')
+  ├── AgentInitializer.initialize()
+  │   ├── InitializationPipeline.execute()
+  │   └── ContextMaterializer.materialize()
+  │       └── WorkspaceBuilder.build(domainContext)
+  ├── HookEventBus.emit('agent:created')
+  └── Return AgentInstanceMeta
 ```
 
-### Managed Session Flow
+### Agent Start Flow (v0.2.4+)
 
-```text
-Client request
-  -> AgentManager.startAgent()
-  -> SessionContextInjector.prepare()
-     -> collect MCP servers / system context additions
-  -> ACP connection established
-  -> service agent accepts sessions and prompts
-  -> employee agent may further receive scheduler-driven work
+```
+CLI: actant agent start myagent
+  │
+  ▼
+AgentManager.startAgent()
+  ├── BackendResolver.resolve(backendType)
+  ├── BuildProviderEnv(backendType) → inject API keys
+  ├── ProcessLauncher.launch() or AcpConnection.connect()
+  ├── AcpConnection.startKeepalive() (v0.2.6: 5s stdin ping)
+  ├── SessionContextInjector.collect() → inject built-in MCP Server
+  │   └── ToolScope filtering: ARCHETYPE_LEVEL[meta.archetype] >= SCOPE_MIN_LEVEL[tool.scope]
+  ├── Update meta: workspaceDir, startedAt, status='running'
+  ├── seedHeartbeatFile() (v0.2.6: if heartbeat config && workspaceDir)
+  ├── EmployeeScheduler.start() (if archetype === 'employee' && schedule config exists)
+  ├── SystemBudgetManager.recordStart() / startKeepAliveTimer() (v0.2.6: service only)
+  └── HookEventBus.emit('process:start')
 ```
 
-### Employee Continuity Flow
+### Heartbeat Flow (v0.2.6)
 
-```text
-Employee agent restart
-  -> AgentManager.getOrCreateEmployeeConversation()
-  -> reuse persistent conversationId
-  -> scheduler resumes event/input sources
-  -> activity history stays logically continuous
+```
+EmployeeScheduler.initSchedulerIfNeeded()
+  ├── seedHeartbeatFile(workspaceDir, template.schedule.heartbeat.prompt)  ← optional seed
+  └── HeartbeatInput.start()
+        │
+        ├── Every intervalMs: onTask({ prompt: DEFAULT_HEARTBEAT_PROMPT })
+        │     └── "心跳触发。请先读取工作目录下的 .heartbeat 文件..."
+        │
+        └── Agent reads .heartbeat → executes → writes .heartbeat
+```
+
+### Canvas Data Flow (v0.2.5)
+
+```
+Agent Process → actant_canvas_update (MCP Tool)
+  → Built-in Actant MCP Server (stdio)
+    → canvas.update RPC (via ACTANT_SOCKET)
+      → Archetype check (rejects 'repo', allows 'service' + 'employee')
+        → CanvasStore (in-memory)
+          → SSE broadcast → Dashboard iframe sandbox
+```
+
+### ToolScope Hierarchical Model (v0.2.5)
+
+```
+Archetype Levels:     repo = 0   service = 1   employee = 2
+Scope Min Levels:     all  = 0   service = 1   employee = 2
+
+Rule: tool available iff ARCHETYPE_LEVEL[agent.archetype] >= SCOPE_MIN_LEVEL[tool.scope]
+
+Example:
+  Canvas tools (scope: "service")  → available to service (1≥1) and employee (2≥1)
+  Schedule tools (scope: "employee") → available to employee only (2≥2)
+  Status tools (scope: "all")      → available to all archetypes (0≥0)
+```
+
+### Session / Conversation Flow (v0.2.6)
+
+```
+Employee:  meta.metadata.conversationId (persistent, stored in .actant.json)
+           → getOrCreateEmployeeConversation() → ActivityRecorder writes to {conversationId}.jsonl
+
+Service:   session.create({ conversationId? })
+           → SessionLease.conversationId (auto or user-provided for resume)
+           → session.prompt returns conversationId; frontend can resume via session.create({ conversationId })
+```
+
+### Hook Event Flow
+
+```
+Event Source (AgentManager / Scheduler / Plugin)
+  │
+  ▼
+HookEventBus.emit(eventName, context, agentName?, data?)
+  ├── EmitGuard — permission check (allowedCallers)
+  ├── Instance-level listeners → HookRegistry
+  └── Actant-level listeners → ActionRunner
+      ├── ShellAction → exec with template interpolation
+      ├── BuiltinAction → built-in handler
+      └── AgentAction → promptAgent(target, prompt)
 ```
 
 ## Agent Lifecycle State Machine
 
-```text
+```
                     ┌─────────┐
-          create -> │ created │
+          create ──►│ created │
                     └────┬────┘
                          │ start
                     ┌────▼────┐
                     │starting │
                     └────┬────┘
-              success ---┤      ├--- failure
+              success ───┤      ├─── failure
                     ┌────▼────┐ │  ┌───────┐
-                    │ running │ └->│ error │
+                    │ running │ └─►│ error │
                     └────┬────┘    └───────┘
                          │ stop
                     ┌────▼────┐
@@ -313,69 +483,123 @@ Employee agent restart
                     └────┬────┘
                          │
                     ┌────▼────┐
-          destroy ->│ stopped │
+          destroy ──│ stopped │
                     └─────────┘
 ```
 
+**Agent Archetypes (v0.2.5 — reclassified by management depth):**
+
+| Archetype | Mgmt Depth | Default Launch Mode | AutoStart | Canvas | ToolScope | Description |
+|-----------|-----------|-------------------|-----------|--------|-----------|-------------|
+| `repo` | Lightest | `direct` | `false` | No | `all` only | Workspace-only agents; Actant builds workspace, agent runs independently |
+| `service` | Medium | `acp-service` | `true` | **Yes** | `all` + `service` | Process-managed services with restart; canvas and communication tools; v0.2.6: SystemBudgetManager keepAlive |
+| `employee` | Heaviest | `acp-background` | `true` | **Yes** | All scopes | Fully managed with scheduling, self-awareness, and all tool access; v0.2.6: persistent conversationId |
+
+**Migration**: Legacy `"tool"` archetype is automatically mapped to `"repo"` via Zod transform on instance metadata deserialization. CLI rejects `"tool"` as an explicit input.
+
 ## Configuration Hierarchy
 
-```text
+```
 AgentTemplate
-├── backend
-├── provider
-├── domainContext          <- template/domain layer
-├── permissions
-├── initializer
-├── archetype
-├── schedule               <- employee-only enhancement
-└── metadata
-
-Platform Runtime
-├── AgentInstanceMeta
-├── AgentManager / Scheduler / Injector
-├── runtime services
-└── protocol adapters
+├── name, version, description
+├── backend: { type, args?, env?, config?: { baseUrl?, ... } }
+├── provider: { type, protocol?, model? }
+├── archetype: 'repo' | 'service' | 'employee'
+├── autoStart: boolean
+├── domainContext
+│   ├── skills: string[]
+│   ├── prompts: string[]
+│   ├── mcpServers: McpServerRef[]
+│   ├── subAgents: SubAgentRef[]
+│   ├── workflows: string[]
+│   └── plugins: string[]
+├── permissions: { allow, deny, ask, defaultMode }
+├── initializer: { steps[] }
+├── schedule: { heartbeat?, cron?, hooks? }
+│   └── heartbeat: { intervalMs, prompt?, priority? }  ← prompt = .heartbeat seed (optional)
+└── metadata: Record<string, string>
 ```
 
-The key rule is: template/domain declarations describe what an agent should contain; platform runtime decides how those declarations become managed behavior.
+## Built-in Resources
 
-- 4 backends: cursor, cursor-agent, claude-code, pi
-- 2 presets: web-dev, devops
+### Backends
 
-## Current Version Status (v0.2.2)
+| Name | Type | Modes |
+|------|------|-------|
+| cursor | IDE | resolve, open |
+| cursor-agent | TUI | resolve, open, acp |
+| claude-code | CLI | resolve, open, acp |
+| pi | In-process | resolve, acp |
+| custom | User-defined | resolve |
 
-### Completed (Phase 1-2)
+### Providers
+
+| Name | Protocol |
+|------|----------|
+| anthropic | anthropic |
+| openai | openai |
+| gemini | openai |
+| openrouter | openai |
+
+## Current Version Status (v0.2.6)
+
+### Completed (Phase 1–3 + Phase 4 partial)
 
 - Full agent lifecycle (create, start, stop, destroy, attach, detach)
 - Multi-backend support (Cursor, Claude Code, Pi, custom)
-- ACP protocol integration
+- ACP protocol integration with Direct Bridge + Session Lease
 - Domain component system (6 types, CRUD, import/export)
-- Source system with actant-hub
+- Source system with actant-hub + community source type
 - Template/preset system
-- Scheduler (heartbeat, cron, hooks)
-- Session lease system
+- Unified hook/event system with 6-layer taxonomy
+- Scheduler (heartbeat, cron, hooks) auto-initialized on agent start
+- Session lease system + gateway.lease RPC
 - Permission system
-- CLI with 68 subcommands
-- Daemon with 62 RPC methods
-- Backend as VersionedComponent (BackendManager)
-- Backend availability checking + install methods
-- `agent run` headless mode (windowsHide)
-- `agent open` with backend-specific spawn config
-- `agent destroy --force` idempotent behavior
+- CLI with 68 subcommands across 17 groups
+- Daemon with 69+ RPC methods across 12 handler groups
+- Backend as VersionedComponent with declarative builder
+- **Agent archetypes** (v0.2.5): `repo / service / employee` — reclassified by management depth with hierarchical ToolScope model
+- Backend-aware provider env injection + auto-install
+- **REST API server** (`@actant/rest-api`) with 35+ endpoints, SSE, webhook integration
+- **Web Dashboard** (`@actant/dashboard`) — SPA with agent monitoring, chat, live canvas
+- **Dashboard i18n** (v0.2.4) — react-i18next framework with English + Chinese support
+- **Live Canvas** (v0.2.5) — Service and employee agents push HTML via MCP tool; repo-rejected gating
+- **SessionContextInjector** (v0.2.4) — Dynamic MCP tool injection with ToolScope hierarchy
+- **Built-in MCP Server** (v0.2.4) — `actant_canvas_update`, `actant_canvas_clear` tools
+- **Activity system** (v0.2.4) — Conversation assembly with prompt_sent/prompt_complete
+- **Chat UX** (v0.2.4) — Stopped agent pre-validation, improved error messages
+- **PI agent chat** (v0.2.4+) — interactionModes, ACP PID tracking, prompt timeout
+- **Hardening** (v0.2.5) — Buffer DoS guards, UTF-8 safe truncation, ToolRegistry fixes (22 bugs)
+- Cross-platform install scripts (Linux/macOS + Windows PowerShell)
+- VitePress wiki documentation site
 
-### In Progress (Phase 3)
+### v0.2.6 Additions
 
-- Frontend dashboard (planned)
-- Plugin execution engine
-- Advanced scheduling (cross-agent dependencies)
+- **ActantPlugin system + PluginHost** (#14) — Six-plug interface, dependency-ordered init, tick loop, HeartbeatPlugin builtin
+- **Plugin RPC** — `plugin.runtimeList`, `plugin.runtimeStatus`; CLI `plugin status [name]`
+- **Heartbeat `.heartbeat` file convention** — DEFAULT_HEARTBEAT_PROMPT, optional seed, seedHeartbeatFile on agent create
+- **Stable conversationId** — SessionLease.conversationId, employee meta.metadata.conversationId, session.create({ conversationId })
+- **Session management spec** — `.trellis/spec/session-management.md`
+- **ACP keepalive ping** — Windows named pipe fix (5s stdin `\n`), unref timer
+- **Pi backend baseUrl fix** — pi-tool-bridge patches modelInstance.baseUrl; PiCommunicator passes baseUrl
+- **REST API POST /v1/templates** — template.create RPC bridge
+- **Dashboard orchestration UI** — Budget-aware lifecycle, template event auditing, instance create wizard
+- **SystemBudgetManager** — Service agent runtime tracking, dynamic keepAlive (1h/24h), auto-stop on expiry
+- **Various fixes** — session-not-found errors, Windows process cleanup (taskkill /T /F), dispatch UX
+
+### In Progress (Phase 4)
+
+- Advanced scheduling — 4-mode enhancement (#122)
+- Workflow as Hook Package (#135)
+- Agent-to-Agent Email (#136)
+- Extensible Initializer (#37)
+- Dashboard v1/v2/v3 iterations
 
 ### Known Limitations
 
-- `gateway.lease` RPC defined but not implemented (#117)
-- MCP server package is a stub
-- No Linux/macOS installation script yet
 - Backend `existenceCheck` requires the binary to be in PATH
+- Canvas content is in-memory only (lost on daemon restart)
+- MCP server currently only exposes canvas tools; schedule tools planned
+- Windows daemon may require `--foreground` workaround (keepalive mitigates named pipe idle exit)
 
----
-
-详细版本快照见仓库中 `docs/stage/v0.2.2/architecture.md`。
+> **Generated**: 2026-02-28 | **Commit**: f99602a | v0.2.6

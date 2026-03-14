@@ -4,9 +4,18 @@
 > 更新节奏：当前任务推进、Issue 状态变更或里程碑调整时同步更新本文。
 > **Task 级 Todo**：在本文持续迭代当前任务的勾选清单，随开发进展更新 `[ ]` → `[x]`，完成一项勾一项。
 
----
+### 当前设计校正 / 规范同步（2026-03-14）
 
-## 项目愿景
+> 目标：把 `service` 作为共享 runtime communication target 的新基线正式写入规范，并统一修正 proxy/prompt/run/lease 语义，而不是继续把这些问题当作零散 bug。
+
+- [x] 新增统一通信层规范：`.trellis/spec/communication-layer.md`
+- [x] 同步 authoritative spec：`index.md` / `agent-lifecycle.md` / `api-contracts.md` / `config-spec.md`
+- [x] 明确 `proxy` 对运行中 `service` 默认 lease-first，而非 direct-bridge-first
+- [x] 明确 `running service` 的目标语义是 communication-ready，而非仅 process-alive
+- [x] 明确 Actant 对外是 runtime facade，`claude-code` 等仅为内部 backend adapter
+- [ ] 后续实现收敛：把 CLI / Dashboard / RPC / internal communication 路由并入同一 communication router
+- [ ] 后续验证：覆盖 `service start => readiness`、`agent.prompt`、`proxy` lease-first、Dashboard session semantics、internal route alignment
+
 
 构建一个**企业级 AI Agent 底层平台**，支持 Agent 的组装、工作区物化、运行时管理、标准协议通信和可插拔扩展体系，并在其上承载 Agent App、SOP 自动化、CI 任务代理与外部引擎集成。
 
@@ -191,16 +200,14 @@ Phase 1 (已完成)
 > - `actant proxy <name>` CLI 命令：对外 ACP Agent 接口，对内 RPC 转发
 
 #### #18 ACP Proxy + Chat — Direct Bridge 与 Session Lease 双模式
-> **架构决策**：废弃 ACP Gateway，支持两种连接模式。
+> **当前校正说明（2026-03-14）**：历史实现曾以 Direct Bridge 叙事为主，但当前规范已改为 **running service => lease-first shared runtime**。Direct Bridge 保留为兼容/显式隔离路径，不再作为运行中 `service` 的默认产品语义。
 >
-> **模式 A — Direct Bridge**：Client 自己 spawn Agent 进程 + 持有 AcpConnection，进程随连接走。最简单，适合一次性使用。
+> **设计校正目标**：把 proxy/chat/prompt/session/Dashboard/internal communication 统一到同一 communication layer，而不是继续分别修补单点行为。
 >
-> **模式 B — Session Lease（默认）**：Daemon 持有 Agent 进程和 AcpConnection，客户端租借 Session。零冷启动，多客户端可并发（独立 Session），session 可恢复。
->
-> **核心原则**：
-> - CWD 永远是 agent workspace
-> - 1 Instance : 1 Process : N Sessions
-> - agent chat / proxy 默认走 Session Lease，`--direct` 切换为 Direct Bridge
+> - `service` 是共享 runtime communication target
+> - `proxy` 对运行中的 service 默认 lease-first
+> - `running` 应趋向 communication-ready，而不是仅 process-alive
+> - `run` 对 service 属于兼容路径，不是主契约
 
 #### #43 统一组件管理体系 — Skill / Prompt / Plugin 完整 CRUD
 > **目标**：增强 BaseComponentManager 支持完整 CRUD + import/export + 搜索过滤。新增 PluginManager 管理 Cloud Code 插件。
@@ -380,6 +387,7 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 - Actant 是 **底层平台**，承载 Agent App、SOP、CI、外部引擎集成等上层形态
 - `repo -> service -> employee` 是 **管理深度递进模型**，不是彼此竞争的三套产品
 - **service 是当前主交付形态**，应作为后续 platform/runtime 与产品集成的默认基线
+- **通信层设计校正已进入当前优先级**：重点不再只是修补 `proxy` 或 `run` 单点 bug，而是把 `service` 的 shared runtime、lease-first 路由、readiness、Dashboard chat、internal communication 统一到同一 contract
 - **employee 是自治增强层**，调度、心跳、持续运行能力在 service 之上叠加
 
 **已完成主线**：
