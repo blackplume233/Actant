@@ -44,8 +44,6 @@ export interface ArchetypeConfig {
   canResumeSession: boolean;
   color: { badge: string; accent: string };
   icon: LucideIcon;
-  /** Allowed backend profiles for this archetype */
-  allowedBackendProfiles: BackendRuntimeProfile[];
   /** Recommended backend for this archetype */
   recommendedBackend: string;
 }
@@ -65,7 +63,6 @@ export const ARCHETYPE_CONFIG: Record<AgentArchetype, ArchetypeConfig> = {
       accent: "purple",
     },
     icon: FolderGit2,
-    allowedBackendProfiles: ["openOnly", "managedPrimary"],
     recommendedBackend: "claude-code",
   },
   service: {
@@ -80,7 +77,6 @@ export const ARCHETYPE_CONFIG: Record<AgentArchetype, ArchetypeConfig> = {
       accent: "orange",
     },
     icon: Server,
-    allowedBackendProfiles: ["managedPrimary", "managedExperimental"],
     recommendedBackend: "claude-code",
   },
   employee: {
@@ -95,7 +91,6 @@ export const ARCHETYPE_CONFIG: Record<AgentArchetype, ArchetypeConfig> = {
       accent: "blue",
     },
     icon: UserCog,
-    allowedBackendProfiles: ["managedPrimary", "managedExperimental"],
     recommendedBackend: "claude-code",
   },
 };
@@ -203,20 +198,44 @@ export const BACKEND_GROUPS = {
   },
 } as const;
 
-/** Get compatible backends for a given archetype */
+/** Get compatible backends for a given archetype using capability-aware validation. */
 export function getCompatibleBackends(archetype: AgentArchetype): BackendMetadata[] {
-  const config = ARCHETYPE_CONFIG[archetype];
-  return Object.values(BACKEND_METADATA).filter((backend) =>
-    config.allowedBackendProfiles.includes(backend.runtimeProfile)
-  );
+  return Object.values(BACKEND_METADATA).filter((backend) => isBackendCompatible(backend.name, archetype));
 }
 
-/** Check if a backend is compatible with an archetype */
+/** Check if a backend is compatible with an archetype using runtime profile + explicit capabilities. */
 export function isBackendCompatible(backendName: string, archetype: AgentArchetype): boolean {
   const backend = BACKEND_METADATA[backendName];
   if (!backend) return false;
-  const config = ARCHETYPE_CONFIG[archetype];
-  return config.allowedBackendProfiles.includes(backend.runtimeProfile);
+
+  if (backend.runtimeProfile === "openOnly") {
+    return archetype === "repo";
+  }
+
+  if (backend.runtimeProfile === "managedPrimary" || backend.runtimeProfile === "managedExperimental") {
+    if (!backend.capabilities.supportsManagedSessions) {
+      return false;
+    }
+    if (archetype === "repo") {
+      return Boolean(backend.capabilities.supportsOpen || backend.capabilities.supportsManagedSessions);
+    }
+    if (archetype === "service") {
+      return backend.capabilities.supportsServiceArchetype !== false;
+    }
+    return backend.capabilities.supportsEmployeeArchetype !== false;
+  }
+
+  if (backend.runtimeProfile === "custom") {
+    if (archetype === "repo") {
+      return true;
+    }
+    if (archetype === "service") {
+      return backend.capabilities.supportsManagedSessions === true && backend.capabilities.supportsServiceArchetype !== false;
+    }
+    return backend.capabilities.supportsManagedSessions === true && backend.capabilities.supportsEmployeeArchetype !== false;
+  }
+
+  return false;
 }
 
 /** Get warning message for incompatible backend/archetype combination */

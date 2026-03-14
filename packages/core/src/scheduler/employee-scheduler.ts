@@ -6,8 +6,10 @@ import { TaskDispatcher, type PromptAgentFn } from "./task-dispatcher";
 import { ExecutionLog } from "./execution-log";
 import { InputRouter } from "./inputs/input-router";
 import { HeartbeatInput } from "./inputs/heartbeat-input";
-import { CronInput } from "./inputs/cron-input";
+import { CronInput, type CronConfig } from "./inputs/cron-input";
 import { HookInput } from "./inputs/hook-input";
+import { DelayInput, type DelayInputConfig } from "./inputs/delay-input";
+import { InputSourceRegistry } from "./input-source-registry";
 import type { ScheduleConfigInput } from "./schedule-config";
 import type { HookEventBus } from "../hooks/hook-event-bus";
 
@@ -28,6 +30,7 @@ export class EmployeeScheduler {
   private readonly dispatcher: TaskDispatcher;
   private readonly log: ExecutionLog;
   private readonly router: InputRouter;
+  private readonly registry: InputSourceRegistry;
   private readonly legacyEventBus: EventEmitter;
   private readonly hookEventBus?: HookEventBus;
   private _running = false;
@@ -47,6 +50,7 @@ export class EmployeeScheduler {
       hookEventBus: this.hookEventBus,
     });
     this.router = new InputRouter(this.queue);
+    this.registry = new InputSourceRegistry();
     this.legacyEventBus = new EventEmitter();
   }
 
@@ -106,6 +110,50 @@ export class EmployeeScheduler {
    */
   emitEvent(eventName: string, payload?: unknown): void {
     this.legacyEventBus.emit(eventName, payload);
+  }
+
+  /** Register a factory for custom input sources. */
+  registerInputType<TConfig = unknown>(type: string, factory: (config: TConfig) => import("./inputs/input-source").InputSource): void {
+    this.registry.register(type, factory);
+  }
+
+  /** Create and register an input source from a registered factory type. */
+  createInput<TConfig = unknown>(type: string, config: TConfig): string {
+    const source = this.registry.create(type, config);
+    this.router.register(source);
+    return source.id;
+  }
+
+  /** List registered input source factory types. */
+  listInputTypes(): string[] {
+    return this.registry.list();
+  }
+
+  /** Register a dynamic input source at runtime. */
+  registerInput(source: import("./inputs/input-source").InputSource): void {
+    this.router.register(source);
+  }
+
+  /** Unregister a dynamic input source by id. */
+  unregisterInput(sourceId: string): boolean {
+    return this.router.unregister(sourceId);
+  }
+
+  /** Schedule a recurring cron task. Returns the source id for cancellation/tracking. */
+  scheduleCron(config: CronConfig & { id?: string }): string {
+    const source = new CronInput(config, {
+      id: config.id,
+      eventBus: this.hookEventBus,
+    });
+    this.router.register(source);
+    return source.id;
+  }
+
+  /** Schedule a one-off delayed task. Returns the source id for cancellation/tracking. */
+  scheduleDelay(config: DelayInputConfig): string {
+    const source = new DelayInput(config);
+    this.router.register(source);
+    return source.id;
   }
 
   /** Get queued tasks. */

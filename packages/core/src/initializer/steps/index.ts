@@ -4,12 +4,16 @@ import { ExecStep } from "./exec-step";
 import { FileCopyStep } from "./file-copy-step";
 import { GitCloneStep } from "./git-clone-step";
 import { NpmInstallStep } from "./npm-install-step";
+import { FileTemplateStep } from "./file-template-step";
+import { WriteFileStep } from "./write-file-step";
 
 export { MkdirStep } from "./mkdir-step";
 export { ExecStep } from "./exec-step";
 export { FileCopyStep } from "./file-copy-step";
 export { GitCloneStep } from "./git-clone-step";
 export { NpmInstallStep } from "./npm-install-step";
+export { FileTemplateStep } from "./file-template-step";
+export { WriteFileStep } from "./write-file-step";
 
 /**
  * Create a StepRegistry pre-loaded with all built-in step executors.
@@ -21,5 +25,7 @@ export function createDefaultStepRegistry(): StepRegistry {
   registry.register(new FileCopyStep());
   registry.register(new GitCloneStep());
   registry.register(new NpmInstallStep());
+  registry.register(new FileTemplateStep());
+  registry.register(new WriteFileStep());
   return registry;
 }

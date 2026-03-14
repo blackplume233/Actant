@@ -32,7 +32,7 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
   return {
     name: "test-tpl",
     version: "1.0.0",
-    backend: { type: "cursor" },
+    backend: { type: "claude-code" },
     provider: { type: "openai", protocol: "openai" },
     domainContext: { skills: ["skill-a"] },
     ...overrides,
@@ -189,7 +189,7 @@ describe("Endurance tests — Phase 1", () => {
     const manager = new AgentManager(initializer, launcher, tmpDir, makeManagerOpts());
     await manager.initialize();
 
-    await manager.createAgent("svc", "test-tpl", { launchMode: "acp-service" });
+    await manager.createAgent("svc", "test-tpl", { launchMode: "acp-service", archetype: "service" });
     await manager.startAgent("svc");
 
     const ctl = await createPidController();
@@ -303,12 +303,11 @@ describe("Endurance tests — Phase 1", () => {
 
     const ctl = await createPidController();
     let cycles = 0;
-    let fakePid = 50000;
     const startTime = Date.now();
 
     while (Date.now() - startTime < DURATION_MS) {
       const name = `ext-${cycles}`;
-      const pid = fakePid++;
+      const pid = process.pid;
       const isEphemeral = cycles % 2 === 0;
 
       // resolve → creates instance
@@ -384,7 +383,7 @@ describe("Endurance tests — Phase 1", () => {
 
       for (const [name, mode] of [[svcName, "acp-service"], [directName, "direct"]] as const) {
         if (!manager.getAgent(name)) {
-          await manager.createAgent(name, "test-tpl", { launchMode: mode });
+          await manager.createAgent(name, "test-tpl", { launchMode: mode, archetype: mode === "acp-service" ? "service" : "repo" });
         }
         if (manager.getStatus(name) !== "running") {
           try { await manager.startAgent(name); } catch { /* may already be running */ }
@@ -630,7 +629,7 @@ describe("Endurance tests — Phase 1", () => {
       let cleanStops = 0;
       const startTime = Date.now();
 
-      await manager.createAgent("svc-sh", "test-tpl", { launchMode: "acp-service" });
+      await manager.createAgent("svc-sh", "test-tpl", { launchMode: "acp-service", archetype: "service" });
       await manager.startAgent("svc-sh");
 
       while (Date.now() - startTime < DURATION_MS) {
@@ -677,12 +676,11 @@ describe("Endurance tests — Phase 1", () => {
       const ctl = await createPidController();
 
       let cycles = 0;
-      let fakePid = 70000;
       const startTime = Date.now();
 
       while (Date.now() - startTime < DURATION_MS) {
         const name = `ext-sh-${cycles}`;
-        const pid = fakePid++;
+        const pid = process.pid;
 
         await manager.resolveAgent(name, "test-tpl");
         await manager.attachAgent(name, pid);

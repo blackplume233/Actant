@@ -1,6 +1,7 @@
 import type { BackendDefinition, MaterializationSpec, ModelProviderConfig } from "@actant/shared";
 import { getBackendManager } from "./backend-registry";
 import { modelProviderRegistry } from "../../provider/model-provider-registry";
+import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../../provider/provider-env-resolver";
 
 // ---------------------------------------------------------------------------
 // Materialization specs for built-in backends (#150)
@@ -216,14 +217,22 @@ function buildClaudeCodeProviderEnv(
   const providerType = providerConfig?.type ?? defaultDesc?.type;
   const descriptor = providerType ? modelProviderRegistry.get(providerType) : defaultDesc;
 
-  const apiKey = descriptor?.apiKey ?? process.env["ACTANT_API_KEY"];
+  const apiKey = descriptor?.apiKey ?? resolveApiKeyFromEnv(providerType);
   if (apiKey) {
     env["ANTHROPIC_API_KEY"] = apiKey;
+    env["ACTANT_API_KEY"] = apiKey;
   }
 
-  const baseUrl = providerConfig?.baseUrl ?? descriptor?.defaultBaseUrl;
+  const baseUrl = providerConfig?.baseUrl
+    ?? descriptor?.defaultBaseUrl
+    ?? (providerType ? resolveUpstreamBaseUrl(providerType) : undefined);
   if (baseUrl) {
     env["ANTHROPIC_BASE_URL"] = baseUrl;
+    env["ACTANT_BASE_URL"] = baseUrl;
+  }
+
+  if (providerType) {
+    env["ACTANT_PROVIDER"] = providerType;
   }
 
   return env;

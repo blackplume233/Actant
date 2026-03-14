@@ -295,6 +295,35 @@ export interface ScheduleListResult {
   running: boolean;
 }
 
+export interface ScheduleWaitParams {
+  name: string;
+  delayMs: number;
+  prompt: string;
+  priority?: "low" | "normal" | "high" | "critical";
+}
+export interface ScheduleWaitResult {
+  sourceId: string;
+}
+
+export interface ScheduleCronParams {
+  name: string;
+  pattern: string;
+  prompt: string;
+  timezone?: string;
+  priority?: "low" | "normal" | "high" | "critical";
+}
+export interface ScheduleCronResult {
+  sourceId: string;
+}
+
+export interface ScheduleCancelParams {
+  name: string;
+  sourceId: string;
+}
+export interface ScheduleCancelResult {
+  cancelled: boolean;
+}
+
 // agent.prompt (ACP session)
 
 export interface AgentPromptParams {
@@ -779,6 +808,9 @@ export interface RpcMethodMap {
   "agent.tasks": { params: AgentTasksParams; result: AgentTasksResult };
   "agent.logs": { params: AgentLogsParams; result: AgentLogsResult };
   "schedule.list": { params: ScheduleListParams; result: ScheduleListResult };
+  "schedule.wait": { params: ScheduleWaitParams; result: ScheduleWaitResult };
+  "schedule.cron": { params: ScheduleCronParams; result: ScheduleCronResult };
+  "schedule.cancel": { params: ScheduleCancelParams; result: ScheduleCancelResult };
   "session.create": { params: SessionCreateParams; result: SessionCreateResult };
   "session.prompt": { params: SessionPromptParams; result: SessionPromptResult };
   "session.cancel": { params: SessionCancelParams; result: SessionCancelResult };

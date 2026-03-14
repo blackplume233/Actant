@@ -1,6 +1,6 @@
 # Phase 4 雇员自治能力扩展 — 步骤化推进计划
 
-> **状态: ACTIVE** — 8/15 Steps 已完成
+> **状态: ACTIVE** — 平台主链已基本完成，记忆系统改为外置组件方向
 > 更新日期: 2026-02-27
 > 关联 Epic: #173 (GitHub)
 > 前置文档: `docs/planning/phase4-plan.md` (旧版评估，保留参考)
@@ -244,7 +244,7 @@ flowchart TB
 
 ---
 
-## Step 4: Plugin 体系核心
+## Step 4: Plugin 体系核心 ✅ 已完成
 
 | 字段 | 值 |
 |------|------|
@@ -267,6 +267,8 @@ flowchart TB
 - 单元测试覆盖 PluginHost 核心流程
 
 **验收**: PluginHost 可加载 Plugin、执行完整生命周期、隔离异常；旧 PluginDefinition 可自动适配
+
+**完成记录**: `packages/shared/src/types/plugin.types.ts` 已定义 `PluginScope`、`PluginContext`、`PluginRuntimeHooks`、`PluginRef` 等基础类型；`packages/core/src/plugin/types.ts` 已定义六插口 `ActantPlugin` 接口；`packages/core/src/plugin/plugin-host.ts` 已实现依赖拓扑排序、异常隔离、tick 防重入、plug 4/5/6 收集；`packages/core/src/plugin/legacy-adapter.ts` 已支持旧 `PluginDefinition` 到 domainContext-only plugin 的自动适配；`pnpm test --filter @actant/core -- plugin` 当前通过（57 tests）。
 
 **人类验收**:
 1. 执行 `pnpm test --filter @actant/core -- plugin`，确认 PluginHost 相关测试全部 pass
@@ -313,7 +315,7 @@ flowchart TB
 
 ---
 
-## Step 6: 调度器四模式增强
+## Step 6: 调度器四模式增强 ✅ 已完成
 
 | 字段 | 值 |
 |------|------|
@@ -335,6 +337,8 @@ flowchart TB
 - 单元测试 + E-SCHED 耐久测试基础场景
 
 **验收**: Agent 通过 MCP Tool 调用 `actant_schedule_wait(30000, "check PR")` 后，30 秒后被自动唤醒并收到 prompt
+
+**完成记录**: `packages/core/src/scheduler/inputs/delay-input.ts` 已实现；`InputSourceRegistry` 已落地并接入 `EmployeeScheduler`；`schedule.wait` / `schedule.cron` / `schedule.cancel` RPC 与 `actant_schedule_wait` / `actant_schedule_cron` / `actant_schedule_cancel` MCP tools 已打通；`packages/core/src/scheduler/scheduler.endurance.test.ts` 已新增 E-SCHED 场景并纳入全量 `pnpm test:endurance` 通过。
 
 **人类验收**:
 1. 启动一个雇员 Agent，通过 `actant agent dispatch` 给它一个包含 `actant_schedule_wait` 调用的 prompt
@@ -397,7 +401,7 @@ flowchart TB
 
 ---
 
-## Step 9: Extensible Initializer — 声明式初始化
+## Step 9: Extensible Initializer — 声明式初始化 ✅ 已完成
 
 | 字段 | 值 |
 |------|------|
@@ -421,6 +425,8 @@ flowchart TB
 - 单元测试
 
 **验收**: 模板声明 `steps: [{ type: "git-clone", config: { repo: "..." } }, { type: "npm-install" }]`，`agent create` 自动执行
+
+**完成记录**: `StepRegistry`、`InitializationPipeline`、`AgentInitializer` 集成已落地；模板验证已支持 initializer step 预检；内置步骤已覆盖 `git-clone`、`npm-install`、`file-copy`、`file-template`、`write-file`、`exec`、`mkdir`；相关测试已通过（builtin steps / pipeline / agent-initializer）。
 
 **人类验收**:
 1. 准备一个模板 JSON，在 `initializer.steps` 中声明:
@@ -494,7 +500,7 @@ flowchart TB
 
 ---
 
-## Step 12: Memory 核心 — core + embedding
+## Step 12: Memory 核心 — core + embedding（移出当前 Phase 4 主线）
 
 | 字段 | 值 |
 |------|------|
@@ -504,6 +510,8 @@ flowchart TB
 | 并行 | **Round 1** — 可与 Step 1, Step 2 同时启动 (零依赖) |
 
 **背景**: 记忆系统拆为三个独立包，零 Actant 依赖。本步完成数据模型和 Embedding 客户端。
+
+> 方向调整：记忆系统现作为 Actant 外置组件 / 外部集成方向，不再作为当前 Phase 4 平台主线的完成条件。以下内容保留为后续外置组件路线参考。
 
 **交付物 (上半: #162 @agent-memory/core)**:
 - `packages/agent-memory/core/` — 新包

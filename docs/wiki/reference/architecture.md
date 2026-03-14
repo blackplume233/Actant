@@ -10,7 +10,29 @@ generated: true
 
 # Actant v0.2.2 — Architecture Document
 
-> **Actant** is "Docker for AI Agents" — a platform to build, manage, and compose AI agents with pluggable backends, declarative configuration, and a component ecosystem.
+> **Actant** is an AI agent platform: a lower runtime and composition layer that materializes workspaces, manages agent processes, bridges protocols, and provides the base for higher-level Agent Apps, SOP automation, CI operators, and engine/toolchain integrations.
+
+## 产品分层
+
+Actant 当前最重要的架构理解方式不是先看包结构，而是先看产品层次：
+
+```text
+Product Layer
+  -> Archetype Layer
+    -> Template / Domain Context Layer
+      -> Platform Runtime Layer
+        -> Protocol Layer
+```
+
+| 层级 | 作用 | 当前事实 |
+|------|------|---------|
+| **Product Layer** | 承载 Agent App、SOP、CI、引擎集成等上层交付形态 | Dashboard、REST API、外部客户端都在消费平台能力 |
+| **Archetype Layer** | 用 `repo -> service -> employee` 表达管理深度递进 | Dashboard 已按 archetype 组织交互与视图 |
+| **Template / Domain Context Layer** | 声明 Agent 蓝图与可复用组件引用 | Template 通过 `domainContext` 组合 skills/prompts/mcp/workflow/plugins |
+| **Platform Runtime Layer** | 提供实例、进程、调度、上下文注入、初始化、状态恢复 | AgentManager、Scheduler、SessionContextInjector、Initializer 已落地 |
+| **Protocol Layer** | 把平台能力暴露给 CLI / ACP / MCP / HTTP | CLI、JSON-RPC、ACP、MCP、REST/SSE 已形成多入口 |
+
+**当前主交付形态**：`service` 是平台默认承载面；`employee` 是在 service 之上叠加调度与自治能力的增强层；`repo` 则是最浅层的工作区承载形态。
 
 ## Tech Stack
 
@@ -27,7 +49,7 @@ generated: true
 
 ## Monorepo Structure
 
-```
+```text
 packages/
 ├── shared/       @actant/shared      Types, logger, config helpers (foundation)
 ├── core/         @actant/core        Runtime engine (managers, builders, domain)
@@ -41,7 +63,7 @@ packages/
 
 ### Package Dependency Graph
 
-```
+```text
                     ┌──────────┐
                     │  actant  │  (meta-package)
                     └────┬─────┘
@@ -55,6 +77,54 @@ packages/
           └──────┴───────┴──► shared ◄─────────┘
 ```
 
+## 架构基线
+
+### 1. Archetype 不是产品线，而是管理深度模型
+
+`repo -> service -> employee` 表示平台对 Agent 的管理深度逐层增强：
+
+- **repo**: 平台物化 workspace，但不承担长期运行时控制
+- **service**: 平台承担进程、会话、keepAlive 与 API 交互，是当前主交付形态
+- **employee**: 在 service 之上增加调度、事件驱动与自治执行，是增强层
+
+Dashboard 已按 archetype-first 组织交互：`packages/dashboard/client/src/lib/archetype-config.ts` 中，`service` 具备 session / chat 能力，`employee` 额外具备 canvas 与运行控制视图。
+
+### 2. Template / Domain Context Layer 负责声明，不负责运行
+
+Template 是声明式蓝图，`domainContext` 负责引用 Skill、Prompt、MCP、Workflow、Plugin 等组件。它们回答的是“Agent 需要什么上下文”，而不是“平台如何运行这些能力”。
+
+当前实现中：
+- Context materialization 会把被引用组件写入 workspace
+- Initializer pipeline 提供可扩展步骤注册与顺序执行能力
+- `StepRegistry` + `InitializationPipeline` 已为后续 initializer 扩展提供基础
+
+### 3. Platform Runtime Layer 才是 Actant 的真正底座
+
+Runtime 层承担实例生命周期、上下文注入、运行时恢复、调度和系统能力挂载：
+
+- **AgentManager**: 管理实例、进程、状态恢复和 launch mode
+- **SessionContextInjector**: 在 ACP 会话建立前聚合 MCP servers / system context additions
+- **InitializationPipeline**: 运行有序初始化步骤，并支持 dry-run、timeout、rollback
+- **EmployeeScheduler**: 只对 `employee` archetype 生效，负责 heartbeat / cron / hook 输入
+- **Dashboard / REST / SSE**: 作为平台观测与控制入口，而不是独立 runtime
+
+当前实现事实包括：
+- `AgentManager` 已为 service agent 提供 keepAlive / auto-stop 预算回调
+- `AgentManager` 已为 employee archetype 维持持久 `conversationId`，避免重启后会话碎片化
+- `SessionContextInjector` 已用于动态注入 MCP servers 与 system context additions
+- Dashboard 已按 archetype 展示不同交互能力，而非单一 agent 模式 UI
+
+### 4. Plugin 目前存在双层语义，必须区分
+
+当前代码中存在两个“plugin”语义：
+
+| 层级 | 当前实现 | 含义 |
+|------|---------|------|
+| **agent-side / workspace-side plugin** | `packages/core/src/domain/plugin/plugin-manager.ts` | 管理被 template 引用并物化到 workspace 的插件定义，例如 Claude Code `plugins.json` |
+| **actant-side / system plugin** | `#14 PluginHost`（目标态） | 平台侧的系统级扩展入口，用于承载 scheduler / memory / hook / runtime capabilities |
+
+因此，当前 `PluginManager` **不是**未来的 System PluginHost。`#14` 要解决的是 actant-side 平台扩展统一入口，而不是继续扩展现有 plugin CRUD。
+
 ## Module Architecture
 
 ### 1. `@actant/shared` — Foundation Types
@@ -63,7 +133,7 @@ Pure type definitions and shared utilities. No runtime logic.
 
 - **Types**: `AgentInstanceMeta`, `AgentTemplate`, `BackendDefinition`, `VersionedComponent`, `DomainContextConfig`, `SourceConfig`, `RPC method map`
 - **Utilities**: Logger (pino), IPC helpers, platform detection
-- **Error hierarchy**: `ActantError` → `AgentNotFoundError`, `ConfigValidationError`, `ComponentReferenceError`, etc.
+- **Error hierarchy**: `ActantError` -> `AgentNotFoundError`, `ConfigValidationError`, `ComponentReferenceError`, etc.
 
 ### 2. `@actant/core` — Runtime Engine
 
@@ -72,11 +142,12 @@ The core logic layer containing all business rules.
 #### Manager (`src/manager/`)
 
 - **AgentManager** — The central orchestrator for agent lifecycle
-  - State machine: `created → starting → running → stopping → stopped`
+  - State machine: `created -> starting -> running -> stopping -> stopped`
   - Launch modes: `direct`, `acp-background`, `acp-service`, `one-shot`
   - Process ownership: `managed` (Actant spawns) or `external` (user spawns, Actant attaches)
   - Workspace policy: `persistent` or `ephemeral`
   - Methods: `createAgent`, `startAgent`, `stopAgent`, `destroyAgent`, `runPrompt`, `streamPrompt`, `resolveAgent`, `openAgent`, `attachAgent`, `detachAgent`
+  - Runtime facts: service keepAlive budget callback, employee conversation continuity, stale-state recovery on daemon init
 
 - **ProcessLauncher** — Spawns backend processes
 - **LaunchModeHandler** — Determines behavior on process exit per launch mode
@@ -102,31 +173,16 @@ All domain components are `VersionedComponent`s managed by `BaseComponentManager
 
 #### Backend System (`src/domain/backend/` + `src/manager/launcher/`)
 
-Backends are `VersionedComponent`s (JSON-serializable) with behavioral extensions:
-
-```
-BackendDefinition (data, serializable)
-├── name, version, description, tags
-├── supportedModes: ["resolve", "open", "acp"]
-├── resolveCommand / openCommand / acpCommand (PlatformCommand)
-├── openSpawnOptions (OpenSpawnOptions)
-├── existenceCheck (BackendExistenceCheck)
-└── install (BackendInstallMethod[])
-
-BackendManager (behavior, non-serializable)
-├── acpResolvers: Map<string, AcpResolverFn>
-├── checkAvailability() — runs existenceCheck
-└── getInstallMethods() — platform-filtered
-```
+Backends are `VersionedComponent`s (JSON-serializable) with behavioral extensions.
 
 Built-in backends:
 
 | Backend | Modes | Binary | Notes |
 |---------|-------|--------|-------|
 | `cursor` | resolve, open | `cursor.cmd` / `cursor` | IDE; shell spawn |
-| `cursor-agent` | resolve, open, acp | `agent` | TUI; cwd-based open |
-| `claude-code` | resolve, open, acp | `claude-agent-acp.cmd` / `claude` | resolvePackage for ACP |
-| `pi` | acp | in-process | ACP owns process |
+| `cursor-agent` | resolve, open, acp | `agent` | TUI; open-oriented experimental backend |
+| `claude-code` | resolve, open, acp | `claude-agent-acp.cmd` / `claude` | managed primary backend; recommended for service / employee |
+| `pi` | acp | in-process | managed experimental backend |
 | `custom` | resolve | user-defined | Fallback |
 
 #### Source System (`src/source/`)
@@ -139,41 +195,28 @@ Built-in backends:
 
 Supports: skills, prompts, mcp, workflows, backends, presets, templates.
 
-#### Builder System (`src/builder/`)
+#### Builder / Initializer System (`src/builder/` + `src/initializer/`)
 
-Materializes agent workspaces from domain context:
+These subsystems bridge template declarations into runnable workspaces:
 
-- **WorkspaceBuilder** — Orchestrates context materialization
-- **CursorBuilder** — `.cursor/` config files (rules, mcp.json, extensions.json)
-- **ClaudeCodeBuilder** — `.claude/` config files (CLAUDE.md, settings.json)
-- **Handlers**: `SkillsHandler`, `PromptsHandler`, `McpServersHandler`, `WorkflowHandler`
+- **WorkspaceBuilder** — Orchestrates backend-aware materialization
+- **ContextMaterializer** — Writes resolved domain context into workspace
+- **StepRegistry** — Runtime registry for initializer step executors
+- **InitializationPipeline** — Sequential initializer execution with timeout and rollback
 
-#### Template System (`src/template/`)
-
-- **TemplateLoader** — Loads from files, validates via Zod
-- **TemplateRegistry** — In-memory registry
-- **TemplateFileWatcher** — Hot-reload on file changes
-- **Validation**: `AgentTemplateSchema` (Zod) validates all fields
-
-#### Initializer System (`src/initializer/`)
-
-Creates agent instance directories via pipeline:
-
-- **InitializationPipeline** — Sequential steps
-- Steps: `MkdirStep`, `FileCopyStep`, `GitCloneStep`, `NpmInstallStep`, `ExecStep`
-- **ContextMaterializer** — Assembles domain components into workspace
+This is why initializer work should be seen as a platform/runtime extension point, not just a doc-level bootstrap helper.
 
 #### Scheduler (`src/scheduler/`)
 
 - **EmployeeScheduler** — Manages heartbeat, cron, hook triggers
 - **TaskDispatcher** — Priority queue, sequential execution
 - **ExecutionLog** — Per-agent execution history
-- Configs: `HeartbeatConfig` (intervalMs), `CronConfig` (pattern), `HookConfig` (eventName)
+- `schedule` is intentionally employee-only; service remains the passive runtime baseline
 
 #### Provider (`src/provider/`)
 
 - **ModelProviderRegistry** — Manages AI provider configs
-- Built-in: `anthropic`, `openai`, `gemini`, `openrouter`
+- Built-in providers are registered centrally and injected at runtime
 
 ### 3. `@actant/api` — Daemon & Handlers
 
@@ -186,151 +229,83 @@ Creates agent instance directories via pipeline:
 
 #### Handlers (`src/handlers/`)
 
-62 RPC methods across 11 handler groups:
-
-| Handler | Method Count | Key Methods |
-|---------|-------------|-------------|
-| template | 5 | list, get, load, unload, validate |
-| agent | 16 | create, start, stop, destroy, status, list, resolve, open, attach, detach, run, prompt, adopt, dispatch, tasks, logs |
-| session | 5 | create, prompt, cancel, close, list |
-| domain (×5) | 25 | list, get, add, update, remove, import, export (per type) |
-| source | 5 | list, add, remove, sync, validate |
-| preset | 3 | list, show, apply |
-| daemon | 2 | ping, shutdown |
-| proxy | 3 | connect, disconnect, forward |
-| schedule | 1 | list |
+RPC surface exposes platform capabilities to CLI, Dashboard, and external integrations.
 
 #### AppContext (`src/services/`)
 
 - Initializes all managers, registries, and services
-- Registers built-in backends, providers
+- Registers built-in backends, providers, context providers
 - Loads domain components from disk and sources
-- Registers Pi backend with ACP resolver
+- Connects template/domain declarations to runtime services
 
 ### 4. `@actant/cli` — Command-Line Interface
 
-68 subcommands organized into 15 command groups:
-
-| Group | Commands | Description |
-|-------|----------|-------------|
-| agent | 17 | Full lifecycle management |
-| template | 5 | Template CRUD |
-| skill | 5 | Skill CRUD |
-| prompt | 5 | Prompt CRUD |
-| mcp | 5 | MCP server config CRUD |
-| workflow | 5 | Workflow CRUD |
-| plugin | 5 | Plugin CRUD |
-| source | 5 | Source management |
-| preset | 3 | Preset management |
-| schedule | 1 | Schedule listing |
-| daemon | 3 | Daemon control |
-| proxy | 1 | ACP proxy |
-| setup | 1 | Interactive wizard |
-| self-update | 1 | Auto-update |
-| help | 1 | Help display |
-
-- **RpcClient** — Connects to daemon via socket, sends JSON-RPC requests
-- **Output formats**: `table` (default), `json` via `-f` flag
-- **Error presentation**: Colored RPC error codes with context
+CLI is one protocol entry, not the whole product. It is how operators access platform capabilities locally.
 
 ### 5. `@actant/acp` — Agent Client Protocol
+
+ACP layer is a transport/protocol bridge, not the home of business semantics.
 
 - **AcpConnection** — Manages lifecycle of one agent subprocess via ACP SDK
 - **AcpConnectionManager** — Pool of connections by agent name
 - **AcpCommunicator** — Implements `AgentCommunicator` over ACP
-- **AcpGateway** — IDE ↔ Agent bridge (upstream `AgentSide` ↔ downstream `ClientSide`)
-- **ClientCallbackRouter** — Routes permission requests, file operations, terminal ops
-- **LocalTerminalManager** — Local terminal handling for headless mode
+- **ClientCallbackRouter** — Intercepts and routes client callbacks
 
-### 6. `@actant/pi` — Lightweight In-Process Agent
+### 6. `@actant/mcp-server` — Platform-to-Agent Capability Bridge
 
-- **PiBuilder** — Workspace builder for Pi agents
-- **PiCommunicator** — Direct LLM communication (Anthropic, OpenAI, etc.)
-- **ACP Bridge** — `pi-acp-bridge` binary for ACP protocol compliance
-- No external binary needed — runs within the Actant process
+MCP server is where platform capabilities become agent-consumable tools/resources. It sits below product shells and above runtime services.
 
 ## Core Data Flows
 
 ### Agent Creation Flow
 
-```
-CLI: actant agent create myagent -t template
-  │
-  ▼
-RPC: agent.create { name, template }
-  │
-  ▼
-AgentManager.createAgent()
-  ├── TemplateRegistry.get(templateName)
-  ├── AgentInitializer.initialize()
-  │   ├── InitializationPipeline.execute()
-  │   │   ├── MkdirStep (create instance dir)
-  │   │   ├── FileCopyStep (copy initializer files)
-  │   │   └── ExecStep (run init commands)
-  │   └── ContextMaterializer.materialize()
-  │       ├── WorkspaceBuilder.build(domainContext)
-  │       │   ├── SkillsHandler → AGENTS.md / .claude/
-  │       │   ├── PromptsHandler → prompts in workspace
-  │       │   ├── McpServersHandler → .cursor/mcp.json
-  │       │   └── WorkflowHandler → .trellis/workflow.md
-  │       └── Write instance-meta.json
-  └── Return AgentInstanceMeta
+```text
+CLI / API / Dashboard
+  -> RPC: agent.create
+  -> AgentManager.createAgent()
+     -> TemplateRegistry.get(templateName)
+     -> AgentInitializer.initialize()
+        -> InitializationPipeline.run()
+        -> ContextMaterializer.materialize()
+           -> WorkspaceBuilder writes Domain Context artifacts
+     -> persist AgentInstanceMeta
 ```
 
-### Agent Run Flow (One-Shot)
+### Managed Session Flow
 
-```
-CLI: actant agent run myagent --prompt "hello"
-  │
-  ▼
-RPC: agent.run { name, prompt }
-  │
-  ▼
-AgentManager.runPrompt()
-  ├── Ensure agent exists (or auto-create from template)
-  ├── Determine launch mode: one-shot
-  ├── Start agent if not running
-  │   ├── BackendResolver.resolveAcpBackend() or resolveBackend()
-  │   └── ProcessLauncher.launch() or AcpConnection.connect()
-  ├── Communicator.runPrompt(prompt)
-  │   ├── AcpCommunicator: session.create → session.prompt → session.close
-  │   └── ClaudeCodeCommunicator: spawn claude -p --output-format json
-  └── Return { text, sessionId }
+```text
+Client request
+  -> AgentManager.startAgent()
+  -> SessionContextInjector.prepare()
+     -> collect MCP servers / system context additions
+  -> ACP connection established
+  -> service agent accepts sessions and prompts
+  -> employee agent may further receive scheduler-driven work
 ```
 
-### Agent Open Flow
+### Employee Continuity Flow
 
-```
-CLI: actant agent open myagent
-  │
-  ▼
-RPC: agent.open { name }
-  │
-  ▼
-AgentManager.openAgent()
-  ├── BackendResolver.openBackend(backendType, workspaceDir)
-  │   ├── BackendManager.get(backendType)
-  │   ├── getPlatformCommand(openCommand)
-  │   └── Return { command, args, cwd?, openSpawnOptions }
-  └── Return result to CLI
-  │
-  ▼
-CLI: spawn(command, args, { cwd, ...openSpawnOptions, detached: true })
+```text
+Employee agent restart
+  -> AgentManager.getOrCreateEmployeeConversation()
+  -> reuse persistent conversationId
+  -> scheduler resumes event/input sources
+  -> activity history stays logically continuous
 ```
 
 ## Agent Lifecycle State Machine
 
-```
+```text
                     ┌─────────┐
-          create ──►│ created │
+          create -> │ created │
                     └────┬────┘
                          │ start
                     ┌────▼────┐
                     │starting │
                     └────┬────┘
-              success ───┤      ├─── failure
+              success ---┤      ├--- failure
                     ┌────▼────┐ │  ┌───────┐
-                    │ running │ └─►│ error │
+                    │ running │ └->│ error │
                     └────┬────┘    └───────┘
                          │ stop
                     ┌────▼────┐
@@ -338,66 +313,32 @@ CLI: spawn(command, args, { cwd, ...openSpawnOptions, detached: true })
                     └────┬────┘
                          │
                     ┌────▼────┐
-          destroy ──│ stopped │
+          destroy ->│ stopped │
                     └─────────┘
 ```
 
-**Launch Modes and Exit Behavior:**
-
-| Mode | On Process Exit | On Daemon Restart |
-|------|----------------|-------------------|
-| `direct` | → stopped | → stopped |
-| `acp-background` | → stopped | → stopped |
-| `acp-service` | → restart (if under limit) | → restart |
-| `one-shot` | → destroy (if autoDestroy) | → stopped |
-
 ## Configuration Hierarchy
 
-```
+```text
 AgentTemplate
-├── name, version, description
-├── backend: { type, args?, env? }
-├── provider: { type, protocol?, model?, apiKey? }
-├── domainContext
-│   ├── skills: string[]          → SkillDefinition[]
-│   ├── prompts: string[]         → PromptDefinition[]
-│   ├── mcpServers: McpServerRef[]
-│   ├── subAgents: SubAgentRef[]
-│   ├── workflows: string[]       → WorkflowDefinition[]
-│   └── plugins: string[]         → PluginDefinition[]
-├── permissions: { allow, deny, ask, defaultMode }
-├── initializer: { steps[] }
-├── schedule: { heartbeat?, cron?, hooks? }
-└── metadata: Record<string, string>
+├── backend
+├── provider
+├── domainContext          <- template/domain layer
+├── permissions
+├── initializer
+├── archetype
+├── schedule               <- employee-only enhancement
+└── metadata
+
+Platform Runtime
+├── AgentInstanceMeta
+├── AgentManager / Scheduler / Injector
+├── runtime services
+└── protocol adapters
 ```
 
-## Built-in Resources
+The key rule is: template/domain declarations describe what an agent should contain; platform runtime decides how those declarations become managed behavior.
 
-### Backends (via actant-hub + built-in)
-
-| Name | Type | Modes |
-|------|------|-------|
-| cursor | IDE | resolve, open |
-| cursor-agent | TUI | resolve, open, acp |
-| claude-code | CLI | resolve, open, acp |
-| pi | In-process | acp |
-| custom | User-defined | resolve |
-
-### Providers
-
-| Name | Protocol |
-|------|----------|
-| anthropic | anthropic |
-| openai | openai |
-| gemini | openai |
-| openrouter | openai |
-
-### Default Source: actant-hub
-
-- 3 templates: code-reviewer, qa-engineer, doc-writer
-- 3 skills: code-review, test-writer, doc-writer
-- 2 prompts: code-assistant, qa-assistant
-- 2 MCP servers: filesystem, memory-server
 - 4 backends: cursor, cursor-agent, claude-code, pi
 - 2 presets: web-dev, devops
 

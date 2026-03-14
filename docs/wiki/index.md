@@ -3,8 +3,8 @@ layout: home
 generated: true
 hero:
   name: Actant
-  text: The Docker for AI Agents
-  tagline: 构建、管理和编排 AI Agent 的开源平台。声明式模板定义能力，一条命令创建实例，标准协议嵌入工作流。
+  text: AI Agent Runtime Platform
+  tagline: 构建、管理和编排 AI Agent 的开源平台。Docker 类比仅用于辅助理解分层，不是产品主叙事；当前以 service 为主交付形态，employee 作为自治增强层。
   actions:
     - theme: brand
       text: 快速开始
@@ -18,8 +18,8 @@ hero:
 
 features:
   - icon: 📦
-    title: Docker 式管理
-    details: Template 定义蓝图，Instance 隔离运行，Daemon 统一管控。和管理容器一样管理 Agent。
+    title: 平台分层清晰
+    details: Template 定义蓝图，Runtime 管理实例与进程，Archetype 用 repo / service / employee 表达管理深度。
   - icon: 🧩
     title: 能力自由拼装
     details: Skills、Prompts、MCP、Workflow、Plugin 五类组件像乐高一样组合，造出定制化 Agent。
@@ -27,8 +27,8 @@ features:
     title: 多后端可选
     details: Claude Code / Cursor / Cursor Agent / Pi / Custom——同一套配置，切换后端零改动。
   - icon: ⏰
-    title: 雇员调度
-    details: 心跳、Cron、Hook 三种输入源驱动 Agent 自动执行任务，7×24 无人值守。
+    title: 自治能力增强
+    details: service 是当前主交付形态；employee 在其上叠加心跳、Cron、Hook 等自治能力。
   - icon: 🌐
     title: 标准协议
     details: ACP 协议接入任意客户端。Direct Bridge 直连或 Session Lease 多路复用。

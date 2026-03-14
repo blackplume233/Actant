@@ -7,6 +7,8 @@
 
 ## 概述
 
+> **#278 Slice 3 契约入口说明**：本文件是 CLI / RPC / ACP / REST / Email 等外部接口的权威入口；它负责收口平台的外部可见行为，但不单独定义 archetype 产品承诺或 endurance baseline。涉及 `repo / service / employee` 的交付边界时，应与 `agent-lifecycle.md`、`config-spec.md`、`endurance-testing.md` 交叉阅读，以避免把 template/domain 声明、runtime service 行为和 validation 口径混为一体。
+
 Actant 的接口架构（三层协议分工）：
 
 ```
@@ -548,6 +550,161 @@ interface PluginDefinition {
 
 > 实现参考：`packages/api/src/handlers/domain-handlers.ts`，类型定义见 `packages/shared/src/types/domain-component.types.ts`
 
+### 3.5a Agent App Contracts
+
+`Agent App` API 是**产品层描述与解析接口**，用于暴露 App Registry、模板到 App 的解析关系、实例当前可见的 App 视图能力，以及 Dashboard 的 App Route / State 描述。
+
+这些接口**不替代** `agent.*` 生命周期接口：
+
+- `agent.*` 仍负责 create / start / stop / destroy / prompt / run 等运行时控制
+- `app.*` 只负责列出、读取、解析和组合 `Agent App` 的产品层视图
+- App 通过既有 `agent.*`、Canvas、Event、Asset、ACP、Email 等契约协作，而不是定义新的底层传输协议
+- App 不能绕过 archetype 限制；例如 `canvas` 相关能力对 `repo` / `service` 的限制仍按 [agent-lifecycle.md](./agent-lifecycle.md) 和 `canvas.*` 契约执行
+
+#### App Registry / Resolve
+
+| 方法 | 参数 | 返回 | 可能错误 |
+|------|------|------|---------|
+| `app.list` | `{ template?, archetype?, tag? }` | `AgentAppDescriptor[]` | — |
+| `app.get` | `{ name }` | `AgentAppDescriptor` | `CONFIG_NOT_FOUND` |
+| `app.resolveForTemplate` | `{ templateName, archetype? }` | `ResolvedAgentApp[]` | `TEMPLATE_NOT_FOUND` |
+| `app.resolveForInstance` | `{ agentName }` | `ResolvedAgentApp[]` | `AGENT_NOT_FOUND` |
+| `app.getState` | `{ appName, agentName? }` | `AgentAppRuntimeState` | `CONFIG_NOT_FOUND`, `AGENT_NOT_FOUND` |
+
+#### AgentAppDescriptor
+
+稳定的产品层清单视图，对应 `AgentAppManifest` 的可暴露字段子集。
+
+```typescript
+interface AgentAppDescriptor {
+  name: string;
+  version: string;
+  description?: string;
+  bindsTo: {
+    templates: string[];
+    defaultTemplate?: string;
+    instanceArchetypes?: AgentArchetype[];
+  };
+  ui: {
+    entry?: 'dashboard' | 'agent-detail' | 'canvas' | 'external';
+    navigationLabel?: string;
+    routes?: AgentAppRouteDescriptor[];
+    hasCanvas?: boolean;
+  };
+  config?: {
+    schema: string;
+    uiSchema?: string;
+    outputKey?: string;
+  };
+  capabilities?: {
+    dashboard?: boolean;
+    canvas?: boolean;
+    events?: boolean;
+    assets?: boolean;
+    acp?: boolean;
+  };
+  tags?: string[];
+  metadata?: Record<string, string>;
+}
+```
+
+#### ResolvedAgentApp
+
+`app.resolveForTemplate` / `app.resolveForInstance` 的返回对象。它在 Descriptor 基础上附带当前解析上下文，说明某个 App 在给定模板或实例上是否可见、为何可见、以及哪些能力当前生效。
+
+```typescript
+interface ResolvedAgentApp {
+  app: AgentAppDescriptor;
+  templateName: string;
+  agentName?: string;
+  archetype?: AgentArchetype;
+  attached: boolean;
+  reasons: string[];
+  effectiveCapabilities: {
+    dashboard: boolean;
+    canvas: boolean;
+    events: boolean;
+    assets: boolean;
+    acp: boolean;
+  };
+  routes: AgentAppRouteDescriptor[];
+}
+```
+
+**解析规则**：
+
+- `resolveForTemplate` 根据 `AgentAppManifest.bindsTo.templates` 匹配模板名，并可选用 `archetype` 进一步过滤
+- `resolveForInstance` 先读取 `AgentInstanceMeta.templateName` / `archetype`，再应用与模板同样的过滤规则
+- `effectiveCapabilities.canvas` 只有在 App 声明需要 Canvas 且目标实例 archetype 为 `employee` 时才为 `true`
+- 解析结果是**描述信息**，不创建新实例，也不改变实例生命周期
+
+#### AgentAppRuntimeState
+
+面向 Dashboard / 前端聚合态查询的运行时状态对象。
+
+```typescript
+interface AgentAppRuntimeState {
+  appName: string;
+  agentName?: string;
+  templateName?: string;
+  status: 'available' | 'unbound' | 'inactive' | 'running';
+  route?: AgentAppRouteDescriptor;
+  canvas?: {
+    enabled: boolean;
+    available: boolean;
+    agentName?: string;
+    title?: string;
+    updatedAt?: number;
+  };
+  activity?: {
+    sessionCount?: number;
+    latestSessionId?: string;
+  };
+  eventScope?: {
+    recentCount?: number;
+    latestEvent?: string;
+  };
+  assets?: {
+    inputs?: string[];
+    outputs?: string[];
+  };
+}
+```
+
+`app.getState` 只聚合已有系统的可见状态：
+
+- Agent 运行态来自 `agent.status`
+- Canvas 可见性来自 `canvas.get` / archetype 约束
+- Activity 概览来自 `activity.sessions`
+- Event 概览来自 `events.recent`
+- 资产视图来自 App manifest 中的 `data.inputs` / `data.outputs` 描述和已有资产系统
+
+#### AgentAppRouteDescriptor
+
+用于 Dashboard 路由注册和导航渲染的稳定对象。
+
+```typescript
+interface AgentAppRouteDescriptor {
+  appName: string;
+  path: string;
+  title: string;
+  kind: 'page' | 'detail' | 'embedded';
+  requiresInstance?: boolean;
+  templateName?: string;
+  agentName?: string;
+}
+```
+
+#### 协作边界
+
+- **与 `agent.*` 的边界**：App API 不启动、不停止、不销毁实例；需要运行控制时由前端或调用方继续调用 `agent.*`
+- **与 Canvas 的边界**：App 只暴露是否可消费 Canvas 与对应 route/state，不新增专属 Canvas 写接口；实际写入仍通过 `actant_canvas_update` → `canvas.update`
+- **与 Event / Workflow 的边界**：App 可暴露 workflow/stage/trigger 的产品层描述，但真正的自动化仍由 EventBus、HookRegistry、WorkflowDefinition 执行
+- **与 Asset / `ac://` 的边界**：App 用 manifest 描述输入输出约定，不引入新的资产协议
+- **与 ACP / Email 的边界**：App 可声明依赖这些能力，但所有实时会话与异步消息仍使用既有 ACP Gateway 和 `email.*` 契约
+
+---
+
 ### 3.6 Agent 任务 API（ACP 集成） ✅ 已实现
 
 > 状态：**已实现**（Phase 3 — ACP 集成）
@@ -624,6 +781,9 @@ ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调
 | `agent.logs` | `{ name, limit? }` | `ExecutionRecord[]` | `AGENT_NOT_FOUND` |
 | `agent.processLogs` | `{ name, stream?, lines? }` | `{ lines, stream, logDir }` | `AGENT_NOT_FOUND` |
 | `schedule.list` | `{ name }` | `{ sources, running }` | `AGENT_NOT_FOUND` |
+| `schedule.wait` | `{ name, delayMs, prompt, priority? }` | `{ sourceId }` | `AGENT_NOT_FOUND`, `GENERIC_BUSINESS` |
+| `schedule.cron` | `{ name, pattern, prompt, timezone?, priority? }` | `{ sourceId }` | `AGENT_NOT_FOUND`, `GENERIC_BUSINESS` |
+| `schedule.cancel` | `{ name, sourceId }` | `{ cancelled }` | `AGENT_NOT_FOUND` |
 
 #### agent.dispatch
 
@@ -676,12 +836,24 @@ ACP Proxy 进程与 Daemon 之间的内部 RPC 方法。外部用户不直接调
 
 #### schedule.list
 
-查看 Agent 的输入源（Heartbeat/Cron/Hook）状态。
+查看 Agent 的输入源（Heartbeat/Cron/Hook/Delay）状态。
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `sources` | `Array<{ id, type, active }>` | 已注册的输入源列表 |
 | `running` | `boolean` | 调度器是否正在运行 |
+
+#### schedule.wait
+
+为指定 employee agent 动态注册一个一次性 `DelayInput`。`delayMs` 必须 ≥ 1000；到时后调度器会把 `prompt` 重新派发给该 agent，并自动移除该 source。
+
+#### schedule.cron
+
+为指定 employee agent 动态注册一个 `CronInput`。返回的 `sourceId` 可用于后续 `schedule.cancel`。
+
+#### schedule.cancel
+
+取消之前通过 `schedule.wait` 或 `schedule.cron` 注册的动态 source。若 source 不存在，返回 `{ cancelled: false }`。
 
 > 实现参考：`packages/api/src/handlers/schedule-handlers.ts`，`packages/core/src/scheduler/`
 
@@ -796,6 +968,9 @@ Agent Process → actant_canvas_update (MCP Tool)
 |------|------|------|------|
 | `actant_canvas_update` | `{ html: string, title?: string }` | success/error text | 更新 Agent 的 Live Canvas HTML |
 | `actant_canvas_clear` | `{}` | success/error text | 清除 Canvas |
+| `actant_schedule_wait` | `{ delayMs: number, prompt: string, priority?: "low"\|"normal"\|"high"\|"critical" }` | success/error text | 注册一次性 delay source |
+| `actant_schedule_cron` | `{ pattern: string, prompt: string, timezone?: string, priority?: "low"\|"normal"\|"high"\|"critical" }` | success/error text | 注册动态 cron source |
+| `actant_schedule_cancel` | `{ sourceId: string }` | success/error text | 取消已注册的动态 source |
 
 **注入机制**：`SessionContextInjector` 在 ACP session 创建前，按注册序遍历所有 `ContextProvider` 收集三类资源（MCP Servers、Tools、System Context），经去重和 Scope 过滤后聚合为 `SessionContext`。内置 Provider：
 
@@ -803,6 +978,7 @@ Agent Process → actant_canvas_update (MCP Tool)
 |----------|------|---------|------|
 | `CoreContextProvider` | `"core-identity"` | SystemContext | Actant 身份声明 + 平台能力介绍 |
 | `CanvasContextProvider` | `"canvas"` | Tools + SystemContext | Canvas 工具注册 + 使用提示 |
+| `ScheduleContextProvider` | `"schedule"` | Tools + SystemContext | 动态调度工具注册（wait / cron / cancel） |
 
 文本上下文模板存放于 `packages/core/src/prompts/*.md`，运行时通过 `loadTemplate()` + `renderTemplate()` 动态加载并替换 `{{variable}}` 占位符。
 

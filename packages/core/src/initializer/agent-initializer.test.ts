@@ -10,6 +10,7 @@ import {
 } from "@actant/shared";
 import { TemplateRegistry } from "../template/registry/template-registry";
 import { AgentInitializer } from "./agent-initializer";
+import { createDefaultStepRegistry } from "./steps";
 
 function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
   return {
@@ -271,6 +272,50 @@ describe("AgentInitializer", () => {
       const meta = await initializer.createInstance("claude-service-agent", "claude-service");
       // managedPrimary backend should have managed modes
       expect(meta.interactionModes).toContain("proxy");
+    });
+  });
+
+  describe("initializer pipeline integration", () => {
+    it("executes declared initializer steps during createInstance", async () => {
+      registry.register(makeTemplate({
+        name: "with-steps",
+        initializer: {
+          steps: [
+            { type: "mkdir", config: { paths: ["src"] } },
+            { type: "exec", config: { command: "node", args: ["-e", "require('node:fs').writeFileSync('src/init-marker.txt','hello')"] } },
+          ],
+        },
+      }));
+      initializer = new AgentInitializer(registry, tmpDir, {
+        stepRegistry: createDefaultStepRegistry(),
+      });
+
+      await initializer.createInstance("init-agent", "with-steps");
+
+      await expect(access(join(tmpDir, "init-agent", "src"))).resolves.toBeUndefined();
+      const marker = await readFile(join(tmpDir, "init-agent", "src", "init-marker.txt"), "utf-8");
+      expect(marker).toBe("hello");
+    });
+
+    it("rolls back executed initializer steps when a later step fails", async () => {
+      registry.register(makeTemplate({
+        name: "with-failing-steps",
+        initializer: {
+          steps: [
+            { type: "mkdir", config: { paths: ["rollback-dir"] } },
+            { type: "exec", config: { command: "node", args: ["-e", "process.exit(1)"] } },
+          ],
+        },
+      }));
+      initializer = new AgentInitializer(registry, tmpDir, {
+        stepRegistry: createDefaultStepRegistry(),
+      });
+
+      await expect(
+        initializer.createInstance("rollback-agent", "with-failing-steps"),
+      ).rejects.toThrow();
+
+      await expect(access(join(tmpDir, "rollback-agent"))).rejects.toThrow();
     });
   });
 

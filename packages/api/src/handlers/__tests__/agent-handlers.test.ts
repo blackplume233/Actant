@@ -93,10 +93,15 @@ describe("agent handlers", () => {
   it("agent.create with overrides sets launch mode", async () => {
     const handler = registry.get("agent.create")!;
     const result = await handler(
-      { name: "custom-agent", template: "test-tpl", overrides: { launchMode: "acp-background" } },
+      {
+        name: "custom-agent",
+        template: "test-tpl",
+        overrides: { launchMode: "acp-background", archetype: "employee" },
+      },
       ctx,
-    ) as { launchMode: string };
+    ) as { launchMode: string; archetype: string };
     expect(result.launchMode).toBe("acp-background");
+    expect(result.archetype).toBe("employee");
 
     await registry.get("agent.destroy")!({ name: "custom-agent" }, ctx);
   });

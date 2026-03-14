@@ -1,13 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtemp, rm, access, writeFile, mkdir } from "node:fs/promises";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { mkdtemp, rm, access, writeFile, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import type { StepContext } from "../pipeline/types";
+import type { AgentTemplate } from "@actant/shared";
 import { MkdirStep } from "./mkdir-step";
 import { ExecStep } from "./exec-step";
 import { FileCopyStep } from "./file-copy-step";
-import type { StepContext } from "../pipeline/types";
-import type { AgentTemplate } from "@actant/shared";
-import { vi } from "vitest";
+import { FileTemplateStep } from "./file-template-step";
+import { WriteFileStep } from "./write-file-step";
 
 function makeContext(workspaceDir: string): StepContext {
   return {
@@ -136,5 +137,68 @@ describe("FileCopyStep", () => {
     await step.execute(makeContext(tmpDir), { from: "source", to: "rollback-dest" });
     await step.rollback!(makeContext(tmpDir), { from: "source", to: "rollback-dest" }, new Error("test"));
     await expect(access(join(tmpDir, "rollback-dest"))).rejects.toThrow();
+  });
+});
+
+describe("FileTemplateStep", () => {
+  let tmpDir: string;
+  const step = new FileTemplateStep();
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-filetemplate-test-"));
+    await writeFile(join(tmpDir, "template.txt"), "Hello {{name}} from {{place}}!");
+  });
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("should have type 'file-template'", () => {
+    expect(step.type).toBe("file-template");
+  });
+
+  it("should validate config", () => {
+    expect(step.validate({ template: "template.txt", output: "out.txt" }).valid).toBe(true);
+    expect(step.validate({ template: "", output: "out.txt" }).valid).toBe(false);
+    expect(step.validate({ template: "template.txt", output: "/abs/out.txt" }).valid).toBe(false);
+  });
+
+  it("should render template variables into output", async () => {
+    const result = await step.execute(makeContext(tmpDir), {
+      template: "template.txt",
+      output: "rendered.txt",
+      variables: { name: "Actant", place: "workspace" },
+    });
+    expect(result.success).toBe(true);
+    const rendered = await readFile(join(tmpDir, "rendered.txt"), "utf-8");
+    expect(rendered).toBe("Hello Actant from workspace!");
+  });
+});
+
+describe("WriteFileStep", () => {
+  let tmpDir: string;
+  const step = new WriteFileStep();
+
+  beforeEach(async () => {
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-writefile-test-"));
+  });
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("should have type 'write-file'", () => {
+    expect(step.type).toBe("write-file");
+  });
+
+  it("should validate config", () => {
+    expect(step.validate({ path: "README.md", content: "hello" }).valid).toBe(true);
+    expect(step.validate({ path: "", content: "hello" }).valid).toBe(false);
+    expect(step.validate({ path: "/abs/file", content: "hello" }).valid).toBe(false);
+  });
+
+  it("should write file content", async () => {
+    const result = await step.execute(makeContext(tmpDir), { path: "notes/info.txt", content: "hello" });
+    expect(result.success).toBe(true);
+    const content = await readFile(join(tmpDir, "notes", "info.txt"), "utf-8");
+    expect(content).toBe("hello");
   });
 });

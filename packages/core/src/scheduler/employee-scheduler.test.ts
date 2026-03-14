@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { PromptAgentFn } from "./task-dispatcher";
 import { EmployeeScheduler } from "./employee-scheduler";
+import type { InputSource } from "./inputs/input-source";
 import type { ScheduleConfigInput } from "./schedule-config";
 
 describe("EmployeeScheduler", () => {
@@ -145,6 +146,79 @@ describe("EmployeeScheduler", () => {
       const stats = scheduler.getStats();
       expect(stats.completed).toBe(1);
     });
+  });
+
+  describe("dynamic input sources", () => {
+    it("registers a runtime DelayInput and enqueues a task after delay", async () => {
+      scheduler = new EmployeeScheduler("agent-delay", promptAgent);
+      scheduler.start();
+
+      const sourceId = scheduler.scheduleDelay({
+        delayMs: 10,
+        prompt: "delayed prompt",
+        priority: "high",
+      });
+
+      expect(sourceId).toContain("delay:");
+      expect(scheduler.getSources().some((s) => s.id === sourceId && s.type === "delay")).toBe(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 30));
+
+      const { tasks } = scheduler.getTasks();
+      expect(tasks).toHaveLength(1);
+      expect((tasks[0] as { prompt: string; priority: string }).prompt).toBe("delayed prompt");
+      expect((tasks[0] as { priority: string }).priority).toBe("high");
+    });
+
+    it("registers a runtime cron source", () => {
+      scheduler = new EmployeeScheduler("agent-cron", promptAgent);
+      scheduler.start();
+
+      const sourceId = scheduler.scheduleCron({
+        pattern: "*/5 * * * *",
+        prompt: "cron prompt",
+        priority: "normal",
+        id: "cron:test-runtime",
+      });
+
+      expect(sourceId).toBe("cron:test-runtime");
+      expect(scheduler.getSources().some((s) => s.id === "cron:test-runtime" && s.type === "cron")).toBe(true);
+    });
+
+    it("creates a dynamic source through InputSourceRegistry", async () => {
+      scheduler = new EmployeeScheduler("agent-registry", promptAgent);
+      scheduler.start();
+
+      scheduler.registerInputType("custom-delay", (config: { id: string; prompt: string }) => ({
+        id: config.id,
+        type: "custom-delay",
+        active: false,
+        start(agentName: string, onTask: (task: unknown) => void) {
+          onTask({
+            id: "task-custom",
+            agentName,
+            prompt: config.prompt,
+            priority: "normal",
+            source: "custom-delay",
+            createdAt: new Date().toISOString(),
+          });
+          Object.defineProperty(this, "active", { value: true, configurable: true });
+        },
+        stop() {
+          Object.defineProperty(this, "active", { value: false, configurable: true });
+        },
+      }) as InputSource);
+
+      expect(scheduler.listInputTypes()).toContain("custom-delay");
+      const sourceId = scheduler.createInput("custom-delay", { id: "custom:1", prompt: "from registry" });
+      expect(sourceId).toBe("custom:1");
+      expect(scheduler.getSources().some((s) => s.id === "custom:1" && s.type === "custom-delay")).toBe(true);
+
+      const { tasks } = scheduler.getTasks();
+      expect(tasks).toHaveLength(1);
+      expect((tasks[0] as { prompt: string }).prompt).toBe("from registry");
+    });
+
   });
 
   describe("emitEvent", () => {

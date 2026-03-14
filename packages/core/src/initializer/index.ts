@@ -18,5 +18,7 @@ export {
   FileCopyStep,
   GitCloneStep,
   NpmInstallStep,
+  FileTemplateStep,
+  WriteFileStep,
   createDefaultStepRegistry,
 } from "./steps/index";

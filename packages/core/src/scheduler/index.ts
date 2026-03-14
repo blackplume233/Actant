@@ -3,6 +3,7 @@ export { TaskQueue } from "./task-queue";
 export { ExecutionLog } from "./execution-log";
 export { TaskDispatcher, type PromptAgentFn, type TaskDispatcherOptions } from "./task-dispatcher";
 export { EmployeeScheduler, type EmployeeSchedulerConfig } from "./employee-scheduler";
+export { InputSourceRegistry, type InputSourceFactory } from "./input-source-registry";
 export {
   ScheduleConfigSchema,
   HeartbeatConfigSchema,

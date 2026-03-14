@@ -8,15 +8,20 @@
 
 ## 项目愿景
 
-构建一个**企业级 Agent 运行时平台**，支持多模式 Agent 启动、生命周期管理、标准协议通信和可插拔扩展体系。
+构建一个**企业级 AI Agent 底层平台**，支持 Agent 的组装、工作区物化、运行时管理、标准协议通信和可插拔扩展体系，并在其上承载 Agent App、SOP 自动化、CI 任务代理与外部引擎集成。
 
 **核心能力矩阵：**
-- **Assembler**: 通过 Skills + Prompts + MCP 快速拼装 Agent
-- **Launcher**: 多模式 Agent 启动（direct / one-shot / service）
-- **Lifecycle**: 进程监控、心跳检测、崩溃恢复
+- **Assembler**: 通过 Skills + Prompts + MCP + Workflow 组织模板与 Domain Context
+- **Launcher**: 多模式 Agent 启动与 archetype-aware 交付（repo / service / employee）
+- **Lifecycle**: 进程监控、会话管理、keepAlive、崩溃恢复
 - **Communication**: ACP Proxy（外部接入）、MCP Server（Agent 间通信）、External Spawn（自主管理）
-- **Extension**: 插件体系（heartbeat / scheduler / memory）
+- **Extension**: 平台插件、调度、Hook、记忆等自治能力挂载
 - **Memory**: 实例记忆、跨实例共享、上下文分层
+
+**交付形态基线：**
+- **repo**：工作区承载层，适合人工协作或外部工具接管
+- **service**：当前主交付形态，适合作为 CLI / API / App / SOP / CI 的默认承载面
+- **employee**：在 service 之上叠加调度与自治能力的增强层
 
 **协议分工：**
 ```
@@ -266,18 +271,20 @@ Phase 2 (已完成)
 ---
 
 ### Phase 4: 自治 Agent 平台 (Hook · Plugin · 强化 · 通信)
-**目标**: 事件驱动的 Hook/Workflow 体系、可插拔系统级插件、雇员 Agent 强化、Agent-to-Agent 通信
+**目标**: 把 Actant 从“可拼装、可运行的 Agent 系统”推进为“以 service 为主交付、以 employee 为自治增强层”的底层平台
 **时间**: Phase 3 完成后（当前）
-**成功标准**: Hook 事件总线可在三层（Actant 系统层 / Instance 作用域 / 进程 Session 运行时）正确触发；Workflow 配置可声明 shell/builtin/agent 动作；Plugin 接口清晰；Agent 间 Email 通信可用
+**当前状态**: 基础设施已部分落地，但产品叙事、Plugin 边界与平台层次仍需统一
+**成功标准**: Hook / Workflow 事件体系可在系统层、实例层、运行时层稳定工作；PluginHost 成为 actant-side 的系统级扩展统一入口；调度、初始化、上下文注入、协作、记忆等能力围绕平台底座收敛；Dashboard / REST API / SSE 能持续反映自治运行状态
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
-| **#135** | **Workflow 重定义为 Hook Package — 事件驱动自动化** | **P1** | #47 | 待开始 |
-| **#14** | **Actant 系统级 Plugin 体系（heartbeat/scheduler/memory 可插拔）** | **P1** | #22, #47 | 待开始 |
-| **#134** | **agent open + interactionModes — 前台 TUI** | **P2** | - | 待开始 |
-| **#133** | **环境变量作为默认 provider 配置** | **P2** | - | 待开始 |
-| **#136** | **Agent-to-Agent Email 通信 — CLI/API/Email 异步范式** | **P2** | 无 | 待开始 |
-| #37 | Initializer: extensible Agent init framework | P1 | - | 待开始 |
+| **#135** | **Workflow 重定义为 Hook Package — 事件驱动自动化** | **P1** | #47 | ✅ 基础已完成，后续与 Plugin Core 继续整合 |
+| **#14** | **Actant 系统级 Plugin 体系（heartbeat/scheduler/memory 可插拔）** | **P1** | #22, #47 | 📋 当前第一优先 |
+| #122 | Employee/Service Mode 完善 / 调度增强 | P2 | #14, #210, #211 | 📋 待开始 |
+| **#134** | **agent open + interactionModes — 前台 TUI** | **P2** | - | ✅ 已完成 |
+| **#133** | **环境变量作为默认 provider 配置** | **P2** | - | 📋 待开始 |
+| **#136** | **Agent-to-Agent Email 通信 — CLI/API/Email 异步范式** | **P2** | #122 后收益更高 | 📋 待开始 |
+| #37 | Initializer: extensible Agent init framework | P1 | #14（集成后收益更高） | 📋 待开始 |
 | #40 | Agent 工具权限管理机制设计 | P2 | - | 待开始 |
 | #9 | Agent 进程 stdout/stderr 日志收集 | P3 | - | 待开始 |
 | #128 | spawn EINVAL 友好错误提示 | P2 | - | 待开始 |
@@ -285,24 +292,18 @@ Phase 2 (已完成)
 | #38 | Template: Endurance Test Agent | P2 | #37 | 待开始 |
 | #16 | MCP Server — Agent 管理能力暴露（可选 MCP 接入） | **P4** | #13 | 长期保留 |
 
-**Phase 4 分三波推进：**
+**Phase 4 已有基础**：
+- Hook 类型体系、Hook EventBus、Hook Package 基础已完成
+- Dashboard 已从最小监控扩展为 React SPA + REST API + SSE + 事件流
+- 动态上下文注入与内置 MCP Server 已打通，Canvas 能力已可用
+- `agent open`、Pi 后端、ToolRegistry 硬化等外围能力已补齐
 
-**第一波（P0 — 基础保障）**：
-- Bug 修复：#117 gateway.lease, #129 版本发布, #95 terminal stub, #127 install.ps1
-- 完成 #121 Pi 内置后端（进行中）
-
-**第二波（P1 — 核心能力）**：
-- #135 Workflow 重定义 + Hook 三层事件总线
-- #14 Plugin 系统架构 + #47 调度组件 Plugin 化
-- #134 agent open + interactionModes
-- #133 环境变量 provider 配置
-- #37 Extensible Initializer
-
-**第三波（P2 — 深化扩展）**：
-- #136 Agent-to-Agent Email 通信（依赖 #16 作为底层 MCP 通道）
-- #40 权限管理
-- #8 Template hot-reload
-- #38 Endurance Test Agent
+**推荐推进顺序**：
+1. 先完成 `#278` 的文档 / Spec / 验证框架收口，稳定平台叙事、概念边界与验证组织
+2. 再完成近期稳定化 / 模型收口任务（capability backend runtime、Windows socket normalization）
+3. 以 #14 Plugin Core 作为平台底座
+4. 在 #14 之上推进 #122 调度增强、#37 Initializer、#133 env provider
+5. 再推进 #136 Email 与 Memory 深化，形成协作与记忆闭环
 
 **#135 Hook 三层架构：**
 ```
@@ -373,38 +374,46 @@ Actant-side Plugin (#14, Phase 4):
 
 ## 当前进行中 (Current)
 
-Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#105/#106 增强项已关闭推迟。当前聚焦 **Phase 4 自治 Agent 平台**（Hook/Plugin/强化/通信）和剩余 BUG 修复。
+Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#105/#106 增强项已关闭推迟。当前聚焦 **Phase 4 自治 Agent 平台**，但本轮主线不是直接实现所有自治能力，而是先完成面向 #278 的平台叙事、概念边界、Spec 与验证框架收敛。
 
-**已完成线**：
-- ✅ 管理线 (3a): #94 → #97 → #98 → #43 完成
-- ✅ 构造线 (3b): #99 → #100 → #45 完成
-- ✅ 调度线 (3c): #101 → #102 → #103 → #47 完成
-- ✅ 协议线: #15 ACP Proxy + #18 Session Lease 双模式 完成
-- ✅ 已关闭过期: #13 ACP Client, #41 雇员型设计文档, #46 daemon stop, #48 session 验证, #96 ESM 解析
+**当前产品定位基线：**
+- Actant 是 **底层平台**，承载 Agent App、SOP、CI、外部引擎集成等上层形态
+- `repo -> service -> employee` 是 **管理深度递进模型**，不是彼此竞争的三套产品
+- **service 是当前主交付形态**，应作为后续 platform/runtime 与产品集成的默认基线
+- **employee 是自治增强层**，调度、心跳、持续运行能力在 service 之上叠加
 
-**Phase 4 进行中**：
-- ✅ #134 (P2) agent open + interactionModes — 已完成
-- ✅ #121 (P1) Pi 内置后端 — 已完成
-- 📋 #135 (P1) Workflow 重定义为 Hook Package — 设计完成，待实现
-- 📋 #14 (P1) Actant 系统级 Plugin 体系 — 待实现
-- 📋 #136 (P2) Agent-to-Agent Email 通信 — 设计完成，待实现
-- 📋 #133 (P2) 环境变量 provider 配置 — 待开始
-- 📋 #37 (P1) Extensible Initializer — 待开始
+**已完成主线**：
+- ✅ Phase 1 Foundation：ProcessWatcher、LaunchMode 分化、external spawn、one-shot、acp-service 崩溃恢复
+- ✅ Phase 2 MVP：Domain Context 全链路、组件加载与 CLI 管理、Daemon ↔ Agent 通信、CLI chat/run、端到端模板示例
+- ✅ Phase 3 协议/管理/构造/调度：
+  - ACP Proxy + Session Lease 双模式
+  - 统一组件管理（Skill / Prompt / Plugin CRUD）
+  - WorkspaceBuilder 差异化构造
+  - EmployeeScheduler + TaskQueue / InputRouter / CLI
 
-**Phase 4 第一波 BUG 修复**（本轮已完成）：
-- ✅ #117 (P1) gateway.lease RPC handler — 已实现 `gateway-handlers.ts`
-- ✅ #151 agent adopt registry/manager cache 不同步 — 已修复
-- ✅ #126 (P3) daemon.ping 硬编码版本 — 已修复，读取真实 package.json 版本
-- ✅ #127 (P2) install.ps1 非交互终端挂起 — 已修复，添加 `$IsInteractive` 检测和 `-NpmRegistry` 参数
+**Phase 4 已落地基础**：
+- ✅ Hook 类型基础（#159）
+- ✅ Bug 清理与脚本修复（#129 / #95 / #57）
+- ✅ Dashboard v0/v1/v2 主体能力已落地（含 REST API / SSE / 事件流）
+- ✅ 动态上下文注入 + Canvas（#210 / #211）
+- ✅ Hook Package / Workflow 事件驱动基础（#135 的基础部分）
+- ✅ Pi 内置后端（#121）
+- ✅ `agent open` + interactionModes（#134）
 
-**Step 2 BUG 清理（已完成）**：
-- ✅ #129 (P1) @actant/* 包 npm 发布 — 全部 0.2.2 已在 npm 发布，IPC 路径修复已包含
-- ✅ #95 (P2) ACP Gateway terminal stub — TerminalHandle 映射方案已实现 + 22 个测试覆盖
-- ✅ #57 (P2) Windows daemon fork — 已关闭 (workaround: --foreground 已文档化)
-- ✅ Trellis 脚本 CRLF — 21 个 .sh 文件转为 LF + .gitattributes 防止复现
+**当前主阻塞 / 主线任务**：
+- 📋 #14 Actant 系统级 Plugin 体系 — **Phase 4 平台底座已具备实现基线**（ActantPlugin / PluginHost / HeartbeatPlugin / runtime status RPC）；当前下一阻塞点转为其上的 #122 / #37 / #133
+- 📋 #122 调度增强 — 依赖 Plugin Core + Context Injection
+- 📋 #37 Extensible Initializer — 依赖 Plugin / Runtime 集成收敛
+- 📋 #133 环境变量作为默认 provider 配置 — 后端可用性与 DX 基础
+- 📋 #136 Agent-to-Agent Email 通信 — 协作层能力，建议排在平台内核稳定之后
 
-详细 TODO 跟踪见：`docs/planning/phase3-todo.md`
-详细设计见：`docs/design/mvp-next-design.md`
+**近期收口任务（非新主线）**：
+- 📋 `03-11-capability-backend-runtime` — capability-driven backend runtime model，属于运行时能力模型收口；应以 `supportedModes + runtimeProfile + capabilities` 三层共同决定 archetype compatibility 与默认 interactionModes，而不是继续依赖后端名称或单一 profile 的隐式推断
+- 📋 `03-11-issue276-daemon-socket-normalization` — Windows daemon socket normalization，属于跨平台稳定性补丁；统一以 `normalizeIpcPath()` + `getDefaultIpcPath()/getIpcPath()` 作为 CLI / Daemon / setup 的共享入口，避免 Windows 上 `.sock` 风格 override 与 named pipe 实际路径继续漂移
+
+**说明**：
+- `docs/planning/phase4-employee-steps.md` 已表明 Phase 4 并非“待开始”，而是 **8/15 Steps 已完成**。
+- 后续推进以 `phase4-employee-steps.md` 的依赖关系为准，roadmap 负责压缩表达和对外总览。
 
 ### Phase 1 完成总结
 
@@ -457,38 +466,46 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 
 ## 后续优先 (Next Up)
 
-按推进优先级排列。Phase 1-3 已完成，Phase 4 为当前阶段。
+按依赖关系与平台价值排序。当前重点不是直接铺开更多实现线，而是先完成 `#278` 的知识治理收口，再把 Phase 4 的平台底座补齐。
 
-### 第一波 — Bug 修复 + 基础保障
+### A. 治理收口（当前主线）
+
+| 顺序 | 项目 | 类型 | 说明 |
+|------|------|------|------|
+| 1 | `#278 Slice 2` | governance slice | 清理仍会误导主线的历史文档、FAQ、design/planning/wiki 表述，逐条映射冲突项（至少覆盖 C-01 / C-02 / C-04 / C-05 / C-08） |
+| 2 | `#278 Slice 3` | governance slice | 收口验证与契约入口：补 issue 跟踪、最小必要的契约/索引同步，并把 archetype-oriented validation 入口固定下来 |
+
+### B. 稳定化与模型收口（近期）
+
+| 顺序 | 项目 | 类型 | 说明 |
+|------|------|------|------|
+| 3 | `03-11-capability-backend-runtime` | planning task | 收口 backend/runtime capability model，明确能力抽象与实现边界 |
+| 4 | `03-11-issue276-daemon-socket-normalization` | planning task | 修复 Windows daemon socket path / normalization 稳定性问题 |
+
+### C. 平台底座（Phase 4 核心）
+
+| 顺序 | Issue | 标题 | 依赖 | 说明 |
+|------|-------|------|------|------|
+| 5 | **#14** | Actant 系统级 Plugin 体系 | #22, #47, `#278` 治理基线 | **当前总阻塞点**；统一 runtime / hooks / domainContext 三插口能力 |
+| 6 | **#122** | 调度器四模式增强 | #14, #210, #211 | 已完成主链：DelayInput、InputSourceRegistry、schedule.wait/cron/cancel RPC、MCP schedule tools、E-SCHED endurance；后续仅剩更深 plugin wiring / 可观测性补强 |
+| 7 | **#37** | Extensible Initializer | #14（集成收敛后收益更高） | 已完成主链：StepRegistry、InitializationPipeline、AgentInitializer 集成执行、initializer 预检、7 个内置步骤（含 file-template/write-file） |
+| 8 | **#133** | 环境变量作为默认 provider 配置 | 与 #37 可并行 | 已完成核心运行时收口：template > env > registry default，backend-aware provider env 注入已统一；后续仅剩 planning/docs 状态同步 |
+
+### D. 协作与外置扩展
+
+| 顺序 | Issue | 标题 | 依赖 | 说明 |
+|------|-------|------|------|------|
+| 9 | **#136** | Agent-to-Agent Email 通信 | #122 后收益更高 | 建立 Agent 异步协作范式，接入 TaskQueue / 调度管道 |
+| 10 | 外置记忆系统 | external component | 独立于当前 Phase 4 主线 | 记忆系统不再视为 Phase 4 内建里程碑，而是作为 Actant 外置组件/集成方向单独推进 |
+
+### E. 平台补强（内核稳定后）
 
 | 顺序 | Issue | 标题 | 说明 |
 |------|-------|------|------|
-| 1 | **#117** | gateway.lease RPC handler missing | Session Lease 模式无法使用 |
-| 2 | **#129** | 所有 @actant/* 包需发布 0.1.3 | IPC path mismatch |
-| 3 | **#95** | ACP Gateway terminal forwarding stub | IDE terminal 面板不可用 |
-| 4 | **#127** | install.ps1 非交互终端挂起 | CI 安装脚本不可用 |
-| 5 | **#121** | Pi (badlogic/pi-mono) 作为内置后端 | 进行中 |
-
-### 第二波 — Phase 4 核心能力 (Hook · Plugin · 强化)
-
-| 顺序 | Issue | 标题 | 依赖 | 说明 |
-|------|-------|------|------|------|
-| 6 | **#135** | Workflow 重定义为 Hook Package | #47 | 三层 Hook 事件总线 + shell/builtin/agent 动作执行 |
-| 7 | **#14** | Actant 系统级 Plugin 体系 | #22, #47 | 可插拔架构 + #47 调度组件 Plugin 化 |
-| 8 | **#134** | agent open + interactionModes | - | 前台 TUI 交互 + 交互模式声明 |
-| 9 | **#133** | 环境变量作为默认 provider 配置 | - | DX: 避免硬编码 API key |
-| 10 | **#37** | Initializer: extensible Agent init framework | - | 声明式 Agent workspace 初始化 |
-| 11 | **#128** | spawn EINVAL 友好错误提示 | - | 后端 CLI 缺失时清晰指引 |
-
-### 第三波 — Phase 4 深化扩展 (通信 · 权限 · DX)
-
-| 顺序 | Issue | 标题 | 依赖 | 说明 |
-|------|-------|------|------|------|
-| 12 | **#136** | Agent-to-Agent Email 通信 | 无 | CLI/API/Email 异步通信，无硬性前置依赖 |
-| 14 | #40 | Agent 工具权限管理机制 | - | 模板级/实例级权限控制 |
-| 15 | #8 | Template hot-reload on file change | - | Daemon 监听 template 变更自动 reload |
-| 16 | #38 | Template: Endurance Test Agent | #37 | 耐久测试 Agent 模板 |
-| 17 | #9 | Agent 进程 stdout/stderr 日志收集 | - | 进程输出写入日志文件 |
+| 12 | #40 | Agent 工具权限管理机制 | 平台安全与权限边界 |
+| 13 | #8 | Template hot-reload on file change | DX 增强 |
+| 14 | #9 | Agent 进程 stdout/stderr 日志收集 | 可观测性补强 |
+| 15 | #38 | Template: Endurance Test Agent | 与 #37 配合完善验证资产 |
 
 ### Phase 5 — 记忆系统 & 长期
 

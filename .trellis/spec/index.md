@@ -38,6 +38,7 @@
 
 ```
 spec/
+├── vision.md             ← 产品愿景与核心定位（最高层级）
 ├── agent-lifecycle.md    ← Agent 生命周期与使用模式（主要产出）
 ├── config-spec.md        ← 配置规范（主要产出）
 ├── api-contracts.md      ← 接口契约（主要产出）
@@ -51,11 +52,22 @@ spec/
 
 **规范定义系统"是什么"**。所有代码必须符合规范；若代码与规范冲突，以规范为准，修正代码。
 
+> **当前治理基线（#278 第一切片）**：Actant 应稳定理解为 AI Agent 的**底层平台**；`repo -> service -> employee` 是**管理深度递进模型**；其中 **service 是当前主交付形态**，`employee` 是在其上叠加调度与自治能力的增强层。阅读和更新 spec 时，需始终区分 template/domain-context layer 与 platform/runtime-services layer，避免把 agent-side plugin definition 与未来 actant-side PluginHost 混为一谈。
+>
+> **验证与契约入口（#278 Slice 3）**：
+> - archetype 级产品承诺与运行边界：以 `agent-lifecycle.md`、`config-spec.md` 为主入口
+> - CLI / RPC / ACP / REST / Email 等外部契约：以 `api-contracts.md` 为主入口
+> - endurance / archetype-oriented validation baseline：以 `endurance-testing.md` 为主入口
+> - 若发现历史 design / planning / wiki 与上述入口冲突，应优先修正周边文档或补充状态说明，而不是回退规范基线
+>
+> **#278 冲突项映射状态**：C-01 / C-02 / C-04 / C-05 已在 vision、roadmap、wiki、design 与 spec 索引中建立统一基线；C-08 由 `endurance-testing.md` 中的 archetype-oriented baseline 与 Phase 4 endurance 组织口径承接，后续新增验证资产必须继续围绕 `repo / service / employee` 建立验收入口。
+
 | 文档 | 内容 | 约束力 |
 |------|------|--------|
+| [愿景](./vision.md) | 产品定位、目标场景、核心特性、演进路线 | **指南** — 理解项目长期方向与决策依据 |
 | [Agent 生命周期](./agent-lifecycle.md) | 运行模式、接入方式、使用场景、状态转换 | **强制** — 理解系统行为的核心文档 |
-| [配置规范](./config-spec.md) | 所有配置结构、Schema、枚举、环境变量 | **强制** — 任何配置变更必须先更新此文档 |
-| [接口契约](./api-contracts.md) | RPC 方法、CLI 命令、ACP Proxy、MCP Server、VFS、错误码 | **强制** — 任何接口变更必须先更新此文档 |
+| [配置规范](./config-spec.md) | 所有配置结构、Schema、枚举、环境变量 | **强制** — 任何配置变更必须先更新此文档；`Agent App` 的正式配置定义见其中的 `AgentAppManifest` |
+| [接口契约](./api-contracts.md) | RPC 方法、CLI 命令、ACP Proxy、MCP Server、VFS、错误码 | **强制** — 任何接口变更必须先更新此文档；`Agent App` 的产品层 API 边界见其中的 Agent App Contracts |
 | [Session 管理](./session-management.md) | 三种 session 的概念、生命周期、按 archetype 的路由规则 | **强制** — 涉及 Chat/Session 相关代码必读 |
 | [耐久测试规范](./endurance-testing.md) | 覆盖矩阵、不变量、演进策略、维护规范 | **强制** — 生命周期/通信变更必须同步更新耐久测试 |
 
@@ -68,8 +80,8 @@ spec/
 | [统一事件系统设计](../../docs/design/event-system-unified-design.md) | EventBus 统一架构、事件分类与订阅模型、Archetype 感知执行策略、Event-First 设计原则 | **核心** — 所有 Hook/Event/Workflow 相关实现的架构依据 |
 | [Agent 启动场景与 ACP 架构](../../docs/design/agent-launch-scenarios.md) | 7 种启动/交互场景、ACP Gateway 架构、协议分层、控制权谱系 | **核心** — 所有 ACP/Proxy/Chat 相关实现的架构依据 |
 | [架构 Docker 类比](../../docs/design/architecture-docker-analogy.md) | CLI-Daemon 分层设计的概念映射 | 参考 — 理解整体架构思路 |
-| [Plugin/Memory 审查报告](../../docs/design/plugin-memory-review-report.md) | Plugin 三插口设计、Memory 12 轮审查、安全/性能/兼容性 | **核心** — Phase 4 Plugin 和 Memory 系统的设计依据 |
-| [记忆层与 Agent 演进](../../docs/design/memory-layer-agent-evolution.md) | 四层记忆架构、MemoryRecord、Promote 机制、Context Broker | **核心** — Phase 5 Memory 系统的蓝图 |
+| [Plugin/Memory 审查报告](../../docs/design/plugin-memory-review-report.md) | Plugin 三插口设计、Memory 12 轮审查、安全/性能/兼容性 | **核心** — Plugin 体系的设计依据；其中 Memory 部分当前更适合作为外置组件/后续集成参考 |
+| [记忆层与 Agent 演进](../../docs/design/memory-layer-agent-evolution.md) | 四层记忆架构、MemoryRecord、Promote 机制、Context Broker | 参考 — 当前不属于 Phase 4 内建完成条件，作为外置组件/后续集成蓝图保留 |
 | [Phase 4 推进步骤](../../docs/planning/phase4-employee-steps.md) | 14 步实施计划、依赖关系、并行策略、验收标准 | **活跃** — 当前阶段的执行指南 |
 | [Agent 动态监听场景分析](../../docs/design/scenario-agent-dynamic-listen.md) | Agent 运行时动态注册事件订阅的场景、通信通道选择（ACP/CLI）、三种订阅模型 | 参考 — Agent 自主性扩展的设计分析 |
 | [Subsystem 子系统设计](../../docs/design/subsystem-design.md) | 参考 UE Subsystem 的可热插拔辅助系统框架，四层作用域、声明式注册、生命周期绑定 | **核心** — 插件深层集成和系统功能模块化的架构基础 |
@@ -115,6 +127,7 @@ spec/
 6. **审查检查项**：Code Review 必须确认：(a) 相关规范文档已同步更新 (b) 接口/类型先于实现定义 (c) 配置 Schema 与实现一致
 7. **跨层一致性**：跨越前后端的约束（如 archetype 功能限制、接口错误码）必须在**所有涉及层**的 spec 文件中保持一致描述。变更时须同步检查 `agent-lifecycle.md`、`api-contracts.md`、`frontend/index.md`、`quality-guidelines.md` 等所有引用点
 8. **引用而非重复**：子层文件（如 `backend/index.md`）应通过链接引用上层权威定义（如 `spec/index.md`），而非复制相同内容。重复描述会在内容变更时产生不一致
+9. **概念分层先于实现分层**：涉及 archetype、plugin、schedule、Domain Context、Agent App 等术语时，必须先说明它属于 product / template / runtime / protocol 的哪一层，再进入包结构或实现细节
 
 ---
 

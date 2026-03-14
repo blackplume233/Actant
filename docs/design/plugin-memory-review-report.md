@@ -19,6 +19,9 @@
 
 ### 后续架构重大变更 (2026-02-25)
 
+> 状态提示：以下“统一三插口设计”属于历史审阅中的候选收敛方向，不应覆盖当前已明确的治理基线。
+> 当前应优先保持：`PluginManager` 负责 agent-side / workspace-side plugin definition；`PluginHost`（#14）负责 actant-side / runtime-side system plugin lifecycle。若未来要统一模型，需要在新一轮 spec / issue 评审中显式决策。
+
 **统一三插口设计**: 将 PluginManager (Phase 3 配置声明) 与 PluginHost (Phase 4 运行时) 合并为统一 Plugin 概念。一个 Plugin 包含三个可选插口 — `domainContext` (物化到 workspace), `runtime` (Daemon 生命周期), `hooks` (事件消费/生产)。旧 `PluginDefinition` 通过 `adaptLegacyPlugin()` 自动适配。此变更需在实施前纳入 Round 1 (架构一致性) 重新评估。
 
 以下为各轮详细发现和建议 (含修复状态)。

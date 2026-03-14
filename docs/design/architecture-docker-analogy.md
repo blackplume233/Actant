@@ -1,6 +1,8 @@
 # Actant 架构 — Docker 类比
 
-> Actant 对 AI Agent 做的事，等同于 Docker 对进程做的事。
+> 状态：历史设计参考
+>
+> 适用范围：用于帮助理解 Template / Instance / Daemon 的分层映射。`Docker for AI Agents` 仅是辅助类比，不是当前产品主叙事；当前权威定位以“AI Agent 底层平台”与 `repo -> service -> employee` 管理深度模型为准。
 
 ---
 

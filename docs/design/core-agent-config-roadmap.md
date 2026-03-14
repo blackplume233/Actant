@@ -22,6 +22,9 @@
 
 ### 要构建的能力
 
+> 历史阶段说明：本文记录的是 Core Agent 配置系统的早期路线图，不再代表当前产品总叙事。
+> 当前基线应以 Actant 作为 AI Agent 底层平台理解：`service` 是主交付形态，`employee` 是其上的自治增强层，`repo -> service -> employee` 是管理深度模型。
+
 ```
 Agent Template (JSON) → 加载/验证 → 注册表 → 创建 Instance → 启动/停止/监控
                                                     ↑

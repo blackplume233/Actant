@@ -6,42 +6,52 @@ generated: true
 
 # 核心概念
 
-Actant 借鉴 Docker 的分层思维来管理 AI Agent。
+Actant 是一个面向 AI Agent 的底层平台：负责工作区物化、运行时管理、协议桥接和自治能力承载。它不是单一的"员工 Agent 产品"，而是承载多种上层交付形态的基础设施。
 
-## Docker 对照表
+## 平台定位
+
+Actant 的核心职责是把 Agent 从"一段 prompt"提升为可组装、可运行、可治理的系统单元。
+
+- **底层平台**：统一模板解析、实例创建、进程生命周期、ACP/MCP 桥接、状态持久化
+- **上层承载**：在平台之上可以构建 Agent App、SOP 自动化、CI 任务代理，以及面向外部引擎/工具链的集成
+- **治理边界**：Actant 管理的是 Agent 的运行与组合，不直接等同于某个具体业务壳层
+
+## Docker 类比（辅助理解）
+
+Docker 类比仍然有助于理解 Actant 的分层，但它只是辅助说明，不是产品主叙事。
 
 | Docker | Actant | 本质 |
 |--------|--------|------|
 | Dockerfile | **Agent Template** | 声明式蓝图 |
-| Image | 解析后的模板 + 组件 | 不可变定义 |
+| Image | 解析后的模板 + 组件 | 可复用定义 |
 | Container | **Agent Instance** | 隔离的运行单元 |
 | docker run | `agent create + start` | 创建并启动 |
-| Docker Daemon | **Actant Daemon** | 后台守护进程 |
+| Docker Daemon | **Actant Daemon** | 平台守护进程 |
 | docker CLI | `actant` CLI | 用户入口 |
-| Registry | **Component Source** | 组件仓库 |
+| Registry | **Component Source** | 组件分发仓库 |
 
 ## Agent Template
 
-一个 JSON 文件，描述 Agent"是什么"——后端、技能、提示词、工具、权限。写一次，创建 N 个实例。
+一个 JSON 文件，描述 Agent"是什么"——后端、技能、提示词、工具、权限、初始化方式与 archetype。模板定义底层运行蓝图，可被反复实例化。
 
 ## Agent Instance
 
-从模板创建的运行实体。拥有独立的工作区目录和进程。像容器一样创建、启动、停止、销毁。
+从模板创建的运行实体。实例拥有独立工作区、持久化元数据和可选的运行进程。是否长期运行、是否接受平台调度，取决于 archetype 与 launch mode。
 
-## Agent 三层分类
+## 管理深度模型
 
-Actant 根据对 Agent 的**管理深度**，将 Agent 分为三层：
+Actant 用 `repo -> service -> employee` 表示平台对 Agent 的管理深度递进，而不是三个彼此割裂的产品类别：
 
+```text
+repo -> service -> employee
+工作区管理   运行时管理   自治增强
 ```
-repo ──→ service ──→ employee
-(仅构建)  (进程管理)  (自治调度)
-```
 
-| 类型 | Actant 做什么 | 你怎么用 |
-|------|-------------|---------|
-| **repo** | 持续管理工作目录 | `actant agent open` 打开 IDE，或通过 `actant` 命令 ACP 直连 |
-| **service** | 管理整个进程生命周期 | 通过 API 发请求，Agent 被动响应，session 由你控制 |
-| **employee** | 管理进程 + 调度 + 心跳 | 自主巡检、定时任务、持续监控 |
+| 层级 | 平台负责什么 | 典型使用方式 |
+|------|-------------|-------------|
+| **repo** | 物化模板、维护工作区、承载人工或外部工具操作 | 打开 IDE、进行代码协作、作为上层交付的基础工作区 |
+| **service** | 在 repo 基础上增加进程生命周期、会话、keepAlive 与 API 交互 | 作为默认主交付形态，被 CLI / API / App / SOP / CI 被动调用 |
+| **employee** | 在 service 基础上增加调度、心跳、事件驱动与自治执行 | 作为增强自治层，适合巡检、守护、持续运营任务 |
 
 在模板中通过 `archetype` 字段声明：
 
@@ -53,35 +63,46 @@ repo ──→ service ──→ employee
 }
 ```
 
-- **repo** 适合开发者日常使用 —— Actant 持续管理工作目录（模板变更自动同步），你在 IDE 里自由操作，也可通过 actant 命令直接 ACP 连接
-- **service** 适合后台服务 —— 像 API 一样被动响应请求，崩溃自动重启
-- **employee** 适合自治 Agent —— 像员工一样主动执行任务，有心跳和调度器
+- **repo** 是最浅层的承载形态，强调工作区和人工主导协作
+- **service** 是当前最稳定、最通用的主交付形态，应优先作为产品与集成默认目标
+- **employee** 不是对 service 的替代，而是在其上叠加自治能力的增强层
 
 ## Domain Context
 
-Agent 能力的组合容器。由 5 类组件拼装：
+`Domain Context` 是模板层的知识与工具组合入口，用来声明 Agent 需要引用哪些 Skill、Prompt、MCP Server、Workflow、Plugin 等组件。
 
 | 组件 | 职责 |
 |------|------|
 | **Skill** | 规则和知识 |
 | **Prompt** | 系统提示词 |
 | **MCP Server** | 外部工具集成 |
-| **Workflow** | 工作流程 |
-| **Plugin** | 扩展能力 |
+| **Workflow** | 工作流或 Hook Package 引用 |
+| **Plugin** | Agent-side 扩展能力引用 |
+
+需要注意：`domainContext` 属于**模板/配置层**，而运行中的进程管理、调度、上下文注入、系统插件等能力属于**平台 runtime 层**。二者相关，但不是同一层概念。
 
 ## Daemon
 
-后台守护进程，管理所有 Agent 实例的生命周期、进程监控、ACP 通信。CLI 通过 JSON-RPC 与 Daemon 交互。
+后台守护进程，负责 Agent 实例生命周期、进程监控、ACP 通信、运行时恢复和平台能力挂载。CLI、Dashboard 与 API 都通过它与平台交互。
 
 ## Component Source
 
-组件的分发仓库（GitHub 或本地目录）。类似 Homebrew Tap，让团队共享 Agent 配方。
+组件的分发仓库（GitHub 或本地目录）。类似 Homebrew Tap，用于共享模板和领域组件，而不是替代运行时平台本身。
 
 ## 一图概览
 
-```
-Template ─(create)─▶ Instance ─(start)─▶ Process ─(session)─▶ 交互
-   │                    │                    │
-   │ 定义能力            │ 独立工作区          │ OS 进程
-   │ Skills/Prompts/MCP  │ .actant.json       │ ACP 通信
+```text
+Template / Domain Context
+          |
+       create
+          v
+      Instance (repo)
+          |
+       start / session
+          v
+   Service Runtime Layer
+          |
+   schedule / hooks / autonomy
+          v
+    Employee Enhancement Layer
 ```

@@ -22,6 +22,7 @@ import {
 import { ScheduleConfigSchema, type ScheduleConfig } from "../../scheduler/schedule-config";
 import { toAgentTemplate } from "../loader/template-loader";
 import { modelProviderRegistry } from "../../provider/model-provider-registry";
+import { createDefaultStepRegistry } from "../../initializer/steps";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -178,21 +179,27 @@ export function validateTemplate(data: unknown): ConfigValidationResult<AgentTem
     ));
   }
 
-  // Semantic: provider checks
-  if (template.provider) {
-    if (template.provider.type === "custom" && !template.provider.config) {
-      warnings.push(warning(
-        "provider.config",
-        "Custom provider type without config; model routing may fail",
-        "CUSTOM_PROVIDER_NO_CONFIG",
-      ));
-    }
-    if (!modelProviderRegistry.has(template.provider.type)) {
-      warnings.push(warning(
-        "provider.type",
-        `Provider type "${template.provider.type}" is not registered; it will be treated as a custom provider`,
-        "UNKNOWN_PROVIDER_TYPE",
-      ));
+  // Semantic: initializer step checks
+  if (template.initializer?.steps?.length) {
+    const stepRegistry = createDefaultStepRegistry();
+    for (const [index, step] of template.initializer.steps.entries()) {
+      const executor = stepRegistry.get(step.type);
+      if (!executor) {
+        warnings.push(warning(
+          `initializer.steps.${index}.type`,
+          `Unknown initializer step type "${step.type}"; runtime execution will fail unless a custom StepRegistry registers it`,
+          "UNKNOWN_INITIALIZER_STEP",
+        ));
+        continue;
+      }
+      const validation = executor.validate(step.config ?? {});
+      for (const issue of validation.issues) {
+        warnings.push(warning(
+          `initializer.steps.${index}.${issue.field}`,
+          issue.message,
+          "INVALID_INITIALIZER_STEP_CONFIG",
+        ));
+      }
     }
   }
 

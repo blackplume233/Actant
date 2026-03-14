@@ -22,7 +22,24 @@
 
 ## 2. 覆盖矩阵
 
-### 2.1 维度定义
+### 2.1 Archetype-oriented baseline
+
+在进入具体场景前，耐久测试应先按 archetype 建立基线理解。`repo -> service -> employee` 是平台管理深度递进模型，因此验证组织也应以此为总入口：
+
+| Archetype | 平台定位 | 当前验证重点 | 基线期望 |
+|-----------|---------|-------------|---------|
+| `repo` | 工作区承载层 | materialize / state / open-oriented compatibility | 能稳定创建、保持 workspace 一致，不要求自治运行 |
+| `service` | 当前主交付形态 | lifecycle / session / keepAlive / prompt API | 能稳定被动响应、持续运行、恢复会话与进程 |
+| `employee` | 自治增强层 | scheduler / hook / conversation continuity / long-running autonomy | 在 service 基线之上增加持续调度与自治能力 |
+
+> 解释：`service` 是当前产品与集成默认承载面，因此未来多数 runtime endurance 场景应先以 `service baseline` 建立，再判断哪些能力只属于 `employee` 增强层。`repo` 仍需要 baseline，但更多承担 workspace 与构造稳定性的验证入口。
+>
+> **#278 Slice 3 对应关系**：
+> - C-08：已通过 archetype-oriented baseline 固定 `repo / service / employee` 验收主线，后续新增 endurance 资产不得只按 phase/feature 自由生长
+> - C-02：通过把 `service` 明确为默认 runtime baseline，避免验证体系继续滑向 employee-first
+> - C-05：通过将 workspace/materialize、runtime/session、autonomy/scheduler 分别映射到 repo / service / employee，明确 template 层与 platform runtime 层的验证边界
+
+### 2.2 维度定义
 
 耐久测试覆盖由两个正交维度组成：
 
@@ -197,10 +214,11 @@ packages/
 ## 7. Phase 4 耐久测试场景 🚧
 
 > 以下场景随 Phase 4 各 Step 逐步实施。
+> 组织原则：先满足 `repo / service / employee` baseline，再在对应 baseline 上叠加平台能力验证。换言之，`E-PLUG`、`E-SCHED`、`E-EMAIL`、`E-MEM` 都不应脱离 archetype baseline 单独设计。
 
 ### E-PLUG — Plugin 生命周期稳定性
 
-**目标**: 验证 PluginHost 在长时间运行中，多个 Plugin 的 tick 循环稳定、故障隔离有效。
+**目标**: 验证平台插件能力在长时间运行中稳定，且明确区分 service baseline 与 employee enhancement。对于未来 actant-side PluginHost，应验证其不会与现有 agent-side plugin definition 语义混淆。
 
 | 维度 | 设计 |
 |------|------|
@@ -223,7 +241,9 @@ packages/
 
 ### E-SCHED — Scheduler 多输入源压力
 
-**目标**: 验证 EmployeeScheduler 在 Heartbeat + Cron + DelayInput + EmailInput 同时运行时的正确性。
+**目标**: 验证 EmployeeScheduler 在 Heartbeat + Cron + DelayInput + EmailInput 同时运行时的正确性。该场景属于 `employee baseline` 之上的增强验证，不应用来替代 `service` 的基础 runtime endurance。
+
+> **#122 当前进度**：`DelayInput` 与通过 MCP / RPC 动态注册的 schedule source 已具备实现基线；在此基础上，E-SCHED 后续应至少覆盖 `schedule.wait` / `schedule.cron` / `schedule.cancel` 产生的动态 source 生命周期与取消语义。
 
 | 维度 | 设计 |
 |------|------|
@@ -233,7 +253,7 @@ packages/
 
 ### E-EMAIL — Email 投递可靠性
 
-**目标**: 验证 EmailHub 在大量并发 send/reply 下的消息投递可靠性。
+**目标**: 验证 EmailHub 在大量并发 send/reply 下的消息投递可靠性，并明确其作为平台 capability 可被 service / employee 消费，但自治投递与输入路由主要在 employee enhancement 层验证。
 
 | 维度 | 设计 |
 |------|------|
@@ -243,7 +263,7 @@ packages/
 
 ### E-MEM — Memory 存储稳定性
 
-**目标**: 验证 MemoryStore 实现在大量 recall/navigate/browse 下的稳定性和正确性。（存储后端待定）
+**目标**: 验证 MemoryStore 实现在大量 recall/navigate/browse 下的稳定性和正确性。（存储后端待定）Memory 是平台 capability，应先确认 service baseline 下的可用性，再验证 employee / autonomous flows 中的持续使用表现。
 
 | 维度 | 设计 |
 |------|------|

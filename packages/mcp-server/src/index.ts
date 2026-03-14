@@ -52,6 +52,62 @@ export async function startServer(): Promise<void> {
     },
   );
 
+  server.tool(
+    "actant_schedule_wait",
+    "Schedule a one-off delayed prompt for this agent. Returns a source id that can be cancelled later.",
+    {
+      delayMs: z.number().int().min(1000).describe("Delay in milliseconds before the prompt is re-dispatched"),
+      prompt: z.string().describe("Prompt to dispatch when the delay fires"),
+      priority: z.enum(["low", "normal", "high", "critical"]).optional().describe("Optional task priority"),
+    },
+    async ({ delayMs, prompt, priority }) => {
+      try {
+        const result = await rpc.call("schedule.wait", { name: agentName, delayMs, prompt, priority }) as { sourceId: string };
+        return { content: [{ type: "text" as const, text: `Scheduled delay source ${result.sourceId}.` }] };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { content: [{ type: "text" as const, text: `Schedule wait failed: ${msg}` }], isError: true };
+      }
+    },
+  );
+
+  server.tool(
+    "actant_schedule_cron",
+    "Schedule a recurring cron prompt for this agent. Returns a source id that can be cancelled later.",
+    {
+      pattern: z.string().describe("Cron pattern, e.g. '*/5 * * * *'"),
+      prompt: z.string().describe("Prompt to dispatch on each cron fire"),
+      timezone: z.string().optional().describe("Optional cron timezone"),
+      priority: z.enum(["low", "normal", "high", "critical"]).optional().describe("Optional task priority"),
+    },
+    async ({ pattern, prompt, timezone, priority }) => {
+      try {
+        const result = await rpc.call("schedule.cron", { name: agentName, pattern, prompt, timezone, priority }) as { sourceId: string };
+        return { content: [{ type: "text" as const, text: `Scheduled cron source ${result.sourceId}.` }] };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { content: [{ type: "text" as const, text: `Schedule cron failed: ${msg}` }], isError: true };
+      }
+    },
+  );
+
+  server.tool(
+    "actant_schedule_cancel",
+    "Cancel a previously scheduled delay or cron source for this agent.",
+    {
+      sourceId: z.string().describe("Source id returned from actant_schedule_wait or actant_schedule_cron"),
+    },
+    async ({ sourceId }) => {
+      try {
+        const result = await rpc.call("schedule.cancel", { name: agentName, sourceId }) as { cancelled: boolean };
+        return { content: [{ type: "text" as const, text: result.cancelled ? `Cancelled ${sourceId}.` : `Source ${sourceId} was not found.` }] };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { content: [{ type: "text" as const, text: `Schedule cancel failed: ${msg}` }], isError: true };
+      }
+    },
+  );
+
   // ---------------------------------------------------------------------------
   // VFS Tools
   // ---------------------------------------------------------------------------
