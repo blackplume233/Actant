@@ -28,8 +28,19 @@
   },
   "initializer": {
     "steps": [
-      { "type": "create-workspace" },
-      { "type": "apply-workflow" }
+      {
+        "type": "mkdir",
+        "config": {
+          "paths": ["reviews"]
+        }
+      },
+      {
+        "type": "write-file",
+        "config": {
+          "path": ".trellis/workflow.md",
+          "content": "Workflow: trellis-standard\n"
+        }
+      }
     ]
   },
   "metadata": {
