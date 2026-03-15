@@ -1,5 +1,6 @@
 import type { ActantChannel, ActantChannelManager, ChannelConnectOptions } from "./types";
 import { RecordingChannelDecorator } from "./recording-channel-decorator";
+import type { RoutingChannelManager } from "./routing-channel-manager";
 import type { RecordSystem } from "../record/record-system";
 
 /**
@@ -40,6 +41,12 @@ export class RecordingChannelManager implements ActantChannelManager {
 
   getPrimarySessionId(name: string): string | undefined {
     return this.inner.getPrimarySessionId(name);
+  }
+
+  setAgentBackend(agentName: string, backendType: string): void {
+    if ("setAgentBackend" in this.inner) {
+      (this.inner as RoutingChannelManager).setAgentBackend(agentName, backendType);
+    }
   }
 
   setCurrentActivitySession(name: string, id: string | null): void {
