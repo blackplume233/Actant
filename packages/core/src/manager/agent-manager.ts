@@ -25,6 +25,7 @@ import { scanInstances, updateInstanceMeta } from "../state/index";
 import type { InstanceRegistryAdapter } from "../state/instance-registry-types";
 import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
 import { createCommunicator } from "../communicator/create-communicator";
+import type { ActantChannelManager, ActantChannel } from "../channel/types";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../provider/provider-env-resolver";
 import type { HookEventBus } from "../hooks/hook-event-bus";
@@ -35,8 +36,8 @@ import type { SystemBudgetManager } from "../budget/system-budget-manager";
 const logger = createLogger("agent-manager");
 
 /**
- * Minimal ACP connection manager interface.
- * The real implementation lives in @actant/acp; this avoids a circular dependency.
+ * @deprecated Use ActantChannelManager from channel/types instead.
+ * Kept during migration — existing AcpConnectionManager implements this shape.
  */
 export interface AcpConnectionManagerLike {
   connect(name: string, options: {
@@ -48,21 +49,12 @@ export interface AcpConnectionManagerLike {
       autoApprove?: boolean;
       env?: Record<string, string>;
     };
-    /** When provided, wraps callback handler with RecordingCallbackHandler for activity recording. */
     activityRecorder?: unknown;
-    /** MCP servers to inject into the ACP session via session/new. */
     mcpServers?: Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }>;
-    /** Internal tools from ToolRegistry (for interceptor observation). */
     tools?: Array<{ name: string; description: string; parameters: Record<string, unknown>; rpcMethod: string; scope: string; context?: string }>;
-    /** Per-session token for internal tool auth. */
     sessionToken?: string;
-    /** System context additions for the agent. */
     systemContext?: string[];
   }): Promise<{ sessionId: string }>;
-  /**
-   * Set the active activity session ID on the agent's RecordingCallbackHandler.
-   * Pass null to clear (falls back to ACP session UUID).
-   */
   setCurrentActivitySession?(name: string, id: string | null): void;
   has(name: string): boolean;
   getPrimarySessionId(name: string): string | undefined;
@@ -71,6 +63,9 @@ export interface AcpConnectionManagerLike {
   disposeAll(): Promise<void>;
 }
 
+/**
+ * @deprecated Use ActantChannel from channel/types instead.
+ */
 export interface AcpConnectionLike {
   prompt(sessionId: string, text: string): Promise<{ stopReason: string; text: string }>;
   streamPrompt(sessionId: string, text: string): AsyncIterable<unknown>;
@@ -84,13 +79,18 @@ export interface ManagerOptions {
   watcherPollIntervalMs?: number;
   /** Restart policy for acp-service agents. */
   restartPolicy?: Partial<RestartPolicy>;
-  /** ACP connection manager for ACP-based backends. */
+  /** Channel manager for backend communication (ActantChannel). */
+  channelManager?: ActantChannelManager;
+  /**
+   * @deprecated Use `channelManager` instead.
+   * Kept for backward compatibility — AcpConnectionManager implements this shape.
+   */
   acpManager?: AcpConnectionManagerLike;
   /** Instance registry for discovering external workspaces. */
   instanceRegistry?: InstanceRegistryAdapter;
   /** Hook event bus for emitting lifecycle events. When provided, AgentManager emits events for all state transitions. */
   eventBus?: HookEventBus;
-  /** Activity recorder for managed agent ACP interaction recording. */
+  /** Activity recorder for managed agent interaction recording. */
   activityRecorder?: ActivityRecorder;
   /** Session context injector for dynamic MCP server injection. */
   sessionContextInjector?: SessionContextInjector;
@@ -104,7 +104,7 @@ export class AgentManager {
   private readonly corruptedDir: string;
   private readonly watcher: ProcessWatcher;
   private readonly restartTracker: RestartTracker;
-  private readonly acpManager?: AcpConnectionManagerLike;
+  private readonly channelManager?: ActantChannelManager | AcpConnectionManagerLike;
   private readonly instanceRegistry?: InstanceRegistryAdapter;
   private readonly eventBus?: HookEventBus;
   private readonly activityRecorder?: ActivityRecorder;
@@ -113,6 +113,18 @@ export class AgentManager {
   private readonly employeeRestartTracker: RestartTracker;
   private readonly agentLocks = new Map<string, Promise<void>>();
   private _disposing = false;
+
+  /**
+   * Resolve a channel/connection for the given agent from the channel manager,
+   * abstracting over both ActantChannelManager (new) and AcpConnectionManagerLike (legacy).
+   */
+  private resolveChannel(name: string): ActantChannel | AcpConnectionLike | undefined {
+    if (!this.channelManager) return undefined;
+    if ("getChannel" in this.channelManager) {
+      return (this.channelManager as ActantChannelManager).getChannel(name);
+    }
+    return (this.channelManager as AcpConnectionManagerLike).getConnection(name);
+  }
 
   /**
    * Get the persistent conversation ID for an employee (acp-background) agent.
@@ -156,7 +168,7 @@ export class AgentManager {
       backoffMaxMs: 120_000,
       resetAfterMs: 60_000,
     });
-    this.acpManager = options?.acpManager;
+    this.channelManager = options?.channelManager ?? options?.acpManager;
     this.eventBus = options?.eventBus;
     this.activityRecorder = options?.activityRecorder;
     this.sessionContextInjector = options?.sessionContextInjector;
@@ -343,7 +355,7 @@ export class AgentManager {
         pid = proc.pid;
       }
 
-      if (this.acpManager) {
+      if (this.channelManager) {
         const acpResolved = resolveAcpBackend(meta.backendType, dir, meta.backendConfig);
         const backendEnvBuilder = getBuildProviderEnv(meta.backendType);
         const providerEnv = backendEnvBuilder
@@ -354,7 +366,7 @@ export class AgentManager {
           ? await this.sessionContextInjector.prepare(name, meta)
           : undefined;
 
-        const connResult = await this.acpManager.connect(name, {
+        const connResult = await this.channelManager.connect(name, {
           command: acpResolved.command,
           args: acpResolved.args,
           cwd: dir,
@@ -376,7 +388,7 @@ export class AgentManager {
         // and the session survives daemon restarts.
         if (starting.launchMode === "acp-background" && meta.processOwnership === "managed") {
           const conversationId = await this.getOrCreateEmployeeConversation(name);
-          this.acpManager.setCurrentActivitySession?.(name, conversationId);
+          this.channelManager.setCurrentActivitySession?.(name, conversationId);
           logger.info({ name, conversationId }, "Employee conversation session set");
         }
         logger.info({ name, acpOnly, providerType: meta.providerConfig?.type }, "ACP connection established");
@@ -421,8 +433,8 @@ export class AgentManager {
         });
         this.processes.delete(name);
       }
-      if (this.acpManager?.getConnection(name)) {
-        await this.acpManager.disconnect(name).catch(() => {});
+      if (this.resolveChannel(name)) {
+        await this.channelManager!.disconnect(name).catch(() => {});
       }
       const errored = await updateInstanceMeta(dir, { status: "error", pid: undefined });
       this.cache.set(name, errored);
@@ -517,13 +529,13 @@ export class AgentManager {
 
     this.sessionContextInjector?.revokeTokens?.(name);
 
-    if (this.acpManager?.getConnection(name)) {
-      this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, name, {
+    if (this.resolveChannel(name)) {
+      this.eventBus?.emit("session:end", { callerType: "system", callerId: "AgentManager" }, name, {
         sessionId: "primary",
         reason: "agent-stop",
       });
-      await this.acpManager.disconnect(name).catch((err) => {
-        logger.warn({ name, error: err }, "Error disconnecting ACP during stop");
+      await this.channelManager!.disconnect(name).catch((err) => {
+        logger.warn({ name, error: err }, "Error disconnecting channel during stop");
       });
     }
 
@@ -773,9 +785,9 @@ export class AgentManager {
     });
 
     let result: PromptResult;
-    if (this.acpManager?.has(name)) {
-      const conn = this.acpManager.getConnection(name);
-      const sessionId = this.acpManager.getPrimarySessionId(name);
+    if (this.channelManager?.has(name)) {
+      const conn = this.resolveChannel(name);
+      const sessionId = this.channelManager.getPrimarySessionId(name);
       if (conn && sessionId) {
         logger.debug({ name, sessionId }, "Sending prompt via ACP");
         if (this.activityRecorder) {
@@ -821,12 +833,12 @@ export class AgentManager {
   ): AsyncIterable<StreamChunk> {
     const meta = this.requireAgent(name);
 
-    if (this.acpManager?.has(name)) {
-      const conn = this.acpManager.getConnection(name);
-      const sessionId = this.acpManager.getPrimarySessionId(name);
+    if (this.channelManager?.has(name)) {
+      const conn = this.resolveChannel(name);
+      const sessionId = this.channelManager.getPrimarySessionId(name);
       if (conn && sessionId) {
-        logger.debug({ name, sessionId }, "Streaming prompt via ACP");
-        return this.streamFromAcp(conn, sessionId, prompt);
+        logger.debug({ name, sessionId }, "Streaming prompt via channel");
+        return this.streamFromChannel(conn, sessionId, prompt);
       }
     }
 
@@ -835,29 +847,33 @@ export class AgentManager {
     return communicator.streamPrompt(dir, prompt, options);
   }
 
-  private async *streamFromAcp(
-    conn: AcpConnectionLike,
+  private async *streamFromChannel(
+    conn: ActantChannel | AcpConnectionLike,
     sessionId: string,
     prompt: string,
   ): AsyncIterable<StreamChunk> {
     try {
-      for await (const event of conn.streamPrompt(sessionId, prompt)) {
-        const record = event as Record<string, unknown>;
-        const type = record["type"] as string | undefined;
+      if ("cancel" in conn) {
+        yield* conn.streamPrompt(sessionId, prompt) as AsyncIterable<StreamChunk>;
+      } else {
+        for await (const event of conn.streamPrompt(sessionId, prompt)) {
+          const record = event as Record<string, unknown>;
+          const type = record["type"] as string | undefined;
 
-        if (type === "text" || type === "assistant") {
-          const content = (record["content"] as string) ?? (record["message"] as string) ?? "";
-          yield { type: "text", content };
-        } else if (type === "tool_use") {
-          const toolName = record["name"] as string | undefined;
-          yield { type: "tool_use", content: toolName ? `[Tool: ${toolName}]` : "" };
-        } else if (type === "result") {
-          yield { type: "result", content: (record["result"] as string) ?? "" };
-        } else if (type === "error") {
-          const errMsg = (record["error"] as Record<string, unknown>)?.["message"] as string | undefined;
-          yield { type: "error", content: errMsg ?? "Unknown error" };
-        } else if (typeof record["content"] === "string") {
-          yield { type: "text", content: record["content"] };
+          if (type === "text" || type === "assistant") {
+            const content = (record["content"] as string) ?? (record["message"] as string) ?? "";
+            yield { type: "text", content };
+          } else if (type === "tool_use") {
+            const toolName = record["name"] as string | undefined;
+            yield { type: "tool_use", content: toolName ? `[Tool: ${toolName}]` : "" };
+          } else if (type === "result") {
+            yield { type: "result", content: (record["result"] as string) ?? "" };
+          } else if (type === "error") {
+            const errMsg = (record["error"] as Record<string, unknown>)?.["message"] as string | undefined;
+            yield { type: "error", content: errMsg ?? "Unknown error" };
+          } else if (typeof record["content"] === "string") {
+            yield { type: "text", content: record["content"] };
+          }
         }
       }
     } catch (err) {
@@ -884,16 +900,16 @@ export class AgentManager {
   ): Promise<PromptResult> {
     const meta = this.requireAgent(name);
 
-    if (!this.acpManager?.has(name)) {
+    if (!this.channelManager?.has(name)) {
       throw new Error(`Agent "${name}" has no ACP connection. Start it first with \`agent start\`.`);
     }
 
-    const conn = this.acpManager.getConnection(name);
+    const conn = this.resolveChannel(name);
     if (!conn) {
       throw new Error(`ACP connection for "${name}" not found`);
     }
 
-    const targetSessionId = sessionId ?? this.acpManager.getPrimarySessionId(name);
+    const targetSessionId = sessionId ?? this.channelManager.getPrimarySessionId(name);
     if (!targetSessionId) {
       throw new Error(`Agent "${name}" is not ready to receive prompts. Ensure it is running and has an active session.`);
     }
@@ -908,12 +924,12 @@ export class AgentManager {
       activitySessionId = activitySessionOverride;
       // Update recording handler so callbacks (session_update, file ops) also
       // go to this conversation ID during the prompt.
-      this.acpManager.setCurrentActivitySession?.(name, activitySessionId);
+      this.channelManager.setCurrentActivitySession?.(name, activitySessionId);
     } else if (isEmployee) {
       activitySessionId = await this.getOrCreateEmployeeConversation(name);
       // Employee recording handler is already set to this ID from _startAgent;
       // re-setting is a safe no-op.
-      this.acpManager.setCurrentActivitySession?.(name, activitySessionId);
+      this.channelManager.setCurrentActivitySession?.(name, activitySessionId);
     } else {
       activitySessionId = targetSessionId;
     }
@@ -960,7 +976,7 @@ export class AgentManager {
     // session so future callbacks (if any) fall back to the ACP session UUID.
     // Employee sessions stay set (cleared only on agent restart/stop).
     if (activitySessionOverride) {
-      this.acpManager.setCurrentActivitySession?.(name, null);
+      this.channelManager.setCurrentActivitySession?.(name, null);
     }
 
     this.eventBus?.emit("prompt:after", { callerType: "system", callerId: "AgentManager" }, name, {
@@ -971,9 +987,16 @@ export class AgentManager {
     return { text: result.text, sessionId: activitySessionId };
   }
 
-  /** Check if an agent has an active ACP connection. */
+  /** Check if an agent has an active communication channel. */
+  hasChannel(name: string): boolean {
+    return this.channelManager?.has(name) ?? false;
+  }
+
+  /**
+   * @deprecated Use hasChannel() instead.
+   */
   hasAcpConnection(name: string): boolean {
-    return this.acpManager?.has(name) ?? false;
+    return this.hasChannel(name);
   }
 
   /**
@@ -1013,7 +1036,7 @@ export class AgentManager {
       });
     }
 
-    await this.acpManager?.disposeAll();
+    await this.channelManager?.disposeAll();
   }
 
   private async handleProcessExit(info: ProcessExitInfo): Promise<void> {
@@ -1034,12 +1057,12 @@ export class AgentManager {
 
     this.sessionContextInjector?.revokeTokens?.(instanceName);
 
-    if (this.acpManager?.getConnection(instanceName)) {
-      this.eventBus?.emit("session:end", { callerType: "system", callerId: "AcpConnectionManager" }, instanceName, {
+    if (this.resolveChannel(instanceName)) {
+      this.eventBus?.emit("session:end", { callerType: "system", callerId: "AgentManager" }, instanceName, {
         sessionId: "primary",
         reason: "process-crash",
       });
-      await this.acpManager.disconnect(instanceName).catch(() => {});
+      await this.channelManager!.disconnect(instanceName).catch(() => {});
     }
 
     const dir = join(this.instancesBaseDir, instanceName);

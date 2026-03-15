@@ -1,4 +1,5 @@
 export * from "./builder/index";
+export * from "./channel/index";
 export * from "./scheduler/index";
 export * from "./template/index";
 export * from "./initializer/index";

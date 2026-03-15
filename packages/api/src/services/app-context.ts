@@ -50,7 +50,7 @@ import {
 } from "@actant/core";
 import { CanvasStore } from "./canvas-store";
 import type { ModelApiProtocol } from "@actant/shared";
-import { AcpConnectionManager } from "@actant/acp";
+import { AcpConnectionManager, AcpChannelManagerAdapter } from "@actant/acp";
 import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
 import { createLogger, getIpcPath, initLogDir, normalizeIpcPath } from "@actant/shared";
 
@@ -196,7 +196,7 @@ export class AppContext {
       createLauncher({ mode: launcherMode }),
       this.instancesDir,
       {
-        acpManager: launcherMode !== "mock" ? this.acpConnectionManager : undefined,
+        channelManager: launcherMode !== "mock" ? new AcpChannelManagerAdapter(this.acpConnectionManager) : undefined,
         instanceRegistry: this.instanceRegistry,
         watcherPollIntervalMs: launcherMode === "mock" ? 2_147_483_647 : undefined,
         eventBus: this.eventBus,
