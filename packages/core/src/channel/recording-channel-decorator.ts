@@ -2,6 +2,7 @@ import { createLogger } from "@actant/shared";
 import type { RecordCategory } from "@actant/shared";
 import type { StreamChunk } from "../communicator/agent-communicator";
 import type { ActantChannel, ChannelPromptResult } from "./types";
+import { channelEventToRecordEntry, legacyChunkToChannelEvent } from "./event-compat";
 import type { RecordSystem } from "../record/record-system";
 
 const logger = createLogger("recording-channel");
@@ -21,6 +22,10 @@ export class RecordingChannelDecorator implements ActantChannel {
     private readonly sessionIdResolver: () => string,
   ) {}
 
+  get capabilities() {
+    return this.inner.capabilities;
+  }
+
   get isConnected(): boolean {
     return this.inner.isConnected;
   }
@@ -32,8 +37,12 @@ export class RecordingChannelDecorator implements ActantChannel {
 
     for await (const chunk of this.streamPrompt(sessionId, text)) {
       if (chunk.type === "text") textChunks.push(chunk.content);
-      else if (chunk.type === "result") resultText = chunk.content;
-      else if (chunk.type === "error") {
+      else if (chunk.type === "result") {
+        resultText = chunk.content;
+        if (chunk.event?.type === "x_result_success") {
+          stopReason = chunk.event.stopReason;
+        }
+      } else if (chunk.type === "error") {
         stopReason = "error";
         if (textChunks.length === 0) textChunks.push(chunk.content);
       }
@@ -55,7 +64,7 @@ export class RecordingChannelDecorator implements ActantChannel {
 
     try {
       for await (const chunk of this.inner.streamPrompt(sessionId, text)) {
-        this.recordChunk(activitySid, chunk);
+        this.recordEvent(activitySid, chunk.event ?? legacyChunkToChannelEvent(activitySid, chunk));
         yield chunk;
       }
 
@@ -82,37 +91,25 @@ export class RecordingChannelDecorator implements ActantChannel {
     return this.inner.cancel(sessionId);
   }
 
-  private recordChunk(activitySid: string, chunk: StreamChunk): void {
-    let category: RecordCategory;
-    let type: string;
-    let data: unknown;
+  newSession = this.inner.newSession?.bind(this.inner);
+  resumeSession = this.inner.resumeSession?.bind(this.inner);
+  configure = this.inner.configure?.bind(this.inner);
+  setMcpServers = this.inner.setMcpServers?.bind(this.inner);
+  getMcpStatus = this.inner.getMcpStatus?.bind(this.inner);
+  registerHostTools = this.inner.registerHostTools?.bind(this.inner);
+  unregisterHostTools = this.inner.unregisterHostTools?.bind(this.inner);
+  setCallbackHandler = this.inner.setCallbackHandler?.bind(this.inner);
 
-    switch (chunk.type) {
-      case "text":
-        category = "communication";
-        type = "session_update";
-        data = { sessionUpdate: "agent_message_chunk", content: { type: "text", text: chunk.content } };
-        break;
-      case "tool_use":
-        category = "communication";
-        type = "session_update";
-        data = { sessionUpdate: "tool_call", content: chunk.content };
-        break;
-      case "result":
-        category = "communication";
-        type = "session_update";
-        data = { sessionUpdate: "agent_message_chunk", content: { type: "text", text: chunk.content } };
-        break;
-      case "error":
-        category = "error";
-        type = "stream:error";
-        data = { error: chunk.content };
-        break;
-      default:
-        return;
-    }
-
-    this.recordSafe({ category, type, agentName: this.agentName, sessionId: activitySid, data });
+  private recordEvent(activitySid: string, event: NonNullable<StreamChunk["event"]>): void {
+    const mapped = channelEventToRecordEntry(event);
+    if (!mapped) return;
+    this.recordSafe({
+      category: mapped.category,
+      type: mapped.type,
+      agentName: this.agentName,
+      sessionId: activitySid,
+      data: mapped.data,
+    });
   }
 
   private recordSafe(entry: {

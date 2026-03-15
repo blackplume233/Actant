@@ -21,7 +21,11 @@ describe("mapSdkMessage", () => {
       } as unknown as SDKMessage;
 
       const chunks = mapSdkMessage(msg);
-      expect(chunks).toEqual([{ type: "text", content: "Hello world" }]);
+      expect(chunks).toEqual([{ type: "text", content: "Hello world", event: {
+        type: "agent_message_chunk",
+        sessionId: "sess-1",
+        content: { type: "text", text: "Hello world" },
+      } }]);
     });
 
     it("maps tool_use content blocks", () => {
@@ -38,7 +42,19 @@ describe("mapSdkMessage", () => {
 
       const chunks = mapSdkMessage(msg);
       expect(chunks).toEqual([
-        { type: "tool_use", content: "[Tool: Bash] tool-123" },
+        {
+          type: "tool_use",
+          content: "[Tool: Bash] tool-123",
+          event: {
+            type: "tool_call",
+            sessionId: "sess-1",
+            toolCallId: "tool-123",
+            title: "Bash",
+            kind: "host_tool",
+            status: "in_progress",
+            input: {},
+          },
+        },
       ]);
     });
 
@@ -58,9 +74,25 @@ describe("mapSdkMessage", () => {
 
       const chunks = mapSdkMessage(msg);
       expect(chunks).toHaveLength(3);
-      expect(chunks[0]).toEqual({ type: "text", content: "Let me " });
-      expect(chunks[1]).toEqual({ type: "text", content: "help you." });
-      expect(chunks[2]).toEqual({ type: "tool_use", content: "[Tool: Read] t-1" });
+      expect(chunks[0]).toEqual({ type: "text", content: "Let me ", event: {
+        type: "agent_message_chunk",
+        sessionId: "sess-1",
+        content: { type: "text", text: "Let me " },
+      } });
+      expect(chunks[1]).toEqual({ type: "text", content: "help you.", event: {
+        type: "agent_message_chunk",
+        sessionId: "sess-1",
+        content: { type: "text", text: "help you." },
+      } });
+      expect(chunks[2]).toEqual({ type: "tool_use", content: "[Tool: Read] t-1", event: {
+        type: "tool_call",
+        sessionId: "sess-1",
+        toolCallId: "t-1",
+        title: "Read",
+        kind: "host_tool",
+        status: "in_progress",
+        input: {},
+      } });
     });
 
     it("maps assistant error to error chunk", () => {
@@ -74,7 +106,12 @@ describe("mapSdkMessage", () => {
 
       const chunks = mapSdkMessage(msg);
       expect(chunks).toEqual([
-        { type: "error", content: "Assistant error: authentication_failed" },
+        { type: "error", content: "Assistant error: authentication_failed", event: {
+          type: "x_result_error",
+          sessionId: "sess-1",
+          errors: ["Assistant error: authentication_failed"],
+          stopReason: "error",
+        } },
       ]);
     });
 
@@ -92,7 +129,18 @@ describe("mapSdkMessage", () => {
       } as unknown as SDKMessage;
 
       const chunks = mapSdkMessage(msg);
-      expect(chunks).toEqual([{ type: "text", content: "Answer" }]);
+      expect(chunks).toEqual([
+        { type: "text", content: "hmm...", event: {
+          type: "agent_thought_chunk",
+          sessionId: "sess-1",
+          content: { type: "text", text: "hmm..." },
+        } },
+        { type: "text", content: "Answer", event: {
+          type: "agent_message_chunk",
+          sessionId: "sess-1",
+          content: { type: "text", text: "Answer" },
+        } },
+      ]);
     });
   });
 
@@ -116,7 +164,13 @@ describe("mapSdkMessage", () => {
 
       const chunks = mapSdkMessage(msg);
       expect(chunks).toEqual([
-        { type: "result", content: "Task completed successfully." },
+        { type: "result", content: "Task completed successfully.", event: {
+          type: "x_result_success",
+          sessionId: "sess-1",
+          result: "Task completed successfully.",
+          stopReason: "end_turn",
+          usage: { input_tokens: 10, output_tokens: 20, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        } },
       ]);
     });
 
@@ -139,7 +193,13 @@ describe("mapSdkMessage", () => {
 
       const chunks = mapSdkMessage(msg);
       expect(chunks).toEqual([
-        { type: "error", content: "Connection timed out; Retry failed" },
+        { type: "error", content: "Connection timed out; Retry failed", event: {
+          type: "x_result_error",
+          sessionId: "sess-1",
+          errors: ["Connection timed out", "Retry failed"],
+          stopReason: "error",
+          usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        } },
       ]);
     });
 
@@ -161,7 +221,13 @@ describe("mapSdkMessage", () => {
 
       const chunks = mapSdkMessage(msg);
       expect(chunks).toEqual([
-        { type: "error", content: "Query ended with error_max_turns" },
+        { type: "error", content: "Query ended with error_max_turns", event: {
+          type: "x_result_error",
+          sessionId: "sess-1",
+          errors: ["Query ended with error_max_turns"],
+          stopReason: "error",
+          usage: { input_tokens: 1000, output_tokens: 2000, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        } },
       ]);
     });
   });
@@ -177,7 +243,13 @@ describe("mapSdkMessage", () => {
 
       const chunks = mapSdkMessage(msg);
       expect(chunks).toEqual([
-        { type: "tool_use", content: "Created file src/index.ts" },
+        { type: "tool_use", content: "Created file src/index.ts", event: {
+          type: "tool_call_update",
+          sessionId: "sess-1",
+          toolCallId: "t-1",
+          status: "completed",
+          content: [{ type: "content", content: { type: "text", text: "Created file src/index.ts" } }],
+        } },
       ]);
     });
 
@@ -193,7 +265,13 @@ describe("mapSdkMessage", () => {
 
       const chunks = mapSdkMessage(msg);
       expect(chunks).toEqual([
-        { type: "tool_use", content: "[Bash] (6s)" },
+        { type: "tool_use", content: "[Bash] (6s)", event: {
+          type: "tool_call_update",
+          sessionId: "sess-1",
+          toolCallId: "t-1",
+          status: "in_progress",
+          content: [{ type: "terminal", terminalId: "t-1", output: "[Bash] (6s)" }],
+        } },
       ]);
     });
   });

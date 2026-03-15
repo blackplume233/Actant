@@ -1,40 +1,61 @@
-import type {
-  ActantChannelManager,
-  ActantChannel,
-  ChannelConnectOptions,
-  ChannelPromptResult,
+import {
+  type ActantChannelManager,
+  type ActantChannel,
+  type ChannelConnectOptions,
+  type ChannelPromptResult,
+  type ChannelCapabilities,
+  type ChannelHostServices,
+  DEFAULT_CHANNEL_CAPABILITIES,
 } from "@actant/core";
 import type { StreamChunk } from "@actant/core";
 import type { AcpConnectionManager } from "./connection-manager";
 import type { AcpConnection } from "./connection";
 import { AcpCommunicator } from "./communicator";
 
+const ACP_CHANNEL_CAPABILITIES: ChannelCapabilities = {
+  ...DEFAULT_CHANNEL_CAPABILITIES,
+  streaming: true,
+  cancel: true,
+  resume: false,
+  multiSession: true,
+  callbacks: true,
+  needsFileIO: true,
+  needsTerminal: true,
+  needsPermission: true,
+  contentTypes: ["text"],
+};
+
 /**
  * Wraps an existing AcpConnectionManager to satisfy the ActantChannelManager
- * interface.  This is the backward-compatibility bridge used during the #279
- * migration.  Once all backends implement ActantChannelManager natively, this
+ * interface. This is the backward-compatibility bridge used during the #279
+ * migration. Once all backends implement ActantChannelManager natively, this
  * adapter will be removed.
  */
 export class AcpChannelManagerAdapter implements ActantChannelManager {
   constructor(private readonly inner: AcpConnectionManager) {}
 
-  async connect(name: string, options: ChannelConnectOptions): Promise<{ sessionId: string }> {
+  async connect(
+    name: string,
+    options: ChannelConnectOptions,
+    hostServices: ChannelHostServices,
+  ): Promise<{ sessionId: string; capabilities: ChannelCapabilities }> {
     const result = await this.inner.connect(name, {
-      command: options.command,
-      args: options.args,
+      command: options.command ?? "",
+      args: options.args ?? [],
       cwd: options.cwd,
       resolvePackage: options.resolvePackage,
       connectionOptions: {
-        autoApprove: options.connectionOptions?.autoApprove,
-        env: options.connectionOptions?.env,
+        autoApprove: options.autoApprove ?? options.connectionOptions?.autoApprove,
+        env: options.env ?? options.connectionOptions?.env,
       },
       activityRecorder: options.activityRecorder as never,
       mcpServers: options.mcpServers,
       tools: options.tools as never,
       sessionToken: options.sessionToken,
       systemContext: options.systemContext,
+      hostServices,
     });
-    return { sessionId: result.sessionId };
+    return { sessionId: result.sessionId, capabilities: ACP_CHANNEL_CAPABILITIES };
   }
 
   has(name: string): boolean {
@@ -52,6 +73,10 @@ export class AcpChannelManagerAdapter implements ActantChannelManager {
     return this.inner.getPrimarySessionId(name);
   }
 
+  getCapabilities(_name: string): ChannelCapabilities | undefined {
+    return ACP_CHANNEL_CAPABILITIES;
+  }
+
   setCurrentActivitySession(name: string, id: string | null): void {
     this.inner.setCurrentActivitySession(name, id);
   }
@@ -67,10 +92,11 @@ export class AcpChannelManagerAdapter implements ActantChannelManager {
 
 /**
  * Wraps a single AcpConnection + sessionId to satisfy the ActantChannel
- * interface.  Stream mapping reuses the existing AcpCommunicator logic.
+ * interface. Stream mapping reuses the existing AcpCommunicator logic.
  */
 class AcpChannelAdapter implements ActantChannel {
   private readonly communicator: AcpCommunicator;
+  readonly capabilities: ChannelCapabilities = ACP_CHANNEL_CAPABILITIES;
 
   constructor(
     private readonly conn: AcpConnection,

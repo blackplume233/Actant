@@ -1,4 +1,10 @@
-import type { ActantChannel, ActantChannelManager, ChannelConnectOptions } from "./types";
+import type {
+  ActantChannel,
+  ActantChannelManager,
+  ChannelConnectOptions,
+  ChannelCapabilities,
+  ChannelHostServices,
+} from "./types";
 import { RecordingChannelDecorator } from "./recording-channel-decorator";
 import type { RoutingChannelManager } from "./routing-channel-manager";
 import type { RecordSystem } from "../record/record-system";
@@ -18,8 +24,12 @@ export class RecordingChannelManager implements ActantChannelManager {
     private readonly recordSystem: RecordSystem,
   ) {}
 
-  async connect(name: string, options: ChannelConnectOptions): Promise<{ sessionId: string }> {
-    return this.inner.connect(name, options);
+  async connect(
+    name: string,
+    options: ChannelConnectOptions,
+    hostServices: ChannelHostServices,
+  ): Promise<{ sessionId: string; capabilities: ChannelCapabilities }> {
+    return this.inner.connect(name, options, hostServices);
   }
 
   has(name: string): boolean {
@@ -41,6 +51,10 @@ export class RecordingChannelManager implements ActantChannelManager {
 
   getPrimarySessionId(name: string): string | undefined {
     return this.inner.getPrimarySessionId(name);
+  }
+
+  getCapabilities(name: string): ChannelCapabilities | undefined {
+    return this.inner.getCapabilities?.(name) ?? this.inner.getChannel(name)?.capabilities;
   }
 
   setAgentBackend(agentName: string, backendType: string): void {

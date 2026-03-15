@@ -2,6 +2,8 @@ import type {
   ActantChannelManager,
   ActantChannel,
   ChannelConnectOptions,
+  ChannelCapabilities,
+  ChannelHostServices,
 } from "./types";
 
 /**
@@ -39,8 +41,9 @@ export class RoutingChannelManager implements ActantChannelManager {
   async connect(
     name: string,
     options: ChannelConnectOptions,
-  ): Promise<{ sessionId: string }> {
-    return this.resolve(name).connect(name, options);
+    hostServices: ChannelHostServices,
+  ): Promise<{ sessionId: string; capabilities: ChannelCapabilities }> {
+    return this.resolve(name).connect(name, options, hostServices);
   }
 
   has(name: string): boolean {
@@ -53,6 +56,11 @@ export class RoutingChannelManager implements ActantChannelManager {
 
   getPrimarySessionId(name: string): string | undefined {
     return this.resolve(name).getPrimarySessionId(name);
+  }
+
+  getCapabilities(name: string): ChannelCapabilities | undefined {
+    const resolved = this.resolve(name);
+    return resolved.getCapabilities?.(name) ?? resolved.getChannel(name)?.capabilities;
   }
 
   setCurrentActivitySession?(name: string, id: string | null): void {

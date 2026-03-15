@@ -1,4 +1,12 @@
-import type { ActantChannelManager, ActantChannel, ChannelConnectOptions } from "@actant/core";
+import {
+  type ActantChannelManager,
+  type ActantChannel,
+  type ChannelConnectOptions,
+  type ChannelCapabilities,
+  type ChannelHostServices,
+  type McpServerSpec,
+  DEFAULT_CHANNEL_CAPABILITIES,
+} from "@actant/core";
 import { ClaudeChannelAdapter, type ClaudeChannelOptions } from "./claude-channel-adapter.js";
 import { randomUUID } from "node:crypto";
 
@@ -6,7 +14,21 @@ interface ChannelEntry {
   adapter: ClaudeChannelAdapter;
   sessionId: string;
   options: ClaudeChannelOptions;
+  capabilities: ChannelCapabilities;
 }
+
+const CLAUDE_MANAGER_CAPABILITIES: ChannelCapabilities = {
+  ...DEFAULT_CHANNEL_CAPABILITIES,
+  streaming: true,
+  cancel: true,
+  resume: true,
+  structuredOutput: true,
+  thinking: true,
+  dynamicMcp: true,
+  dynamicTools: true,
+  contentTypes: ["text"],
+  extensions: ["hooks", "agents", "effort"],
+};
 
 /**
  * Manages multiple ClaudeChannelAdapter instances keyed by name.
@@ -22,18 +44,16 @@ export class ClaudeChannelManagerAdapter implements ActantChannelManager {
   async connect(
     name: string,
     options: ChannelConnectOptions,
-  ): Promise<{ sessionId: string }> {
+    hostServices: ChannelHostServices,
+  ): Promise<{ sessionId: string; capabilities: ChannelCapabilities }> {
     const sessionId = randomUUID();
 
     const perms = options.permissions;
-    const adapterOpts = (options as unknown as Record<string, unknown>)["adapterOptions"] as
-      | Record<string, unknown>
-      | undefined;
+    const adapterOpts = options.adapterOptions;
 
     const channelOptions: ClaudeChannelOptions = {
       cwd: options.cwd,
       model: adapterOpts?.["model"] as string | undefined,
-      // Permission chain: adapterOptions override > protocol permissions > default
       permissionMode: (adapterOpts?.["permissionMode"] as ClaudeChannelOptions["permissionMode"])
         ?? perms?.mode
         ?? "acceptEdits",
@@ -43,25 +63,37 @@ export class ClaudeChannelManagerAdapter implements ActantChannelManager {
       maxTurns: adapterOpts?.["maxTurns"] as number | undefined,
       thinking: adapterOpts?.["thinking"] as ClaudeChannelOptions["thinking"],
       effort: adapterOpts?.["effort"] as ClaudeChannelOptions["effort"],
-      mcpServers: adapterOpts?.["mcpServers"] as ClaudeChannelOptions["mcpServers"],
+      mcpServers: toClaudeMcpServers(adapterOpts?.["mcpServers"] as ClaudeChannelOptions["mcpServers"] | undefined, options.mcpServers),
       allowedTools:
         (adapterOpts?.["allowedTools"] as string[] | undefined) ?? perms?.allowedTools,
       disallowedTools:
         (adapterOpts?.["disallowedTools"] as string[] | undefined) ?? perms?.disallowedTools,
-      env: options.connectionOptions?.env,
+      env: options.env ?? options.connectionOptions?.env,
       hooks: adapterOpts?.["hooks"] as ClaudeChannelOptions["hooks"],
       agents: adapterOpts?.["agents"] as ClaudeChannelOptions["agents"],
     };
 
-    // Protocol-level tool restriction → SDK tools option
     if (!channelOptions.allowedTools && perms?.tools) {
       channelOptions.allowedTools = perms.tools;
     }
 
     const adapter = new ClaudeChannelAdapter(name, channelOptions);
-    this.channels.set(name, { adapter, sessionId, options: channelOptions });
+    adapter.setCallbackHandler(hostServices);
+    if (options.hostTools?.length) {
+      await adapter.registerHostTools(options.hostTools);
+    }
+    if (options.mcpServers?.length) {
+      await adapter.setMcpServers(Object.fromEntries(options.mcpServers.map((server) => [server.name, server.transport])));
+    }
 
-    return { sessionId };
+    this.channels.set(name, {
+      adapter,
+      sessionId,
+      options: channelOptions,
+      capabilities: CLAUDE_MANAGER_CAPABILITIES,
+    });
+
+    return { sessionId, capabilities: CLAUDE_MANAGER_CAPABILITIES };
   }
 
   has(name: string): boolean {
@@ -76,8 +108,12 @@ export class ClaudeChannelManagerAdapter implements ActantChannelManager {
     return this.channels.get(name)?.sessionId;
   }
 
-  setCurrentActivitySession(_name: string, _id: string | null): void {
-    // Activity recording integration deferred to Phase 2.
+  getCapabilities(name: string): ChannelCapabilities | undefined {
+    return this.channels.get(name)?.capabilities;
+  }
+
+  setCurrentActivitySession(name: string, id: string | null): void {
+    this.channels.get(name)?.adapter.setCurrentActivitySession(id);
   }
 
   async disconnect(name: string): Promise<void> {
@@ -92,4 +128,21 @@ export class ClaudeChannelManagerAdapter implements ActantChannelManager {
     const names = [...this.channels.keys()];
     await Promise.all(names.map((n) => this.disconnect(n)));
   }
+}
+
+function toClaudeMcpServers(
+  adapterServers: ClaudeChannelOptions["mcpServers"] | undefined,
+  protocolServers: McpServerSpec[] | undefined,
+): ClaudeChannelOptions["mcpServers"] | undefined {
+  if (adapterServers) return adapterServers;
+  if (!protocolServers?.length) return undefined;
+  const mapped = protocolServers
+    .filter((server) => server.transport.type === "stdio")
+    .map((server) => ({
+      name: server.name,
+      command: server.transport.command,
+      args: server.transport.args,
+      env: server.transport.env,
+    }));
+  return mapped.length > 0 ? mapped : undefined;
 }

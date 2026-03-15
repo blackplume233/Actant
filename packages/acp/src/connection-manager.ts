@@ -6,7 +6,7 @@ import {
   AcpGatewayNotFoundError,
 } from "@actant/shared";
 import { PermissionPolicyEnforcer, PermissionAuditLogger, type ActivityRecorder } from "@actant/core";
-import type { ActantToolDefinition } from "@actant/core";
+import type { ActantToolDefinition, ChannelHostServices, McpServerSpec } from "@actant/core";
 import { AcpConnection, type AcpConnectionOptions, type AcpSessionInfo, type ClientCallbackHandler } from "./connection";
 import { ClientCallbackRouter } from "./callback-router";
 import { RecordingCallbackHandler } from "./recording-handler";
@@ -21,18 +21,13 @@ export interface ConnectOptions {
   args: string[];
   cwd: string;
   connectionOptions?: AcpConnectionOptions;
-  /** npm package providing the binary (from BackendDescriptor.resolvePackage). */
   resolvePackage?: string;
-  /** When provided, wraps the callback handler with RecordingCallbackHandler for activity recording. */
   activityRecorder?: ActivityRecorder;
-  /** MCP servers to inject into the ACP session via session/new. */
-  mcpServers?: Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }>;
-  /** Internal tools registered via ToolRegistry (for interceptor observation). */
+  mcpServers?: McpServerSpec[];
   tools?: ActantToolDefinition[];
-  /** Per-session token for internal tool auth. Injected as ACTANT_SESSION_TOKEN env. */
   sessionToken?: string;
-  /** System context additions to prepend to the agent's first prompt. */
   systemContext?: string[];
+  hostServices?: ChannelHostServices;
 }
 
 /**
@@ -46,7 +41,6 @@ export class AcpConnectionManager {
   private routers = new Map<string, ClientCallbackRouter>();
   private gateways = new Map<string, AcpGateway>();
   private enforcers = new Map<string, PermissionPolicyEnforcer>();
-  /** RecordingCallbackHandler per agent — used to set the active activity session. */
   private recordingHandlers = new Map<string, RecordingCallbackHandler>();
 
   private cleanupConnectionState(name: string): void {
@@ -69,7 +63,6 @@ export class AcpConnectionManager {
       throw new AcpConnectionAlreadyExistsError(name);
     }
 
-    // Create enforcer if permission policy is provided
     let enforcer: PermissionPolicyEnforcer | undefined;
     let auditLogger: PermissionAuditLogger | undefined;
     if (options.connectionOptions?.permissionPolicy) {
@@ -78,16 +71,16 @@ export class AcpConnectionManager {
       this.enforcers.set(name, enforcer);
     }
 
-    // Build a local-only AcpConnection first; the router wraps it
-    // so we can later attach an IDE upstream without reinitializing.
     const localConn = new AcpConnection(options.connectionOptions);
-
-    // Create a router using the connection's built-in local callbacks as fallback.
-    // We create a "local handler" that is the default AcpConnection behavior.
-    const localHandler: ClientCallbackHandler = buildLocalHandler(localConn, options.connectionOptions, enforcer, auditLogger);
+    const localHandler: ClientCallbackHandler = buildLocalHandler(
+      localConn,
+      options.connectionOptions,
+      enforcer,
+      auditLogger,
+      options.hostServices,
+    );
     const router = new ClientCallbackRouter(localHandler);
 
-    // Attach ToolCallInterceptor for internal tool observation
     if (options.tools && options.tools.length > 0) {
       const interceptor = new ToolCallInterceptor(
         options.tools.map((t) => t.name),
@@ -97,8 +90,6 @@ export class AcpConnectionManager {
       router.setToolCallInterceptor(interceptor);
     }
 
-    // Wrap with RecordingCallbackHandler when activity recording is enabled.
-    // Chain: AcpConnection → RecordingCallbackHandler → ClientCallbackRouter → Local/IDE
     let finalHandler: ClientCallbackHandler = router;
     if (options.activityRecorder) {
       const rh = new RecordingCallbackHandler(router, options.activityRecorder, name);
@@ -106,8 +97,7 @@ export class AcpConnectionManager {
       finalHandler = rh;
     }
 
-    // Inject session token and system context into process environment
-    const MAX_ENV_VALUE_BYTES = 128 * 1024; // 128 KB guard to stay well below OS ARG_MAX
+    const MAX_ENV_VALUE_BYTES = 128 * 1024;
     const extraEnv: Record<string, string> = {};
     if (options.sessionToken) {
       extraEnv["ACTANT_SESSION_TOKEN"] = options.sessionToken;
@@ -149,7 +139,6 @@ export class AcpConnectionManager {
       mergedOptions.env = { ...mergedOptions.env, ...extraEnv };
     }
 
-    // Now create the real connection with the final callback handler
     const connWithRouter = new AcpConnection(mergedOptions);
 
     this.connections.set(name, connWithRouter);
@@ -158,10 +147,9 @@ export class AcpConnectionManager {
     try {
       await connWithRouter.spawn(options.command, options.args, options.cwd, options.resolvePackage);
       await connWithRouter.initialize();
-      const session = await connWithRouter.newSession(options.cwd, options.mcpServers ?? []);
+      const session = await connWithRouter.newSession(options.cwd, toLegacyMcpServers(options.mcpServers));
       this.primarySessions.set(name, session.sessionId);
 
-      // Pre-create a Gateway for this connection (inactive until IDE connects)
       const gateway = new AcpGateway({
         downstream: connWithRouter,
         callbackRouter: router,
@@ -178,10 +166,6 @@ export class AcpConnectionManager {
     }
   }
 
-  /**
-   * Accept an IDE connection on the Gateway for a named agent.
-   * The IDE socket carries ACP protocol messages.
-   */
   acceptLeaseSocket(name: string, socket: Socket): void {
     const gateway = this.gateways.get(name);
     if (!gateway) {
@@ -190,9 +174,6 @@ export class AcpConnectionManager {
     gateway.acceptSocket(socket);
   }
 
-  /**
-   * Disconnect IDE from the Gateway.
-   */
   disconnectLease(name: string): void {
     this.gateways.get(name)?.disconnectUpstream();
   }
@@ -218,19 +199,6 @@ export class AcpConnectionManager {
     return conn != null && conn.isConnected;
   }
 
-  /**
-   * Set the active activity session ID on the agent's RecordingCallbackHandler.
-   *
-   * - **Employee agents**: call once after connecting with the persistent stable
-   *   session ID (read from `meta.metadata.activitySessionId`). This routes ALL
-   *   activity (session updates, file ops, tool calls) to one long-lived session,
-   *   surviving ACP process restarts.
-   * - **Service agents**: call with the chat lease ID before each prompt, then
-   *   call with `null` after. This ensures all activity within one lease maps to
-   *   one conversation record, even if the agent restarts between prompts.
-   *
-   * No-op when no RecordingCallbackHandler is registered (non-managed agents).
-   */
   setCurrentActivitySession(name: string, id: string | null): void {
     this.recordingHandlers.get(name)?.setCurrentSession(id);
   }
@@ -254,10 +222,6 @@ export class AcpConnectionManager {
     logger.info({ count: names.length }, "All ACP connections disposed");
   }
 
-  /**
-   * Update the permission policy for a named connection at runtime.
-   * Propagates to both the AcpConnection and the local handler enforcer.
-   */
   updatePermissionPolicy(name: string, config: PermissionsConfig): void {
     const conn = this.connections.get(name);
     if (conn) {
@@ -270,22 +234,21 @@ export class AcpConnectionManager {
   }
 }
 
-/**
- * Build a local ClientCallbackHandler from connection defaults.
- * This is the "Mode A" handler used when no IDE is connected.
- * When a permissionPolicy is provided, uses PermissionPolicyEnforcer for smart decisions.
- */
 function buildLocalHandler(
   _conn: AcpConnection,
   options?: AcpConnectionOptions,
   enforcer?: PermissionPolicyEnforcer,
   auditLogger?: PermissionAuditLogger,
+  hostServices?: ChannelHostServices,
 ): ClientCallbackHandler {
   const terminalManager = new LocalTerminalManager();
 
   return {
     requestPermission: async (params) => {
-      // Layer 2: Policy-based enforcement
+      if (hostServices?.requestPermission) {
+        return hostServices.requestPermission(params as never) as never;
+      }
+
       if (enforcer && params.options.length > 0) {
         const toolInfo = {
           kind: params.toolCall?.kind ?? undefined,
@@ -301,7 +264,6 @@ function buildLocalHandler(
         }
       }
 
-      // Fallback: legacy autoApprove
       if (options?.autoApprove && params.options.length > 0) {
         const opt = params.options.find(
           (o) => o.kind === "allow_once" || o.kind === "allow_always",
@@ -314,9 +276,13 @@ function buildLocalHandler(
 
     sessionUpdate: async (params) => {
       options?.onSessionUpdate?.(params);
+      await hostServices?.sessionUpdate?.(params.update as never);
     },
 
     readTextFile: async (params) => {
+      if (hostServices?.readTextFile) {
+        return hostServices.readTextFile(params as never) as never;
+      }
       const { readFile } = await import("node:fs/promises");
       const raw = await readFile(params.path, "utf-8");
       if (params.line != null || params.limit != null) {
@@ -329,6 +295,9 @@ function buildLocalHandler(
     },
 
     writeTextFile: async (params) => {
+      if (hostServices?.writeTextFile) {
+        return hostServices.writeTextFile(params as never) as never;
+      }
       const { writeFile, mkdir } = await import("node:fs/promises");
       const { dirname } = await import("node:path");
       await mkdir(dirname(params.path), { recursive: true });
@@ -336,10 +305,34 @@ function buildLocalHandler(
       return {};
     },
 
-    createTerminal: (p) => terminalManager.createTerminal(p),
-    terminalOutput: (p) => terminalManager.terminalOutput(p),
-    waitForTerminalExit: (p) => terminalManager.waitForExit(p),
-    killTerminal: (p) => terminalManager.killTerminal(p),
-    releaseTerminal: (p) => terminalManager.releaseTerminal(p),
+    createTerminal: (p) => hostServices?.createTerminal
+      ? hostServices.createTerminal(p as never) as never
+      : terminalManager.createTerminal(p),
+    terminalOutput: (p) => hostServices?.terminalOutput
+      ? hostServices.terminalOutput(p as never) as never
+      : terminalManager.terminalOutput(p),
+    waitForTerminalExit: (p) => hostServices?.waitForTerminalExit
+      ? hostServices.waitForTerminalExit(p as never) as never
+      : terminalManager.waitForExit(p),
+    killTerminal: (p) => hostServices?.killTerminal
+      ? hostServices.killTerminal(p as never) as never
+      : terminalManager.killTerminal(p),
+    releaseTerminal: (p) => hostServices?.releaseTerminal
+      ? hostServices.releaseTerminal(p as never) as never
+      : terminalManager.releaseTerminal(p),
   };
+}
+
+function toLegacyMcpServers(servers: McpServerSpec[] | undefined): Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }> {
+  if (!servers?.length) return [];
+  return servers
+    .filter((server) => server.transport.type === "stdio")
+    .map((server) => ({
+      name: server.name,
+      command: server.transport.command,
+      args: server.transport.args ?? [],
+      env: server.transport.env
+        ? Object.entries(server.transport.env).map(([envName, value]) => ({ name: envName, value }))
+        : undefined,
+    }));
 }
