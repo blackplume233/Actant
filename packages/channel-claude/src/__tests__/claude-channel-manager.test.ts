@@ -117,6 +117,81 @@ describe("ClaudeChannelManagerAdapter", () => {
     });
   });
 
+  describe("protocol-level permissions flow", () => {
+    it("maps ChannelPermissions.mode to adapter permissionMode", async () => {
+      const opts = makeConnectOptions({
+        permissions: { mode: "bypassPermissions" },
+      });
+      await manager.connect("p1", opts);
+      const channel = manager.getChannel("p1") as ClaudeChannelAdapter;
+      expect(channel).toBeInstanceOf(ClaudeChannelAdapter);
+      // Verify via internal options — the adapter was constructed with the right mode
+      expect((channel as unknown as { options: { permissionMode: string } }).options.permissionMode).toBe("bypassPermissions");
+    });
+
+    it("maps ChannelPermissions.allowedTools to adapter allowedTools", async () => {
+      const opts = makeConnectOptions({
+        permissions: { allowedTools: ["Bash", "WebFetch"] },
+      });
+      await manager.connect("p2", opts);
+      const channel = manager.getChannel("p2") as ClaudeChannelAdapter;
+      const internal = (channel as unknown as { options: { allowedTools?: string[] } }).options;
+      expect(internal.allowedTools).toEqual(["Bash", "WebFetch"]);
+    });
+
+    it("maps ChannelPermissions.disallowedTools to adapter disallowedTools", async () => {
+      const opts = makeConnectOptions({
+        permissions: { disallowedTools: ["WebSearch"] },
+      });
+      await manager.connect("p3", opts);
+      const channel = manager.getChannel("p3") as ClaudeChannelAdapter;
+      const internal = (channel as unknown as { options: { disallowedTools?: string[] } }).options;
+      expect(internal.disallowedTools).toEqual(["WebSearch"]);
+    });
+
+    it("maps ChannelPermissions.tools to adapter allowedTools (tool set restriction)", async () => {
+      const opts = makeConnectOptions({
+        permissions: { tools: ["Read", "Grep", "Glob"] },
+      });
+      await manager.connect("p4", opts);
+      const channel = manager.getChannel("p4") as ClaudeChannelAdapter;
+      const internal = (channel as unknown as { options: { allowedTools?: string[] } }).options;
+      expect(internal.allowedTools).toEqual(["Read", "Grep", "Glob"]);
+    });
+
+    it("adapterOptions override protocol permissions", async () => {
+      const opts = makeConnectOptions({
+        permissions: { mode: "plan", allowedTools: ["Read"] },
+      });
+      (opts as unknown as Record<string, unknown>)["adapterOptions"] = {
+        permissionMode: "bypassPermissions",
+        allowedTools: ["Bash", "Read", "Write"],
+      };
+      await manager.connect("p5", opts);
+      const channel = manager.getChannel("p5") as ClaudeChannelAdapter;
+      const internal = (channel as unknown as { options: Record<string, unknown> }).options;
+      expect(internal.permissionMode).toBe("bypassPermissions");
+      expect(internal.allowedTools).toEqual(["Bash", "Read", "Write"]);
+    });
+
+    it("defaults to acceptEdits when no permissions or adapterOptions", async () => {
+      await manager.connect("p6", makeConnectOptions());
+      const channel = manager.getChannel("p6") as ClaudeChannelAdapter;
+      const internal = (channel as unknown as { options: { permissionMode: string } }).options;
+      expect(internal.permissionMode).toBe("acceptEdits");
+    });
+
+    it("auto-sets allowDangerouslySkipPermissions for bypassPermissions mode", async () => {
+      const opts = makeConnectOptions({
+        permissions: { mode: "bypassPermissions" },
+      });
+      await manager.connect("p7", opts);
+      const channel = manager.getChannel("p7") as ClaudeChannelAdapter;
+      const internal = (channel as unknown as { options: { allowDangerouslySkipPermissions?: boolean } }).options;
+      expect(internal.allowDangerouslySkipPermissions).toBe(true);
+    });
+  });
+
   describe("multiple independent channels", () => {
     it("each channel has its own identity and lifecycle", async () => {
       await manager.connect("alpha", makeConnectOptions({ cwd: "/alpha" }));

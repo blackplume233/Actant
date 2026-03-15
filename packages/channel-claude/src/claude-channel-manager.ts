@@ -25,6 +25,7 @@ export class ClaudeChannelManagerAdapter implements ActantChannelManager {
   ): Promise<{ sessionId: string }> {
     const sessionId = randomUUID();
 
+    const perms = options.permissions;
     const adapterOpts = (options as unknown as Record<string, unknown>)["adapterOptions"] as
       | Record<string, unknown>
       | undefined;
@@ -32,18 +33,30 @@ export class ClaudeChannelManagerAdapter implements ActantChannelManager {
     const channelOptions: ClaudeChannelOptions = {
       cwd: options.cwd,
       model: adapterOpts?.["model"] as string | undefined,
-      permissionMode: (adapterOpts?.["permissionMode"] as ClaudeChannelOptions["permissionMode"]) ?? "acceptEdits",
-      allowDangerouslySkipPermissions: adapterOpts?.["allowDangerouslySkipPermissions"] as boolean | undefined,
+      // Permission chain: adapterOptions override > protocol permissions > default
+      permissionMode: (adapterOpts?.["permissionMode"] as ClaudeChannelOptions["permissionMode"])
+        ?? perms?.mode
+        ?? "acceptEdits",
+      allowDangerouslySkipPermissions:
+        (adapterOpts?.["allowDangerouslySkipPermissions"] as boolean | undefined)
+        ?? (perms?.mode === "bypassPermissions" ? true : undefined),
       maxTurns: adapterOpts?.["maxTurns"] as number | undefined,
       thinking: adapterOpts?.["thinking"] as ClaudeChannelOptions["thinking"],
       effort: adapterOpts?.["effort"] as ClaudeChannelOptions["effort"],
       mcpServers: adapterOpts?.["mcpServers"] as ClaudeChannelOptions["mcpServers"],
-      allowedTools: adapterOpts?.["allowedTools"] as string[] | undefined,
-      disallowedTools: adapterOpts?.["disallowedTools"] as string[] | undefined,
+      allowedTools:
+        (adapterOpts?.["allowedTools"] as string[] | undefined) ?? perms?.allowedTools,
+      disallowedTools:
+        (adapterOpts?.["disallowedTools"] as string[] | undefined) ?? perms?.disallowedTools,
       env: options.connectionOptions?.env,
       hooks: adapterOpts?.["hooks"] as ClaudeChannelOptions["hooks"],
       agents: adapterOpts?.["agents"] as ClaudeChannelOptions["agents"],
     };
+
+    // Protocol-level tool restriction → SDK tools option
+    if (!channelOptions.allowedTools && perms?.tools) {
+      channelOptions.allowedTools = perms.tools;
+    }
 
     const adapter = new ClaudeChannelAdapter(name, channelOptions);
     this.channels.set(name, { adapter, sessionId, options: channelOptions });

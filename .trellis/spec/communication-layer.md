@@ -4,6 +4,8 @@
 > It defines how `repo`, `service`, and `employee` instances expose runtime communication, how external and internal callers route requests, and how Actant presents a stable runtime facade even when the underlying backend is `claude-code` or another adapter.
 > **If code or secondary docs conflict with this document on communication semantics, this document wins.**
 
+> **变更流程**: 通信层协议的任何变更（类型定义、接口签名、行为语义）MUST 先更新本文档及 `docs/design/channel-protocol/` 白皮书，然后再修改代码。详见 [Quality Guidelines §通信层变更流程](backend/quality-guidelines.md#通信层变更流程)。
+
 ---
 
 ## 1. Purpose and Scope

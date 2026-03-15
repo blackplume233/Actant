@@ -393,6 +393,33 @@ export class EmployeeSchedulerImpl {
 
 > **规则**: 任何 PR 如果包含新功能或接口变更，但缺少对应的 spec/类型/配置文档更新，应被 reject。
 
+### 通信层变更流程
+
+> **背景**: 通信协议层（`@actant/core` channel types、`ActantChannel`、`ChannelConnectOptions`、`ChannelPermissions`）是所有 Backend 适配器的契约基础。协议变更的影响面极大——一个字段的语义偏差会导致多个适配器行为不一致。
+
+**通信层协议变更 MUST 按以下顺序执行：**
+
+| 步骤 | 产出 | 位置 |
+|------|------|------|
+| 1 | **更新协议白皮书** | `docs/design/channel-protocol/` 中对应的 `.md`（如 `initialization.md`、`tool-calls.md`） |
+| 2 | **更新通信层 spec** | `.trellis/spec/communication-layer.md` |
+| 3 | **修改协议类型** | `packages/core/src/channel/types.ts` |
+| 4 | **修改 AgentManager 层** | `packages/core/src/manager/agent-manager.ts` 中的连接逻辑 |
+| 5 | **修改适配器实现** | `packages/channel-claude/`、`packages/acp/` 等 |
+| 6 | **添加单元测试** | 验证从 template → connect options → adapter 的完整传递链 |
+
+```typescript
+// Good — 先更新白皮书定义 ChannelPermissions 的语义和适配器映射表，
+//        再修改 types.ts 添加 ChannelPermissions interface，
+//        再修改 agent-manager.ts 注入 permissions，
+//        最后修改 ClaudeChannelManagerAdapter 读取 permissions
+
+// Bad — 直接在 ClaudeChannelAdapter 加 allowedTools 参数，
+//       绕过协议层，导致其他适配器不知道这个约定存在
+```
+
+**Why**: 刚刚的 `ChannelPermissions` 添加过程暴露了这个问题——如果直接在 `adapterOptions` 中透传 `permissionMode`/`allowedTools`，协议层完全不知道权限模型的存在，其他适配器无法受益，新开发者也不知道权限应该从哪里配置。白皮书先行确保所有适配器有一致的实现参照。
+
 ### 项目文件格式约定
 
 项目中不同用途的文件使用不同的标准格式：

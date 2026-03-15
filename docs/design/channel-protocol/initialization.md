@@ -61,11 +61,11 @@ connect(
 interface ChannelConnectOptions {
   cwd: string;
   env?: Record<string, string>;
+  permissions?: ChannelPermissions;
   autoApprove?: boolean;
   systemContext?: string[];
   mcpServers?: McpServerSpec[];
   hostTools?: HostToolDefinition[];
-  toolPolicy?: ToolPolicy;
   command?: string;          // ACP compat
   args?: string[];           // ACP compat
   resolvePackage?: string;   // ACP compat
@@ -79,22 +79,128 @@ interface ChannelConnectOptions {
 |------|------|------|---------|------|
 | cwd | string | Yes | Core | Backend 工作目录，所有相对路径以此为基准 |
 | env | Record<string, string> | No | Core | 传递给 Backend 进程的环境变量 |
-| autoApprove | boolean | No | Core | 是否自动审批所有权限请求，默认 false |
+| **permissions** | **ChannelPermissions** | **No** | **Core** | **协议级权限声明，控制 Backend 工具执行策略。从 template `permissions` 解析。详见下方。** |
+| autoApprove | boolean | No | Core | 是否自动审批所有权限请求，默认 false。当 `permissions.mode` 为 `bypassPermissions` 时自动设为 true。 |
 | systemContext | string[] | No | Core | 注入到 Backend 的系统上下文（system message 片段） |
 | mcpServers | McpServerSpec[] | No | Core | MCP 服务器配置，Host 提供，Backend 负责连接和使用 |
 | hostTools | HostToolDefinition[] | No | Extended | Host 提供的工具定义，执行时通过 `executeTool` 回调 Host |
-| toolPolicy | ToolPolicy | No | Extended | 工具策略（白名单、黑名单、自动审批） |
 | command | string | No | ACP-compat | ACP Binary 命令，仅 AcpChannelAdapter 使用 |
 | args | string[] | No | ACP-compat | ACP Binary 参数 |
 | resolvePackage | string | No | ACP-compat | npm 包名，用于 binary 自动解析 |
 | adapterOptions | Record<string, unknown> | No | Extended | 适配器自行解读的扩展选项，协议层不解读，直接透传 |
+
+---
+
+## ChannelPermissions
+
+### 概述
+
+`ChannelPermissions` 是 **协议级权限声明**，作为 `ChannelConnectOptions.permissions` 传递。它是所有 Backend 必须遵守的工具执行约束。
+
+权限从 Agent Template 的 `permissions` 字段解析，经过 `resolvePermissions()` 后转换为 `ChannelPermissions`，在 `AgentManager.connect*Channel()` 时注入 `ChannelConnectOptions`。
+
+### 数据流
+
+```
+AgentTemplate.permissions (PermissionsInput)
+       │
+       ▼  resolvePermissions()
+PermissionsConfig (on AgentInstanceMeta.effectivePermissions)
+       │
+       ▼  toChannelPermissions()
+ChannelPermissions (on ChannelConnectOptions.permissions)
+       │
+       ▼  Backend Adapter
+Backend-specific permission mapping
+(e.g. Claude SDK allowedTools, Pi permissionConfig, ACP autoApprove)
+```
+
+### 接口定义
+
+```typescript
+type ChannelPermissionMode =
+  | "default"         // Backend 自行决定（通常交互式审批）
+  | "acceptEdits"     // 自动批准文件读写，其余需要审批
+  | "plan"            // 只读分析模式
+  | "bypassPermissions"  // 自动批准所有工具（危险）
+  | "dontAsk";        // 拒绝一切需要审批的操作
+
+interface ChannelPermissions {
+  mode?: ChannelPermissionMode;       // 基础权限模式，默认 "acceptEdits"
+  allowedTools?: string[];            // 白名单：列出的工具自动执行无需确认
+  disallowedTools?: string[];         // 黑名单：列出的工具完全移除
+  tools?: string[];                   // 工具集限制：仅这些工具可用
+  additionalDirectories?: string[];   // 额外可访问的文件系统目录
+  sandbox?: {
+    enabled?: boolean;
+    allowedDomains?: string[];
+  };
+}
+```
+
+### 字段说明
+
+| 字段 | 类型 | 默认 | 描述 |
+|------|------|------|------|
+| mode | ChannelPermissionMode | `"acceptEdits"` | 控制工具执行的基础策略 |
+| allowedTools | string[] | — | 白名单工具列表。列出的工具自动批准执行，不触发权限请求。优先于 `mode` |
+| disallowedTools | string[] | — | 黑名单工具列表。Backend MUST NOT 将这些工具暴露给 LLM |
+| tools | string[] | — | 工具集限制。设定后仅列出的工具可用，其余全部移除。与 `disallowedTools` 意图互斥（同时设定时 `tools` 优先） |
+| additionalDirectories | string[] | — | 额外可访问目录。Backend-specific，例如 Claude Code 的 `additionalDirectories` |
+| sandbox | object | — | 沙箱配置 |
+
+### 适配器映射
+
+| Protocol 字段 | Claude SDK | ACP | Pi |
+|---------------|-----------|-----|-----|
+| `mode` | `permissionMode` | `autoApprove` (boolean) | `permissionConfig.mode` |
+| `allowedTools` | `allowedTools` | CLI `--auto-approve` | `permissionConfig.allow` |
+| `disallowedTools` | `disallowedTools` | N/A | `permissionConfig.deny` |
+| `tools` | `tools` (base tool set) | N/A | N/A |
+| `additionalDirectories` | `additionalDirectories` | N/A | N/A |
+| `sandbox` | Claude Code sandbox settings | N/A | N/A |
+
+### 示例
+
+```typescript
+// 1. 只读分析 agent
+permissions: {
+  mode: "plan",
+  tools: ["Read", "Grep", "Glob"],
+}
+
+// 2. 全功能 agent，自动批准 Bash 和网络
+permissions: {
+  mode: "acceptEdits",
+  allowedTools: ["Bash", "Read", "Write", "Edit", "WebFetch", "WebSearch"],
+}
+
+// 3. 禁止网络访问
+permissions: {
+  mode: "acceptEdits",
+  disallowedTools: ["WebFetch", "WebSearch"],
+}
+
+// 4. 完全自动化（employee agent）
+permissions: {
+  mode: "bypassPermissions",
+}
+```
+
+### 与 adapterOptions 的关系
+
+`ChannelPermissions` 是协议层的 **标准字段**，所有适配器 MUST 实现。`adapterOptions` 中的权限相关字段（如 `permissionMode`、`allowedTools`）作为 **适配器级覆盖**，优先级高于协议级声明。
+
+优先级链：`adapterOptions > ChannelPermissions > Backend default`
+
+---
 
 ### adapterOptions 示例
 
 | 适配器 | 示例字段 |
 |--------|----------|
 | AcpChannelAdapter | `{ connectionOptions, activityRecorder, sessionToken }` |
-| ClaudeChannelAdapter | `{ model, permissionMode, hooks, agents, thinking, effort }` |
+| ClaudeChannelAdapter | `{ model, hooks, agents, thinking, effort }` |
 | PiChannelAdapter | `{ personality, voiceMode }` |
 
 ---

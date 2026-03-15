@@ -26,15 +26,31 @@ import { scanInstances, updateInstanceMeta } from "../state/index";
 import type { InstanceRegistryAdapter } from "../state/instance-registry-types";
 import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
 import { createCommunicator } from "../communicator/create-communicator";
-import type { ActantChannelManager, ActantChannel } from "../channel/types";
+import type { ActantChannelManager, ActantChannel, ChannelPermissions } from "../channel/types";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../provider/provider-env-resolver";
 import type { HookEventBus } from "../hooks/hook-event-bus";
 import type { ActivityRecorder } from "../activity/activity-recorder";
 import type { SessionContextInjector } from "../context-injector/session-context-injector";
 import type { SystemBudgetManager } from "../budget/system-budget-manager";
+import type { PermissionsConfig } from "@actant/shared";
 
 const logger = createLogger("agent-manager");
+
+/**
+ * Resolve the persisted PermissionsConfig on an agent instance into
+ * the protocol-level ChannelPermissions.
+ */
+function toChannelPermissions(p: PermissionsConfig | undefined): ChannelPermissions | undefined {
+  if (!p) return undefined;
+  return {
+    mode: p.defaultMode ?? "acceptEdits",
+    allowedTools: p.allow?.includes("*") ? undefined : p.allow,
+    disallowedTools: p.deny,
+    additionalDirectories: p.additionalDirectories,
+    sandbox: p.sandbox ? { enabled: p.sandbox.enabled, allowedDomains: p.sandbox.network?.allowedDomains } : undefined,
+  };
+}
 
 /**
  * @deprecated Use ActantChannelManager from channel/types instead.
@@ -461,6 +477,7 @@ export class AgentManager {
       command: "",
       args: [],
       cwd: workspaceDir,
+      permissions: toChannelPermissions(meta.effectivePermissions),
       connectionOptions: {
         autoApprove: true,
         ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
@@ -508,6 +525,7 @@ export class AgentManager {
       args: acpResolved.args,
       cwd: dir,
       resolvePackage: acpResolved.resolvePackage,
+      permissions: toChannelPermissions(meta.effectivePermissions),
       connectionOptions: {
         autoApprove: true,
         ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
@@ -871,18 +889,8 @@ export class AgentManager {
       const sessionId = this.channelManager.getPrimarySessionId(name);
       if (conn && sessionId) {
         logger.debug({ name, sessionId }, "Sending prompt via ACP");
-        if (this.activityRecorder) {
-          const packed = await this.activityRecorder.packContent(name, prompt);
-          this.activityRecorder.record(name, sessionId, { type: "prompt_sent", data: packed })
-            .catch(() => {});
-        }
+        // prompt_sent/prompt_complete are recorded by RecordingChannelDecorator
         const acpResult = await conn.prompt(sessionId, prompt);
-        if (this.activityRecorder) {
-          this.activityRecorder.record(name, sessionId, {
-            type: "prompt_complete",
-            data: { stopReason: acpResult.stopReason },
-          }).catch(() => {});
-        }
         result = { text: acpResult.text, sessionId };
       } else {
         const dir = join(this.instancesBaseDir, name);
@@ -1020,11 +1028,7 @@ export class AgentManager {
       sessionId: targetSessionId,
     });
 
-    if (this.activityRecorder) {
-      const packed = await this.activityRecorder.packContent(name, message);
-      this.activityRecorder.record(name, activitySessionId, { type: "prompt_sent", data: packed })
-        .catch(() => {});
-    }
+    // prompt_sent/prompt_complete are recorded by RecordingChannelDecorator
 
     const PROMPT_TIMEOUT_MS = 300_000;
     const promptPromise = conn.prompt(targetSessionId, message);
@@ -1044,13 +1048,6 @@ export class AgentManager {
         "error.code": "PROMPT_FAILED",
       });
       throw err;
-    }
-
-    if (this.activityRecorder) {
-      this.activityRecorder.record(name, activitySessionId, {
-        type: "prompt_complete",
-        data: { stopReason: result.stopReason },
-      }).catch(() => {});
     }
 
     // For service agents with a per-prompt override, clear the recording handler
