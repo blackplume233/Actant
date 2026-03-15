@@ -1,6 +1,6 @@
 {
   "name": "@actant/api",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "High-level API for the Actant AI agent platform",
   "type": "module",
   "license": "MIT",
@@ -40,10 +40,10 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@actant/acp": "workspace:*",
-    "@actant/channel-claude": "workspace:*",
-    "@actant/core": "workspace:*",
-    "@actant/pi": "workspace:*",
-    "@actant/shared": "workspace:*"
+    "@actant/acp": "workspace:0.3.0",
+    "@actant/channel-claude": "workspace:0.3.0",
+    "@actant/core": "workspace:0.3.0",
+    "@actant/pi": "workspace:0.3.0",
+    "@actant/shared": "workspace:0.3.0"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@actant/core",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Core runtime engine for the Actant AI agent platform",
   "type": "module",
   "license": "MIT",
@@ -41,7 +41,7 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@actant/shared": "workspace:*",
+    "@actant/shared": "workspace:0.3.0",
     "croner": "^9.0.0",
     "picomatch": "^4.0.3",
     "zod": "^4.3.6"

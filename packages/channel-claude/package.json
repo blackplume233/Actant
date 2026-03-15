@@ -1,6 +1,6 @@
 {
   "name": "@actant/channel-claude",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Claude Agent SDK channel adapter for the Actant platform",
   "type": "module",
   "license": "MIT",
@@ -45,9 +45,9 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@actant/core": "workspace:*",
-    "@actant/shared": "workspace:*",
-    "@actant/tui": "workspace:*",
+    "@actant/core": "workspace:0.3.0",
+    "@actant/shared": "workspace:0.3.0",
+    "@actant/tui": "workspace:0.3.0",
     "@anthropic-ai/claude-agent-sdk": "^0.2.0"
   }
 }
