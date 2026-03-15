@@ -91,14 +91,61 @@ export class RecordingChannelDecorator implements ActantChannel {
     return this.inner.cancel(sessionId);
   }
 
-  newSession = this.inner.newSession?.bind(this.inner);
-  resumeSession = this.inner.resumeSession?.bind(this.inner);
-  configure = this.inner.configure?.bind(this.inner);
-  setMcpServers = this.inner.setMcpServers?.bind(this.inner);
-  getMcpStatus = this.inner.getMcpStatus?.bind(this.inner);
-  registerHostTools = this.inner.registerHostTools?.bind(this.inner);
-  unregisterHostTools = this.inner.unregisterHostTools?.bind(this.inner);
-  setCallbackHandler = this.inner.setCallbackHandler?.bind(this.inner);
+  async newSession(options?: Parameters<NonNullable<ActantChannel["newSession"]>>[0]) {
+    if (!this.inner.newSession) {
+      throw new Error("newSession is not supported by the wrapped channel");
+    }
+    return this.inner.newSession(options);
+  }
+
+  async resumeSession(options: Parameters<NonNullable<ActantChannel["resumeSession"]>>[0]) {
+    if (!this.inner.resumeSession) {
+      throw new Error("resumeSession is not supported by the wrapped channel");
+    }
+    return this.inner.resumeSession(options);
+  }
+
+  async configure(options: Parameters<NonNullable<ActantChannel["configure"]>>[0]) {
+    if (!this.inner.configure) {
+      throw new Error("configure is not supported by the wrapped channel");
+    }
+    return this.inner.configure(options);
+  }
+
+  async setMcpServers(servers: Parameters<NonNullable<ActantChannel["setMcpServers"]>>[0]) {
+    if (!this.inner.setMcpServers) {
+      throw new Error("setMcpServers is not supported by the wrapped channel");
+    }
+    return this.inner.setMcpServers(servers);
+  }
+
+  async getMcpStatus() {
+    if (!this.inner.getMcpStatus) {
+      throw new Error("getMcpStatus is not supported by the wrapped channel");
+    }
+    return this.inner.getMcpStatus();
+  }
+
+  async registerHostTools(tools: Parameters<NonNullable<ActantChannel["registerHostTools"]>>[0]) {
+    if (!this.inner.registerHostTools) {
+      throw new Error("registerHostTools is not supported by the wrapped channel");
+    }
+    return this.inner.registerHostTools(tools);
+  }
+
+  async unregisterHostTools(toolNames: Parameters<NonNullable<ActantChannel["unregisterHostTools"]>>[0]) {
+    if (!this.inner.unregisterHostTools) {
+      throw new Error("unregisterHostTools is not supported by the wrapped channel");
+    }
+    return this.inner.unregisterHostTools(toolNames);
+  }
+
+  setCallbackHandler(hostServices: Parameters<NonNullable<ActantChannel["setCallbackHandler"]>>[0]) {
+    if (!this.inner.setCallbackHandler) {
+      throw new Error("setCallbackHandler is not supported by the wrapped channel");
+    }
+    return this.inner.setCallbackHandler(hostServices);
+  }
 
   private recordEvent(activitySid: string, event: NonNullable<StreamChunk["event"]>): void {
     const mapped = channelEventToRecordEntry(event);

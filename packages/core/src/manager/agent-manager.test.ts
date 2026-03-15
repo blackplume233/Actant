@@ -664,8 +664,8 @@ describe("AgentManager", () => {
         has: vi.fn().mockReturnValue(false),
         getPrimarySessionId: vi.fn(),
         getConnection: vi.fn(),
-        disconnect: vi.fn(),
-        disposeAll: vi.fn(),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        disposeAll: vi.fn().mockResolvedValue(undefined),
       };
 
       const acpManager = new AgentManager(initializer, launcher, tmpDir, {
@@ -688,8 +688,8 @@ describe("AgentManager", () => {
         has: vi.fn().mockReturnValue(false),
         getPrimarySessionId: vi.fn(),
         getConnection: vi.fn(),
-        disconnect: vi.fn(),
-        disposeAll: vi.fn(),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        disposeAll: vi.fn().mockResolvedValue(undefined),
       };
 
       const acpManager = new AgentManager(initializer, launcher, tmpDir, {

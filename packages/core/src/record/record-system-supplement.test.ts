@@ -7,8 +7,8 @@
  * 4. Blob storage round-trip with RecordSystem
  * 5. HookEventBus → RecordSystem bridge
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mkdtemp, rm, readFile } from "node:fs/promises";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { RecordSystem } from "./record-system";
@@ -71,7 +71,7 @@ describe("RecordSystem — Supplementary Gap Coverage", () => {
       expect(sessions.length).toBeGreaterThanOrEqual(1);
       const s = sessions.find((s) => s.conversationId === "conv-1");
       expect(s).toBeDefined();
-      expect(s!.state).toBe("idle");
+      expect(s?.state).toBe("idle");
     });
 
     it("handles HookEventBus payload wrapping in session events", async () => {
@@ -126,12 +126,14 @@ describe("RecordSystem — Supplementary Gap Coverage", () => {
 
       const legacy = rs.getSessionsLegacy("a");
       expect(legacy).toHaveLength(1);
-      expect(legacy[0]).not.toHaveProperty("platformEventCount");
-      expect(legacy[0]).toHaveProperty("messageCount", 1);
-      expect(legacy[0]).toHaveProperty("recordCount", 2);
-      expect(legacy[0]).toHaveProperty("sessionId", "s1");
-      expect(legacy[0]).toHaveProperty("agentName", "a");
-      expect(legacy[0]).toHaveProperty("startTs");
+      const firstSession = legacy[0];
+      expect(firstSession).toBeDefined();
+      expect(firstSession).not.toHaveProperty("platformEventCount");
+      expect(firstSession).toHaveProperty("messageCount", 1);
+      expect(firstSession).toHaveProperty("recordCount", 2);
+      expect(firstSession).toHaveProperty("sessionId", "s1");
+      expect(firstSession).toHaveProperty("agentName", "a");
+      expect(firstSession).toHaveProperty("startTs");
     });
   });
 
@@ -160,7 +162,8 @@ describe("RecordSystem — Supplementary Gap Coverage", () => {
       });
 
       expect(count).toBe(1);
-      const e = entries[0] as Record<string, unknown>;
+      const e = entries[0] as Record<string, unknown> | undefined;
+      expect(e).toBeDefined();
       expect(e).toHaveProperty("seq");
       expect(e).toHaveProperty("ts");
       expect(e).toHaveProperty("category", "session");
@@ -234,7 +237,7 @@ describe("RecordSystem — Supplementary Gap Coverage", () => {
       expect(entries.length).toBeGreaterThanOrEqual(1);
       const agentCreated = entries.find((e) => e.type === "agent:created");
       expect(agentCreated).toBeDefined();
-      expect(agentCreated!.agentName).toBe("test-agent");
+      expect(agentCreated?.agentName).toBe("test-agent");
 
       bus.dispose();
     });
@@ -251,7 +254,9 @@ describe("RecordSystem — Supplementary Gap Coverage", () => {
 
       const { records } = await rs.queryAgent("my-agent", "_lifecycle");
       expect(records.length).toBeGreaterThanOrEqual(1);
-      expect(records[0].type).toBe("process:start");
+      const firstRecord = records[0];
+      expect(firstRecord).toBeDefined();
+      expect(firstRecord?.type).toBe("process:start");
 
       bus.dispose();
     });
@@ -269,7 +274,9 @@ describe("RecordSystem — Supplementary Gap Coverage", () => {
 
       const { records } = await rs.queryAgent("routed-agent", "active-session-123");
       expect(records.length).toBeGreaterThanOrEqual(1);
-      expect(records[0].type).toBe("prompt:before");
+      const firstRecord = records[0];
+      expect(firstRecord).toBeDefined();
+      expect(firstRecord?.type).toBe("prompt:before");
 
       bus.dispose();
     });

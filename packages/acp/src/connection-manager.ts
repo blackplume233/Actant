@@ -325,14 +325,17 @@ function buildLocalHandler(
 
 function toLegacyMcpServers(servers: McpServerSpec[] | undefined): Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }> {
   if (!servers?.length) return [];
-  return servers
-    .filter((server) => server.transport.type === "stdio")
-    .map((server) => ({
+  return servers.reduce<Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }>>((acc, server) => {
+    const t = server.transport;
+    if (t.type !== "stdio") return acc;
+    acc.push({
       name: server.name,
-      command: server.transport.command,
-      args: server.transport.args ?? [],
-      env: server.transport.env
-        ? Object.entries(server.transport.env).map(([envName, value]) => ({ name: envName, value }))
+      command: t.command,
+      args: t.args ?? [],
+      env: t.env
+        ? Object.entries(t.env).map(([envName, value]) => ({ name: envName, value }))
         : undefined,
-    }));
+    });
+    return acc;
+  }, []);
 }

@@ -132,8 +132,7 @@ export interface WriteTextFileRequest {
   content: string;
 }
 
-export interface WriteTextFileResponse {
-}
+export type WriteTextFileResponse = Record<string, never>;
 
 export interface RequestPermissionRequest {
   sessionId: string;
@@ -195,16 +194,14 @@ export interface KillTerminalCommandRequest {
   terminalId: string;
 }
 
-export interface KillTerminalCommandResponse {
-}
+export type KillTerminalCommandResponse = Record<string, never>;
 
 export interface ReleaseTerminalRequest {
   sessionId: string;
   terminalId: string;
 }
 
-export interface ReleaseTerminalResponse {
-}
+export type ReleaseTerminalResponse = Record<string, never>;
 
 export interface ChannelHostServices {
   sessionUpdate?(event: ChannelEvent): Promise<void>;

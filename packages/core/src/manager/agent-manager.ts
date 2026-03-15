@@ -26,7 +26,7 @@ import { scanInstances, updateInstanceMeta } from "../state/index";
 import type { InstanceRegistryAdapter } from "../state/instance-registry-types";
 import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
 import { createCommunicator } from "../communicator/create-communicator";
-import type { ActantChannelManager, ActantChannel, ChannelPermissions, ChannelCapabilities, ChannelHostServices } from "../channel/types";
+import type { ActantChannelManager, ActantChannel, ChannelPermissions, ChannelCapabilities, ChannelHostServices, McpServerSpec } from "../channel/types";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../provider/provider-env-resolver";
 import type { HookEventBus } from "../hooks/hook-event-bus";
@@ -52,26 +52,58 @@ function toChannelPermissions(p: PermissionsConfig | undefined): ChannelPermissi
   };
 }
 
+
+function toLegacyMcpServers(
+  servers: McpServerSpec[] | undefined,
+): Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }> | undefined {
+  if (!servers) return undefined;
+  return servers.flatMap((server) => {
+    if (server.transport.type !== "stdio") {
+      return [];
+    }
+    return [{
+      name: server.name,
+      command: server.transport.command,
+      args: server.transport.args ?? [],
+      env: server.transport.env
+        ? Object.entries(server.transport.env).map(([name, value]) => ({ name, value }))
+        : undefined,
+    }];
+  });
+}
+
+function getChannelCapabilities(
+  manager: ActantChannelManager | AcpConnectionManagerLike | undefined,
+  name: string,
+): ChannelCapabilities | undefined {
+  if (!manager || !("getCapabilities" in manager)) {
+    return undefined;
+  }
+  return manager.getCapabilities?.(name);
+}
+
+interface LegacyChannelConnectOptions {
+  command: string;
+  args: string[];
+  cwd: string;
+  resolvePackage?: string;
+  connectionOptions?: {
+    autoApprove?: boolean;
+    env?: Record<string, string>;
+  };
+  activityRecorder?: unknown;
+  mcpServers?: Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }>;
+  tools?: Array<{ name: string; description: string; parameters: Record<string, unknown>; rpcMethod: string; scope: string; context?: string }>;
+  sessionToken?: string;
+  systemContext?: string[];
+}
+
 /**
  * @deprecated Use ActantChannelManager from channel/types instead.
  * Kept during migration — existing AcpConnectionManager implements this shape.
  */
 export interface AcpConnectionManagerLike {
-  connect(name: string, options: {
-    command: string;
-    args: string[];
-    cwd: string;
-    resolvePackage?: string;
-    connectionOptions?: {
-      autoApprove?: boolean;
-      env?: Record<string, string>;
-    };
-    activityRecorder?: unknown;
-    mcpServers?: Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }>;
-    tools?: Array<{ name: string; description: string; parameters: Record<string, unknown>; rpcMethod: string; scope: string; context?: string }>;
-    sessionToken?: string;
-    systemContext?: string[];
-  }): Promise<{ sessionId: string }>;
+  connect(name: string, options: LegacyChannelConnectOptions): Promise<{ sessionId: string }>;
   setCurrentActivitySession?(name: string, id: string | null): void;
   has(name: string): boolean;
   getPrimarySessionId(name: string): string | undefined;
@@ -147,7 +179,7 @@ export class AgentManager {
   private buildHostServices(name: string): ChannelHostServices {
     return {
       sessionUpdate: async (event) => {
-        this.eventBus?.emit("session:update", { callerType: "system", callerId: "AgentManager" }, name, {
+        this.eventBus?.emit("session:start", { callerType: "system", callerId: "AgentManager" }, name, {
           sessionId: event.sessionId,
           type: event.type,
         });
@@ -162,6 +194,12 @@ export class AgentManager {
     if (capabilities) {
       this.channelCapabilities.set(name, capabilities);
     }
+  }
+
+  private isModernChannelManager(
+    manager: ActantChannelManager | AcpConnectionManagerLike,
+  ): manager is ActantChannelManager {
+    return "getChannel" in manager;
   }
 
   /**
@@ -452,8 +490,9 @@ export class AgentManager {
         });
         this.processes.delete(name);
       }
-      if (this.resolveChannel(name)) {
-        await this.channelManager!.disconnect(name).catch(() => {});
+      const channelManager = this.channelManager;
+      if (channelManager) {
+        await Promise.resolve(channelManager.disconnect(name)).catch(() => {});
       }
       const errored = await updateInstanceMeta(dir, { status: "error", pid: undefined });
       this.cache.set(name, errored);
@@ -482,7 +521,11 @@ export class AgentManager {
     starting: AgentInstanceMeta,
     meta: AgentInstanceMeta,
   ): Promise<void> {
-    if (!this.channelManager) return;
+    const channelManager = this.channelManager;
+    if (!channelManager) return;
+    if (!this.isModernChannelManager(channelManager)) {
+      return;
+    }
 
     const backendEnvBuilder = getBuildProviderEnv(meta.backendType);
     const providerEnv = backendEnvBuilder
@@ -492,10 +535,19 @@ export class AgentManager {
     const sessionCtx = this.sessionContextInjector
       ? await this.sessionContextInjector.prepare(name, meta)
       : undefined;
+    const modernMcpServers: McpServerSpec[] | undefined = sessionCtx?.mcpServers?.map((server) => ({
+      name: server.name,
+      transport: {
+        type: "stdio",
+        command: server.command,
+        args: server.args,
+        env: server.env ? Object.fromEntries(server.env.map((item) => [item.name, item.value])) : undefined,
+      },
+    }));
 
     const workspaceDir = meta.workspaceDir ?? dir;
 
-    const connResult = await this.channelManager.connect(name, {
+    const connResult = await channelManager.connect(name, {
       command: "",
       args: [],
       cwd: workspaceDir,
@@ -507,15 +559,7 @@ export class AgentManager {
         ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
       },
       activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
-      mcpServers: sessionCtx?.mcpServers?.map((server) => ({
-        name: server.name,
-        transport: {
-          type: "stdio",
-          command: server.command,
-          args: server.args,
-          env: server.env ? Object.fromEntries(server.env.map((item) => [item.name, item.value])) : undefined,
-        },
-      })),
+      mcpServers: modernMcpServers,
       hostTools: sessionCtx?.tools?.map((tool) => ({
         name: tool.name,
         description: tool.description,
@@ -528,11 +572,11 @@ export class AgentManager {
       systemContext: sessionCtx?.systemContextAdditions,
     }, this.buildHostServices(name));
 
-    this.rememberChannelCapabilities(name, connResult.capabilities);
+    this.rememberChannelCapabilities(name, getChannelCapabilities(channelManager, name));
 
     if (starting.launchMode === "acp-background" && meta.processOwnership === "managed") {
       const conversationId = await this.getOrCreateEmployeeConversation(name);
-      this.channelManager.setCurrentActivitySession?.(name, conversationId);
+      channelManager.setCurrentActivitySession?.(name, conversationId);
       logger.info({ name, conversationId }, "Employee conversation session set");
     }
 
@@ -560,46 +604,72 @@ export class AgentManager {
     const sessionCtx = this.sessionContextInjector
       ? await this.sessionContextInjector.prepare(name, meta)
       : undefined;
-
-    const connResult = await this.channelManager!.connect(name, {
-      command: acpResolved.command,
-      args: acpResolved.args,
-      cwd: dir,
-      resolvePackage: acpResolved.resolvePackage,
-      env: Object.keys(providerEnv).length > 0 ? providerEnv : undefined,
-      autoApprove: true,
-      permissions: toChannelPermissions(meta.effectivePermissions),
-      connectionOptions: {
-        autoApprove: true,
-        ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
+    const modernMcpServers: McpServerSpec[] | undefined = sessionCtx?.mcpServers?.map((server) => ({
+      name: server.name,
+      transport: {
+        type: "stdio",
+        command: server.command,
+        args: server.args,
+        env: server.env ? Object.fromEntries(server.env.map((item) => [item.name, item.value])) : undefined,
       },
-      activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
-      mcpServers: sessionCtx?.mcpServers?.map((server) => ({
-        name: server.name,
-        transport: {
-          type: "stdio",
-          command: server.command,
-          args: server.args,
-          env: server.env ? Object.fromEntries(server.env.map((item) => [item.name, item.value])) : undefined,
-        },
-      })),
-      hostTools: sessionCtx?.tools?.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters,
-        scope: tool.scope as "all" | "service" | "employee" | undefined,
-        instructions: tool.context,
-      })),
-      tools: sessionCtx?.tools,
-      sessionToken: sessionCtx?.token,
-      systemContext: sessionCtx?.systemContextAdditions,
-    }, this.buildHostServices(name));
+    }));
+    const legacyMcpServers = toLegacyMcpServers(modernMcpServers);
 
-    this.rememberChannelCapabilities(name, (connResult as { capabilities?: ChannelCapabilities }).capabilities);
+    const channelManager = this.channelManager;
+    if (!channelManager) {
+      throw new AgentLaunchError(name, new Error("Channel manager is required to connect ACP backends"));
+    }
+
+    let connResult: { sessionId: string };
+    if (this.isModernChannelManager(channelManager)) {
+      connResult = await channelManager.connect(name, {
+        command: acpResolved.command,
+        args: acpResolved.args,
+        cwd: dir,
+        resolvePackage: acpResolved.resolvePackage,
+        env: Object.keys(providerEnv).length > 0 ? providerEnv : undefined,
+        autoApprove: true,
+        permissions: toChannelPermissions(meta.effectivePermissions),
+        connectionOptions: {
+          autoApprove: true,
+          ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
+        },
+        activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
+        mcpServers: modernMcpServers,
+        hostTools: sessionCtx?.tools?.map((tool) => ({
+          name: tool.name,
+          description: tool.description,
+          parameters: tool.parameters,
+          scope: tool.scope as "all" | "service" | "employee" | undefined,
+          instructions: tool.context,
+        })),
+        tools: sessionCtx?.tools,
+        sessionToken: sessionCtx?.token,
+        systemContext: sessionCtx?.systemContextAdditions,
+      }, this.buildHostServices(name));
+    } else {
+      connResult = await channelManager.connect(name, {
+        command: acpResolved.command,
+        args: acpResolved.args,
+        cwd: dir,
+        resolvePackage: acpResolved.resolvePackage,
+        connectionOptions: {
+          autoApprove: true,
+          ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
+        },
+        activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
+        mcpServers: legacyMcpServers,
+        tools: sessionCtx?.tools,
+        sessionToken: sessionCtx?.token,
+        systemContext: sessionCtx?.systemContextAdditions,
+      });
+    }
+
+    this.rememberChannelCapabilities(name, getChannelCapabilities(channelManager, name));
 
     if (starting.launchMode === "acp-background" && meta.processOwnership === "managed") {
       const conversationId = await this.getOrCreateEmployeeConversation(name);
-      this.channelManager!.setCurrentActivitySession?.(name, conversationId);
+      channelManager.setCurrentActivitySession?.(name, conversationId);
       logger.info({ name, conversationId }, "Employee conversation session set");
     }
     logger.info({ name, strategy: "acp", providerType: meta.providerConfig?.type }, "ACP connection established");
@@ -688,12 +758,13 @@ export class AgentManager {
 
     this.sessionContextInjector?.revokeTokens?.(name);
 
-    if (this.resolveChannel(name)) {
+    const channelManager = this.channelManager;
+    if (channelManager && this.resolveChannel(name)) {
       this.eventBus?.emit("session:end", { callerType: "system", callerId: "AgentManager" }, name, {
         sessionId: "primary",
         reason: "agent-stop",
       });
-      await this.channelManager!.disconnect(name).catch((err) => {
+      await channelManager.disconnect(name).catch((err: unknown) => {
         logger.warn({ name, error: err }, "Error disconnecting channel during stop");
       });
       this.channelCapabilities.delete(name);
@@ -1212,12 +1283,13 @@ export class AgentManager {
     this.watcher.unwatch(instanceName);
     this.sessionContextInjector?.revokeTokens?.(instanceName);
 
-    if (this.resolveChannel(instanceName)) {
+    const channelManager = this.channelManager;
+    if (channelManager && this.resolveChannel(instanceName)) {
       this.eventBus?.emit("session:end", { callerType: "system", callerId: "AgentManager" }, instanceName, {
         sessionId: "primary",
         reason: "process-crash",
       });
-      await this.channelManager!.disconnect(instanceName).catch(() => {});
+      await channelManager.disconnect(instanceName).catch(() => {});
       this.channelCapabilities.delete(instanceName);
     }
 

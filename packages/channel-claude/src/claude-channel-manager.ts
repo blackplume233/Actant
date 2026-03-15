@@ -136,13 +136,11 @@ function toClaudeMcpServers(
 ): ClaudeChannelOptions["mcpServers"] | undefined {
   if (adapterServers) return adapterServers;
   if (!protocolServers?.length) return undefined;
-  const mapped = protocolServers
-    .filter((server) => server.transport.type === "stdio")
-    .map((server) => ({
-      name: server.name,
-      command: server.transport.command,
-      args: server.transport.args,
-      env: server.transport.env,
-    }));
-  return mapped.length > 0 ? mapped : undefined;
+  const result: Record<string, { type?: "stdio"; command: string; args?: string[]; env?: Record<string, string> }> = {};
+  for (const server of protocolServers) {
+    const t = server.transport;
+    if (t.type !== "stdio") continue;
+    result[server.name] = { type: "stdio", command: t.command, args: t.args, env: t.env };
+  }
+  return Object.keys(result).length > 0 ? result : undefined;
 }

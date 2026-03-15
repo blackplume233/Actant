@@ -72,7 +72,7 @@ describe("RecordingChannelManager", () => {
       disconnect: vi.fn(async () => {}),
       disposeAll: vi.fn(async () => {}),
       setAgentBackend: vi.fn(),
-    } as unknown as ActantChannelManager;
+    } as unknown as ActantChannelManager & { setAgentBackend: ReturnType<typeof vi.fn> };
     const manager = new RecordingChannelManager(inner, { record: vi.fn(async () => {}) } as never);
 
     await expect(manager.connect("agent-2", { cwd: "repo" } as ChannelConnectOptions, {} as ChannelHostServices)).resolves.toEqual({

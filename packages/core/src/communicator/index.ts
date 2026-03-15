@@ -4,6 +4,7 @@ export type {
   StreamChunk,
   RunPromptOptions,
   CommunicatorFactory,
+  ChannelEvent,
 } from "./agent-communicator";
 export { ClaudeCodeCommunicator } from "./claude-code-communicator";
 export { CursorCommunicator } from "./cursor-communicator";

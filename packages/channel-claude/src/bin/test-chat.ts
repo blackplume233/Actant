@@ -27,12 +27,16 @@ function parseArgs(): { cwd: string; model?: string; permission?: string } {
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === "--cwd" && args[i + 1]) {
-      cwd = args[++i]!;
-    } else if (arg === "--model" && args[i + 1]) {
-      model = args[++i];
-    } else if (arg === "--permission" && args[i + 1]) {
-      permission = args[++i];
+    const next = args[i + 1];
+    if (arg === "--cwd" && next) {
+      cwd = next;
+      i++;
+    } else if (arg === "--model" && next) {
+      model = next;
+      i++;
+    } else if (arg === "--permission" && next) {
+      permission = next;
+      i++;
     }
   }
 
@@ -54,7 +58,7 @@ async function main() {
     },
   };
 
-  const { sessionId } = await manager.connect("test-chat", connectOptions as never);
+  const { sessionId } = await manager.connect("test-chat", connectOptions as never, {});
   const channel = manager.getChannel("test-chat");
   if (!channel) {
     console.error("Failed to get channel");

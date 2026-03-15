@@ -90,7 +90,7 @@ async function runDaemonChat(
     } catch (err) {
       chatView.hideLoader();
       const msg = err instanceof Error ? err.message : String(err);
-      throw new Error(msg);
+      throw new Error(msg, { cause: err });
     }
   };
 

@@ -40,10 +40,14 @@ export interface TuiTestHarness {
   resize(cols: number, rows: number): void;
 }
 
-const ANSI_RE = /\x1b\[[0-9;]*[A-Za-z]|\x1b\].*?\x07|\x1b_.*?\x07/g;
-
 function stripAnsi(s: string): string {
-  return s.replace(ANSI_RE, "");
+  const ESC = String.fromCharCode(27);
+  const BEL = String.fromCharCode(7);
+
+  return s
+    .replace(new RegExp(`${ESC}\\[[0-9;]*[A-Za-z]`, "g"), "")
+    .replace(new RegExp(`${ESC}\\].*?${BEL}`, "g"), "")
+    .replace(new RegExp(`${ESC}_.*?${BEL}`, "g"), "");
 }
 
 /**

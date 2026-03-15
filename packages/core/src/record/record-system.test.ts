@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtemp, rm, readdir, readFile } from "node:fs/promises";
+import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { RecordSystem } from "./record-system";
@@ -29,9 +29,11 @@ describe("RecordSystem", () => {
 
     const entries = await rs.queryGlobal();
     expect(entries).toHaveLength(1);
-    expect(entries[0].category).toBe("system");
-    expect(entries[0].type).toBe("actant:start");
-    expect(entries[0].agentName).toBeUndefined();
+    const firstEntry = entries[0];
+    expect(firstEntry).toBeDefined();
+    expect(firstEntry?.category).toBe("system");
+    expect(firstEntry?.type).toBe("actant:start");
+    expect(firstEntry?.agentName).toBeUndefined();
   });
 
   it("dual-writes global + agent for agent-scoped records", async () => {
@@ -47,7 +49,9 @@ describe("RecordSystem", () => {
 
     const { records } = await rs.queryAgent("alice", "_lifecycle");
     expect(records).toHaveLength(1);
-    expect(records[0].type).toBe("agent:created");
+    const firstRecord = records[0];
+    expect(firstRecord).toBeDefined();
+    expect(firstRecord?.type).toBe("agent:created");
   });
 
   it("dual-writes global + agent session for session-scoped records", async () => {
@@ -64,7 +68,9 @@ describe("RecordSystem", () => {
 
     const { records } = await rs.queryAgent("bob", "conv-1");
     expect(records).toHaveLength(1);
-    expect(records[0].category).toBe("communication");
+    const firstRecord = records[0];
+    expect(firstRecord).toBeDefined();
+    expect(firstRecord?.category).toBe("communication");
   });
 
   // ── Querying ──
@@ -76,7 +82,9 @@ describe("RecordSystem", () => {
 
     const systemOnly = await rs.queryGlobal({ category: "system" });
     expect(systemOnly).toHaveLength(1);
-    expect(systemOnly[0].type).toBe("actant:start");
+    const firstEntry = systemOnly[0];
+    expect(firstEntry).toBeDefined();
+    expect(firstEntry?.type).toBe("actant:start");
   });
 
   it("queryAgent filters by type", async () => {
@@ -85,7 +93,9 @@ describe("RecordSystem", () => {
 
     const { records } = await rs.queryAgent("a", "s1", { types: ["prompt_sent"] });
     expect(records).toHaveLength(1);
-    expect(records[0].type).toBe("prompt_sent");
+    const firstRecord = records[0];
+    expect(firstRecord).toBeDefined();
+    expect(firstRecord?.type).toBe("prompt_sent");
   });
 
   it("queryAgent filters by category", async () => {
@@ -94,7 +104,9 @@ describe("RecordSystem", () => {
 
     const { records } = await rs.queryAgent("a", "s1", { categories: ["communication"] });
     expect(records).toHaveLength(1);
-    expect(records[0].category).toBe("communication");
+    const firstRecord = records[0];
+    expect(firstRecord).toBeDefined();
+    expect(firstRecord?.category).toBe("communication");
   });
 
   // ── Session summaries ──
@@ -107,11 +119,13 @@ describe("RecordSystem", () => {
 
     const sessions = rs.getSessions("agent1");
     expect(sessions).toHaveLength(1);
-    expect(sessions[0].messageCount).toBe(1);
-    expect(sessions[0].toolCallCount).toBe(1);
-    expect(sessions[0].fileWriteCount).toBe(1);
-    expect(sessions[0].platformEventCount).toBe(1);
-    expect(sessions[0].recordCount).toBe(4);
+    const firstSession = sessions[0];
+    expect(firstSession).toBeDefined();
+    expect(firstSession?.messageCount).toBe(1);
+    expect(firstSession?.toolCallCount).toBe(1);
+    expect(firstSession?.fileWriteCount).toBe(1);
+    expect(firstSession?.platformEventCount).toBe(1);
+    expect(firstSession?.recordCount).toBe(4);
   });
 
   it("getSessions excludes _lifecycle pseudo-session", async () => {
@@ -168,8 +182,10 @@ describe("RecordSystem", () => {
     await rs2.rebuildIndex();
     const sessions = rs2.getSessions("a");
     expect(sessions).toHaveLength(1);
-    expect(sessions[0].messageCount).toBe(1);
-    expect(sessions[0].fileWriteCount).toBe(1);
+    const firstSession = sessions[0];
+    expect(firstSession).toBeDefined();
+    expect(firstSession?.messageCount).toBe(1);
+    expect(firstSession?.fileWriteCount).toBe(1);
     rs2.dispose();
   });
 
@@ -180,9 +196,11 @@ describe("RecordSystem", () => {
 
     const { records, total } = await rs.readStream("a", "s1");
     expect(total).toBe(1);
-    expect(records[0].type).toBe("prompt_sent");
-    expect(records[0].sessionId).toBe("s1");
-    expect(typeof records[0].ts).toBe("number");
+    const firstRecord = records[0];
+    expect(firstRecord).toBeDefined();
+    expect(firstRecord?.type).toBe("prompt_sent");
+    expect(firstRecord?.sessionId).toBe("s1");
+    expect(typeof firstRecord?.ts).toBe("number");
   });
 
   // ── Backward-compat: getSessionsLegacy ──
@@ -192,8 +210,10 @@ describe("RecordSystem", () => {
 
     const sessions = rs.getSessionsLegacy("a");
     expect(sessions).toHaveLength(1);
-    expect(sessions[0]).not.toHaveProperty("platformEventCount");
-    expect(sessions[0]).toHaveProperty("messageCount", 1);
+    const firstSession = sessions[0];
+    expect(firstSession).toBeDefined();
+    expect(firstSession).not.toHaveProperty("platformEventCount");
+    expect(firstSession).toHaveProperty("messageCount", 1);
   });
 
   // ── Monotonic seq ──
@@ -204,8 +224,11 @@ describe("RecordSystem", () => {
     await rs.record({ category: "system", type: "c", data: {} });
 
     const entries = await rs.queryGlobal();
-    expect(entries[0].seq).toBe(0);
-    expect(entries[1].seq).toBe(1);
-    expect(entries[2].seq).toBe(2);
+    const firstEntry = entries[0];
+    const secondEntry = entries[1];
+    const thirdEntry = entries[2];
+    expect(firstEntry?.seq).toBe(0);
+    expect(secondEntry?.seq).toBe(1);
+    expect(thirdEntry?.seq).toBe(2);
   });
 });
