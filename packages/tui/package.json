@@ -1,29 +1,29 @@
 {
-  "name": "@actant/cli",
-  "version": "0.2.3",
-  "description": "CLI for the Actant AI agent platform — build, manage, and compose AI agents",
+  "name": "@actant/tui",
+  "version": "0.1.0",
+  "description": "Unified Terminal UI framework for the Actant AI agent platform, built on pi-tui",
   "type": "module",
   "license": "MIT",
   "author": "blackplume <blackplume233@gmail.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/blackplume233/Actant.git",
-    "directory": "packages/cli"
+    "directory": "packages/tui"
   },
   "homepage": "https://github.com/blackplume233/Actant#readme",
   "bugs": "https://github.com/blackplume233/Actant/issues",
   "keywords": [
     "actant",
     "ai-agent",
-    "cli",
-    "agent-platform"
+    "tui",
+    "terminal-ui",
+    "chat"
   ],
   "publishConfig": {
     "access": "public"
   },
   "files": [
-    "dist",
-    "scripts/postinstall.mjs"
+    "dist"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -32,32 +32,26 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./dist/bin/actant.js": "./dist/bin/actant.js"
-  },
-  "bin": {
-    "actant": "./dist/bin/actant.js"
+    "./testing": {
+      "import": "./dist/testing.js",
+      "types": "./dist/testing.d.ts"
+    }
   },
   "scripts": {
     "build": "tsup",
-    "dev": "tsx src/index.ts",
+    "dev": "tsup --watch",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "clean": "rimraf dist",
-    "postinstall": "node scripts/postinstall.mjs",
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@actant/acp": "workspace:*",
-    "@actant/api": "workspace:*",
     "@actant/core": "workspace:*",
-    "@actant/dashboard": "workspace:*",
-    "@actant/rest-api": "workspace:*",
-    "@actant/pi": "workspace:*",
-    "@actant/shared": "workspace:*",
-    "@actant/tui": "workspace:*",
-    "@inquirer/prompts": "^8.3.0",
-    "chalk": "^5.6.2",
-    "cli-table3": "^0.6.5",
-    "commander": "^14.0.3"
+    "@mariozechner/pi-tui": "^0.58.1",
+    "chalk": "^5.5.0"
+  },
+  "devDependencies": {
+    "@xterm/headless": "^5.5.0",
+    "@xterm/xterm": "^5.5.0"
   }
 }

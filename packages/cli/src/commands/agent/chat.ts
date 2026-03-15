@@ -1,10 +1,9 @@
-import { createInterface, type Interface } from "node:readline";
 import { Command } from "commander";
-import chalk from "chalk";
 import type { RpcClient } from "../../client/rpc-client";
-import { presentError, renderStream, type CliPrinter, defaultPrinter } from "../../output/index";
+import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 import { AcpConnection, type AcpSessionInfo, type SessionNotification } from "@actant/acp";
 import type { StreamChunk } from "@actant/core";
+import { ProcessTerminal, ActantChatView } from "@actant/tui";
 
 export function createAgentChatCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("chat")
@@ -34,7 +33,6 @@ async function runChat(
     return;
   }
 
-  // Check if the agent is already running (Daemon-managed)
   let daemonManaged = false;
   try {
     const status = await client.call("agent.status", { name });
@@ -62,52 +60,44 @@ async function runChat(
 
 /**
  * Daemon-managed path: Agent is already running via `agent start`.
- * Uses agent.prompt RPC (synchronous for now; Phase 3 will add Session Lease streaming).
+ * Uses agent.prompt RPC.
  */
 async function runDaemonChat(
   client: RpcClient,
   name: string,
-  printer: CliPrinter,
+  _printer: CliPrinter,
 ): Promise<void> {
   const meta = await client.call("agent.status", { name });
-  printer.log(
-    chalk.bold(`Chat with ${meta.name}`) +
-    chalk.dim(` (${meta.templateName}@${meta.templateVersion}) [daemon-managed]`),
-  );
-  printer.log(chalk.dim('Type your message and press Enter. Use "exit" or Ctrl+C to quit.\n'));
 
-  const rl = createReadline();
-  rl.prompt();
+  const terminal = new ProcessTerminal();
+  const chatView = new ActantChatView(terminal, {
+    title: `Chat with ${meta.name}`,
+    subtitle: `${meta.templateName}@${meta.templateVersion} [daemon-managed]\nType your message and press Enter. Press Escape to cancel. Type "/exit" to quit.`,
+  });
 
   let sessionId: string | undefined;
 
-  rl.on("line", async (line: string) => {
-    const trimmed = line.trim();
-    if (!trimmed) { rl.prompt(); return; }
-    if (trimmed === "exit" || trimmed === "quit") { rl.close(); return; }
-
+  chatView.onUserMessage = async (text) => {
     try {
-      process.stdout.write(chalk.cyan("agent> "));
       const result = await client.call("agent.prompt", {
         name,
-        message: trimmed,
+        message: text,
         sessionId,
       }, { timeoutMs: 305_000 });
-      process.stdout.write(result.response + "\n\n");
+      chatView.hideLoader();
+      chatView.appendAssistantMessage(result.response);
       sessionId = result.sessionId;
     } catch (err) {
-      presentError(err, printer);
+      chatView.hideLoader();
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(msg);
     }
-    rl.prompt();
-  });
+  };
 
-  rl.on("close", () => {
-    process.stdout.write(chalk.dim("\nChat ended.\n"));
-  });
+  chatView.onExit = async () => { /* daemon stays running */ };
 
-  return new Promise((resolve) => {
-    rl.on("close", resolve);
-  });
+  chatView.start();
+  await waitForStop(chatView);
 }
 
 /**
@@ -118,7 +108,7 @@ async function runDirectBridgeChat(
   client: RpcClient,
   name: string,
   opts: { template?: string },
-  printer: CliPrinter,
+  _printer: CliPrinter,
 ): Promise<void> {
   const resolved = await client.call("agent.resolve", {
     name,
@@ -159,7 +149,7 @@ async function runDirectBridgeChat(
 
     await client.call("agent.attach", {
       name: resolved.instanceName,
-      pid: process.pid, // register for lifecycle tracking
+      pid: process.pid,
       metadata: { proxyMode: "direct-bridge-chat" },
     });
     attached = true;
@@ -183,62 +173,59 @@ async function runDirectBridgeChat(
       throw initErr;
     }
     const agentName = initResult.agentInfo?.name ?? name;
-
     session = await conn.newSession(resolved.workspaceDir);
 
-    printer.log(
-      chalk.bold(`Chat with ${agentName}`) +
-      chalk.dim(` (direct bridge, session ${session.sessionId.slice(0, 8)}...)`),
-    );
-    printer.log(chalk.dim('Type your message and press Enter. Use "exit" or Ctrl+C to quit.\n'));
-
-    const rl = createReadline();
-
-    process.on("SIGINT", () => {
-      if (session) {
-        conn.cancel(session.sessionId).catch(() => {});
-      }
-      rl.close();
+    const terminal = new ProcessTerminal();
+    const chatView = new ActantChatView(terminal, {
+      title: `Chat with ${agentName}`,
+      subtitle: `direct bridge, session ${session.sessionId.slice(0, 8)}...\nType your message and press Enter. Press Escape to cancel. Type "/exit" to quit.`,
+      cwd: resolved.workspaceDir,
     });
-
-    rl.prompt();
 
     const activeSession = session;
 
-    rl.on("line", async (line: string) => {
-      const trimmed = line.trim();
-      if (!trimmed) { rl.prompt(); return; }
-      if (trimmed === "exit" || trimmed === "quit") { rl.close(); return; }
+    chatView.onUserMessage = async (text) => {
+      const chunkStream = mapNotificationsToChunks(
+        conn.streamPrompt(activeSession.sessionId, text),
+      );
+      await chatView.appendAssistantStream(chunkStream);
+    };
 
-      try {
-        const chunkStream = mapNotificationsToChunks(
-          conn.streamPrompt(activeSession.sessionId, trimmed),
-        );
-        await renderStream(chunkStream, { agentLabel: agentName });
-      } catch (err) {
-        presentError(err, printer);
+    chatView.onCancel = () => {
+      if (session) {
+        conn.cancel(session.sessionId).catch(() => {});
       }
-      rl.prompt();
-    });
+    };
 
-    rl.on("close", () => {
-      process.stdout.write(chalk.dim("\nChat ended.\n"));
-    });
+    chatView.onExit = async () => { /* cleanup handled in finally */ };
 
-    await new Promise<void>((resolve) => {
-      rl.on("close", resolve);
-    });
+    chatView.start();
+    await waitForStop(chatView);
   } finally {
     await cleanup();
   }
 }
 
-function createReadline(): Interface {
-  return createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    prompt: chalk.green("you> "),
-    terminal: process.stdin.isTTY ?? false,
+function waitForStop(chatView: ActantChatView): Promise<void> {
+  return new Promise((resolve) => {
+    const check = setInterval(() => {
+      // ActantChatView.stop() is called internally when /exit is processed
+      // We poll a simple flag — the tui.stop() triggers terminal restore.
+      // A cleaner approach would be an event, but this works for now.
+      try {
+        // If the TUI terminal has been stopped, the process can exit.
+        // We detect this by checking if requestRender still works.
+        chatView.tui.requestRender();
+      } catch {
+        clearInterval(check);
+        resolve();
+      }
+    }, 500);
+    // Also handle process signals
+    process.once("SIGINT", () => {
+      clearInterval(check);
+      chatView.stop().then(resolve).catch(resolve);
+    });
   });
 }
 

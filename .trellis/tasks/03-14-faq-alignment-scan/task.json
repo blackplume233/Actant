@@ -1,0 +1,49 @@
+{
+  "id": "faq-alignment-scan",
+  "name": "faq-alignment-scan",
+  "title": "Scan FAQ alignment and implementation gaps",
+  "description": "Governance scan for aligning current docs, specs, plans, implementation structure, and verification assets with the AgentCraft FAQ framing. Focus on Actant as a lower-layer platform, archetype progression repo->service->employee, service as the default main delivery shape, employee as an autonomy-enhanced shape, plugin boundary cleanup, and archetype-oriented verification. This task now also produces an expanded Chinese issue draft with historical-content review, concept contraction, repository current-state整理, execution checklist, and suggested follow-up issues.",
+  "status": "planning",
+  "dev_type": null,
+  "scope": null,
+  "priority": "P1",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-14",
+  "completedAt": null,
+  "branch": null,
+  "base_branch": "master",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {"phase": 1, "action": "implement"},
+    {"phase": 2, "action": "check"},
+    {"phase": 3, "action": "finish"},
+    {"phase": 4, "action": "create-pr"}
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [
+    "Expand governance issue draft with historical review and concept contraction sections",
+    "Add execution checklist and deliverables for the governance issue",
+    "Capture repository current-state summary and conflict categories",
+    "Propose follow-up sub-issues for docs/spec/runtime/verification convergence"
+  ],
+  "relatedFiles": [
+    "docs/wiki/guide/concepts.md",
+    "docs/wiki/reference/architecture.md",
+    "docs/planning/roadmap.md",
+    "docs/planning/phase4-plan.md",
+    "docs/planning/phase4-employee-steps.md",
+    "docs/design/core-agent-progress-report.md",
+    "docs/design/mvp-next-design.md",
+    "packages/core/src/manager/agent-manager.ts",
+    "packages/core/src/domain/plugin/plugin-manager.ts",
+    "packages/core/src/initializer/pipeline/initialization-pipeline.ts",
+    "packages/dashboard/client/src/lib/archetype-config.ts",
+    ".trellis/spec/config-spec.md",
+    ".trellis/spec/api-contracts.md",
+    ".trellis/spec/endurance-testing.md"
+  ],
+  "notes": "Issue draft expanded in chat; generated artifacts include issue-draft.zh.md, conflict-register.zh.md, and repo-current-state.zh.md. Next execution step is optional GitHub issue creation or splitting follow-up sub-issues."
+}

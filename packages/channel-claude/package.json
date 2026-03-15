@@ -1,29 +1,29 @@
 {
-  "name": "@actant/cli",
-  "version": "0.2.3",
-  "description": "CLI for the Actant AI agent platform — build, manage, and compose AI agents",
+  "name": "@actant/channel-claude",
+  "version": "0.1.0",
+  "description": "Claude Agent SDK channel adapter for the Actant platform",
   "type": "module",
   "license": "MIT",
   "author": "blackplume <blackplume233@gmail.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/blackplume233/Actant.git",
-    "directory": "packages/cli"
+    "directory": "packages/channel-claude"
   },
   "homepage": "https://github.com/blackplume233/Actant#readme",
   "bugs": "https://github.com/blackplume233/Actant/issues",
   "keywords": [
     "actant",
     "ai-agent",
-    "cli",
-    "agent-platform"
+    "claude",
+    "channel",
+    "sdk"
   ],
   "publishConfig": {
     "access": "public"
   },
   "files": [
-    "dist",
-    "scripts/postinstall.mjs"
+    "dist"
   ],
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -31,33 +31,23 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
-    },
-    "./dist/bin/actant.js": "./dist/bin/actant.js"
+    }
   },
   "bin": {
-    "actant": "./dist/bin/actant.js"
+    "actant-channel-claude-chat": "./dist/bin/test-chat.js"
   },
   "scripts": {
     "build": "tsup",
-    "dev": "tsx src/index.ts",
+    "dev": "tsx --watch src/index.ts",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
-    "clean": "rimraf dist",
-    "postinstall": "node scripts/postinstall.mjs",
-    "prepublishOnly": "tsup"
+    "test:chat": "tsx src/bin/test-chat.ts",
+    "clean": "rimraf dist"
   },
   "dependencies": {
-    "@actant/acp": "workspace:*",
-    "@actant/api": "workspace:*",
     "@actant/core": "workspace:*",
-    "@actant/dashboard": "workspace:*",
-    "@actant/rest-api": "workspace:*",
-    "@actant/pi": "workspace:*",
     "@actant/shared": "workspace:*",
     "@actant/tui": "workspace:*",
-    "@inquirer/prompts": "^8.3.0",
-    "chalk": "^5.6.2",
-    "cli-table3": "^0.6.5",
-    "commander": "^14.0.3"
+    "@anthropic-ai/claude-agent-sdk": "^0.2.0"
   }
 }

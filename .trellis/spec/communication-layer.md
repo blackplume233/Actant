@@ -464,6 +464,29 @@ The following files are the primary implementation surfaces that must ultimately
 - `packages/core/src/initializer/archetype-defaults.ts`
 - runtime session/lease modules referenced by `.trellis/spec/session-management.md`
 
+### 12.1 Unified TUI Surface (`@actant/tui`)
+
+所有 CLI 交互式聊天界面统一使用 `@actant/tui` 包（基于 `@mariozechner/pi-tui`），替代原有 `node:readline` + 手写 ANSI 方案。
+
+| 组件 | 职责 |
+|------|------|
+| `ActantChatView` | 高层聊天视图：Editor（用户输入）+ Markdown（助手响应）+ Loader（等待状态）组合 |
+| `StreamingMarkdown` | 从 `StreamChunk` 流式增量渲染 Markdown 内容 |
+| `ProcessTerminal` | 生产环境终端适配（`process.stdin/stdout`） |
+| `VirtualTerminal` | 测试用无头终端（`@xterm/headless`），详见 `quality-guidelines.md §TUI Testing` |
+
+**已迁移的 CLI 入口**:
+
+- `packages/channel-claude/src/bin/test-chat.ts` — ACP-EX test TUI
+- `packages/cli/src/commands/agent/chat.ts` — `actant agent chat` 命令（daemon / direct-bridge 双路径）
+
+**架构规则**:
+- 新增交互式 CLI 聊天功能必须使用 `ActantChatView`，禁止 `readline.createInterface()`
+- `@actant/tui` 仅依赖 `@actant/core`（`StreamChunk` 类型）和 `@mariozechner/pi-tui`，不引入 CLI 或 API 层的耦合
+- 主题和样式集中在 `packages/tui/src/theme.ts`，各消费方不应自行硬编码终端样式
+
+> 引入于 #279 Phase 1。协议设计详见 [ACP-EX](../../docs/design/channel-protocol/README.md)。
+
 Expected future implementation work includes:
 
 1. Consolidate route selection into an explicit communication router abstraction.
