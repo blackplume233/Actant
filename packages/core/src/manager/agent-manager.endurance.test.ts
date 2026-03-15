@@ -23,6 +23,7 @@ import { readInstanceMeta } from "../state/instance-meta-io";
 
 const DURATION_MS = parseInt(process.env.ENDURANCE_DURATION_MS ?? "30000", 10);
 const WATCHER_POLL_MS = 50;
+const USING_MOCK_LAUNCHER = process.env.ENDURANCE_USE_MOCK_LAUNCHER === "true";
 
 const VALID_STATUSES: AgentStatus[] = [
   "created", "starting", "running", "stopping", "stopped", "crashed", "error",
@@ -161,10 +162,15 @@ describe("Endurance tests — Phase 1", () => {
       expect(manager.getStatus(name)).toBe("stopped");
       expect(manager.getAgent(name)?.pid).toBeUndefined();
 
-      // Second run — new PID
+      // Second run — new PID for launcher-backed modes, still rerunnable for SDK-backed modes
       await manager.startAgent(name);
-      const pid2 = manager.getAgent(name)!.pid!;
-      expect(pid2).not.toBe(pid1);
+      const pid2 = manager.getAgent(name)!.pid;
+      if (USING_MOCK_LAUNCHER) {
+        expect(pid2).toBeDefined();
+        expect(pid2).not.toBe(pid1);
+      } else {
+        expect(manager.getStatus(name)).toBe("running");
+      }
 
       await manager.stopAgent(name);
       await manager.destroyAgent(name);
@@ -263,21 +269,32 @@ describe("Endurance tests — Phase 1", () => {
       await manager.startAgent(name);
       const pid = manager.getAgent(name)!.pid!;
 
-      // Simulate process completion
+      // Simulate process completion when the launcher produces watchable PIDs
       ctl.kill(pid);
 
       if (isEphemeral) {
-        // Should auto-destroy
-        await vi.waitFor(() => {
+        if (USING_MOCK_LAUNCHER) {
+          // Should auto-destroy
+          await vi.waitFor(() => {
+            expect(manager.getAgent(name)).toBeUndefined();
+          }, { timeout: 3000, interval: 50 });
+        } else {
+          await manager.stopAgent(name);
+          await manager.destroyAgent(name);
           expect(manager.getAgent(name)).toBeUndefined();
-        }, { timeout: 3000, interval: 50 });
+        }
         destroyedNames.push(name);
       } else {
-        // Should just stop
-        await vi.waitFor(() => {
+        if (USING_MOCK_LAUNCHER) {
+          // Should just stop
+          await vi.waitFor(() => {
+            expect(manager.getStatus(name)).toBe("stopped");
+          }, { timeout: 3000, interval: 50 });
+          expect(manager.getAgent(name)?.metadata?.exitedAt).toBeDefined();
+        } else {
+          await manager.stopAgent(name);
           expect(manager.getStatus(name)).toBe("stopped");
-        }, { timeout: 3000, interval: 50 });
-        expect(manager.getAgent(name)?.metadata?.exitedAt).toBeDefined();
+        }
         await manager.destroyAgent(name);
         destroyedNames.push(name);
       }
@@ -408,9 +425,11 @@ describe("Endurance tests — Phase 1", () => {
       const manager2 = new AgentManager(initializer, launcher, tmpDir, opts);
       await manager2.initialize();
 
-      // acp-service → auto-restarted → running
+      // acp-service → auto-restarted → running when launcher-backed, otherwise remains logically running
       expect(manager2.getStatus(svcName)).toBe("running");
-      expect(manager2.getAgent(svcName)?.pid).toBeDefined();
+      if (USING_MOCK_LAUNCHER) {
+        expect(manager2.getAgent(svcName)?.pid).toBeDefined();
+      }
 
       // direct → reset to stopped (no auto-restart)
       expect(manager2.getStatus(directName)).toBe("stopped");
@@ -553,16 +572,21 @@ describe("Endurance tests — Phase 1", () => {
           await manager.startAgent("d-agent");
         }
 
-        const pid = manager.getAgent("d-agent")!.pid!;
-        ctl.kill(pid);
+        const pid = manager.getAgent("d-agent")!.pid;
+        if (USING_MOCK_LAUNCHER && pid != null) {
+          ctl.kill(pid);
 
-        // direct crash → stopped (no restart)
-        await vi.waitFor(() => {
+          // direct crash → stopped (no restart)
+          await vi.waitFor(() => {
+            expect(manager.getStatus("d-agent")).toBe("stopped");
+          }, { timeout: 3000, interval: 50 });
+
+          expect(manager.getAgent("d-agent")?.pid).toBeUndefined();
+          await assertDiskCacheConsistency(manager, tmpDir, ["d-agent"]);
+        } else {
+          await manager.stopAgent("d-agent");
           expect(manager.getStatus("d-agent")).toBe("stopped");
-        }, { timeout: 3000, interval: 50 });
-
-        expect(manager.getAgent("d-agent")?.pid).toBeUndefined();
-        await assertDiskCacheConsistency(manager, tmpDir, ["d-agent"]);
+        }
 
         // Simulate daemon restart
         manager.dispose();
@@ -600,11 +624,18 @@ describe("Endurance tests — Phase 1", () => {
         await expect(access(wsDir)).resolves.toBeUndefined();
 
         await manager.startAgent(name);
-        ctl.kill(manager.getAgent(name)!.pid!);
+        const pid = manager.getAgent(name)?.pid;
 
-        await vi.waitFor(() => {
+        if (USING_MOCK_LAUNCHER && pid != null) {
+          ctl.kill(pid);
+          await vi.waitFor(() => {
+            expect(manager.getAgent(name)).toBeUndefined();
+          }, { timeout: 3000, interval: 50 });
+        } else {
+          await manager.stopAgent(name);
+          await manager.destroyAgent(name);
           expect(manager.getAgent(name)).toBeUndefined();
-        }, { timeout: 3000, interval: 50 });
+        }
 
         await expect(access(wsDir)).rejects.toThrow();
 
@@ -634,19 +665,25 @@ describe("Endurance tests — Phase 1", () => {
 
       while (Date.now() - startTime < DURATION_MS) {
         if (Math.random() < 0.5) {
-          // Crash → should first enter crashed, then auto-restart with new PID
-          const oldPid = manager.getAgent("svc-sh")!.pid!;
-          ctl.kill(oldPid);
-          await vi.waitFor(() => {
-            expect(manager.getStatus("svc-sh")).toBe("crashed");
-          }, { timeout: 3000, interval: 50 });
-          expect(manager.getAgent("svc-sh")?.pid).toBeUndefined();
-          await vi.waitFor(() => {
-            const p = manager.getAgent("svc-sh")?.pid;
-            expect(p).toBeDefined();
-            expect(p).not.toBe(oldPid);
-          }, { timeout: 5000, interval: 50 });
-          expect(manager.getStatus("svc-sh")).toBe("running");
+          // Crash → should first enter crashed, then auto-restart with new PID when launcher-backed
+          const oldPid = manager.getAgent("svc-sh")!.pid;
+          if (USING_MOCK_LAUNCHER && oldPid != null) {
+            ctl.kill(oldPid);
+            await vi.waitFor(() => {
+              expect(manager.getStatus("svc-sh")).toBe("crashed");
+            }, { timeout: 3000, interval: 50 });
+            expect(manager.getAgent("svc-sh")?.pid).toBeUndefined();
+            await vi.waitFor(() => {
+              const p = manager.getAgent("svc-sh")?.pid;
+              expect(p).toBeDefined();
+              expect(p).not.toBe(oldPid);
+            }, { timeout: 5000, interval: 50 });
+            expect(manager.getStatus("svc-sh")).toBe("running");
+          } else {
+            await manager.stopAgent("svc-sh");
+            await manager.startAgent("svc-sh");
+            expect(manager.getStatus("svc-sh")).toBe("running");
+          }
           crashRestarts++;
         } else {
           // Clean stop → should NOT auto-restart

@@ -26,7 +26,7 @@ import { scanInstances, updateInstanceMeta } from "../state/index";
 import type { InstanceRegistryAdapter } from "../state/instance-registry-types";
 import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
 import { createCommunicator } from "../communicator/create-communicator";
-import type { ActantChannelManager, ActantChannel, ChannelPermissions } from "../channel/types";
+import type { ActantChannelManager, ActantChannel, ChannelPermissions, ChannelCapabilities, ChannelHostServices } from "../channel/types";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../provider/provider-env-resolver";
 import type { HookEventBus } from "../hooks/hook-event-bus";
@@ -129,6 +129,7 @@ export class AgentManager {
   private readonly budgetManager?: SystemBudgetManager;
   private readonly employeeRestartTracker: RestartTracker;
   private readonly agentLocks = new Map<string, Promise<void>>();
+  private readonly channelCapabilities = new Map<string, ChannelCapabilities>();
   private _disposing = false;
 
   /**
@@ -141,6 +142,26 @@ export class AgentManager {
       return (this.channelManager as ActantChannelManager).getChannel(name);
     }
     return (this.channelManager as AcpConnectionManagerLike).getConnection(name);
+  }
+
+  private buildHostServices(name: string): ChannelHostServices {
+    return {
+      sessionUpdate: async (event) => {
+        this.eventBus?.emit("session:update", { callerType: "system", callerId: "AgentManager" }, name, {
+          sessionId: event.sessionId,
+          type: event.type,
+        });
+      },
+      activitySetSession: (id) => {
+        this.channelManager?.setCurrentActivitySession?.(name, id);
+      },
+    };
+  }
+
+  private rememberChannelCapabilities(name: string, capabilities: ChannelCapabilities | undefined): void {
+    if (capabilities) {
+      this.channelCapabilities.set(name, capabilities);
+    }
   }
 
   /**
@@ -213,6 +234,7 @@ export class AgentManager {
 
     this.cache.clear();
     this.processes.clear();
+    this.channelCapabilities.clear();
 
     const pendingRestarts: string[] = [];
 
@@ -477,17 +499,36 @@ export class AgentManager {
       command: "",
       args: [],
       cwd: workspaceDir,
+      env: Object.keys(providerEnv).length > 0 ? providerEnv : undefined,
+      autoApprove: true,
       permissions: toChannelPermissions(meta.effectivePermissions),
       connectionOptions: {
         autoApprove: true,
         ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
       },
       activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
-      mcpServers: sessionCtx?.mcpServers,
+      mcpServers: sessionCtx?.mcpServers?.map((server) => ({
+        name: server.name,
+        transport: {
+          type: "stdio",
+          command: server.command,
+          args: server.args,
+          env: server.env ? Object.fromEntries(server.env.map((item) => [item.name, item.value])) : undefined,
+        },
+      })),
+      hostTools: sessionCtx?.tools?.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
+        scope: tool.scope as "all" | "service" | "employee" | undefined,
+        instructions: tool.context,
+      })),
       tools: sessionCtx?.tools,
       sessionToken: sessionCtx?.token,
       systemContext: sessionCtx?.systemContextAdditions,
-    });
+    }, this.buildHostServices(name));
+
+    this.rememberChannelCapabilities(name, connResult.capabilities);
 
     if (starting.launchMode === "acp-background" && meta.processOwnership === "managed") {
       const conversationId = await this.getOrCreateEmployeeConversation(name);
@@ -525,17 +566,36 @@ export class AgentManager {
       args: acpResolved.args,
       cwd: dir,
       resolvePackage: acpResolved.resolvePackage,
+      env: Object.keys(providerEnv).length > 0 ? providerEnv : undefined,
+      autoApprove: true,
       permissions: toChannelPermissions(meta.effectivePermissions),
       connectionOptions: {
         autoApprove: true,
         ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
       },
       activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
-      mcpServers: sessionCtx?.mcpServers,
+      mcpServers: sessionCtx?.mcpServers?.map((server) => ({
+        name: server.name,
+        transport: {
+          type: "stdio",
+          command: server.command,
+          args: server.args,
+          env: server.env ? Object.fromEntries(server.env.map((item) => [item.name, item.value])) : undefined,
+        },
+      })),
+      hostTools: sessionCtx?.tools?.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
+        scope: tool.scope as "all" | "service" | "employee" | undefined,
+        instructions: tool.context,
+      })),
       tools: sessionCtx?.tools,
       sessionToken: sessionCtx?.token,
       systemContext: sessionCtx?.systemContextAdditions,
-    });
+    }, this.buildHostServices(name));
+
+    this.rememberChannelCapabilities(name, (connResult as { capabilities?: ChannelCapabilities }).capabilities);
 
     if (starting.launchMode === "acp-background" && meta.processOwnership === "managed") {
       const conversationId = await this.getOrCreateEmployeeConversation(name);
@@ -636,6 +696,7 @@ export class AgentManager {
       await this.channelManager!.disconnect(name).catch((err) => {
         logger.warn({ name, error: err }, "Error disconnecting channel during stop");
       });
+      this.channelCapabilities.delete(name);
     }
 
     const proc = this.processes.get(name);
@@ -674,6 +735,7 @@ export class AgentManager {
     await this.initializer.destroyInstance(name);
     this.cache.delete(name);
     this.processes.delete(name);
+    this.channelCapabilities.delete(name);
     this.eventBus?.emit("agent:destroyed", { callerType: "system", callerId: "AgentManager" }, name, {
       "agent.name": name,
     });
@@ -887,11 +949,17 @@ export class AgentManager {
     if (this.channelManager?.has(name)) {
       const conn = this.resolveChannel(name);
       const sessionId = this.channelManager.getPrimarySessionId(name);
+      const capabilities = this.channelCapabilities.get(name);
       if (conn && sessionId) {
         logger.debug({ name, sessionId }, "Sending prompt via ACP");
-        // prompt_sent/prompt_complete are recorded by RecordingChannelDecorator
-        const acpResult = await conn.prompt(sessionId, prompt);
-        result = { text: acpResult.text, sessionId };
+        if (!capabilities || capabilities.streaming || "prompt" in conn) {
+          const acpResult = await conn.prompt(sessionId, prompt);
+          result = { text: acpResult.text, sessionId };
+        } else {
+          const dir = join(this.instancesBaseDir, name);
+          const communicator = createCommunicator(meta.backendType);
+          result = await communicator.runPrompt(dir, prompt, options);
+        }
       } else {
         const dir = join(this.instancesBaseDir, name);
         const communicator = createCommunicator(meta.backendType);
@@ -925,7 +993,8 @@ export class AgentManager {
     if (this.channelManager?.has(name)) {
       const conn = this.resolveChannel(name);
       const sessionId = this.channelManager.getPrimarySessionId(name);
-      if (conn && sessionId) {
+      const capabilities = this.channelCapabilities.get(name);
+      if (conn && sessionId && capabilities?.streaming !== false) {
         logger.debug({ name, sessionId }, "Streaming prompt via channel");
         return this.streamFromChannel(conn, sessionId, prompt);
       }
@@ -1128,11 +1197,19 @@ export class AgentManager {
       return;
     }
 
+    const proc = this.processes.get(instanceName);
+    if (proc && proc.pid !== pid) {
+      logger.debug({ instanceName, exitedPid: pid, currentPid: proc.pid }, "Ignoring stale process exit event");
+      return;
+    }
+
     const handler = getLaunchModeHandler(meta.launchMode);
     const action = handler.getProcessExitAction(instanceName, meta);
 
     logger.warn({ instanceName, pid, launchMode: meta.launchMode, action: action.type, previousStatus: meta.status }, "Agent process exited unexpectedly");
 
+    this.processes.delete(instanceName);
+    this.watcher.unwatch(instanceName);
     this.sessionContextInjector?.revokeTokens?.(instanceName);
 
     if (this.resolveChannel(instanceName)) {
@@ -1141,6 +1218,7 @@ export class AgentManager {
         reason: "process-crash",
       });
       await this.channelManager!.disconnect(instanceName).catch(() => {});
+      this.channelCapabilities.delete(instanceName);
     }
 
     const dir = join(this.instancesBaseDir, instanceName);
@@ -1156,7 +1234,6 @@ export class AgentManager {
       metadata: { ...meta.metadata, exitedAt },
     });
     this.cache.set(instanceName, stopped);
-    this.processes.delete(instanceName);
 
     if (action.type === "restart" || exitStatus === "crashed") {
       this.eventBus?.emit("process:crash", { callerType: "system", callerId: "ProcessWatcher" }, instanceName, {
@@ -1221,7 +1298,7 @@ export class AgentManager {
       }
       case "destroy":
         try {
-          await this.destroyAgent(instanceName);
+          await this._destroyAgent(instanceName);
           logger.info({ instanceName }, "One-shot agent destroyed after exit");
         } catch (err) {
           logger.error({ instanceName, error: err }, "One-shot auto-destroy failed");

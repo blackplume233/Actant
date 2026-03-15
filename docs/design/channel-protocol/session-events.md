@@ -8,6 +8,13 @@
 
 Event 是 Backend 向 Host 通信的主要机制。流式模式下，事件由 `streamPrompt()` yield；Out-of-band 时，事件可通过 `ChannelHostServices.sessionUpdate()` 推送。Core 事件类型与 ACP `SessionUpdate` 完全一致；Extended 类型使用 `x_` 前缀。
 
+当前实现规则：
+
+- adapter SHOULD 在每个可映射的 `StreamChunk` 上附带 `chunk.event`
+- `event-compat.ts` 负责 `ChannelEvent <-> StreamChunk` 的双向兼容和 record entry 映射
+- recording 优先消费原生 `ChannelEvent`，仅在旧 chunk 路径下回退到 `legacyChunkToChannelEvent()`
+- 对于没有合适 legacy chunk 表示的事件，Host 应通过 `sessionUpdate()` 处理，而不是强行压缩到旧四元 chunk 形态
+
 ---
 
 ## ChannelEvent Base
@@ -235,11 +242,15 @@ interface ResultErrorEvent extends ChannelEvent {
 
 > 工具使用摘要（Claude SDK 特有）。
 
+当前仍通过 `tool_call_update` 兼容映射落到旧 `StreamChunk` 展示层；如需保留更强语义，应优先扩展原生 `ChannelEvent` 消费端而不是继续扩充 legacy chunk 类型。
+
 ---
 
 ### x_session_init / x_session_ready
 
 > Session 初始化/就绪事件。
+
+这两个事件保留为扩展点；当前主链路更多依赖 connect 返回值与 `sessionUpdate()` 回调，而不是单独的 init/ready 事件。
 
 ---
 
@@ -247,11 +258,17 @@ interface ResultErrorEvent extends ChannelEvent {
 
 > Prompt 处理边界事件。
 
+- Claude SDK adapter 会显式发送这两个事件
+- `RecordingChannelDecorator` 会把它们映射为 `prompt_sent` / `prompt_complete`
+- service lease 覆盖场景下，事件记录使用 activity session override，而不是底层 ACP session ID
+
 ---
 
 ### x_activity_record
 
 > Activity 记录事件。
+
+这是协议层将 backend-specific activity 上送到统一记录系统的扩展口。`channelEventToRecordEntry()` 会把它映射到对应 category/type/data。
 
 ---
 

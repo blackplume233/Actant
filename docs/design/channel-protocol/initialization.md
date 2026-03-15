@@ -8,6 +8,13 @@
 
 在任何 session 操作之前，Host MUST 通过 `ActantChannelManager.connect()` 建立连接。连接成功后，Backend 返回 `sessionId` 和 `ChannelCapabilities`，Host 据此决定可调用的方法及需注入的 Host 服务。
 
+当前实现约束：
+
+- `ChannelConnectOptions` 仍保留 `command` / `args` / `resolvePackage` 作为 ACP compatibility 字段
+- `hostServices` 已经是统一入口，ACP 与 Claude SDK adapter 都通过它接收 session / activity 回调
+- `connect()` 返回的 capabilities 会被 `AgentManager` 缓存，用于 prompt 路径与功能可用性判断
+- recording session override 通过 `ChannelHostServices.activitySetSession()` 传递，避免 service lease 场景重复记账
+
 ```mermaid
 sequenceDiagram
     participant Host
@@ -257,6 +264,13 @@ interface ChannelCapabilities {
 ## Capability Negotiation
 
 Host MUST 在调用 optional 方法前检查对应的 capability。若 capability 为 false 或方法不存在，Host MUST 使用 fallback 或跳过该操作。
+
+当前约定：
+
+- `AgentManager` 优先通过 channel 执行 `prompt()` / `streamPrompt()`；若 adapter 不支持预期能力，则回退到 communicator
+- `RoutingChannelManager` 负责按 backend 解析 manager，`RecordingChannelManager` 负责在不改变 capability 语义的前提下包装 channel
+- Claude SDK adapter 当前声明 `streaming/cancel/resume/structuredOutput/thinking/dynamicMcp/dynamicTools`
+- ACP adapter 的 callback 需求由 `callbacks` 与 `needs*` 系列能力表达，Host 通过 `ChannelHostServices` 满足这些依赖
 
 ### Checking Support
 

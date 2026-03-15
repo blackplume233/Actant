@@ -1,76 +1,141 @@
 # Migration
 
-**副标题**：分阶段实施计划
+This document tracks the channel protocol migration from the legacy ACP-shaped manager contract to the unified `ActantChannel` protocol.
 
 ---
 
-## Overview
+## Status
 
-ACP-EX 分 4 个阶段增量实现。每阶段在保持向后兼容的前提下增加能力。
+Phase 1-3 are now functionally in place for the production paths used by `AgentManager`.
 
----
+Completed implementation scope:
 
-## Phase 1: Interface Migration (Current, #279)
+- `@actant/core` owns the protocol surface in `packages/core/src/channel/types.ts`
+- `AgentManager` connects through `channelManager` / `ActantChannelManager`
+- `RoutingChannelManager` delegates by backend type and preserves per-agent capability lookup
+- `RecordingChannelManager` and `RecordingChannelDecorator` record both native `ChannelEvent` payloads and legacy `StreamChunk` fallbacks
+- `@actant/acp` accepts `hostServices` and bridges callbacks through `RecordingCallbackHandler` / `ClientCallbackRouter`
+- `@actant/channel-claude` emits protocol-native `ChannelEvent` values on each mapped SDK chunk
+- lifecycle regressions in `AgentManager` were re-baselined with deterministic tests plus endurance coverage
 
-**Status**：In progress
+Remaining migration posture:
 
-**Completed**：
-
-- 在 `@actant/core` 中定义 `ActantChannelManager` / `ActantChannel` 基础接口
-- 将 `AgentManager` 迁移为使用 `channelManager` 字段
-- 在 `@actant/acp` 中创建 `AcpChannelManagerAdapter` 兼容层
-- 更新 `AppContext` 以接入 adapter
-
-**In Progress**：
-
-- `ClaudeChannelAdapter` 实现（SDK 直连）
-
-**Interface Scope**：
-
-- `ChannelConnectOptions` 保留 ACP 兼容字段（command、args、resolvePackage）
-- `StreamChunk` 不变
-- 尚无 `ChannelHostServices`、`ChannelCapabilities`、`ChannelEvent`
+- `StreamChunk` remains supported as the compatibility transport shape for existing consumers
+- `StreamChunk.event` is the progressive migration hook; new adapters SHOULD attach native protocol events
+- legacy ACP-like interfaces remain temporarily supported where `AgentManager` still accepts compatibility managers during transition
 
 ---
 
-## Phase 2: Protocol Upgrade
+## Current Protocol Surface
 
-**Planned Changes**：
+### `ChannelCapabilities`
 
-- 重构 `ChannelConnectOptions`：将 ACP 字段提取到 adapterOptions
-- 在 connect() 中引入 `ChannelHostServices` 注入
-- 在 connect() 返回值中引入 `ChannelCapabilities`
-- 为 StreamChunk 添加可选 `event` 字段
-- 实现 `executeTool` 以替代 ACTANT_TOOLS 环境变量 hack
-- 更新 AgentManager 使用 capabilities 进行 feature 检测
+The live capability surface is defined in `packages/core/src/channel/types.ts` and currently includes:
+
+- stream control: `streaming`, `cancel`, `resume`, `multiSession`
+- host integration: `callbacks`, `needsFileIO`, `needsTerminal`, `needsPermission`
+- output semantics: `structuredOutput`, `thinking`, `contentTypes`
+- dynamic runtime features: `configurable`, `dynamicMcp`, `dynamicTools`
+- adapter extensions: `extensions`
+
+`AgentManager` stores the returned capabilities per agent and uses them to decide whether prompt execution should stay on the channel path or fall back to communicator-based execution.
+
+### `ChannelHostServices`
+
+The host service contract is also live in `packages/core/src/channel/types.ts`.
+
+Core callbacks in active use:
+
+- `sessionUpdate()` for out-of-band event delivery
+- file / permission / terminal callbacks for ACP-backed routes
+- `activityRecord()` and `activitySetSession()` for recording integration
+- `executeTool()` / `invoke()` / VFS hooks reserved for richer adapter integrations
+
+### `ChannelEvent`
+
+The current event model is protocol-native and adapter-agnostic.
+
+Implemented event families in active use today:
+
+- text/thinking stream events: `agent_message_chunk`, `agent_thought_chunk`
+- tool lifecycle events: `tool_call`, `tool_call_update`
+- prompt lifecycle extensions: `x_prompt_start`, `x_prompt_end`
+- terminal/result extensions: `x_result_success`, `x_result_error`
+- recording passthrough: `x_activity_record`
+
+`event-compat.ts` remains the single compatibility bridge between protocol-native events, legacy `StreamChunk`, and record entries.
 
 ---
 
-## Phase 3: Event System
+## Compatibility Strategy
 
-**Planned Changes**：
+The migration is intentionally additive.
 
-- 完整 `ChannelEvent` 类型系统实现
-- AgentManager 从 StreamChunk 迁移为消费 ChannelEvent
-- Activity recording 迁移至 `ChannelHostServices.activityRecord`
-- VFS 服务实现
+- Adapters SHOULD emit `StreamChunk` values with `chunk.event` populated
+- Consumers that only understand the old four-variant stream shape may continue using `type`/`content`
+- Recording always prefers native `ChannelEvent`, then falls back through `legacyChunkToChannelEvent()`
+- `channelEventToStreamChunk()` exists only for event types with meaningful legacy display equivalents; unsupported events remain out-of-band via `sessionUpdate()`
 
----
-
-## Phase 4: External Profile
-
-**Planned Changes**：
-
-- `AcpProxyAdapter` 使用 Channel Protocol 替代直接 ACP SDK 调用
-- REST Session API 直接映射到 Channel Protocol
-- Gateway Bridge 标准化
-- 端到端 ACP proxy 测试
+This lets protocol-native adapters coexist with older consumers while reducing semantic loss over time.
 
 ---
 
-## Backward Compatibility Strategy
+## Adapter Matrix
 
-- 保留已废弃接口（`AcpConnectionManagerLike`、`AcpConnectionLike`）
-- 过渡期使用 union 类型（`ActantChannelManager | AcpConnectionManagerLike`）
-- `resolveChannel()` helper 抽象 old/new manager 访问
-- 逐步 adapter 迁移，不破坏现有代码
+### Claude SDK adapter
+
+`@actant/channel-claude` is now treated as a native channel adapter.
+
+Supported today:
+
+- streaming prompt delivery
+- cancellation
+- resumable SDK session reuse
+- dynamic MCP registration
+- host tool registration bookkeeping
+- native `ChannelEvent` emission from SDK messages
+- callback bridge through `ChannelHostServices.sessionUpdate()` and `activitySetSession()`
+
+### ACP adapter
+
+`@actant/acp` remains the transport-heavy implementation for managed ACP backends.
+
+Supported today:
+
+- command/args/resolvePackage compatibility in connect options
+- host callback injection for file IO / terminal / permissions
+- recording callback decoration with activity session override support
+- gateway / lease path reuse
+
+---
+
+## Recording Responsibilities
+
+Recording is intentionally split by boundary.
+
+- ACP callback-side recording captures backend-initiated callback traffic through `RecordingCallbackHandler`
+- channel-side recording captures prompt stream output through `RecordingChannelDecorator`
+- `RecordingChannelManager` owns the activity session override used to avoid duplicate accounting across shared service prompts
+
+The rule of thumb is:
+
+- callback traffic is recorded where ACP callbacks are intercepted
+- prompt/event traffic is recorded where `ActantChannel.streamPrompt()` is consumed
+
+---
+
+## Regression Baseline
+
+The migration is now guarded by:
+
+- manager lifecycle unit coverage in `packages/core/src/manager/agent-manager.test.ts`
+- scenario coverage in `packages/core/src/manager/agent-lifecycle-scenarios.test.ts`
+- channel protocol compatibility coverage in `packages/core/src/channel/*.test.ts`
+- ACP callback/session coverage in `packages/acp/src/__tests__/*.test.ts`
+- endurance regression in `packages/core/src/manager/agent-manager.endurance.test.ts`
+
+Required quick-check command after lifecycle or communication changes:
+
+```bash
+ENDURANCE_DURATION_MS=5000 pnpm test:endurance
+```

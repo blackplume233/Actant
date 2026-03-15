@@ -121,28 +121,23 @@ It decides:
 - which conversation ID should be attached or created
 - which backend adapter should receive the final request
 
-### 4.2 Router responsibilities
+## 4.3 Channel protocol status
 
-The router abstraction may be implemented across existing modules today, but the architecture contract is singular.
+The unified communication layer is now backed by the protocol types in `packages/core/src/channel/types.ts`.
 
-The router owns these decisions:
+Implemented protocol facts:
 
-1. Resolve target instance and archetype.
-2. Resolve communication policy defaults.
-3. Check runtime readiness.
-4. Select route.
-5. Bind or create lease/conversation state as needed.
-6. Deliver prompt or ACP session interaction through the backend adapter.
-7. Return Actant-level result metadata.
+- `ActantChannelManager.connect()` returns `{ sessionId, capabilities }`
+- `ChannelHostServices` is the single callback ingress for session updates, file IO, permission, terminal, activity, and future host-tool/VFS hooks
+- `ChannelEvent` is the preferred event carrier; legacy `StreamChunk` remains a compatibility transport with optional `event`
+- `RoutingChannelManager` selects backend-specific managers by backend type
+- `RecordingChannelManager` / `RecordingChannelDecorator` own prompt-stream recording, while ACP callback recording remains in `RecordingCallbackHandler`
 
-Current code paths that collectively implement or must later consolidate this router include:
+Normative guidance:
 
-- `packages/cli/src/commands/proxy.ts`
-- `packages/cli/src/commands/agent/prompt.ts`
-- `packages/cli/src/commands/agent/chat.ts`
-- `packages/core/src/manager/agent-manager.ts`
-- `packages/api/src/handlers/agent-handlers.ts`
-- session handlers and registry components referenced by `session-management.md`
+- New adapters SHOULD emit native `ChannelEvent` values and attach them to `StreamChunk.event`
+- New consumers SHOULD prefer `ChannelEvent` semantics over inferring meaning from the old chunk enum alone
+- Compatibility helpers in `event-compat.ts` are the only approved place for legacy mapping logic
 
 ---
 
