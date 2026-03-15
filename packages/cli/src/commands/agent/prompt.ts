@@ -19,7 +19,7 @@ export function createAgentPromptCommand(client: RpcClient, printer: CliPrinter 
           name,
           message: opts.message,
           sessionId: opts.sessionId,
-        });
+        }, { timeoutMs: 305_000 });
 
         if (opts.format === "json") {
           printer.log(JSON.stringify(result, null, 2));

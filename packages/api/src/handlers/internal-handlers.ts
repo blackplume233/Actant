@@ -114,18 +114,29 @@ function recordAudit(
   result: unknown,
   durationMs: number,
 ): void {
-  ctx.activityRecorder?.record(session.agentName, session.sessionId, {
-    type: "internal_tool_call",
-    data: {
-      tool,
-      params,
-      callerPid: session.pid,
-      tokenPrefix: session.token.slice(0, 8),
-      result,
-      durationMs,
-      source: "cli",
-    },
-  }).catch(() => {});
+  const data = {
+    tool,
+    params,
+    callerPid: session.pid,
+    tokenPrefix: session.token.slice(0, 8),
+    result,
+    durationMs,
+    source: "cli" as const,
+  };
+  if (ctx.recordSystem) {
+    ctx.recordSystem.record({
+      category: "tool",
+      type: "internal_tool_call",
+      agentName: session.agentName,
+      sessionId: session.sessionId,
+      data,
+    }).catch(() => {});
+  } else {
+    ctx.activityRecorder?.record(session.agentName, session.sessionId, {
+      type: "internal_tool_call",
+      data,
+    }).catch(() => {});
+  }
 }
 
 function recordAuditFailure(
@@ -134,15 +145,26 @@ function recordAuditFailure(
   tool: string,
   reason: string,
 ): void {
-  ctx.activityRecorder?.record(session.agentName, session.sessionId, {
-    type: "internal_tool_call",
-    data: {
-      tool,
-      params: {},
-      tokenPrefix: session.token.slice(0, 8),
-      result: { error: reason },
-      durationMs: 0,
-      source: "cli",
-    },
-  }).catch(() => {});
+  const data = {
+    tool,
+    params: {},
+    tokenPrefix: session.token.slice(0, 8),
+    result: { error: reason },
+    durationMs: 0,
+    source: "cli" as const,
+  };
+  if (ctx.recordSystem) {
+    ctx.recordSystem.record({
+      category: "tool",
+      type: "internal_tool_call",
+      agentName: session.agentName,
+      sessionId: session.sessionId,
+      data,
+    }).catch(() => {});
+  } else {
+    ctx.activityRecorder?.record(session.agentName, session.sessionId, {
+      type: "internal_tool_call",
+      data,
+    }).catch(() => {});
+  }
 }

@@ -1,0 +1,57 @@
+{
+  "name": "@actant/tui",
+  "version": "0.3.0",
+  "description": "Unified Terminal UI framework for the Actant AI agent platform, built on pi-tui",
+  "type": "module",
+  "license": "MIT",
+  "author": "blackplume <blackplume233@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blackplume233/Actant.git",
+    "directory": "packages/tui"
+  },
+  "homepage": "https://github.com/blackplume233/Actant#readme",
+  "bugs": "https://github.com/blackplume233/Actant/issues",
+  "keywords": [
+    "actant",
+    "ai-agent",
+    "tui",
+    "terminal-ui",
+    "chat"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./testing": {
+      "import": "./dist/testing.js",
+      "types": "./dist/testing.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf dist",
+    "prepublishOnly": "tsup"
+  },
+  "dependencies": {
+    "@actant/core": "workspace:0.3.0",
+    "@mariozechner/pi-tui": "^0.58.1",
+    "chalk": "^5.5.0"
+  },
+  "devDependencies": {
+    "@xterm/headless": "^5.5.0",
+    "@xterm/xterm": "^5.5.0"
+  }
+}

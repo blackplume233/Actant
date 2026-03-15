@@ -393,6 +393,33 @@ export class EmployeeSchedulerImpl {
 
 > **规则**: 任何 PR 如果包含新功能或接口变更，但缺少对应的 spec/类型/配置文档更新，应被 reject。
 
+### 通信层变更流程
+
+> **背景**: 通信协议层（`@actant/core` channel types、`ActantChannel`、`ChannelConnectOptions`、`ChannelPermissions`）是所有 Backend 适配器的契约基础。协议变更的影响面极大——一个字段的语义偏差会导致多个适配器行为不一致。
+
+**通信层协议变更 MUST 按以下顺序执行：**
+
+| 步骤 | 产出 | 位置 |
+|------|------|------|
+| 1 | **更新协议白皮书** | `docs/design/channel-protocol/` 中对应的 `.md`（如 `initialization.md`、`tool-calls.md`） |
+| 2 | **更新通信层 spec** | `.trellis/spec/communication-layer.md` |
+| 3 | **修改协议类型** | `packages/core/src/channel/types.ts` |
+| 4 | **修改 AgentManager 层** | `packages/core/src/manager/agent-manager.ts` 中的连接逻辑 |
+| 5 | **修改适配器实现** | `packages/channel-claude/`、`packages/acp/` 等 |
+| 6 | **添加单元测试** | 验证从 template → connect options → adapter 的完整传递链 |
+
+```typescript
+// Good — 先更新白皮书定义 ChannelPermissions 的语义和适配器映射表，
+//        再修改 types.ts 添加 ChannelPermissions interface，
+//        再修改 agent-manager.ts 注入 permissions，
+//        最后修改 ClaudeChannelManagerAdapter 读取 permissions
+
+// Bad — 直接在 ClaudeChannelAdapter 加 allowedTools 参数，
+//       绕过协议层，导致其他适配器不知道这个约定存在
+```
+
+**Why**: 刚刚的 `ChannelPermissions` 添加过程暴露了这个问题——如果直接在 `adapterOptions` 中透传 `permissionMode`/`allowedTools`，协议层完全不知道权限模型的存在，其他适配器无法受益，新开发者也不知道权限应该从哪里配置。白皮书先行确保所有适配器有一致的实现参照。
+
 ### 项目文件格式约定
 
 项目中不同用途的文件使用不同的标准格式：
@@ -926,6 +953,36 @@ backend: { type: "pi", config: { executablePath: process.execPath, args: [...] }
 > `MockLauncher` 已标记为 `@deprecated`。仅在状态机测试中保留使用，且必须配合 Pi 后端。
 > 参见 `packages/core/src/testing/test-launcher.ts`
 
+### Common Mistake: `vi.fn` 泛型在 TypeScript Strict 模式下报错
+
+**症状**: 测试在 vitest 中运行通过（`pnpm test` 成功），但 `tsc --noEmit` 报 `TS2558: Expected 0-1 type arguments, but got 2` 或 `TS2344: Type 'Function' does not satisfy the constraint`。
+
+**原因**: `vi.fn<[string], Promise<void>>()` 的双泛型参数写法在 vitest 的 globals 环境下可以运行，但 TypeScript strict 模式下不合法。
+
+**修复**:
+
+```typescript
+// Bad — tsc --noEmit 报错
+const handler = vi.fn<[string], Promise<void>>().mockResolvedValue(undefined);
+
+// Good — 用内联函数签名替代泛型参数
+const handler = vi.fn(async (_text: string) => {});
+```
+
+**同理适用于无参函数**:
+
+```typescript
+// Bad
+const exitHandler = vi.fn<[], Promise<void>>().mockResolvedValue(undefined);
+
+// Good
+const exitHandler = vi.fn(async () => {});
+```
+
+**预防**: 新增测试文件后，运行 `npx tsc --noEmit` 检查，不要仅依赖 `pnpm test`。vitest 使用 esbuild 转译，跳过了部分 TypeScript 类型检查。
+
+> 发现于 #279 TUI 测试 chat-view.test.ts。
+
 ### Test Stubs: Use Type Assertion, Not Annotation
 
 ```typescript
@@ -950,6 +1007,52 @@ const stubMeta: AgentInstanceMeta = {
 **Why**: Test stubs intentionally provide only the fields the test cares about. Using `as Type` gives basic type checking on the provided fields while allowing omission of irrelevant ones. Direct annotation (`: Type`) forces you to either provide every field or add `Partial<>` wrappers that weaken downstream type safety.
 
 > **Gotcha**: Ensure the stub includes the specific fields that the code under test actually reads. If a test fails at runtime because a field is `undefined`, add it to the stub rather than making the type `Partial`.
+
+### TUI Testing via VirtualTerminal
+
+TUI 组件（`ActantChatView`、`StreamingMarkdown` 等）使用 `@actant/tui/testing` 提供的 `createTestHarness()` 进行 E2E 测试。该方案基于 `@xterm/headless`（无头终端模拟器），无需 `child_process.spawn` 或真实 TTY。
+
+```typescript
+import { createTestHarness, type TuiTestHarness } from "@actant/tui/testing";
+import { ActantChatView } from "@actant/tui";
+
+let harness: TuiTestHarness;
+const { harness: h, terminal } = await createTestHarness(80, 24);
+harness = h;
+
+const chatView = new ActantChatView(terminal, { title: "Test" });
+chatView.onUserMessage = async (text) => { /* ... */ };
+chatView.start();
+
+harness.sendInput("Hello world");
+harness.sendInput("\r");
+await harness.waitFor("expected output", 3000);
+
+const text = await harness.getViewportText();
+expect(text).toContain("expected output");
+```
+
+**`TuiTestHarness` API**:
+
+| 方法 | 用途 |
+|------|------|
+| `sendInput(data)` | 向虚拟终端发送键盘输入（支持 ANSI 转义如 `\x1b` = Escape） |
+| `getViewport()` | 返回当前渲染的行数组（`string[]`） |
+| `getViewportText()` | 返回所有行拼接后的文本 |
+| `waitFor(pattern, timeoutMs)` | 轮询直到输出包含 `pattern`，超时抛异常 |
+| `resize(cols, rows)` | 调整虚拟终端尺寸 |
+
+**必须覆盖的压力/边界场景**:
+
+- 超长输入（1000+ 字符）
+- Unicode / emoji 输入
+- 快速连续空 Enter（不应触发 onUserMessage）
+- 大量流式 chunk（100+）
+- 空内容 chunk 混杂
+- 非响应状态下 Escape（应为 no-op）
+- 多轮连续对话
+
+> 发现于 #279 TUI 集成。所有 `@actant/tui` 组件的 E2E 测试必须使用此方案，禁止 `child_process.spawn` + 真实 TTY 的脆弱方式。
 
 ### Test Structure
 

@@ -4,18 +4,61 @@
 > 更新节奏：当前任务推进、Issue 状态变更或里程碑调整时同步更新本文。
 > **Task 级 Todo**：在本文持续迭代当前任务的勾选清单，随开发进展更新 `[ ]` → `[x]`，完成一项勾一项。
 
-### 当前设计校正 / 规范同步（2026-03-14）
+### 当前最高优先：#279 统一通信层收敛（2026-03-14）
 
-> 目标：把 `service` 作为共享 runtime communication target 的新基线正式写入规范，并统一修正 proxy/prompt/run/lease 语义，而不是继续把这些问题当作零散 bug。
+> 目标：建立 Actant 自有通信层 `ActantChannel`（ACP-Like），用 Claude Agent SDK 替代 ACP bridge binary，把 `service` 作为共享 runtime communication target，统一内外通信模型。紧随其后进行全项目回顾审查与稳定性修复。
 
 - [x] 新增统一通信层规范：`.trellis/spec/communication-layer.md`
 - [x] 同步 authoritative spec：`index.md` / `agent-lifecycle.md` / `api-contracts.md` / `config-spec.md`
 - [x] 明确 `proxy` 对运行中 `service` 默认 lease-first，而非 direct-bridge-first
 - [x] 明确 `running service` 的目标语义是 communication-ready，而非仅 process-alive
 - [x] 明确 Actant 对外是 runtime facade，`claude-code` 等仅为内部 backend adapter
+- [ ] **定义 `ActantChannel` 接口**（session / prompt / stream / cancel / notification / readiness）
+- [ ] **实现 `ClaudeAgentSdkAdapter`**（用 `@anthropic-ai/claude-agent-sdk` 的 `query()` 封装）
+- [ ] **迁移 `AgentManager`** 从 `AcpConnectionManagerLike` 到 `ActantChannel`
+- [ ] **`@actant/acp` 重构**为纯外部 ACP 协议适配器
 - [ ] 后续实现收敛：把 CLI / Dashboard / RPC / internal communication 路由并入同一 communication router
 - [ ] 后续验证：覆盖 `service start => readiness`、`agent.prompt`、`proxy` lease-first、Dashboard session semantics、internal route alignment
+- [ ] **全项目回顾审查**：功能稳定性、正确性、基本功能修复、端到端流程验证
 
+### Pi Mono 简洁哲学吸收（2026-03-15，#291 总入口）
+
+> **Umbrella Issue**: [#291 - Absorb Pi Mono simplicity philosophy into ACP-EX and architecture](https://github.com/blackplume233/Actant/issues/291)
+>
+> 通过与 [Pi Mono](https://github.com/badlogic/pi-mono) 的深度架构对比，识别出 ACP-EX 协议缺失的底层语义和 Actant 架构可优化的方向。按 P0-P3 分阶段推进。
+
+**P0 — 与 #279 同步**
+
+| Issue | 标题 | 优先级 | 状态 |
+|-------|------|--------|------|
+| #280 | ACP-EX Steering/Follow-up mid-turn messaging | P0 | open |
+
+**P1 — #279 后优先实现**
+
+| Issue | 标题 | 优先级 | 状态 |
+|-------|------|--------|------|
+| #281 | ACP-EX Session Branching and Fork | P1 | open |
+| #282 | ACP-EX Context Compaction for long-running sessions | P1 | open |
+
+**P2 — 中期架构改造**
+
+| Issue | 标题 | 优先级 | 状态 |
+|-------|------|--------|------|
+| #283 | ACP-EX Tool Hooks - beforeToolCall/afterToolCall | P2 | open |
+| #284 | ACP-EX Design Principles and Custom Message Types | P2 | open |
+| #285 | Evaluate @actant/core package split | P2 | open |
+| #286 | AgentManager slim-down and CommunicationRouter extraction | P2 | open |
+| #288 | Subsystem hot-pluggable architecture | P2 | open |
+| #289 | Platform Session vs Backend Session ownership model | P2 | open |
+
+**P3 — 长期方向**
+
+| Issue | 标题 | 优先级 | 状态 |
+|-------|------|--------|------|
+| #287 | Agent App registration-based developer API | P3 | open |
+| #290 | CLI command layering and event system hierarchy | P3 | open |
+
+---
 
 构建一个**企业级 AI Agent 底层平台**，支持 Agent 的组装、工作区物化、运行时管理、标准协议通信和可插拔扩展体系，并在其上承载 Agent App、SOP 自动化、CI 任务代理与外部引擎集成。
 
@@ -23,7 +66,7 @@
 - **Assembler**: 通过 Skills + Prompts + MCP + Workflow 组织模板与 Domain Context
 - **Launcher**: 多模式 Agent 启动与 archetype-aware 交付（repo / service / employee）
 - **Lifecycle**: 进程监控、会话管理、keepAlive、崩溃恢复
-- **Communication**: ACP Proxy（外部接入）、MCP Server（Agent 间通信）、External Spawn（自主管理）
+- **Communication**: ActantChannel（Actant 自有通信层）、ACP Proxy（外部 IDE 接入）、Claude Agent SDK / Pi SDK（backend adapter）、MCP Server（Agent 间通信）、External Spawn（自主管理）
 - **Extension**: 平台插件、调度、Hook、记忆等自治能力挂载
 - **Memory**: 实例记忆、跨实例共享、上下文分层
 
@@ -285,8 +328,9 @@ Phase 2 (已完成)
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
+| **#279** | **统一通信层与 Runtime Facade 收敛 — ActantChannel + Claude Agent SDK** | **P0** | - | 🔥 **当前最高优先** |
 | **#135** | **Workflow 重定义为 Hook Package — 事件驱动自动化** | **P1** | #47 | ✅ 基础已完成，后续与 Plugin Core 继续整合 |
-| **#14** | **Actant 系统级 Plugin 体系（heartbeat/scheduler/memory 可插拔）** | **P1** | #22, #47 | 📋 当前第一优先 |
+| **#14** | **Actant 系统级 Plugin 体系（heartbeat/scheduler/memory 可插拔）** | **P1** | #22, #47 | 📋 待 #279 通信层稳定后推进 |
 | #122 | Employee/Service Mode 完善 / 调度增强 | P2 | #14, #210, #211 | 📋 待开始 |
 | **#134** | **agent open + interactionModes — 前台 TUI** | **P2** | - | ✅ 已完成 |
 | **#133** | **环境变量作为默认 provider 配置** | **P2** | - | 📋 待开始 |
@@ -306,11 +350,12 @@ Phase 2 (已完成)
 - `agent open`、Pi 后端、ToolRegistry 硬化等外围能力已补齐
 
 **推荐推进顺序**：
-1. 先完成 `#278` 的文档 / Spec / 验证框架收口，稳定平台叙事、概念边界与验证组织
-2. 再完成近期稳定化 / 模型收口任务（capability backend runtime、Windows socket normalization）
-3. 以 #14 Plugin Core 作为平台底座
-4. 在 #14 之上推进 #122 调度增强、#37 Initializer、#133 env provider
-5. 再推进 #136 Email 与 Memory 深化，形成协作与记忆闭环
+1. **🔥 #279 统一通信层收敛**：定义 `ActantChannel` 接口 → 实现 `ClaudeAgentSdkAdapter`（用 `@anthropic-ai/claude-agent-sdk` 替代 ACP bridge binary）→ 迁移 `AgentManager` → `@actant/acp` 退化为外部协议适配器
+2. **项目回顾审查与稳定性修复**：全面审查现有功能稳定性与正确性、修复 QA 发现的问题、基础端到端流程验证（create → start → prompt → stop 各 archetype）
+3. 近期收口任务：capability backend runtime model、Windows socket normalization
+4. 以 #14 Plugin Core 作为平台底座
+5. 在 #14 之上推进 #122 调度增强、#37 Initializer、#133 env provider
+6. 再推进 #136 Email 与 Memory 深化，形成协作与记忆闭环
 
 **#135 Hook 三层架构：**
 ```
@@ -381,13 +426,13 @@ Actant-side Plugin (#14, Phase 4):
 
 ## 当前进行中 (Current)
 
-Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#105/#106 增强项已关闭推迟。当前聚焦 **Phase 4 自治 Agent 平台**，但本轮主线不是直接实现所有自治能力，而是先完成面向 #278 的平台叙事、概念边界、Spec 与验证框架收敛。
+Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#105/#106 增强项已关闭推迟。当前聚焦 **Phase 4 自治 Agent 平台**，本轮最高优先是 **#279 统一通信层收敛**（建立 Actant 自有通信层 `ActantChannel`、用 Claude Agent SDK 替代 ACP bridge binary、统一 runtime facade），紧随其后是**全项目回顾审查与稳定性修复**。
 
 **当前产品定位基线：**
 - Actant 是 **底层平台**，承载 Agent App、SOP、CI、外部引擎集成等上层形态
 - `repo -> service -> employee` 是 **管理深度递进模型**，不是彼此竞争的三套产品
 - **service 是当前主交付形态**，应作为后续 platform/runtime 与产品集成的默认基线
-- **通信层设计校正已进入当前优先级**：重点不再只是修补 `proxy` 或 `run` 单点 bug，而是把 `service` 的 shared runtime、lease-first 路由、readiness、Dashboard chat、internal communication 统一到同一 contract
+- **通信层收敛为当前最高优先（#279）**：建立 Actant 自有通信层 `ActantChannel`（ACP-Like），用 Claude Agent SDK 替代 ACP bridge binary 封装 claude-code，`@actant/acp` 退化为外部协议适配器；把 `service` 的 shared runtime、lease-first 路由、readiness、Dashboard chat、internal communication 统一到同一 contract
 - **employee 是自治增强层**，调度、心跳、持续运行能力在 service 之上叠加
 
 **已完成主线**：
@@ -409,19 +454,27 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 - ✅ `agent open` + interactionModes（#134）
 
 **当前主阻塞 / 主线任务**：
-- 📋 #14 Actant 系统级 Plugin 体系 — **Phase 4 平台底座已具备实现基线**（ActantPlugin / PluginHost / HeartbeatPlugin / runtime status RPC）；当前下一阻塞点转为其上的 #122 / #37 / #133
+- 🔥 **#279 统一通信层与 Runtime Facade 收敛** — **当前最高优先**：定义 `ActantChannel` 接口、实现 `ClaudeAgentSdkAdapter`（用 `@anthropic-ai/claude-agent-sdk` 替代 ACP bridge）、`@actant/acp` 退化为外部协议适配器
+- 🔍 **项目回顾审查与稳定性修复** — 紧随 #279 之后：全面审查现有功能稳定性与正确性、修复 QA 发现的基础问题、端到端流程验证
+- 📋 #14 Actant 系统级 Plugin 体系 — 待 #279 通信层稳定后推进
 - 📋 #122 调度增强 — 依赖 Plugin Core + Context Injection
 - 📋 #37 Extensible Initializer — 依赖 Plugin / Runtime 集成收敛
 - 📋 #133 环境变量作为默认 provider 配置 — 后端可用性与 DX 基础
 - 📋 #136 Agent-to-Agent Email 通信 — 协作层能力，建议排在平台内核稳定之后
 
-**近期收口任务（非新主线）**：
+**紧随 #279 之后：项目回顾审查与稳定性修复**：
+- 🔍 全面审查现有功能的稳定性、正确性与代码质量
+- 🔍 修复 QA 发现的基础功能与 service communication 问题
+- 🔍 基础端到端流程验证（create → start → prompt → stop 各 archetype）
+
+**近期收口任务（稳定性修复的一部分）**：
 - 📋 `03-11-capability-backend-runtime` — capability-driven backend runtime model，属于运行时能力模型收口；应以 `supportedModes + runtimeProfile + capabilities` 三层共同决定 archetype compatibility 与默认 interactionModes，而不是继续依赖后端名称或单一 profile 的隐式推断
 - 📋 `03-11-issue276-daemon-socket-normalization` — Windows daemon socket normalization，属于跨平台稳定性补丁；统一以 `normalizeIpcPath()` + `getDefaultIpcPath()/getIpcPath()` 作为 CLI / Daemon / setup 的共享入口，避免 Windows 上 `.sock` 风格 override 与 named pipe 实际路径继续漂移
 
 **说明**：
 - `docs/planning/phase4-employee-steps.md` 已表明 Phase 4 并非“待开始”，而是 **8/15 Steps 已完成**。
 - 后续推进以 `phase4-employee-steps.md` 的依赖关系为准，roadmap 负责压缩表达和对外总览。
+- **#279 通信层收敛是 Phase 4 的新最高优先项**，完成后紧接全项目回顾审查与稳定性修复，再继续推进平台底座。
 
 ### Phase 1 完成总结
 
@@ -474,46 +527,54 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 
 ## 后续优先 (Next Up)
 
-按依赖关系与平台价值排序。当前重点不是直接铺开更多实现线，而是先完成 `#278` 的知识治理收口，再把 Phase 4 的平台底座补齐。
+按依赖关系与平台价值排序。当前最高优先是 **#279 通信层收敛**，紧随其后是**全项目回顾审查与稳定性修复**，然后再推进平台底座。
 
-### A. 治理收口（当前主线）
-
-| 顺序 | 项目 | 类型 | 说明 |
-|------|------|------|------|
-| 1 | `#278 Slice 2` | governance slice | 清理仍会误导主线的历史文档、FAQ、design/planning/wiki 表述，逐条映射冲突项（至少覆盖 C-01 / C-02 / C-04 / C-05 / C-08） |
-| 2 | `#278 Slice 3` | governance slice | 收口验证与契约入口：补 issue 跟踪、最小必要的契约/索引同步，并把 archetype-oriented validation 入口固定下来 |
-
-### B. 稳定化与模型收口（近期）
+### A. 通信层收敛（🔥 当前最高优先）
 
 | 顺序 | 项目 | 类型 | 说明 |
 |------|------|------|------|
-| 3 | `03-11-capability-backend-runtime` | planning task | 收口 backend/runtime capability model，明确能力抽象与实现边界 |
-| 4 | `03-11-issue276-daemon-socket-normalization` | planning task | 修复 Windows daemon socket path / normalization 稳定性问题 |
+| 1 | **#279 统一通信层** | architecture | 定义 `ActantChannel` 接口 → `ClaudeAgentSdkAdapter` 实现 → `AgentManager` 迁移 → `@actant/acp` 退化为外部适配器 |
 
-### C. 平台底座（Phase 4 核心）
+### B. 项目回顾审查与稳定性修复（紧随 #279 之后）
+
+| 顺序 | 项目 | 类型 | 说明 |
+|------|------|------|------|
+| 2 | **全面功能审查** | review | 回顾现有全部功能的稳定性、正确性、代码质量；端到端流程验证（create → start → prompt → stop 各 archetype） |
+| 3 | **QA 问题修复** | bugfix | 修复 QA 发现的 service communication 及基础功能问题 |
+| 4 | `03-11-capability-backend-runtime` | planning task | 收口 backend/runtime capability model，明确能力抽象与实现边界 |
+| 5 | `03-11-issue276-daemon-socket-normalization` | planning task | 修复 Windows daemon socket path / normalization 稳定性问题 |
+
+### C. 治理收口
+
+| 顺序 | 项目 | 类型 | 说明 |
+|------|------|------|------|
+| 6 | `#278 Slice 2` | governance slice | 清理仍会误导主线的历史文档、FAQ、design/planning/wiki 表述，逐条映射冲突项（至少覆盖 C-01 / C-02 / C-04 / C-05 / C-08） |
+| 7 | `#278 Slice 3` | governance slice | 收口验证与契约入口：补 issue 跟踪、最小必要的契约/索引同步，并把 archetype-oriented validation 入口固定下来 |
+
+### D. 平台底座（Phase 4 核心）
 
 | 顺序 | Issue | 标题 | 依赖 | 说明 |
 |------|-------|------|------|------|
-| 5 | **#14** | Actant 系统级 Plugin 体系 | #22, #47, `#278` 治理基线 | **当前总阻塞点**；统一 runtime / hooks / domainContext 三插口能力 |
-| 6 | **#122** | 调度器四模式增强 | #14, #210, #211 | 已完成主链：DelayInput、InputSourceRegistry、schedule.wait/cron/cancel RPC、MCP schedule tools、E-SCHED endurance；后续仅剩更深 plugin wiring / 可观测性补强 |
-| 7 | **#37** | Extensible Initializer | #14（集成收敛后收益更高） | 已完成主链：StepRegistry、InitializationPipeline、AgentInitializer 集成执行、initializer 预检、7 个内置步骤（含 file-template/write-file） |
-| 8 | **#133** | 环境变量作为默认 provider 配置 | 与 #37 可并行 | 已完成核心运行时收口：template > env > registry default，backend-aware provider env 注入已统一；后续仅剩 planning/docs 状态同步 |
+| 8 | **#14** | Actant 系统级 Plugin 体系 | #22, #47, #279 通信层稳定 | 统一 runtime / hooks / domainContext 三插口能力 |
+| 9 | **#122** | 调度器四模式增强 | #14, #210, #211 | 已完成主链：DelayInput、InputSourceRegistry、schedule.wait/cron/cancel RPC、MCP schedule tools、E-SCHED endurance；后续仅剩更深 plugin wiring / 可观测性补强 |
+| 10 | **#37** | Extensible Initializer | #14（集成收敛后收益更高） | 已完成主链：StepRegistry、InitializationPipeline、AgentInitializer 集成执行、initializer 预检、7 个内置步骤（含 file-template/write-file） |
+| 11 | **#133** | 环境变量作为默认 provider 配置 | 与 #37 可并行 | 已完成核心运行时收口：template > env > registry default，backend-aware provider env 注入已统一；后续仅剩 planning/docs 状态同步 |
 
-### D. 协作与外置扩展
+### E. 协作与外置扩展
 
 | 顺序 | Issue | 标题 | 依赖 | 说明 |
 |------|-------|------|------|------|
-| 9 | **#136** | Agent-to-Agent Email 通信 | #122 后收益更高 | 建立 Agent 异步协作范式，接入 TaskQueue / 调度管道 |
-| 10 | 外置记忆系统 | external component | 独立于当前 Phase 4 主线 | 记忆系统不再视为 Phase 4 内建里程碑，而是作为 Actant 外置组件/集成方向单独推进 |
+| 12 | **#136** | Agent-to-Agent Email 通信 | #122 后收益更高 | 建立 Agent 异步协作范式，接入 TaskQueue / 调度管道 |
+| 13 | 外置记忆系统 | external component | 独立于当前 Phase 4 主线 | 记忆系统不再视为 Phase 4 内建里程碑，而是作为 Actant 外置组件/集成方向单独推进 |
 
-### E. 平台补强（内核稳定后）
+### F. 平台补强（内核稳定后）
 
 | 顺序 | Issue | 标题 | 说明 |
 |------|-------|------|------|
-| 12 | #40 | Agent 工具权限管理机制 | 平台安全与权限边界 |
-| 13 | #8 | Template hot-reload on file change | DX 增强 |
-| 14 | #9 | Agent 进程 stdout/stderr 日志收集 | 可观测性补强 |
-| 15 | #38 | Template: Endurance Test Agent | 与 #37 配合完善验证资产 |
+| 14 | #40 | Agent 工具权限管理机制 | 平台安全与权限边界 |
+| 15 | #8 | Template hot-reload on file change | DX 增强 |
+| 16 | #9 | Agent 进程 stdout/stderr 日志收集 | 可观测性补强 |
+| 17 | #38 | Template: Endurance Test Agent | 与 #37 配合完善验证资产 |
 
 ### Phase 5 — 记忆系统 & 长期
 

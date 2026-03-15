@@ -1,4 +1,5 @@
 export * from "./builder/index";
+export * from "./channel/index";
 export * from "./scheduler/index";
 export * from "./template/index";
 export * from "./initializer/index";
@@ -13,6 +14,7 @@ export * from "./provider/index";
 export * from "./hooks/index";
 export * from "./activity/index";
 export * from "./journal/index";
+export * from "./record/index";
 export * from "./context-injector/index";
 export * from "./budget/index";
 export * from "./plugin/index";

@@ -6,5 +6,5 @@
     "rootDir": "./src"
   },
   "include": ["src", "bin"],
-  "references": [{ "path": "../shared" }, { "path": "../core" }, { "path": "../acp" }, { "path": "../api" }]
+  "references": [{ "path": "../shared" }, { "path": "../core" }, { "path": "../acp" }, { "path": "../api" }, { "path": "../tui" }]
 }

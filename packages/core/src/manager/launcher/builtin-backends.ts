@@ -134,6 +134,7 @@ const BUILTIN_BACKENDS: BackendDefinition[] = [
     version: "1.0.0",
     description: "Claude Code CLI",
     origin: { type: "builtin" },
+    channelStrategy: "sdk",
     supportedModes: ["resolve", "open", "acp"],
     defaultInteractionModes: ["open", "start", "chat", "run", "proxy"],
     runtimeProfile: "managedPrimary",

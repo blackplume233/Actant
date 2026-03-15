@@ -1630,3 +1630,57 @@ Shipped the intended tooling fix that excludes Claude-managed worktrees from roo
 ### Next Steps
 
 - None - task complete
+
+## Session 30: Unified communication spec sync
+
+**Date**: 2026-03-14
+**Task**: Unified communication spec sync
+
+### Summary
+
+Added and aligned the unified communication layer spec, synced lifecycle/api/config/roadmap/architecture docs, fixed proxy CLI type errors, and verified lint/type-check/test before pushing.
+
+### Main Changes
+
+| Area | Description |
+|------|-------------|
+| Spec | Added `.trellis/spec/communication-layer.md` as the authoritative unified communication layer spec |
+| Spec Sync | Updated `.trellis/spec/index.md`, `.trellis/spec/agent-lifecycle.md`, `.trellis/spec/api-contracts.md`, and `.trellis/spec/config-spec.md` to align service lease-first communication semantics |
+| Planning | Updated `docs/planning/roadmap.md` to frame the work as communication-layer design correction and spec sync |
+| Architecture | Synced `docs/stage/v0.2.6/architecture.md` and `docs/wiki/reference/architecture.md` with runtime-facade and communication-layer guidance |
+| CLI | Fixed `packages/cli/src/commands/proxy.ts` type mismatches so the repo passes validation |
+
+**Verification**:
+- `pnpm lint` ✅
+- `pnpm type-check` ✅
+- `pnpm test` ✅
+- Pushed commit `d32d566` to `origin/master`
+
+**Updated Files**:
+- `.trellis/spec/communication-layer.md`
+- `.trellis/spec/index.md`
+- `.trellis/spec/agent-lifecycle.md`
+- `.trellis/spec/api-contracts.md`
+- `.trellis/spec/config-spec.md`
+- `docs/planning/roadmap.md`
+- `docs/stage/v0.2.6/architecture.md`
+- `docs/wiki/reference/architecture.md`
+- `packages/cli/src/commands/proxy.ts`
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `d32d566` | (see git log) |
+
+### Testing
+
+- [OK] (Add test results)
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - task complete

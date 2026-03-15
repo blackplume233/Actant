@@ -1,0 +1,53 @@
+{
+  "name": "@actant/channel-claude",
+  "version": "0.3.0",
+  "description": "Claude Agent SDK channel adapter for the Actant platform",
+  "type": "module",
+  "license": "MIT",
+  "author": "blackplume <blackplume233@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blackplume233/Actant.git",
+    "directory": "packages/channel-claude"
+  },
+  "homepage": "https://github.com/blackplume233/Actant#readme",
+  "bugs": "https://github.com/blackplume233/Actant/issues",
+  "keywords": [
+    "actant",
+    "ai-agent",
+    "claude",
+    "channel",
+    "sdk"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "bin": {
+    "actant-channel-claude-chat": "./dist/bin/test-chat.js"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsx --watch src/index.ts",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:chat": "tsx src/bin/test-chat.ts",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@actant/core": "workspace:0.3.0",
+    "@actant/shared": "workspace:0.3.0",
+    "@actant/tui": "workspace:0.3.0",
+    "@anthropic-ai/claude-agent-sdk": "^0.2.0"
+  }
+}

@@ -119,6 +119,16 @@ export type {
   JournalQueryFilter,
   SessionLifecycleData,
 } from "./journal.types";
+export type {
+  RecordCategory,
+  RecordEntry,
+  RecordQueryFilter,
+  RecordSessionSummary,
+} from "./record.types";
+export {
+  mapHookEventToCategory,
+  mapActivityTypeToCategory,
+} from "./record.types";
 export {
   RPC_ERROR_CODES,
   type RpcRequest,

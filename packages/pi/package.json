@@ -1,7 +1,7 @@
 {
   "name": "@actant/pi",
-  "version": "0.2.3",
-  "description": "Pi Agent backend for the Actant platform — built on pi-agent-core and pi-ai",
+  "version": "0.3.0",
+  "description": "Pi Agent backend for the Actant platform \u2014 built on pi-agent-core and pi-ai",
   "type": "module",
   "license": "MIT",
   "author": "blackplume <blackplume233@gmail.com>",
@@ -45,8 +45,8 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@actant/core": "workspace:*",
-    "@actant/shared": "workspace:*",
+    "@actant/core": "workspace:0.3.0",
+    "@actant/shared": "workspace:0.3.0",
     "@agentclientprotocol/sdk": "^0.14.1",
     "@mariozechner/pi-agent-core": "^0.54.2",
     "@mariozechner/pi-ai": "^0.54.2"

@@ -6,6 +6,9 @@ import type { JournalEntry, JournalCategory, JournalQueryFilter } from "@actant/
 const logger = createLogger("event-journal");
 
 /**
+ * @deprecated Use {@link RecordSystem} from `@actant/core/record` instead.
+ * This class is retained for backward compatibility during migration.
+ *
  * Append-only event journal for system recovery and audit.
  *
  * Storage layout:

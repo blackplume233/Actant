@@ -28,6 +28,8 @@ import {
   HookRegistry,
   ActivityRecorder,
   EventJournal,
+  RecordSystem,
+  RecordingChannelManager,
   SessionContextInjector,
   SessionTokenStore,
   CanvasContextProvider,
@@ -45,12 +47,14 @@ import {
   canvasSourceFactory,
   vcsSourceFactory,
   processSourceFactory,
+  RoutingChannelManager,
   type ActionContext,
   type LauncherMode,
 } from "@actant/core";
 import { CanvasStore } from "./canvas-store";
 import type { ModelApiProtocol } from "@actant/shared";
-import { AcpConnectionManager } from "@actant/acp";
+import { AcpConnectionManager, AcpChannelManagerAdapter } from "@actant/acp";
+import { ClaudeChannelManagerAdapter } from "@actant/channel-claude";
 import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
 import { createLogger, getIpcPath, initLogDir, normalizeIpcPath } from "@actant/shared";
 
@@ -104,6 +108,7 @@ export class AppContext {
   readonly pluginManager: PluginManager;
   readonly agentInitializer: AgentInitializer;
   readonly acpConnectionManager: AcpConnectionManager;
+  readonly claudeChannelManager: ClaudeChannelManagerAdapter;
   readonly agentManager: AgentManager;
   readonly sessionRegistry: SessionRegistry;
   readonly sourceManager: SourceManager;
@@ -112,7 +117,10 @@ export class AppContext {
   readonly eventBus: HookEventBus;
   readonly hookCategoryRegistry: HookCategoryRegistry;
   readonly hookRegistry: HookRegistry;
+  readonly recordSystem: RecordSystem;
+  /** @deprecated Use recordSystem. Kept for backward compat during migration. */
   readonly activityRecorder: ActivityRecorder;
+  /** @deprecated Use recordSystem. Kept for backward compat during migration. */
   readonly eventJournal: EventJournal;
   readonly sessionContextInjector: SessionContextInjector;
   readonly sessionTokenStore: SessionTokenStore;
@@ -178,7 +186,12 @@ export class AppContext {
       },
     );
     this.acpConnectionManager = new AcpConnectionManager();
+    this.claudeChannelManager = new ClaudeChannelManagerAdapter();
     this.sessionRegistry = new SessionRegistry();
+    this.recordSystem = new RecordSystem({
+      globalDir: join(this.homeDir, "records", "global"),
+      instancesDir: this.instancesDir,
+    });
     this.activityRecorder = new ActivityRecorder(this.instancesDir);
     this.eventJournal = new EventJournal(join(this.homeDir, "journal"));
     this.sessionContextInjector = new SessionContextInjector();
@@ -196,7 +209,7 @@ export class AppContext {
       createLauncher({ mode: launcherMode }),
       this.instancesDir,
       {
-        acpManager: launcherMode !== "mock" ? this.acpConnectionManager : undefined,
+        channelManager: launcherMode !== "mock" ? this.buildRoutingChannelManager() : undefined,
         instanceRegistry: this.instanceRegistry,
         watcherPollIntervalMs: launcherMode === "mock" ? 2_147_483_647 : undefined,
         eventBus: this.eventBus,
@@ -240,12 +253,22 @@ export class AppContext {
     this.registerWorkflowHooks();
     this.listenForInstanceHooks();
 
+    await this.recordSystem.rebuildIndex();
     await this.activityRecorder.rebuildIndex();
 
     initLogDir(join(this.homeDir, "logs"));
-    this.eventBus.setJournal(this.eventJournal);
-    this.sessionRegistry.setJournal(this.eventJournal);
-    await this.sessionRegistry.rebuildFromJournal(this.eventJournal);
+    this.eventBus.setRecordSystem(this.recordSystem);
+    this.eventBus.setSessionResolver((agentName) => {
+      const sessions = this.sessionRegistry.list(agentName);
+      const active = sessions.find((s) => s.state === "active");
+      return active?.conversationId ?? active?.sessionId;
+    });
+    this.sessionRegistry.setRecordSystem(this.recordSystem);
+    try {
+      await this.sessionRegistry.rebuildFromRecordSystem(this.recordSystem);
+    } catch {
+      await this.sessionRegistry.rebuildFromJournal(this.eventJournal);
+    }
 
     this.sessionContextInjector.setEventBus(this.eventBus);
     this.sessionContextInjector.setTokenStore(this.sessionTokenStore);
@@ -339,6 +362,13 @@ export class AppContext {
    *   - providerEnv builder     → injects API keys / model config
    *   - PiBuilder + PiCommunicator
    */
+  private buildRoutingChannelManager(): RecordingChannelManager {
+    const acpAdapter = new AcpChannelManagerAdapter(this.acpConnectionManager);
+    const router = new RoutingChannelManager(acpAdapter);
+    router.registerBackend("claude-code", this.claudeChannelManager);
+    return new RecordingChannelManager(router, this.recordSystem);
+  }
+
   private registerPiBackend(): void {
     const mgr = getBackendManager();
     const existing = mgr.get("pi");

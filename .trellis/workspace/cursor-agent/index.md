@@ -8,8 +8,8 @@
 
 <!-- @@@auto:current-status -->
 - **Active File**: `journal-1.md`
-- **Total Sessions**: 29
-- **Last Active**: 2026-03-11
+- **Total Sessions**: 30
+- **Last Active**: 2026-03-14
 <!-- @@@/auto:current-status -->
 
 ---
@@ -19,7 +19,7 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~1632 | Active |
+| `journal-1.md` | ~1686 | Active |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +29,7 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 30 | 2026-03-14 | Unified communication spec sync | `d32d566` |
 | 29 | 2026-03-11 | Ship lint worktree ignore | `8ca69e4` |
 | 28 | 2026-02-27 | Issue #249 — ContextProvider 重构 + CoreContextProvider | `f3308e3` |
 | 27 | 2026-02-27 | Archetype Reclassification #228 + v0.2.5 Release | `b08eaf8`, `bf6f684`, `98f3c52`, `5fa3b31` |

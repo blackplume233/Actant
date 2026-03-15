@@ -1,7 +1,8 @@
 import { EventEmitter } from "node:events";
-import { createLogger } from "@actant/shared";
+import { createLogger, mapHookEventToCategory } from "@actant/shared";
 import type { HookEventName, HookCallerType, HookEmitContext } from "@actant/shared";
 import type { EventJournal } from "../journal/event-journal";
+import type { RecordSystem } from "../record/record-system";
 
 const logger = createLogger("hook-event-bus");
 
@@ -42,6 +43,12 @@ export class HookEventBus {
   private readonly emitter = new EventEmitter();
   private emitGuard: EmitGuard | null = null;
   private journal: EventJournal | null = null;
+  private recordSystem: RecordSystem | null = null;
+  /**
+   * Resolves agent name → current session ID for recording.
+   * Set by AgentManager so platform events land in the active session file.
+   */
+  private sessionResolver: ((agentName: string) => string | undefined) | null = null;
   private readonly recentBuffer: HookEventPayload[] = [];
   private readonly maxRecent: number;
 
@@ -50,9 +57,25 @@ export class HookEventBus {
     this.maxRecent = options?.maxRecentEvents ?? 500;
   }
 
-  /** Attach an EventJournal so every emitted event is persisted to disk. */
+  /**
+   * @deprecated Use setRecordSystem() instead. Kept for backward compat.
+   */
   setJournal(journal: EventJournal | null): void {
     this.journal = journal;
+  }
+
+  /** Attach the unified RecordSystem. Replaces setJournal(). */
+  setRecordSystem(rs: RecordSystem | null): void {
+    this.recordSystem = rs;
+  }
+
+  /**
+   * Provide a function that resolves an agent name to its current
+   * activity session ID. This lets platform events (lifecycle, process, etc.)
+   * be written to the correct per-session file instead of _lifecycle.
+   */
+  setSessionResolver(resolver: ((agentName: string) => string | undefined) | null): void {
+    this.sessionResolver = resolver;
   }
 
   /**
@@ -127,7 +150,18 @@ export class HookEventBus {
       this.recentBuffer.shift();
     }
 
-    if (this.journal) {
+    if (this.recordSystem) {
+      const sessionId = agentName ? this.sessionResolver?.(agentName) : undefined;
+      this.recordSystem.record({
+        category: mapHookEventToCategory(event),
+        type: event,
+        agentName,
+        sessionId,
+        data: payload,
+      }).catch((err) => {
+        logger.warn({ err, event }, "Failed to record hook event");
+      });
+    } else if (this.journal) {
       this.journal.append("hook", event, payload).catch((err) => {
         logger.warn({ err, event }, "Failed to journal hook event");
       });

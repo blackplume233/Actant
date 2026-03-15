@@ -4,6 +4,8 @@
 > It defines how `repo`, `service`, and `employee` instances expose runtime communication, how external and internal callers route requests, and how Actant presents a stable runtime facade even when the underlying backend is `claude-code` or another adapter.
 > **If code or secondary docs conflict with this document on communication semantics, this document wins.**
 
+> **变更流程**: 通信层协议的任何变更（类型定义、接口签名、行为语义）MUST 先更新本文档及 `docs/design/channel-protocol/` 白皮书，然后再修改代码。详见 [Quality Guidelines §通信层变更流程](backend/quality-guidelines.md#通信层变更流程)。
+
 ---
 
 ## 1. Purpose and Scope
@@ -119,28 +121,23 @@ It decides:
 - which conversation ID should be attached or created
 - which backend adapter should receive the final request
 
-### 4.2 Router responsibilities
+## 4.3 Channel protocol status
 
-The router abstraction may be implemented across existing modules today, but the architecture contract is singular.
+The unified communication layer is now backed by the protocol types in `packages/core/src/channel/types.ts`.
 
-The router owns these decisions:
+Implemented protocol facts:
 
-1. Resolve target instance and archetype.
-2. Resolve communication policy defaults.
-3. Check runtime readiness.
-4. Select route.
-5. Bind or create lease/conversation state as needed.
-6. Deliver prompt or ACP session interaction through the backend adapter.
-7. Return Actant-level result metadata.
+- `ActantChannelManager.connect()` returns `{ sessionId, capabilities }`
+- `ChannelHostServices` is the single callback ingress for session updates, file IO, permission, terminal, activity, and future host-tool/VFS hooks
+- `ChannelEvent` is the preferred event carrier; legacy `StreamChunk` remains a compatibility transport with optional `event`
+- `RoutingChannelManager` selects backend-specific managers by backend type
+- `RecordingChannelManager` / `RecordingChannelDecorator` own prompt-stream recording, while ACP callback recording remains in `RecordingCallbackHandler`
 
-Current code paths that collectively implement or must later consolidate this router include:
+Normative guidance:
 
-- `packages/cli/src/commands/proxy.ts`
-- `packages/cli/src/commands/agent/prompt.ts`
-- `packages/cli/src/commands/agent/chat.ts`
-- `packages/core/src/manager/agent-manager.ts`
-- `packages/api/src/handlers/agent-handlers.ts`
-- session handlers and registry components referenced by `session-management.md`
+- New adapters SHOULD emit native `ChannelEvent` values and attach them to `StreamChunk.event`
+- New consumers SHOULD prefer `ChannelEvent` semantics over inferring meaning from the old chunk enum alone
+- Compatibility helpers in `event-compat.ts` are the only approved place for legacy mapping logic
 
 ---
 
@@ -463,6 +460,29 @@ The following files are the primary implementation surfaces that must ultimately
 - `packages/api/src/handlers/agent-handlers.ts`
 - `packages/core/src/initializer/archetype-defaults.ts`
 - runtime session/lease modules referenced by `.trellis/spec/session-management.md`
+
+### 12.1 Unified TUI Surface (`@actant/tui`)
+
+所有 CLI 交互式聊天界面统一使用 `@actant/tui` 包（基于 `@mariozechner/pi-tui`），替代原有 `node:readline` + 手写 ANSI 方案。
+
+| 组件 | 职责 |
+|------|------|
+| `ActantChatView` | 高层聊天视图：Editor（用户输入）+ Markdown（助手响应）+ Loader（等待状态）组合 |
+| `StreamingMarkdown` | 从 `StreamChunk` 流式增量渲染 Markdown 内容 |
+| `ProcessTerminal` | 生产环境终端适配（`process.stdin/stdout`） |
+| `VirtualTerminal` | 测试用无头终端（`@xterm/headless`），详见 `quality-guidelines.md §TUI Testing` |
+
+**已迁移的 CLI 入口**:
+
+- `packages/channel-claude/src/bin/test-chat.ts` — ACP-EX test TUI
+- `packages/cli/src/commands/agent/chat.ts` — `actant agent chat` 命令（daemon / direct-bridge 双路径）
+
+**架构规则**:
+- 新增交互式 CLI 聊天功能必须使用 `ActantChatView`，禁止 `readline.createInterface()`
+- `@actant/tui` 仅依赖 `@actant/core`（`StreamChunk` 类型）和 `@mariozechner/pi-tui`，不引入 CLI 或 API 层的耦合
+- 主题和样式集中在 `packages/tui/src/theme.ts`，各消费方不应自行硬编码终端样式
+
+> 引入于 #279 Phase 1。协议设计详见 [ACP-EX](../../docs/design/channel-protocol/README.md)。
 
 Expected future implementation work includes:
 

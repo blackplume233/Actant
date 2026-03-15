@@ -14,6 +14,7 @@ import { TemplateRegistry } from "../template/registry/template-registry";
 import { AgentInitializer } from "../initializer/agent-initializer";
 import { AgentManager } from "./agent-manager";
 import { MockLauncher } from "./launcher/mock-launcher";
+import { getBackendManager } from "./launcher/backend-registry";
 import { writeInstanceMeta, readInstanceMeta } from "../state/instance-meta-io";
 import type { AgentInstanceMeta } from "@actant/shared";
 
@@ -21,7 +22,7 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
   return {
     name: "test-tpl",
     version: "1.0.0",
-    backend: { type: "claude-code" },
+    backend: { type: "pi" },
     archetype: "service",
     provider: { type: "openai", protocol: "openai" },
     domainContext: { skills: ["skill-a"] },
@@ -36,7 +37,7 @@ function makeMeta(name: string, overrides?: Partial<AgentInstanceMeta>): AgentIn
     name,
     templateName: "test-tpl",
     templateVersion: "1.0.0",
-    backendType: "claude-code",
+    backendType: "pi",
     interactionModes: ["open", "start", "chat", "run", "proxy"],
     status: "created",
     launchMode: "direct",
@@ -48,6 +49,30 @@ function makeMeta(name: string, overrides?: Partial<AgentInstanceMeta>): AgentIn
     updatedAt: now,
     ...overrides,
   };
+}
+
+function registerTestAcpBackend(): void {
+  const mgr = getBackendManager();
+  if (!mgr.get("test-acp")) {
+    mgr.register({
+      name: "test-acp",
+      version: "1.0.0",
+      description: "ACP backend for unit tests (process lifecycle testing)",
+      origin: { type: "builtin" },
+      supportedModes: ["resolve", "open", "acp"],
+      runtimeProfile: "managedPrimary",
+      maturity: "stable",
+      capabilities: {
+        supportsOpen: true,
+        supportsManagedSessions: true,
+        supportsServiceArchetype: true,
+        supportsEmployeeArchetype: true,
+        supportsPromptApi: true,
+      },
+      defaultInteractionModes: ["open", "start", "chat", "run"],
+      resolveCommand: { win32: "test-acp.cmd", default: "test-acp" },
+    });
+  }
 }
 
 describe("AgentManager", () => {
@@ -377,11 +402,11 @@ describe("AgentManager", () => {
     });
 
     it("should mark direct agent as stopped on crash (no restart)", async () => {
-      // Register a repo template with direct launch mode (no auto-restart)
+      registerTestAcpBackend();
       registry.register(makeTemplate({
         name: "direct-tpl",
         archetype: "repo",
-        backend: { type: "claude-code" },
+        backend: { type: "test-acp" },
       }));
 
       const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
@@ -434,10 +459,11 @@ describe("AgentManager", () => {
   describe("ProcessWatcher integration", () => {
     it("should update status when watched process exits unexpectedly", async () => {
       // Register a repo template with direct launch mode (no auto-restart)
+      registerTestAcpBackend();
       registry.register(makeTemplate({
         name: "direct-tpl",
         archetype: "repo",
-        backend: { type: "claude-code" },
+        backend: { type: "test-acp" },
       }));
 
       const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
@@ -477,11 +503,11 @@ describe("AgentManager", () => {
     });
 
     it("should start watcher on initialize", async () => {
-      // Register a repo template with direct launch mode (no auto-restart)
+      registerTestAcpBackend();
       registry.register(makeTemplate({
         name: "direct-tpl",
         archetype: "repo",
-        backend: { type: "claude-code" },
+        backend: { type: "test-acp" },
       }));
 
       const newManager = new AgentManager(initializer, launcher, tmpDir, {
@@ -520,7 +546,7 @@ describe("AgentManager", () => {
       expect(result.workspaceDir).toContain("res-agent");
       expect(result.command).toBeDefined();
       expect(result.args).toBeDefined();
-      expect(result.backendType).toBe("claude-code");
+      expect(result.backendType).toBe("pi");
       expect(result.created).toBe(false);
     });
 
@@ -638,8 +664,8 @@ describe("AgentManager", () => {
         has: vi.fn().mockReturnValue(false),
         getPrimarySessionId: vi.fn(),
         getConnection: vi.fn(),
-        disconnect: vi.fn(),
-        disposeAll: vi.fn(),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        disposeAll: vi.fn().mockResolvedValue(undefined),
       };
 
       const acpManager = new AgentManager(initializer, launcher, tmpDir, {
@@ -662,8 +688,8 @@ describe("AgentManager", () => {
         has: vi.fn().mockReturnValue(false),
         getPrimarySessionId: vi.fn(),
         getConnection: vi.fn(),
-        disconnect: vi.fn(),
-        disposeAll: vi.fn(),
+        disconnect: vi.fn().mockResolvedValue(undefined),
+        disposeAll: vi.fn().mockResolvedValue(undefined),
       };
 
       const acpManager = new AgentManager(initializer, launcher, tmpDir, {

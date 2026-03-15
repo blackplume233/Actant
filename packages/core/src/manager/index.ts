@@ -1,4 +1,4 @@
-export { AgentManager, type ManagerOptions } from "./agent-manager";
+export { AgentManager, type ManagerOptions, type AcpConnectionManagerLike, type AcpConnectionLike } from "./agent-manager";
 export {
   getLaunchModeHandler,
   type LaunchModeHandler,

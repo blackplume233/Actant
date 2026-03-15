@@ -62,7 +62,7 @@ spec/
 >
 > **#278 冲突项映射状态**：C-01 / C-02 / C-04 / C-05 已在 vision、roadmap、wiki、design 与 spec 索引中建立统一基线；C-08 由 `endurance-testing.md` 中的 archetype-oriented baseline 与 Phase 4 endurance 组织口径承接，后续新增验证资产必须继续围绕 `repo / service / employee` 建立验收入口。
 >
-> **统一通信层基线（2026-03-14）**：`service` 是共享 runtime communication target，统一通信语义由 `communication-layer.md` 负责收口。生命周期文档保留 product/runtime 总览，接口契约文档描述可调用 surface，配置规范描述 `communicationPolicy` 等声明面；若出现 `agent.prompt`、`proxy`、`run`、session/lease、Dashboard Chat 或 agent-to-agent communication 的口径分裂，应优先修正这三个入口的交叉引用，而不是继续在 design/wiki 中新增平行定义。
+> **统一通信层基线（2026-03-14，#279 升级）**：`service` 是共享 runtime communication target。Actant 建立自有通信层接口 `ActantChannel`（ACP-Like），概念借鉴 ACP 标准但所有权归 Actant；`claude-code` 通过 Claude Agent SDK 封装，`@actant/acp` 退化为外部协议适配器。统一通信语义由 `communication-layer.md` 负责收口。生命周期文档保留 product/runtime 总览，接口契约文档描述可调用 surface，配置规范描述 `communicationPolicy` 等声明面；若出现 `agent.prompt`、`proxy`、`run`、session/lease、Dashboard Chat 或 agent-to-agent communication 的口径分裂，应优先修正这三个入口的交叉引用，而不是继续在 design/wiki 中新增平行定义。
 
 | 文档 | 内容 | 约束力 |
 |------|------|--------|
@@ -82,6 +82,7 @@ spec/
 |------|------|--------|
 | [统一事件系统设计](../../docs/design/event-system-unified-design.md) | EventBus 统一架构、事件分类与订阅模型、Archetype 感知执行策略、Event-First 设计原则 | **核心** — 所有 Hook/Event/Workflow 相关实现的架构依据 |
 | [Agent 启动场景与 ACP 架构](../../docs/design/agent-launch-scenarios.md) | 7 种启动/交互场景、ACP Gateway 架构、协议分层、控制权谱系 | **核心** — 所有 ACP/Proxy/Chat 相关实现的架构依据 |
+| [ACP 未来发展分析与战略定位](../../docs/design/acp-future-analysis.md) | ACP 演进六大方向（Proxy Chains / MCP-over-ACP / 远程 Agent 等）、Actant 双层定位（ACP Proxy + Runtime Platform）、#279 方向验证 | **核心** — ACP 相关架构决策的战略依据 |
 | [架构 Docker 类比](../../docs/design/architecture-docker-analogy.md) | CLI-Daemon 分层设计的概念映射 | 参考 — 理解整体架构思路 |
 | [Plugin/Memory 审查报告](../../docs/design/plugin-memory-review-report.md) | Plugin 三插口设计、Memory 12 轮审查、安全/性能/兼容性 | **核心** — Plugin 体系的设计依据；其中 Memory 部分当前更适合作为外置组件/后续集成参考 |
 | [记忆层与 Agent 演进](../../docs/design/memory-layer-agent-evolution.md) | 四层记忆架构、MemoryRecord、Promote 机制、Context Broker | 参考 — 当前不属于 Phase 4 内建完成条件，作为外置组件/后续集成蓝图保留 |
@@ -90,6 +91,9 @@ spec/
 | [Subsystem 子系统设计](../../docs/design/subsystem-design.md) | 参考 UE Subsystem 的可热插拔辅助系统框架，四层作用域、声明式注册、生命周期绑定 | **核心** — 插件深层集成和系统功能模块化的架构基础 |
 | [actant-hub 组件仓库设计](../../docs/design/actant-hub-registry-design.md) | 官方 Hub 结构、组件类型、Skill 双格式、Source 集成 | **核心** — Hub 内容和 Source 系统的架构依据 |
 | [Hub Agent 内核设计 (#204)](https://github.com/blackplume233/Actant/issues/204) | 三层平台级 Agent 体系（Kernel/Auxiliary/Spark）、资产系统、`ac://` 统一寻址 | **核心** — actant-hub 初始内容和资产管理的蓝图 |
+| [Actant Channel Protocol (ACP-EX)](../../docs/design/channel-protocol/README.md) | Host-Backend 通信协议、三层 Profile、多适配器架构、Pi 简洁哲学启发的 steering/branching/compaction 语义 | **核心** — 统一通信层的协议定义，#279/#280-#290 实现依据 |
+| [Pi Mono 架构对比分析](https://github.com/badlogic/pi-mono) | Pi 的极简 Agent 核心 (~400 LOC)、Steering/Follow-up 双队列、Session Branching/Compaction、Extension API 设计 | **参考** — ACP-EX 和架构优化方向的外部灵感来源（#280-#290） |
+| `@actant/tui` (`packages/tui/`) | 统一 TUI 层（基于 `@mariozechner/pi-tui`）：`ActantChatView` 高层聊天组件、`StreamingMarkdown` 流式渲染、`VirtualTerminal` 无头测试 | **核心** — 所有 CLI 交互式聊天的唯一入口，禁止 `readline`（#279） |
 
 ### 第二层：实现指南（Implementation Guidelines）
 

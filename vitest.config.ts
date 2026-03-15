@@ -7,6 +7,8 @@ export default defineConfig({
       "@actant/core": resolve(__dirname, "packages/core/src/index.ts"),
       "@actant/shared": resolve(__dirname, "packages/shared/src/index.ts"),
       "@actant/api": resolve(__dirname, "packages/api/src/index.ts"),
+      "@actant/tui": resolve(__dirname, "packages/tui/src/index.ts"),
+      "@actant/tui/testing": resolve(__dirname, "packages/tui/src/testing.ts"),
     },
   },
   test: {

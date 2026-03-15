@@ -11,10 +11,16 @@ let nextPid = 10000;
 export class MockLauncher implements AgentLauncher {
   readonly launched: AgentProcess[] = [];
   readonly terminated: AgentProcess[] = [];
+  private readonly retiredPids = new Set<number>();
 
   async launch(workspaceDir: string, meta: AgentInstanceMeta): Promise<AgentProcess> {
+    let pid = nextPid++;
+    while (this.retiredPids.has(pid)) {
+      pid = nextPid++;
+    }
+
     const process: AgentProcess = {
-      pid: nextPid++,
+      pid,
       workspaceDir,
       instanceName: meta.name,
     };
@@ -24,5 +30,6 @@ export class MockLauncher implements AgentLauncher {
 
   async terminate(process: AgentProcess): Promise<void> {
     this.terminated.push(process);
+    this.retiredPids.add(process.pid);
   }
 }
