@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "@actant/acp": "workspace:*",
+    "@actant/channel-claude": "workspace:*",
     "@actant/core": "workspace:*",
     "@actant/pi": "workspace:*",
     "@actant/shared": "workspace:*"

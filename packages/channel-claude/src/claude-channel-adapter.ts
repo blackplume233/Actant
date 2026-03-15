@@ -42,25 +42,24 @@ export class ClaudeChannelAdapter implements ActantChannel {
   }
 
   async prompt(sessionId: string, text: string): Promise<ChannelPromptResult> {
-    const chunks: string[] = [];
+    const textChunks: string[] = [];
+    let resultText: string | undefined;
     let stopReason = "end_turn";
-    let resultSessionId: string | undefined;
 
     for await (const chunk of this.streamPrompt(sessionId, text)) {
       if (chunk.type === "text") {
-        chunks.push(chunk.content);
+        textChunks.push(chunk.content);
       } else if (chunk.type === "result") {
-        chunks.push(chunk.content);
+        resultText = chunk.content;
       } else if (chunk.type === "error") {
         stopReason = "error";
-        if (chunks.length === 0) chunks.push(chunk.content);
+        if (textChunks.length === 0) textChunks.push(chunk.content);
       }
     }
 
     return {
       stopReason,
-      text: chunks.join(""),
-      ...(resultSessionId ? { sessionId: resultSessionId } : {}),
+      text: resultText ?? textChunks.join(""),
     };
   }
 

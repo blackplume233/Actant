@@ -144,6 +144,14 @@ export interface BackendDefinition extends VersionedComponent {
    */
   acpOwnsProcess?: boolean;
   /**
+   * How the backend communicates with the LLM:
+   * - `"acp"` (default): spawn an ACP subprocess (e.g. claude-agent-acp) and
+   *   communicate via JSON-RPC over stdio.
+   * - `"sdk"`: use Actant's own SDK adapter directly (no ACP subprocess).
+   *   The adapter is resolved from the RoutingChannelManager registry.
+   */
+  channelStrategy?: "acp" | "sdk";
+  /**
    * npm package that provides the resolve/acp executable.
    * Used by binary-resolver as fallback when the command is not found on PATH.
    */

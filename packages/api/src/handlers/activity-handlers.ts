@@ -26,6 +26,7 @@ async function handleActivitySessions(
   ctx: AppContext,
 ): Promise<ActivitySessionsResult> {
   const { agentName } = params as unknown as ActivitySessionsParams;
+  if (ctx.recordSystem) return ctx.recordSystem.getSessionsLegacy(agentName);
   if (!ctx.activityRecorder) return [];
   return ctx.activityRecorder.getSessions(agentName);
 }
@@ -35,6 +36,7 @@ async function handleActivityStream(
   ctx: AppContext,
 ): Promise<ActivityStreamResult> {
   const { agentName, sessionId, types, offset, limit } = params as unknown as ActivityStreamParams;
+  if (ctx.recordSystem) return ctx.recordSystem.readStream(agentName, sessionId, { types, offset, limit });
   if (!ctx.activityRecorder) return { records: [], total: 0 };
   return ctx.activityRecorder.readStream(agentName, sessionId, { types, offset, limit });
 }
@@ -44,6 +46,10 @@ async function handleActivityConversation(
   ctx: AppContext,
 ): Promise<ActivityConversationResult> {
   const { agentName, sessionId } = params as unknown as ActivityConversationParams;
+  if (ctx.recordSystem) {
+    const { records } = await ctx.recordSystem.readStream(agentName, sessionId);
+    return assembleConversation(records);
+  }
   if (!ctx.activityRecorder) return [];
   const { records } = await ctx.activityRecorder.readStream(agentName, sessionId);
   return assembleConversation(records);
@@ -54,6 +60,10 @@ async function handleActivityBlob(
   ctx: AppContext,
 ): Promise<ActivityBlobResult> {
   const { agentName, hash } = params as unknown as ActivityBlobParams;
+  if (ctx.recordSystem) {
+    const content = await ctx.recordSystem.readBlob(agentName, hash);
+    return { content };
+  }
   if (!ctx.activityRecorder) throw new Error("Activity recording not enabled");
   const content = await ctx.activityRecorder.readBlob(agentName, hash);
   return { content };

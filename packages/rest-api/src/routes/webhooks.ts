@@ -30,7 +30,7 @@ export function registerWebhookRoutes(router: Router): void {
       const result = await ctx.bridge.call("agent.prompt", {
         name: agentName,
         message: text,
-      }) as { response: string; sessionId: string };
+      }, { timeoutMs: 305_000 }) as { response: string; sessionId: string };
 
       json(res, {
         agent: agentName,

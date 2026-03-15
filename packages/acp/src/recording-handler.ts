@@ -18,14 +18,22 @@ import type {
   ReleaseTerminalResponse,
 } from "@agentclientprotocol/sdk";
 import { createLogger } from "@actant/shared";
-import type { ActivityRecorder } from "@actant/core";
+import type { mapActivityTypeToCategory as _mapFn } from "@actant/shared";
+import type { ActivityRecorder, RecordSystem } from "@actant/core";
 import type { ClientCallbackHandler } from "./connection";
 
 const logger = createLogger("recording-handler");
 
+/** Unified recording target: either RecordSystem or legacy ActivityRecorder. */
+type RecordingTarget = RecordSystem | ActivityRecorder;
+
+function isRecordSystem(t: RecordingTarget): t is RecordSystem {
+  return "queryGlobal" in t;
+}
+
 /**
  * Decorator that intercepts all ACP Client callbacks and records them
- * as ActivityRecords before delegating to the inner handler.
+ * via the unified RecordSystem (preferred) or legacy ActivityRecorder.
  *
  * Placement in the callback chain:
  *   AcpConnection → RecordingCallbackHandler → ClientCallbackRouter → Local/IDE
@@ -46,14 +54,16 @@ const logger = createLogger("recording-handler");
  * ACP session UUID from the callback parameters.
  */
 export class RecordingCallbackHandler implements ClientCallbackHandler {
-  /** Mutable activity session ID. See class doc for lifecycle details. */
   private currentSession: string | null = null;
+  private readonly target: RecordingTarget;
 
   constructor(
     private readonly inner: ClientCallbackHandler,
-    private readonly recorder: ActivityRecorder,
+    recorder: RecordingTarget,
     private readonly agentName: string,
-  ) {}
+  ) {
+    this.target = recorder;
+  }
 
   /** Set the activity session ID for all subsequent recordings. */
   setCurrentSession(id: string | null): void {
@@ -64,37 +74,52 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
     return this.currentSession ?? acpSessionId;
   }
 
+  private recordSafe(
+    sessionId: string,
+    category: string,
+    type: string,
+    data: unknown,
+  ): void {
+    const sid = this.activityId(sessionId);
+    if (isRecordSystem(this.target)) {
+      this.target.record({
+        category: category as import("@actant/shared").RecordCategory,
+        type,
+        agentName: this.agentName,
+        sessionId: sid,
+        data,
+      }).catch((e: unknown) => logger.warn({ err: e, type }, "Failed to record"));
+    } else {
+      this.target.record(this.agentName, sid, {
+        type: type as import("@actant/shared").ActivityRecordType,
+        data,
+      }).catch((e: unknown) => logger.warn({ err: e, type }, "Failed to record"));
+    }
+  }
+
+  private async packSafe(content: string) {
+    return this.target.packContent(this.agentName, content);
+  }
+
   // ---- session/update (primary data stream) ----
 
   async sessionUpdate(params: SessionNotification): Promise<void> {
-    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
-      type: "session_update",
-      data: params.update,
-    }).catch((e: unknown) => logger.warn({ err: e }, "Failed to record session_update"));
-
+    this.recordSafe(params.sessionId, "communication", "session_update", params.update);
     return this.inner.sessionUpdate(params);
   }
 
   // ---- fs/write_text_file ----
 
   async writeTextFile(params: WriteTextFileRequest): Promise<WriteTextFileResponse> {
-    const packed = await this.recorder.packContent(this.agentName, params.content);
-    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
-      type: "file_write",
-      data: { path: params.path, ...packed },
-    }).catch((e: unknown) => logger.warn({ err: e }, "Failed to record file_write"));
-
+    const packed = await this.packSafe(params.content);
+    this.recordSafe(params.sessionId, "file", "file_write", { path: params.path, ...packed });
     return this.inner.writeTextFile(params);
   }
 
   // ---- fs/read_text_file ----
 
   async readTextFile(params: ReadTextFileRequest): Promise<ReadTextFileResponse> {
-    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
-      type: "file_read",
-      data: { path: params.path },
-    }).catch((e: unknown) => logger.warn({ err: e }, "Failed to record file_read"));
-
+    this.recordSafe(params.sessionId, "file", "file_read", { path: params.path });
     return this.inner.readTextFile(params);
   }
 
@@ -102,18 +127,13 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
 
   async requestPermission(params: RequestPermissionRequest): Promise<RequestPermissionResponse> {
     const result = await this.inner.requestPermission(params);
-
-    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
-      type: "permission_request",
-      data: {
-        toolCall: params.toolCall
-          ? { toolCallId: params.toolCall.toolCallId, title: params.toolCall.title, kind: params.toolCall.kind }
-          : undefined,
-        options: params.options.map((o) => ({ optionId: o.optionId, kind: o.kind, name: o.name })),
-        outcome: result.outcome,
-      },
-    }).catch((e: unknown) => logger.warn({ err: e }, "Failed to record permission_request"));
-
+    this.recordSafe(params.sessionId, "permission", "permission_request", {
+      toolCall: params.toolCall
+        ? { toolCallId: params.toolCall.toolCallId, title: params.toolCall.title, kind: params.toolCall.kind }
+        : undefined,
+      options: params.options.map((o) => ({ optionId: o.optionId, kind: o.kind, name: o.name })),
+      outcome: result.outcome,
+    });
     return result;
   }
 
@@ -122,17 +142,12 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
   async createTerminal(params: CreateTerminalRequest): Promise<CreateTerminalResponse> {
     if (!this.inner.createTerminal) throw new Error("Terminal not supported");
     const result = await this.inner.createTerminal(params);
-
-    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
-      type: "terminal_create",
-      data: {
-        terminalId: result.terminalId,
-        command: params.command,
-        args: params.args,
-        cwd: params.cwd,
-      },
-    }).catch((e: unknown) => logger.warn({ err: e }, "Failed to record terminal_create"));
-
+    this.recordSafe(params.sessionId, "terminal", "terminal_create", {
+      terminalId: result.terminalId,
+      command: params.command,
+      args: params.args,
+      cwd: params.cwd,
+    });
     return result;
   }
 
@@ -141,17 +156,11 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
   async terminalOutput(params: TerminalOutputRequest): Promise<TerminalOutputResponse> {
     if (!this.inner.terminalOutput) throw new Error("Terminal not supported");
     const result = await this.inner.terminalOutput(params);
-
-    const packed = await this.recorder.packContent(this.agentName, result.output);
+    const packed = await this.packSafe(result.output);
     const data = "content" in packed
       ? { terminalId: params.terminalId, output: packed.content, truncated: result.truncated }
       : { terminalId: params.terminalId, outputRef: packed.contentRef, truncated: result.truncated };
-
-    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
-      type: "terminal_output",
-      data,
-    }).catch((e: unknown) => logger.warn({ err: e }, "Failed to record terminal_output"));
-
+    this.recordSafe(params.sessionId, "terminal", "terminal_output", data);
     return result;
   }
 
@@ -160,16 +169,11 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
   async waitForTerminalExit(params: WaitForTerminalExitRequest): Promise<WaitForTerminalExitResponse> {
     if (!this.inner.waitForTerminalExit) throw new Error("Terminal not supported");
     const result = await this.inner.waitForTerminalExit(params);
-
-    this.recorder.record(this.agentName, this.activityId(params.sessionId), {
-      type: "terminal_exit",
-      data: {
-        terminalId: params.terminalId,
-        exitCode: result.exitCode,
-        signal: result.signal,
-      },
-    }).catch((e: unknown) => logger.warn({ err: e }, "Failed to record terminal_exit"));
-
+    this.recordSafe(params.sessionId, "terminal", "terminal_exit", {
+      terminalId: params.terminalId,
+      exitCode: result.exitCode,
+      signal: result.signal,
+    });
     return result;
   }
 

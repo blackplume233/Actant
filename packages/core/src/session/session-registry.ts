@@ -1,7 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { createLogger } from "@actant/shared";
-import type { SessionLifecycleData } from "@actant/shared";
+import type { SessionLifecycleData, RecordEntry } from "@actant/shared";
 import type { EventJournal } from "../journal/event-journal";
+import type { RecordSystem } from "../record/record-system";
 
 const logger = createLogger("session-registry");
 
@@ -54,6 +55,7 @@ export class SessionRegistry {
   private readonly defaultIdleTtlMs: number;
   private onExpireCallback?: (session: SessionLease) => void;
   private journal: EventJournal | null = null;
+  private recordSystem: RecordSystem | null = null;
 
   constructor(options?: SessionRegistryOptions) {
     this.defaultIdleTtlMs = options?.defaultIdleTtlMs ?? DEFAULT_IDLE_TTL_MS;
@@ -62,60 +64,87 @@ export class SessionRegistry {
     this.sweepTimer.unref();
   }
 
-  /** Attach an EventJournal so session lifecycle events are persisted to disk. */
+  /**
+   * @deprecated Use setRecordSystem() instead. Kept for backward compat.
+   */
   setJournal(journal: EventJournal | null): void {
     this.journal = journal;
   }
 
+  /** Attach the unified RecordSystem. Replaces setJournal(). */
+  setRecordSystem(rs: RecordSystem | null): void {
+    this.recordSystem = rs;
+  }
+
   /**
-   * Rebuild in-memory session state by replaying journal entries.
-   * Should be called once at startup, before accepting new requests.
+   * @deprecated Use rebuildFromRecordSystem() with RecordSystem. Kept for backward compat.
    */
   async rebuildFromJournal(journal: EventJournal): Promise<void> {
     const count = await journal.replay("session", (entry) => {
-      const d = entry.data as SessionLifecycleData;
-      switch (d.action) {
-        case "created": {
-          const lease: SessionLease = {
-            sessionId: d.sessionId,
-            agentName: d.agentName,
-            clientId: d.clientId ?? null,
-            state: "active",
-            createdAt: new Date(entry.ts).toISOString(),
-            lastActivityAt: new Date(entry.ts).toISOString(),
-            idleTtlMs: d.idleTtlMs ?? this.defaultIdleTtlMs,
-            conversationId: d.conversationId ?? d.sessionId,
-          };
-          this.sessions.set(d.sessionId, lease);
-          break;
-        }
-        case "released": {
-          const s = this.sessions.get(d.sessionId);
-          if (s) {
-            s.clientId = null;
-            s.state = "idle";
-            s.lastActivityAt = new Date(entry.ts).toISOString();
-          }
-          break;
-        }
-        case "resumed": {
-          const s = this.sessions.get(d.sessionId);
-          if (s) {
-            s.clientId = d.clientId ?? null;
-            s.state = "active";
-            s.lastActivityAt = new Date(entry.ts).toISOString();
-          }
-          break;
-        }
-        case "closed":
-        case "expired":
-          this.sessions.delete(d.sessionId);
-          break;
-      }
+      this.applySessionEntry(entry.ts, entry.data as SessionLifecycleData);
     });
 
     if (count > 0) {
       logger.info({ replayed: count, sessions: this.sessions.size }, "Session state rebuilt from journal");
+    }
+  }
+
+  /**
+   * Rebuild in-memory session state by replaying "session" category records
+   * from the unified RecordSystem.
+   */
+  async rebuildFromRecordSystem(rs: RecordSystem): Promise<void> {
+    const count = await rs.replay("session", (entry: RecordEntry) => {
+      const d = entry.data as Record<string, unknown>;
+      const lifecycleData = (d?.action ? d : (d as Record<string, unknown>)?.data ?? d) as SessionLifecycleData;
+      if (lifecycleData.action && lifecycleData.sessionId) {
+        this.applySessionEntry(entry.ts, lifecycleData);
+      }
+    });
+
+    if (count > 0) {
+      logger.info({ replayed: count, sessions: this.sessions.size }, "Session state rebuilt from RecordSystem");
+    }
+  }
+
+  private applySessionEntry(ts: number, d: SessionLifecycleData): void {
+    switch (d.action) {
+      case "created": {
+        const lease: SessionLease = {
+          sessionId: d.sessionId,
+          agentName: d.agentName,
+          clientId: d.clientId ?? null,
+          state: "active",
+          createdAt: new Date(ts).toISOString(),
+          lastActivityAt: new Date(ts).toISOString(),
+          idleTtlMs: d.idleTtlMs ?? this.defaultIdleTtlMs,
+          conversationId: d.conversationId ?? d.sessionId,
+        };
+        this.sessions.set(d.sessionId, lease);
+        break;
+      }
+      case "released": {
+        const s = this.sessions.get(d.sessionId);
+        if (s) {
+          s.clientId = null;
+          s.state = "idle";
+          s.lastActivityAt = new Date(ts).toISOString();
+        }
+        break;
+      }
+      case "resumed": {
+        const s = this.sessions.get(d.sessionId);
+        if (s) {
+          s.clientId = d.clientId ?? null;
+          s.state = "active";
+          s.lastActivityAt = new Date(ts).toISOString();
+        }
+        break;
+      }
+      case "closed":
+      case "expired":
+        this.sessions.delete(d.sessionId);
+        break;
     }
   }
 
@@ -263,9 +292,20 @@ export class SessionRegistry {
   }
 
   private journalWrite(data: SessionLifecycleData): void {
-    if (!this.journal) return;
-    this.journal.append("session", `session:${data.action}`, data).catch((err) => {
-      logger.warn({ err, action: data.action, sessionId: data.sessionId }, "Failed to journal session event");
-    });
+    if (this.recordSystem) {
+      this.recordSystem.record({
+        category: "session",
+        type: `session:${data.action}`,
+        agentName: data.agentName,
+        sessionId: data.conversationId ?? data.sessionId,
+        data,
+      }).catch((err) => {
+        logger.warn({ err, action: data.action, sessionId: data.sessionId }, "Failed to record session event");
+      });
+    } else if (this.journal) {
+      this.journal.append("session", `session:${data.action}`, data).catch((err) => {
+        logger.warn({ err, action: data.action, sessionId: data.sessionId }, "Failed to journal session event");
+      });
+    }
   }
 }

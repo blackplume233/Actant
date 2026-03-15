@@ -1,5 +1,5 @@
 import type { SessionNotification } from "@agentclientprotocol/sdk";
-import type { ActivityRecorder } from "@actant/core";
+import type { ActivityRecorder, RecordSystem } from "@actant/core";
 import { createLogger } from "@actant/shared";
 
 const logger = createLogger("tool-call-interceptor");
@@ -17,7 +17,7 @@ export class ToolCallInterceptor {
 
   constructor(
     knownToolNames: string[],
-    private activityRecorder?: ActivityRecorder,
+    private activityRecorder?: ActivityRecorder | RecordSystem,
     private agentName?: string,
   ) {
     // Build multiple match patterns per tool:
@@ -62,19 +62,32 @@ export class ToolCallInterceptor {
     );
 
     if (this.activityRecorder && this.agentName) {
-      this.activityRecorder.record(this.agentName, notification.sessionId, {
-        type: "internal_tool_call",
-        data: {
-          tool: safeTitle,
-          params: {},
-          tokenPrefix: "",
-          result: null,
-          durationMs: 0,
-          source: "observed",
-        },
-      }).catch((err) => {
-        logger.warn({ err }, "Failed to record internal tool call observation");
-      });
+      const data = {
+        tool: safeTitle,
+        params: {},
+        tokenPrefix: "",
+        result: null,
+        durationMs: 0,
+        source: "observed" as const,
+      };
+      if ("queryGlobal" in this.activityRecorder) {
+        (this.activityRecorder as RecordSystem).record({
+          category: "tool",
+          type: "internal_tool_call",
+          agentName: this.agentName,
+          sessionId: notification.sessionId,
+          data,
+        }).catch((err) => {
+          logger.warn({ err }, "Failed to record internal tool call observation");
+        });
+      } else {
+        (this.activityRecorder as ActivityRecorder).record(this.agentName, notification.sessionId, {
+          type: "internal_tool_call",
+          data,
+        }).catch((err) => {
+          logger.warn({ err }, "Failed to record internal tool call observation");
+        });
+      }
     }
   }
 }

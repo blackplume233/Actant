@@ -30,6 +30,16 @@ export function isAcpBackend(backendType: AgentBackendType): boolean {
 }
 
 /**
+ * Return the channel strategy for a backend.
+ * `"sdk"` means the backend uses Actant's own SDK adapter directly;
+ * `"acp"` (default) means it spawns an ACP subprocess.
+ */
+export function getChannelStrategy(backendType: AgentBackendType): "acp" | "sdk" {
+  const desc = getBackendDescriptor(backendType);
+  return desc.channelStrategy ?? "acp";
+}
+
+/**
  * Whether a backend's ACP connection owns the process lifecycle.
  * When true, ProcessLauncher.launch() is skipped — only AcpConnectionManager spawns the process.
  */

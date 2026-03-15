@@ -95,6 +95,9 @@ importers:
       '@actant/acp':
         specifier: workspace:*
         version: link:../acp
+      '@actant/channel-claude':
+        specifier: workspace:*
+        version: link:../channel-claude
       '@actant/core':
         specifier: workspace:*
         version: link:../core

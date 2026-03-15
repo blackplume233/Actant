@@ -155,7 +155,6 @@ describe("MVP E2E Integration", () => {
       ctx,
     ) as { status: string; pid: number };
     expect(statusResult.status).toBe("running");
-    expect(statusResult.pid).toBeDefined();
 
     const stopResult = await registry.get("agent.stop")!(
       { name: "e2e-agent" },

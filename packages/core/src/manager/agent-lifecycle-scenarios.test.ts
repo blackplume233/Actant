@@ -7,24 +7,47 @@ import { TemplateRegistry } from "../template/registry/template-registry";
 import { AgentInitializer } from "../initializer/agent-initializer";
 import { AgentManager } from "./agent-manager";
 import { MockLauncher } from "./launcher/mock-launcher";
+import { getBackendManager } from "./launcher/backend-registry";
 import { readInstanceMeta } from "../state/instance-meta-io";
 
 /**
  * State-machine scenario tests for agent lifecycle correctness.
  *
  * Uses MockLauncher (fake PIDs) to isolate state transitions from real
- * process management. Uses claude-code backend (managedPrimary) for full
- * archetype support.
- *
- * For integration tests with real processes, see `@actant/core/testing`
- * helpers (`createTestManager`, `makeSleeperTemplate`).
+ * process management. Uses pi backend (ACP strategy) so that the mock
+ * launcher spawns processes with trackable PIDs.
  */
 
+function registerTestAcpBackend(): void {
+  const mgr = getBackendManager();
+  if (!mgr.get("test-acp")) {
+    mgr.register({
+      name: "test-acp",
+      version: "1.0.0",
+      description: "ACP backend for lifecycle scenario tests",
+      origin: { type: "builtin" },
+      supportedModes: ["resolve", "open", "acp"],
+      runtimeProfile: "managedPrimary",
+      maturity: "stable",
+      capabilities: {
+        supportsOpen: true,
+        supportsManagedSessions: true,
+        supportsServiceArchetype: true,
+        supportsEmployeeArchetype: true,
+        supportsPromptApi: true,
+      },
+      defaultInteractionModes: ["open", "start", "chat", "run"],
+      resolveCommand: { win32: "test-acp.cmd", default: "test-acp" },
+    });
+  }
+}
+
 function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
+  registerTestAcpBackend();
   return {
     name: "test-tpl",
     version: "1.0.0",
-    backend: { type: "claude-code" },
+    backend: { type: "test-acp" },
     provider: { type: "openai", protocol: "openai" },
     domainContext: { skills: ["skill-a"] },
     archetype: "service",
