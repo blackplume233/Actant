@@ -1684,3 +1684,57 @@ Added and aligned the unified communication layer spec, synced lifecycle/api/con
 ### Next Steps
 
 - None - task complete
+
+---
+
+## Session 31 — Resolve All Review Issues (Architecture Audit Batch)
+
+**Date**: 2026-03-16
+**Commits**: `a112c87`
+**Branch**: master
+
+### Summary
+
+Processed and closed all 15 open Review Issues from the architecture audit in a single batch. Covered bug fixes, structured error migration, RPC transport unification, security hardening, and cross-layer test expansion.
+
+### Changes
+
+| Category | Issues | Description |
+|----------|--------|-------------|
+| Bug fixes | #238, #239, #240 | dispose() race guard, spawn orphan SIGKILL fallback, connect() resource leak cleanup |
+| Version semantics | #269 | Replaced 5 hardcoded "0.1.0" with package-version utilities |
+| Structured errors | #266, #268 | New ACP/lifecycle/session error classes; REST code-first HTTP mapping |
+| Gateway hardening | #267 | TerminalHandleRegistry, reconnect cleanup, stale handle guards |
+| Webhook contract | #273 | Aligned RPC method, input validation, response contract |
+| RPC unification | #265 | Shared RpcTransportClient used by CLI, REST, MCP |
+| Bridge alignment | #270 | Shared bridge-env helpers, bridgeLogger, structured errors in Pi |
+| Security boundary | #274 | Shared path-boundary module, safeResolvePath in Pi tool bridge |
+| Endurance tests | #271 | 9 tests: RPC churn/drop/timeout, ACP reconnect/leak, bridge unavail/degraded |
+| Error contract tests | #272 | 30 tests: error propagation, handler codes, REST mapping, CLI preservation |
+| Meta review | #260 | SSE auth (query token), process exit event semantics, init idempotency, signal listener dedup |
+| False positive | #259 | Closed — roadmap references valid (#112-#115 exist on GitHub) |
+
+### Key Files Created
+
+- `packages/shared/src/rpc/rpc-transport.ts` — Shared RPC transport client
+- `packages/shared/src/security/path-boundary.ts` — Path boundary enforcement
+- `packages/shared/src/env/bridge-env.ts` — Bridge env helpers
+- `packages/shared/src/errors/{acp,lifecycle,bridge,session}-errors.ts` — Structured error classes
+- `packages/{acp,cli,mcp-server,pi}/src/package-version.ts` — Dynamic version resolution
+- 6 test files (endurance + error contract)
+
+### Metrics
+
+- **50 files changed**, +2083, -182
+- **1072 tests passed** (87 files)
+- **15 GitHub Issues closed**
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `a112c87` | fix: resolve 15 review issues — structured errors, unified RPC, security hardening, and cross-layer tests |
+
+### Status
+
+[OK] **Completed** — All review issues resolved and shipped.
