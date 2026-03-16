@@ -47,6 +47,55 @@ Actant 致力于成为 **Agent 应用开发平台**。
 
 ---
 
+## 当前阶段主轴（2026-03）
+
+> **阶段判断**：Actant 的长期使命没有变化，变化的是当前阶段的首要任务排序。
+> 这一阶段的收敛，不应被解释为平台使命收缩，也不应被解释为产品转型为单一 MCP 工具。
+
+### 不变的长期使命
+
+- Actant 仍然是 Agent 平台与 Agent App 开发平台。
+- `AgentTemplate`、`AgentInstance`、`DomainContext`、通信层、运行时管理、Dashboard、PluginHost 等仍然属于主航道。
+- daemon、scheduler、runtime services、ACP/MCP/REST 等能力仍然是平台建设的一部分，而不是被放弃的方向。
+
+### 当前阶段的首要任务
+
+当前阶段优先级已经从“继续平均推进所有平台能力面”切换为“先让 Agent 真正进入项目并开始工作”。
+
+这意味着当前主线应优先解决：
+
+1. **项目级上下文入口**
+   - Agent 前端应能先通过 Actant 发现当前项目的共享上下文，而不是先依赖完整 daemon runtime。
+2. **自举开发闭环**
+   - Actant 应优先能够帮助开发 Actant 自身，成为进入项目、获取上下文、发现能力、驱动协作的第一入口。
+3. **project-context first, runtime-enhancement second**
+   - daemon 在线时的 live runtime 视图是增强项；
+   - 无 daemon 时仍可提供静态项目上下文，是当前阶段的基础要求。
+
+### 当前阶段中 MCP 的职责
+
+当前讨论中的 MCP，不应被理解为“再加一个协议接入点”，而应被理解为：
+
+- **Project Context Gateway**：Agent 进入项目时的第一站；
+- **Bootstrap Surface**：自举开发中的默认查询与操作入口；
+- **Runtime Bridge 的超集**：daemon 在线时桥接运行时能力，但不应仅停留在 daemon RPC 壳。
+
+因此，MCP 在当前阶段承担的是“先让 Agent 看见项目并开始工作”的职责，而不是替代 Actant 的长期平台定位。
+
+### 当前阶段的设计取舍
+
+在这个阶段，设计与排期应优先遵循：
+
+- 先定义 `Project-level DomainContext`，再决定大规模 runtime 改造；
+- 先定义作用域、暴露面和同步模型，再决定外部 MCP surface；
+- 先做最小可自举闭环，再做大而全的包级纯化。
+
+因此：
+
+- `actant.project.json`、作用域隔离、reactive sync 是当前主线；
+- 现有 daemon-bridge MCP 是过渡形态，不应直接当作最终产品定义；
+- `@actant/core` 的大规模拆分只应在它明确服务于 project-context / bootstrap 目标时推进。
+
 ## 核心抽象
 
 ### 1. AgentTemplate 仍然是运行时蓝图

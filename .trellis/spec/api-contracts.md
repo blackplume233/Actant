@@ -2254,6 +2254,80 @@ Agent / External Client
 
 ---
 
+### 8.8a MCP 双模式契约（2026-03）
+
+> 当前阶段，`@actant/mcp-server` 不再只被视为 daemon RPC 的薄包装层；它同时承担“项目上下文入口 / bootstrap surface”的职责。使命未变，但首要任务转为先让 Agent 能理解并进入当前项目。
+
+#### 模式一：`connected`
+
+当 MCP server 可以连接 daemon 且 `daemon.ping` 成功时：
+
+- MCP 进入 `connected` 模式
+- `vfs_*` 工具透传 daemon VFS
+- `actant` 工具可代理 runtime RPC
+- `/daemon/rpc-catalog.json` 反映真实 daemon 方法集合
+
+#### 模式二：`standalone`
+
+当 MCP server 无法连接 daemon 时：
+
+- MCP 必须退化为 `standalone` project-context 模式，而不是直接失败退出
+- `vfs_*` 工具仍可用，但只暴露只读项目上下文
+- `actant` 工具必须拒绝 runtime RPC，并明确提示需要启动 daemon
+- standalone 不负责进程管理、session 管理或 runtime mutation
+
+#### 初始发现入口
+
+无论是否连接 daemon，客户端都应优先读取：
+
+- `/project/context.json`
+
+该文件是当前阶段统一的 discovery entrypoint，至少包含：
+
+- `mode`
+- `projectRoot`
+- `projectName`
+- `description`
+- `configPath`
+- `configsDir`
+- `sources`
+- `sourceWarnings`
+- `components`
+
+#### standalone 最小挂载契约
+
+standalone 模式至少应暴露以下挂载：
+
+- `/project`
+- `/workspace`
+- `/daemon`
+- `/skills`
+- `/prompts`
+- `/workflows`
+- `/templates`
+- `/config`（仅在 `configsDir` 存在时）
+
+其中：
+
+- `/project/context.json` 提供项目摘要与 warning 面
+- `/project/actant.project.json` 提供当前生效的项目配置视图
+- `/project/sources.json` 提供已声明 sources 摘要
+- `/daemon/health.json` 在 standalone 下应返回虚拟健康信息，版本可标记为 `standalone`
+- `/daemon/rpc-catalog.json` 在 standalone 下可为空集合
+
+#### 工具行为约束
+
+| 工具 | connected | standalone |
+|------|-----------|------------|
+| `vfs_read` | 透传 daemon VFS | 读取只读项目上下文 VFS |
+| `vfs_list` | 透传 daemon VFS | 枚举项目上下文挂载与只读目录 |
+| `vfs_describe` | 透传 daemon VFS | 返回 standalone mount 元数据 |
+| `vfs_grep` | 透传 daemon VFS | 在对应 standalone source 上执行 |
+| `vfs_write` | 按 daemon 能力执行 | 仅在目标 source 显式支持时允许；当前 project-context 设计默认为只读 |
+| `actant` | 允许代理 daemon RPC | 必须报错并提示 “Start the Actant daemon for runtime operations” |
+
+---
+
 ## 10. 六种外部接入模式对比
 
 | 维度 | CLI / RPC | REST API | ACP Proxy | Email (#136) | MCP Server (#16, P4) | Self-spawn + Attach |

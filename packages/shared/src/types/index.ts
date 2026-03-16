@@ -94,6 +94,10 @@ export type {
   PresetDefinition,
 } from "./source.types";
 export type {
+  ProjectSourceEntry,
+  ActantProjectConfig,
+} from "./project.types";
+export type {
   ContentRef,
   ActivityRecord,
   ActivityRecordType,
