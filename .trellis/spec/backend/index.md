@@ -63,7 +63,7 @@ Actant
 │
 ├── Actant ACP          # Agent Client Protocol server
 │
-├── Actant MCP          # Built-in MCP server (actant_canvas_update, actant_schedule_* tools)
+├── Actant MCP          # Built-in MCP server (VFS + RPC gateway, 6 tools)
 │
 ├── Actant Pi           # Pi Agent backend integration (optional)
 │

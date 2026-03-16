@@ -4,16 +4,21 @@
  * (pi, mcp-server, dashboard, cli edge entrypoints).
  */
 
-import { normalizeIpcPath } from "../platform/platform";
+import { normalizeIpcPath, getDefaultIpcPath } from "../platform/platform";
 
 /**
  * Returns the normalized socket path from ACTANT_SOCKET.
+ * Falls back to the default IPC path (~/.actant/actant.sock) when ACTANT_SOCKET
+ * is not set, enabling MCP connections without explicit socket configuration.
  * Uses ACTANT_HOME for Windows .sock shorthand resolution when applicable.
  */
 export function getBridgeSocketPath(): string | undefined {
   const raw = process.env["ACTANT_SOCKET"];
-  if (!raw || raw.trim() === "") return undefined;
-  return normalizeIpcPath(raw, process.env["ACTANT_HOME"]);
+  if (raw && raw.trim() !== "") {
+    return normalizeIpcPath(raw, process.env["ACTANT_HOME"]);
+  }
+  const home = process.env["ACTANT_HOME"];
+  return getDefaultIpcPath(home && home.trim() !== "" ? home : undefined);
 }
 
 /**

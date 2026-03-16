@@ -1,10 +1,15 @@
 ---
-generated: true
+generated: false
 ---
 
-<!-- GENERATED -->
+<!-- Updated for #278 governance alignment -->
 
 # 打造雇员 Agent
+
+> **前置理解**: Employee 不是独立产品类型，而是 **service + 自治增强** 的组合层。
+> 大多数场景下，`service` 已足够（被动响应、进程生命周期、keepAlive）。
+> 仅当需要**主动调度、心跳巡检、事件驱动自治执行**时，才需要 employee 形态。
+> 详见 [核心概念 — 管理深度模型](/guide/concepts#管理深度模型)。
 
 让 Agent 作为 7×24 运行的"数字雇员"，按计划自动执行任务。
 
@@ -15,6 +20,7 @@ generated: true
   "name": "pr-patrol",
   "version": "1.0.0",
   "description": "每天巡检 PR 的雇员 Agent",
+  "archetype": "employee",
   "backend": { "type": "claude-code" },
   "provider": { "type": "anthropic" },
   "domainContext": {

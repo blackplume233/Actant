@@ -204,11 +204,23 @@
 
 ---
 
-## 建议下一步
+## 处置状态汇总 (2026-03-16 #278 session)
 
-- 将本登记表与母 issue 互相链接
-- 先处理 P0 冲突项，再处理 P1 结构收敛项
-- 每解决一项冲突，都同步更新：
-  - 文档/Spec
-  - 规划入口
-  - 验证口径
+| 冲突项 | 优先级 | 状态 | 处置 |
+|--------|--------|------|------|
+| C-01 | P0 | ✅ 已解决 | architecture.md 重写为平台主叙事；roadmap.md 已含平台定位 |
+| C-02 | P0 | ✅ 已解决 | architecture.md/concepts.md/endurance-testing.md/phase4-employee-steps.md 均已明确 service 为主交付形态 |
+| C-03 | P0 | ✅ 已解决 | phase4-employee-steps.md 设计理念已更新；employee-agent.md recipe 增加前置说明 |
+| C-04 | P0 | ✅ 已解决 | architecture.md 概念模型增加 Plugin 术语注意；config-spec.md 已有分层说明 |
+| C-05 | P1 | ✅ 已解决 | architecture.md 增加 Layer Separation 模型；concepts.md 已区分 domainContext 与 platform runtime |
+| C-06 | P1 | ✅ 已解决 | phase4-plan.md 已有"已落地基础"章节；phase4-employee-steps.md Step 4 状态已修正 |
+| C-07 | P1 | ✅ 已解决 | architecture.md 从 v0.2.6 更新到 v0.3.0，包含 ActantChannel/TUI/RecordSystem/VFS |
+| C-08 | P1 | ✅ 已解决 | endurance-testing.md 已有 archetype-oriented baseline (§2.1) |
+| C-09 | P2 | ✅ 已解决 | core-agent-progress-report.md 标记 Historical；mvp-next-design.md 标记 Partially Valid |
+| C-10 | P2 | ✅ 已解决 | architecture.md archetype 表格已明确区分管理深度与技术实现层 |
+
+## 建议后续
+
+- 本轮 10 个冲突项全部完成初步处置
+- 后续随代码演进，持续检查新文档/新 feature 是否继续符合已建立的基线
+- 建议在下一次 stage/release 前通过 `/review` 再次检查一致性

@@ -1,17 +1,18 @@
 # Phase 4 雇员自治能力扩展 — 步骤化推进计划
 
 > **状态: ACTIVE** — 平台主链已基本完成，记忆系统改为外置组件方向
-> 更新日期: 2026-02-27
+> 更新日期: 2026-03-16
 > 关联 Epic: #173 (GitHub)
 > 前置文档: `docs/planning/phase4-plan.md` (旧版评估，保留参考)
-> 最新版本: v0.2.5 (archetype reclassification #228)
+> 最新版本: v0.3.0 (ActantChannel / TUI / RecordSystem / VFS)
 
 ---
 
 ## 设计理念
 
-> Employee 不是独立类型，而是 "acp-service + plugins" 的能力组合。
-> Phase 4 的目标是围绕雇员型 Agent，逐步赋予六大自治能力:
+> **定位基线（#278 对齐）**：Employee 是 `service + autonomy` 的增强层，不是独立类型，更不是默认主交付形态。
+> `service` 是 Actant 当前最稳定、最通用的主交付形态，被 CLI / API / App / SOP / CI 被动调用。
+> Phase 4 的目标是在 service 基线之上，逐步为 employee 赋予六大自治能力:
 > 调度增强 / 事件自动化 / 自主初始化 / 跨 Agent 协作 / 经验记忆 / 运行监控
 
 全部 15 Step（含 3b），每步是一个可独立交付的小版本。串行总计 ~24 天，最大并行化关键路径 ~14 天。
@@ -30,10 +31,10 @@ flowchart TB
         S12["Step 12: Memory Core<br/>#162 #164 | 2d"]
     end
 
-    subgraph R2 ["Round 2 ⚠️ 部分完成"]
+    subgraph R2 ["Round 2 ✅ 完成"]
         S3["Step 3: Dashboard v0 ✅<br/>新建 | 1d"]
         S3b["Step 3b: 上下文注入+Canvas ✅<br/>#210 #211 | 2d"]
-        S4["Step 4: Plugin Core ❌<br/>#14 | 2d"]
+        S4["Step 4: Plugin Core ✅<br/>#14 | 2d"]
     end
 
     subgraph R3 ["Round 3 ⚠️ 部分完成"]

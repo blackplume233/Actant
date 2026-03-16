@@ -49,9 +49,9 @@
 ### 与步骤文档的对应关系
 
 `docs/planning/phase4-employee-steps.md` 目前是更接近真实执行状态的文档：
-- 已完成：Step 1、2、3、3b、7、8、10，以及若干计划外基础能力
-- 当前总阻塞：Step 4 `#14` Plugin Core
-- 后续关键路径：Step 4 → Step 6 / 9 / 13 → Step 11 / 14
+- 已完成：Step 1、2、3、3b、4（Plugin Core）、7、8、10，以及若干计划外基础能力
+- 当前关键路径：Step 5 → Step 6 / 9 / 13 → Step 11 / 14
+- v0.3.0 新增基础：ActantChannel、TUI、RecordSystem、VFS、ChannelPermissions
 
 ---
 

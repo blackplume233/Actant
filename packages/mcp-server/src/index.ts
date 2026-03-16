@@ -21,102 +21,26 @@ export async function startServer(): Promise<void> {
     version: getMcpServerPackageVersion(),
   });
 
-  server.tool(
-    "actant_canvas_update",
-    "Update this agent's Live Canvas on the Actant Dashboard. Provide full HTML content (supports HTML/CSS/JS). Rendered in an iframe sandbox.",
-    {
-      html: z.string().describe("Full HTML content for the canvas widget"),
-      title: z.string().optional().describe("Optional title for the canvas card"),
-    },
-    async ({ html, title }) => {
-      try {
-        await rpc.call("canvas.update", { agentName, html, title });
-        return { content: [{ type: "text" as const, text: "Canvas updated successfully." }] };
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return { content: [{ type: "text" as const, text: `Canvas update failed: ${msg}` }], isError: true };
-      }
-    },
-  );
-
-  server.tool(
-    "actant_canvas_clear",
-    "Clear this agent's Live Canvas from the Actant Dashboard.",
-    {},
-    async () => {
-      try {
-        await rpc.call("canvas.clear", { agentName });
-        return { content: [{ type: "text" as const, text: "Canvas cleared." }] };
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return { content: [{ type: "text" as const, text: `Canvas clear failed: ${msg}` }], isError: true };
-      }
-    },
-  );
-
-  server.tool(
-    "actant_schedule_wait",
-    "Schedule a one-off delayed prompt for this agent. Returns a source id that can be cancelled later.",
-    {
-      delayMs: z.number().int().min(1000).describe("Delay in milliseconds before the prompt is re-dispatched"),
-      prompt: z.string().describe("Prompt to dispatch when the delay fires"),
-      priority: z.enum(["low", "normal", "high", "critical"]).optional().describe("Optional task priority"),
-    },
-    async ({ delayMs, prompt, priority }) => {
-      try {
-        const result = await rpc.call("schedule.wait", { name: agentName, delayMs, prompt, priority }) as { sourceId: string };
-        return { content: [{ type: "text" as const, text: `Scheduled delay source ${result.sourceId}.` }] };
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return { content: [{ type: "text" as const, text: `Schedule wait failed: ${msg}` }], isError: true };
-      }
-    },
-  );
-
-  server.tool(
-    "actant_schedule_cron",
-    "Schedule a recurring cron prompt for this agent. Returns a source id that can be cancelled later.",
-    {
-      pattern: z.string().describe("Cron pattern, e.g. '*/5 * * * *'"),
-      prompt: z.string().describe("Prompt to dispatch on each cron fire"),
-      timezone: z.string().optional().describe("Optional cron timezone"),
-      priority: z.enum(["low", "normal", "high", "critical"]).optional().describe("Optional task priority"),
-    },
-    async ({ pattern, prompt, timezone, priority }) => {
-      try {
-        const result = await rpc.call("schedule.cron", { name: agentName, pattern, prompt, timezone, priority }) as { sourceId: string };
-        return { content: [{ type: "text" as const, text: `Scheduled cron source ${result.sourceId}.` }] };
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return { content: [{ type: "text" as const, text: `Schedule cron failed: ${msg}` }], isError: true };
-      }
-    },
-  );
-
-  server.tool(
-    "actant_schedule_cancel",
-    "Cancel a previously scheduled delay or cron source for this agent.",
-    {
-      sourceId: z.string().describe("Source id returned from actant_schedule_wait or actant_schedule_cron"),
-    },
-    async ({ sourceId }) => {
-      try {
-        const result = await rpc.call("schedule.cancel", { name: agentName, sourceId }) as { cancelled: boolean };
-        return { content: [{ type: "text" as const, text: result.cancelled ? `Cancelled ${sourceId}.` : `Source ${sourceId} was not found.` }] };
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        return { content: [{ type: "text" as const, text: `Schedule cancel failed: ${msg}` }], isError: true };
-      }
-    },
-  );
-
   // ---------------------------------------------------------------------------
-  // VFS Tools
+  // VFS Tools — unified read/write/browse interface for all data
+  //
+  // Mount points include:
+  //   /skills          — domain components (skills)
+  //   /prompts         — domain components (prompts)
+  //   /workflows       — domain components (workflows)
+  //   /templates       — domain components (templates)
+  //   /agents          — agent instances registry
+  //   /daemon          — daemon health & RPC catalog
+  //   /config          — configuration files
+  //   /memory          — in-memory scratch space
+  //   /canvas          — live canvas data
+  //   /workspace/<n>   — agent workspace filesystems
+  //   /proc/<n>/<pid>  — agent process streams
   // ---------------------------------------------------------------------------
 
   server.tool(
     "vfs_read",
-    "Read a file from the Virtual File System. Supports virtual paths like /proc/<agent>/<pid>/stdout, /memory/<agent>/notes.md, /config/template.json, /vcs/status.",
+    "Read from the Actant Virtual File System. Paths include /skills/<name>, /agents/<name>/status.json, /daemon/health.json, /daemon/rpc-catalog.json, /config/..., /memory/..., etc. Use vfs_list / to discover all mount points.",
     {
       path: z.string().describe("VFS path to read"),
       startLine: z.number().optional().describe("Start line (1-based, or negative for from end)"),
@@ -135,7 +59,7 @@ export async function startServer(): Promise<void> {
 
   server.tool(
     "vfs_write",
-    "Write content to a Virtual File System path. Supports /memory/, /proc/*/cmd, /config/, /canvas/ etc.",
+    "Write content to a VFS path. Writable mounts: /memory/, /config/, /canvas/, /workspace/. Not all mounts support writes.",
     {
       path: z.string().describe("VFS path to write"),
       content: z.string().describe("Content to write"),
@@ -154,7 +78,7 @@ export async function startServer(): Promise<void> {
 
   server.tool(
     "vfs_list",
-    "List files and directories at a VFS path. Use / to see top-level mount points.",
+    "List files/directories at a VFS path. Use / to see all mount points (/skills, /agents, /daemon, /config, /memory, etc.).",
     {
       path: z.string().optional().describe("VFS directory path (default: /)"),
       recursive: z.boolean().optional().describe("List recursively"),
@@ -179,7 +103,7 @@ export async function startServer(): Promise<void> {
 
   server.tool(
     "vfs_describe",
-    "Describe a VFS path: its source type, capabilities, and metadata.",
+    "Describe a VFS path: its source type, capabilities (read/write/list/grep/...), and metadata.",
     {
       path: z.string().describe("VFS path to describe"),
     },
@@ -196,7 +120,7 @@ export async function startServer(): Promise<void> {
 
   server.tool(
     "vfs_grep",
-    "Search for a regex pattern in VFS file contents.",
+    "Search for a regex pattern across VFS file contents.",
     {
       pattern: z.string().describe("Regex pattern to search"),
       path: z.string().optional().describe("VFS path scope (default: /workspace)"),
@@ -212,6 +136,43 @@ export async function startServer(): Promise<void> {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         return { content: [{ type: "text" as const, text: `VFS grep failed: ${msg}` }], isError: true };
+      }
+    },
+  );
+
+  // ---------------------------------------------------------------------------
+  // RPC Gateway — single entry point for all daemon operations
+  //
+  // Read /daemon/rpc-catalog.json via vfs_read to discover available methods.
+  // Common methods:
+  //   agent.create / agent.start / agent.stop / agent.destroy / agent.prompt
+  //   canvas.update / canvas.clear
+  //   schedule.wait / schedule.cron / schedule.cancel
+  //   daemon.ping / daemon.shutdown
+  //   session.create / session.prompt / session.close
+  //   template.list / template.get / template.load
+  //   source.list / source.add / source.sync
+  // ---------------------------------------------------------------------------
+
+  server.tool(
+    "actant",
+    `Execute any Actant daemon RPC method. Use vfs_read /daemon/rpc-catalog.json to discover all available methods. The agentName "${agentName}" is auto-injected for agent-scoped calls when not provided.`,
+    {
+      method: z.string().describe("RPC method name, e.g. 'agent.prompt', 'canvas.update', 'schedule.cron'"),
+      params: z.record(z.string(), z.unknown()).optional().describe("Method parameters as a JSON object"),
+    },
+    async ({ method, params }) => {
+      try {
+        const p = { ...(params ?? {}) };
+        if (agentName && !("agentName" in p) && !("name" in p)) {
+          p.agentName = agentName;
+        }
+        const result = await rpc.call(method, p);
+        const text = typeof result === "string" ? result : JSON.stringify(result, null, 2);
+        return { content: [{ type: "text" as const, text }] };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { content: [{ type: "text" as const, text: `RPC ${method} failed: ${msg}` }], isError: true };
       }
     },
   );

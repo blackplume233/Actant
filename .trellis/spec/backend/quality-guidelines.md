@@ -195,6 +195,25 @@ else send("events", { events: [] }); // graceful fallback
 
 **Why**: SSE endpoints aggregate multiple RPC calls. If a new RPC method hasn't been deployed yet (e.g., daemon running old code), `Promise.all` causes a total blackout — the client receives zero data. `Promise.allSettled` ensures available data is still delivered. This is especially critical during incremental rollouts where the daemon may be running for days without restart.
 
+### Common Mistake: Mermaid 图、汇总表与正文的状态不一致
+
+**症状**: Planning 文档中 mermaid flowchart 标记某 Step 为 ❌，但正文和关联 plan 都说该 Step 已完成。
+
+**原因**: 更新完成状态时只改了正文或 task.json，没有同步更新 mermaid 图和汇总表。
+
+**修复**: 更新任何 step/task 完成状态时，必须搜索文件内所有提及该 step 的位置：
+
+```bash
+rg "Step 4" docs/planning/phase4-employee-steps.md
+```
+
+**预防**: Planning 文档中的状态至少有三种表示形式需要同步：
+1. **Mermaid 图** — `S4["Step 4: Plugin Core ❌"]` → `✅`
+2. **汇总表** — Round/Step 表格中的状态列
+3. **正文** — Step 详细描述中的完成记录
+
+> 这是 #278 治理中发现的高频问题。phase4-employee-steps.md 的 Step 4 在 mermaid 中标记为 ❌ 但实际已完成。
+
 ### Common Mistake: Windows 上 spawn `.cmd` 文件报 EINVAL
 
 **症状**: `spawn EINVAL` 错误，仅在 Windows 上出现。
@@ -351,6 +370,58 @@ eventBus.emit(event, data);
 ---
 
 ## Required Patterns
+
+### Actant-First 自举开发模式
+
+> **核心原则**: Actant 的开发过程本身就是 Actant 的用户场景。所有能通过 Actant 获取的数据和能力，都应首先通过 Actant 获取。
+
+**背景**: Actant 通过 MCP Server 向外部 Agent（如 Cursor）暴露 6 个工具：5 个 VFS 工具 + 1 个 RPC 网关。所有 Daemon 能力均可通过这两个通道访问。开发 Actant 时，应优先使用这些通道而非直接读取本地文件。
+
+**自举优先级链**:
+
+| 优先级 | 获取方式 | 适用场景 |
+|--------|---------|---------|
+| 1 | `vfs_read /skills/<name>` | 获取技能内容 |
+| 2 | `vfs_list /agents` | 查看可用 Agent 实例 |
+| 3 | `actant({ method: "skill.search", params: { query } })` | 搜索技能 |
+| 4 | `vfs_read /daemon/rpc-catalog.json` | 发现所有可用操作 |
+| **Fallback** | 本地 `.agents/skills/`、`.trellis/` 文件 | Actant 不可用时的降级路径 |
+
+**失败处理流程**:
+
+```
+尝试通过 Actant 获取
+  ↓ 失败
+分析原因（Daemon 未启动 / 包未构建 / RPC 未注册 / VFS 源缺失）
+  ↓
+创建 Bug Issue 记录具体失败原因和期望行为
+  ↓
+临时使用本地文件降级获取
+  ↓
+后续修复 Actant，使该路径恢复正常
+```
+
+**持续改进心态**:
+
+开发过程中应持续评估以下问题：
+- 这个重复操作能否成为一个 Actant 技能？
+- 这个信息能否通过 VFS 源暴露？
+- 这个 RPC 方法是否应该注册到 Daemon？
+- 外部 Agent 调用这个能力时，体验是否足够好？
+
+**常见自举场景**:
+
+| 场景 | 自举方式 | 降级方式 |
+|------|---------|---------|
+| 获取开发技能 | `vfs_read /skills/pr-management` | 读本地 `.agents/skills/pr-handler/SKILL.md` |
+| 查看 Agent 状态 | `vfs_read /agents/_catalog.json` | `actant agent list` CLI |
+| 健康检查 | `vfs_read /daemon/health.json` | `ls ~/.actant/actant.sock` |
+| 发现可用 RPC | `vfs_read /daemon/rpc-catalog.json` | 搜索 `registry.register(` 源码 |
+| 执行 Daemon 操作 | `actant({ method, params })` | 直接调用 CLI 命令 |
+
+**Gotcha**: Daemon 必须运行且包必须构建后，MCP Server 才能正常工作。开发新 VFS 源或 RPC handler 后，需要重启 Daemon 并可能重建 `@actant/core` 和 `@actant/api` 包。
+
+> **Why**: 自举开发是 Actant 最有效的质量保障——如果开发者自己都不通过 Actant 获取数据，就不会发现 API 设计中的摩擦点。每一次自举失败都是一个待修复的 Bug，每一次成功都是一次能力验证。
 
 ### Documentation-First 开发模式
 

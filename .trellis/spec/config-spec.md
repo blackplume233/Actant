@@ -298,9 +298,9 @@ Provider 存在两个层次：
 定义雇员型 Agent 的自动调度策略。**仅 `archetype: "employee"` 的 Agent 允许配置此字段**。`repo` 和 `service` 类型配置 `schedule` 时校验将报错。当模板包含 `schedule` 字段时，Agent 启动后自动初始化 EmployeeScheduler。
 
 > **#122 当前扩展基线**：除了模板静态配置，运行中的 employee agent 现在还可以通过内置 MCP tools / RPC 动态注册调度源：
-> - `schedule.wait` / `actant_schedule_wait` → 一次性 `DelayInput`
-> - `schedule.cron` / `actant_schedule_cron` → 动态 `CronInput`
-> - `schedule.cancel` / `actant_schedule_cancel` → 注销动态 source
+> - `schedule.wait`（通过 `actant` MCP 网关工具）→ 一次性 `DelayInput`
+> - `schedule.cron`（通过 `actant` MCP 网关工具）→ 动态 `CronInput`
+> - `schedule.cancel`（通过 `actant` MCP 网关工具）→ 注销动态 source
 >
 > 这意味着 `ScheduleConfig` 仍是静态 baseline，而动态调度属于 runtime augmentation，不直接回写模板配置。
 

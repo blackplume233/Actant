@@ -240,7 +240,7 @@ registerInputSources(registry: InputSourceRegistry): void {
 
 `DelayInput` 是一次性定时器，作为所有时间相关调度的基础:
 
-- MCP Tool `actant_schedule_wait` 内部创建 DelayInput
+- RPC 方法 `schedule.wait`（通过 `actant` MCP 网关工具调用）内部创建 DelayInput
 - 执行完毕后自动从 InputRouter 注销
 - 不可复用，每次创建新实例
 

@@ -75,6 +75,7 @@ function createCrudHandlers<T extends NamedComponent>(
 export function registerDomainHandlers(registry: HandlerRegistry): void {
   registry.register("skill.list", handleSkillList);
   registry.register("skill.get", handleSkillGet);
+  registry.register("skill.search", handleSkillSearch);
   registry.register("prompt.list", handlePromptList);
   registry.register("prompt.get", handlePromptGet);
   registry.register("mcp.list", handleMcpList);
@@ -237,6 +238,19 @@ async function handlePluginRuntimeStatus(
  * from HeartbeatPlugin). Falls back gracefully when the plugin does not expose
  * these fields.
  */
+async function handleSkillSearch(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<Array<{ name: string; description?: string; tags?: string[]; origin?: unknown }>> {
+  const { query } = params as { query: string };
+  return ctx.skillManager.search(query ?? "").map((s) => ({
+    name: s.name,
+    description: s.description,
+    tags: s.tags,
+    origin: s.origin,
+  }));
+}
+
 function enrichPluginRef(ctx: AppContext, ref: PluginRef): PluginRef {
   const plugin = ctx.pluginHost.getPlugin(ref.name) as Partial<HeartbeatPlugin> | undefined;
   if (plugin && typeof plugin.consecutiveFailures === "number") {

@@ -1,5 +1,12 @@
 {
   "mcpServers": {
+    "actant": {
+      "command": "npx",
+      "args": ["tsx", "packages/mcp-server/src/index.ts"],
+      "env": {
+        "ACTANT_AGENT_NAME": "cursor-dev"
+      }
+    },
     "gitnexus": {
       "command": "npx",
       "args": ["-y", "gitnexus@latest", "mcp"]

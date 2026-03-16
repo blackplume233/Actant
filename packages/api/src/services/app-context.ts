@@ -47,6 +47,8 @@ import {
   canvasSourceFactory,
   vcsSourceFactory,
   processSourceFactory,
+  createDomainSource,
+  createAgentRegistrySource,
   RoutingChannelManager,
   type ActionContext,
   type LauncherMode,
@@ -538,6 +540,13 @@ export class AppContext {
         reg.unmountByPrefix(`workspace-${payload.agentName}`);
       }
     });
+
+    const daemonLifecycle = { type: "daemon" as const };
+    reg.mount(createDomainSource(this.skillManager, "skill", "/skills", daemonLifecycle));
+    reg.mount(createDomainSource(this.promptManager, "prompt", "/prompts", daemonLifecycle));
+    reg.mount(createDomainSource(this.workflowManager, "workflow", "/workflows", daemonLifecycle));
+    reg.mount(createDomainSource(this.templateRegistry, "template", "/templates", daemonLifecycle));
+    reg.mount(createAgentRegistrySource(this.agentManager, "/agents", daemonLifecycle));
 
     logger.info({ mounts: reg.size }, "VFS initialized with default mounts");
   }

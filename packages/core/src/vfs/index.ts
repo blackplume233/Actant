@@ -18,6 +18,9 @@ export {
   OutputBuffer,
   type ProcessHandle,
   vcsSourceFactory,
+  createDomainSource,
+  createAgentRegistrySource,
+  createDaemonInfoSource,
 } from "./sources/index";
 export {
   VfsDataStore,

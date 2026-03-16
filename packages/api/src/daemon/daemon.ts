@@ -1,5 +1,6 @@
 import { unlink } from "node:fs/promises";
 import { createLogger, ipcRequiresFileCleanup } from "@actant/shared";
+import { createDaemonInfoSource } from "@actant/core";
 import { AppContext, type AppConfig } from "../services/app-context";
 import { SocketServer } from "./socket-server";
 import {
@@ -71,6 +72,17 @@ export class Daemon {
     }
 
     await this.ctx.init();
+
+    this.ctx.vfsRegistry.mount(createDaemonInfoSource(
+      {
+        getVersion: () => getApiPackageVersion(),
+        getUptime: () => this.ctx.uptime,
+        getAgentCount: () => this.ctx.agentManager.size,
+        getRpcMethods: () => this.handlers.methods(),
+      },
+      "/daemon",
+      { type: "daemon" },
+    ));
 
     if (ipcRequiresFileCleanup()) {
       try {

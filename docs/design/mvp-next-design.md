@@ -1,6 +1,12 @@
 # MVP Next — 组件管理 · 构造器 · 雇员调度 设计方案
 
-> **状态**：设计稿 — 待评审
+> **⚠️ Partially Valid (2026-02-21 → 部分已被后续实现超越)**
+> 本文中「组件管理」与「Workspace Builder」的架构思路仍有参考价值。
+> 关于 **Plugin 双义拆分**（agent-side plugin vs actant-side PluginHost），
+> 请以 `.trellis/spec/config-spec.md` 和 `phase4-plan.md` 为当前基线。
+> 「雇员型 Agent」部分已由 `phase4-employee-steps.md` 细化推进。
+
+> **原状态**：设计稿 — 待评审
 > **日期**：2026-02-21
 > **范围**：Phase 3 后半段 + Phase 4 部分能力前置
 

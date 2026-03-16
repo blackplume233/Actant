@@ -36,6 +36,48 @@ These guides help you **ask the right questions before coding**.
 
 ## Actant-Specific Thinking Triggers
 
+### When to Think About Self-Bootstrapping (Actant-First Development)
+
+- [ ] 需要获取技能（skill）、提示词（prompt）、工作流（workflow）
+- [ ] 需要了解当前可用的 Agent 实例或 Daemon 状态
+- [ ] 需要查询 Actant 支持哪些 RPC 方法
+- [ ] 正在开发 Actant 自身的功能，考虑是否可以通过 Actant 来辅助
+
+→ **首先尝试通过 Actant MCP 获取**（VFS read/list），如果失败则：
+1. 分析失败原因（Daemon 未启动？RPC 未注册？VFS 源未挂载？）
+2. 创建 Bug Issue 记录问题
+3. 临时回退到本地文件系统获取数据
+4. 后续修复 Actant 使其能提供该能力
+
+**关键路径**：
+
+```
+vfs_list /              → 发现所有挂载点
+vfs_read /skills/_catalog.json  → 获取技能目录
+vfs_read /daemon/rpc-catalog.json → 发现可用 RPC 方法
+actant({ method, params })     → 执行任意 daemon 操作
+```
+
+**自举心态**：开发过程中持续思考——「这个操作能否让 Actant 提供？」「这个信息能否通过 VFS 暴露？」「这个重复动作能否变成一个 Actant 技能？」
+
+→ See [Quality Guidelines — Actant-First 自举开发模式](../backend/quality-guidelines.md#actant-first-自举开发模式)
+
+### When to Think About MCP Tool Surface
+
+- [ ] 添加新的 Daemon 能力（RPC handler）
+- [ ] 考虑是否需要新的 MCP 工具
+- [ ] 外部 Agent（Cursor、Claude）需要访问 Actant 数据
+
+→ **不要添加新的 MCP 工具。** 遵循 VFS + RPC 网关架构：
+- 读操作 → 创建新的 VFS 源并挂载（工具数保持 6 个不变）
+- 写/动作操作 → 通过 `actant` RPC 网关调用（已有 RPC handler 自动可用）
+- 自描述 → `vfs_read /daemon/rpc-catalog.json` 自动反映所有注册的 RPC 方法
+
+```
+工具数 = 5 (VFS) + 1 (RPC gateway) = 6，永不膨胀
+新增能力 → 挂载 VFS 源 或 注册 RPC handler → 零新工具
+```
+
 ### When to Think About Agent Lifecycle
 
 - [ ] Feature involves starting or stopping agents
@@ -182,6 +224,47 @@ These guides help you **ask the right questions before coding**.
 **Key architecture**: All external HTTP access goes through `@actant/rest-api`. The package translates RESTful routes to Daemon RPC calls via `RpcBridge`. New RPC methods should get corresponding REST endpoints. The Dashboard mounts this handler internally and adds static file serving on top.
 
 → See [API Contracts §4A](../api-contracts.md#4a-rest-apiactantrest-api), `packages/rest-api/src/routes/`
+
+### When to Think About Concept Layer Separation
+
+- [ ] Feature involves `plugin` — is it agent-side (workspace) or actant-side (PluginHost)?
+- [ ] Feature involves `schedule` / `memory` / `contextInjection` — is it template declaration or platform runtime?
+- [ ] Feature involves `domainContext` — does it cross into platform runtime behavior?
+- [ ] Documentation mentions a capability — is it described at the right layer?
+
+→ Consider: Actant 的配置体系区分 **template/domain-context layer** 和 **platform/runtime-services layer**。混淆这两层是概念漂移的主要来源。
+
+```text
+Template / Domain-Context Layer
+  Skill · Prompt · MCP · Workflow · agent-side Plugin
+  → 声明 Agent 引用什么组件
+
+Platform / Runtime-Services Layer
+  AgentManager · PluginHost · Scheduler · ContextInjector · ActantChannel
+  → 决定声明如何被物化、启动、调度、恢复和注入
+```
+
+**Gotcha**: `domainContext.plugins` 中的 plugin 是 agent-side 扩展（workspace 内），`PluginHost` 管理的是 actant-side system plugin（平台 runtime 级），名字相同但层级完全不同。
+
+→ See `docs/wiki/reference/architecture.md` Platform Conceptual Model
+
+### When to Think About Document Governance
+
+- [ ] Referencing a design doc or planning doc — is it still current baseline?
+- [ ] Auto-generated wiki doc contains outdated narrative
+- [ ] New feature narrative conflicts with established governance baseline
+- [ ] Historical document is being cited as current design authority
+
+→ Consider: Historical docs without explicit status markers will **silently define current concepts**. Every design doc should have one of these statuses:
+
+| Status | Meaning |
+|--------|---------|
+| **Current** | Active baseline, code must conform |
+| **Partially Valid** | Some sections still useful, but superseded in parts |
+| **Historical** | Preserved for evolution context, not for current decisions |
+| **Superseded** | Replaced by a newer document (link to replacement) |
+
+**Convention**: When auto-generated docs (e.g. `generated: true` wiki pages) conflict with governance baselines from spec, **governance takes precedence**. Switch `generated` to `false` and update manually.
 
 ---
 

@@ -24,6 +24,9 @@
   "files": [
     "dist"
   ],
+  "bin": {
+    "actant-mcp-server": "./dist/index.js"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

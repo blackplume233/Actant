@@ -194,7 +194,7 @@ AgentManager.startAgent(name)
 ```
 [0] "## Actant Agent Identity\nYou are **my-agent**..."     ← CoreContextProvider
 [1] "You have a live canvas on the Actant dashboard..."     ← CanvasContextProvider
-[2] "## Actant Internal Tools\n  - actant_canvas_update..." ← buildToolContextBlock
+[2] "## Actant Internal Tools\n  - actant RPC gateway..."    ← buildToolContextBlock
 ```
 
 `[0]` 和 `[1]` 由 Provider 注册顺序决定，`[2]` 始终在末尾（post-collection 产生）。

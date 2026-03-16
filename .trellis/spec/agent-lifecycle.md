@@ -688,13 +688,13 @@ Agent A ──MCP tool call──→ Actant MCP Server ──RPC──→ Daemon
 
 **为什么不用 ACP**：Agent A 自身就是被管理的 Agent，它没有能力扮演 ACP Client（无法提供文件系统、终端、权限）。MCP 是 Agent 的原生工具调用协议。
 
-**MCP Tools**（基础版，#16）：
+**MCP Tools**（VFS + RPC 网关架构，#16）：
 ```
-actant_run_agent      — 创建 ephemeral Agent 执行任务
-actant_prompt_agent   — 向持久 Agent 发送消息
-actant_agent_status   — 查询 Agent 状态
-actant_create_agent   — 创建实例
-actant_list_agents    — 列出所有 Agent
+actant { method: "agent.run", params: {...} }   — 创建 ephemeral Agent 执行任务
+actant { method: "agent.prompt", params: {...} } — 向持久 Agent 发送消息
+vfs_read /agents/<name>/status.json              — 查询 Agent 状态
+actant { method: "agent.create", params: {...} } — 创建实例
+vfs_list /agents/                                — 列出所有 Agent
 ```
 
 > **架构决策：CLI-first 工具暴露（#228）**
@@ -851,18 +851,18 @@ Actant->Detach("ue-helper");
 
 ```
 // Agent A 的 MCP 配置中包含 Actant MCP Server
-// Agent A 在执行过程中：
+// Agent A 通过 actant RPC 网关工具调用：
 
-result = mcp.call("actant_run_agent", {
-  template: "coding-expert",
-  prompt: "实现以下接口：..."
+result = mcp.call("actant", {
+  method: "agent.run",
+  params: { template: "coding-expert", prompt: "实现以下接口：..." }
 })
 // Agent B 被创建、执行、返回结果、清理
 
 // 或者复用持久 Agent：
-result = mcp.call("actant_prompt_agent", {
-  name: "team-coder",
-  message: "实现以下接口：..."
+result = mcp.call("actant", {
+  method: "agent.prompt",
+  params: { name: "team-coder", message: "实现以下接口：..." }
 })
 ```
 

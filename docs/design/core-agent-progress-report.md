@@ -1,5 +1,10 @@
 # Actant Core Agent 配置系统 — 完成度报告
 
+> **⚠️ Historical (截至 2026-02-19)**
+> 本文记录 Phase 0-7 的完成度快照。架构已演进至 v0.3.0（ActantChannel / RecordSystem / VFS / TUI 等），
+> 模块边界和数据流已发生显著变化。**当前基线请参阅** `.trellis/spec/` 系列文档。
+> 保留本文作为演进历史参考，不应再作为当前设计依据。
+
 > 截至 2026-02-19，Phase 0-7 全部完成，M1-M4 四个里程碑已达成。
 
 ---
