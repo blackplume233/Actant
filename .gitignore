@@ -38,6 +38,7 @@ docs/wiki/node_modules/
 # Issue sync temp files
 .trellis/issues/.dirty
 .trellis/_sync_body_*.tmp
+.trellis/tmp-codex-scripts-*/
 .gitnexus
 
 # QA Alpha persistent environment
