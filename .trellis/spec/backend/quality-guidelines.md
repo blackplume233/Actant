@@ -420,6 +420,13 @@ eventBus.emit(event, data);
 | 执行 Daemon 操作 | `actant({ method, params })` | 直接调用 CLI 命令 |
 
 **Gotcha**: Daemon 必须运行且包必须构建后，MCP Server 才能正常工作。开发新 VFS 源或 RPC handler 后，需要重启 Daemon 并可能重建 `@actant/core` 和 `@actant/api` 包。
+>
+> **阶段性更新（2026-03）**：当前自举开发不应再假设 “没有 daemon 就无法用 MCP”。开发者应优先把项目根目录的 `actant.project.json` 与 MCP 配置（如 `.claude/mcp.json`、`.cursor/mcp.json`）接好，然后按下面顺序发现上下文：
+> 1. `vfs_read /project/context.json`
+> 2. `vfs_list /`
+> 3. 如果 `mode` 表明已连接 daemon，再读取 `/daemon/rpc-catalog.json` 并使用 `actant`
+>
+> **Why**: 当前阶段的主轴是 project-context first。standalone MCP 也是有效的 bootstrap surface，不应因为 daemon 不在线就退回“直接翻本地文件”作为第一选择。
 
 > **Why**: 自举开发是 Actant 最有效的质量保障——如果开发者自己都不通过 Actant 获取数据，就不会发现 API 设计中的摩擦点。每一次自举失败都是一个待修复的 Bug，每一次成功都是一次能力验证。
 

@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "name": "Actant",
+  "description": "Actant self-bootstrap project context",
+  "configsDir": "configs"
+}
