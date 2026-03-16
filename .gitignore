@@ -46,3 +46,13 @@ docs/wiki/node_modules/
 # Local npm cache
 .npm-cache/
 .npm-cache-local/
+
+# QA test artifacts (screenshots, scripts, results)
+.trellis/tasks/archive/**/screenshots/
+.trellis/tasks/archive/**/*.py
+.trellis/tasks/archive/**/*.json
+!.trellis/tasks/archive/**/task.json
+.trellis/tasks/archive/**/*.jsonl
+.trellis/tasks/archive/**/*.mjs
+.trellis/tasks/archive/**/*.ps1
+dashboard-*.png
