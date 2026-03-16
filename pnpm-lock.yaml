@@ -54,10 +54,10 @@ importers:
   packages/acp:
     dependencies:
       '@actant/core':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../core
       '@actant/shared':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../shared
       '@agentclientprotocol/sdk':
         specifier: ^0.14.1
@@ -69,55 +69,55 @@ importers:
   packages/actant:
     dependencies:
       '@actant/acp':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../acp
       '@actant/api':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../api
       '@actant/cli':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../cli
       '@actant/core':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../core
       '@actant/mcp-server':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../mcp-server
       '@actant/pi':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../pi
       '@actant/shared':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../shared
 
   packages/api:
     dependencies:
       '@actant/acp':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../acp
       '@actant/channel-claude':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../channel-claude
       '@actant/core':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../core
       '@actant/pi':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../pi
       '@actant/shared':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../shared
 
   packages/channel-claude:
     dependencies:
       '@actant/core':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../core
       '@actant/shared':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../shared
       '@actant/tui':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../tui
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.2.0
@@ -126,28 +126,28 @@ importers:
   packages/cli:
     dependencies:
       '@actant/acp':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../acp
       '@actant/api':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../api
       '@actant/core':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../core
       '@actant/dashboard':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../dashboard
       '@actant/pi':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../pi
       '@actant/rest-api':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../rest-api
       '@actant/shared':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../shared
       '@actant/tui':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../tui
       '@inquirer/prompts':
         specifier: ^8.3.0
@@ -165,7 +165,7 @@ importers:
   packages/core:
     dependencies:
       '@actant/shared':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../shared
       croner:
         specifier: ^9.0.0
@@ -184,10 +184,10 @@ importers:
   packages/dashboard:
     dependencies:
       '@actant/rest-api':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../rest-api
       '@actant/shared':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../shared
     devDependencies:
       '@radix-ui/react-slot':
@@ -254,10 +254,10 @@ importers:
   packages/mcp-server:
     dependencies:
       '@actant/core':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../core
       '@actant/shared':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../shared
       '@modelcontextprotocol/sdk':
         specifier: ^1.27.1
@@ -269,10 +269,10 @@ importers:
   packages/pi:
     dependencies:
       '@actant/core':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../core
       '@actant/shared':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../shared
       '@agentclientprotocol/sdk':
         specifier: ^0.14.1
@@ -287,7 +287,7 @@ importers:
   packages/rest-api:
     dependencies:
       '@actant/shared':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../shared
     devDependencies:
       '@types/node':
@@ -313,7 +313,7 @@ importers:
   packages/tui:
     dependencies:
       '@actant/core':
-        specifier: workspace:*
+        specifier: workspace:0.3.0
         version: link:../core
       '@mariozechner/pi-tui':
         specifier: ^0.58.1

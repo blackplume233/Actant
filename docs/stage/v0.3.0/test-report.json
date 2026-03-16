@@ -1,0 +1,43 @@
+{
+  "version": "v0.3.0",
+  "date": "2026-03-16T03:12:00.000Z",
+  "summary": {
+    "testFiles": 104,
+    "tests": 1259,
+    "passed": 1259,
+    "failed": 0,
+    "duration": "19.11s"
+  },
+  "newTestFiles": [
+    "packages/channel-claude/src/__tests__/claude-channel-adapter.test.ts",
+    "packages/channel-claude/src/__tests__/claude-channel-manager.test.ts",
+    "packages/channel-claude/src/__tests__/message-mapper.test.ts",
+    "packages/tui/src/__tests__/chat-view.test.ts",
+    "packages/tui/src/__tests__/stress.test.ts",
+    "packages/tui/src/__tests__/streaming-markdown.test.ts",
+    "packages/core/src/channel/event-compat.test.ts",
+    "packages/core/src/channel/recording-channel-decorator.test.ts",
+    "packages/core/src/channel/recording-channel-manager.test.ts",
+    "packages/core/src/channel/routing-channel-manager.test.ts",
+    "packages/core/src/record/record-system.test.ts",
+    "packages/core/src/record/record-system-supplement.test.ts",
+    "packages/core/src/vfs/__tests__/vfs-registry.test.ts",
+    "packages/core/src/vfs/__tests__/vfs-lifecycle-manager.test.ts",
+    "packages/core/src/vfs/__tests__/vfs-permission-manager.test.ts",
+    "packages/core/src/vfs/__tests__/process-source.test.ts",
+    "packages/core/src/vfs/__tests__/memory-source.test.ts",
+    "packages/core/src/vfs/__tests__/path-index.test.ts",
+    "packages/core/src/context-injector/core-context-provider.test.ts",
+    "packages/api/src/handlers/__tests__/event-handlers.test.ts",
+    "packages/api/src/handlers/__tests__/gateway-handlers.test.ts",
+    "packages/api/src/handlers/__tests__/session-handlers.test.ts",
+    "packages/shared/src/errors/session-errors.test.ts",
+    "packages/shared/src/rpc/json-rpc-socket.test.ts",
+    "packages/acp/src/__tests__/channel-adapter.test.ts"
+  ],
+  "comparison": {
+    "previousVersion": "v0.2.6",
+    "testFilesDelta": "+26",
+    "testsDelta": "+232"
+  }
+}

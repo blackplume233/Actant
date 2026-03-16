@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, type Mock } from "vitest";
 import { createApiHandler } from "./server";
+import { getRestApiPackageVersion } from "./package-version";
 
 function createMockBridge() {
   return {
@@ -89,6 +90,6 @@ describe("createApiHandler", () => {
     const [body] = res.end.mock.calls[0] ?? [];
     expect(body).toBeDefined();
     const payload = JSON.parse(body as string) as { info: { version: string } };
-    expect(payload.info.version).toBe("0.2.3");
+    expect(payload.info.version).toBe(getRestApiPackageVersion());
   });
 });
