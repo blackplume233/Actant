@@ -8,7 +8,7 @@ if (!process.env["LOG_LEVEL"]) {
 
 if (process.argv.includes("--__actant-daemon")) {
   const { Daemon } = await import("@actant/api");
-  const { onShutdownSignal } = await import("@actant/shared");
+  const { onShutdownSignal, bridgeLogger } = await import("@actant/shared");
   const { DAEMON_READY_SIGNAL } = await import("../commands/daemon/start");
   try {
     const daemon = new Daemon();
@@ -19,7 +19,7 @@ if (process.argv.includes("--__actant-daemon")) {
     await daemon.start();
     process.stderr.write(DAEMON_READY_SIGNAL + "\n");
   } catch (err) {
-    console.error("Daemon failed to start:", err);
+    bridgeLogger.error("Daemon failed to start", err);
     process.exit(1);
   }
 } else {

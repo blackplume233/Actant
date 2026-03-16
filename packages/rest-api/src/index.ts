@@ -17,7 +17,7 @@ function installSignalHandlersOnce(): void {
 
   const signals: NodeJS.Signals[] = ["SIGINT", "SIGTERM"];
   for (const sig of signals) {
-    process.on(sig, () => {
+    process.once(sig, () => {
       for (const server of managedServers) {
         try {
           server.close();

@@ -89,27 +89,53 @@ export function registerWebhookRoutes(router: Router): void {
   //
   // Allows external systems to inject events into the EventBus.
   // Can be used to trigger hook-based agent workflows.
-  // Body: { event, agentName?, payload? }
+  //
+  // Body: { event (required), agentName (required), payload? (optional object) }
+  // Response: 200 { ok: true } | 400 invalid input | 404 agent not found | 502 RPC failure
   // -----------------------------------------------------------------------
   router.post("/v1/webhooks/event", async (ctx, _req, res) => {
     const { event, agentName, payload } = ctx.body;
-    if (!event) {
-      return error(res, "event is required", 400);
+
+    // Require event: string, non-empty
+    const eventStr = typeof event === "string" ? event.trim() : "";
+    if (!eventStr) {
+      return error(res, "event is required and must be a non-empty string", 400);
     }
-    if (!agentName) {
-      return error(res, "agentName is required for event routing", 400);
+
+    // Require agentName: string, non-empty
+    const agentNameStr = typeof agentName === "string" ? agentName.trim() : "";
+    if (!agentNameStr) {
+      return error(res, "agentName is required and must be a non-empty string", 400);
+    }
+
+    // Optional payload: must be plain object if provided
+    let payloadObj: Record<string, unknown> | undefined;
+    if (payload !== undefined && payload !== null) {
+      if (typeof payload !== "object" || Array.isArray(payload)) {
+        return error(res, "payload must be an object when provided", 400);
+      }
+      payloadObj = payload as Record<string, unknown>;
     }
 
     try {
       const result = await ctx.bridge.call("events.emit", {
-        event: String(event),
-        agentName: String(agentName),
-        ...(payload && typeof payload === "object" ? { payload } : {}),
+        event: eventStr,
+        agentName: agentNameStr,
+        ...(payloadObj !== undefined ? { payload: payloadObj } : {}),
       });
       json(res, result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      error(res, msg, 502);
+      const rpcErr = err as { code?: number; data?: { errorCode?: string } };
+      const actantCode = rpcErr.data?.errorCode;
+
+      let status = 502;
+      if (actantCode === "AGENT_NOT_FOUND" || actantCode === "SESSION_NOT_FOUND") status = 404;
+      else if (actantCode === "INVALID_PARAMS" || actantCode === "SESSION_VALIDATION_ERROR") status = 400;
+      else if (rpcErr.code === -32003 || rpcErr.code === -32001) status = 404;
+      else if (rpcErr.code === -32002 || rpcErr.code === -32602) status = 400;
+
+      error(res, msg, status);
     }
   });
 }

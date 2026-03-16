@@ -1,7 +1,7 @@
-import type { RpcRequest, RpcResponse, RpcMethodMap, RpcMethod } from "@actant/shared";
-import { sendJsonRpcRequest } from "@actant/shared";
+import type { RpcMethodMap, RpcMethod } from "@actant/shared";
+import { RpcTransportClient, RpcTransportError } from "@actant/shared";
 
-let requestId = 0;
+const CONNECTION_ERROR_PATTERN = /Cannot connect|ECONNREFUSED|ENOENT|EPIPE|socket/i;
 
 export class RpcClient {
   constructor(private readonly socketPath: string) {}
@@ -11,24 +11,27 @@ export class RpcClient {
     params: RpcMethodMap[M]["params"],
     options?: { timeoutMs?: number },
   ): Promise<RpcMethodMap[M]["result"]> {
-    const id = ++requestId;
-    const request: RpcRequest = {
-      jsonrpc: "2.0",
-      id,
-      method,
-      params: params as Record<string, unknown>,
-    };
-
-    const response = await this.send(request, options?.timeoutMs);
-
-    if (response.error) {
-      const rawMsg = response.error.message;
-      const message = typeof rawMsg === "string" ? rawMsg : JSON.stringify(rawMsg) ?? "Unknown error";
-      const err = new RpcCallError(message, response.error.code, response.error.data);
+    const transport = new RpcTransportClient({
+      defaultTimeoutMs: this.getEffectiveDefaultTimeout(),
+    });
+    await transport.connect(this.socketPath);
+    try {
+      const result = await transport.call(method, params as Record<string, unknown>, {
+        timeout: options?.timeoutMs ?? this.getEffectiveDefaultTimeout(),
+      });
+      return result as RpcMethodMap[M]["result"];
+    } catch (err) {
+      if (err instanceof RpcTransportError) {
+        const msg = err.message;
+        if (CONNECTION_ERROR_PATTERN.test(msg)) {
+          throw new ConnectionError(this.socketPath, err.cause ?? err);
+        }
+        throw new RpcCallError(msg, err.code, err.data);
+      }
       throw err;
+    } finally {
+      transport.disconnect();
     }
-
-    return response.result as RpcMethodMap[M]["result"];
   }
 
   async ping(): Promise<boolean> {
@@ -40,16 +43,9 @@ export class RpcClient {
     }
   }
 
-  private send(request: RpcRequest, timeoutMs?: number): Promise<RpcResponse> {
+  private getEffectiveDefaultTimeout(): number {
     const envTimeout = process.env["ACTANT_RPC_TIMEOUT_MS"] ? Number(process.env["ACTANT_RPC_TIMEOUT_MS"]) : NaN;
-    const effectiveTimeout = timeoutMs ?? (Number.isFinite(envTimeout) ? envTimeout : 10_000);
-
-    return sendJsonRpcRequest(this.socketPath, request, { timeoutMs: effectiveTimeout }).catch((err: unknown) => {
-      if (err instanceof Error && /Cannot connect|ECONNREFUSED|ENOENT|EPIPE|socket/i.test(err.message)) {
-        throw new ConnectionError(this.socketPath, err);
-      }
-      throw err;
-    });
+    return Number.isFinite(envTimeout) ? envTimeout : 10_000;
   }
 }
 

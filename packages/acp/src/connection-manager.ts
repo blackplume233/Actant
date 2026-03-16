@@ -161,6 +161,7 @@ export class AcpConnectionManager {
       return { ...session, pid };
     } catch (err) {
       await connWithRouter.close().catch(() => {});
+      this.gateways.get(name)?.disconnectUpstream();
       this.cleanupConnectionState(name);
       throw err;
     }

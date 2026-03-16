@@ -1,8 +1,12 @@
 import { readFile, writeFile, readdir } from "node:fs/promises";
-import { resolve } from "node:path";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import { sendJsonRpcRequest, type RpcRequest } from "@actant/shared";
+import {
+  sendJsonRpcRequest,
+  RpcTransportError,
+  safeResolvePath,
+  type RpcRequest,
+} from "@actant/shared";
 import { Agent, type AgentTool } from "@mariozechner/pi-agent-core";
 import { getModel, Type } from "@mariozechner/pi-ai";
 
@@ -24,15 +28,6 @@ export interface PiAgentOptions {
 
 const ALL_TOOLS = ["read_file", "write_file", "list_directory", "run_command"] as const;
 
-function resolvePath(workspaceDir: string, path: string): string {
-  const abs = resolve(workspaceDir, path);
-  const base = resolve(workspaceDir);
-  if (!abs.startsWith(base)) {
-    throw new Error(`Path "${path}" resolves outside workspace`);
-  }
-  return abs;
-}
-
 function buildTools(workspaceDir: string, toolNames?: string[]): AgentTool[] {
   const enabled = toolNames && toolNames.length > 0 ? toolNames : [...ALL_TOOLS];
   const tools: AgentTool[] = [];
@@ -47,7 +42,7 @@ function buildTools(workspaceDir: string, toolNames?: string[]): AgentTool[] {
       }),
       execute: (async (_toolCallId, params) => {
         const { path } = params as { path: string };
-        const absPath = resolvePath(workspaceDir, path);
+        const absPath = safeResolvePath(workspaceDir, path);
         const content = await readFile(absPath, "utf-8");
         return { content: [{ type: "text" as const, text: content }], details: undefined };
       }) as AgentTool["execute"],
@@ -65,7 +60,7 @@ function buildTools(workspaceDir: string, toolNames?: string[]): AgentTool[] {
       }),
       execute: (async (_toolCallId, params) => {
         const { path, content } = params as { path: string; content: string };
-        const absPath = resolvePath(workspaceDir, path);
+        const absPath = safeResolvePath(workspaceDir, path);
         await writeFile(absPath, content, "utf-8");
         return { content: [{ type: "text" as const, text: `Wrote ${path}` }], details: undefined };
       }) as AgentTool["execute"],
@@ -82,7 +77,7 @@ function buildTools(workspaceDir: string, toolNames?: string[]): AgentTool[] {
       }),
       execute: (async (_toolCallId, params) => {
         const { path } = params as { path: string };
-        const absPath = resolvePath(workspaceDir, path);
+        const absPath = safeResolvePath(workspaceDir, path);
         const entries = await readdir(absPath, { withFileTypes: true });
         const lines = entries.map((e) => (e.isDirectory() ? `${e.name}/` : e.name));
         return { content: [{ type: "text" as const, text: lines.join("\n") }], details: undefined };
@@ -102,6 +97,8 @@ function buildTools(workspaceDir: string, toolNames?: string[]): AgentTool[] {
       execute: (async (_toolCallId, params, signal) => {
         const { command, args: argList } = params as { command: string; args?: string[] };
         const args = argList ?? [];
+        // Uses execFile (not exec) to prevent shell injection. Executable and args
+        // are passed directly to the kernel without invoking a shell.
         const { stdout, stderr } = await execFileAsync(
           command,
           args,
@@ -176,7 +173,11 @@ function rpcCall(socketPath: string, method: string, params: Record<string, unkn
     maxBufferBytes: 1024 * 1024,
   }).then((resp) => {
     if (resp.error) {
-      throw new Error(resp.error.message ?? "RPC error");
+      throw new RpcTransportError(
+        resp.error.message ?? "RPC error",
+        resp.error.code ?? -32603,
+        resp.error.data,
+      );
     }
     return resp.result;
   });

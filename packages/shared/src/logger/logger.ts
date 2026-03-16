@@ -83,3 +83,15 @@ export function createLogger(module: string): Logger {
     getSharedStream(),
   );
 }
+
+/**
+ * Minimal logger for bridge entrypoints (MCP server, Pi bridge, CLI bin).
+ * Writes to stderr with a consistent prefix for startup/fatal errors.
+ * Use when full pino logger is not initialized.
+ */
+export const bridgeLogger = {
+  error(msg: string, err?: unknown): void {
+    const suffix = err !== undefined ? `: ${err instanceof Error ? err.message : String(err)}` : "";
+    process.stderr.write(`[actant] ${msg}${suffix}\n`);
+  },
+};

@@ -4,7 +4,7 @@
 > 每个新功能**必须**同步扩展耐久覆盖。本文档定义覆盖矩阵、演进策略和维护规范。
 > **若代码行为与本文档定义的覆盖目标不一致，优先更新耐久测试。**
 
-> **实现状态**：**Phase 1（生命周期场景）已实现**，为当前有效规范；Phase 2（通信与协议）和 Phase 3+（扩展体系）为计划扩展，尚未实现，标注为"待实现"。
+> **实现状态**：**Phase 1（生命周期场景）已实现**；**Phase 2（RPC、ACP Gateway、REST Bridge）部分实现**；Phase 2（MCP）及 Phase 3+ 为计划扩展，标注为"待实现"。
 
 ---
 
@@ -59,12 +59,21 @@
 | `E-DAEMON` | Daemon 重启恢复 | Daemon 反复崩溃重启，验证 acp-service 恢复、direct 不恢复 | Daemon dispose → 新 Daemon 恢复 |
 | `E-MIX` | 混合并发操作 | 多 Agent、多模式、随机 create/start/stop/crash/destroy | 各模式各自关停逻辑 |
 
-#### Phase 2: 通信与协议（待实现）
+#### Phase 2: 通信与协议（部分实现）
 
 | 场景 ID | 场景名称 | 覆盖内容 | 关停行为 |
 |---------|---------|---------|---------|
 | `E-RPC` | RPC 高频通信 | 连续 RPC 调用，验证无连接泄漏、无状态漂移 | 正常关闭连接 |
+| `E-RPC-CHURN` | RPC 连接抖动 | 请求/回复循环，连接反复建立/断开 | 正常关闭 |
+| `E-RPC-DROP` | RPC 中途断开 | 请求进行中连接断开 | 抛出错误，无泄漏 |
+| `E-RPC-TIMEOUT` | RPC 超时负载 | 服务端不响应，验证超时行为 | 超时抛出 |
 | `E-ACP` | ACP Proxy 持续转发 | Proxy 长时间转发消息，验证 Agent 状态同步；**必须包含空闲期存活验证**（见注） | Proxy 断开后 Agent 状态正确 |
+| `E-ACP-RECONNECT` | ACP Gateway 重连 | 反复 connect/disconnect，验证 terminal 清理 | disconnectUpstream 清理 |
+| `E-ACP-DISCONNECT` | ACP 显式断开 | 每次连接后显式 disconnectUpstream | 无资源泄漏 |
+| `E-ACP-LEAK` | ACP 资源泄漏检测 | N 次循环后验证 handle/listener 无累积 | 无泄漏 |
+| `E-BRIDGE-UNAVAIL` | REST Bridge 不可用 | daemon 不可达时 ping 行为 | 返回 false |
+| `E-BRIDGE-TIMEOUT` | REST Bridge 超时 | 服务端不响应时的超时 | 抛出错误 |
+| `E-BRIDGE-DEGRADED` | REST Bridge 降级 | 服务端中途关闭连接 | 抛出错误 |
 | `E-MCP` | Agent 间 MCP 通信 | Agent A 反复通过 MCP 委派任务给 Agent B | one-shot Agent 自动清理 |
 
 > **`E-ACP` 实现注意**：测试中必须包含 >10s 的空闲窗口（两次 prompt 之间无活动），并验证 acp-background Agent 子进程在此期间保持存活（`INV-ALIVE`）。这覆盖了 Windows Named Pipe 空闲退出 bug 的回归。详见 `guides/cross-platform-guide.md §Windows Named Pipe Idle Exit`。
@@ -195,10 +204,14 @@ ENDURANCE_DURATION_MS=3600000 pnpm test:endurance
 packages/
   core/src/manager/
     agent-manager.endurance.test.ts      ← Phase 1: 核心生命周期
+  shared/src/rpc/__tests__/
+    rpc-transport.endurance.test.ts      ← Phase 2: RPC 传输
+  acp/src/__tests__/
+    gateway-lifecycle.endurance.test.ts  ← Phase 2: ACP Gateway
+  rest-api/src/__tests__/
+    rpc-bridge.endurance.test.ts         ← Phase 2: REST RPC Bridge
   api/src/
     rpc-endurance.test.ts                ← Phase 2: RPC 通信（待建）
-  acp/src/
-    acp-proxy-endurance.test.ts          ← Phase 2: ACP Proxy（待建）
   core/src/plugin/
     plugin-host.endurance.test.ts        ← Phase 4: Plugin 生命周期（待建）
   core/src/scheduler/

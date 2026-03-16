@@ -15,11 +15,75 @@ import { createLogger } from "@actant/shared";
 import {
   AcpGatewayStateError,
   AcpConnectionStateError,
+  AcpTerminalHandleMissingError,
 } from "@actant/shared";
 import type { AcpConnection } from "./connection";
 import { ClientCallbackRouter, type UpstreamHandler } from "./callback-router";
+import { getAcpPackageVersion } from "./package-version";
 
 const logger = createLogger("acp-gateway");
+
+/* ---------------------------------------------------------------------------
+ * SDK WORKAROUND: TerminalHandleRegistry
+ *
+ * INVARIANT CONTRACT:
+ * - The ACP SDK's AgentSideConnection exposes fs ops as flat methods
+ *   (readTextFile, writeTextFile) but wraps terminal ops behind TerminalHandle.
+ *   The SDK does NOT expose flat terminalOutput(), waitForTerminalExit(),
+ *   killTerminal(), releaseTerminal() on AgentSideConnection.
+ *
+ * - This registry exists solely as an adapter: we store handles from
+ *   createTerminal() and delegate IDE requests through them. The IDE (Client)
+ *   owns the real terminal state; this map is purely an SDK workaround.
+ *
+ * - REMOVAL: Delete this entire section once @agentclientprotocol/sdk adds
+ *   flat terminal methods. See #95, #116.
+ *
+ * LIFECYCLE INVARIANTS:
+ * - Handles are valid only while upstream is connected. On upstream disconnect,
+ *   cleanupAll() must run to release every handle and clear the map.
+ * - A handle is "stale" if it's not in the map (released or never existed).
+ * - Duplicate release is safe: we delete-before-release so concurrent calls
+ *   get undefined and return no-op.
+ * ------------------------------------------------------------------------- */
+class TerminalHandleRegistry {
+  private readonly handles = new Map<string, TerminalHandle>();
+
+  add(handle: TerminalHandle): void {
+    this.handles.set(handle.id, handle);
+  }
+
+  get(terminalId: string): TerminalHandle | undefined {
+    return this.handles.get(terminalId);
+  }
+
+  /**
+   * Release a terminal handle. Uses delete-before-release to prevent duplicate
+   * release: concurrent calls will get undefined and return early.
+   */
+  async release(terminalId: string): Promise<Record<string, unknown>> {
+    const handle = this.handles.get(terminalId);
+    if (!handle) return {}; // Already released or never existed
+    this.handles.delete(terminalId); // Remove FIRST to guard against double release
+    const result = await handle.release();
+    return (result as Record<string, unknown>) ?? {};
+  }
+
+  /**
+   * Release all handles and clear the map. Call on upstream disconnect.
+   */
+  cleanupAll(): void {
+    for (const handle of this.handles.values()) {
+      handle.release().catch(() => {});
+    }
+    this.handles.clear();
+  }
+
+  /** Check if a handle exists (not yet released). */
+  has(terminalId: string): boolean {
+    return this.handles.has(terminalId);
+  }
+}
 
 export interface GatewayOptions {
   /** The downstream AcpConnection (Daemon → Agent). */
@@ -41,22 +105,19 @@ export interface GatewayOptions {
  * - Forwards IDE requests (prompt, cancel, etc.) to the downstream Agent
  * - Routes Agent callbacks (permissions, fs, terminal) to IDE or local
  *   via the ClientCallbackRouter
+ *
+ * Terminal handle invariants (SDK workaround, see TerminalHandleRegistry):
+ * - On upstream disconnect: all terminal handles are released and cleared
+ * - Duplicate release: safe (delete-before-release prevents double release)
+ * - Stale handles: operations check handle existence before use
  */
 export class AcpGateway {
   private upstream: AgentSideConnection | null = null;
   private readonly downstream: AcpConnection;
   private readonly callbackRouter: ClientCallbackRouter;
   private ideCapabilities: ClientCapabilities | null = null;
-  /**
-   * WORKAROUND for SDK API limitation (see #95):
-   * AgentSideConnection exposes flat methods for fs (readTextFile, writeTextFile)
-   * but wraps terminal ops behind TerminalHandle. Ideally the Gateway should be
-   * stateless — the IDE (Client) manages its own terminal state keyed by terminalId.
-   * We maintain this map only because the SDK doesn't expose flat terminalOutput(),
-   * waitForTerminalExit(), killTerminal(), releaseTerminal() on AgentSideConnection.
-   * Remove this once the SDK adds flat terminal methods.
-   */
-  private terminalHandles = new Map<string, TerminalHandle>();
+  /** SDK workaround: see TerminalHandleRegistry JSDoc above. */
+  private readonly terminalRegistry = new TerminalHandleRegistry();
 
   constructor(options: GatewayOptions) {
     this.downstream = options.downstream;
@@ -89,10 +150,7 @@ export class AcpGateway {
 
     this.upstream.signal.addEventListener("abort", () => {
       logger.info("Upstream IDE disconnected from Gateway");
-      for (const handle of this.terminalHandles.values()) {
-        handle.release().catch(() => {});
-      }
-      this.terminalHandles.clear();
+      this.terminalRegistry.cleanupAll(); // Reconnect safety: clean all handles on disconnect
       this.callbackRouter.detachUpstream();
       this.ideCapabilities = null;
     });
@@ -104,10 +162,7 @@ export class AcpGateway {
    * Disconnect the upstream IDE.
    */
   disconnectUpstream(): void {
-    for (const handle of this.terminalHandles.values()) {
-      handle.release().catch(() => {});
-    }
-    this.terminalHandles.clear();
+    this.terminalRegistry.cleanupAll();
     this.callbackRouter.detachUpstream();
     this.upstream = null;
     this.ideCapabilities = null;
@@ -125,37 +180,33 @@ export class AcpGateway {
       sessionUpdate: (p) => conn.sessionUpdate(p),
       readTextFile: (p) => conn.readTextFile(p),
       writeTextFile: (p) => conn.writeTextFile(p),
-      // Terminal forwarding via TerminalHandle map.
-      // SDK limitation: AgentSideConnection doesn't expose flat terminalOutput() etc.
-      // so we store handles from createTerminal and delegate through them.
-      // The IDE (Client) owns the real terminal state; this map is purely an SDK
-      // adapter and should be removed once the SDK exposes flat terminal methods.
+      // Terminal forwarding via TerminalHandleRegistry (SDK workaround).
       createTerminal: async (p) => {
         const handle = await conn.createTerminal(p);
-        this.terminalHandles.set(handle.id, handle);
+        this.terminalRegistry.add(handle);
         return { terminalId: handle.id };
       },
       terminalOutput: async (p) => {
-        const handle = this.terminalHandles.get(p.terminalId);
-        if (!handle) throw new AcpGatewayStateError(`Terminal "${p.terminalId}" not found in Gateway handle map`, { terminalId: p.terminalId });
+        if (!this.isUpstreamConnected) throw new AcpConnectionStateError("Upstream disconnected");
+        const handle = this.terminalRegistry.get(p.terminalId);
+        if (!handle) throw new AcpTerminalHandleMissingError(p.terminalId); // Stale handle
         return handle.currentOutput();
       },
       waitForTerminalExit: async (p) => {
-        const handle = this.terminalHandles.get(p.terminalId);
-        if (!handle) throw new AcpGatewayStateError(`Terminal "${p.terminalId}" not found in Gateway handle map`, { terminalId: p.terminalId });
+        if (!this.isUpstreamConnected) throw new AcpConnectionStateError("Upstream disconnected");
+        const handle = this.terminalRegistry.get(p.terminalId);
+        if (!handle) throw new AcpTerminalHandleMissingError(p.terminalId);
         return handle.waitForExit();
       },
       killTerminal: async (p) => {
-        const handle = this.terminalHandles.get(p.terminalId);
-        if (!handle) throw new AcpGatewayStateError(`Terminal "${p.terminalId}" not found in Gateway handle map`, { terminalId: p.terminalId });
+        if (!this.isUpstreamConnected) throw new AcpConnectionStateError("Upstream disconnected");
+        const handle = this.terminalRegistry.get(p.terminalId);
+        if (!handle) throw new AcpTerminalHandleMissingError(p.terminalId);
         return handle.kill();
       },
       releaseTerminal: async (p) => {
-        const handle = this.terminalHandles.get(p.terminalId);
-        if (!handle) return {};
-        const result = await handle.release();
-        this.terminalHandles.delete(p.terminalId);
-        return result ?? {};
+        if (!this.isUpstreamConnected) return {}; // No-op if already disconnected
+        return this.terminalRegistry.release(p.terminalId); // Duplicate release protected
       },
     };
 
@@ -176,7 +227,7 @@ export class AcpGateway {
         return {
           protocolVersion: 1,
           agentCapabilities: {},
-          agentInfo: { name: "actant-gateway", version: "0.1.0" },
+          agentInfo: { name: "actant-gateway", version: getAcpPackageVersion() },
         } as InitializeResponse;
       },
 

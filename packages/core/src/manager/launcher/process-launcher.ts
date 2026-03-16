@@ -1,6 +1,12 @@
 import { spawn } from "node:child_process";
 import type { AgentInstanceMeta } from "@actant/shared";
-import { AgentLaunchError, createLogger } from "@actant/shared";
+import {
+  AgentLaunchError,
+  AgentSpawnTimeoutError,
+  AgentSpawnFailedError,
+  AgentProcessExitedImmediatelyError,
+  createLogger,
+} from "@actant/shared";
 import type { AgentLauncher, AgentProcess } from "./agent-launcher";
 import { resolveBackend, isAcpBackend } from "./backend-resolver";
 import { isProcessAlive, sendSignal, killProcessTree, delay } from "./process-utils";
@@ -87,7 +93,7 @@ export class ProcessLauncher implements AgentLauncher {
         } else {
           child.once("spawn", () => {
             if (child.pid == null) {
-              resolve({ error: new Error("spawn event fired but pid is null") });
+              resolve({ error: new AgentSpawnFailedError("spawn event fired but pid is null", { command }) });
               return;
             }
             resolve({ pid: child.pid });
@@ -96,9 +102,22 @@ export class ProcessLauncher implements AgentLauncher {
       }),
       new Promise<{ error: Error }>((resolve) => {
         setTimeout(() => {
-          child.kill();
+          child.kill("SIGTERM");
           child.unref();
-          resolve({ error: new Error(`Spawn timed out after ${SPAWN_TIMEOUT_MS}ms (command=${command})`) });
+          // Force kill after 5s if SIGTERM is ignored (avoids orphan processes)
+          const forceKillTimer = setTimeout(() => {
+            try {
+              child.kill("SIGKILL");
+            } catch {
+              /* already dead */
+            }
+          }, 5000);
+          forceKillTimer.unref();
+          // Clean up stdio handles to release pipe references
+          child.stdin?.destroy();
+          child.stdout?.destroy();
+          child.stderr?.destroy();
+          resolve({ error: new AgentSpawnTimeoutError(command, SPAWN_TIMEOUT_MS) });
         }, SPAWN_TIMEOUT_MS);
       }),
     ]);
@@ -126,7 +145,7 @@ export class ProcessLauncher implements AgentLauncher {
       if (earlyExit || !isProcessAlive(pid)) {
         throw new AgentLaunchError(
           meta.name,
-          new Error(`Process exited immediately after spawn (pid=${pid}, command=${command})`),
+          new AgentProcessExitedImmediatelyError(pid, command),
         );
       }
     }

@@ -94,8 +94,21 @@ export function json(res: ServerResponse, data: unknown, status = 200): void {
   res.end(JSON.stringify(data));
 }
 
-export function error(res: ServerResponse, message: string, status = 500): void {
-  json(res, { error: message, status }, status);
+export interface ErrorResponseOptions {
+  errorCode?: string;
+  context?: Record<string, unknown>;
+}
+
+export function error(
+  res: ServerResponse,
+  message: string,
+  status = 500,
+  options?: ErrorResponseOptions,
+): void {
+  const body: Record<string, unknown> = { error: message, status };
+  if (options?.errorCode) body.code = options.errorCode;
+  if (options?.context && Object.keys(options.context).length > 0) body.context = options.context;
+  json(res, body, status);
 }
 
 export function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {

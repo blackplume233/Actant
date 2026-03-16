@@ -16,6 +16,9 @@ export {
   InvalidAgentNameError,
   InstanceCorruptedError,
   WorkspaceInitError,
+  AgentSpawnTimeoutError,
+  AgentSpawnFailedError,
+  AgentProcessExitedImmediatelyError,
 } from "./lifecycle-errors";
 export {
   SessionValidationError,
@@ -24,10 +27,16 @@ export {
   AcpConnectionMissingError,
   AgentNotRunningError,
   GatewayUnavailableError,
+  CancelFailedError,
 } from "./session-errors";
 export {
   AcpConnectionAlreadyExistsError,
   AcpGatewayNotFoundError,
   AcpConnectionStateError,
   AcpGatewayStateError,
+  AcpProcessExitedError,
+  AcpFsReadError,
+  AcpFsWriteError,
+  AcpTerminalHandleMissingError,
 } from "./acp-errors";
+export { PathOutsideWorkspaceError } from "./bridge-errors";

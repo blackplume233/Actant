@@ -86,3 +86,36 @@ export class WorkspaceInitError extends ActantError {
     if (cause) this.cause = cause;
   }
 }
+
+export class AgentSpawnTimeoutError extends ActantError {
+  readonly code = "AGENT_SPAWN_TIMEOUT";
+  readonly category: ErrorCategory = "lifecycle";
+
+  constructor(command: string, timeoutMs: number) {
+    super(`Spawn timed out after ${timeoutMs}ms (command=${command})`, {
+      command,
+      timeoutMs,
+    });
+  }
+}
+
+export class AgentSpawnFailedError extends ActantError {
+  readonly code = "AGENT_SPAWN_FAILED";
+  readonly category: ErrorCategory = "lifecycle";
+
+  constructor(reason: string, context?: Record<string, unknown>) {
+    super(reason, context);
+  }
+}
+
+export class AgentProcessExitedImmediatelyError extends ActantError {
+  readonly code = "AGENT_PROCESS_EXITED_IMMEDIATELY";
+  readonly category: ErrorCategory = "lifecycle";
+
+  constructor(pid: number, command: string) {
+    super(`Process exited immediately after spawn (pid=${pid}, command=${command})`, {
+      pid,
+      command,
+    });
+  }
+}

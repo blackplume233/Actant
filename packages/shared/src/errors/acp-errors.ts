@@ -35,3 +35,41 @@ export class AcpGatewayStateError extends ActantError {
     super(message, context);
   }
 }
+
+export class AcpProcessExitedError extends ActantError {
+  readonly code = "ACP_PROCESS_EXITED";
+  readonly category: ErrorCategory = "communication";
+
+  constructor(message: string, context?: Record<string, unknown>) {
+    super(message, context);
+  }
+}
+
+export class AcpFsReadError extends ActantError {
+  readonly code = "ACP_FS_READ_ERROR";
+  readonly category: ErrorCategory = "communication";
+
+  constructor(path: string, cause?: Error) {
+    super(`Cannot read file: ${path}`, { path, cause: cause?.message });
+    if (cause) this.cause = cause;
+  }
+}
+
+export class AcpFsWriteError extends ActantError {
+  readonly code = "ACP_FS_WRITE_ERROR";
+  readonly category: ErrorCategory = "communication";
+
+  constructor(path: string, cause?: Error) {
+    super(`Cannot write file: ${path}`, { path, cause: cause?.message });
+    if (cause) this.cause = cause;
+  }
+}
+
+export class AcpTerminalHandleMissingError extends ActantError {
+  readonly code = "TERMINAL_HANDLE_MISSING";
+  readonly category: ErrorCategory = "communication";
+
+  constructor(terminalId: string) {
+    super(`Terminal "${terminalId}" not found in Gateway handle map`, { terminalId });
+  }
+}

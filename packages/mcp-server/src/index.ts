@@ -2,21 +2,23 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { getBridgeSocketPath, getBridgeAgentName, bridgeLogger } from "@actant/shared";
 import { createRpcClient } from "./rpc-client.js";
+import { getMcpServerPackageVersion } from "./package-version.js";
 
 export async function startServer(): Promise<void> {
-  const socketPath = process.env["ACTANT_SOCKET"];
+  const socketPath = getBridgeSocketPath();
   if (!socketPath) {
-    process.stderr.write("ACTANT_SOCKET environment variable is required\n");
+    bridgeLogger.error("ACTANT_SOCKET environment variable is required");
     process.exit(1);
   }
 
-  const agentName = process.env["ACTANT_AGENT_NAME"] ?? "unknown";
+  const agentName = getBridgeAgentName();
   const rpc = createRpcClient(socketPath);
 
   const server = new McpServer({
     name: "actant-builtin",
-    version: "0.1.0",
+    version: getMcpServerPackageVersion(),
   });
 
   server.tool(
@@ -219,6 +221,6 @@ export async function startServer(): Promise<void> {
 }
 
 startServer().catch((err) => {
-  process.stderr.write(`MCP server failed to start: ${err}\n`);
+  bridgeLogger.error("MCP server failed to start", err);
   process.exit(1);
 });

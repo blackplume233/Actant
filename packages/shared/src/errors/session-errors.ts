@@ -53,3 +53,13 @@ export class GatewayUnavailableError extends ActantError {
     super(`No ACP Gateway found for agent "${agentName}"`, { agentName });
   }
 }
+
+export class CancelFailedError extends ActantError {
+  readonly code = "CANCEL_FAILED";
+  readonly category: ErrorCategory = "session";
+
+  constructor(sessionId: string, cause?: Error) {
+    super(`Failed to cancel session "${sessionId}"`, { sessionId, cause: cause?.message });
+    if (cause) this.cause = cause;
+  }
+}

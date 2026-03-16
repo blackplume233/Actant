@@ -19,6 +19,7 @@ import {
   AcpConnectionMissingError,
   AgentNotRunningError,
   AgentNotFoundError,
+  CancelFailedError,
 } from "@actant/shared";
 import type { SessionLease } from "@actant/core";
 import type { AppContext } from "../services/app-context";
@@ -134,7 +135,7 @@ async function handleSessionCancel(
     logger.info({ sessionId, acpSessionId, agentName: lease.agentName }, "Session cancel sent to ACP");
   } catch (err) {
     logger.error({ sessionId, error: err }, "Failed to cancel ACP session");
-    throw new Error(`Failed to cancel session: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+    throw new CancelFailedError(sessionId, err instanceof Error ? err : undefined);
   }
 
   return { ok: true };

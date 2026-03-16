@@ -1,22 +1,28 @@
-import type { RpcRequest, RpcResponse } from "@actant/shared";
-import { sendJsonRpcRequest } from "@actant/shared";
-
-let requestId = 0;
+import { RpcTransportClient, RpcTransportError } from "@actant/shared";
 
 export class RpcBridge {
   constructor(private readonly socketPath: string) {}
 
   async call(method: string, params: Record<string, unknown> = {}, options?: { timeoutMs?: number }): Promise<unknown> {
-    const id = ++requestId;
-    const request: RpcRequest = { jsonrpc: "2.0", id, method, params };
-    const response = await this.send(request, options?.timeoutMs);
-    if (response.error) {
-      const err = new Error(response.error.message) as Error & { code: number; data?: unknown };
-      err.code = response.error.code;
-      err.data = response.error.data;
+    const transport = new RpcTransportClient({
+      defaultTimeoutMs: 30_000,
+    });
+    await transport.connect(this.socketPath);
+    try {
+      return await transport.call(method, params, {
+        timeout: options?.timeoutMs ?? 30_000,
+      });
+    } catch (err) {
+      if (err instanceof RpcTransportError) {
+        const wrapped = new Error(err.message) as Error & { code: number; data?: unknown };
+        wrapped.code = err.code;
+        wrapped.data = err.data;
+        throw wrapped;
+      }
       throw err;
+    } finally {
+      transport.disconnect();
     }
-    return response.result;
   }
 
   async ping(): Promise<boolean> {
@@ -26,15 +32,5 @@ export class RpcBridge {
     } catch {
       return false;
     }
-  }
-
-  private send(request: RpcRequest, timeoutMs?: number): Promise<RpcResponse> {
-    const effectiveTimeout = timeoutMs ?? 30_000;
-    return sendJsonRpcRequest(this.socketPath, request, { timeoutMs: effectiveTimeout }).catch((err) => {
-      if (err instanceof Error && /Cannot connect|ECONNREFUSED|ENOENT|EPIPE|socket/i.test(err.message)) {
-        throw new Error(`Cannot connect to daemon at ${this.socketPath}: ${err.message}`);
-      }
-      throw err;
-    });
   }
 }

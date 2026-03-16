@@ -11,7 +11,9 @@ import {
 } from "@agentclientprotocol/sdk";
 import { Agent as PiAgent } from "@mariozechner/pi-agent-core";
 // @mariozechner/pi-ai imports removed — SDK API drift (#121)
+import { getBridgeSocketPath, getBridgeSessionToken, bridgeLogger } from "@actant/shared";
 import { createPiAgent, buildInternalTools, type PiAgentOptions } from "./pi-tool-bridge";
+import { getPiPackageVersion } from "./package-version";
 
 interface SessionState {
   agent: PiAgent;
@@ -46,7 +48,7 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
         agentCapabilities: {},
         agentInfo: {
           name: "pi-acp-bridge",
-          version: "0.1.0",
+          version: getPiPackageVersion(),
         },
       } as InitializeResponse;
     },
@@ -72,8 +74,8 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
       };
 
       // Inject internal tools from ToolRegistry via env
-      const socketPath = process.env["ACTANT_SOCKET"];
-      const sessionToken = process.env["ACTANT_SESSION_TOKEN"];
+      const socketPath = getBridgeSocketPath();
+      const sessionToken = getBridgeSessionToken();
       const toolsJson = process.env["ACTANT_TOOLS"];
       if (socketPath && sessionToken && toolsJson) {
         try {
@@ -81,7 +83,7 @@ function buildAgentHandler(conn: AgentSideConnection): AcpAgent {
           const internalTools = buildInternalTools(socketPath, sessionToken, toolDefs);
           agentOpts.extraTools = internalTools;
         } catch (err) {
-          console.error("[pi-acp-bridge] Failed to parse ACTANT_TOOLS:", (err as Error).message);
+          bridgeLogger.error("Failed to parse ACTANT_TOOLS", err);
         }
       }
 

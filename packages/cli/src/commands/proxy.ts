@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createInterface } from "node:readline";
 import { RpcClient } from "../client/rpc-client";
+import { getCliPackageVersion } from "../package-version";
 import { presentError, type CliPrinter, defaultPrinter } from "../output/index";
 import { defaultSocketPath } from "../program";
 
@@ -430,7 +431,7 @@ async function handleLegacyMessage(
     case "initialize":
       writeAcpResponse(msg.id, {
         protocolVersion: 1,
-        agentInfo: { name: "actant-proxy", title: `Actant Proxy: ${agentName} (lease)`, version: "0.1.0" },
+        agentInfo: { name: "actant-proxy", title: `Actant Proxy: ${agentName} (lease)`, version: getCliPackageVersion() },
         agentCapabilities: {},
       });
       break;

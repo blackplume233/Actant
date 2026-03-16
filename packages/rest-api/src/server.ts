@@ -26,12 +26,15 @@ export function createApiHandler(config: ServerConfig): RequestListener {
 
     if (handlePreflight(req, res)) return;
 
-    // Auth check (SSE supports query token for EventSource clients)
+    // Auth check (SSE supports query token for EventSource, plus headers for fetch clients)
     if (pathname === "/v1/sse" || pathname === "/sse") {
       if (apiKey) {
-        const sseToken = url.searchParams.get("api_key") ?? url.searchParams.get("token");
-        if (sseToken !== apiKey) {
-          return error(res, "Unauthorized SSE request. Provide ?api_key=<key>.", 401);
+        const header = req.headers["authorization"] ?? req.headers["x-api-key"];
+        const headerToken = typeof header === "string" ? header.replace(/^Bearer\s+/i, "").trim() : "";
+        const queryToken = url.searchParams.get("api_key") ?? url.searchParams.get("token");
+        const token = headerToken || queryToken || "";
+        if (token !== apiKey) {
+          return error(res, "Unauthorized SSE request. Provide ?api_key=<key> or X-API-Key header.", 401);
         }
       }
     } else {
@@ -93,18 +96,38 @@ export function createApiHandler(config: ServerConfig): RequestListener {
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      const code = (err as { code?: number }).code;
+      const rpcErr = err as { code?: number; data?: { errorCode?: string; context?: Record<string, unknown> } };
+      const actantCode = rpcErr.data?.errorCode;
 
-      // Map RPC error codes to HTTP status
+      // Map ActantError codes (from RPC bridge data) to HTTP status
       let httpStatus = 500;
-      if (code) {
-        if (code === -32001 || code === -32003) httpStatus = 404;
-        else if (code === -32002 || code === -32602) httpStatus = 400;
-        else if (code === -32004 || code === -32009) httpStatus = 409;
-        else if (code === -32601) httpStatus = 404;
+      if (actantCode) {
+        if (actantCode === "INVALID_PARAMS" || actantCode === "SESSION_VALIDATION_ERROR") httpStatus = 400;
+        else if (
+          actantCode === "AGENT_NOT_FOUND" ||
+          actantCode === "SESSION_NOT_FOUND" ||
+          actantCode === "GATEWAY_UNAVAILABLE" ||
+          actantCode === "ACP_GATEWAY_NOT_FOUND"
+        )
+          httpStatus = 404;
+        else if (
+          actantCode === "AGENT_NOT_RUNNING" ||
+          actantCode === "ACP_CONNECTION_MISSING" ||
+          actantCode === "CANCEL_FAILED"
+        )
+          httpStatus = 503;
+        else if (actantCode === "SESSION_EXPIRED") httpStatus = 410;
       }
 
-      // Fallback: infer HTTP status from error message patterns when no RPC code
+      // Fallback: map numeric RPC error codes to HTTP status
+      if (httpStatus === 500 && rpcErr.code) {
+        if (rpcErr.code === -32001 || rpcErr.code === -32003) httpStatus = 404;
+        else if (rpcErr.code === -32002 || rpcErr.code === -32602) httpStatus = 400;
+        else if (rpcErr.code === -32004 || rpcErr.code === -32009) httpStatus = 409;
+        else if (rpcErr.code === -32601) httpStatus = 404;
+      }
+
+      // Fallback: infer HTTP status from error message patterns (backwards compatibility)
       if (httpStatus === 500) {
         const lower = message.toLowerCase();
         if (/not found|does not exist|no such/.test(lower)) httpStatus = 404;
@@ -113,7 +136,11 @@ export function createApiHandler(config: ServerConfig): RequestListener {
         else if (/not support|not implemented/.test(lower)) httpStatus = 501;
       }
 
-      error(res, message, httpStatus);
+      const errorOptions =
+        actantCode || rpcErr.data?.context
+          ? { errorCode: actantCode, context: rpcErr.data?.context as Record<string, unknown> }
+          : undefined;
+      error(res, message, httpStatus, errorOptions);
     }
   };
 }

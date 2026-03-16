@@ -162,7 +162,7 @@ export class AgentManager {
   private readonly employeeRestartTracker: RestartTracker;
   private readonly agentLocks = new Map<string, Promise<void>>();
   private readonly channelCapabilities = new Map<string, ChannelCapabilities>();
-  private _disposing = false;
+  private disposing = false;
 
   /**
    * Resolve a channel/connection for the given agent from the channel manager,
@@ -1238,7 +1238,7 @@ export class AgentManager {
 
   /** Shut down the process watcher, ACP connections, terminate processes, and release resources. */
   async dispose(): Promise<void> {
-    this._disposing = true;
+    this.disposing = true;
     this.watcher.dispose();
     this.restartTracker.dispose();
     this.employeeRestartTracker.dispose();
@@ -1258,7 +1258,7 @@ export class AgentManager {
   }
 
   private async handleProcessExit(info: ProcessExitInfo): Promise<void> {
-    if (this._disposing) return;
+    if (this.disposing) return;
 
     const { instanceName, pid } = info;
     const meta = this.cache.get(instanceName);
@@ -1307,7 +1307,8 @@ export class AgentManager {
     });
     this.cache.set(instanceName, stopped);
 
-    if (action.type === "restart" || exitStatus === "crashed") {
+    // Emit crash only for restart (unexpected); emit stop for mark-stopped (expected)
+    if (action.type === "restart") {
       this.eventBus?.emit("process:crash", { callerType: "system", callerId: "ProcessWatcher" }, instanceName, {
         pid,
       });
@@ -1319,6 +1320,7 @@ export class AgentManager {
 
     switch (action.type) {
       case "restart": {
+        if (this.disposing) break;
         const isEmployee = meta.launchMode === "acp-background";
         const isService = meta.launchMode === "acp-service";
 
@@ -1347,6 +1349,7 @@ export class AgentManager {
         if (decision.delayMs > 0) {
           await delay(decision.delayMs);
         }
+        if (this.disposing) break;
 
         tracker.recordRestart(instanceName);
         this.eventBus?.emit("process:restart", { callerType: "system", callerId: "RestartTracker" }, instanceName, {

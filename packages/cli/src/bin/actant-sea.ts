@@ -4,6 +4,8 @@
  * (Node.js SEA runs embedded code as CommonJS).
  */
 
+import { bridgeLogger } from "@actant/shared";
+
 async function main(): Promise<void> {
   if (!process.env["LOG_LEVEL"]) {
     process.env["LOG_LEVEL"] = "silent";
@@ -25,6 +27,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((err) => {
-  console.error(err);
+  bridgeLogger.error("Startup failed", err);
   process.exit(1);
 });

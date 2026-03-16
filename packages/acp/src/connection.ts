@@ -27,8 +27,16 @@ import {
   type ReleaseTerminalRequest,
   type ReleaseTerminalResponse,
 } from "@agentclientprotocol/sdk";
-import { createLogger, isWindows, AcpConnectionStateError } from "@actant/shared";
+import {
+  createLogger,
+  isWindows,
+  AcpConnectionStateError,
+  AcpProcessExitedError,
+  AcpFsReadError,
+  AcpFsWriteError,
+} from "@actant/shared";
 import { resolveAcpBinary } from "./binary-resolver";
+import { getAcpPackageVersion } from "./package-version";
 import type { PermissionsConfig } from "@actant/shared";
 import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/core";
 import { LocalTerminalManager } from "./terminal-manager";
@@ -207,9 +215,10 @@ export class AcpConnection {
         const detail = stderr
           ? `\n  stderr: ${stderr}`
           : "";
-        reject(new Error(
+        reject(new AcpProcessExitedError(
           `ACP agent process exited unexpectedly (code=${code}, signal=${signal}).` +
           ` Command: ${finalCommand} ${finalArgs.join(" ")}${detail}`,
+          { code, signal, command: finalCommand, args: finalArgs, stderr },
         ));
       });
     });
@@ -241,7 +250,7 @@ export class AcpConnection {
       clientInfo: {
         name: "actant",
         title: "Actant Daemon",
-        version: "0.1.0",
+        version: getAcpPackageVersion(),
       },
     });
 
@@ -582,8 +591,8 @@ export class AcpConnection {
         return { content: lines.slice(start, end).join("\n") };
       }
       return { content: raw };
-    } catch {
-      throw new Error(`Cannot read file: ${params.path}`);
+    } catch (err) {
+      throw new AcpFsReadError(params.path, err instanceof Error ? err : undefined);
     }
   }
 
@@ -596,8 +605,8 @@ export class AcpConnection {
       await mkdir(dirname(params.path), { recursive: true });
       await writeFile(params.path, params.content, "utf-8");
       return {};
-    } catch {
-      throw new Error(`Cannot write file: ${params.path}`);
+    } catch (err) {
+      throw new AcpFsWriteError(params.path, err instanceof Error ? err : undefined);
     }
   }
 

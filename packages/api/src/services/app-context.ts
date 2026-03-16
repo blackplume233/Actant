@@ -452,6 +452,7 @@ export class AppContext {
    */
   private listenForInstanceHooks(): void {
     if (this.instanceHooksRegistered) return;
+    this.instanceHooksRegistered = true;
 
     this.eventBus.on("agent:created", (payload) => {
       const agentName = payload.agentName;
@@ -484,7 +485,6 @@ export class AppContext {
     };
     this.eventBus.on("process:stop", closeLeases);
     this.eventBus.on("process:crash", closeLeases);
-    this.instanceHooksRegistered = true;
   }
 
   private initializeVfs(): void {

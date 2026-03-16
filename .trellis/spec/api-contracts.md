@@ -1653,7 +1653,7 @@ Dashboard（`@actant/dashboard`）在内部挂载 `@actant/rest-api` 的 handler
 | **Events** | GET | `/v1/events` | `events.recent` |
 | **Webhooks** | POST | `/v1/webhooks/message` | `agent.prompt`（简化入口） |
 | | POST | `/v1/webhooks/run` | `agent.run`（简化入口） |
-| | POST | `/v1/webhooks/event` | `gateway.lease` |
+| | POST | `/v1/webhooks/event` | `events.emit` |
 
 ### 认证
 
