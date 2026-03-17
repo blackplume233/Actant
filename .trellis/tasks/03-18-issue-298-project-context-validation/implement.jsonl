@@ -1,0 +1,13 @@
+{"file": ".trellis/workflow.md", "reason": "Project workflow and execution rules"}
+{"file": ".trellis/spec/index.md", "reason": "Specification hierarchy and governance baseline"}
+{"file": ".trellis/spec/backend/index.md", "reason": "Backend development constraints for project-context changes"}
+{"file": ".trellis/spec/guides/index.md", "reason": "Thinking guide index for cross-layer and cross-platform checks"}
+{"file": ".trellis/spec/guides/cross-layer-thinking-guide.md", "reason": "Project-context and bootstrap changes cross CLI, API, MCP, and VFS layers"}
+{"file": ".trellis/spec/config-spec.md", "reason": "Authoritative spec for actant.project.json and related config contracts"}
+{"file": ".trellis/spec/api-contracts.md", "reason": "Authoritative contract for hub, VFS, and detached-readonly behavior"}
+{"file": "actant.project.json", "reason": "Current repository project manifest entry"}
+{"file": "packages/api/src/services/project-context.ts", "reason": "Current project-context loader and registration logic"}
+{"file": "packages/shared/src/types/project.types.ts", "reason": "Shared project manifest types"}
+{"file": "packages/shared/src/types/domain-context.types.ts", "reason": "Shared DomainContext component model"}
+{"file": "configs/", "type": "directory", "reason": "Current project-local context asset directory"}
+{"file": ".trellis/tasks/archive/2026-03/qa-loop-cli-hub-bootstrap/", "type": "directory", "reason": "Existing bootstrap QA evidence to reuse and extend"}
