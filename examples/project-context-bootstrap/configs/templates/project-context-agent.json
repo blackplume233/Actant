@@ -1,0 +1,15 @@
+{
+  "name": "project-context-agent",
+  "version": "1.0.0",
+  "description": "Minimal agent template for project-context bootstrap validation.",
+  "backend": {
+    "type": "claude-code"
+  },
+  "provider": {
+    "type": "anthropic"
+  },
+  "domainContext": {
+    "skills": ["project-context-reader"],
+    "prompts": ["project-context-bootstrap"]
+  }
+}

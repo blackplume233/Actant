@@ -2,5 +2,16 @@
   "version": 1,
   "name": "Actant",
   "description": "Actant self-bootstrap project context",
-  "configsDir": "configs"
+  "configsDir": "configs",
+  "entrypoints": {
+    "knowledge": [
+      "PROJECT_CONTEXT.md"
+    ],
+    "readFirst": [
+      "PROJECT_CONTEXT.md",
+      ".trellis/spec/index.md",
+      ".trellis/spec/backend/index.md",
+      ".trellis/spec/guides/cross-layer-thinking-guide.md"
+    ]
+  }
 }

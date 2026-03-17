@@ -1,6 +1,6 @@
 import { mkdtemp, mkdir, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createStandaloneContext } from "./context-backend";
 
@@ -183,6 +183,103 @@ describe("createStandaloneContext", () => {
     };
     expect(projectConfig.name).toBe("project-with-source");
     expect(projectConfig.sources.map((source) => source.name)).toEqual(["extra"]);
+  });
+
+  it("surfaces explicit discovery entrypoints and available assets in project context", async () => {
+    const projectDir = await makeTempProject();
+    const knowledgePath = join(projectDir, "PROJECT_CONTEXT.md");
+
+    await mkdir(join(projectDir, "configs", "skills"), { recursive: true });
+    await mkdir(join(projectDir, "configs", "prompts"), { recursive: true });
+    await writeFile(knowledgePath, "# Project Context\n", "utf-8");
+    await writeFile(
+      join(projectDir, "configs", "skills", "reader.json"),
+      JSON.stringify({
+        name: "reader",
+        description: "Read the project context before acting.",
+        content: "Read /project/context.json, then follow the declared entrypoints.",
+      }, null, 2),
+      "utf-8",
+    );
+    await writeFile(
+      join(projectDir, "configs", "prompts", "bootstrap.json"),
+      JSON.stringify({
+        name: "bootstrap",
+        description: "Project bootstrap prompt",
+        content: "Use the project context entrypoints before making assumptions.",
+      }, null, 2),
+      "utf-8",
+    );
+    await writeFile(
+      join(projectDir, "actant.project.json"),
+      JSON.stringify({
+        version: 1,
+        name: "entrypoint-project",
+        entrypoints: {
+          knowledge: ["PROJECT_CONTEXT.md"],
+          readFirst: ["PROJECT_CONTEXT.md"],
+        },
+      }, null, 2),
+      "utf-8",
+    );
+
+    const backend = await createStandaloneContext(projectDir);
+    const context = JSON.parse((await backend.read("/project/context.json")).content) as {
+      entrypoints: { knowledge: string[]; readFirst: string[] };
+      available: { skills: string[]; prompts: string[] };
+    };
+
+    expect(context.entrypoints.knowledge).toEqual([knowledgePath]);
+    expect(context.entrypoints.readFirst).toEqual([
+      join(projectDir, "actant.project.json"),
+      knowledgePath,
+    ]);
+    expect(context.available.skills).toEqual(expect.arrayContaining(["reader"]));
+    expect(context.available.prompts).toEqual(expect.arrayContaining(["bootstrap"]));
+  });
+
+  it("dedupes missing entrypoint warnings when knowledge and readFirst overlap", async () => {
+    const projectDir = await makeTempProject();
+    const missingPath = join(projectDir, "MISSING.md");
+
+    await writeFile(
+      join(projectDir, "actant.project.json"),
+      JSON.stringify({
+        version: 1,
+        entrypoints: {
+          knowledge: ["MISSING.md"],
+          readFirst: ["MISSING.md"],
+        },
+      }, null, 2),
+      "utf-8",
+    );
+
+    const backend = await createStandaloneContext(projectDir);
+    const context = JSON.parse((await backend.read("/project/context.json")).content) as {
+      sourceWarnings: string[];
+    };
+
+    expect(context.sourceWarnings).toEqual([
+      `Project entrypoint "${missingPath}" does not exist`,
+    ]);
+  });
+
+  it("loads the checked-in minimal bootstrap example", async () => {
+    const projectDir = resolve(process.cwd(), "examples/project-context-bootstrap");
+    const backend = await createStandaloneContext(projectDir);
+    const context = JSON.parse((await backend.read("/project/context.json")).content) as {
+      projectName: string;
+      entrypoints: { knowledge: string[]; readFirst: string[] };
+      available: { skills: string[]; prompts: string[]; templates: string[] };
+    };
+
+    expect(context.projectName).toBe("project-context-bootstrap");
+    expect(context.entrypoints.knowledge).toEqual([
+      join(projectDir, "PROJECT_CONTEXT.md"),
+    ]);
+    expect(context.available.skills).toEqual(expect.arrayContaining(["project-context-reader"]));
+    expect(context.available.prompts).toEqual(expect.arrayContaining(["project-context-bootstrap"]));
+    expect(context.available.templates).toEqual(expect.arrayContaining(["project-context-agent"]));
   });
 
   it("falls back to cwd when ACTANT_PROJECT_DIR points to an invalid directory", async () => {

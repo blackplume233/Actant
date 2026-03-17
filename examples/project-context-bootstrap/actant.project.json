@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "name": "project-context-bootstrap",
+  "description": "Minimal bootstrap fixture for validating project-context discovery.",
+  "configsDir": "configs",
+  "entrypoints": {
+    "knowledge": [
+      "PROJECT_CONTEXT.md"
+    ],
+    "readFirst": [
+      "PROJECT_CONTEXT.md"
+    ]
+  }
+}

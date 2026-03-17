@@ -2327,6 +2327,8 @@ Agent / External Client
 - `configsDir`
 - `sources`
 - `sourceWarnings`
+- `entrypoints`
+- `available`
 - `components`
 
 > 在单宿主实现中，Hub 会把当前项目挂载到内部命名空间：

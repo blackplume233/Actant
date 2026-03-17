@@ -1,0 +1,6 @@
+{
+  "name": "project-context-bootstrap",
+  "description": "Constrain a backend to bootstrap from project files only.",
+  "content": "Summarize the project using declared project-context assets only. Do not rely on oral context or prior memory.",
+  "variables": []
+}

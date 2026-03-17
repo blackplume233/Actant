@@ -1,0 +1,6 @@
+{
+  "name": "project-context-reader",
+  "description": "Read project context assets before acting.",
+  "content": "Read /project/context.json first. Then read the declared manifest and knowledge entrypoints before using individual assets.",
+  "tags": ["bootstrap", "project-context"]
+}

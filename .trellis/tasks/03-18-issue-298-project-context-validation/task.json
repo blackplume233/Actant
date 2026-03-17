@@ -3,58 +3,41 @@
   "name": "issue-298-project-context-validation",
   "title": "Issue #298 Project Context Validation",
   "description": "Validate and complete the project-context sharing and empty-dir bootstrap loop for Codex and other Actant backends.",
-  "status": "planning",
+  "status": "completed",
   "dev_type": "backend",
   "scope": "project-context",
   "priority": "P1",
   "creator": "cursor-agent",
   "assignee": "cursor-agent",
   "createdAt": "2026-03-18",
-  "completedAt": null,
-  "branch": null,
+  "completedAt": "2026-03-18",
+  "branch": "codex/03-18-issue-298-project-context-validation",
   "base_branch": "master",
-  "worktree_path": null,
-  "current_phase": 0,
-  "next_action": [
-    {
-      "phase": 1,
-      "action": "design-and-plan"
-    },
-    {
-      "phase": 2,
-      "action": "implement-project-context-protocol"
-    },
-    {
-      "phase": 3,
-      "action": "validate-bootstrap-loop"
-    },
-    {
-      "phase": 4,
-      "action": "document-and-close"
-    }
-  ],
+  "worktree_path": "G:/Workspace/AgentWorkSpace/trellis-worktrees/codex/03-18-issue-298-project-context-validation",
+  "current_phase": 4,
+  "next_action": [],
   "commit": null,
   "pr_url": null,
   "subtasks": [
     {
       "name": "Freeze the intended project-context protocol",
-      "status": "in_progress"
+      "status": "completed"
     },
     {
       "name": "Add reusable project-context reading assets",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "name": "Add empty-dir bootstrap fixture or example",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "name": "Run Codex validation loop without oral context",
-      "status": "pending"
+      "status": "completed"
     },
     {
       "name": "Write concise validation report and close the issue if accepted",
-      "status": "pending"
+      "status": "completed"
     }
   ],
   "relatedFiles": [
@@ -65,5 +48,5 @@
     ".trellis/spec/config-spec.md",
     ".trellis/spec/api-contracts.md"
   ],
-  "notes": "Planning task created manually because the Trellis bash helpers still hit CRLF issues when executed under bash in this Windows workspace."
+  "notes": "Planning task created manually because the Trellis bash helpers still hit CRLF issues when executed under bash in this Windows workspace. Final validation is recorded in validation.md and validation-result.json. Repo-wide @actant/api type-check and mcp-server vitest still expose unrelated pre-existing dist/export drift outside the issue-298 change set."
 }

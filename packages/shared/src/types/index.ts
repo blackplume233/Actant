@@ -95,6 +95,7 @@ export type {
 } from "./source.types";
 export type {
   ProjectSourceEntry,
+  ActantProjectEntrypoints,
   ActantProjectConfig,
 } from "./project.types";
 export type {

@@ -17,6 +17,7 @@ import {
 } from "@actant/core";
 import type {
   AgentTemplate,
+  ActantProjectEntrypoints,
   ActantProjectConfig,
   ProjectSourceEntry,
   SourceConfig,
@@ -33,6 +34,17 @@ export interface ProjectContextSummary {
   configsDir: string;
   sources: Array<{ name: string; type: SourceConfig["type"] }>;
   sourceWarnings: string[];
+  entrypoints: {
+    readFirst: string[];
+    knowledge: string[];
+  };
+  available: {
+    skills: string[];
+    prompts: string[];
+    mcpServers: string[];
+    workflows: string[];
+    templates: string[];
+  };
   components: {
     skills: number;
     prompts: number;
@@ -47,6 +59,7 @@ export interface LoadedProjectContext {
   configPath: string | null;
   configsDir: string;
   configExists: boolean;
+  projectConfig: ActantProjectConfig;
   summary: ProjectContextSummary;
   managers: {
     skillManager: SkillManager;
@@ -133,11 +146,27 @@ export async function loadProjectContext(projectDir?: string): Promise<LoadedPro
     }
   }
 
+  const entrypointInfo = await resolveProjectEntrypoints(
+    projectRoot,
+    projectConfig.entrypoints,
+    projectConfigResult.path,
+  );
+  sourceWarnings.push(...entrypointInfo.warnings);
+
+  const available = {
+    skills: sortNames(skillManager.list().map((skill) => skill.name)),
+    prompts: sortNames(promptManager.list().map((prompt) => prompt.name)),
+    mcpServers: sortNames(mcpConfigManager.list().map((server) => server.name)),
+    workflows: sortNames(workflowManager.list().map((workflow) => workflow.name)),
+    templates: sortNames(templateRegistry.list().map((template) => template.name)),
+  };
+
   return {
     projectRoot,
     configPath: projectConfigResult.path,
     configsDir,
     configExists: await pathExists(configsDir),
+    projectConfig,
     summary: buildProjectContextSummary(
       projectRoot,
       projectConfigResult.path,
@@ -145,12 +174,14 @@ export async function loadProjectContext(projectDir?: string): Promise<LoadedPro
       projectConfig,
       summarySources,
       sourceWarnings,
+      entrypointInfo.entrypoints,
+      available,
       {
-        skills: skillManager.list().length,
-        prompts: promptManager.list().length,
-        mcpServers: mcpConfigManager.list().length,
-        workflows: workflowManager.list().length,
-        templates: templateRegistry.list().length,
+        skills: available.skills.length,
+        prompts: available.prompts.length,
+        mcpServers: available.mcpServers.length,
+        workflows: available.workflows.length,
+        templates: available.templates.length,
       },
     ),
     managers: {
@@ -172,7 +203,7 @@ export function createProjectContextRegistrations(
 ): VfsSourceRegistration[] {
   const prefix = options?.namePrefix ?? "project-context";
   const regs: VfsSourceRegistration[] = [
-    createProjectSource(`${prefix}-project`, context.summary, layout.project, lifecycle),
+    createProjectSource(`${prefix}-project`, context, layout.project, lifecycle),
     factoryRegistry.create({
       name: `${prefix}-workspace`,
       mountPoint: layout.workspace,
@@ -333,6 +364,8 @@ function buildProjectContextSummary(
   config: ActantProjectConfig,
   sources: Array<{ name: string; type: SourceConfig["type"] }>,
   sourceWarnings: string[],
+  entrypoints: ProjectContextSummary["entrypoints"],
+  available: ProjectContextSummary["available"],
   counts: ProjectContextSummary["components"],
 ): ProjectContextSummary {
   return {
@@ -344,6 +377,8 @@ function buildProjectContextSummary(
     configsDir,
     sources,
     sourceWarnings,
+    entrypoints,
+    available,
     components: counts,
   };
 }
@@ -411,16 +446,20 @@ async function resolveRepoLocalSourceName(projectRoot: string): Promise<string> 
 
 function createProjectSource(
   name: string,
-  summary: ProjectContextSummary,
+  context: LoadedProjectContext,
   mountPoint: string,
   lifecycle: VfsLifecycle,
 ): VfsSourceRegistration {
+  const summary = context.summary;
   const generatedConfig = {
-    version: 1,
-    name: summary.projectName,
-    ...(summary.description ? { description: summary.description } : {}),
-    configsDir: summary.configsDir,
-    sources: summary.sources,
+    version: context.projectConfig.version ?? 1,
+    name: context.projectConfig.name ?? summary.projectName,
+    ...(context.projectConfig.description ?? summary.description
+      ? { description: context.projectConfig.description ?? summary.description }
+      : {}),
+    configsDir: context.projectConfig.configsDir ?? "configs",
+    ...(context.projectConfig.sources ? { sources: context.projectConfig.sources } : {}),
+    ...(context.projectConfig.entrypoints ? { entrypoints: context.projectConfig.entrypoints } : {}),
   };
 
   return {
@@ -484,6 +523,9 @@ function validateProjectConfig(input: unknown):
   if (value.configsDir !== undefined && typeof value.configsDir !== "string") {
     warnings.push("configsDir must be a string");
   }
+  if (value.entrypoints !== undefined) {
+    warnings.push(...validateProjectEntrypoints(value.entrypoints));
+  }
 
   const sourcesInput = value.sources;
   if (sourcesInput !== undefined) {
@@ -501,6 +543,33 @@ function validateProjectConfig(input: unknown):
   }
 
   return { valid: true, data: value as ActantProjectConfig };
+}
+
+function validateProjectEntrypoints(entrypoints: unknown): string[] {
+  if (!entrypoints || typeof entrypoints !== "object" || Array.isArray(entrypoints)) {
+    return ["entrypoints must be an object"];
+  }
+
+  const value = entrypoints as Record<string, unknown>;
+  const warnings: string[] = [];
+  for (const [field, entry] of [
+    ["readFirst", value.readFirst],
+    ["knowledge", value.knowledge],
+  ] as const) {
+    if (entry === undefined) {
+      continue;
+    }
+    if (!Array.isArray(entry)) {
+      warnings.push(`entrypoints.${field} must be an array`);
+      continue;
+    }
+    entry.forEach((item, index) => {
+      if (typeof item !== "string" || item.trim().length === 0) {
+        warnings.push(`entrypoints.${field}.${index} must be a non-empty string`);
+      }
+    });
+  }
+  return warnings;
 }
 
 function validateProjectSourceEntry(source: unknown, index: number): string[] {
@@ -560,6 +629,50 @@ async function pathExists(filePath: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function resolveProjectEntrypoints(
+  projectRoot: string,
+  entrypoints: ActantProjectEntrypoints | undefined,
+  configPath: string | null,
+): Promise<{
+  entrypoints: ProjectContextSummary["entrypoints"];
+  warnings: string[];
+}> {
+  const knowledge = resolveProjectPaths(projectRoot, entrypoints?.knowledge);
+  const readFirstInput = resolveProjectPaths(projectRoot, entrypoints?.readFirst);
+  const readFirst = dedupeStrings([
+    ...(configPath ? [configPath] : []),
+    ...readFirstInput,
+    ...knowledge,
+  ]);
+
+  const warnings: string[] = [];
+  for (const filePath of dedupeStrings([...knowledge, ...readFirst])) {
+    if (!await pathExists(filePath)) {
+      warnings.push(`Project entrypoint "${filePath}" does not exist`);
+    }
+  }
+
+  return {
+    entrypoints: {
+      readFirst,
+      knowledge,
+    },
+    warnings,
+  };
+}
+
+function resolveProjectPaths(projectRoot: string, paths: string[] | undefined): string[] {
+  return dedupeStrings((paths ?? []).map((entry) => resolve(projectRoot, entry)));
+}
+
+function dedupeStrings(values: string[]): string[] {
+  return [...new Set(values)];
+}
+
+function sortNames(values: string[]): string[] {
+  return [...values].sort((left, right) => left.localeCompare(right));
 }
 
 async function resolveProjectRoot(projectDir?: string): Promise<{
