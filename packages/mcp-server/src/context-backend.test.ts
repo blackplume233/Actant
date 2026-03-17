@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, writeFile } from "node:fs/promises";
+import { mkdtemp, mkdir, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -183,5 +183,35 @@ describe("createStandaloneContext", () => {
     };
     expect(projectConfig.name).toBe("project-with-source");
     expect(projectConfig.sources.map((source) => source.name)).toEqual(["extra"]);
+  });
+
+  it("falls back to cwd when ACTANT_PROJECT_DIR points to an invalid directory", async () => {
+    const projectDir = await makeTempProject();
+    const missingDir = join(projectDir, "missing-project-root");
+    const previousProjectDir = process.env["ACTANT_PROJECT_DIR"];
+    const previousCwd = process.cwd();
+    const expectedProjectRoot = await realpath(projectDir);
+
+    process.env["ACTANT_PROJECT_DIR"] = missingDir;
+    process.chdir(projectDir);
+
+    try {
+      const backend = await createStandaloneContext();
+      expect(backend.projectRoot).toBe(expectedProjectRoot);
+
+      const context = JSON.parse((await backend.read("/project/context.json")).content) as {
+        sourceWarnings: string[];
+      };
+      expect(context.sourceWarnings).toEqual(
+        expect.arrayContaining([expect.stringContaining("ACTANT_PROJECT_DIR")]),
+      );
+    } finally {
+      process.chdir(previousCwd);
+      if (previousProjectDir === undefined) {
+        delete process.env["ACTANT_PROJECT_DIR"];
+      } else {
+        process.env["ACTANT_PROJECT_DIR"] = previousProjectDir;
+      }
+    }
   });
 });

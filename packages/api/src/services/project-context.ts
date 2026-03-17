@@ -75,7 +75,8 @@ export interface ProjectContextRegistrationOptions {
 }
 
 export async function loadProjectContext(projectDir?: string): Promise<LoadedProjectContext> {
-  const projectRoot = resolve(projectDir ?? process.env["ACTANT_PROJECT_DIR"] ?? process.cwd());
+  const rootResolution = await resolveProjectRoot(projectDir);
+  const projectRoot = rootResolution.projectRoot;
   const projectConfigResult = await loadProjectConfig(projectRoot);
   const projectConfig = projectConfigResult.config;
   const configsDir = resolve(projectRoot, projectConfig.configsDir ?? "configs");
@@ -94,7 +95,7 @@ export async function loadProjectContext(projectDir?: string): Promise<LoadedPro
     templateRegistry,
   });
 
-  const sourceWarnings = [...projectConfigResult.warnings];
+  const sourceWarnings = [...rootResolution.warnings, ...projectConfigResult.warnings];
   const summarySources: Array<{ name: string; type: SourceConfig["type"] }> = [];
 
   const repoLocalSource = await detectRepoLocalSource(projectRoot, configsDir, projectConfig.sources ?? []);
@@ -556,6 +557,41 @@ async function pathExists(filePath: string): Promise<boolean> {
   try {
     await access(filePath);
     return true;
+  } catch {
+    return false;
+  }
+}
+
+async function resolveProjectRoot(projectDir?: string): Promise<{
+  projectRoot: string;
+  warnings: string[];
+}> {
+  if (projectDir) {
+    return { projectRoot: resolve(projectDir), warnings: [] };
+  }
+
+  const envProjectDir = process.env["ACTANT_PROJECT_DIR"];
+  if (!envProjectDir) {
+    return { projectRoot: resolve(process.cwd()), warnings: [] };
+  }
+
+  const resolvedEnvProjectDir = resolve(envProjectDir);
+  if (await isDirectory(resolvedEnvProjectDir)) {
+    return { projectRoot: resolvedEnvProjectDir, warnings: [] };
+  }
+
+  const cwdRoot = resolve(process.cwd());
+  return {
+    projectRoot: cwdRoot,
+    warnings: [
+      `ACTANT_PROJECT_DIR "${envProjectDir}" is not a readable directory; falling back to current working directory "${cwdRoot}"`,
+    ],
+  };
+}
+
+async function isDirectory(filePath: string): Promise<boolean> {
+  try {
+    return (await stat(filePath)).isDirectory();
   } catch {
     return false;
   }
