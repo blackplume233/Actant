@@ -79,7 +79,7 @@ _slugify() {
 get_implement_base() {
   cat << EOF
 {"file": "$DIR_WORKFLOW/workflow.md", "reason": "Project workflow and conventions"}
-{"file": "$DIR_WORKFLOW/$DIR_SPEC/shared/index.md", "reason": "Shared coding standards"}
+{"file": "$DIR_WORKFLOW/$DIR_SPEC/index.md", "reason": "Spec hierarchy and shared engineering standards"}
 EOF
 }
 
@@ -106,7 +106,7 @@ get_check_context() {
 
   cat << EOF
 {"file": "${finish_work}", "reason": "Finish work checklist"}
-{"file": "$DIR_WORKFLOW/$DIR_SPEC/shared/index.md", "reason": "Shared coding standards"}
+{"file": "$DIR_WORKFLOW/$DIR_SPEC/index.md", "reason": "Spec hierarchy and shared engineering standards"}
 EOF
 
   if [[ "$dev_type" == "backend" ]] || [[ "$dev_type" == "fullstack" ]]; then
@@ -122,7 +122,7 @@ get_debug_context() {
   local check_backend=$(get_command_path "check-backend")
   local check_frontend=$(get_command_path "check-frontend")
 
-  echo "{\"file\": \"$DIR_WORKFLOW/$DIR_SPEC/shared/index.md\", \"reason\": \"Shared coding standards\"}"
+  echo "{\"file\": \"$DIR_WORKFLOW/$DIR_SPEC/index.md\", \"reason\": \"Spec hierarchy and shared engineering standards\"}"
 
   if [[ "$dev_type" == "backend" ]] || [[ "$dev_type" == "fullstack" ]]; then
     echo "{\"file\": \"${check_backend}\", \"reason\": \"Backend check spec\"}"

@@ -9,6 +9,7 @@
 #   get_worktree_base_dir       - Get worktree storage directory
 #   get_worktree_copy_files     - Get files to copy list
 #   get_worktree_post_create_hooks - Get post-create hooks
+#   get_worktree_verify_commands - Get Ralph Loop verification commands
 #   get_agents_dir              - Get agents registry directory
 #
 # Requires: paths.sh (for get_repo_root)
@@ -109,6 +110,15 @@ get_worktree_post_create_hooks() {
   local repo_root="${1:-$(get_repo_root)}"
   local config=$(get_worktree_config "$repo_root")
   _yaml_get_list "post_create" "$config"
+}
+
+# Get verify commands
+# Args: $1 - repo_root (optional)
+# Returns: command list (one per line)
+get_worktree_verify_commands() {
+  local repo_root="${1:-$(get_repo_root)}"
+  local config=$(get_worktree_config "$repo_root")
+  _yaml_get_list "verify" "$config"
 }
 
 # =============================================================================

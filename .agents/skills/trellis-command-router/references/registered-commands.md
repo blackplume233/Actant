@@ -17,6 +17,7 @@ Only commands listed in this table are valid routing targets.
 | `/trellis-handle-pr` | `/handle-pr` | `.cursor/commands/trellis-handle-pr.md` |
 | `/trellis-integrate-skill` | `/integrate-skill` | `.cursor/commands/trellis-integrate-skill.md` |
 | `/trellis-issue` | `/issue` | `.cursor/commands/trellis-issue.md` |
+| `/trellis-loop` | `/loop` | `.cursor/commands/trellis-loop.md` |
 | `/trellis-onboard` | `/onboard` | `.cursor/commands/trellis-onboard.md` |
 | `/trellis-plan-start` | `/plan-start` | `.cursor/commands/trellis-plan-start.md` |
 | `/trellis-project-review` | `/project-review` | `.cursor/commands/trellis-project-review.md` |
