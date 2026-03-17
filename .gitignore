@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+node_modules
+.worktree-env.sh
 
 # Build output
 dist/
@@ -25,11 +27,14 @@ Thumbs.db
 
 # Test
 coverage/
+.vite/
 
 # Runtime
 *.log
 data/
 /daemon
+.actant-dev-cache/
+.actant-smoke/
 
 # Site build artifacts
 docs/site/wiki/
@@ -38,6 +43,7 @@ docs/wiki/node_modules/
 # Issue sync temp files
 .trellis/issues/.dirty
 .trellis/_sync_body_*.tmp
+.trellis/tmp/
 .trellis/tmp-codex-scripts-*/
 .gitnexus
 

@@ -97,11 +97,13 @@ describe("ProcessLauncher", () => {
     });
 
     it("should throw AgentLaunchError when process exits immediately", async () => {
+      const executablePath = process.platform === "win32" ? "cmd.exe" : "/bin/sh";
+      const args = process.platform === "win32" ? ["/c", "exit", "1"] : ["-c", "exit 1"];
       const meta = makeMeta({
         backendType: "custom",
         backendConfig: {
-          executablePath: "node",
-          args: ["-e", "process.exit(1)"],
+          executablePath,
+          args,
         },
       });
 

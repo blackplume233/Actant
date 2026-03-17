@@ -1,11 +1,10 @@
-import { basename } from "node:path";
-
 export function buildHubAliasArgs(rawArgs: string[]): string[] {
   return rawArgs[0] === "hub" ? rawArgs : ["hub", ...rawArgs];
 }
 
 export function isActhubExecutable(executablePath: string): boolean {
-  const executable = basename(executablePath).toLowerCase();
+  const normalized = executablePath.replace(/\\/g, "/");
+  const executable = normalized.slice(normalized.lastIndexOf("/") + 1).toLowerCase();
   return executable === "acthub" || executable === "acthub.exe";
 }
 

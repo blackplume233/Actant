@@ -76,11 +76,14 @@ function runCommand(
   env?: Record<string, string>,
 ): Promise<{ exitCode: number; stdout: string; stderr: string }> {
   return new Promise((resolve, reject) => {
+    // If the step already provides argv tokens, avoid shell parsing so quoting is preserved.
+    // Keep shell execution for shell snippets and Windows command shims.
+    const needsShell = args.length === 0 || (process.platform === "win32" && /\.(cmd|bat)$/i.test(command));
     const child = spawn(command, args, {
       cwd,
       env: env ? { ...process.env, ...env } : process.env,
       stdio: ["ignore", "pipe", "pipe"],
-      shell: true,
+      shell: needsShell,
     });
 
     const stdoutChunks: Buffer[] = [];

@@ -1600,12 +1600,13 @@ actant proxy my-agent -t review-template # 不存在则自动创建
 
 | 命令 | 选项 | 行为 |
 |------|------|------|
-| `hub status` | `-f, --format` | 若宿主未运行则自动拉起 `bootstrap` profile，随后激活当前项目并显示 Hub 状态 |
-| `hub read <path>` | `--start <n>`, `--end <n>`, `--json` | 读取当前项目 Hub VFS 内容 |
-| `hub list [path]` / `hub ls [path]` | `-r`, `-l`, `--json` | 列出当前项目 Hub VFS 内容 |
-| `hub grep <pattern> [path]` | `-i`, `--max <n>`, `--json` | 在当前项目 Hub VFS 内搜索 |
+| `hub status` | `-f, --format` | 若宿主未运行则自动拉起 `bootstrap` profile；若当前环境不允许 daemon 绑定（如 `EPERM` / `EACCES`），允许退化到 standalone project-context 模式并返回同一份 Hub 状态结构 |
+| `hub read <path>` | `--start <n>`, `--end <n>`, `--json` | 读取当前项目 Hub VFS 内容；standalone fallback 下仍必须工作于只读 project-context 视图 |
+| `hub list [path]` / `hub ls [path]` | `-r`, `-l`, `--json` | 列出当前项目 Hub VFS 内容；standalone fallback 下仍必须工作于只读 project-context 视图 |
+| `hub grep <pattern> [path]` | `-i`, `--max <n>`, `--json` | 在当前项目 Hub VFS 内搜索；standalone fallback 下仍必须工作于只读 project-context 视图 |
 
 > Hub 命令对外接受 `/project`、`/workspace`、`/config`、`/skills`、`/prompts`、`/mcp`、`/workflows`、`/templates` 这些逻辑根；宿主内部统一映射到 `/hub/...` 挂载命名空间。
+> 若进入 standalone fallback，CLI 仍应明确提示当前处于 standalone project-context mode，但返回数据结构与 `/hub/...` 挂载命名空间保持一致。
 
 ### 4.11 VFS 命令 (`actant vfs`) ✅ 已实现
 

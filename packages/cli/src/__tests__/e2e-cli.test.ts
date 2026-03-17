@@ -1,14 +1,19 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtemp, writeFile, rm, access } from "node:fs/promises";
+import { mkdtemp, writeFile, rm, access, realpath } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { once } from "node:events";
 import { Daemon } from "@actant/api";
 import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared";
 
+const REPO_ROOT = join(import.meta.dirname, "..", "..", "..", "..");
+const SOURCE_RUNNER = join(REPO_ROOT, "scripts", "run-workspace-entry.mjs");
 const CLI_BIN = join(import.meta.dirname, "..", "..", "dist", "bin", "actant.js");
 const ACTHUB_BIN = join(import.meta.dirname, "..", "..", "dist", "bin", "acthub.js");
+const CLI_SOURCE_ENTRY = "packages/cli/src/bin/actant.ts";
+const ACTHUB_SOURCE_ENTRY = "packages/cli/src/bin/acthub.ts";
 
 function runCli(
   args: string[],
@@ -18,7 +23,11 @@ function runCli(
   cwd?: string,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve) => {
-    const child: ChildProcess = spawn("node", [binPath, ...args], {
+    const sourceEntry = binPath === ACTHUB_BIN ? ACTHUB_SOURCE_ENTRY : CLI_SOURCE_ENTRY;
+    const commandArgs = existsSync(binPath)
+      ? [binPath, ...args]
+      : [SOURCE_RUNNER, sourceEntry, ...args];
+    const child: ChildProcess = spawn(process.execPath, commandArgs, {
       cwd,
       env: {
         ...process.env,
@@ -45,7 +54,15 @@ function runCli(
   });
 }
 
-describe("CLI E2E (stdio)", () => {
+async function normalizeFsPath(path: string): Promise<string> {
+  try {
+    return await realpath(path);
+  } catch {
+    return path;
+  }
+}
+
+describe("CLI E2E (stdio)", { timeout: 20_000 }, () => {
   let tmpDir: string;
   let daemon: Daemon;
   let socketPath: string;
@@ -61,6 +78,7 @@ describe("CLI E2E (stdio)", () => {
 
   beforeAll(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "ac-cli-e2e-"));
+    tmpDir = await realpath(tmpDir);
     daemon = new Daemon({ homeDir: tmpDir, launcherMode: "mock" });
     await daemon.start();
     socketPath = daemon.socketPath;
@@ -108,7 +126,10 @@ describe("CLI E2E (stdio)", () => {
     const normalizedOverride = normalizeIpcPath(socketOverride, foregroundHome);
     expect(normalizedOverride).toBe(expectedSocketPath);
     const pidFile = join(foregroundHome, "daemon.pid");
-    const child = spawn("node", [CLI_BIN, "daemon", "start", "--foreground"], {
+    const foregroundArgs = existsSync(CLI_BIN)
+      ? [CLI_BIN, "daemon", "start", "--foreground"]
+      : [SOURCE_RUNNER, CLI_SOURCE_ENTRY, "daemon", "start", "--foreground"];
+    const child = spawn(process.execPath, foregroundArgs, {
       env: {
         ...process.env,
         ACTANT_HOME: foregroundHome,
@@ -267,7 +288,7 @@ describe("CLI E2E (stdio)", () => {
     expect(exitCode).toBe(0);
     const result = JSON.parse(stdout);
     expect(result.active).toBe(true);
-    expect(result.projectRoot).toBe(tmpDir);
+    expect(await normalizeFsPath(result.projectRoot)).toBe(tmpDir);
     expect(result.mounts.workspace).toBe("/hub/workspace");
   });
 
@@ -276,6 +297,6 @@ describe("CLI E2E (stdio)", () => {
     expect(exitCode).toBe(0);
     const result = JSON.parse(stdout);
     expect(result.active).toBe(true);
-    expect(result.projectRoot).toBe(tmpDir);
+    expect(await normalizeFsPath(result.projectRoot)).toBe(tmpDir);
   });
 });

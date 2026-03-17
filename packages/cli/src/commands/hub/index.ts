@@ -1,5 +1,20 @@
 import { Command } from "commander";
-import type { HubActivateResult, HubStatusResult, VfsGrepRpcResult, VfsListRpcResult, VfsReadResult } from "@actant/shared";
+import {
+  VfsRegistry,
+  createDaemonInfoSource,
+} from "@actant/core";
+import {
+  createProjectContextFactoryRegistry,
+  createProjectContextRegistrations,
+  loadProjectContext,
+} from "@actant/api";
+import type {
+  HubActivateResult,
+  HubStatusResult,
+  VfsGrepRpcResult,
+  VfsListRpcResult,
+  VfsReadResult,
+} from "@actant/shared";
 import type { RpcClient } from "../../client/rpc-client";
 import { ensureDaemonRunning } from "../daemon/start";
 import { presentError, type CliPrinter, defaultPrinter, type OutputFormat } from "../../output/index";
@@ -15,8 +30,43 @@ const HUB_ALIASES: Record<string, string> = {
   "/templates": "/hub/templates",
 };
 
-export function createHubCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
+const HUB_MOUNTS = {
+  project: "/hub/project",
+  workspace: "/hub/workspace",
+  config: "/hub/config",
+  skills: "/hub/skills",
+  prompts: "/hub/prompts",
+  mcp: "/hub/mcp",
+  workflows: "/hub/workflows",
+  templates: "/hub/templates",
+} as const;
+
+interface HubBackend {
+  readonly mode: "connected" | "standalone";
+  readonly status: HubStatusResult;
+  read(path: string, startLine?: number, endLine?: number): Promise<VfsReadResult>;
+  list(path?: string, recursive?: boolean, long?: boolean): Promise<VfsListRpcResult>;
+  grep(
+    pattern: string,
+    path?: string,
+    caseInsensitive?: boolean,
+    maxResults?: number,
+  ): Promise<VfsGrepRpcResult>;
+}
+
+interface HubCommandDependencies {
+  ensureDaemonRunningImpl?: typeof ensureDaemonRunning;
+  createStandaloneBackend?: (projectDir: string) => Promise<HubBackend>;
+}
+
+export function createHubCommand(
+  client: RpcClient,
+  printer: CliPrinter = defaultPrinter,
+  dependencies?: HubCommandDependencies,
+): Command {
   const hub = new Command("hub").description("CLI-first project bootstrap hub");
+  const ensureDaemonRunningImpl = dependencies?.ensureDaemonRunningImpl ?? ensureDaemonRunning;
+  const createStandaloneBackend = dependencies?.createStandaloneBackend ?? createStandaloneHubBackend;
 
   hub
     .command("status")
@@ -24,10 +74,10 @@ export function createHubCommand(client: RpcClient, printer: CliPrinter = defaul
     .option("-f, --format <format>", "Output format: table, json, quiet", "table")
     .action(async (opts: { format: OutputFormat }) => {
       try {
-        const started = await ensureHubActivated(client, process.cwd(), printer);
-        const status = await client.call("hub.status", {}) as HubStatusResult;
+        const backend = await resolveHubBackend(client, process.cwd(), printer, ensureDaemonRunningImpl, createStandaloneBackend);
+        const status = backend.status;
         if (opts.format === "json") {
-          printer.log(JSON.stringify({ daemonStarted: started, ...status }, null, 2));
+          printer.log(JSON.stringify({ daemonStarted: backend.mode === "connected", ...status }, null, 2));
           return;
         }
         if (opts.format === "quiet") {
@@ -58,12 +108,8 @@ export function createHubCommand(client: RpcClient, printer: CliPrinter = defaul
     .option("--json", "Output as JSON")
     .action(async (path: string, opts: { start?: number; end?: number; json?: boolean }) => {
       try {
-        await ensureHubActivated(client, process.cwd(), printer);
-        const result = await client.call("vfs.read", {
-          path: resolveHubPath(path),
-          startLine: opts.start,
-          endLine: opts.end,
-        }) as VfsReadResult;
+        const backend = await resolveHubBackend(client, process.cwd(), printer, ensureDaemonRunningImpl, createStandaloneBackend);
+        const result = await backend.read(resolveHubPath(path), opts.start, opts.end);
         printer.log(opts.json ? JSON.stringify(result, null, 2) : result.content);
       } catch (err) {
         presentError(err, printer);
@@ -80,12 +126,8 @@ export function createHubCommand(client: RpcClient, printer: CliPrinter = defaul
     .option("--json", "Output as JSON")
     .action(async (path: string | undefined, opts: { recursive?: boolean; long?: boolean; json?: boolean }) => {
       try {
-        await ensureHubActivated(client, process.cwd(), printer);
-        const entries = await client.call("vfs.list", {
-          path: resolveHubPath(path ?? "."),
-          recursive: opts.recursive,
-          long: opts.long,
-        }) as VfsListRpcResult;
+        const backend = await resolveHubBackend(client, process.cwd(), printer, ensureDaemonRunningImpl, createStandaloneBackend);
+        const entries = await backend.list(resolveHubPath(path ?? "."), opts.recursive, opts.long);
         if (opts.json) {
           printer.log(JSON.stringify(entries, null, 2));
           return;
@@ -113,13 +155,8 @@ export function createHubCommand(client: RpcClient, printer: CliPrinter = defaul
     .option("--json", "Output as JSON")
     .action(async (pattern: string, path: string | undefined, opts: { ignoreCase?: boolean; max?: number; json?: boolean }) => {
       try {
-        await ensureHubActivated(client, process.cwd(), printer);
-        const result = await client.call("vfs.grep", {
-          pattern,
-          path: resolveHubPath(path ?? "."),
-          caseInsensitive: opts.ignoreCase,
-          maxResults: opts.max,
-        }) as VfsGrepRpcResult;
+        const backend = await resolveHubBackend(client, process.cwd(), printer, ensureDaemonRunningImpl, createStandaloneBackend);
+        const result = await backend.grep(pattern, resolveHubPath(path ?? "."), opts.ignoreCase, opts.max);
         if (opts.json) {
           printer.log(JSON.stringify(result, null, 2));
           return;
@@ -141,22 +178,149 @@ export function createHubCommand(client: RpcClient, printer: CliPrinter = defaul
   return hub;
 }
 
-async function ensureHubActivated(
+async function resolveHubBackend(
   client: RpcClient,
   projectDir: string,
   printer: CliPrinter,
-): Promise<boolean> {
+  ensureDaemonRunningImpl: typeof ensureDaemonRunning,
+  createStandaloneBackend: (projectDir: string) => Promise<HubBackend>,
+): Promise<HubBackend> {
   const running = await client.ping();
-  let started = false;
-  if (!running) {
-    ({ started } = await ensureDaemonRunning("bootstrap"));
+  if (running) {
+    return createConnectedHubBackend(client, projectDir);
+  }
+
+  try {
+    const { started } = await ensureDaemonRunningImpl("bootstrap");
     if (started) {
       printer.dim("Started bootstrap host.");
     }
+    return createConnectedHubBackend(client, projectDir);
+  } catch (err) {
+    if (!canUseStandaloneFallback(err)) {
+      throw err;
+    }
+    printer.dim("Daemon unavailable, using standalone project-context mode.");
+    return createStandaloneBackend(projectDir);
+  }
+}
+
+async function createConnectedHubBackend(client: RpcClient, projectDir: string): Promise<HubBackend> {
+  await client.call("hub.activate", { projectDir }) as HubActivateResult;
+  const status = await client.call("hub.status", {}) as HubStatusResult;
+  return {
+    mode: "connected",
+    status,
+    read(path, startLine, endLine) {
+      return client.call("vfs.read", { path, startLine, endLine }) as Promise<VfsReadResult>;
+    },
+    list(path = "/hub/workspace", recursive, long) {
+      return client.call("vfs.list", { path, recursive, long }) as Promise<VfsListRpcResult>;
+    },
+    grep(pattern, path = "/hub/workspace", caseInsensitive, maxResults) {
+      return client.call("vfs.grep", { pattern, path, caseInsensitive, maxResults }) as Promise<VfsGrepRpcResult>;
+    },
+  };
+}
+
+async function createStandaloneHubBackend(projectDir: string): Promise<HubBackend> {
+  const context = await loadProjectContext(projectDir);
+  const registry = new VfsRegistry();
+  const factoryRegistry = createProjectContextFactoryRegistry();
+
+  for (const registration of createProjectContextRegistrations(
+    context,
+    factoryRegistry,
+    HUB_MOUNTS,
+    { type: "daemon" },
+    {
+      namePrefix: "standalone-hub",
+      workspaceReadOnly: true,
+      configReadOnly: true,
+    },
+  )) {
+    registry.mount(registration);
   }
 
-  await client.call("hub.activate", { projectDir }) as HubActivateResult;
-  return started;
+  registry.mount(createDaemonInfoSource({
+    getVersion: () => "standalone",
+    getUptime: () => 0,
+    getAgentCount: () => 0,
+    getRpcMethods: () => [],
+    getHostProfile: () => "bootstrap",
+    getRuntimeState: () => "inactive",
+    getCapabilities: () => ["hub", "vfs", "domain"],
+    getHubProject: () => ({
+      projectRoot: context.projectRoot,
+      projectName: context.summary.projectName,
+      configPath: context.configPath,
+    }),
+  }, "/daemon", { type: "daemon" }));
+
+  return {
+    mode: "standalone",
+    status: {
+      active: true,
+      hostProfile: "bootstrap",
+      runtimeState: "inactive",
+      projectRoot: context.projectRoot,
+      projectName: context.summary.projectName,
+      configPath: context.configPath,
+      configsDir: context.configsDir,
+      sourceWarnings: context.summary.sourceWarnings,
+      components: context.summary.components,
+      mounts: HUB_MOUNTS,
+    },
+    async read(path, startLine, endLine) {
+      const resolved = registry.resolve(path);
+      if (!resolved) {
+        throw new Error(`VFS path not found: ${path}`);
+      }
+
+      if (startLine != null) {
+        const handler = requireHandler(resolved.source.handlers.read_range, "read_range", path);
+        const result = await handler(resolved.relativePath, startLine, endLine);
+        return { content: result.content, mimeType: result.mimeType };
+      }
+
+      const handler = requireHandler(resolved.source.handlers.read, "read", path);
+      const result = await handler(resolved.relativePath);
+      return { content: result.content, mimeType: result.mimeType };
+    },
+    async list(path = "/hub/workspace", recursive, long) {
+      const resolved = registry.resolve(path);
+      if (!resolved) {
+        const childMounts = registry.listChildMounts(path);
+        return childMounts.map((source) => ({
+          name: source.mountPoint.split("/").pop() ?? source.name,
+          path: source.mountPoint,
+          type: "directory" as const,
+        }));
+      }
+      const handler = requireHandler(resolved.source.handlers.list, "list", path);
+      return handler(resolved.relativePath, { recursive, long });
+    },
+    async grep(pattern, path = "/hub/workspace", caseInsensitive, maxResults) {
+      const resolved = registry.resolve(path);
+      if (!resolved) {
+        throw new Error(`VFS path not found: ${path}`);
+      }
+      const handler = requireHandler(resolved.source.handlers.grep, "grep", path);
+      return handler(pattern, { caseInsensitive, maxResults });
+    },
+  };
+}
+
+function canUseStandaloneFallback(err: unknown): boolean {
+  const message = err instanceof Error ? err.message : String(err);
+  return /listen\s+(?:eperm|eacces)|operation not permitted|permission denied/i.test(message);
+}
+
+function requireHandler<T>(handler: T | undefined | null, capability: string, path: string): T {
+  if (!handler) {
+    throw new Error(`Capability "${capability}" not supported for path "${path}"`);
+  }
+  return handler;
 }
 
 function resolveHubPath(path: string): string {
