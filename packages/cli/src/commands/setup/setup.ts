@@ -3,6 +3,8 @@ import chalk from "chalk";
 import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared";
 import { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
+import { SEA_DAEMON_FLAG } from "../daemon/start";
+import { shouldSpawnEmbeddedDaemon } from "../daemon/runtime-mode";
 import {
   chooseHome,
   ensureDirectoryStructure,
@@ -156,11 +158,11 @@ async function tryStartDaemon(printer: CliPrinter, socketPath: string): Promise<
   try {
     const { fork, spawn } = await import("node:child_process");
     const { join } = await import("node:path");
-    const { isWindows, isSingleExecutable } = await import("@actant/shared");
+    const { isWindows } = await import("@actant/shared");
 
     let child;
-    if (isSingleExecutable()) {
-      child = spawn(process.execPath, ["--__actant-daemon"], {
+    if (shouldSpawnEmbeddedDaemon()) {
+      child = spawn(process.execPath, [SEA_DAEMON_FLAG], {
         detached: true,
         stdio: ["ignore", "ignore", "ignore"],
         env: process.env,

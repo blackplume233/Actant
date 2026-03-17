@@ -54,11 +54,12 @@ import {
   type LauncherMode,
 } from "@actant/core";
 import { CanvasStore } from "./canvas-store";
-import type { ModelApiProtocol } from "@actant/shared";
+import type { HostCapability, HostProfile, HostRuntimeState, ModelApiProtocol } from "@actant/shared";
 import { AcpConnectionManager, AcpChannelManagerAdapter } from "@actant/acp";
 import { ClaudeChannelManagerAdapter } from "@actant/channel-claude";
 import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
 import { createLogger, getIpcPath, initLogDir, normalizeIpcPath } from "@actant/shared";
+import { HubContextService } from "./hub-context";
 
 const logger = createLogger("app-context");
 
@@ -87,6 +88,8 @@ export interface AppConfig {
   configsDir?: string;
   /** "mock" for testing, "real" for production. Default: auto-detect from ACTANT_LAUNCHER_MODE env. */
   launcherMode?: LauncherMode;
+  /** Host bootstrap profile. */
+  hostProfile?: HostProfile;
 }
 
 export class AppContext {
@@ -131,11 +134,18 @@ export class AppContext {
   readonly pluginHost: PluginHost;
   readonly vfsRegistry: VfsRegistry;
   readonly sourceFactoryRegistry: SourceFactoryRegistry;
+  readonly hostProfile: HostProfile;
+  readonly hubContext: HubContextService;
   private vfsLifecycleManager?: VfsLifecycleManager;
 
   private initialized = false;
   private workflowHooksRegistered = false;
   private instanceHooksRegistered = false;
+  private sourceManagerInitialized = false;
+  private sourceManagerInitPromise?: Promise<void>;
+  private runtimeActivationState: HostRuntimeState = "inactive";
+  private runtimeActivationPromise?: Promise<void>;
+  private pluginsStarted = false;
   private startTime = Date.now();
   private pluginTickInterval?: ReturnType<typeof setInterval>;
 
@@ -151,6 +161,7 @@ export class AppContext {
       ? normalizeIpcPath(process.env.ACTANT_SOCKET, this.homeDir)
       : getIpcPath(this.homeDir);
     this.pidFilePath = join(this.homeDir, "daemon.pid");
+    this.hostProfile = config?.hostProfile ?? (process.env["ACTANT_HOST_PROFILE"] as HostProfile | undefined) ?? "runtime";
 
     this.instanceRegistry = new InstanceRegistry(this.registryPath, this.builtinInstancesDir);
     this.templateLoader = new TemplateLoader();
@@ -233,10 +244,20 @@ export class AppContext {
     this.sourceFactoryRegistry.register(canvasSourceFactory);
     this.sourceFactoryRegistry.register(vcsSourceFactory);
     this.sourceFactoryRegistry.register(processSourceFactory);
+    this.hubContext = new HubContextService(this);
   }
 
   async init(): Promise<void> {
-    if (this.initialized) return;
+    if (this.initialized) {
+      if (this.hostProfile !== "bootstrap") {
+        await this.ensureRuntimeActivated({
+          initializeSources: true,
+          startPlugins: true,
+          autoStartAgents: true,
+        });
+      }
+      return;
+    }
 
     await mkdir(this.homeDir, { recursive: true });
     await mkdir(this.instancesDir, { recursive: true });
@@ -251,9 +272,6 @@ export class AppContext {
 
     await this.loadDomainComponents();
     this.registerPiBackend();
-    await this.sourceManager.initialize();
-    this.registerWorkflowHooks();
-    this.listenForInstanceHooks();
 
     await this.recordSystem.rebuildIndex();
     await this.activityRecorder.rebuildIndex();
@@ -280,19 +298,17 @@ export class AppContext {
 
     this.initializeVfs();
 
-    await this.agentManager.initialize();
-    this.templateWatcher.start();
-
-    await this.pluginHost.start({ config: {} }, this.eventBus);
-    this.pluginTickInterval = setInterval(() => {
-      void this.pluginHost.tick({ config: {} });
-    }, 30_000);
-
     this.initialized = true;
     this.startTime = Date.now();
     logger.info("AppContext initialized");
 
-    await this.autoStartAgents();
+    if (this.hostProfile !== "bootstrap") {
+      await this.ensureRuntimeActivated({
+        initializeSources: true,
+        startPlugins: true,
+        autoStartAgents: true,
+      });
+    }
   }
 
   get uptime(): number {
@@ -306,7 +322,140 @@ export class AppContext {
       this.pluginTickInterval = undefined;
     }
     this.vfsLifecycleManager?.dispose();
-    await this.pluginHost.stop({ config: {} });
+    if (this.pluginsStarted) {
+      await this.pluginHost.stop({ config: {} });
+      this.pluginsStarted = false;
+    }
+  }
+
+  get runtimeState(): HostRuntimeState {
+    return this.runtimeActivationState;
+  }
+
+  getHostCapabilities(): HostCapability[] {
+    const capabilities: HostCapability[] = ["hub", "vfs", "domain"];
+    if (this.sourceManagerInitialized) {
+      capabilities.push("sources");
+    }
+    if (this.runtimeActivationState === "active") {
+      capabilities.push("runtime", "agents", "sessions", "schedules", "plugins");
+    }
+    return capabilities;
+  }
+
+  async prepareForRpc(method: string): Promise<void> {
+    if (method === "daemon.ping" || method === "daemon.shutdown" || method.startsWith("hub.") || method.startsWith("vfs.") || method.startsWith("events.")) {
+      return;
+    }
+
+    if (method.startsWith("source.") || method.startsWith("preset.")) {
+      await this.ensureSourceManagerInitialized();
+      return;
+    }
+
+    if (method.startsWith("plugin.runtime")) {
+      await this.ensureRuntimeActivated({
+        initializeSources: true,
+        startPlugins: true,
+        autoStartAgents: false,
+      });
+      return;
+    }
+
+    if (
+      method.startsWith("agent.")
+      || method.startsWith("session.")
+      || method.startsWith("proxy.")
+      || method.startsWith("schedule.")
+      || method.startsWith("gateway.")
+      || method.startsWith("activity.")
+      || method.startsWith("canvas.")
+      || method.startsWith("internal.")
+    ) {
+      await this.ensureRuntimeActivated({
+        initializeSources: true,
+        startPlugins: true,
+        autoStartAgents: false,
+      });
+    }
+  }
+
+  async ensureSourceManagerInitialized(): Promise<void> {
+    if (this.sourceManagerInitialized) return;
+    if (this.sourceManagerInitPromise) {
+      await this.sourceManagerInitPromise;
+      return;
+    }
+
+    this.sourceManagerInitPromise = (async () => {
+      await this.sourceManager.initialize();
+      this.sourceManagerInitialized = true;
+    })();
+
+    try {
+      await this.sourceManagerInitPromise;
+    } finally {
+      this.sourceManagerInitPromise = undefined;
+    }
+  }
+
+  async ensureRuntimeActivated(options?: {
+    initializeSources?: boolean;
+    startPlugins?: boolean;
+    autoStartAgents?: boolean;
+  }): Promise<void> {
+    if (this.runtimeActivationState === "active") {
+      if (options?.startPlugins) {
+        await this.ensurePluginsStarted();
+      }
+      return;
+    }
+
+    if (this.runtimeActivationPromise) {
+      await this.runtimeActivationPromise;
+      if (options?.startPlugins) {
+        await this.ensurePluginsStarted();
+      }
+      return;
+    }
+
+    this.runtimeActivationState = "activating";
+    this.runtimeActivationPromise = (async () => {
+      if (options?.initializeSources) {
+        await this.ensureSourceManagerInitialized();
+      }
+
+      this.registerWorkflowHooks();
+      this.listenForInstanceHooks();
+      await this.agentManager.initialize();
+      this.templateWatcher.start();
+      this.runtimeActivationState = "active";
+
+      if (options?.startPlugins) {
+        await this.ensurePluginsStarted();
+      }
+      if (options?.autoStartAgents) {
+        await this.autoStartAgents();
+      }
+    })();
+
+    try {
+      await this.runtimeActivationPromise;
+    } catch (err) {
+      this.runtimeActivationState = "inactive";
+      throw err;
+    } finally {
+      this.runtimeActivationPromise = undefined;
+    }
+  }
+
+  private async ensurePluginsStarted(): Promise<void> {
+    if (this.pluginsStarted) return;
+    await this.pluginHost.start({ config: {} }, this.eventBus);
+    this.pluginTickInterval = setInterval(() => {
+      void this.pluginHost.tick({ config: {} });
+    }, 30_000);
+    this.pluginsStarted = true;
   }
 
   /**

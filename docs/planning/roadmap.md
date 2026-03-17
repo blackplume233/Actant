@@ -4,21 +4,21 @@
 > 更新节奏：当前任务推进、Issue 状态变更或里程碑调整时同步更新本文。
 > **Task 级 Todo**：在本文持续迭代当前任务的勾选清单，随开发进展更新 `[ ]` → `[x]`，完成一项勾一项。
 
-### 当前最高优先：#296 / #297 CLI-first 自举宿主与 Hub 收口（2026-03-17）
+### 当前最高优先：#296 / #297 CLI-first 自举宿主与 Hub 收口（已完成，2026-03-17）
 
 > 目标：让**正式安装的 `actant` CLI**成为 Actant 自举的第一控制面，以 `actant hub ...` 作为官方入口，在单宿主进程上提供 project-context-first 的 bootstrap surface。默认 profile 只加载 host kernel + hub core，不默认启用 `AgentService`。
 
 - [x] **#296 已完成**：从 `@actant/core` 提取 project-context 相关 packages，作为轻宿主 / Hub 分层的先行 groundwork
-- [ ] **#297 收口**：明确 Project-level DomainContext、作用域边界与 reactive sync 接受线
-- [ ] 固化 `actant hub ...` 为官方自举命名空间
-- [ ] 提供 `acthub ...` 等价别名，但不形成第二套语义
-- [ ] `hub` 命令自动复用或拉起单个轻量 host，而不是创建第二个 daemon
-- [ ] 定义 `bootstrap` profile：host kernel + hub core + project context + source/config loader + 只读 VFS
-- [ ] 明确默认不实例化 `AgentService`、Scheduler、平台级 Kernel Agents
-- [ ] 明确 Agent Runtime 为可注册框架，但服务按需懒激活
-- [ ] 将 MCP 重定位为消费层入口，而不是 bootstrap owner
-- [ ] 验证轻量宿主的启动耗时、内存占用与热插拔成本
-- [ ] 完成全项目回顾审查与稳定性修复，确保新主线可作为自举基线
+- [x] **#297 收口**：明确 Project-level DomainContext、作用域边界与 reactive sync 接受线
+- [x] 固化 `actant hub ...` 为官方自举命名空间
+- [x] 提供 `acthub ...` 等价别名，但不形成第二套语义
+- [x] `hub` 命令自动复用或拉起单个轻量 host，而不是创建第二个 daemon
+- [x] 定义 `bootstrap` profile：host kernel + hub core + project context + source/config loader + 只读 VFS
+- [x] 明确默认不实例化 `AgentService`、Scheduler、平台级 Kernel Agents
+- [x] 明确 Agent Runtime 为可注册框架，但服务按需懒激活
+- [x] 将 MCP 重定位为消费层入口，而不是 bootstrap owner
+- [x] 通过 build / type-check / lint / test 与定向 CLI 黑盒回归验证自举主线
+- [x] 完成本轮主线收口，使其可作为后续自举基线
 
 ### Pi Mono 简洁哲学吸收（2026-03-15，#291 总入口）
 
@@ -349,15 +349,14 @@ Phase 2 (已完成)
 - Dashboard 已从最小监控扩展为 React SPA + REST API + SSE + 事件流
 - 动态上下文注入与内置 MCP Server 已打通，Canvas 能力已可用
 - `#296` 已为轻宿主 / Hub 分层拆出 project-context 相关包
+- `#297` 已完成收口：`actant hub` / `acthub`、`bootstrap` profile、Hub Core、MCP 收口、正式安装链均已落地
 - `agent open`、Pi 后端、ToolRegistry 硬化等外围能力已补齐
 
 **推荐推进顺序**：
-1. **🔥 #297 + Hub 主线收口**：明确 project-level context / scope / reactive sync → 固化 `actant hub` / `acthub` → 建立默认 `bootstrap` profile → 明确默认不启用 `AgentService`
-2. **轻宿主验证**：验证单宿主进程在热插拔模块前提下的启动耗时、内存占用、模块加载成本
-3. **项目回顾审查与稳定性修复**：全面审查现有功能稳定性与正确性、修复 QA 发现的问题、基础端到端流程验证（create → start → prompt → stop 各 archetype）
-4. **#279 统一通信层收敛**：作为支撑架构继续推进 `ActantChannel` / `ClaudeAgentSdkAdapter` / `@actant/acp` 外部适配器化
-5. 以 #14 Plugin Core 作为平台底座
-6. 在 #14 之上推进 #122 调度增强、#37 Initializer、#133 env provider，再推进 #136 Email 与 Memory 深化
+1. **项目回顾审查与稳定性修复**：在 CLI-first 自举主线已落地的基础上做更广范围的回归与问题收敛
+2. **#279 统一通信层收敛**：作为支撑架构继续推进 `ActantChannel` / `ClaudeAgentSdkAdapter` / `@actant/acp` 外部适配器化
+3. 以 #14 Plugin Core 作为平台底座
+4. 在 #14 之上推进 #122 调度增强、#37 Initializer、#133 env provider，再推进 #136 Email 与 Memory 深化
 
 **#135 Hook 三层架构：**
 ```
@@ -458,9 +457,9 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 - ✅ `agent open` + interactionModes（#134）
 
 **当前主阻塞 / 主线任务**：
-- 🔥 **#297 Project-level DomainContext / 作用域 / reactive sync 收口** — **当前最高优先**：完成 project-context-first 的接受线定义
-- 🔥 **Hub / 轻宿主收口** — 固化 `actant hub` / `acthub`、默认 `bootstrap` profile、单宿主进程复用、默认不启用 `AgentService`
-- 🔍 **项目回顾审查与稳定性修复** — 紧随自举主线之后：全面审查现有功能稳定性与正确性、修复 QA 发现的基础问题、端到端流程验证
+- 🔍 **项目回顾审查与稳定性修复** — 当前最高优先：在新自举主线上扩展 QA 覆盖，审查跨层回归与体验缺口
+- ✅ **#297 Project-level DomainContext / 作用域 / reactive sync 收口** — 已完成，project-context-first 接受线已落地
+- ✅ **Hub / 轻宿主收口** — `actant hub` / `acthub`、默认 `bootstrap` profile、单宿主进程复用、默认不启用 `AgentService` 已完成
 - 📋 **#279 统一通信层与 Runtime Facade 收敛** — 作为支撑架构继续推进
 - 📋 #14 Actant 系统级 Plugin 体系 — 待自举宿主与 Hub 边界稳定后推进
 - 📋 #122 调度增强 — 依赖 Plugin Core + Context Injection
@@ -533,14 +532,14 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 
 ## 后续优先 (Next Up)
 
-按依赖关系与平台价值排序。当前最高优先是 **CLI-first 自举宿主与 Hub 收口（#296 / #297）**，紧随其后是**全项目回顾审查与稳定性修复**；`#279` 作为支撑架构随后推进，再继续平台底座。
+按依赖关系与平台价值排序。**CLI-first 自举宿主与 Hub 收口（#296 / #297）已完成**，当前最高优先转为**全项目回顾审查与稳定性修复**；`#279` 作为支撑架构随后推进，再继续平台底座。
 
-### A. CLI-first 自举宿主与 Hub 收口（🔥 当前最高优先）
+### A. CLI-first 自举宿主与 Hub 收口（✅ 已完成）
 
 | 顺序 | 项目 | 类型 | 说明 |
 |------|------|------|------|
-| 1 | **#297 Project-level DomainContext 收口** | architecture | 明确 project-level context、作用域边界、reactive sync 接受线，为 `hub` 自举面定基线 |
-| 2 | **Hub 命名空间 / 轻宿主** | architecture | 固化 `actant hub` 正式入口与 `acthub` 别名；定义单宿主进程 + `bootstrap` profile + 默认不启用 `AgentService` |
+| 1 | **#297 Project-level DomainContext 收口** | shipped architecture | 已完成；明确 project-level context、作用域边界、reactive sync 接受线，为 `hub` 自举面定基线 |
+| 2 | **Hub 命名空间 / 轻宿主** | shipped architecture | 已完成；固化 `actant hub` 正式入口与 `acthub` 别名；定义单宿主进程 + `bootstrap` profile + 默认不启用 `AgentService` |
 | 3 | **#296 project-context package groundwork** | shipped groundwork | 已完成；作为轻宿主 / Hub 分层与后续热插拔模块化的包结构基础 |
 
 ### B. 项目回顾审查与稳定性修复（紧随自举主线之后）

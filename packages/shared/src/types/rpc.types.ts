@@ -3,6 +3,7 @@ import type { AgentArchetype } from "./template.types";
 import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, DetachResult } from "./agent.types";
 import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "./domain-component.types";
 import type { SourceEntry, SourceConfig, PresetDefinition } from "./source.types";
+import type { HostCapability, HostProfile, HostRuntimeState } from "./host.types";
 import type { ActivityRecord, ActivitySessionSummary, ConversationTurn } from "./activity.types";
 import type { PluginRef } from "./plugin.types";
 
@@ -503,12 +504,68 @@ export interface DaemonPingResult {
   version: string;
   uptime: number;
   agents: number;
+  hostProfile: HostProfile;
+  runtimeState: HostRuntimeState;
+  capabilities: HostCapability[];
+  hubProject?: {
+    projectRoot: string;
+    projectName: string;
+    configPath: string | null;
+  };
 }
 
 export type DaemonShutdownParams = Record<string, never>;
 
 export interface DaemonShutdownResult {
   success: boolean;
+}
+
+// hub.*
+
+export type HubActivateParams = {
+  projectDir?: string;
+};
+
+export interface HubMountLayout {
+  project: string;
+  workspace: string;
+  config: string;
+  skills: string;
+  prompts: string;
+  mcp: string;
+  workflows: string;
+  templates: string;
+}
+
+export interface HubActivateResult {
+  projectRoot: string;
+  projectName: string;
+  configPath: string | null;
+  configsDir: string;
+  sourceWarnings: string[];
+  components: {
+    skills: number;
+    prompts: number;
+    mcpServers: number;
+    workflows: number;
+    templates: number;
+  };
+  mounts: HubMountLayout;
+}
+
+export type HubStatusParams = Record<string, never>;
+
+export interface HubStatusResult {
+  active: boolean;
+  hostProfile: HostProfile;
+  runtimeState: HostRuntimeState;
+  projectRoot?: string;
+  projectName?: string;
+  configPath?: string | null;
+  configsDir?: string;
+  sourceWarnings?: string[];
+  components?: HubActivateResult["components"];
+  mounts: HubMountLayout;
 }
 
 // ---------------------------------------------------------------------------
@@ -866,6 +923,8 @@ export interface RpcMethodMap {
   "preset.apply": { params: PresetApplyParams; result: PresetApplyResult };
   "daemon.ping": { params: DaemonPingParams; result: DaemonPingResult };
   "daemon.shutdown": { params: DaemonShutdownParams; result: DaemonShutdownResult };
+  "hub.activate": { params: HubActivateParams; result: HubActivateResult };
+  "hub.status": { params: HubStatusParams; result: HubStatusResult };
   "gateway.lease": { params: GatewayLeaseParams; result: GatewayLeaseResult };
   "activity.sessions": { params: ActivitySessionsParams; result: ActivitySessionsResult };
   "activity.stream": { params: ActivityStreamParams; result: ActivityStreamResult };

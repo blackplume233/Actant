@@ -15,10 +15,23 @@ export function registerDaemonHandlers(
 }
 
 async function handleDaemonPing(ctx: AppContext): Promise<DaemonPingResult> {
+  const activeHub = ctx.hubContext.getActiveProject();
   return {
     version: getApiPackageVersion(),
     uptime: ctx.uptime,
     agents: ctx.agentManager.size,
+    hostProfile: ctx.hostProfile,
+    runtimeState: ctx.runtimeState,
+    capabilities: ctx.getHostCapabilities(),
+    ...(activeHub
+      ? {
+          hubProject: {
+            projectRoot: activeHub.projectRoot,
+            projectName: activeHub.projectName,
+            configPath: activeHub.configPath,
+          },
+        }
+      : {}),
   };
 }
 

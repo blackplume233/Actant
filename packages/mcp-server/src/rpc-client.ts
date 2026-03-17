@@ -2,6 +2,7 @@ import { RpcTransportClient } from "@actant/shared";
 
 export interface RpcClient {
   ping(): Promise<boolean>;
+  pingInfo(): Promise<Record<string, unknown> | null>;
   call(method: string, params: Record<string, unknown>): Promise<unknown>;
   dispose(): void;
 }
@@ -13,13 +14,16 @@ export interface RpcClient {
 export function createRpcClient(socketPath: string): RpcClient {
   return {
     async ping(): Promise<boolean> {
+      return (await this.pingInfo()) !== null;
+    },
+
+    async pingInfo(): Promise<Record<string, unknown> | null> {
       const transport = new RpcTransportClient();
       try {
         await transport.connect(socketPath);
-        await transport.call("daemon.ping", {});
-        return true;
+        return await transport.call("daemon.ping", {}) as Record<string, unknown>;
       } catch {
-        return false;
+        return null;
       } finally {
         transport.disconnect();
       }

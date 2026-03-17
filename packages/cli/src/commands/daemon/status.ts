@@ -23,6 +23,11 @@ export function createDaemonStatusCommand(printer: CliPrinter = defaultPrinter):
           printer.log(`  Version: ${result.version}`);
           printer.log(`  Uptime:  ${result.uptime}s`);
           printer.log(`  Agents:  ${result.agents}`);
+          printer.log(`  Profile: ${result.hostProfile}`);
+          printer.log(`  Runtime: ${result.runtimeState}`);
+          if (result.hubProject) {
+            printer.log(`  Hub:     ${result.hubProject.projectName}`);
+          }
         }
       } catch {
         if (opts.format === "json") {

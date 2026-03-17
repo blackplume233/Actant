@@ -1,6 +1,4 @@
 import { Command } from "commander";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared";
 import { RpcClient } from "./client/rpc-client";
 import {
@@ -23,8 +21,10 @@ import {
   createApiCommand,
   createInternalCommand,
   createVfsCommand,
+  createHubCommand,
 } from "./commands/index";
 import { presentError, type CliPrinter } from "./output/index";
+import { getCliPackageVersion } from "./package-version";
 
 export function defaultSocketPath(): string {
   const home = process.env["ACTANT_HOME"];
@@ -35,14 +35,17 @@ export function defaultSocketPath(): string {
   return getDefaultIpcPath(home);
 }
 
-export function createProgram(socketPath?: string, printer?: CliPrinter): Command {
+export function createProgram(
+  socketPath?: string,
+  printer?: CliPrinter,
+  options?: { name?: string },
+): Command {
   const sock = socketPath ?? defaultSocketPath();
   const client = new RpcClient(sock);
 
-  const pkgPath = join(import.meta.dirname, "..", "package.json");
-  const { version } = JSON.parse(readFileSync(pkgPath, "utf-8"));
+  const version = getCliPackageVersion();
 
-  const program = new Command("actant")
+  const program = new Command(options?.name ?? "actant")
     .version(version)
     .description("Actant — Build, manage, and compose AI agents");
 
@@ -65,13 +68,14 @@ export function createProgram(socketPath?: string, printer?: CliPrinter): Comman
   program.addCommand(createApiCommand(printer));
   program.addCommand(createInternalCommand(printer));
   program.addCommand(createVfsCommand(client, printer));
+  program.addCommand(createHubCommand(client, printer));
 
   program.exitOverride();
 
   return program;
 }
 
-export async function run(argv?: string[]): Promise<void> {
+export async function run(argv?: string[], options?: { name?: string }): Promise<void> {
   const args = argv ?? process.argv;
 
   const hasSubcommand = args.length > 2 && !args[2]?.startsWith("-");
@@ -89,7 +93,7 @@ export async function run(argv?: string[]): Promise<void> {
     }
   }
 
-  const program = createProgram();
+  const program = createProgram(undefined, undefined, options);
   try {
     await program.parseAsync(args);
   } catch (err) {

@@ -13,6 +13,10 @@ interface DaemonInfoProvider {
   getUptime(): number;
   getAgentCount(): number;
   getRpcMethods(): string[];
+  getHostProfile?(): string;
+  getRuntimeState?(): string;
+  getCapabilities?(): string[];
+  getHubProject?(): { projectRoot: string; projectName: string; configPath: string | null } | undefined;
 }
 
 /**
@@ -40,6 +44,10 @@ export function createDaemonInfoSource(
         version: provider.getVersion(),
         uptimeSeconds: Math.round(provider.getUptime() / 1000),
         agentCount: provider.getAgentCount(),
+        hostProfile: provider.getHostProfile?.(),
+        runtimeState: provider.getRuntimeState?.(),
+        capabilities: provider.getCapabilities?.() ?? [],
+        hubProject: provider.getHubProject?.(),
         timestamp: new Date().toISOString(),
       };
       return { content: JSON.stringify(data, null, 2), mimeType: "application/json" };

@@ -61,7 +61,14 @@ describe("RpcClient", () => {
               response = {
                 jsonrpc: "2.0",
                 id: req.id,
-                result: { version: "0.1.0", uptime: 0, agents: 0 },
+                result: {
+                  version: "0.1.0",
+                  uptime: 0,
+                  agents: 0,
+                  hostProfile: "runtime",
+                  runtimeState: "active",
+                  capabilities: ["vfs", "runtime"],
+                },
               };
             }
             socket.write(JSON.stringify(response) + "\n");
@@ -92,7 +99,14 @@ describe("RpcClient", () => {
   it("call() sends request and receives successful response", async () => {
     const client = new RpcClient(socketPath);
     const result = await client.call("daemon.ping", {});
-    expect(result).toEqual({ version: "0.1.0", uptime: 0, agents: 0 });
+    expect(result).toEqual({
+      version: "0.1.0",
+      uptime: 0,
+      agents: 0,
+      hostProfile: "runtime",
+      runtimeState: "active",
+      capabilities: ["vfs", "runtime"],
+    });
   });
 
   it("call() throws RpcCallError when response has error", async () => {
@@ -108,6 +122,18 @@ describe("RpcClient", () => {
   it("ping() returns true when daemon is running", async () => {
     const client = new RpcClient(socketPath);
     expect(await client.ping()).toBe(true);
+  });
+
+  it("pingInfo() returns daemon metadata", async () => {
+    const client = new RpcClient(socketPath);
+    expect(await client.pingInfo()).toEqual({
+      version: "0.1.0",
+      uptime: 0,
+      agents: 0,
+      hostProfile: "runtime",
+      runtimeState: "active",
+      capabilities: ["vfs", "runtime"],
+    });
   });
 
   it("ping() returns false when connection fails", async () => {

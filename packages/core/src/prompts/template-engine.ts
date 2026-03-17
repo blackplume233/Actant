@@ -2,7 +2,17 @@ import { readFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
-const _thisDir = dirname(fileURLToPath(import.meta.url));
+function resolveModuleDir(metaUrl: string): string {
+  if (metaUrl.startsWith("file:")) {
+    return dirname(fileURLToPath(metaUrl));
+  }
+  if (!metaUrl.includes("://")) {
+    return dirname(metaUrl);
+  }
+  return process.cwd();
+}
+
+const _thisDir = resolveModuleDir(import.meta.url);
 
 /**
  * Resolve the prompts directory.

@@ -22,7 +22,9 @@ function getClientDir(): string {
   const thisDir =
     typeof __dirname !== "undefined"
       ? __dirname
-      : join(fileURLToPath(import.meta.url), "..");
+      : import.meta.url.startsWith("file:")
+        ? join(fileURLToPath(import.meta.url), "..")
+        : join(import.meta.url, "..");
   return join(thisDir, "client");
 }
 

@@ -10,6 +10,7 @@ import { createAgentListCommand } from "../agent/list";
 import { createTemplateListCommand } from "../template/list";
 import { createTemplateLoadCommand } from "../template/load";
 import { createDaemonStopCommand } from "../daemon/stop";
+import { createHubCommand } from "../hub/index";
 
 function createMockClient(): {
   call: ReturnType<typeof vi.fn>;
@@ -334,5 +335,76 @@ describe("createDaemonStopCommand", () => {
     await parent.parseAsync(["node", "test", "stop"]);
 
     expect(output.logs.some((l) => l.includes("Daemon is not running"))).toBe(true);
+  });
+});
+
+describe("createHubCommand", () => {
+  let savedExitCode: number | undefined;
+
+  beforeEach(() => {
+    const raw = process.exitCode;
+    savedExitCode = typeof raw === "number" ? raw : undefined;
+  });
+
+  afterEach(() => {
+    process.exitCode = savedExitCode;
+  });
+
+  it("hub status reuses running daemon and prints project status", async () => {
+    const mock = createMockClient();
+    mock.ping.mockResolvedValue(true);
+    mock.call
+      .mockResolvedValueOnce({
+        projectRoot: "/repo",
+        projectName: "repo",
+        configPath: null,
+        configsDir: "/repo/configs",
+        sourceWarnings: [],
+        components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
+        mounts: {
+          project: "/hub/project",
+          workspace: "/hub/workspace",
+          config: "/hub/config",
+          skills: "/hub/skills",
+          prompts: "/hub/prompts",
+          mcp: "/hub/mcp",
+          workflows: "/hub/workflows",
+          templates: "/hub/templates",
+        },
+      })
+      .mockResolvedValueOnce({
+        active: true,
+        hostProfile: "bootstrap",
+        runtimeState: "inactive",
+        projectRoot: "/repo",
+        projectName: "repo",
+        configPath: null,
+        configsDir: "/repo/configs",
+        sourceWarnings: [],
+        components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
+        mounts: {
+          project: "/hub/project",
+          workspace: "/hub/workspace",
+          config: "/hub/config",
+          skills: "/hub/skills",
+          prompts: "/hub/prompts",
+          mcp: "/hub/mcp",
+          workflows: "/hub/workflows",
+          templates: "/hub/templates",
+        },
+      });
+
+    const client = mock as unknown as RpcClient;
+    const { printer, output } = createTestPrinter();
+    const parent = new Command();
+    parent.exitOverride();
+    parent.addCommand(createHubCommand(client, printer));
+
+    await parent.parseAsync(["node", "test", "hub", "status"]);
+
+    expect(mock.call).toHaveBeenNthCalledWith(1, "hub.activate", { projectDir: process.cwd() });
+    expect(mock.call).toHaveBeenNthCalledWith(2, "hub.status", {});
+    expect(output.logs.some((line) => line.includes("Host Profile: bootstrap"))).toBe(true);
+    expect(output.logs.some((line) => line.includes("Project:      repo"))).toBe(true);
   });
 });

@@ -143,7 +143,8 @@ export class SocketServer {
       return;
     }
 
-    handler(request.params ?? {}, this.ctx)
+    this.ctx.prepareForRpc(request.method)
+      .then(() => handler(request.params ?? {}, this.ctx))
       .then((result) => {
         this.sendResponse(socket, {
           jsonrpc: "2.0",

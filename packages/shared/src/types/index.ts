@@ -98,6 +98,11 @@ export type {
   ActantProjectConfig,
 } from "./project.types";
 export type {
+  HostProfile,
+  HostRuntimeState,
+  HostCapability,
+} from "./host.types";
+export type {
   ContentRef,
   ActivityRecord,
   ActivityRecordType,
@@ -182,6 +187,11 @@ export {
   type DaemonPingResult,
   type DaemonShutdownParams,
   type DaemonShutdownResult,
+  type HubActivateParams,
+  type HubActivateResult,
+  type HubMountLayout,
+  type HubStatusParams,
+  type HubStatusResult,
   type AgentRunParams,
   type AgentRunResult,
   type AgentPromptParams,

@@ -26,7 +26,8 @@
     "scripts/postinstall.mjs"
   ],
   "bin": {
-    "actant": "./bin/actant.js"
+    "actant": "./bin/actant.js",
+    "acthub": "./bin/acthub.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

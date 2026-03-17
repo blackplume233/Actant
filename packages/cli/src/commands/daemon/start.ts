@@ -2,10 +2,12 @@ import { Command } from "commander";
 import { join } from "node:path";
 import { fork, spawn } from "node:child_process";
 import chalk from "chalk";
-import { onShutdownSignal, isWindows, isSingleExecutable, normalizeIpcPath } from "@actant/shared";
+import type { HostProfile } from "@actant/shared";
+import { onShutdownSignal, isWindows, normalizeIpcPath } from "@actant/shared";
 import { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 import { defaultSocketPath } from "../../program";
+import { shouldSpawnEmbeddedDaemon } from "./runtime-mode";
 
 /**
  * Internal flag used by SEA binary to re-exec itself in daemon mode.
@@ -22,12 +24,13 @@ export const DAEMON_READY_SIGNAL = "__ACTANT_DAEMON_READY__";
 
 const STARTUP_TIMEOUT_MS = 30_000;
 
-function spawnDaemonChild() {
-  if (isSingleExecutable()) {
+function spawnDaemonChild(profile: HostProfile) {
+  const env = { ...process.env, ACTANT_HOST_PROFILE: profile };
+  if (shouldSpawnEmbeddedDaemon()) {
     return spawn(process.execPath, [SEA_DAEMON_FLAG], {
       detached: true,
       stdio: ["ignore", "ignore", "pipe"],
-      env: process.env,
+      env,
     });
   }
 
@@ -39,12 +42,12 @@ function spawnDaemonChild() {
     ? spawn(process.execPath, [daemonScript], {
         detached: true,
         stdio: ["ignore", "ignore", "pipe"],
-        env: process.env,
+        env,
       })
     : fork(daemonScript, [], {
         detached: true,
         stdio: ["ignore", "ignore", "pipe", "ipc"],
-        env: process.env,
+        env,
       });
 }
 
@@ -78,7 +81,8 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
   return new Command("start")
     .description("Start the Actant daemon")
     .option("--foreground", "Run in foreground (don't daemonize)", false)
-    .action(async (opts: { foreground: boolean }) => {
+    .option("--profile <profile>", "Host profile: bootstrap, runtime, autonomous", "runtime")
+    .action(async (opts: { foreground: boolean; profile: HostProfile }) => {
       const client = new RpcClient(defaultSocketPath());
 
       const alive = await client.ping();
@@ -95,7 +99,8 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
           if (socketOverride) {
             process.env["ACTANT_SOCKET"] = normalizeIpcPath(socketOverride, homeDir);
           }
-          const daemon = new Daemon();
+          process.env["ACTANT_HOST_PROFILE"] = opts.profile;
+          const daemon = new Daemon({ hostProfile: opts.profile });
 
           onShutdownSignal(async () => {
             await daemon.stop();
@@ -103,7 +108,7 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
           });
 
           await daemon.start();
-          printer.log(`${chalk.green("Daemon started (foreground).")} PID: ${process.pid}`);
+          printer.log(`${chalk.green("Daemon started (foreground).")} PID: ${process.pid} [${opts.profile}]`);
           printer.dim("Press Ctrl+C to stop.");
 
           await new Promise(() => {});
@@ -112,7 +117,7 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
           process.exitCode = 1;
         }
       } else {
-        const child = spawnDaemonChild();
+        const child = spawnDaemonChild(opts.profile);
         const stderrChunks: Buffer[] = [];
 
         const outcome = await waitForReady(child, stderrChunks);
@@ -139,7 +144,7 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
         child.unref();
 
         if (healthy) {
-          printer.log(`${chalk.green("Daemon started.")} PID: ${child.pid}`);
+          printer.log(`${chalk.green("Daemon started.")} PID: ${child.pid} [${opts.profile}]`);
         } else {
           const stderr = Buffer.concat(stderrChunks).toString().trim();
           printer.error("Daemon process started but is not responding.");
@@ -148,4 +153,38 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
         }
       }
     });
+}
+
+export async function ensureDaemonRunning(profile: HostProfile): Promise<{ started: boolean }> {
+  const client = new RpcClient(defaultSocketPath());
+  if (await client.ping()) {
+    return { started: false };
+  }
+
+  const child = spawnDaemonChild(profile);
+  const stderrChunks: Buffer[] = [];
+  const outcome = await waitForReady(child, stderrChunks);
+
+  if (outcome === "exited") {
+    const stderr = Buffer.concat(stderrChunks).toString().trim();
+    throw new Error(stderr || "Daemon process exited unexpectedly.");
+  }
+
+  let healthy = false;
+  for (let i = 0; i < 5; i++) {
+    healthy = await client.ping();
+    if (healthy) break;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  child.stderr?.destroy();
+  if ("connected" in child && child.connected) child.disconnect();
+  child.unref();
+
+  if (!healthy) {
+    const stderr = Buffer.concat(stderrChunks).toString().trim();
+    throw new Error(stderr || "Daemon process started but is not responding.");
+  }
+
+  return { started: true };
 }

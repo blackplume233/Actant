@@ -32,10 +32,12 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./dist/bin/actant.js": "./dist/bin/actant.js"
+    "./dist/bin/actant.js": "./dist/bin/actant.js",
+    "./dist/bin/acthub.js": "./dist/bin/acthub.js"
   },
   "bin": {
-    "actant": "./dist/bin/actant.js"
+    "actant": "./dist/bin/actant.js",
+    "acthub": "./dist/bin/acthub.js"
   },
   "scripts": {
     "build": "tsup",

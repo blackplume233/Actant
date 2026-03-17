@@ -17,3 +17,4 @@ export { createDashboardCommand } from "./dashboard/index";
 export { createApiCommand } from "./api/index";
 export { createInternalCommand } from "./internal/index";
 export { createVfsCommand } from "./vfs/index";
+export { createHubCommand } from "./hub/index";

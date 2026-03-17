@@ -8,14 +8,18 @@ import { Daemon } from "@actant/api";
 import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared";
 
 const CLI_BIN = join(import.meta.dirname, "..", "..", "dist", "bin", "actant.js");
+const ACTHUB_BIN = join(import.meta.dirname, "..", "..", "dist", "bin", "acthub.js");
 
 function runCli(
   args: string[],
   socketPath: string,
   extraEnv?: Record<string, string | undefined>,
+  binPath = CLI_BIN,
+  cwd?: string,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve) => {
-    const child: ChildProcess = spawn("node", [CLI_BIN, ...args], {
+    const child: ChildProcess = spawn("node", [binPath, ...args], {
+      cwd,
       env: {
         ...process.env,
         ...extraEnv,
@@ -256,5 +260,22 @@ describe("CLI E2E (stdio)", () => {
     expect(stdout).toContain("--force");
 
     await runCli(["agent", "destroy", "warn-agent", "--force"], socketPath);
+  });
+
+  it("hub status mounts current project context", async () => {
+    const { stdout, exitCode } = await runCli(["hub", "status", "-f", "json"], socketPath, undefined, CLI_BIN, tmpDir);
+    expect(exitCode).toBe(0);
+    const result = JSON.parse(stdout);
+    expect(result.active).toBe(true);
+    expect(result.projectRoot).toBe(tmpDir);
+    expect(result.mounts.workspace).toBe("/hub/workspace");
+  });
+
+  it("acthub alias routes to hub commands", async () => {
+    const { stdout, exitCode } = await runCli(["status", "-f", "json"], socketPath, undefined, ACTHUB_BIN, tmpDir);
+    expect(exitCode).toBe(0);
+    const result = JSON.parse(stdout);
+    expect(result.active).toBe(true);
+    expect(result.projectRoot).toBe(tmpDir);
   });
 });

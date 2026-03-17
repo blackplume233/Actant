@@ -12,6 +12,7 @@ import {
   registerTemplateHandlers,
   registerAgentHandlers,
   registerDaemonHandlers,
+  registerHubHandlers,
 } from "../../handlers/index";
 
 function rpcCall(socketPath: string, request: RpcRequest): Promise<RpcResponse> {
@@ -61,6 +62,7 @@ describe("SocketServer integration", () => {
     registerTemplateHandlers(handlers);
     registerAgentHandlers(handlers);
     registerDaemonHandlers(handlers, async () => {});
+    registerHubHandlers(handlers);
 
     server = new SocketServer(handlers, ctx);
     await server.listen(socketPath);
@@ -194,9 +196,29 @@ describe("SocketServer integration", () => {
     const res = await rpcCall(socketPath, {
       jsonrpc: "2.0", id: 20, method: "daemon.ping",
     });
-    const result = res.result as { version: string; uptime: number; agents: number };
+    const result = res.result as {
+      version: string;
+      uptime: number;
+      agents: number;
+      hostProfile: string;
+      runtimeState: string;
+    };
     expect(result.version).toMatch(/^\d+\.\d+\.\d+/);
     expect(result.uptime).toBeGreaterThanOrEqual(0);
     expect(typeof result.agents).toBe("number");
+    expect(result.hostProfile).toBe("runtime");
+    expect(result.runtimeState).toBe("active");
+  });
+
+  it("hub.activate mounts the current project context", async () => {
+    const res = await rpcCall(socketPath, {
+      jsonrpc: "2.0",
+      id: 21,
+      method: "hub.activate",
+      params: { projectDir: tmpDir },
+    });
+    const result = res.result as { projectRoot: string; projectName: string };
+    expect(result.projectRoot).toBe(tmpDir);
+    expect(result.projectName).toBeDefined();
   });
 });

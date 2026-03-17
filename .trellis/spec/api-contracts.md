@@ -906,8 +906,12 @@ interface SourceValidateResult {
 
 | 方法 | 参数 | 返回 | 说明 |
 |------|------|------|------|
-| `daemon.ping` | `{}` | `{ version, uptime, agents }` | 健康检查 |
+| `daemon.ping` | `{}` | `{ version, uptime, agents, hostProfile, runtimeState, capabilities, hubProject? }` | 健康检查与宿主能力发现 |
 | `daemon.shutdown` | `{}` | `{ success }` | 优雅关闭 |
+| `hub.activate` | `{ projectDir? }` | `{ projectRoot, projectName, configPath, configsDir, sourceWarnings, components, mounts }` | 激活或切换当前项目的 Hub 上下文 |
+| `hub.status` | `{}` | `{ active, hostProfile, runtimeState, projectRoot?, projectName?, configPath?, configsDir?, sourceWarnings?, components?, mounts }` | 查询当前 Hub 激活状态 |
+
+> `daemon.ping` 现在承担最小 host discovery 职责：客户端可据此判断当前宿主处于 `bootstrap` / `runtime` / `autonomous` 哪个 profile、runtime 是否已激活，以及当前是否已有 Hub 项目挂载。
 
 ### 3.11 Plugin 运行时管理（Phase 4 新增） ✅ 已实现
 
@@ -1586,9 +1590,22 @@ actant proxy my-agent -t review-template # 不存在则自动创建
 
 | 命令 | 选项 | 行为 |
 |------|------|------|
-| `daemon start` | `--foreground` | 启动守护进程；`--foreground` 在当前进程运行 |
+| `daemon start` | `--foreground`, `--profile <bootstrap\|runtime\|autonomous>` | 启动守护进程；默认 `runtime`；`--foreground` 在当前进程运行 |
 | `daemon stop` | — | 发送 `daemon.shutdown` RPC |
-| `daemon status` | `-f, --format` | 发送 `daemon.ping` RPC |
+| `daemon status` | `-f, --format` | 发送 `daemon.ping` RPC，并显示 profile / runtime / hub 状态 |
+
+### 4.10a Hub 命令 (`actant hub` / `acthub`)
+
+> `acthub` 是 `actant hub` 的等价别名；两者必须复用同一实现与同一宿主语义。
+
+| 命令 | 选项 | 行为 |
+|------|------|------|
+| `hub status` | `-f, --format` | 若宿主未运行则自动拉起 `bootstrap` profile，随后激活当前项目并显示 Hub 状态 |
+| `hub read <path>` | `--start <n>`, `--end <n>`, `--json` | 读取当前项目 Hub VFS 内容 |
+| `hub list [path]` / `hub ls [path]` | `-r`, `-l`, `--json` | 列出当前项目 Hub VFS 内容 |
+| `hub grep <pattern> [path]` | `-i`, `--max <n>`, `--json` | 在当前项目 Hub VFS 内搜索 |
+
+> Hub 命令对外接受 `/project`、`/workspace`、`/config`、`/skills`、`/prompts`、`/mcp`、`/workflows`、`/templates` 这些逻辑根；宿主内部统一映射到 `/hub/...` 挂载命名空间。
 
 ### 4.11 VFS 命令 (`actant vfs`) ✅ 已实现
 
@@ -2311,6 +2328,19 @@ Agent / External Client
 - `sourceWarnings`
 - `components`
 
+> 在单宿主实现中，Hub 会把当前项目挂载到内部命名空间：
+>
+> - `/hub/project`
+> - `/hub/workspace`
+> - `/hub/config`
+> - `/hub/skills`
+> - `/hub/prompts`
+> - `/hub/mcp`
+> - `/hub/workflows`
+> - `/hub/templates`
+>
+> CLI 与 MCP connected 模式对外继续暴露 `/project` 等逻辑根，并在访问时映射到上述 `/hub/...` 挂载。
+
 ### 8.8b MCP 消费层契约（2026-03）
 
 > `@actant/mcp-server` 仍然可以存在，但它是**消费层 / 接入层**，不再是 bootstrap owner。
@@ -2320,7 +2350,8 @@ Agent / External Client
 当 MCP server 连接到 Actant host 且 `daemon.ping` 成功时：
 
 - MCP 进入 `connected` 模式；
-- `vfs_*` 工具透传 host / daemon VFS；
+- MCP 必须先调用 `hub.activate(projectDir ?? process.cwd())`，确保当前项目上下文已挂载；
+- `vfs_*` 工具透传 host / daemon VFS，并将 `/project`、`/workspace`、`/config`、`/skills`、`/prompts`、`/mcp`、`/workflows`、`/templates` 映射到宿主内部 `/hub/...` 命名空间；
 - `actant` 工具仅代理宿主已经显式开放的 runtime RPC；
 - MCP 不得定义强于 CLI / hub 的额外 bootstrap 语义。
 
@@ -2330,7 +2361,7 @@ Agent / External Client
 
 - MCP 可以退化为 `detached-readonly` project-context 模式；
 - `vfs_*` 工具仍可用，但只暴露只读项目上下文；
-- `actant` 工具必须拒绝 runtime RPC，并提示先通过 `actant hub` 或显式 daemon 启动路径建立宿主；
+- `actant` 工具必须拒绝 runtime RPC，并提示先通过 `actant hub status` 或显式 daemon 启动路径建立宿主；
 - 该模式不负责进程管理、session 管理或 runtime mutation。
 
 #### detached-readonly 最小挂载契约

@@ -262,6 +262,9 @@ importers:
 
   packages/mcp-server:
     dependencies:
+      '@actant/api':
+        specifier: workspace:0.3.0
+        version: link:../api
       '@actant/domain':
         specifier: workspace:0.3.0
         version: link:../domain

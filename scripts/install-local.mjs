@@ -37,6 +37,7 @@ const customInstallDir = getArg("--install-dir");
 const isWindows = process.platform === "win32";
 const isMac = process.platform === "darwin";
 const binaryName = isWindows ? "actant.exe" : "actant";
+const aliasBinaryName = isWindows ? "acthub.exe" : "acthub";
 
 function run(cmd, opts = {}) {
   execSync(cmd, { stdio: "inherit", cwd: ROOT, ...opts });
@@ -140,12 +141,16 @@ async function installLink() {
   // Verify
   console.log();
   const version = quiet("actant --version");
+  const aliasVersion = quiet("acthub --version");
   if (version) {
     console.log(`Done! actant ${version} is now available globally. (link mode)`);
     console.log(`  Location : ${npmGlobalPrefix}`);
+    if (aliasVersion) {
+      console.log(`  Alias    : acthub ${aliasVersion}`);
+    }
     console.log(`  Tip      : Run \`pnpm build\` to update — no re-link needed.`);
   } else {
-    console.log("Done! Link created. Restart your terminal to use `actant`.");
+    console.log("Done! Link created. Restart your terminal to use `actant` / `acthub`.");
   }
 }
 
@@ -156,13 +161,14 @@ async function installLink() {
 async function installStandalone() {
   const installDir = resolveInstallDir();
   const targetPath = join(installDir, binaryName);
+  const aliasTargetPath = join(installDir, aliasBinaryName);
   const buildOutputPath = join(ROOT, "dist-standalone", binaryName);
 
   console.log(`[info] Platform       : ${process.platform} ${process.arch}`);
   console.log(`[info] Install target : ${targetPath}\n`);
 
   // Check existing
-  if (existsSync(targetPath)) {
+  if (existsSync(targetPath) || existsSync(aliasTargetPath)) {
     console.log(`[!] ${targetPath} already exists.`);
     if (!(await confirmOverwrite(targetPath))) {
       console.log("\nAborted.");
@@ -193,11 +199,14 @@ async function installStandalone() {
   console.log(`[${skipBuild ? "1/1" : "2/2"}] Installing to ${installDir}...\n`);
   try {
     if (existsSync(targetPath)) unlinkSync(targetPath);
+    if (existsSync(aliasTargetPath)) unlinkSync(aliasTargetPath);
     copyFileSync(buildOutputPath, targetPath);
+    copyFileSync(buildOutputPath, aliasTargetPath);
 
     if (!isWindows) {
       const { chmodSync } = await import("node:fs");
       chmodSync(targetPath, 0o755);
+      chmodSync(aliasTargetPath, 0o755);
     }
   } catch (err) {
     if (err.code === "EACCES" || err.code === "EPERM") {
@@ -222,6 +231,7 @@ async function installStandalone() {
     console.log(`Done! Binary installed.`);
   }
   console.log(`  Location : ${targetPath}`);
+  console.log(`  Alias    : ${aliasTargetPath}`);
   console.log(`  Size     : ${(binarySize / 1024 / 1024).toFixed(1)} MB`);
   console.log(`  Runtime  : Self-contained (no Node.js required)`);
 

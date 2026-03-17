@@ -44,7 +44,7 @@ describe("createStandaloneContext", () => {
       mode: string;
       components: { skills: number };
     };
-    expect(context.mode).toBe("standalone");
+    expect(context.mode).toBe("project-context");
     expect(context.components.skills).toBe(1);
 
     const skillCatalog = await backend.list("/skills");

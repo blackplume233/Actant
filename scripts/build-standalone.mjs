@@ -16,7 +16,7 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, copyFileSync, existsSync, writeFileSync, readFileSync } from "node:fs";
+import { mkdirSync, copyFileSync, existsSync, writeFileSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import esbuild from "esbuild";
 
@@ -31,16 +31,46 @@ const binaryName = isWindows ? "actant.exe" : "actant";
 const BINARY_PATH = join(OUT_DIR, binaryName);
 
 const bundleOnly = process.argv.includes("--bundle-only");
+const rootPackage = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
+const cliPackage = JSON.parse(readFileSync(join(ROOT, "packages", "cli", "package.json"), "utf-8"));
+
+function createWorkspaceSourceAliasPlugin() {
+  const packagesDir = join(ROOT, "packages");
+  const workspaceEntryByName = new Map();
+
+  for (const entry of readdirSync(packagesDir)) {
+    const packageDir = join(packagesDir, entry);
+    if (!statSync(packageDir).isDirectory()) continue;
+
+    const packageJsonPath = join(packageDir, "package.json");
+    const sourceEntryPath = join(packageDir, "src", "index.ts");
+    if (!existsSync(packageJsonPath) || !existsSync(sourceEntryPath)) continue;
+
+    const packageJson = JSON.parse(readFileSync(packageJsonPath, "utf-8"));
+    if (typeof packageJson.name === "string" && packageJson.name.startsWith("@actant/")) {
+      workspaceEntryByName.set(packageJson.name, sourceEntryPath);
+    }
+  }
+
+  return {
+    name: "workspace-source-alias",
+    setup(build) {
+      build.onResolve({ filter: /^@actant\/[^/]+$/ }, (args) => {
+        const sourceEntry = workspaceEntryByName.get(args.path);
+        if (!sourceEntry) return null;
+        return { path: sourceEntry };
+      });
+    },
+  };
+}
 
 console.log("=== Actant Standalone Build ===\n");
 
-// ── Step 0: ensure output dir ──
+// Step 0: ensure output dir
 mkdirSync(OUT_DIR, { recursive: true });
 
-// ── Step 1: bundle with esbuild ──
+// Step 1: bundle with esbuild
 console.log("[1/4] Bundling with esbuild...");
-
-const entryPoint = join(ROOT, "packages", "cli", "src", "bin", "actant.ts");
 
 const seaEntry = join(ROOT, "packages", "cli", "src", "bin", "actant-sea.ts");
 
@@ -55,25 +85,35 @@ await esbuild.build({
   sourcemap: false,
   packages: "bundle",
   define: {
-    "import.meta.dirname": "__dirname",
-    "import.meta.filename": "__filename",
-    "import.meta.url": "__filename",
+    "import.meta.dirname": "__actantImportMetaDirname",
+    "import.meta.filename": "__actantImportMetaFilename",
+    "import.meta.url": "__actantImportMetaUrl",
+    __ACTANT_VERSION__: JSON.stringify(rootPackage.version),
+    __ACTANT_CLI_VERSION__: JSON.stringify(cliPackage.version),
   },
   banner: {
-    js: "// Actant CLI — Single Executable Application\n// Built: " + new Date().toISOString(),
+    js:
+      "// Actant CLI - Single Executable Application\n" +
+      "// Built: " + new Date().toISOString() + "\n" +
+      'const { pathToFileURL } = require("node:url");\n' +
+      'process.env.ACTANT_STANDALONE ??= "1";\n' +
+      "const __actantImportMetaFilename = __filename;\n" +
+      "const __actantImportMetaDirname = __dirname;\n" +
+      "const __actantImportMetaUrl = pathToFileURL(__filename).href;",
   },
+  plugins: [createWorkspaceSourceAliasPlugin()],
   logLevel: "warning",
 });
 
 const bundleSize = readFileSync(BUNDLE_PATH).length;
-console.log(`   Bundle: ${(bundleSize / 1024).toFixed(0)} KB → ${BUNDLE_PATH}`);
+console.log(`   Bundle: ${(bundleSize / 1024).toFixed(0)} KB -> ${BUNDLE_PATH}`);
 
 if (bundleOnly) {
   console.log("\n--bundle-only: skipping SEA injection.");
   process.exit(0);
 }
 
-// ── Step 2: generate SEA config & blob ──
+// Step 2: generate SEA config & blob
 console.log("[2/4] Generating SEA blob...");
 
 writeFileSync(
@@ -95,7 +135,7 @@ execFileSync(process.execPath, ["--experimental-sea-config", SEA_CONFIG], {
   stdio: "inherit",
 });
 
-// ── Step 3: copy node binary ──
+// Step 3: copy node binary
 console.log("[3/4] Copying Node.js binary...");
 
 if (existsSync(BINARY_PATH)) {
@@ -113,7 +153,7 @@ if (process.platform === "darwin") {
   }
 }
 
-// ── Step 4: inject blob into binary ──
+// Step 4: inject blob into binary
 console.log("[4/4] Injecting SEA blob into binary...");
 
 if (isWindows) {
@@ -192,7 +232,7 @@ if (!isWindows) {
 }
 
 const binarySize = readFileSync(BINARY_PATH).length;
-console.log(`\n✔ Built: ${BINARY_PATH}`);
+console.log(`\nBuilt: ${BINARY_PATH}`);
 console.log(`  Size: ${(binarySize / 1024 / 1024).toFixed(1)} MB`);
-console.log(`\nTest it:`);
-console.log(`  ${isWindows ? ".\\dist-standalone\\actant.exe" : "./dist-standalone/actant"} --version`);
+console.log("\nTest it:");
+console.log(`  ${isWindows ? ".\\\\dist-standalone\\\\actant.exe" : "./dist-standalone/actant"} --version`);

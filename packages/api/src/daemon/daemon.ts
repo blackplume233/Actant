@@ -12,6 +12,7 @@ import {
   registerSourceHandlers,
   registerPresetHandlers,
   registerDaemonHandlers,
+  registerHubHandlers,
   registerProxyHandlers,
   registerScheduleHandlers,
   registerGatewayHandlers,
@@ -45,6 +46,7 @@ export class Daemon {
     registerSourceHandlers(this.handlers);
     registerPresetHandlers(this.handlers);
     registerDaemonHandlers(this.handlers, () => this.stop());
+    registerHubHandlers(this.handlers);
     registerProxyHandlers(this.handlers);
     registerScheduleHandlers(this.handlers);
     registerGatewayHandlers(this.handlers);
@@ -79,6 +81,18 @@ export class Daemon {
         getUptime: () => this.ctx.uptime,
         getAgentCount: () => this.ctx.agentManager.size,
         getRpcMethods: () => this.handlers.methods(),
+        getHostProfile: () => this.ctx.hostProfile,
+        getRuntimeState: () => this.ctx.runtimeState,
+        getCapabilities: () => this.ctx.getHostCapabilities(),
+        getHubProject: () => {
+          const active = this.ctx.hubContext.getActiveProject();
+          if (!active) return undefined;
+          return {
+            projectRoot: active.projectRoot,
+            projectName: active.projectName,
+            configPath: active.configPath,
+          };
+        },
       },
       "/daemon",
       { type: "daemon" },

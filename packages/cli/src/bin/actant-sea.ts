@@ -10,6 +10,7 @@ async function main(): Promise<void> {
   if (!process.env["LOG_LEVEL"]) {
     process.env["LOG_LEVEL"] = "silent";
   }
+  process.env["ACTANT_STANDALONE"] = "1";
 
   if (process.argv.includes("--__actant-daemon")) {
     const { Daemon } = await import("@actant/api");
@@ -21,8 +22,10 @@ async function main(): Promise<void> {
     });
     await daemon.start();
   } else {
+    const { resolveSeaInvocation } = await import("./entry-alias");
     const { run } = await import("../program");
-    await run();
+    const invocation = resolveSeaInvocation(process.argv, process.execPath);
+    await run(invocation.argv, invocation.name ? { name: invocation.name } : undefined);
   }
 }
 

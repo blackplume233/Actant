@@ -1,4 +1,4 @@
-import type { RpcMethodMap, RpcMethod } from "@actant/shared";
+import type { DaemonPingResult, RpcMethodMap, RpcMethod } from "@actant/shared";
 import { RpcTransportClient, RpcTransportError } from "@actant/shared";
 
 const CONNECTION_ERROR_PATTERN = /Cannot connect|ECONNREFUSED|ENOENT|EPIPE|socket/i;
@@ -35,11 +35,14 @@ export class RpcClient {
   }
 
   async ping(): Promise<boolean> {
+    return (await this.pingInfo()) !== null;
+  }
+
+  async pingInfo(): Promise<DaemonPingResult | null> {
     try {
-      await this.call("daemon.ping", {});
-      return true;
+      return await this.call("daemon.ping", {});
     } catch {
-      return false;
+      return null;
     }
   }
 

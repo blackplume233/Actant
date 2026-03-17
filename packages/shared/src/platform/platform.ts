@@ -120,6 +120,11 @@ let _isSeaChecked = false;
  * Uses `node:sea` module (Node 20+) with a fallback heuristic.
  */
 export function isSingleExecutable(): boolean {
+  if (process.env["ACTANT_STANDALONE"] === "1") {
+    _isSea = true;
+    _isSeaChecked = true;
+    return true;
+  }
   if (_isSeaChecked) return _isSea;
   _isSeaChecked = true;
   try {
