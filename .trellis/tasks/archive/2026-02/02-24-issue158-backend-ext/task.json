@@ -1,0 +1,10 @@
+{
+  "title": "Backend-aware buildProviderEnv + DeclarativeBuilder (#141/#150)",
+  "slug": "issue158-backend-ext",
+  "status": "completed",
+  "completedAt": "2026-03-17",
+  "issueRef": 158,
+  "createdAt": "2026-02-24T23:16:00",
+  "developer": "cursor-agent",
+  "notes": "Archived after reconciling GitHub issue #158. Implementation had already landed via PR #162 / merge commit d69725b; remaining work was task and issue state cleanup."
+}
