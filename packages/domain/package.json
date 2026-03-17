@@ -1,0 +1,46 @@
+{
+    "name":  "@actant/domain",
+    "version":  "0.3.0",
+    "description":  "Domain component registry and template primitives for Actant",
+    "type":  "module",
+    "license":  "MIT",
+    "author":  "blackplume \u003cblackplume233@gmail.com\u003e",
+    "repository":  {
+                       "type":  "git",
+                       "url":  "https://github.com/blackplume233/Actant.git",
+                       "directory":  "packages/domain"
+                   },
+    "homepage":  "https://github.com/blackplume233/Actant#readme",
+    "bugs":  "https://github.com/blackplume233/Actant/issues",
+    "keywords":  [
+                     "actant",
+                     "domain",
+                     "template"
+                 ],
+    "publishConfig":  {
+                          "access":  "public"
+                      },
+    "files":  [
+                  "dist"
+              ],
+    "main":  "./dist/index.js",
+    "types":  "./dist/index.d.ts",
+    "exports":  {
+                    ".":  {
+                              "import":  "./dist/index.js",
+                              "types":  "./dist/index.d.ts"
+                          }
+                },
+    "scripts":  {
+                    "build":  "tsup",
+                    "dev":  "tsup --watch",
+                    "type-check":  "tsc --noEmit",
+                    "test":  "vitest run",
+                    "clean":  "rimraf dist",
+                    "prepublishOnly":  "tsup"
+                },
+    "dependencies":  {
+                         "@actant/shared":  "workspace:0.3.0",
+                         "zod":  "^4.3.6"
+                     }
+}

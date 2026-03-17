@@ -251,14 +251,29 @@ importers:
         specifier: ^6
         version: 6.4.1(@types/node@22.19.12)(jiti@2.6.1)(lightningcss@1.31.1)(tsx@4.21.0)
 
-  packages/mcp-server:
+  packages/domain:
     dependencies:
-      '@actant/core':
-        specifier: workspace:0.3.0
-        version: link:../core
       '@actant/shared':
         specifier: workspace:0.3.0
         version: link:../shared
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+
+  packages/mcp-server:
+    dependencies:
+      '@actant/domain':
+        specifier: workspace:0.3.0
+        version: link:../domain
+      '@actant/shared':
+        specifier: workspace:0.3.0
+        version: link:../shared
+      '@actant/source':
+        specifier: workspace:0.3.0
+        version: link:../source
+      '@actant/vfs':
+        specifier: workspace:0.3.0
+        version: link:../vfs
       '@modelcontextprotocol/sdk':
         specifier: ^1.27.1
         version: 1.27.1(zod@4.3.6)
@@ -310,6 +325,15 @@ importers:
         specifier: ^25.3.0
         version: 25.3.0
 
+  packages/source:
+    dependencies:
+      '@actant/shared':
+        specifier: workspace:0.3.0
+        version: link:../shared
+      picomatch:
+        specifier: ^4.0.3
+        version: 4.0.3
+
   packages/tui:
     dependencies:
       '@actant/core':
@@ -328,6 +352,12 @@ importers:
       '@xterm/xterm':
         specifier: ^5.5.0
         version: 5.5.0
+
+  packages/vfs:
+    dependencies:
+      '@actant/shared':
+        specifier: workspace:0.3.0
+        version: link:../shared
 
 packages:
 

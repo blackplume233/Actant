@@ -35,7 +35,9 @@ export function createAgentRegistrySource(
   function parseAgentPath(filePath: string): { agentName: string; file: string } | null {
     const parts = filePath.replace(/^\/+/, "").split("/").filter(Boolean);
     if (parts.length < 2) return null;
-    return { agentName: parts[0]!, file: parts.slice(1).join("/") };
+    const [agentName] = parts;
+    if (!agentName) return null;
+    return { agentName, file: parts.slice(1).join("/") };
   }
 
   function sanitizeMeta(meta: AgentInstanceMeta): Record<string, unknown> {
@@ -85,7 +87,10 @@ export function createAgentRegistrySource(
       return entries;
     }
 
-    const agentName = normalized.split("/")[0]!;
+    const [agentName] = normalized.split("/");
+    if (!agentName) {
+      throw new Error(`Invalid agent path: ${dirPath}`);
+    }
     const agent = agentManager.getAgent(agentName);
     if (!agent) throw new Error(`Agent not found: ${agentName}`);
 

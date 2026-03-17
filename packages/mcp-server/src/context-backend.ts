@@ -2,22 +2,20 @@ import { access, readFile } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { z } from "zod";
-import {
-  SkillManager,
-  PromptManager,
-  McpConfigManager,
-  WorkflowManager,
-  TemplateRegistry,
-  VfsRegistry,
-  SourceFactoryRegistry,
-  workspaceSourceFactory,
-  createDomainSource,
-  createDaemonInfoSource,
-  LocalSource,
-  GitHubSource,
-  CommunitySource,
-  type FetchResult,
-} from "@actant/core";
+import { SkillManager } from "@actant/domain";
+import { PromptManager } from "@actant/domain";
+import { McpConfigManager } from "@actant/domain";
+import { WorkflowManager } from "@actant/domain";
+import { TemplateRegistry } from "@actant/domain";
+import { LocalSource } from "@actant/source";
+import { GitHubSource } from "@actant/source";
+import { CommunitySource } from "@actant/source";
+import type { FetchResult } from "@actant/source";
+import { VfsRegistry } from "@actant/vfs";
+import { SourceFactoryRegistry } from "@actant/vfs";
+import { workspaceSourceFactory } from "@actant/vfs";
+import { createDomainSource } from "@actant/vfs";
+import { createDaemonInfoSource } from "@actant/vfs";
 import type {
   AgentTemplate,
   ActantProjectConfig,
@@ -518,3 +516,6 @@ async function pathExists(filePath: string): Promise<boolean> {
     return false;
   }
 }
+
+
+

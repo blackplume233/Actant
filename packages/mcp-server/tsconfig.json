@@ -1,10 +1,25 @@
 {
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "composite": true,
-    "outDir": "./dist",
-    "rootDir": "./src"
-  },
-  "include": ["src"],
-  "references": [{ "path": "../shared" }, { "path": "../core" }]
+    "extends":  "../../tsconfig.base.json",
+    "compilerOptions":  {
+                            "composite":  true,
+                            "outDir":  "./dist",
+                            "rootDir":  "./src"
+                        },
+    "include":  [
+                    "src"
+                ],
+    "references":  [
+                       {
+                           "path":  "../shared"
+                       },
+                       {
+                           "path":  "../domain"
+                       },
+                       {
+                           "path":  "../source"
+                       },
+                       {
+                           "path":  "../vfs"
+                       }
+                   ]
 }
