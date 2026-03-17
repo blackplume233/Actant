@@ -26,6 +26,15 @@ const STARTUP_TIMEOUT_MS = 30_000;
 
 function spawnDaemonChild(profile: HostProfile) {
   const env = { ...process.env, ACTANT_HOST_PROFILE: profile };
+  const devRunner = process.env["ACTANT_DEV_RUNNER"];
+  if (devRunner) {
+    return spawn(process.execPath, [devRunner, "packages/cli/src/daemon-entry.ts"], {
+      detached: true,
+      stdio: ["ignore", "ignore", "pipe"],
+      env,
+    });
+  }
+
   if (shouldSpawnEmbeddedDaemon()) {
     return spawn(process.execPath, [SEA_DAEMON_FLAG], {
       detached: true,

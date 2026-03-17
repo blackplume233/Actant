@@ -67,6 +67,27 @@ pnpm build
 pnpm link --global
 ```
 
+### 源码仓库内自举 / Hub 开发
+
+当你需要直接在仓库源码上验证 `hub`、`acthub` 或 MCP 自举链路时，优先使用 repo-local runner，而不是直接执行未构建的 TypeScript 入口：
+
+```bash
+# 在源码模式下运行 CLI / acthub / MCP
+pnpm run dev:actant -- hub status -f json
+pnpm run dev:acthub -- status -f json
+pnpm run dev:mcp
+
+# 运行 repo-local bootstrap smoke
+pnpm run test:bootstrap
+```
+
+这些命令会通过 `scripts/run-workspace-entry.mjs` 先把 workspace 入口 bundle 成可运行的临时 ESM，再启动同一套源码包依赖，适合验证：
+
+- `actant hub status` 的 bootstrap host 自动拉起
+- `acthub` 对同一宿主的复用
+- MCP 连接已启动 daemon 的路径
+- MCP 在 daemon 不可达时回退到 standalone project-context 模式
+
 ### 基本使用
 
 ```bash
@@ -258,8 +279,12 @@ Actant/
 | 命令 | 说明 |
 |------|------|
 | `pnpm dev` | 开发模式启动 CLI |
+| `pnpm run dev:actant -- <args>` | 通过 repo-local runner 启动源码版 `actant` CLI |
+| `pnpm run dev:acthub -- <args>` | 通过 repo-local runner 启动源码版 `acthub` |
+| `pnpm run dev:mcp` | 通过 repo-local runner 启动源码版 MCP server |
 | `pnpm build` | 构建所有包 |
 | `pnpm test` | 运行全部测试（1,027 tests） |
+| `pnpm run test:bootstrap` | 验证 hub/bootstrap/MCP 的 repo-local 自举链路 |
 | `pnpm test:changed` | 仅运行受变更影响的测试 |
 | `pnpm test:watch` | 测试监听模式 |
 | `pnpm lint` | ESLint 代码检查 |

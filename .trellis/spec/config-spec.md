@@ -1534,6 +1534,7 @@ Daemon 侧维护的 ACP Proxy 连接状态（运行时，不持久化）。
 | `ACTANT_HOME` | 覆盖数据根目录（homeDir） | `~/.actant` |
 | `ACTANT_SOCKET` | 覆盖 IPC Socket 路径 | 平台默认 |
 | `ACTANT_HOST_PROFILE` | 覆盖宿主启动 profile（`bootstrap` / `runtime` / `autonomous`） | `runtime` |
+| `ACTANT_DEV_RUNNER` | 指定源码模式下用于重启 daemon 子进程的 repo-local runner 入口 | 无 |
 | `ACTANT_LAUNCHER_MODE` | 设定 Launcher 模式（`"mock"` / `"real"`） | `"real"` |
 | `ACTANT_PROVIDER` | 统一 LLM Provider 标识（如 `openai`、`anthropic`） | 无（由 Daemon 从 config.json 注入） |
 | `ACTANT_PROVIDER_TYPE` | `ACTANT_PROVIDER` 的别名（优先级更高） | 无 |

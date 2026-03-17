@@ -18,6 +18,52 @@ afterEach(async () => {
 });
 
 describe("createStandaloneContext", () => {
+  it("auto-loads repo-local hub components from the project root", async () => {
+    const projectDir = await makeTempProject();
+    await mkdir(join(projectDir, "skills"), { recursive: true });
+    await mkdir(join(projectDir, "templates"), { recursive: true });
+    await writeFile(
+      join(projectDir, "actant.json"),
+      JSON.stringify({ name: "repo-hub" }, null, 2),
+      "utf-8",
+    );
+    await writeFile(
+      join(projectDir, "skills", "bootstrap.json"),
+      JSON.stringify({
+        name: "bootstrap",
+        description: "Repo-local bootstrap skill",
+        content: "Bootstrap from the current repo.",
+      }, null, 2),
+      "utf-8",
+    );
+    await writeFile(
+      join(projectDir, "templates", "bootstrap-agent.json"),
+      JSON.stringify({
+        name: "bootstrap-agent",
+        version: "1.0.0",
+        backend: { type: "claude-code" },
+        provider: { type: "anthropic" },
+        domainContext: {
+          skills: ["bootstrap"],
+        },
+      }, null, 2),
+      "utf-8",
+    );
+
+    const backend = await createStandaloneContext(projectDir);
+    const skills = await backend.list("/skills");
+    const templates = await backend.list("/templates");
+    const context = JSON.parse((await backend.read("/project/context.json")).content) as {
+      sources: Array<{ name: string; type: string }>;
+      components: { skills: number; templates: number };
+    };
+
+    expect(skills.map((entry) => entry.path)).toEqual(expect.arrayContaining(["repo-hub@bootstrap"]));
+    expect(templates.map((entry) => entry.path)).toEqual(expect.arrayContaining(["repo-hub@bootstrap-agent"]));
+    expect(context.sources).toEqual([{ name: "repo-hub", type: "local" }]);
+    expect(context.components).toMatchObject({ skills: 1, templates: 1 });
+  });
+
   it("builds a standalone project-context view from local configs", async () => {
     const projectDir = await makeTempProject();
     await mkdir(join(projectDir, "configs", "skills"), { recursive: true });
@@ -51,6 +97,40 @@ describe("createStandaloneContext", () => {
     expect(skillCatalog.map((entry) => entry.path)).toEqual(
       expect.arrayContaining(["_catalog.json", "local-skill"]),
     );
+  });
+
+  it("does not duplicate repo-local components when configsDir points at the project root", async () => {
+    const projectDir = await makeTempProject();
+    await writeFile(
+      join(projectDir, "actant.project.json"),
+      JSON.stringify({
+        version: 1,
+        configsDir: ".",
+      }, null, 2),
+      "utf-8",
+    );
+    await mkdir(join(projectDir, "skills"), { recursive: true });
+    await writeFile(
+      join(projectDir, "skills", "root-skill.json"),
+      JSON.stringify({
+        name: "root-skill",
+        description: "Loaded from project root configs",
+        content: "Use the root config skill.",
+      }, null, 2),
+      "utf-8",
+    );
+
+    const backend = await createStandaloneContext(projectDir);
+    const skills = await backend.list("/skills");
+    const context = JSON.parse((await backend.read("/project/context.json")).content) as {
+      sources: Array<{ name: string; type: string }>;
+      components: { skills: number };
+    };
+
+    expect(skills.map((entry) => entry.path)).toEqual(expect.arrayContaining(["root-skill"]));
+    expect(skills.map((entry) => entry.path)).not.toEqual(expect.arrayContaining([`${projectDir.split(/[/\\\\]/).pop()}@root-skill`]));
+    expect(context.sources).toEqual([]);
+    expect(context.components.skills).toBe(1);
   });
 
   it("loads additional project sources from actant.project.json", async () => {

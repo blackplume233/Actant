@@ -27,6 +27,7 @@ export interface ProcessLauncherOptions {
 
 const DEFAULT_TERMINATE_TIMEOUT = 5_000;
 const DEFAULT_SPAWN_VERIFY_DELAY = 500;
+const SPAWN_VERIFY_SETTLE_DELAY_MS = 200;
 
 /**
  * Real launcher that spawns IDE/CLI backend processes.
@@ -132,17 +133,34 @@ export class ProcessLauncher implements AgentLauncher {
       child.unref();
     }
 
-    let earlyExit = false;
-    child.once("exit", () => { earlyExit = true; });
+    const earlyExit = new Promise<void>((resolve) => {
+      child.once("exit", () => resolve());
+    });
 
     child.on("error", (err) => {
       logger.error({ name: meta.name, pid, error: err }, "Backend process error after spawn");
     });
 
     if (this.spawnVerifyDelayMs > 0) {
-      await delay(this.spawnVerifyDelayMs);
+      const result = await Promise.race([
+        earlyExit.then(() => "exited" as const),
+        delay(this.spawnVerifyDelayMs).then(() => "alive-check" as const),
+      ]);
 
-      if (earlyExit || !isProcessAlive(pid)) {
+      if (result === "alive-check") {
+        const settled = await Promise.race([
+          earlyExit.then(() => "exited" as const),
+          delay(SPAWN_VERIFY_SETTLE_DELAY_MS).then(() => "still-running" as const),
+        ]);
+        if (settled === "exited") {
+          throw new AgentLaunchError(
+            meta.name,
+            new AgentProcessExitedImmediatelyError(pid, command),
+          );
+        }
+      }
+
+      if (result === "exited" || child.exitCode != null || !isProcessAlive(pid)) {
         throw new AgentLaunchError(
           meta.name,
           new AgentProcessExitedImmediatelyError(pid, command),

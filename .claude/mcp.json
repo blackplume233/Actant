@@ -2,10 +2,9 @@
   "mcpServers": {
     "actant": {
       "command": "npx",
-      "args": ["tsx", "packages/mcp-server/src/index.ts"],
+      "args": ["tsx", "./scripts/run-workspace-entry.mjs", "packages/mcp-server/src/index.ts"],
       "env": {
-        "ACTANT_AGENT_NAME": "claude-dev",
-        "ACTANT_PROJECT_DIR": "G:\\Workspace\\AgentWorkSpace\\AgentCraft"
+        "ACTANT_AGENT_NAME": "claude-dev"
       }
     }
   }

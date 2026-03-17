@@ -1,4 +1,4 @@
-import { access, readFile } from "node:fs/promises";
+import { access, readFile, stat } from "node:fs/promises";
 import { basename, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -95,6 +95,26 @@ export async function loadProjectContext(projectDir?: string): Promise<LoadedPro
   });
 
   const sourceWarnings = [...projectConfigResult.warnings];
+  const summarySources: Array<{ name: string; type: SourceConfig["type"] }> = [];
+
+  const repoLocalSource = await detectRepoLocalSource(projectRoot, configsDir, projectConfig.sources ?? []);
+  if (repoLocalSource) {
+    try {
+      const result = await fetchLocalSource(repoLocalSource.name, projectRoot);
+      injectSourceComponents(repoLocalSource.name, result, {
+        skillManager,
+        promptManager,
+        mcpConfigManager,
+        workflowManager,
+        templateRegistry,
+      });
+      summarySources.push({ name: repoLocalSource.name, type: "local" });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      sourceWarnings.push(`Repo-local source "${repoLocalSource.name}" failed: ${msg}`);
+    }
+  }
+
   for (const source of projectConfig.sources ?? []) {
     try {
       const result = await fetchSource(source, projectRoot);
@@ -105,6 +125,7 @@ export async function loadProjectContext(projectDir?: string): Promise<LoadedPro
         workflowManager,
         templateRegistry,
       });
+      summarySources.push({ name: source.name, type: source.config.type });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       sourceWarnings.push(`Source "${source.name}" failed: ${msg}`);
@@ -121,6 +142,7 @@ export async function loadProjectContext(projectDir?: string): Promise<LoadedPro
       projectConfigResult.path,
       configsDir,
       projectConfig,
+      summarySources,
       sourceWarnings,
       {
         skills: skillManager.list().length,
@@ -239,10 +261,7 @@ async function loadLocalDomainComponents(
 async function fetchSource(entry: ProjectSourceEntry, projectRoot: string): Promise<FetchResult> {
   switch (entry.config.type) {
     case "local":
-      return new LocalSource(entry.name, {
-        ...entry.config,
-        path: resolve(projectRoot, entry.config.path),
-      }).fetch();
+      return fetchLocalSource(entry.name, resolve(projectRoot, entry.config.path));
     case "github":
       return new GitHubSource(entry.name, entry.config, join(tmpdir(), "actant-hub-cache")).fetch();
     case "community":
@@ -252,6 +271,13 @@ async function fetchSource(entry: ProjectSourceEntry, projectRoot: string): Prom
       throw new Error(`Unsupported project source type: ${String(exhaustive)}`);
     }
   }
+}
+
+async function fetchLocalSource(name: string, sourcePath: string): Promise<FetchResult> {
+  return new LocalSource(name, {
+    type: "local",
+    path: sourcePath,
+  }).fetch();
 }
 
 function injectSourceComponents(
@@ -304,6 +330,7 @@ function buildProjectContextSummary(
   configPath: string | null,
   configsDir: string,
   config: ActantProjectConfig,
+  sources: Array<{ name: string; type: SourceConfig["type"] }>,
   sourceWarnings: string[],
   counts: ProjectContextSummary["components"],
 ): ProjectContextSummary {
@@ -314,10 +341,71 @@ function buildProjectContextSummary(
     description: config.description,
     configPath,
     configsDir,
-    sources: (config.sources ?? []).map((source) => ({ name: source.name, type: source.config.type })),
+    sources,
     sourceWarnings,
     components: counts,
   };
+}
+
+async function detectRepoLocalSource(
+  projectRoot: string,
+  configsDir: string,
+  declaredSources: ProjectSourceEntry[],
+): Promise<{ name: string } | null> {
+  if (projectRoot === configsDir) {
+    return null;
+  }
+
+  const declaredRootSource = declaredSources.some((source) => {
+    if (source.config.type !== "local") {
+      return false;
+    }
+    return resolve(projectRoot, source.config.path) === projectRoot;
+  });
+  if (declaredRootSource) {
+    return null;
+  }
+
+  if (!await looksLikeRepoLocalSource(projectRoot)) {
+    return null;
+  }
+
+  return {
+    name: await resolveRepoLocalSourceName(projectRoot),
+  };
+}
+
+async function looksLikeRepoLocalSource(projectRoot: string): Promise<boolean> {
+  if (await pathExists(join(projectRoot, "actant.json"))) {
+    return true;
+  }
+
+  for (const dirname of ["skills", "prompts", "mcp", "workflows", "templates", "presets", "backends"]) {
+    try {
+      const entry = await stat(join(projectRoot, dirname));
+      if (entry.isDirectory()) {
+        return true;
+      }
+    } catch {
+      // Ignore missing directories during bootstrap discovery.
+    }
+  }
+
+  return false;
+}
+
+async function resolveRepoLocalSourceName(projectRoot: string): Promise<string> {
+  try {
+    const raw = await readFile(join(projectRoot, "actant.json"), "utf-8");
+    const parsed = JSON.parse(raw) as { name?: unknown };
+    if (typeof parsed.name === "string" && parsed.name.trim().length > 0) {
+      return parsed.name.trim();
+    }
+  } catch {
+    // Fall back to the repo directory name when manifest discovery fails.
+  }
+
+  return basename(projectRoot);
 }
 
 function createProjectSource(

@@ -12,6 +12,10 @@
   "scripts": {
     "build": "pnpm -r run build",
     "dev": "pnpm --filter @actant/cli run dev",
+    "dev:actant": "node scripts/run-workspace-entry.mjs packages/cli/src/bin/actant.ts",
+    "dev:acthub": "node scripts/run-workspace-entry.mjs packages/cli/src/bin/acthub.ts",
+    "dev:mcp": "node scripts/run-workspace-entry.mjs packages/mcp-server/src/index.ts",
+    "test:bootstrap": "node scripts/bootstrap-smoke.mjs",
     "test": "vitest run",
     "test:changed": "vitest run --changed",
     "test:endurance": "vitest run --config vitest.endurance.config.ts",
