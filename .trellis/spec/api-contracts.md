@@ -2254,31 +2254,48 @@ Agent / External Client
 
 ---
 
-### 8.8a MCP 双模式契约（2026-03）
+### 8.8a CLI-first Hub 自举契约（2026-03）
 
-> 当前阶段，`@actant/mcp-server` 不再只被视为 daemon RPC 的薄包装层；它同时承担“项目上下文入口 / bootstrap surface”的职责。使命未变，但首要任务转为先让 Agent 能理解并进入当前项目。
+> 当前阶段的正式自举入口是**已安装的 CLI**，而不是 MCP。`hub` 是单宿主进程上的 bootstrap capability surface。
 
-#### 模式一：`connected`
+#### 命令入口
 
-当 MCP server 可以连接 daemon 且 `daemon.ping` 成功时：
+| 入口 | 契约 | 说明 |
+|------|------|------|
+| `actant hub <subcommand>` | **正式入口** | 自举开发、项目上下文发现、Hub 能力访问的权威命令命名空间 |
+| `acthub <subcommand>` | **别名** | 仅提供短命令体验，不得引入任何语义偏差 |
 
-- MCP 进入 `connected` 模式
-- `vfs_*` 工具透传 daemon VFS
-- `actant` 工具可代理 runtime RPC
-- `/daemon/rpc-catalog.json` 反映真实 daemon 方法集合
+#### 宿主复用 / 自动拉起
 
-#### 模式二：`standalone`
+- `hub` 命令在宿主未运行时，可以自动拉起 `bootstrap` profile；
+- 若宿主已运行，必须优先复用现有进程；
+- `hub` 不得创建第二个独立 daemon，也不得把自己实现为单独的长期后台服务。
 
-当 MCP server 无法连接 daemon 时：
+#### `bootstrap` profile 最小契约
 
-- MCP 必须退化为 `standalone` project-context 模式，而不是直接失败退出
-- `vfs_*` 工具仍可用，但只暴露只读项目上下文
-- `actant` 工具必须拒绝 runtime RPC，并明确提示需要启动 daemon
-- standalone 不负责进程管理、session 管理或 runtime mutation
+| 模块 / 服务 | `bootstrap` | 说明 |
+|-------------|-------------|------|
+| Host Kernel | 必须 | 进程、配置、生命周期最小宿主能力 |
+| Hub Core | 必须 | `hub` 命令路由、项目发现、能力发现 |
+| Project Context Registry | 必须 | 项目级上下文、作用域与来源汇总 |
+| Source / Config Loader | 必须 | sources、configs、索引与缓存加载 |
+| 只读 VFS | 必须 | 为 `hub` / project-context 提供稳定读取面 |
+| Agent Runtime 框架注册 | 可选 | 允许注册模块，但不代表服务被激活 |
+| `AgentService` | **默认禁止** | 不得因 bootstrap 自动实例化 |
+| Scheduler | **默认禁止** | 不得因 `hub` 自动启动 |
+| 平台级 Kernel Agents | **默认禁止** | 不得因 bootstrap 自动启用 |
+| MCP bridge / server | **默认禁止** | 不是 bootstrap 成立的前提条件 |
 
-#### 初始发现入口
+#### 激活规则
 
-无论是否连接 daemon，客户端都应优先读取：
+- 注册 runtime module ≠ 激活 runtime service；
+- 加载 Agent Runtime 框架 ≠ 启用 `AgentService`；
+- `hub` 命令不得通过依赖链隐式拉起 `AgentService`；
+- 需要完整 runtime 的场景必须走显式激活路径，而不是提升 `hub` 的默认职责。
+
+#### discovery entrypoint
+
+无论宿主是否刚被自动拉起，客户端都应优先读取：
 
 - `/project/context.json`
 
@@ -2294,9 +2311,31 @@ Agent / External Client
 - `sourceWarnings`
 - `components`
 
-#### standalone 最小挂载契约
+### 8.8b MCP 消费层契约（2026-03）
 
-standalone 模式至少应暴露以下挂载：
+> `@actant/mcp-server` 仍然可以存在，但它是**消费层 / 接入层**，不再是 bootstrap owner。
+
+#### 模式一：`connected`
+
+当 MCP server 连接到 Actant host 且 `daemon.ping` 成功时：
+
+- MCP 进入 `connected` 模式；
+- `vfs_*` 工具透传 host / daemon VFS；
+- `actant` 工具仅代理宿主已经显式开放的 runtime RPC；
+- MCP 不得定义强于 CLI / hub 的额外 bootstrap 语义。
+
+#### 模式二：`detached-readonly`
+
+当 MCP server 未连接到 Actant host 时：
+
+- MCP 可以退化为 `detached-readonly` project-context 模式；
+- `vfs_*` 工具仍可用，但只暴露只读项目上下文；
+- `actant` 工具必须拒绝 runtime RPC，并提示先通过 `actant hub` 或显式 daemon 启动路径建立宿主；
+- 该模式不负责进程管理、session 管理或 runtime mutation。
+
+#### detached-readonly 最小挂载契约
+
+`detached-readonly` 模式至少应暴露以下挂载：
 
 - `/project`
 - `/workspace`
@@ -2309,22 +2348,22 @@ standalone 模式至少应暴露以下挂载：
 
 其中：
 
-- `/project/context.json` 提供项目摘要与 warning 面
-- `/project/actant.project.json` 提供当前生效的项目配置视图
-- `/project/sources.json` 提供已声明 sources 摘要
-- `/daemon/health.json` 在 standalone 下应返回虚拟健康信息，版本可标记为 `standalone`
-- `/daemon/rpc-catalog.json` 在 standalone 下可为空集合
+- `/project/context.json` 提供项目摘要与 warning 面；
+- `/project/actant.project.json` 提供当前生效的项目配置视图；
+- `/project/sources.json` 提供已声明 sources 摘要；
+- `/daemon/health.json` 在 detached-readonly 下应返回虚拟健康信息，版本可标记为 `standalone`；
+- `/daemon/rpc-catalog.json` 在 detached-readonly 下可为空集合。
 
 #### 工具行为约束
 
-| 工具 | connected | standalone |
-|------|-----------|------------|
-| `vfs_read` | 透传 daemon VFS | 读取只读项目上下文 VFS |
-| `vfs_list` | 透传 daemon VFS | 枚举项目上下文挂载与只读目录 |
-| `vfs_describe` | 透传 daemon VFS | 返回 standalone mount 元数据 |
-| `vfs_grep` | 透传 daemon VFS | 在对应 standalone source 上执行 |
-| `vfs_write` | 按 daemon 能力执行 | 仅在目标 source 显式支持时允许；当前 project-context 设计默认为只读 |
-| `actant` | 允许代理 daemon RPC | 必须报错并提示 “Start the Actant daemon for runtime operations” |
+| 工具 | connected | detached-readonly |
+|------|-----------|-------------------|
+| `vfs_read` | 透传 host / daemon VFS | 读取只读项目上下文 VFS |
+| `vfs_list` | 透传 host / daemon VFS | 枚举项目上下文挂载与只读目录 |
+| `vfs_describe` | 透传 host / daemon VFS | 返回 detached mount 元数据 |
+| `vfs_grep` | 透传 host / daemon VFS | 在对应 detached source 上执行 |
+| `vfs_write` | 按宿主能力执行 | 仅在目标 source 显式支持时允许；当前 project-context 设计默认为只读 |
+| `actant` | 允许代理宿主已开放 RPC | 必须报错并提示先启动或复用 Actant host |
 
 ---
 

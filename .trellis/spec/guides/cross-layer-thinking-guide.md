@@ -139,6 +139,14 @@ For each boundary:
 
 **Why**: ACP 是协议传输 + 回调拦截层，加入业务语义会混淆关注点，也会使协议层难以替换。
 
+### Mistake 7: Letting Bootstrap Commands Transitively Activate Runtime Services
+
+**Bad**: `actant hub` / project-context discovery commands implicitly instantiate `AgentService`, scheduler, or platform kernel agents
+
+**Good**: Bootstrap path only loads host kernel + hub core + readonly project-context capabilities; runtime modules register lazily and require explicit activation
+
+**Why**: Self-bootstrap is sensitive to startup latency, memory footprint, and dependency spread. Hidden service activation makes the host heavier, harder to reason about, and much harder to keep stable across CLI / MCP / API surfaces.
+
 ---
 
 ## ACP Client Callback 层的职责边界
@@ -225,6 +233,7 @@ async readTextFile(params: ReadTextFileRequest) {
 - [ ] CLI and API commands call the same Core function
 - [ ] Config references resolved at the right time (creation, not load)
 - [ ] Agent process state verified before operations
+- [ ] Bootstrap path does not transitively activate `AgentService` / scheduler / platform agents
 - [ ] Error handling at each boundary (see [Error Handling](../backend/error-handling.md))
 
 ### After Implementation

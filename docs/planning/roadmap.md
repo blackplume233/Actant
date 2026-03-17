@@ -4,22 +4,21 @@
 > 更新节奏：当前任务推进、Issue 状态变更或里程碑调整时同步更新本文。
 > **Task 级 Todo**：在本文持续迭代当前任务的勾选清单，随开发进展更新 `[ ]` → `[x]`，完成一项勾一项。
 
-### 当前最高优先：#279 统一通信层收敛（2026-03-14）
+### 当前最高优先：#296 / #297 CLI-first 自举宿主与 Hub 收口（2026-03-17）
 
-> 目标：建立 Actant 自有通信层 `ActantChannel`（ACP-Like），用 Claude Agent SDK 替代 ACP bridge binary，把 `service` 作为共享 runtime communication target，统一内外通信模型。紧随其后进行全项目回顾审查与稳定性修复。
+> 目标：让**正式安装的 `actant` CLI**成为 Actant 自举的第一控制面，以 `actant hub ...` 作为官方入口，在单宿主进程上提供 project-context-first 的 bootstrap surface。默认 profile 只加载 host kernel + hub core，不默认启用 `AgentService`。
 
-- [x] 新增统一通信层规范：`.trellis/spec/communication-layer.md`
-- [x] 同步 authoritative spec：`index.md` / `agent-lifecycle.md` / `api-contracts.md` / `config-spec.md`
-- [x] 明确 `proxy` 对运行中 `service` 默认 lease-first，而非 direct-bridge-first
-- [x] 明确 `running service` 的目标语义是 communication-ready，而非仅 process-alive
-- [x] 明确 Actant 对外是 runtime facade，`claude-code` 等仅为内部 backend adapter
-- [ ] **定义 `ActantChannel` 接口**（session / prompt / stream / cancel / notification / readiness）
-- [ ] **实现 `ClaudeAgentSdkAdapter`**（用 `@anthropic-ai/claude-agent-sdk` 的 `query()` 封装）
-- [ ] **迁移 `AgentManager`** 从 `AcpConnectionManagerLike` 到 `ActantChannel`
-- [ ] **`@actant/acp` 重构**为纯外部 ACP 协议适配器
-- [ ] 后续实现收敛：把 CLI / Dashboard / RPC / internal communication 路由并入同一 communication router
-- [ ] 后续验证：覆盖 `service start => readiness`、`agent.prompt`、`proxy` lease-first、Dashboard session semantics、internal route alignment
-- [ ] **全项目回顾审查**：功能稳定性、正确性、基本功能修复、端到端流程验证
+- [x] **#296 已完成**：从 `@actant/core` 提取 project-context 相关 packages，作为轻宿主 / Hub 分层的先行 groundwork
+- [ ] **#297 收口**：明确 Project-level DomainContext、作用域边界与 reactive sync 接受线
+- [ ] 固化 `actant hub ...` 为官方自举命名空间
+- [ ] 提供 `acthub ...` 等价别名，但不形成第二套语义
+- [ ] `hub` 命令自动复用或拉起单个轻量 host，而不是创建第二个 daemon
+- [ ] 定义 `bootstrap` profile：host kernel + hub core + project context + source/config loader + 只读 VFS
+- [ ] 明确默认不实例化 `AgentService`、Scheduler、平台级 Kernel Agents
+- [ ] 明确 Agent Runtime 为可注册框架，但服务按需懒激活
+- [ ] 将 MCP 重定位为消费层入口，而不是 bootstrap owner
+- [ ] 验证轻量宿主的启动耗时、内存占用与热插拔成本
+- [ ] 完成全项目回顾审查与稳定性修复，确保新主线可作为自举基线
 
 ### Pi Mono 简洁哲学吸收（2026-03-15，#291 总入口）
 
@@ -328,9 +327,11 @@ Phase 2 (已完成)
 
 | Issue | 标题 | 优先级 | 依赖 | 状态 |
 |-------|------|--------|------|------|
-| **#279** | **统一通信层与 Runtime Facade 收敛 — ActantChannel + Claude Agent SDK** | **P0** | - | 🔥 **当前最高优先** |
+| **#297** | **Project-level DomainContext / 作用域 / reactive sync 收口** | **P0** | #296 | 🔥 **当前最高优先** |
+| **#296** | **从 core 提取 project-context packages** | **P0** | - | ✅ 已完成（2026-03-17） |
+| **#279** | **统一通信层与 Runtime Facade 收敛 — ActantChannel + Claude Agent SDK** | **P1** | 自举宿主主线稳定后 | 📋 作为支撑架构继续推进 |
 | **#135** | **Workflow 重定义为 Hook Package — 事件驱动自动化** | **P1** | #47 | ✅ 基础已完成，后续与 Plugin Core 继续整合 |
-| **#14** | **Actant 系统级 Plugin 体系（heartbeat/scheduler/memory 可插拔）** | **P1** | #22, #47 | 📋 待 #279 通信层稳定后推进 |
+| **#14** | **Actant 系统级 Plugin 体系（heartbeat/scheduler/memory 可插拔）** | **P1** | #22, #47 | 📋 待自举宿主与 Hub 边界稳定后推进 |
 | #122 | Employee/Service Mode 完善 / 调度增强 | P2 | #14, #210, #211 | 📋 待开始 |
 | **#134** | **agent open + interactionModes — 前台 TUI** | **P2** | - | ✅ 已完成 |
 | **#133** | **环境变量作为默认 provider 配置** | **P2** | - | 📋 待开始 |
@@ -347,15 +348,16 @@ Phase 2 (已完成)
 - Hook 类型体系、Hook EventBus、Hook Package 基础已完成
 - Dashboard 已从最小监控扩展为 React SPA + REST API + SSE + 事件流
 - 动态上下文注入与内置 MCP Server 已打通，Canvas 能力已可用
+- `#296` 已为轻宿主 / Hub 分层拆出 project-context 相关包
 - `agent open`、Pi 后端、ToolRegistry 硬化等外围能力已补齐
 
 **推荐推进顺序**：
-1. **🔥 #279 统一通信层收敛**：定义 `ActantChannel` 接口 → 实现 `ClaudeAgentSdkAdapter`（用 `@anthropic-ai/claude-agent-sdk` 替代 ACP bridge binary）→ 迁移 `AgentManager` → `@actant/acp` 退化为外部协议适配器
-2. **项目回顾审查与稳定性修复**：全面审查现有功能稳定性与正确性、修复 QA 发现的问题、基础端到端流程验证（create → start → prompt → stop 各 archetype）
-3. 近期收口任务：capability backend runtime model、Windows socket normalization
-4. 以 #14 Plugin Core 作为平台底座
-5. 在 #14 之上推进 #122 调度增强、#37 Initializer、#133 env provider
-6. 再推进 #136 Email 与 Memory 深化，形成协作与记忆闭环
+1. **🔥 #297 + Hub 主线收口**：明确 project-level context / scope / reactive sync → 固化 `actant hub` / `acthub` → 建立默认 `bootstrap` profile → 明确默认不启用 `AgentService`
+2. **轻宿主验证**：验证单宿主进程在热插拔模块前提下的启动耗时、内存占用、模块加载成本
+3. **项目回顾审查与稳定性修复**：全面审查现有功能稳定性与正确性、修复 QA 发现的问题、基础端到端流程验证（create → start → prompt → stop 各 archetype）
+4. **#279 统一通信层收敛**：作为支撑架构继续推进 `ActantChannel` / `ClaudeAgentSdkAdapter` / `@actant/acp` 外部适配器化
+5. 以 #14 Plugin Core 作为平台底座
+6. 在 #14 之上推进 #122 调度增强、#37 Initializer、#133 env provider，再推进 #136 Email 与 Memory 深化
 
 **#135 Hook 三层架构：**
 ```
@@ -426,13 +428,15 @@ Actant-side Plugin (#14, Phase 4):
 
 ## 当前进行中 (Current)
 
-Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#105/#106 增强项已关闭推迟。当前聚焦 **Phase 4 自治 Agent 平台**，本轮最高优先是 **#279 统一通信层收敛**（建立 Actant 自有通信层 `ActantChannel`、用 Claude Agent SDK 替代 ACP bridge binary、统一 runtime facade），紧随其后是**全项目回顾审查与稳定性修复**。
+Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#105/#106 增强项已关闭推迟。当前聚焦 **Phase 4 的 CLI-first 自举宿主 / Hub 主线**，本轮最高优先是 **#296 / #297 收口**：让正式安装的 CLI 成为第一控制面，围绕单宿主进程建立 project-context-first bootstrap surface，默认不启用 `AgentService`。在该主线稳定后，再继续推进统一通信层与其他平台底座能力。
 
 **当前产品定位基线：**
 - Actant 是 **底层平台**，承载 Agent App、SOP、CI、外部引擎集成等上层形态
 - `repo -> service -> employee` 是 **管理深度递进模型**，不是彼此竞争的三套产品
 - **service 是当前主交付形态**，应作为后续 platform/runtime 与产品集成的默认基线
-- **通信层收敛为当前最高优先（#279）**：建立 Actant 自有通信层 `ActantChannel`（ACP-Like），用 Claude Agent SDK 替代 ACP bridge binary 封装 claude-code，`@actant/acp` 退化为外部协议适配器；把 `service` 的 shared runtime、lease-first 路由、readiness、Dashboard chat、internal communication 统一到同一 contract
+- **CLI-first 自举是当前最高优先**：正式入口是 `actant hub`，`acthub` 只是别名；`hub` 挂在单宿主进程上，默认 profile 只加载 host kernel + hub core + project-context 能力
+- **默认不启用 `AgentService`**：Agent Runtime 可以存在，但 `AgentService`、Scheduler、平台级 Kernel Agents 都必须显式激活
+- **MCP 已降为消费层**：它可以复用同一宿主能力，但不再定义正式 bootstrap 路径
 - **employee 是自治增强层**，调度、心跳、持续运行能力在 service 之上叠加
 
 **已完成主线**：
@@ -454,9 +458,11 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 - ✅ `agent open` + interactionModes（#134）
 
 **当前主阻塞 / 主线任务**：
-- 🔥 **#279 统一通信层与 Runtime Facade 收敛** — **当前最高优先**：定义 `ActantChannel` 接口、实现 `ClaudeAgentSdkAdapter`（用 `@anthropic-ai/claude-agent-sdk` 替代 ACP bridge）、`@actant/acp` 退化为外部协议适配器
-- 🔍 **项目回顾审查与稳定性修复** — 紧随 #279 之后：全面审查现有功能稳定性与正确性、修复 QA 发现的基础问题、端到端流程验证
-- 📋 #14 Actant 系统级 Plugin 体系 — 待 #279 通信层稳定后推进
+- 🔥 **#297 Project-level DomainContext / 作用域 / reactive sync 收口** — **当前最高优先**：完成 project-context-first 的接受线定义
+- 🔥 **Hub / 轻宿主收口** — 固化 `actant hub` / `acthub`、默认 `bootstrap` profile、单宿主进程复用、默认不启用 `AgentService`
+- 🔍 **项目回顾审查与稳定性修复** — 紧随自举主线之后：全面审查现有功能稳定性与正确性、修复 QA 发现的基础问题、端到端流程验证
+- 📋 **#279 统一通信层与 Runtime Facade 收敛** — 作为支撑架构继续推进
+- 📋 #14 Actant 系统级 Plugin 体系 — 待自举宿主与 Hub 边界稳定后推进
 - 📋 #122 调度增强 — 依赖 Plugin Core + Context Injection
 - 📋 #37 Extensible Initializer — 依赖 Plugin / Runtime 集成收敛
 - 📋 #133 环境变量作为默认 provider 配置 — 后端可用性与 DX 基础
@@ -527,38 +533,41 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 
 ## 后续优先 (Next Up)
 
-按依赖关系与平台价值排序。当前最高优先是 **#279 通信层收敛**，紧随其后是**全项目回顾审查与稳定性修复**，然后再推进平台底座。
+按依赖关系与平台价值排序。当前最高优先是 **CLI-first 自举宿主与 Hub 收口（#296 / #297）**，紧随其后是**全项目回顾审查与稳定性修复**；`#279` 作为支撑架构随后推进，再继续平台底座。
 
-### A. 通信层收敛（🔥 当前最高优先）
-
-| 顺序 | 项目 | 类型 | 说明 |
-|------|------|------|------|
-| 1 | **#279 统一通信层** | architecture | 定义 `ActantChannel` 接口 → `ClaudeAgentSdkAdapter` 实现 → `AgentManager` 迁移 → `@actant/acp` 退化为外部适配器 |
-
-### B. 项目回顾审查与稳定性修复（紧随 #279 之后）
+### A. CLI-first 自举宿主与 Hub 收口（🔥 当前最高优先）
 
 | 顺序 | 项目 | 类型 | 说明 |
 |------|------|------|------|
-| 2 | **全面功能审查** | review | 回顾现有全部功能的稳定性、正确性、代码质量；端到端流程验证（create → start → prompt → stop 各 archetype） |
-| 3 | **QA 问题修复** | bugfix | 修复 QA 发现的 service communication 及基础功能问题 |
-| 4 | `03-11-capability-backend-runtime` | planning task | 收口 backend/runtime capability model，明确能力抽象与实现边界 |
-| 5 | `03-11-issue276-daemon-socket-normalization` | planning task | 修复 Windows daemon socket path / normalization 稳定性问题 |
+| 1 | **#297 Project-level DomainContext 收口** | architecture | 明确 project-level context、作用域边界、reactive sync 接受线，为 `hub` 自举面定基线 |
+| 2 | **Hub 命名空间 / 轻宿主** | architecture | 固化 `actant hub` 正式入口与 `acthub` 别名；定义单宿主进程 + `bootstrap` profile + 默认不启用 `AgentService` |
+| 3 | **#296 project-context package groundwork** | shipped groundwork | 已完成；作为轻宿主 / Hub 分层与后续热插拔模块化的包结构基础 |
 
-### C. 治理收口
+### B. 项目回顾审查与稳定性修复（紧随自举主线之后）
 
 | 顺序 | 项目 | 类型 | 说明 |
 |------|------|------|------|
-| 6 | `#278 Slice 2` | governance slice | 清理仍会误导主线的历史文档、FAQ、design/planning/wiki 表述，逐条映射冲突项（至少覆盖 C-01 / C-02 / C-04 / C-05 / C-08） |
-| 7 | `#278 Slice 3` | governance slice | 收口验证与契约入口：补 issue 跟踪、最小必要的契约/索引同步，并把 archetype-oriented validation 入口固定下来 |
+| 4 | **全面功能审查** | review | 回顾现有全部功能的稳定性、正确性、代码质量；端到端流程验证（create → start → prompt → stop 各 archetype） |
+| 5 | **QA 问题修复** | bugfix | 修复 QA 发现的 service communication 及基础功能问题 |
+| 6 | `03-11-capability-backend-runtime` | planning task | 收口 backend/runtime capability model，明确能力抽象与实现边界 |
+| 7 | `03-11-issue276-daemon-socket-normalization` | planning task | 修复 Windows daemon socket path / normalization 稳定性问题 |
+
+### C. 支撑架构与治理收口
+
+| 顺序 | 项目 | 类型 | 说明 |
+|------|------|------|------|
+| 8 | **#279 统一通信层** | supporting architecture | 定义 `ActantChannel` 接口 → `ClaudeAgentSdkAdapter` → `AgentManager` 迁移 → `@actant/acp` 外部适配器化 |
+| 9 | `#278 Slice 2` | governance slice | 清理仍会误导主线的历史文档、FAQ、design/planning/wiki 表述，逐条映射冲突项（至少覆盖 C-01 / C-02 / C-04 / C-05 / C-08） |
+| 10 | `#278 Slice 3` | governance slice | 收口验证与契约入口：补 issue 跟踪、最小必要的契约/索引同步，并把 archetype-oriented validation 入口固定下来 |
 
 ### D. 平台底座（Phase 4 核心）
 
 | 顺序 | Issue | 标题 | 依赖 | 说明 |
 |------|-------|------|------|------|
-| 8 | **#14** | Actant 系统级 Plugin 体系 | #22, #47, #279 通信层稳定 | 统一 runtime / hooks / domainContext 三插口能力 |
-| 9 | **#122** | 调度器四模式增强 | #14, #210, #211 | 已完成主链：DelayInput、InputSourceRegistry、schedule.wait/cron/cancel RPC、MCP schedule tools、E-SCHED endurance；后续仅剩更深 plugin wiring / 可观测性补强 |
-| 10 | **#37** | Extensible Initializer | #14（集成收敛后收益更高） | 已完成主链：StepRegistry、InitializationPipeline、AgentInitializer 集成执行、initializer 预检、7 个内置步骤（含 file-template/write-file） |
-| 11 | **#133** | 环境变量作为默认 provider 配置 | 与 #37 可并行 | 已完成核心运行时收口：template > env > registry default，backend-aware provider env 注入已统一；后续仅剩 planning/docs 状态同步 |
+| 11 | **#14** | Actant 系统级 Plugin 体系 | #22, #47, 自举宿主边界稳定 | 统一 runtime / hooks / domainContext 三插口能力 |
+| 12 | **#122** | 调度器四模式增强 | #14, #210, #211 | 已完成主链：DelayInput、InputSourceRegistry、schedule.wait/cron/cancel RPC、MCP schedule tools、E-SCHED endurance；后续仅剩更深 plugin wiring / 可观测性补强 |
+| 13 | **#37** | Extensible Initializer | #14（集成收敛后收益更高） | 已完成主链：StepRegistry、InitializationPipeline、AgentInitializer 集成执行、initializer 预检、7 个内置步骤（含 file-template/write-file） |
+| 14 | **#133** | 环境变量作为默认 provider 配置 | 与 #37 可并行 | 已完成核心运行时收口：template > env > registry default，backend-aware provider env 注入已统一；后续仅剩 planning/docs 状态同步 |
 
 ### E. 协作与外置扩展
 

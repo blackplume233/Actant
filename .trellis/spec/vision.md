@@ -60,40 +60,48 @@ Actant 致力于成为 **Agent 应用开发平台**。
 
 ### 当前阶段的首要任务
 
-当前阶段优先级已经从“继续平均推进所有平台能力面”切换为“先让 Agent 真正进入项目并开始工作”。
+当前阶段优先级已经从“继续平均推进所有平台能力面”切换为“先用正式安装的 CLI 让 Agent 真正进入项目并开始工作”。
 
 这意味着当前主线应优先解决：
 
-1. **项目级上下文入口**
-   - Agent 前端应能先通过 Actant 发现当前项目的共享上下文，而不是先依赖完整 daemon runtime。
+1. **正式 CLI 作为第一控制面**
+   - 自举阶段以已安装的 `actant` CLI 为准，而不是本地源码入口、临时脚本或 MCP 配置。
+   - 正式自举命名空间是 `actant hub ...`；`acthub ...` 只是等价别名，不形成第二套产品语义。
 2. **自举开发闭环**
    - Actant 应优先能够帮助开发 Actant 自身，成为进入项目、获取上下文、发现能力、驱动协作的第一入口。
-3. **project-context first, runtime-enhancement second**
+   - “CLI-first”不等于“无 daemon”；允许存在轻量常驻宿主进程，但控制面必须仍然是正式 CLI。
+3. **单宿主进程 + Hub 自举面**
+   - `hub` 是单个 daemon host 上的 bootstrap capability surface，而不是第二个独立 daemon。
+   - 默认自举配置应只加载 host kernel + hub core + project-context 相关能力，保持可热插拔、低内存占用。
+4. **project-context first, runtime-enhancement second**
    - daemon 在线时的 live runtime 视图是增强项；
-   - 无 daemon 时仍可提供静态项目上下文，是当前阶段的基础要求。
+   - 默认自举不应实例化 `AgentService`；
+   - Agent Runtime 可以作为框架存在，但运行时服务必须按需懒激活。
 
-### 当前阶段中 MCP 的职责
+### 当前阶段中 CLI / Hub / MCP 的职责
 
-当前讨论中的 MCP，不应被理解为“再加一个协议接入点”，而应被理解为：
+当前阶段的职责边界应明确为：
 
-- **Project Context Gateway**：Agent 进入项目时的第一站；
-- **Bootstrap Surface**：自举开发中的默认查询与操作入口；
-- **Runtime Bridge 的超集**：daemon 在线时桥接运行时能力，但不应仅停留在 daemon RPC 壳。
+- **CLI**：正式的自举控制面，负责启动、复用和驱动宿主能力。
+- **Hub**：挂在单宿主进程上的 bootstrap surface，负责项目上下文发现、能力发现、只读 VFS/索引访问与后续扩展的统一入口。
+- **MCP**：同一宿主能力之上的消费层 / 接入层，而不是当前阶段的 bootstrap owner。
 
-因此，MCP 在当前阶段承担的是“先让 Agent 看见项目并开始工作”的职责，而不是替代 Actant 的长期平台定位。
+因此，MCP 在当前阶段不再承担“第一入口”的职责；它可以继续作为消费层存在，但不应反向定义 Actant 的正式自举路径。
 
 ### 当前阶段的设计取舍
 
 在这个阶段，设计与排期应优先遵循：
 
 - 先定义 `Project-level DomainContext`，再决定大规模 runtime 改造；
-- 先定义作用域、暴露面和同步模型，再决定外部 MCP surface；
-- 先做最小可自举闭环，再做大而全的包级纯化。
+- 先定义 `hub` 的控制面、作用域和同步模型，再决定消费层接入形式；
+- 先做最小可自举闭环，再做大而全的包级纯化；
+- 允许 Agent Runtime 框架先存在，但必须把“模块已注册”和“服务已激活”严格区分开。
 
 因此：
 
-- `actant.project.json`、作用域隔离、reactive sync 是当前主线；
-- 现有 daemon-bridge MCP 是过渡形态，不应直接当作最终产品定义；
+- `actant hub`、`acthub` 别名、bootstrap profile、`actant.project.json`、作用域隔离、reactive sync 是当前主线；
+- 默认启动应收敛到 host kernel + hub core，而不是默认拉起完整 runtime service 集；
+- MCP 应移动到消费层，而不是继续占据 bootstrap owner 位置；
 - `@actant/core` 的大规模拆分只应在它明确服务于 project-context / bootstrap 目标时推进。
 
 ## 核心抽象
