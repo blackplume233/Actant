@@ -4,5 +4,6 @@
   "status": "planning",
   "issueRef": 158,
   "createdAt": "2026-02-24T23:16:00",
-  "developer": "cursor-agent"
+  "developer": "cursor-agent",
+  "notes": "Implementation appears to have landed via merge commit d69725b, but GitHub issue #158 is still open as of 2026-03-17, so this task stays active until issue state is reconciled."
 }

@@ -50,6 +50,21 @@ docs/wiki/node_modules/
 # QA Alpha persistent environment
 .trellis/qa-alpha/
 
+# Repo-local self-host/bootstrap runtime sandboxes
+.trellis/runtime/**
+!.trellis/runtime/
+!.trellis/runtime/README.md
+
+# Ephemeral QA runtime artifacts under active task folders
+.trellis/tasks/**/home/
+.trellis/tasks/**/home-round*/
+.trellis/tasks/**/detached-home/
+.trellis/tasks/**/detached-home*/
+.trellis/tasks/**/standalone-round*/
+.trellis/tasks/**/round*-status.txt
+.trellis/tasks/**/round*-status.err.txt
+.trellis/tasks/**/round*-status.json
+
 # Local npm cache
 .npm-cache/
 .npm-cache-local/

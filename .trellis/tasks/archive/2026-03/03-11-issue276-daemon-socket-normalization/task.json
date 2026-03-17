@@ -3,14 +3,14 @@
   "name": "issue276-daemon-socket-normalization",
   "title": "Fix Windows daemon socket normalization",
   "description": "修复 Windows 平台 daemon socket path / normalization 行为，解决跨平台 socket 路径规范化带来的稳定性问题。该任务属于近期平台稳定性补丁，用于降低 Phase 4 主线开发中的环境噪音，而不是新的产品主线。完成后应同步对齐 roadmap、phase4-plan、相关测试与验证说明。",
-  "status": "planning",
+  "status": "completed",
   "dev_type": "bugfix",
   "scope": "windows-stability",
   "priority": "P2",
   "creator": "cursor-agent",
   "assignee": "cursor-agent",
   "createdAt": "2026-03-11",
-  "completedAt": null,
+  "completedAt": "2026-03-17",
   "branch": null,
   "base_branch": "master",
   "worktree_path": null,
@@ -21,7 +21,7 @@
     {"phase": 3, "action": "finish"},
     {"phase": 4, "action": "create-pr"}
   ],
-  "commit": null,
+  "commit": "402a388",
   "pr_url": null,
   "subtasks": [],
   "relatedFiles": [
@@ -29,5 +29,5 @@
     "docs/planning/phase4-plan.md",
     "docs/planning/phase4-employee-steps.md"
   ],
-  "notes": "Positioned in roadmap/phase4-plan as a near-term Windows stability patch, not a new product direction. Priority stays P2. It should reduce platform-specific noise before or alongside #14 / #122 work, and its verification should cover Windows daemon socket path normalization behavior."
+  "notes": "Archived after verifying the Windows socket normalization fix landed via commit 402a388 and the QA report passed targeted regression coverage."
 }

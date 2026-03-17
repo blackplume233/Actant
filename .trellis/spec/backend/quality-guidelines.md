@@ -1153,6 +1153,57 @@ describe("TemplateLoader", () => {
 
 ---
 
+### Repo-local Bootstrap Runtime Sandboxes
+
+When validating `hub`, `acthub`, or MCP bootstrap flows inside this repository, keep
+mutable runtime state separate from task evidence.
+
+- `.trellis/tasks/<task>/` stores durable logs, reports, screenshots, and conclusions.
+- `.trellis/runtime/<sandbox>/` stores `ACTANT_HOME`, sockets, pid files, standalone
+  binaries, and other local runtime state.
+
+Prefer a stable sandbox such as `.trellis/runtime/bootstrap-dev/` for repeated
+self-host/bootstrap work instead of creating `home-round*` and `standalone-round*`
+directories directly under a task folder.
+
+```powershell
+# Good: runtime state lives under .trellis/runtime/
+$env:ACTANT_HOME = (Resolve-Path ".trellis/runtime/bootstrap-dev/home").Path
+pnpm run dev:actant -- hub status -f json
+node scripts/install-local.mjs --standalone --install-dir .trellis/runtime/bootstrap-dev/standalone
+
+# Durable records stay under the task folder
+.trellis/tasks/qa-loop-cli-hub-bootstrap/qa-report-round9.md
+```
+
+```powershell
+# Bad: runtime state and large binaries are mixed into the task folder
+$env:ACTANT_HOME = (Resolve-Path ".trellis/tasks/qa-loop-cli-hub-bootstrap/home-round9").Path
+node scripts/install-local.mjs --standalone --install-dir .trellis/tasks/qa-loop-cli-hub-bootstrap/standalone-round9
+```
+
+**Why**:
+- task folders are institutional memory, not local runtime homes
+- standalone binaries are large and will pollute `git status` if mixed into task output
+- a fixed repo-local runtime area makes cleanup, reuse, and repro much more predictable
+
+### Common Mistake: Mixing QA Runtime State into `.trellis/tasks/`
+
+**Symptom**: `git status` keeps showing `home-round*`, `standalone-round*`, and
+`round*-status.*`; task folders become unexpectedly large and may contain hundreds of
+MB of `actant.exe` / `acthub.exe`.
+
+**Cause**: `ACTANT_HOME`, standalone install output, and task evidence were written into
+the same directory tree.
+
+**Fix**: Move runtime state into `.trellis/runtime/<sandbox>/`, keep task folders for
+durable reports only, and add ignore rules for runtime artifacts.
+
+**Prevention**: Before starting a repo-local QA/bootstrap loop, define both paths up
+front:
+- report root: `.trellis/tasks/<task>/`
+- runtime root: `.trellis/runtime/<sandbox>/`
+
 ## Code Review Checklist
 
 Before approving any feature:

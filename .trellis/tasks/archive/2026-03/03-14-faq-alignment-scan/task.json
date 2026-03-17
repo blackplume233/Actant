@@ -3,14 +3,14 @@
   "name": "faq-alignment-scan",
   "title": "Scan FAQ alignment and implementation gaps",
   "description": "Governance scan for aligning current docs, specs, plans, implementation structure, and verification assets with the AgentCraft FAQ framing. Focus on Actant as a lower-layer platform, archetype progression repo->service->employee, service as the default main delivery shape, employee as an autonomy-enhanced shape, plugin boundary cleanup, and archetype-oriented verification. This task now also produces an expanded Chinese issue draft with historical-content review, concept contraction, repository current-state整理, execution checklist, and suggested follow-up issues.",
-  "status": "planning",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "priority": "P1",
   "creator": "cursor-agent",
   "assignee": "cursor-agent",
   "createdAt": "2026-03-14",
-  "completedAt": null,
+  "completedAt": "2026-03-17",
   "branch": null,
   "base_branch": "master",
   "worktree_path": null,
@@ -45,5 +45,5 @@
     ".trellis/spec/api-contracts.md",
     ".trellis/spec/endurance-testing.md"
   ],
-  "notes": "Issue draft expanded in chat; generated artifacts include issue-draft.zh.md, conflict-register.zh.md, and repo-current-state.zh.md. Next execution step is optional GitHub issue creation or splitting follow-up sub-issues."
+  "notes": "Archived as a completed deliverable. The requested governance scan artifacts were produced: issue-draft.zh.md, conflict-register.zh.md, and repo-current-state.zh.md. Any follow-up GitHub issue creation or task splitting should happen as separate work."
 }

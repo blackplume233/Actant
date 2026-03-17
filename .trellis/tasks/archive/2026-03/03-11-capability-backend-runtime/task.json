@@ -3,14 +3,14 @@
   "name": "capability-backend-runtime",
   "title": "Capability-driven backend runtime model",
   "description": "收口 backend/runtime capability model，明确 capability 与 backend/runtime abstraction 的边界，作为近期模型治理任务服务于 Phase 4 主线，而不是开启新的产品方向。目标是为后续 Plugin Core、调度增强、Initializer、provider/env 注入提供更稳定的一致能力模型。完成后应同步对齐 roadmap、phase4-plan、相关 spec 与验证口径。",
-  "status": "planning",
+  "status": "completed",
   "dev_type": "planning",
   "scope": "runtime-model",
   "priority": "P2",
   "creator": "cursor-agent",
   "assignee": "cursor-agent",
   "createdAt": "2026-03-11",
-  "completedAt": null,
+  "completedAt": "2026-03-17",
   "branch": null,
   "base_branch": "master",
   "worktree_path": null,
@@ -21,7 +21,7 @@
     {"phase": 3, "action": "finish"},
     {"phase": 4, "action": "create-pr"}
   ],
-  "commit": null,
+  "commit": "4920184",
   "pr_url": null,
   "subtasks": [],
   "relatedFiles": [
@@ -29,5 +29,5 @@
     "docs/planning/phase4-plan.md",
     "docs/planning/phase4-employee-steps.md"
   ],
-  "notes": "Positioned in roadmap/phase4-plan as a near-term stabilization and model-closure task. Priority stays P2. It should complete before or alongside #14 Plugin Core planning/implementation so Phase 4 core work builds on a clearer backend/runtime capability model."
+  "notes": "Archived after verifying the capability-driven backend runtime work landed via commits 5760fe8 and 4920184, and phase4-plan already marks it completed."
 }

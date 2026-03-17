@@ -3,14 +3,14 @@
   "name": "fix-agent-status-sync",
   "title": "Fix #155: Agent instance status stuck on error while actually running",
   "description": "Agent 实例状态卡在 error 但进程正在正常运行。根因：startAgent() catch 块未清理已 spawn 的进程（进程泄漏+状态不一致），handleProcessExit() 对 direct 模式使用错误退出状态，initialize() 不修正 error/crashed 状态的孤儿进程。",
-  "status": "planning",
+  "status": "completed",
   "dev_type": "fix",
   "scope": "core",
   "priority": "P2",
   "creator": "cursor-agent",
   "assignee": "cursor-agent",
   "createdAt": "2026-02-24",
-  "completedAt": null,
+  "completedAt": "2026-03-17",
   "branch": "vk/7b37-155",
   "base_branch": "master",
   "worktree_path": null,
@@ -21,7 +21,7 @@
     {"phase": 3, "action": "finish"},
     {"phase": 4, "action": "create-pr"}
   ],
-  "commit": null,
+  "commit": "3c9f6f1",
   "pr_url": null,
   "subtasks": [
     {

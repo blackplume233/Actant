@@ -81,6 +81,16 @@ pnpm run dev:mcp
 pnpm run test:bootstrap
 ```
 
+推荐把持续保留的自举运行目录统一放在 `.trellis/runtime/bootstrap-dev/`，而不要继续散落到具体 task 目录里。例如：
+
+```powershell
+$env:ACTANT_HOME = (Resolve-Path ".trellis/runtime/bootstrap-dev/home").Path
+pnpm run dev:actant -- hub status -f json
+node scripts/install-local.mjs --standalone --install-dir .trellis/runtime/bootstrap-dev/standalone
+```
+
+任务目录保留日志、报告和结论；运行态 home、standalone 二进制、socket、pid 等本地产物统一放到这个 runtime 区，后续自举开发和问题复现都会更干净。
+
 这些命令会通过 `scripts/run-workspace-entry.mjs` 先把 workspace 入口 bundle 成可运行的临时 ESM，再启动同一套源码包依赖，适合验证：
 
 - `actant hub status` 的 bootstrap host 自动拉起

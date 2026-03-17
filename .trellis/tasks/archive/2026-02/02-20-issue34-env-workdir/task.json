@@ -1,16 +1,16 @@
 {
-  "id": "issue278-doc-spec-alignment",
-  "name": "issue278-doc-spec-alignment",
-  "title": "issue-278-doc-spec-alignment",
+  "id": "issue34-env-workdir",
+  "name": "issue34-env-workdir",
+  "title": "Fix #34 AGENTCRAFT_HOME + Agent workDir option",
   "description": "",
-  "status": "planning",
+  "status": "completed",
   "dev_type": null,
   "scope": null,
   "priority": "P2",
   "creator": "cursor-agent",
   "assignee": "cursor-agent",
-  "createdAt": "2026-03-14",
-  "completedAt": null,
+  "createdAt": "2026-02-20",
+  "completedAt": "2026-03-17",
   "branch": null,
   "base_branch": "master",
   "worktree_path": null,
@@ -25,5 +25,5 @@
   "pr_url": null,
   "subtasks": [],
   "relatedFiles": [],
-  "notes": ""
+  "notes": "Archived after verifying the historical workDir implementation had already landed and the related issue tracking was already archived."
 }
