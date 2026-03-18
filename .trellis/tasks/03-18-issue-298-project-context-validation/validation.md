@@ -78,8 +78,12 @@ Bootstrap fixture manifest:
 Commands run:
 
 ```powershell
+pnpm --filter @actant/core build
+pnpm --filter @actant/pi build
 pnpm --filter @actant/shared type-check
+pnpm --filter @actant/api type-check
 pnpm --filter @actant/mcp-server type-check
+pnpm --filter @actant/mcp-server exec vitest run src/context-backend.test.ts
 $env:LOG_LEVEL='silent'; node .trellis/tasks/03-18-issue-298-project-context-validation/validate-project-context.mjs
 ```
 
@@ -88,17 +92,23 @@ Artifacts:
 - `validation-result.json` contains the machine-readable output
 - `validate-project-context.mjs` is the reproducible validation entry
 
-Additional checks attempted:
+Final-artifact repair required before the blocked checks would pass:
 
 ```powershell
-pnpm --filter @actant/api type-check
-pnpm --filter @actant/mcp-server exec vitest run src/context-backend.test.ts
+pnpm --filter @actant/core build
+pnpm --filter @actant/pi build
 ```
 
-Both failures are pre-existing workspace/dist drift outside the issue-298 change set:
+The root causes were:
 
-- `@actant/api type-check` fails because current `@actant/core` workspace exports seen by `tsc --noEmit` do not match the repo state
-- the focused Vitest run fails while importing `packages/pi/dist/index.js` because `./pi-builder` is missing from current dist output
+- `@actant/core` was shipping JS without a stable matching `dist/*.d.ts` surface
+- `@actant/pi` was shipping `dist/index.js` that re-exported `./pi-builder` without emitting `pi-builder.js`
+
+The repair was to:
+
+- split JS and declaration generation for `core` and `pi` so `tsup` builds JS and `tsc -p tsconfig.build.json` emits declarations
+- emit `pi-builder.js`, `pi-communicator.js`, `pi-tool-bridge.js`, and `package-version.js` as final artifacts
+- fix the bootstrap fixture test to resolve from repository root rather than package-local `cwd`
 
 ## Results
 
@@ -156,6 +166,7 @@ Pass.
 Pass.
 
 Using only checked-in files plus the validation loader output, Codex can answer the required questions.
+The final verification now uses the built artifact `packages/api/dist/services/project-context.js`, not a source-only shortcut.
 
 For the root repo:
 
@@ -178,10 +189,10 @@ Validated in this issue:
 - reusable project-context reader skill
 - minimal bootstrap fixture checked into the repo
 - deterministic machine-readable validation output for repo root and empty-dir fixture
+- repaired final-artifact export/declaration surfaces for `@actant/core` and `@actant/pi` so `@actant/api` type-check and focused `mcp-server` validation run cleanly
 
 Deferred to later productization:
 
 - source/project scope declaration and permission matching
 - large-scale project-context version management
 - installer/UI flows for creating project bootstrap assets
-- restoring unrelated repo-wide `@actant/core` / `@actant/api` / `@actant/pi` dist and export consistency

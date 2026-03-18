@@ -48,5 +48,5 @@
     ".trellis/spec/config-spec.md",
     ".trellis/spec/api-contracts.md"
   ],
-  "notes": "Planning task created manually because the Trellis bash helpers still hit CRLF issues when executed under bash in this Windows workspace. Final validation is recorded in validation.md and validation-result.json. Repo-wide @actant/api type-check and mcp-server vitest still expose unrelated pre-existing dist/export drift outside the issue-298 change set."
+  "notes": "Planning task created manually because the Trellis bash helpers still hit CRLF issues when executed under bash in this Windows workspace. Final validation is recorded in validation.md and validation-result.json. Final-artifact verification now passes after repairing @actant/core/@actant/pi dist and declaration generation."
 }

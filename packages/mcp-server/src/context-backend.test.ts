@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createStandaloneContext } from "./context-backend";
 
 const tempDirs: string[] = [];
+const repoRoot = resolve(import.meta.dirname, "..", "..", "..");
 
 async function makeTempProject(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "actant-mcp-test-"));
@@ -265,7 +266,7 @@ describe("createStandaloneContext", () => {
   });
 
   it("loads the checked-in minimal bootstrap example", async () => {
-    const projectDir = resolve(process.cwd(), "examples/project-context-bootstrap");
+    const projectDir = resolve(repoRoot, "examples", "project-context-bootstrap");
     const backend = await createStandaloneContext(projectDir);
     const context = JSON.parse((await backend.read("/project/context.json")).content) as {
       projectName: string;

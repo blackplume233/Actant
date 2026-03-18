@@ -33,12 +33,12 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && tsc -p tsconfig.build.json",
     "dev": "tsup --watch",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "clean": "rimraf dist",
-    "prepublishOnly": "tsup"
+    "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
     "@actant/shared": "workspace:0.3.0",
