@@ -4,6 +4,8 @@ import { TaskQueue } from "../task-queue";
 import { HeartbeatInput } from "./heartbeat-input";
 import { CronInput } from "./cron-input";
 import { HookInput } from "./hook-input";
+import { HookEventBusInput } from "./hook-event-bus-input";
+import { HookEventBus } from "../../hooks/hook-event-bus";
 import { InputRouter } from "./input-router";
 
 describe("HeartbeatInput", () => {
@@ -166,6 +168,81 @@ describe("HookInput", () => {
     emitter.emit("tick");
 
     expect(onTask).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("HookEventBusInput", () => {
+  it("start() subscribes to HookEventBus events", () => {
+    const bus = new HookEventBus();
+    const input = new HookEventBusInput(
+      { eventName: "process:start", prompt: "handle start" },
+      bus,
+    );
+    input.start("agent-a", vi.fn());
+    expect(input.active).toBe(true);
+    input.stop();
+    expect(input.active).toBe(false);
+  });
+
+  it("emitting event produces a task", () => {
+    const bus = new HookEventBus();
+    const onTask = vi.fn();
+    const input = new HookEventBusInput(
+      { eventName: "process:start", prompt: "handle start" },
+      bus,
+    );
+    input.start("agent-a", onTask);
+
+    bus.emit("process:start", { callerType: "system" }, "agent-a", { pid: 123 });
+
+    expect(onTask).toHaveBeenCalledTimes(1);
+    const task = onTask.mock.calls[0]?.[0];
+    expect(task?.agentName).toBe("agent-a");
+    expect(task?.prompt).toBe("handle start");
+    expect(task?.source).toBe("hook:process:start");
+  });
+
+  it("filters events by agentName", () => {
+    const bus = new HookEventBus();
+    const onTask = vi.fn();
+    const input = new HookEventBusInput(
+      { eventName: "process:start", prompt: "handle" },
+      bus,
+    );
+    input.start("agent-a", onTask);
+
+    bus.emit("process:start", { callerType: "system" }, "agent-b", {});
+
+    expect(onTask).not.toHaveBeenCalled();
+  });
+
+  it("prompt template {{payload}} is replaced", () => {
+    const bus = new HookEventBus();
+    const onTask = vi.fn();
+    const input = new HookEventBusInput(
+      { eventName: "process:start", prompt: "Process: {{payload}}" },
+      bus,
+    );
+    input.start("agent-a", onTask);
+
+    bus.emit("process:start", { callerType: "system" }, "agent-a", { id: 42 });
+
+    const task = onTask.mock.calls[0]?.[0];
+    expect(task?.prompt).toBe('Process: {"id":42}');
+  });
+
+  it("stop() unsubscribes from events", () => {
+    const bus = new HookEventBus();
+    const onTask = vi.fn();
+    const input = new HookEventBusInput(
+      { eventName: "process:start", prompt: "handle" },
+      bus,
+    );
+    input.start("agent-a", onTask);
+    input.stop();
+
+    bus.emit("process:start", { callerType: "system" }, "agent-a", {});
+    expect(onTask).not.toHaveBeenCalled();
   });
 });
 

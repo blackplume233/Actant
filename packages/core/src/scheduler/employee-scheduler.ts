@@ -1,4 +1,3 @@
-import { EventEmitter } from "node:events";
 import { randomUUID } from "node:crypto";
 import { createLogger } from "@actant/shared";
 import { TaskQueue } from "./task-queue";
@@ -7,7 +6,7 @@ import { ExecutionLog } from "./execution-log";
 import { InputRouter } from "./inputs/input-router";
 import { HeartbeatInput } from "./inputs/heartbeat-input";
 import { CronInput, type CronConfig } from "./inputs/cron-input";
-import { HookInput } from "./inputs/hook-input";
+import { HookEventBusInput } from "./inputs/hook-event-bus-input";
 import { DelayInput, type DelayInputConfig } from "./inputs/delay-input";
 import { InputSourceRegistry } from "./input-source-registry";
 import type { ScheduleConfigInput } from "./schedule-config";
@@ -31,7 +30,6 @@ export class EmployeeScheduler {
   private readonly log: ExecutionLog;
   private readonly router: InputRouter;
   private readonly registry: InputSourceRegistry;
-  private readonly legacyEventBus: EventEmitter;
   private readonly hookEventBus?: HookEventBus;
   private _running = false;
 
@@ -51,7 +49,6 @@ export class EmployeeScheduler {
     });
     this.router = new InputRouter(this.queue);
     this.registry = new InputSourceRegistry();
-    this.legacyEventBus = new EventEmitter();
   }
 
   /** Configure schedule from template config. */
@@ -66,8 +63,10 @@ export class EmployeeScheduler {
         eventBus: this.hookEventBus,
       }));
     }
-    for (const hookConfig of scheduleConfig.hooks ?? []) {
-      this.router.register(new HookInput(hookConfig, this.legacyEventBus));
+    if (this.hookEventBus) {
+      for (const hookConfig of scheduleConfig.hooks ?? []) {
+        this.router.register(new HookEventBusInput(hookConfig, this.hookEventBus));
+      }
     }
     logger.info({ agentName: this.agentName, sources: this.router.sourceCount }, "Schedule configured");
   }

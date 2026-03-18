@@ -30,7 +30,7 @@ import type { ActantChannelManager, ActantChannel, ChannelPermissions, ChannelCa
 import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../provider/provider-env-resolver";
 import type { HookEventBus } from "../hooks/hook-event-bus";
-import type { ActivityRecorder } from "../activity/activity-recorder";
+import type { RecordSystem } from "../record/record-system";
 import type { SessionContextInjector } from "../context-injector/session-context-injector";
 import type { SystemBudgetManager } from "../budget/system-budget-manager";
 import type { PermissionsConfig } from "@actant/shared";
@@ -76,8 +76,8 @@ export interface ManagerOptions {
   instanceRegistry?: InstanceRegistryAdapter;
   /** Hook event bus for emitting lifecycle events. When provided, AgentManager emits events for all state transitions. */
   eventBus?: HookEventBus;
-  /** Activity recorder for managed agent interaction recording. */
-  activityRecorder?: ActivityRecorder;
+  /** Record system for managed agent interaction recording. */
+  recordSystem?: RecordSystem;
   /** Session context injector for dynamic MCP server injection. */
   sessionContextInjector?: SessionContextInjector;
   /** System budget manager for Service Agent keepAlive / auto-stop. */
@@ -93,7 +93,7 @@ export class AgentManager {
   private readonly channelManager?: ActantChannelManager;
   private readonly instanceRegistry?: InstanceRegistryAdapter;
   private readonly eventBus?: HookEventBus;
-  private readonly activityRecorder?: ActivityRecorder;
+  private readonly recordSystem?: RecordSystem;
   private readonly sessionContextInjector?: SessionContextInjector;
   private readonly budgetManager?: SystemBudgetManager;
   private readonly employeeRestartTracker: RestartTracker;
@@ -170,7 +170,7 @@ export class AgentManager {
     });
     this.channelManager = options?.channelManager;
     this.eventBus = options?.eventBus;
-    this.activityRecorder = options?.activityRecorder;
+    this.recordSystem = options?.recordSystem;
     this.sessionContextInjector = options?.sessionContextInjector;
     this.budgetManager = options?.budgetManager;
 
@@ -479,7 +479,7 @@ export class AgentManager {
         autoApprove: true,
         ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
       },
-      activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
+      recordSystem: meta.processOwnership === "managed" ? this.recordSystem : undefined,
       mcpServers: modernMcpServers,
       hostTools: sessionCtx?.tools?.map((tool) => ({
         name: tool.name,
@@ -551,7 +551,7 @@ export class AgentManager {
         autoApprove: true,
         ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
       },
-      activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
+      recordSystem: meta.processOwnership === "managed" ? this.recordSystem : undefined,
       mcpServers: modernMcpServers,
       hostTools: sessionCtx?.tools?.map((tool) => ({
         name: tool.name,

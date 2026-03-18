@@ -48,7 +48,7 @@ export class AcpChannelManagerAdapter implements ActantChannelManager {
         autoApprove: options.autoApprove ?? options.connectionOptions?.autoApprove,
         env: options.env ?? options.connectionOptions?.env,
       },
-      activityRecorder: options.activityRecorder as never,
+      recordSystem: options.recordSystem as never,
       mcpServers: options.mcpServers,
       tools: options.tools as never,
       sessionToken: options.sessionToken,

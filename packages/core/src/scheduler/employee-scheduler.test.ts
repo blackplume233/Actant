@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { PromptAgentFn } from "./task-dispatcher";
 import { EmployeeScheduler } from "./employee-scheduler";
+import { HookEventBus } from "../hooks/hook-event-bus";
 import type { InputSource } from "./inputs/input-source";
 import type { ScheduleConfigInput } from "./schedule-config";
 
@@ -20,11 +21,12 @@ describe("EmployeeScheduler", () => {
 
   describe("configure", () => {
     it("adds input sources from schedule config", () => {
-      scheduler = new EmployeeScheduler("agent-a", promptAgent);
+      const hookEventBus = new HookEventBus();
+      scheduler = new EmployeeScheduler("agent-a", promptAgent, { hookEventBus });
       const config: ScheduleConfigInput = {
         heartbeat: { intervalMs: 5000, prompt: "heartbeat prompt" },
         cron: [{ pattern: "0 9 * * *", prompt: "daily prompt" }],
-        hooks: [{ eventName: "on-push", prompt: "push prompt" }],
+        hooks: [{ eventName: "process:start", prompt: "push prompt" }],
       };
       scheduler.configure(config);
       const sources = scheduler.getSources();

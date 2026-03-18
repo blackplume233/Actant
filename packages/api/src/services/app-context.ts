@@ -26,7 +26,6 @@ import {
   HookEventBus,
   HookCategoryRegistry,
   HookRegistry,
-  ActivityRecorder,
   RecordSystem,
   RecordingChannelManager,
   SessionContextInjector,
@@ -122,7 +121,6 @@ export class AppContext {
   readonly hookCategoryRegistry: HookCategoryRegistry;
   readonly hookRegistry: HookRegistry;
   readonly recordSystem: RecordSystem;
-  readonly activityRecorder: ActivityRecorder;
   readonly sessionContextInjector: SessionContextInjector;
   readonly sessionTokenStore: SessionTokenStore;
   readonly budgetManager: SystemBudgetManager;
@@ -202,7 +200,6 @@ export class AppContext {
       globalDir: join(this.homeDir, "records", "global"),
       instancesDir: this.instancesDir,
     });
-    this.activityRecorder = new ActivityRecorder(this.instancesDir);
     this.sessionContextInjector = new SessionContextInjector();
     this.sessionTokenStore = new SessionTokenStore();
     this.canvasStore = new CanvasStore();
@@ -222,7 +219,7 @@ export class AppContext {
         instanceRegistry: this.instanceRegistry,
         watcherPollIntervalMs: launcherMode === "mock" ? 2_147_483_647 : undefined,
         eventBus: this.eventBus,
-        activityRecorder: this.activityRecorder,
+        recordSystem: this.recordSystem,
         sessionContextInjector: this.sessionContextInjector,
         budgetManager: this.budgetManager,
       },
@@ -271,7 +268,6 @@ export class AppContext {
     this.registerPiBackend();
 
     await this.recordSystem.rebuildIndex();
-    await this.activityRecorder.rebuildIndex();
 
     initLogDir(join(this.homeDir, "logs"));
     this.eventBus.setRecordSystem(this.recordSystem);

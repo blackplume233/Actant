@@ -125,8 +125,10 @@ describe("AcpConnectionManager", () => {
         args: [],
         cwd: "/tmp",
         connectionOptions: { permissionPolicy },
-        activityRecorder: {
-          append: vi.fn().mockResolvedValue(undefined),
+        recordSystem: {
+          record: vi.fn().mockResolvedValue(undefined),
+          packContent: vi.fn().mockResolvedValue({ content: "" }),
+          queryGlobal: vi.fn(),
         } as never,
       }),
     ).rejects.toThrow("init failed");

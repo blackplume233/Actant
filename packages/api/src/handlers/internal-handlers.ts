@@ -123,20 +123,13 @@ function recordAudit(
     durationMs,
     source: "cli" as const,
   };
-  if (ctx.recordSystem) {
-    ctx.recordSystem.record({
-      category: "tool",
-      type: "internal_tool_call",
-      agentName: session.agentName,
-      sessionId: session.sessionId,
-      data,
-    }).catch(() => {});
-  } else {
-    ctx.activityRecorder?.record(session.agentName, session.sessionId, {
-      type: "internal_tool_call",
-      data,
-    }).catch(() => {});
-  }
+  ctx.recordSystem.record({
+    category: "tool",
+    type: "internal_tool_call",
+    agentName: session.agentName,
+    sessionId: session.sessionId,
+    data,
+  }).catch(() => {});
 }
 
 function recordAuditFailure(
@@ -153,18 +146,11 @@ function recordAuditFailure(
     durationMs: 0,
     source: "cli" as const,
   };
-  if (ctx.recordSystem) {
-    ctx.recordSystem.record({
-      category: "tool",
-      type: "internal_tool_call",
-      agentName: session.agentName,
-      sessionId: session.sessionId,
-      data,
-    }).catch(() => {});
-  } else {
-    ctx.activityRecorder?.record(session.agentName, session.sessionId, {
-      type: "internal_tool_call",
-      data,
-    }).catch(() => {});
-  }
+  ctx.recordSystem.record({
+    category: "tool",
+    type: "internal_tool_call",
+    agentName: session.agentName,
+    sessionId: session.sessionId,
+    data,
+  }).catch(() => {});
 }

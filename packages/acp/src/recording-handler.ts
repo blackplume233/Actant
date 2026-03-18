@@ -19,17 +19,10 @@ import type {
 } from "@agentclientprotocol/sdk";
 import { createLogger } from "@actant/shared";
 import type { mapActivityTypeToCategory as _mapFn } from "@actant/shared";
-import type { ActivityRecorder, RecordSystem } from "@actant/agent-runtime";
+import type { RecordSystem } from "@actant/agent-runtime";
 import type { ClientCallbackHandler } from "./connection";
 
 const logger = createLogger("recording-handler");
-
-/** Unified recording target: either RecordSystem or legacy ActivityRecorder. */
-type RecordingTarget = RecordSystem | ActivityRecorder;
-
-function isRecordSystem(t: RecordingTarget): t is RecordSystem {
-  return "queryGlobal" in t;
-}
 
 /**
  * Decorator that intercepts all ACP Client callbacks and records them
@@ -55,15 +48,12 @@ function isRecordSystem(t: RecordingTarget): t is RecordSystem {
  */
 export class RecordingCallbackHandler implements ClientCallbackHandler {
   private currentSession: string | null = null;
-  private readonly target: RecordingTarget;
 
   constructor(
     private readonly inner: ClientCallbackHandler,
-    recorder: RecordingTarget,
+    private readonly recordSystem: RecordSystem,
     private readonly agentName: string,
-  ) {
-    this.target = recorder;
-  }
+  ) {}
 
   /** Set the activity session ID for all subsequent recordings. */
   setCurrentSession(id: string | null): void {
@@ -81,24 +71,17 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
     data: unknown,
   ): void {
     const sid = this.activityId(sessionId);
-    if (isRecordSystem(this.target)) {
-      this.target.record({
-        category: category as import("@actant/shared").RecordCategory,
-        type,
-        agentName: this.agentName,
-        sessionId: sid,
-        data,
-      }).catch((e: unknown) => logger.warn({ err: e, type }, "Failed to record"));
-    } else {
-      this.target.record(this.agentName, sid, {
-        type: type as import("@actant/shared").ActivityRecordType,
-        data,
-      }).catch((e: unknown) => logger.warn({ err: e, type }, "Failed to record"));
-    }
+    this.recordSystem.record({
+      category: category as import("@actant/shared").RecordCategory,
+      type,
+      agentName: this.agentName,
+      sessionId: sid,
+      data,
+    }).catch((e: unknown) => logger.warn({ err: e, type }, "Failed to record"));
   }
 
   private async packSafe(content: string) {
-    return this.target.packContent(this.agentName, content);
+    return this.recordSystem.packContent(this.agentName, content);
   }
 
   // ---- session/update (primary data stream) ----

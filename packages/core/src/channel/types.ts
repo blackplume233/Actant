@@ -385,7 +385,7 @@ export interface ChannelConnectOptions {
     autoApprove?: boolean;
     env?: Record<string, string>;
   };
-  activityRecorder?: unknown;
+  recordSystem?: unknown;
   mcpServers?: McpServerSpec[];
   hostTools?: HostToolDefinition[];
   tools?: Array<{

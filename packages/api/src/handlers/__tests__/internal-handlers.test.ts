@@ -19,7 +19,7 @@ function createMockCtx(token?: string, agentName?: string, sessionId?: string): 
         remove: vi.fn(),
         get: vi.fn().mockReturnValue(undefined),
       },
-      activityRecorder: {
+      recordSystem: {
         record: vi.fn().mockResolvedValue(undefined),
       },
       _generatedToken: generated,
@@ -33,7 +33,7 @@ function createMockCtx(token?: string, agentName?: string, sessionId?: string): 
       remove: vi.fn(),
       get: vi.fn().mockReturnValue(undefined),
     },
-    activityRecorder: {
+    recordSystem: {
       record: vi.fn().mockResolvedValue(undefined),
     },
   } as unknown as AppContext;
@@ -96,11 +96,12 @@ describe("internal-handlers", () => {
 
       expect(result).toEqual({ ok: true });
       expect(ctx.canvasStore.update).toHaveBeenCalledWith("agent-1", "<h1>Hello</h1>", "Status");
-      expect(ctx.activityRecorder!.record).toHaveBeenCalledWith(
-        "agent-1",
-        "sess-1",
+      expect(ctx.recordSystem.record).toHaveBeenCalledWith(
         expect.objectContaining({
+          category: "tool",
           type: "internal_tool_call",
+          agentName: "agent-1",
+          sessionId: "sess-1",
         }),
       );
     });
@@ -128,11 +129,12 @@ describe("internal-handlers", () => {
       const handler = registry.get("internal.canvasUpdate")!;
 
       await handler({ token }, ctx).catch(() => {});
-      expect(ctx.activityRecorder!.record).toHaveBeenCalledWith(
-        "agent-1",
-        "sess-1",
+      expect(ctx.recordSystem.record).toHaveBeenCalledWith(
         expect.objectContaining({
+          category: "tool",
           type: "internal_tool_call",
+          agentName: "agent-1",
+          sessionId: "sess-1",
           data: expect.objectContaining({ result: { error: "html is required" } }),
         }),
       );

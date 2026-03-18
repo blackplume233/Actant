@@ -17,11 +17,11 @@ function makeNotification(
 }
 
 describe("ToolCallInterceptor", () => {
-  let recorder: { record: ReturnType<typeof vi.fn> };
+  let recorder: { record: ReturnType<typeof vi.fn>; queryGlobal: ReturnType<typeof vi.fn> };
   let interceptor: ToolCallInterceptor;
 
   beforeEach(() => {
-    recorder = { record: vi.fn().mockResolvedValue(undefined) };
+    recorder = { record: vi.fn().mockResolvedValue(undefined), queryGlobal: vi.fn() };
     interceptor = new ToolCallInterceptor(
       ["actant_canvas_update", "actant_canvas_clear"],
       recorder as never,
@@ -47,10 +47,11 @@ describe("ToolCallInterceptor", () => {
     );
     expect(recorder.record).toHaveBeenCalledOnce();
     expect(recorder.record).toHaveBeenCalledWith(
-      "test-agent",
-      "test-session",
       expect.objectContaining({
+        category: "tool",
         type: "internal_tool_call",
+        agentName: "test-agent",
+        sessionId: "test-session",
       }),
     );
   });
@@ -92,7 +93,7 @@ describe("ToolCallInterceptor", () => {
       makeNotification("tool_call", `Bash(actant internal canvas update --token ${fullToken} --html test)`),
     );
     expect(recorder.record).toHaveBeenCalledOnce();
-    const callArg = recorder.record.mock.calls[0]![2] as { data: { tokenPrefix: string } };
+    const callArg = recorder.record.mock.calls[0]![0] as { data: { tokenPrefix: string } };
     expect(callArg.data.tokenPrefix).toBe("");
   });
 });

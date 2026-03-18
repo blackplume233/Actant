@@ -5,8 +5,8 @@ import {
   AcpConnectionAlreadyExistsError,
   AcpGatewayNotFoundError,
 } from "@actant/shared";
-import { PermissionPolicyEnforcer, PermissionAuditLogger, type ActivityRecorder } from "@actant/agent-runtime";
-import type { ActantToolDefinition, ChannelHostServices, McpServerSpec } from "@actant/agent-runtime";
+import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/agent-runtime";
+import type { ActantToolDefinition, ChannelHostServices, McpServerSpec, RecordSystem } from "@actant/agent-runtime";
 import { AcpConnection, type AcpConnectionOptions, type AcpSessionInfo, type ClientCallbackHandler } from "./connection";
 import { ClientCallbackRouter } from "./callback-router";
 import { RecordingCallbackHandler } from "./recording-handler";
@@ -22,7 +22,7 @@ export interface ConnectOptions {
   cwd: string;
   connectionOptions?: AcpConnectionOptions;
   resolvePackage?: string;
-  activityRecorder?: ActivityRecorder;
+  recordSystem?: RecordSystem;
   mcpServers?: McpServerSpec[];
   tools?: ActantToolDefinition[];
   sessionToken?: string;
@@ -84,15 +84,15 @@ export class AcpConnectionManager {
     if (options.tools && options.tools.length > 0) {
       const interceptor = new ToolCallInterceptor(
         options.tools.map((t) => t.name),
-        options.activityRecorder,
+        options.recordSystem,
         name,
       );
       router.setToolCallInterceptor(interceptor);
     }
 
     let finalHandler: ClientCallbackHandler = router;
-    if (options.activityRecorder) {
-      const rh = new RecordingCallbackHandler(router, options.activityRecorder, name);
+    if (options.recordSystem) {
+      const rh = new RecordingCallbackHandler(router, options.recordSystem, name);
       this.recordingHandlers.set(name, rh);
       finalHandler = rh;
     }
