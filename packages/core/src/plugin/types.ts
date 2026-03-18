@@ -21,7 +21,7 @@ import type {
   PluginRuntimeHooks,
   SubsystemDefinition,
 } from "@actant/shared";
-import type { ContextProvider } from "../context-injector/session-context-injector";
+import type { ContextProvider } from "../context-injector/session-context-types";
 import type { HookEventBus } from "../hooks/hook-event-bus";
 
 export interface ActantPlugin {

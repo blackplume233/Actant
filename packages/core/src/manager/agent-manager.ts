@@ -26,12 +26,12 @@ import { scanInstances, updateInstanceMeta } from "../state/index";
 import type { InstanceRegistryAdapter } from "../state/instance-registry-types";
 import type { PromptResult, StreamChunk, RunPromptOptions } from "../communicator/agent-communicator";
 import { createCommunicator } from "../communicator/create-communicator";
-import type { ActantChannelManager, ActantChannel, ChannelPermissions, ChannelCapabilities, ChannelHostServices, McpServerSpec } from "../channel/types";
+import type { ActantChannelManager, ActantChannel, ChannelPermissions, ChannelCapabilities, ChannelHostServices } from "../channel/types";
 import { modelProviderRegistry } from "../provider/model-provider-registry";
 import { resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "../provider/provider-env-resolver";
 import type { HookEventBus } from "../hooks/hook-event-bus";
 import type { RecordSystem } from "../record/record-system";
-import type { SessionContextInjector } from "../context-injector/session-context-injector";
+import { RulesContextProvider } from "../context-injector/rules-context-provider";
 import type { SystemBudgetManager } from "../budget/system-budget-manager";
 import type { PermissionsConfig } from "@actant/shared";
 
@@ -78,8 +78,6 @@ export interface ManagerOptions {
   eventBus?: HookEventBus;
   /** Record system for managed agent interaction recording. */
   recordSystem?: RecordSystem;
-  /** Session context injector for dynamic MCP server injection. */
-  sessionContextInjector?: SessionContextInjector;
   /** System budget manager for Service Agent keepAlive / auto-stop. */
   budgetManager?: SystemBudgetManager;
 }
@@ -94,7 +92,7 @@ export class AgentManager {
   private readonly instanceRegistry?: InstanceRegistryAdapter;
   private readonly eventBus?: HookEventBus;
   private readonly recordSystem?: RecordSystem;
-  private readonly sessionContextInjector?: SessionContextInjector;
+  private readonly rulesProvider = new RulesContextProvider();
   private readonly budgetManager?: SystemBudgetManager;
   private readonly employeeRestartTracker: RestartTracker;
   private readonly agentLocks = new Map<string, Promise<void>>();
@@ -103,6 +101,14 @@ export class AgentManager {
 
   private resolveChannel(name: string): ActantChannel | undefined {
     return this.channelManager?.getChannel(name);
+  }
+
+  /** Build system context additions from template rules. */
+  private buildSystemContext(name: string, meta: AgentInstanceMeta): string[] {
+    const additions: string[] = [];
+    const rulesCtx = this.rulesProvider.getSystemContext(name, meta);
+    if (rulesCtx) additions.push(rulesCtx);
+    return additions;
   }
 
   private buildHostServices(name: string): ChannelHostServices {
@@ -171,7 +177,6 @@ export class AgentManager {
     this.channelManager = options?.channelManager;
     this.eventBus = options?.eventBus;
     this.recordSystem = options?.recordSystem;
-    this.sessionContextInjector = options?.sessionContextInjector;
     this.budgetManager = options?.budgetManager;
 
     if (this.budgetManager) {
@@ -405,8 +410,6 @@ export class AgentManager {
       });
       logger.info({ name, pid, launchMode: starting.launchMode, strategy }, "Agent started");
     } catch (err) {
-      this.sessionContextInjector?.revokeTokens?.(name);
-
       const proc = this.processes.get(name);
       if (proc) {
         await this.launcher.terminate(proc).catch((e) => {
@@ -453,18 +456,7 @@ export class AgentManager {
       ? backendEnvBuilder(meta.providerConfig, meta.backendConfig)
       : buildDefaultProviderEnv(meta.providerConfig);
 
-    const sessionCtx = this.sessionContextInjector
-      ? await this.sessionContextInjector.prepare(name, meta)
-      : undefined;
-    const modernMcpServers: McpServerSpec[] | undefined = sessionCtx?.mcpServers?.map((server) => ({
-      name: server.name,
-      transport: {
-        type: "stdio",
-        command: server.command,
-        args: server.args,
-        env: server.env ? Object.fromEntries(server.env.map((item) => [item.name, item.value])) : undefined,
-      },
-    }));
+    const systemContext = this.buildSystemContext(name, meta);
 
     const workspaceDir = meta.workspaceDir ?? dir;
 
@@ -480,17 +472,7 @@ export class AgentManager {
         ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
       },
       recordSystem: meta.processOwnership === "managed" ? this.recordSystem : undefined,
-      mcpServers: modernMcpServers,
-      hostTools: sessionCtx?.tools?.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters,
-        scope: tool.scope as "all" | "service" | "employee" | undefined,
-        instructions: tool.context,
-      })),
-      tools: sessionCtx?.tools,
-      sessionToken: sessionCtx?.token,
-      systemContext: sessionCtx?.systemContextAdditions,
+      systemContext: systemContext.length > 0 ? systemContext : undefined,
     }, this.buildHostServices(name));
 
     this.rememberChannelCapabilities(name, getChannelCapabilities(channelManager, name));
@@ -522,18 +504,7 @@ export class AgentManager {
       ? backendEnvBuilder(meta.providerConfig, meta.backendConfig)
       : buildDefaultProviderEnv(meta.providerConfig);
 
-    const sessionCtx = this.sessionContextInjector
-      ? await this.sessionContextInjector.prepare(name, meta)
-      : undefined;
-    const modernMcpServers: McpServerSpec[] | undefined = sessionCtx?.mcpServers?.map((server) => ({
-      name: server.name,
-      transport: {
-        type: "stdio",
-        command: server.command,
-        args: server.args,
-        env: server.env ? Object.fromEntries(server.env.map((item) => [item.name, item.value])) : undefined,
-      },
-    }));
+    const systemContext = this.buildSystemContext(name, meta);
     const channelManager = this.channelManager;
     if (!channelManager) {
       throw new AgentLaunchError(name, new Error("Channel manager is required to connect ACP backends"));
@@ -552,17 +523,7 @@ export class AgentManager {
         ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
       },
       recordSystem: meta.processOwnership === "managed" ? this.recordSystem : undefined,
-      mcpServers: modernMcpServers,
-      hostTools: sessionCtx?.tools?.map((tool) => ({
-        name: tool.name,
-        description: tool.description,
-        parameters: tool.parameters,
-        scope: tool.scope as "all" | "service" | "employee" | undefined,
-        instructions: tool.context,
-      })),
-      tools: sessionCtx?.tools,
-      sessionToken: sessionCtx?.token,
-      systemContext: sessionCtx?.systemContextAdditions,
+      systemContext: systemContext.length > 0 ? systemContext : undefined,
     }, this.buildHostServices(name));
 
     this.rememberChannelCapabilities(name, getChannelCapabilities(channelManager, name));
@@ -655,8 +616,6 @@ export class AgentManager {
 
     const stopping = await updateInstanceMeta(dir, { status: "stopping" });
     this.cache.set(name, stopping);
-
-    this.sessionContextInjector?.revokeTokens?.(name);
 
     const channelManager = this.channelManager;
     if (channelManager && this.resolveChannel(name)) {
@@ -1152,8 +1111,6 @@ export class AgentManager {
 
     this.processes.delete(instanceName);
     this.watcher.unwatch(instanceName);
-    this.sessionContextInjector?.revokeTokens?.(instanceName);
-
     const channelManager = this.channelManager;
     if (channelManager && this.resolveChannel(instanceName)) {
       this.eventBus?.emit("session:end", { callerType: "system", callerId: "AgentManager" }, instanceName, {

@@ -83,6 +83,17 @@ Actant 同时扮演：
 
 ## 已完成里程碑
 
+### Phase C — 迁移清理（2026-03-18）
+
+> Phase B 标记的全部 @deprecated 模块已完成迁移和删除。
+
+- [x] C-1：SessionContextInjector 删除 → AgentManager 内联 RulesContextProvider
+- [x] C-2：CoreContextProvider 删除 → 由 template rules 替代
+- [x] C-3：CanvasContextProvider 删除 → Canvas 不再注入
+- [x] C-4：VfsContextProvider 删除 → ContextManager MCP Server 替代
+- [x] C-5：ActivityRecorder → RecordSystem 全链路迁移
+- [x] C-6：HookInput → HookEventBusInput 直接监听 HookEventBus
+
 ### v0.5.0 — Phase B Context-First 架构实施（2026-03-18）
 
 > Phase B 全部完成。在 v0.4.0 干净基线上实施 Context-First Multi-Source 架构重构。
@@ -157,18 +168,16 @@ Actant 同时扮演：
 
 详见 [设计文档 §Phase B](../design/context-first-multi-source-architecture.md)。v0.5.0 已发布。
 
-### C. Phase C — 迁移清理（v0.5.0 后）
+### C. Phase C — 迁移清理（✅ 已完成）
 
-> Phase B 中标记为 `@deprecated` 的旧模块，待全部 Agent 迁移到 ContextManager 路径后删除。
+> Phase B 中标记为 `@deprecated` 的旧模块已全部迁移删除。
 
-| 顺序 | 清理项 | 旧模块 | 替代 | 说明 |
-|------|--------|--------|------|------|
-| C-1 | SessionContextInjector 删除 | `core/context-injector/` | ContextManager VFS 动态发现 | Agent 通过 VFS 自行浏览上下文 |
-| C-2 | CoreContextProvider 删除 | `core/context-injector/core-context-provider` | AgentServer 固化 identity rules | 由 rules 字段 + RulesContextProvider 替代 |
-| C-3 | CanvasContextProvider 删除 | `core/context-injector/canvas-context-provider` | AgentServer 内部能力 | Canvas 变为 tool，不再注入 |
-| C-4 | VfsContextProvider 删除 | `core/vfs/vfs-context-provider` | ContextManager MCP Server | Agent 通过 MCP tools 访问 VFS |
-| C-5 | ActivityRecorder → RecordSystem | `core/activity/activity-recorder` | RecordSystem | 需要重构 ACP 包的录制层 |
-| C-6 | HookInput → HookRegistry | `core/scheduler/inputs/hook-input` | HookEventBus + HookRegistry | 需要重构 EmployeeScheduler |
+- [x] **C-1** SessionContextInjector 删除 → AgentManager 内联 RulesContextProvider，ContextProvider 接口保留给插件系统
+- [x] **C-2** CoreContextProvider 删除 → 由 rules 字段 + RulesContextProvider 替代
+- [x] **C-3** CanvasContextProvider 删除 → Canvas 不再注入，RPC 通道保留
+- [x] **C-4** VfsContextProvider 删除 → Agent 通过 ContextManager MCP Server 访问 VFS
+- [x] **C-5** ActivityRecorder → RecordSystem → ACP 包录制层已迁移到 RecordSystem
+- [x] **C-6** HookInput → HookEventBusInput → EmployeeScheduler 直接监听 HookEventBus
 
 ### D. 架构重构后独立项
 
@@ -281,15 +290,15 @@ Actant 同时扮演：
 | VFS 运行时开销 | Internal Agent 性能 | VFS 读取为内存操作；LLM 思考时间远大于 VFS 延迟；可在 ContextManager 层缓存 |
 | 大型 UE 项目扫描延迟 | B-3 可用性 | 渐进式加载 + 缓存 + 按需投影 |
 | ACP 协议标准演进 | 通信层兼容性 | ActantChannel 自有协议层隔离，ACP 仅作外部适配器 |
-| 新旧上下文路径共存 | 迁移期维护成本 | Phase C 清理计划已定义；@deprecated 标记提供迁移指引 |
-| ActivityRecorder 深耦合 ACP | C-5 清理复杂度 | 需重构 AcpConnectionManager + ToolCallInterceptor + RecordingCallbackHandler |
+| ~~新旧上下文路径共存~~ | ~~迁移期维护成本~~ | ✅ Phase C 已完成，全部 @deprecated 已清除 |
+| ~~ActivityRecorder 深耦合 ACP~~ | ~~C-5 清理复杂度~~ | ✅ 已迁移到 RecordSystem |
 
 ---
 
 ## 维护说明
 
-- **当前进行中**：Phase C 迁移清理 + Phase D 独立项。
+- **当前进行中**：Phase D 独立项 + Phase E Pi Mono 吸收。
 - **Task 级 Todo**：随开发推进勾选 `[ ]` → `[x]`。
-- **后续优先**：Phase C 清理 → Phase D 独立项 → Phase E Pi Mono 吸收。
+- **后续优先**：Phase D 独立项 → Phase E Pi Mono 吸收 → Phase F 长期方向。
 - 新增/关闭 Issue 或完成 Task 后同步更新本表。
 - **历史详情**：Phase 1-3 的详细 checklist 已归入 git 历史（v0.3.0 前的 roadmap 版本），如需查看可 `git log -- docs/planning/roadmap.md`。

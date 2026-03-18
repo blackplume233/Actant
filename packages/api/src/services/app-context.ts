@@ -28,17 +28,12 @@ import {
   HookRegistry,
   RecordSystem,
   RecordingChannelManager,
-  SessionContextInjector,
   SessionTokenStore,
-  CanvasContextProvider,
-  CoreContextProvider,
-  RulesContextProvider,
   SystemBudgetManager,
   PluginHost,
   HeartbeatPlugin,
   VfsRegistry,
   SourceFactoryRegistry,
-  VfsContextProvider,
   VfsLifecycleManager,
   workspaceSourceFactory,
   memorySourceFactory,
@@ -121,7 +116,6 @@ export class AppContext {
   readonly hookCategoryRegistry: HookCategoryRegistry;
   readonly hookRegistry: HookRegistry;
   readonly recordSystem: RecordSystem;
-  readonly sessionContextInjector: SessionContextInjector;
   readonly sessionTokenStore: SessionTokenStore;
   readonly budgetManager: SystemBudgetManager;
   readonly canvasStore: CanvasStore;
@@ -200,7 +194,6 @@ export class AppContext {
       globalDir: join(this.homeDir, "records", "global"),
       instancesDir: this.instancesDir,
     });
-    this.sessionContextInjector = new SessionContextInjector();
     this.sessionTokenStore = new SessionTokenStore();
     this.canvasStore = new CanvasStore();
     this.eventBus = new HookEventBus();
@@ -220,7 +213,6 @@ export class AppContext {
         watcherPollIntervalMs: launcherMode === "mock" ? 2_147_483_647 : undefined,
         eventBus: this.eventBus,
         recordSystem: this.recordSystem,
-        sessionContextInjector: this.sessionContextInjector,
         budgetManager: this.budgetManager,
       },
     );
@@ -278,13 +270,6 @@ export class AppContext {
     });
     this.sessionRegistry.setRecordSystem(this.recordSystem);
     await this.sessionRegistry.rebuildFromRecordSystem(this.recordSystem);
-
-    this.sessionContextInjector.setEventBus(this.eventBus);
-    this.sessionContextInjector.setTokenStore(this.sessionTokenStore);
-    this.sessionContextInjector.register(new CoreContextProvider());
-    this.sessionContextInjector.register(new RulesContextProvider());
-    this.sessionContextInjector.register(new CanvasContextProvider());
-    this.sessionContextInjector.register(new VfsContextProvider(this.vfsRegistry));
 
     this.initializeVfs();
 

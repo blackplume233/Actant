@@ -12,7 +12,6 @@ export {
   type VfsPermissionDecision,
 } from "./vfs-permission-manager";
 export { SourceFactoryRegistry } from "./source-factory-registry";
-export { VfsContextProvider } from "./vfs-context-provider";
 export {
   workspaceSourceFactory,
   memorySourceFactory,

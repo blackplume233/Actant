@@ -1,19 +1,18 @@
 export {
-  SessionContextInjector,
   type ContextProvider,
   type SessionContext,
   type AcpMcpServerStdio,
   type ActantToolDefinition,
   type ToolScope,
-} from "./session-context-injector";
+  ARCHETYPE_LEVEL,
+  SCOPE_MIN_LEVEL,
+} from "./session-context-types";
 
 export {
   SessionTokenStore,
   type SessionToken,
 } from "./session-token-store";
 
-export { CanvasContextProvider } from "./canvas-context-provider";
-export { CoreContextProvider } from "./core-context-provider";
 export { RulesContextProvider } from "./rules-context-provider";
 
 export { loadTemplate, renderTemplate } from "../prompts/template-engine";

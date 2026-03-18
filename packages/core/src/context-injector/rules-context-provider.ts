@@ -1,5 +1,5 @@
 import type { AgentInstanceMeta } from "@actant/shared";
-import type { ContextProvider } from "./session-context-injector";
+import type { ContextProvider } from "./session-context-types";
 
 /**
  * Injects template-declared behavioral rules into the Agent's system prompt.
