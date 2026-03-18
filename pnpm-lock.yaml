@@ -265,15 +265,9 @@ importers:
       '@actant/api':
         specifier: workspace:0.3.0
         version: link:../api
-      '@actant/domain':
-        specifier: workspace:0.3.0
-        version: link:../domain
       '@actant/shared':
         specifier: workspace:0.3.0
         version: link:../shared
-      '@actant/source':
-        specifier: workspace:0.3.0
-        version: link:../source
       '@actant/vfs':
         specifier: workspace:0.3.0
         version: link:../vfs
