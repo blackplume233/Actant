@@ -4,7 +4,38 @@
 > 更新节奏：当前任务推进、Issue 状态变更或里程碑调整时同步更新本文。
 > **Task 级 Todo**：在本文持续迭代当前任务的勾选清单，随开发进展更新 `[ ]` → `[x]`，完成一项勾一项。
 
-### 当前最高优先：#296 / #297 CLI-first 自举宿主与 Hub 收口（已完成，2026-03-17）
+### 当前最高优先：Context-First 架构重构准备与实施
+
+> **设计文档**：[context-first-multi-source-architecture.md](../design/context-first-multi-source-architecture.md)
+>
+> **核心方向**：将上下文管理从子功能提升为平台的核心抽象。Agent 服务降级为上下文的消费者和提供者。
+> Actant = 上下文平台，Agent 是消费上下文的一种方式。
+>
+> **两大阶段**：
+> - **Phase A**（v0.3.0 → v0.4.0）：工程清理与重构准备，产出存档版本
+> - **Phase B**（v0.4.0 → v0.5.0）：Context-First 架构实施
+
+#### Phase A：工程清理与重构准备（v0.3.0 → v0.4.0 存档）— 预计 5-8 天
+
+- [ ] **A-1 废弃代码清理**（2-3 天）：清零全部 17 处 `@deprecated`，删除 EventJournal / ActivityRecorder / MockLauncher / ContextMaterializer / Legacy proxy handlers 等已被替代的代码
+- [ ] **A-2 无效依赖清理**（0.5 天）：移除 `@actant/mcp-server` 对 `@actant/domain` 和 `@actant/source` 的未使用依赖
+- [ ] **A-3 @actant/core 内聚性梳理**（1-2 天）：消除 core 内部 domain/source/vfs 子目录与独立包的重复定义，为每个子模块标注 Phase B 迁移归属
+- [ ] **A-4 测试补强与质量基线**（1-2 天）：补充各 archetype 端到端集成测试，修复 #238/#239/#240 已知 bugs，记录 coverage baseline
+- [ ] **A-5 版本存档**（0.5 天）：全部 package 升至 `0.4.0`，打 tag `v0.4.0` 作为重构前最后存档
+
+#### Phase B：Context-First 架构实施（v0.4.0 → v0.5.0）— 预计 12-20 天
+
+- [ ] **B-0 ContextManager 骨架**（1-2 天）：创建 `@actant/context` 包，实现 ContextSource 接口 + ContextManager + MCP Server
+- [ ] **B-1 DomainContextSource**（2-3 天）：包装现有 SkillManager/PromptManager 为 VFS 投影，External Agent 可浏览
+- [ ] **B-2 AgentTemplate/Manager 增量**（1-2 天）：原地扩展 rules + toolSchema + ContextManager MCP 注入 + Agent → Tool 回注
+- [ ] **B-3 UnrealProjectSource**（3-5 天）：大型游戏项目上下文投影为 VFS
+- [ ] **B-4 现有系统桥接**（3-5 天）：MCP Server / Hub / CLI 切换到 ContextManager 架构
+- [ ] **B-5 重命名与旧模块收缩**（2-3 天）：`@actant/core` → `@actant/agent-runtime`，删除被 ContextManager 替代的模块
+- [ ] **B-6 版本发布**（1 天）：全部 package 升至 `0.5.0`，打 tag `v0.5.0`
+
+---
+
+### 已完成：#296 / #297 CLI-first 自举宿主与 Hub 收口（2026-03-17）
 
 > 目标：让**正式安装的 `actant` CLI**成为 Actant 自举的第一控制面，以 `actant hub ...` 作为官方入口，在单宿主进程上提供 project-context-first 的 bootstrap surface。默认 profile 只加载 host kernel + hub core，不默认启用 `AgentService`。
 
@@ -427,59 +458,39 @@ Actant-side Plugin (#14, Phase 4):
 
 ## 当前进行中 (Current)
 
-Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#105/#106 增强项已关闭推迟。当前聚焦 **Phase 4 的 CLI-first 自举宿主 / Hub 主线**，本轮最高优先是 **#296 / #297 收口**：让正式安装的 CLI 成为第一控制面，围绕单宿主进程建立 project-context-first bootstrap surface，默认不启用 `AgentService`。在该主线稳定后，再继续推进统一通信层与其他平台底座能力。
+Phase 1-3 全部完成。Phase 4 基础设施已部分落地（8/15 Steps）。#296/#297 CLI-first 自举主线已完成。
 
-**当前产品定位基线：**
-- Actant 是 **底层平台**，承载 Agent App、SOP、CI、外部引擎集成等上层形态
-- `repo -> service -> employee` 是 **管理深度递进模型**，不是彼此竞争的三套产品
-- **service 是当前主交付形态**，应作为后续 platform/runtime 与产品集成的默认基线
-- **CLI-first 自举是当前最高优先**：正式入口是 `actant hub`，`acthub` 只是别名；`hub` 挂在单宿主进程上，默认 profile 只加载 host kernel + hub core + project-context 能力
-- **默认不启用 `AgentService`**：Agent Runtime 可以存在，但 `AgentService`、Scheduler、平台级 Kernel Agents 都必须显式激活
-- **MCP 已降为消费层**：它可以复用同一宿主能力，但不再定义正式 bootstrap 路径
-- **employee 是自治增强层**，调度、心跳、持续运行能力在 service 之上叠加
+**当前最高优先：Context-First 架构重构**——通过 Phase A（工程清理）和 Phase B（架构实施）将 Actant 从 Agent 平台重构为**上下文平台**。详见设计文档 [context-first-multi-source-architecture.md](../design/context-first-multi-source-architecture.md)。
+
+**当前产品定位演进：**
+- Actant = **上下文平台**，Agent 是消费上下文的一种方式（Context-First 反转）
+- `ContextManager` 是平台的核心抽象，管理所有上下文源（Domain / Agent / Project / Runtime）
+- 对外通过 MCP/VFS 暴露可浏览的上下文资源和可调用的工具
+- 对内 Internal Agent 只固化 identity + rules，运行时动态获取其他上下文
+- `repo -> service -> employee` 管理模型不变，但 Agent 不再是唯一的顶层概念
+
+**当前主线任务**：
+- 🔥 **Phase A：工程清理与 v0.4.0 存档**（当前执行中）
+  - [ ] A-1 废弃代码清理（17 处 @deprecated）
+  - [ ] A-2 无效依赖清理（mcp-server 幽灵依赖）
+  - [ ] A-3 @actant/core 内聚性梳理（消除与独立包的重复）
+  - [ ] A-4 测试补强与质量基线（集成测试 + bug fix + coverage）
+  - [ ] A-5 版本存档（v0.4.0 tag）
+- 📋 **Phase B：Context-First 架构实施**（Phase A 完成后启动）
+  - B-0 ContextManager 骨架 → B-1 DomainContextSource → B-2 AgentTemplate 增量 → B-3 UnrealProjectSource → B-4 系统桥接 → B-5 重命名与模块收缩 → B-6 v0.5.0 发布
 
 **已完成主线**：
 - ✅ Phase 1 Foundation：ProcessWatcher、LaunchMode 分化、external spawn、one-shot、acp-service 崩溃恢复
 - ✅ Phase 2 MVP：Domain Context 全链路、组件加载与 CLI 管理、Daemon ↔ Agent 通信、CLI chat/run、端到端模板示例
-- ✅ Phase 3 协议/管理/构造/调度：
-  - ACP Proxy + Session Lease 双模式
-  - 统一组件管理（Skill / Prompt / Plugin CRUD）
-  - WorkspaceBuilder 差异化构造
-  - EmployeeScheduler + TaskQueue / InputRouter / CLI
+- ✅ Phase 3 协议/管理/构造/调度：ACP Proxy + Session Lease、统一组件管理、WorkspaceBuilder 差异化构造、EmployeeScheduler + TaskQueue
+- ✅ Phase 4 部分：Hook 基础、Dashboard v2、VFS、Capability-driven backend、`agent open`、Pi 后端、#296/#297 CLI-first 自举
 
-**Phase 4 已落地基础**：
-- ✅ Hook 类型基础（#159）
-- ✅ Bug 清理与脚本修复（#129 / #95 / #57）
-- ✅ Dashboard v0/v1/v2 主体能力已落地（含 REST API / SSE / 事件流）
-- ✅ 动态上下文注入 + Canvas（#210 / #211）
-- ✅ Hook Package / Workflow 事件驱动基础（#135 的基础部分）
-- ✅ Pi 内置后端（#121）
-- ✅ `agent open` + interactionModes（#134）
-
-**当前主阻塞 / 主线任务**：
-- 🔍 **项目回顾审查与稳定性修复** — 当前最高优先：在新自举主线上扩展 QA 覆盖，审查跨层回归与体验缺口
-- ✅ **#297 Project-level DomainContext / 作用域 / reactive sync 收口** — 已完成，project-context-first 接受线已落地
-- ✅ **Hub / 轻宿主收口** — `actant hub` / `acthub`、默认 `bootstrap` profile、单宿主进程复用、默认不启用 `AgentService` 已完成
-- 📋 **#279 统一通信层与 Runtime Facade 收敛** — 作为支撑架构继续推进
-- 📋 #14 Actant 系统级 Plugin 体系 — 待自举宿主与 Hub 边界稳定后推进
-- 📋 #122 调度增强 — 依赖 Plugin Core + Context Injection
-- 📋 #37 Extensible Initializer — 依赖 Plugin / Runtime 集成收敛
-- 📋 #133 环境变量作为默认 provider 配置 — 后端可用性与 DX 基础
-- 📋 #136 Agent-to-Agent Email 通信 — 协作层能力，建议排在平台内核稳定之后
-
-**紧随 #279 之后：项目回顾审查与稳定性修复**：
-- 🔍 全面审查现有功能的稳定性、正确性与代码质量
-- 🔍 修复 QA 发现的基础功能与 service communication 问题
-- 🔍 基础端到端流程验证（create → start → prompt → stop 各 archetype）
-
-**近期收口任务（稳定性修复的一部分）**：
-- 📋 `03-11-capability-backend-runtime` — capability-driven backend runtime model，属于运行时能力模型收口；应以 `supportedModes + runtimeProfile + capabilities` 三层共同决定 archetype compatibility 与默认 interactionModes，而不是继续依赖后端名称或单一 profile 的隐式推断
-- 📋 `03-11-issue276-daemon-socket-normalization` — Windows daemon socket normalization，属于跨平台稳定性补丁；统一以 `normalizeIpcPath()` + `getDefaultIpcPath()/getIpcPath()` 作为 CLI / Daemon / setup 的共享入口，避免 Windows 上 `.sock` 风格 override 与 named pipe 实际路径继续漂移
-
-**说明**：
-- `docs/planning/phase4-employee-steps.md` 已表明 Phase 4 并非“待开始”，而是 **8/15 Steps 已完成**。
-- 后续推进以 `phase4-employee-steps.md` 的依赖关系为准，roadmap 负责压缩表达和对外总览。
-- **#279 通信层收敛是 Phase 4 的新最高优先项**，完成后紧接全项目回顾审查与稳定性修复，再继续推进平台底座。
+**被 Phase B 取代/合并的原 Phase 4 未完成项**：
+- #279 统一通信层 → Phase B-4 桥接阶段中处理通信层适配
+- #14 Plugin 体系 → Phase B 完成后重新评估
+- #122 调度增强、#136 Email 通信 → 保留，不受重构影响
+- #133 env provider → 已完成核心，仅剩文档同步
+- `03-11-capability-backend-runtime`、`03-11-issue276-daemon-socket-normalization` → 合并入 Phase A 清理
 
 ### Phase 1 完成总结
 
@@ -532,67 +543,56 @@ Phase 1、Phase 2 MVP、Phase 3 核心三线（3a/3b/3c）全部完成。#104/#1
 
 ## 后续优先 (Next Up)
 
-按依赖关系与平台价值排序。**CLI-first 自举宿主与 Hub 收口（#296 / #297）已完成**，当前最高优先转为**全项目回顾审查与稳定性修复**；`#279` 作为支撑架构随后推进，再继续平台底座。
+按依赖关系与平台价值排序。当前最高优先是 **Context-First 架构重构**（Phase A + Phase B）。
 
-### A. CLI-first 自举宿主与 Hub 收口（✅ 已完成）
+### A. Phase A — 工程清理与 v0.4.0 存档（🔥 当前执行中）
 
-| 顺序 | 项目 | 类型 | 说明 |
-|------|------|------|------|
-| 1 | **#297 Project-level DomainContext 收口** | shipped architecture | 已完成；明确 project-level context、作用域边界、reactive sync 接受线，为 `hub` 自举面定基线 |
-| 2 | **Hub 命名空间 / 轻宿主** | shipped architecture | 已完成；固化 `actant hub` 正式入口与 `acthub` 别名；定义单宿主进程 + `bootstrap` profile + 默认不启用 `AgentService` |
-| 3 | **#296 project-context package groundwork** | shipped groundwork | 已完成；作为轻宿主 / Hub 分层与后续热插拔模块化的包结构基础 |
+详见 [context-first-multi-source-architecture.md §迁移计划 Phase A](../design/context-first-multi-source-architecture.md)。
 
-### B. 项目回顾审查与稳定性修复（紧随自举主线之后）
+| 顺序 | 子阶段 | 类型 | 预计 | 说明 |
+|------|--------|------|------|------|
+| 1 | **A-1 废弃代码清理** | cleanup | 2-3 天 | 清零全部 17 处 `@deprecated`：EventJournal、ActivityRecorder、MockLauncher、ContextMaterializer、Legacy proxy handlers 等 |
+| 2 | **A-2 无效依赖清理** | cleanup | 0.5 天 | 移除 mcp-server 的 `@actant/domain`、`@actant/source` 幽灵依赖 |
+| 3 | **A-3 @actant/core 内聚性梳理** | refactor | 1-2 天 | 消除 core 内部 domain/source/vfs 子目录与独立包的重复定义，标注 Phase B 迁移归属 |
+| 4 | **A-4 测试补强与质量基线** | quality | 1-2 天 | 各 archetype 端到端集成测试 + 修复 #238/#239/#240 + coverage baseline |
+| 5 | **A-5 版本存档** | release | 0.5 天 | 全部 package 升至 `0.4.0`，打 tag `v0.4.0` |
 
-| 顺序 | 项目 | 类型 | 说明 |
-|------|------|------|------|
-| 4 | **全面功能审查** | review | 回顾现有全部功能的稳定性、正确性、代码质量；端到端流程验证（create → start → prompt → stop 各 archetype） |
-| 5 | **QA 问题修复** | bugfix | 修复 QA 发现的 service communication 及基础功能问题 |
-| 6 | `03-11-capability-backend-runtime` | planning task | 收口 backend/runtime capability model，明确能力抽象与实现边界 |
-| 7 | `03-11-issue276-daemon-socket-normalization` | planning task | 修复 Windows daemon socket path / normalization 稳定性问题 |
+### B. Phase B — Context-First 架构实施（Phase A 完成后启动）
 
-### C. 支撑架构与治理收口
+详见 [context-first-multi-source-architecture.md §迁移计划 Phase B](../design/context-first-multi-source-architecture.md)。
 
-| 顺序 | 项目 | 类型 | 说明 |
-|------|------|------|------|
-| 8 | **#279 统一通信层** | supporting architecture | 定义 `ActantChannel` 接口 → `ClaudeAgentSdkAdapter` → `AgentManager` 迁移 → `@actant/acp` 外部适配器化 |
-| 9 | `#278 Slice 2` | governance slice | 清理仍会误导主线的历史文档、FAQ、design/planning/wiki 表述，逐条映射冲突项（至少覆盖 C-01 / C-02 / C-04 / C-05 / C-08） |
-| 10 | `#278 Slice 3` | governance slice | 收口验证与契约入口：补 issue 跟踪、最小必要的契约/索引同步，并把 archetype-oriented validation 入口固定下来 |
+| 顺序 | 子阶段 | 类型 | 预计 | 说明 |
+|------|--------|------|------|------|
+| 6 | **B-0 ContextManager 骨架** | new package | 1-2 天 | 创建 `@actant/context`：ContextSource 接口 + ContextManager + MCP Server |
+| 7 | **B-1 DomainContextSource** | feature | 2-3 天 | 包装 SkillManager/PromptManager 为 VFS 投影 |
+| 8 | **B-2 AgentTemplate/Manager 增量** | enhancement | 1-2 天 | rules + toolSchema + ContextManager MCP 注入 + Agent→Tool 回注 |
+| 9 | **B-3 UnrealProjectSource** | feature | 3-5 天 | 大型游戏项目上下文投影 |
+| 10 | **B-4 现有系统桥接** | migration | 3-5 天 | MCP Server / Hub / CLI 切换 + #279 通信层适配 |
+| 11 | **B-5 重命名与旧模块收缩** | refactor | 2-3 天 | `@actant/core` → `@actant/agent-runtime` + 删除被替代模块 |
+| 12 | **B-6 版本发布** | release | 1 天 | 全部 package 升至 `0.5.0`，打 tag `v0.5.0` |
 
-### D. 平台底座（Phase 4 核心）
+### C. 架构重构后继续推进的独立项
 
-| 顺序 | Issue | 标题 | 依赖 | 说明 |
+> 以下项不受 Context-First 重构阻塞，或在 Phase B 完成后重新评估。
+
+| 顺序 | Issue | 标题 | 状态 | 说明 |
 |------|-------|------|------|------|
-| 11 | **#14** | Actant 系统级 Plugin 体系 | #22, #47, 自举宿主边界稳定 | 统一 runtime / hooks / domainContext 三插口能力 |
-| 12 | **#122** | 调度器四模式增强 | #14, #210, #211 | 已完成主链：DelayInput、InputSourceRegistry、schedule.wait/cron/cancel RPC、MCP schedule tools、E-SCHED endurance；后续仅剩更深 plugin wiring / 可观测性补强 |
-| 13 | **#37** | Extensible Initializer | #14（集成收敛后收益更高） | 已完成主链：StepRegistry、InitializationPipeline、AgentInitializer 集成执行、initializer 预检、7 个内置步骤（含 file-template/write-file） |
-| 14 | **#133** | 环境变量作为默认 provider 配置 | 与 #37 可并行 | 已完成核心运行时收口：template > env > registry default，backend-aware provider env 注入已统一；后续仅剩 planning/docs 状态同步 |
+| 13 | **#14** | Actant 系统级 Plugin 体系 | Phase B 后评估 | 在 ContextManager 架构上重新设计 Plugin 边界 |
+| 14 | **#122** | 调度器四模式增强 | 不受影响 | 已完成主链，仅剩 plugin wiring / 可观测性补强 |
+| 15 | **#136** | Agent-to-Agent Email 通信 | 不受影响 | 异步协作范式 |
+| 16 | #40 | Agent 工具权限管理 | 不受影响 | 平台安全与权限边界 |
+| 17 | #8 | Template hot-reload | 不受影响 | DX 增强 |
+| 18 | #9 | Agent 进程日志收集 | 不受影响 | 可观测性补强 |
 
-### E. 协作与外置扩展
-
-| 顺序 | Issue | 标题 | 依赖 | 说明 |
-|------|-------|------|------|------|
-| 12 | **#136** | Agent-to-Agent Email 通信 | #122 后收益更高 | 建立 Agent 异步协作范式，接入 TaskQueue / 调度管道 |
-| 13 | 外置记忆系统 | external component | 独立于当前 Phase 4 主线 | 记忆系统不再视为 Phase 4 内建里程碑，而是作为 Actant 外置组件/集成方向单独推进 |
-
-### F. 平台补强（内核稳定后）
+### D. 长期方向
 
 | 顺序 | Issue | 标题 | 说明 |
 |------|-------|------|------|
-| 14 | #40 | Agent 工具权限管理机制 | 平台安全与权限边界 |
-| 15 | #8 | Template hot-reload on file change | DX 增强 |
-| 16 | #9 | Agent 进程 stdout/stderr 日志收集 | 可观测性补强 |
-| 17 | #38 | Template: Endurance Test Agent | 与 #37 配合完善验证资产 |
-
-### Phase 5 — 记忆系统 & 长期
-
-| 顺序 | Issue | 标题 | 说明 |
-|------|-------|------|------|
-| 18 | #10 | Instance Memory Layer | 实例级长期记忆 |
-| 19 | #11 | Memory Consolidation + Shared Memory | 跨实例记忆整合 |
-| 20 | #12 | Context Layers + ContextBroker | 上下文分层与代理 |
-| 21 | #20 | OpenViking as optional MCP Server | 可选 MCP 集成 |
-| 22 | #17 | ACP-Fleet 扩展协议 | 长期愿景：Daemon 升级为 ACP Server |
+| 19 | #10 | Instance Memory Layer | 实例级长期记忆 |
+| 20 | #11 | Memory Consolidation + Shared Memory | 跨实例记忆整合 |
+| 21 | #12 | Context Layers + ContextBroker | 上下文分层与代理（可能合并入 ContextManager） |
+| 22 | #20 | OpenViking as optional MCP Server | 可选 MCP 集成 |
+| 23 | #17 | ACP-Fleet 扩展协议 | 长期愿景：Daemon 升级为 ACP Server |
 
 ---
 

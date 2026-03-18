@@ -1,5 +1,0 @@
-{"file": ".trellis/spec/index.md", "reason": "Ensure implementation still matches current specification hierarchy"}
-{"file": ".trellis/spec/config-spec.md", "reason": "Verify project manifest and any new fields remain documented"}
-{"file": ".trellis/spec/api-contracts.md", "reason": "Verify hub/VFS/bootstrap contract updates are documented if behavior changes"}
-{"file": "packages/api/src/services/project-context.ts", "reason": "Primary implementation review target"}
-{"file": "packages/mcp-server/src/context-backend.test.ts", "reason": "Primary standalone/bootstrap validation baseline"}

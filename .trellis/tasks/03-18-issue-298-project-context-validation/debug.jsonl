@@ -1,4 +1,0 @@
-{"file": "packages/api/src/services/project-context.ts", "reason": "Debug loader, source injection, and project summary behavior"}
-{"file": "packages/cli/src/commands/hub/index.ts", "reason": "Debug hub bootstrap and standalone fallback behavior"}
-{"file": "packages/mcp-server/src/context-backend.ts", "reason": "Debug detached-readonly and standalone VFS projection behavior"}
-{"file": "packages/mcp-server/src/context-backend.test.ts", "reason": "Debug expectations for project-context bootstrap scenarios"}

@@ -1738,3 +1738,59 @@ Processed and closed all 15 open Review Issues from the architecture audit in a 
 ### Status
 
 [OK] **Completed** — All review issues resolved and shipped.
+
+---
+
+## Session 32: Archive Trellis Tasks and Isolate Runtime State
+
+**Date**: 2026-03-17
+**Task**: Archive Trellis Tasks and Isolate Runtime State
+
+### Summary
+
+Cleaned up the remaining Trellis task backlog, archived all completed task directories, reconciled lingering issue state, isolated repo-local bootstrap runtime state under `.trellis/runtime/`, and pushed the cleanup to `origin/master`.
+
+### Main Changes
+
+| Area | Description |
+|------|-------------|
+| Task archive | Moved all completed task directories into `.trellis/tasks/archive/2026-02` and `.trellis/tasks/archive/2026-03` |
+| Active task cleanup | Reduced `.trellis/tasks/` so it now contains only `archive/` |
+| Issue drafts | Moved non-task issue draft artifacts into `.trellis/issues/drafts/` |
+| Runtime hygiene | Introduced `.trellis/runtime/README.md` and documented a stable repo-local bootstrap runtime area |
+| Ignore rules | Added `.gitignore` rules for runtime sandboxes and ephemeral QA runtime artifacts |
+| Spec sync | Updated backend quality guidelines to document separation of runtime sandboxes from task evidence |
+| Issue reconciliation | Closed and archived GitHub/local issue `#158` after verifying implementation had already landed |
+| QA evidence retention | Archived `03-14-qa-loop` as historical failed QA evidence with an explicit `resolution.md` |
+
+### Updated Files
+
+- `.gitignore`
+- `README.md`
+- `.trellis/spec/backend/quality-guidelines.md`
+- `.trellis/runtime/README.md`
+- `.trellis/issues/archive/0158-backend-provider-env-declarative-builder.md`
+- `.trellis/tasks/archive/2026-02/02-24-issue158-backend-ext/task.json`
+- `.trellis/tasks/archive/2026-03/03-14-qa-loop/resolution.md`
+
+### Git Commits
+
+| Hash | Message |
+|------|---------|
+| `de6028a` | chore(trellis): archive completed tasks and isolate runtime state |
+| `567fbf9` | chore(trellis): close remaining active tasks |
+
+### Testing
+
+- [OK] Verified GitHub issue `#158` is closed
+- [OK] Verified `.trellis/tasks/` contains only `archive/`
+- [OK] Verified `git status` clean after push
+- [OK] Pushed both commits to `origin/master`
+
+### Status
+
+[OK] **Completed**
+
+### Next Steps
+
+- None - cleanup and recording complete
