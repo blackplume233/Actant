@@ -47,14 +47,12 @@ import {
   canvasSourceFactory,
   vcsSourceFactory,
   processSourceFactory,
-  createDomainSource,
-  createAgentRegistrySource,
   RoutingChannelManager,
   type ActionContext,
   type LauncherMode,
 } from "@actant/agent-runtime";
 import { CanvasStore } from "./canvas-store";
-import { ContextManager, DomainContextSource } from "@actant/context";
+import { ContextManager, DomainContextSource, AgentStatusSource, type AgentStatusProvider, type AgentStatusInfo } from "@actant/context";
 import type { HostCapability, HostProfile, HostRuntimeState, ModelApiProtocol } from "@actant/shared";
 import { AcpConnectionManager, AcpChannelManagerAdapter } from "@actant/acp";
 import { ClaudeChannelManagerAdapter } from "@actant/channel-claude";
@@ -619,10 +617,37 @@ export class AppContext {
       if (!agentName) return;
       this.hookRegistry.unregisterAgent(agentName);
       this.canvasStore.remove(agentName);
+      this.contextManager.unregisterTool(`actant_${agentName}`);
     });
 
-    // Close all chat leases when an agent stops (covers all paths:
-    // manual stop, budget keepAlive expiry, and process crash).
+    this.eventBus.on("process:start", (payload) => {
+      const name = payload.agentName;
+      if (!name) return;
+      const meta = this.agentManager.listAgents().find((a) => a.name === name);
+      if (!meta?.toolSchema) return;
+      try {
+        this.contextManager.registerTool({
+          name: `actant_${name}`,
+          description: (meta.metadata?.["description"] as string | undefined) ?? `Internal Agent: ${name}`,
+          inputSchema: meta.toolSchema,
+          handler: async (params) => {
+            return this.agentManager.promptAgent(name, (params["message"] as string) ?? JSON.stringify(params));
+          },
+        });
+        logger.info({ agent: name }, "Agent registered as ContextManager tool");
+      } catch (err) {
+        logger.warn({ agent: name, error: err }, "Failed to register agent as tool");
+      }
+    });
+
+    const unregisterAgentTool = (payload: { agentName?: string }) => {
+      if (payload.agentName) {
+        this.contextManager.unregisterTool(`actant_${payload.agentName}`);
+      }
+    };
+    this.eventBus.on("process:stop", unregisterAgentTool);
+    this.eventBus.on("process:crash", unregisterAgentTool);
+
     const closeLeases = (payload: { agentName?: string }) => {
       if (!payload.agentName) return;
       const closed = this.sessionRegistry.closeByAgent(payload.agentName);
@@ -686,13 +711,6 @@ export class AppContext {
       }
     });
 
-    const daemonLifecycle = { type: "daemon" as const };
-    reg.mount(createDomainSource(this.skillManager, "skill", "/skills", daemonLifecycle));
-    reg.mount(createDomainSource(this.promptManager, "prompt", "/prompts", daemonLifecycle));
-    reg.mount(createDomainSource(this.workflowManager, "workflow", "/workflows", daemonLifecycle));
-    reg.mount(createDomainSource(this.templateRegistry, "template", "/templates", daemonLifecycle));
-    reg.mount(createAgentRegistrySource(this.agentManager, "/agents", daemonLifecycle));
-
     this.contextManager.registerSource(new DomainContextSource({
       skillManager: this.skillManager,
       promptManager: this.promptManager,
@@ -701,7 +719,23 @@ export class AppContext {
       templateRegistry: this.templateRegistry,
     }));
 
+    const agentStatusProvider: AgentStatusProvider = {
+      listAgents: (): AgentStatusInfo[] =>
+        this.agentManager.listAgents().map(agentMetaToStatusInfo),
+      getAgent: (name: string): AgentStatusInfo | undefined => {
+        const meta = this.agentManager.listAgents().find((a) => a.name === name);
+        return meta ? agentMetaToStatusInfo(meta) : undefined;
+      },
+    };
+    this.contextManager.registerSource(new AgentStatusSource(agentStatusProvider));
+    this.contextManager.mountSources(reg);
+
     logger.info({ mounts: reg.size }, "VFS initialized with default mounts");
+  }
+
+  /** Refresh ContextManager VFS mounts (call after sources change). */
+  refreshContextMounts(): void {
+    this.contextManager.mountSources(this.vfsRegistry);
   }
 
   private async loadDomainComponents(): Promise<void> {
@@ -726,4 +760,22 @@ export class AppContext {
       }
     }
   }
+}
+
+function agentMetaToStatusInfo(meta: {
+  name: string;
+  metadata?: Record<string, string>;
+  archetype?: string;
+  status: string;
+  startedAt?: string;
+  toolSchema?: Record<string, unknown>;
+}): AgentStatusInfo {
+  return {
+    name: meta.name,
+    description: meta.metadata?.["description"],
+    archetype: meta.archetype ?? "repo",
+    status: meta.status,
+    startedAt: meta.startedAt,
+    toolSchema: meta.toolSchema,
+  };
 }

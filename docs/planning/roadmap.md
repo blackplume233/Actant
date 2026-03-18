@@ -59,7 +59,7 @@ Actant 同时扮演：
 - [x] **B-2 AgentTemplate/Manager 增量**（1-2 天）：原地扩展 rules + toolSchema + ContextManager MCP 注入 + Agent → Tool 回注
 - [x] **B-3 UnrealProjectSource**（3-5 天）：大型游戏项目上下文投影为 VFS
 - [x] **B-4 现有系统桥接**（3-5 天）：MCP Server / Hub / CLI 切换到 ContextManager 架构
-- [x] **B-5 重命名与旧模块收缩**（2-3 天）：`@actant/core` → `@actant/agent-runtime`，删除被 ContextManager 替代的模块
+- [x] **B-5 重命名与旧模块标记**（2-3 天）：`@actant/core` → `@actant/agent-runtime`，旧上下文路径模块（SessionContextInjector / CoreContextProvider / CanvasContextProvider / VfsContextProvider）标记 `@deprecated`，保留迁移期共存
 - [x] **B-6 版本发布**（1 天）：全部 package 升至 `0.5.0`，打 tag `v0.5.0`
 
 ---
@@ -89,10 +89,10 @@ Actant 同时扮演：
 
 - [x] B-0：创建 `@actant/context` 包，ContextSource + ContextManager + VfsMountTarget 接口
 - [x] B-1：DomainContextSource 包装 SkillManager/PromptManager/McpConfigManager/WorkflowManager/TemplateRegistry
-- [x] B-2：AgentTemplate 扩展 rules/toolSchema，RulesContextProvider 注入系统提示，AgentStatusSource 投影 Agent 状态
+- [x] B-2：AgentTemplate 扩展 rules/toolSchema，RulesContextProvider 注入系统提示，AgentStatusSource 通过 ContextManager 接入 VFS，Agent→Tool 回注（process:start → registerTool / process:stop → unregisterTool）
 - [x] B-3：ProjectSource 抽象基类 + UnrealProjectSource 扫描 UE 项目结构投影为 VFS
 - [x] B-4：AppContext/HubContextService/MCP Server Standalone 三端桥接 ContextManager
-- [x] B-5：`@actant/core` → `@actant/agent-runtime` 全局重命名（33 文件 + 14 package.json）
+- [x] B-5：`@actant/core` → `@actant/agent-runtime` 全局重命名 + 旧上下文模块标记 @deprecated（SessionContextInjector / CoreContextProvider / CanvasContextProvider / VfsContextProvider）
 - [x] B-6：全部 15 package 升至 0.5.0
 
 ### v0.4.0 — Phase A 工程清理与重构准备（2026-03-18）
@@ -157,7 +157,20 @@ Actant 同时扮演：
 
 详见 [设计文档 §Phase B](../design/context-first-multi-source-architecture.md)。v0.5.0 已发布。
 
-### C. 架构重构后独立项
+### C. Phase C — 迁移清理（v0.5.0 后）
+
+> Phase B 中标记为 `@deprecated` 的旧模块，待全部 Agent 迁移到 ContextManager 路径后删除。
+
+| 顺序 | 清理项 | 旧模块 | 替代 | 说明 |
+|------|--------|--------|------|------|
+| C-1 | SessionContextInjector 删除 | `core/context-injector/` | ContextManager VFS 动态发现 | Agent 通过 VFS 自行浏览上下文 |
+| C-2 | CoreContextProvider 删除 | `core/context-injector/core-context-provider` | AgentServer 固化 identity rules | 由 rules 字段 + RulesContextProvider 替代 |
+| C-3 | CanvasContextProvider 删除 | `core/context-injector/canvas-context-provider` | AgentServer 内部能力 | Canvas 变为 tool，不再注入 |
+| C-4 | VfsContextProvider 删除 | `core/vfs/vfs-context-provider` | ContextManager MCP Server | Agent 通过 MCP tools 访问 VFS |
+| C-5 | ActivityRecorder → RecordSystem | `core/activity/activity-recorder` | RecordSystem | 需要重构 ACP 包的录制层 |
+| C-6 | HookInput → HookRegistry | `core/scheduler/inputs/hook-input` | HookEventBus + HookRegistry | 需要重构 EmployeeScheduler |
+
+### D. 架构重构后独立项
 
 > 不受 Context-First 阻塞，或在 Phase B 完成后重新评估。
 
@@ -170,7 +183,7 @@ Actant 同时扮演：
 | 17 | #8 | Template hot-reload | 不受影响 | DX 增强 |
 | 18 | #9 | Agent 进程日志收集 | 不受影响 | 可观测性 |
 
-### D. Pi Mono 简洁哲学吸收（#291）
+### E. Pi Mono 简洁哲学吸收（#291）
 
 > 通过与 [Pi Mono](https://github.com/badlogic/pi-mono) 的架构对比识别的优化方向。Phase B 完成后按优先级继续推进。
 
@@ -188,7 +201,7 @@ Actant 同时扮演：
 | P3 | #287 | Agent App registration-based API | open |
 | P3 | #290 | CLI command layering | open |
 
-### E. 长期方向
+### F. 长期方向
 
 | 顺序 | Issue | 标题 | 说明 |
 |------|-------|------|------|
@@ -264,19 +277,19 @@ Actant 同时扮演：
 
 | 风险项 | 影响 | 缓解措施 |
 |--------|------|---------|
-| `@actant/core` 过度膨胀 | Phase B 迁移复杂度 | Phase A-3 先梳理内聚性，标注迁移归属 |
 | ContextManager 边界模糊 | 架构退化为新的 god object | 判定标准：ContextManager 不知道 Agent 是什么，所有接口 agent-agnostic |
 | VFS 运行时开销 | Internal Agent 性能 | VFS 读取为内存操作；LLM 思考时间远大于 VFS 延迟；可在 ContextManager 层缓存 |
 | 大型 UE 项目扫描延迟 | B-3 可用性 | 渐进式加载 + 缓存 + 按需投影 |
 | ACP 协议标准演进 | 通信层兼容性 | ActantChannel 自有协议层隔离，ACP 仅作外部适配器 |
-| 旧 `BackendDescriptor` 残留 | Phase A 清理遗漏 | A-1 强制清零所有 @deprecated |
+| 新旧上下文路径共存 | 迁移期维护成本 | Phase C 清理计划已定义；@deprecated 标记提供迁移指引 |
+| ActivityRecorder 深耦合 ACP | C-5 清理复杂度 | 需重构 AcpConnectionManager + ToolCallInterceptor + RecordingCallbackHandler |
 
 ---
 
 ## 维护说明
 
-- **当前进行中**：顶部 Phase A/B 的勾选清单即为实时状态。
+- **当前进行中**：Phase C 迁移清理 + Phase D 独立项。
 - **Task 级 Todo**：随开发推进勾选 `[ ]` → `[x]`。
-- **后续优先**：从 Issue 列表提炼，前 5 项为共识下一步。
+- **后续优先**：Phase C 清理 → Phase D 独立项 → Phase E Pi Mono 吸收。
 - 新增/关闭 Issue 或完成 Task 后同步更新本表。
 - **历史详情**：Phase 1-3 的详细 checklist 已归入 git 历史（v0.3.0 前的 roadmap 版本），如需查看可 `git log -- docs/planning/roadmap.md`。

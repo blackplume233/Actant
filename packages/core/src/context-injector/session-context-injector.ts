@@ -74,6 +74,10 @@ export interface SessionContext {
  * EventBus integration:
  * - Emits `session:preparing` before collection starts
  * - Emits `session:context-ready` after collection finishes
+ *
+ * @deprecated Phase B migration: Context discovery is moving to ContextManager (VFS-based).
+ * Agents will browse context via VFS at runtime instead of pre-assembled injection.
+ * This class is retained during migration. See: docs/design/context-first-multi-source-architecture.md
  */
 export class SessionContextInjector {
   private providers = new Map<string, ContextProvider>();

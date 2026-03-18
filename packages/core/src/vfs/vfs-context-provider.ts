@@ -8,6 +8,9 @@ import type { VfsRegistry } from "./vfs-registry";
  * When an ACP session starts, this provider generates a summary of all
  * available VFS mount points and their capabilities, so the agent knows
  * what virtual paths it can access using standard Read/Write operations.
+ *
+ * @deprecated Phase B migration: VFS is now ContextManager's primary output.
+ * Agents access VFS through ContextManager MCP Server. Retained during migration.
  */
 export class VfsContextProvider implements ContextProvider {
   readonly name = "vfs";

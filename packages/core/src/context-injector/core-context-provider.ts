@@ -13,6 +13,9 @@ const ARCHETYPE_DESCRIPTIONS: Record<AgentArchetype, string> = {
  * into every managed agent session, regardless of archetype.
  *
  * Tells the agent what it is, where it lives, and what Actant provides.
+ *
+ * @deprecated Phase B migration: Identity context will be handled by AgentServer's
+ * fixed rules + ContextManager VFS. Retained during migration period.
  */
 export class CoreContextProvider implements ContextProvider {
   readonly name = "core-identity";

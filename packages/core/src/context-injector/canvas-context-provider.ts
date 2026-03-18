@@ -5,6 +5,9 @@ import { loadTemplate, renderTemplate } from "../prompts/template-engine";
 /**
  * Provides canvas-related tools and system context for managed agents.
  * Repo-tier agents are excluded (canvas requires at least service archetype).
+ *
+ * @deprecated Phase B migration: Canvas will become an AgentServer-internal capability.
+ * Retained during migration period.
  */
 export class CanvasContextProvider implements ContextProvider {
   readonly name = "canvas";
