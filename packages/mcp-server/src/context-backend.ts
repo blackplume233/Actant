@@ -4,6 +4,7 @@ import {
   createProjectContextRegistrations,
   loadProjectContext,
 } from "@actant/api";
+import { ContextManager, DomainContextSource } from "@actant/context";
 import type {
   VfsDescribeRpcResult,
   VfsGrepRpcResult,
@@ -38,6 +39,7 @@ export interface StandaloneContext extends ContextBackend {
   readonly mode: "standalone";
   readonly projectRoot: string;
   readonly configPath: string | null;
+  readonly contextManager: ContextManager;
 }
 
 export async function createContextBackend(options?: ContextBackendOptions): Promise<ContextBackend> {
@@ -146,10 +148,20 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
     }),
   }, "/daemon", { type: "daemon" }));
 
+  const contextManager = new ContextManager();
+  contextManager.registerSource(new DomainContextSource({
+    skillManager: context.managers.skillManager,
+    promptManager: context.managers.promptManager,
+    mcpConfigManager: context.managers.mcpConfigManager,
+    workflowManager: context.managers.workflowManager,
+    templateRegistry: context.managers.templateRegistry,
+  }));
+
   return {
     mode: "standalone",
     projectRoot: context.projectRoot,
     configPath: context.configPath,
+    contextManager,
     async read(path, startLine, endLine) {
       const resolved = registry.resolve(path);
       if (!resolved) {

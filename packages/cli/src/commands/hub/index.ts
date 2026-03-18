@@ -2,7 +2,7 @@ import { Command } from "commander";
 import {
   VfsRegistry,
   createDaemonInfoSource,
-} from "@actant/core";
+} from "@actant/agent-runtime";
 import {
   createProjectContextFactoryRegistry,
   createProjectContextRegistrations,

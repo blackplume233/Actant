@@ -6,7 +6,7 @@ import type {
   SourceValidateResult,
   SourceEntry,
 } from "@actant/shared";
-import { SourceValidator } from "@actant/core";
+import { SourceValidator } from "@actant/agent-runtime";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

@@ -14,7 +14,7 @@ import {
   SourceFactoryRegistry,
   workspaceSourceFactory,
   type FetchResult,
-} from "@actant/core";
+} from "@actant/agent-runtime";
 import type {
   AgentTemplate,
   ActantProjectEntrypoints,

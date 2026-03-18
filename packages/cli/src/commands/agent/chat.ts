@@ -2,7 +2,7 @@ import { Command } from "commander";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 import { AcpConnection, type AcpSessionInfo, type SessionNotification } from "@actant/acp";
-import type { StreamChunk } from "@actant/core";
+import type { StreamChunk } from "@actant/agent-runtime";
 import { ProcessTerminal, ActantChatView } from "@actant/tui";
 
 export function createAgentChatCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {

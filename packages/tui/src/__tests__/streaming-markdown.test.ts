@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { StreamingMarkdown } from "../streaming-markdown";
 import { actantMarkdownTheme } from "../theme";
-import type { StreamChunk } from "@actant/core";
+import type { StreamChunk } from "@actant/agent-runtime";
 
 describe("StreamingMarkdown", () => {
   it("starts with empty text", () => {

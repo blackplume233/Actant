@@ -14,7 +14,7 @@ import {
 const logger = createLogger("activity-recorder");
 
 /**
- * @deprecated Use {@link RecordSystem} from `@actant/core/record` instead.
+ * @deprecated Use {@link RecordSystem} from `@actant/agent-runtime/record` instead.
  * This class is retained for backward compatibility during migration.
  *
  * Records agent activity to per-session JSONL files with content-addressable

@@ -131,6 +131,8 @@ export function toAgentTemplate(output: AgentTemplateOutput): AgentTemplate {
     archetype: output.archetype,
     launchMode: output.launchMode,
     metadata: output.metadata,
+    rules: output.rules,
+    toolSchema: output.toolSchema,
   };
 }
 

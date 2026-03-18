@@ -1,5 +1,5 @@
 import { Markdown, type MarkdownTheme, type Component } from "@mariozechner/pi-tui";
-import type { StreamChunk } from "@actant/core";
+import type { StreamChunk } from "@actant/agent-runtime";
 
 /**
  * A Markdown component that can be progressively updated with streaming chunks.

@@ -62,6 +62,14 @@ export interface AgentTemplate extends VersionedComponent {
   /** Preferred launch mode. When set, overrides archetype-derived default. */
   launchMode?: LaunchMode;
   metadata?: Record<string, string>;
+
+  /** Explicit behavioral rules injected into the Agent's system prompt. */
+  rules?: string[];
+  /**
+   * When set, this Agent is exposed as an MCP Tool to External Agents.
+   * Defines the JSON Schema for tool input parameters.
+   */
+  toolSchema?: Record<string, unknown>;
 }
 
 /** High-level semantic archetype describing how an agent is intended to be used (management depth: repo < service < employee). */

@@ -6,8 +6,8 @@ import {
   type ChannelCapabilities,
   type ChannelHostServices,
   DEFAULT_CHANNEL_CAPABILITIES,
-} from "@actant/core";
-import type { StreamChunk } from "@actant/core";
+} from "@actant/agent-runtime";
+import type { StreamChunk } from "@actant/agent-runtime";
 import type { AcpConnectionManager } from "./connection-manager";
 import type { AcpConnection } from "./connection";
 import { AcpCommunicator } from "./communicator";

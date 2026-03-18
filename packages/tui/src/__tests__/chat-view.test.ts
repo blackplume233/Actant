@@ -2,7 +2,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { createTestHarness, type TuiTestHarness } from "../testing";
 import { ActantChatView, type ChatViewOptions } from "../chat-view";
 import type { Terminal } from "@mariozechner/pi-tui";
-import type { StreamChunk } from "@actant/core";
+import type { StreamChunk } from "@actant/agent-runtime";
 
 let harness: TuiTestHarness;
 let terminal: Terminal;

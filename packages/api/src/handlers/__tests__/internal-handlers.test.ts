@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { HandlerRegistry } from "../handler-registry";
 import { registerInternalHandlers } from "../internal-handlers";
 import type { AppContext } from "../../services/app-context";
-import { SessionTokenStore } from "@actant/core";
+import { SessionTokenStore } from "@actant/agent-runtime";
 
 function createMockCtx(token?: string, agentName?: string, sessionId?: string): AppContext {
   const tokenStore = new SessionTokenStore();

@@ -4,7 +4,7 @@ import type {
   PromptResult,
   RunPromptOptions,
   StreamChunk,
-} from "@actant/core";
+} from "@actant/agent-runtime";
 import { createLogger } from "@actant/shared";
 import type { AcpConnection } from "./connection";
 

@@ -42,6 +42,10 @@ export interface AgentInstanceMeta {
   workspaceDir?: string;
   /** ISO timestamp of when the agent process was last started. */
   startedAt?: string;
+  /** Behavioral rules for this Agent, injected into system prompt by RulesContextProvider. */
+  rules?: string[];
+  /** When set, this Agent is exposed as an MCP Tool. Defines the input JSON Schema. */
+  toolSchema?: Record<string, unknown>;
 }
 
 export type AgentStatus =

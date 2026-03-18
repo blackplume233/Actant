@@ -3,7 +3,7 @@
  *
  * These are the pure data types shared across packages.
  * The full ActantPlugin interface (which references HookEventBus and ContextProvider)
- * lives in @actant/core/plugin.
+ * lives in @actant/agent-runtime/plugin.
  */
 
 // ─────────────────────────────────────────────────────────────

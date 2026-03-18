@@ -1,6 +1,6 @@
 {
   "name": "@actant/acp",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Agent Client Protocol adapter for the Actant platform",
   "type": "module",
   "license": "MIT",
@@ -41,8 +41,8 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@actant/core": "workspace:0.4.0",
-    "@actant/shared": "workspace:0.4.0",
+    "@actant/agent-runtime": "workspace:0.5.0",
+    "@actant/shared": "workspace:0.5.0",
     "@agentclientprotocol/sdk": "^0.14.1",
     "@zed-industries/claude-agent-acp": "^0.18.0"
   }

@@ -1,1 +1,1 @@
-export * from "@actant/core";
+export * from "@actant/agent-runtime";

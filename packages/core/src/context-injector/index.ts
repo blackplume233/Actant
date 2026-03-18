@@ -14,5 +14,6 @@ export {
 
 export { CanvasContextProvider } from "./canvas-context-provider";
 export { CoreContextProvider } from "./core-context-provider";
+export { RulesContextProvider } from "./rules-context-provider";
 
 export { loadTemplate, renderTemplate } from "../prompts/template-engine";

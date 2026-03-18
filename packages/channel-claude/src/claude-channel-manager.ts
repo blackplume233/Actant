@@ -6,7 +6,7 @@ import {
   type ChannelHostServices,
   type McpServerSpec,
   DEFAULT_CHANNEL_CAPABILITIES,
-} from "@actant/core";
+} from "@actant/agent-runtime";
 import { ClaudeChannelAdapter, type ClaudeChannelOptions } from "./claude-channel-adapter.js";
 import { randomUUID } from "node:crypto";
 

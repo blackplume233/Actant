@@ -9,7 +9,7 @@ import {
   type VfsCapabilityId,
   type VfsIdentity,
 } from "@actant/shared";
-import type { VfsRegistry, VfsPermissionManager } from "@actant/core";
+import type { VfsRegistry, VfsPermissionManager } from "@actant/agent-runtime";
 
 const logger = createLogger("vfs-interceptor");
 

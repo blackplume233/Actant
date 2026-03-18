@@ -19,7 +19,7 @@ import type {
 } from "@agentclientprotocol/sdk";
 import { createLogger } from "@actant/shared";
 import type { mapActivityTypeToCategory as _mapFn } from "@actant/shared";
-import type { ActivityRecorder, RecordSystem } from "@actant/core";
+import type { ActivityRecorder, RecordSystem } from "@actant/agent-runtime";
 import type { ClientCallbackHandler } from "./connection";
 
 const logger = createLogger("recording-handler");

@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 export default defineConfig({
   resolve: {
     alias: {
-      "@actant/core": resolve(__dirname, "packages/core/src/index.ts"),
+      "@actant/agent-runtime": resolve(__dirname, "packages/core/src/index.ts"),
       "@actant/shared": resolve(__dirname, "packages/shared/src/index.ts"),
       "@actant/api": resolve(__dirname, "packages/api/src/index.ts"),
       "@actant/acp": resolve(__dirname, "packages/acp/src/index.ts"),

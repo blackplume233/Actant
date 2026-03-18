@@ -108,6 +108,28 @@ describe("TemplateLoader", () => {
       expect(template.schedule).toBeUndefined();
     });
 
+    it("should preserve rules and toolSchema fields (Phase B-2)", async () => {
+      const json = JSON.stringify({
+        name: "rules-test",
+        version: "1.0.0",
+        backend: { type: "cursor" },
+        provider: { type: "openai" },
+        domainContext: {},
+        rules: ["Always respond in English", "Be concise"],
+        toolSchema: { my_tool: { type: "object", properties: { q: { type: "string" } } } },
+      });
+      const template = await loader.loadFromString(json);
+
+      expect(template.rules).toEqual(["Always respond in English", "Be concise"]);
+      expect(template.toolSchema).toEqual({ my_tool: { type: "object", properties: { q: { type: "string" } } } });
+    });
+
+    it("should default rules and toolSchema to undefined when absent", async () => {
+      const template = await loader.loadFromFile(join(FIXTURES, "minimal-template.json"));
+      expect(template.rules).toBeUndefined();
+      expect(template.toolSchema).toBeUndefined();
+    });
+
     it("should accept a permission preset string", async () => {
       const json = JSON.stringify({
         name: "preset-perms",

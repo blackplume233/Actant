@@ -18,8 +18,8 @@ import type {
   McpServerDefinition,
   WorkflowDefinition,
 } from "@actant/shared";
-import type { HeartbeatPlugin } from "@actant/core";
-import type { BaseComponentManager, NamedComponent } from "@actant/core";
+import type { HeartbeatPlugin } from "@actant/agent-runtime";
+import type { BaseComponentManager, NamedComponent } from "@actant/agent-runtime";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry, RpcHandler } from "./handler-registry";
 

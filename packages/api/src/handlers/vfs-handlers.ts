@@ -58,7 +58,7 @@ function assertBootstrapVfsMutationAllowed(ctx: AppContext, path?: string): void
   );
 }
 
-function requireVfsRegistry(ctx: AppContext): import("@actant/core").VfsRegistry {
+function requireVfsRegistry(ctx: AppContext): import("@actant/agent-runtime").VfsRegistry {
   return ctx.vfsRegistry;
 }
 

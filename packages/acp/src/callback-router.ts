@@ -19,7 +19,7 @@ import type {
   ClientCapabilities,
 } from "@agentclientprotocol/sdk";
 import { createLogger } from "@actant/shared";
-import type { PermissionPolicyEnforcer } from "@actant/core";
+import type { PermissionPolicyEnforcer } from "@actant/agent-runtime";
 import type { ClientCallbackHandler } from "./connection";
 import type { ToolCallInterceptor } from "./tool-call-interceptor";
 import type { VfsInterceptor } from "./vfs-interceptor";

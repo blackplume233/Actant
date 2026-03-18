@@ -36,7 +36,7 @@ Actant 同时扮演：
 
 ---
 
-## 当前最高优先：Context-First 架构重构
+## Context-First 架构重构（已完成）
 
 > **设计文档**：[context-first-multi-source-architecture.md](../design/context-first-multi-source-architecture.md)
 
@@ -50,17 +50,17 @@ Actant 同时扮演：
 - [x] **A-4 测试补强与质量基线**（1-2 天）：#238/#239/#240 已修复并关闭，新增 dispose 竞态测试。Coverage baseline: **Stmts 52.31% | Branch 42.97% | Funcs 54.83% | Lines 53.45%**（1315 tests / 114 files）
 - [x] **A-5 版本存档**（0.5 天）：全部 14 package 升至 `0.4.0`，打 tag `v0.4.0` 作为重构前最后存档
 
-### Phase B：Context-First 架构实施（v0.4.0 → v0.5.0）— 预计 12-20 天
+### Phase B：Context-First 架构实施（v0.4.0 → v0.5.0）— 已完成
 
 > **目标**：在 v0.4.0 干净基线上实施 Context-First Multi-Source 架构重构。
 
-- [ ] **B-0 ContextManager 骨架**（1-2 天）：创建 `@actant/context` 包，实现 ContextSource 接口 + ContextManager + MCP Server
-- [ ] **B-1 DomainContextSource**（2-3 天）：包装现有 SkillManager/PromptManager 为 VFS 投影，External Agent 可浏览
-- [ ] **B-2 AgentTemplate/Manager 增量**（1-2 天）：原地扩展 rules + toolSchema + ContextManager MCP 注入 + Agent → Tool 回注
-- [ ] **B-3 UnrealProjectSource**（3-5 天）：大型游戏项目上下文投影为 VFS
-- [ ] **B-4 现有系统桥接**（3-5 天）：MCP Server / Hub / CLI 切换到 ContextManager 架构
-- [ ] **B-5 重命名与旧模块收缩**（2-3 天）：`@actant/core` → `@actant/agent-runtime`，删除被 ContextManager 替代的模块
-- [ ] **B-6 版本发布**（1 天）：全部 package 升至 `0.5.0`，打 tag `v0.5.0`
+- [x] **B-0 ContextManager 骨架**（1-2 天）：创建 `@actant/context` 包，实现 ContextSource 接口 + ContextManager + MCP Server
+- [x] **B-1 DomainContextSource**（2-3 天）：包装现有 SkillManager/PromptManager 为 VFS 投影，External Agent 可浏览
+- [x] **B-2 AgentTemplate/Manager 增量**（1-2 天）：原地扩展 rules + toolSchema + ContextManager MCP 注入 + Agent → Tool 回注
+- [x] **B-3 UnrealProjectSource**（3-5 天）：大型游戏项目上下文投影为 VFS
+- [x] **B-4 现有系统桥接**（3-5 天）：MCP Server / Hub / CLI 切换到 ContextManager 架构
+- [x] **B-5 重命名与旧模块收缩**（2-3 天）：`@actant/core` → `@actant/agent-runtime`，删除被 ContextManager 替代的模块
+- [x] **B-6 版本发布**（1 天）：全部 package 升至 `0.5.0`，打 tag `v0.5.0`
 
 ---
 
@@ -82,6 +82,18 @@ Actant 同时扮演：
 ---
 
 ## 已完成里程碑
+
+### v0.5.0 — Phase B Context-First 架构实施（2026-03-18）
+
+> Phase B 全部完成。在 v0.4.0 干净基线上实施 Context-First Multi-Source 架构重构。
+
+- [x] B-0：创建 `@actant/context` 包，ContextSource + ContextManager + VfsMountTarget 接口
+- [x] B-1：DomainContextSource 包装 SkillManager/PromptManager/McpConfigManager/WorkflowManager/TemplateRegistry
+- [x] B-2：AgentTemplate 扩展 rules/toolSchema，RulesContextProvider 注入系统提示，AgentStatusSource 投影 Agent 状态
+- [x] B-3：ProjectSource 抽象基类 + UnrealProjectSource 扫描 UE 项目结构投影为 VFS
+- [x] B-4：AppContext/HubContextService/MCP Server Standalone 三端桥接 ContextManager
+- [x] B-5：`@actant/core` → `@actant/agent-runtime` 全局重命名（33 文件 + 14 package.json）
+- [x] B-6：全部 15 package 升至 0.5.0
 
 ### v0.4.0 — Phase A 工程清理与重构准备（2026-03-18）
 
@@ -127,9 +139,9 @@ Actant 同时扮演：
 
 ## 后续优先
 
-按依赖关系与平台价值排序。**Phase A/B 为当前最高优先**。
+按依赖关系与平台价值排序。**Phase A/B 已完成**，后续从 C 部分开始。
 
-### A. Phase A — 工程清理与 v0.4.0 存档（🔥 当前）
+### A. Phase A — 工程清理与 v0.4.0 存档（✅ 已完成）
 
 详见 [设计文档 §Phase A](../design/context-first-multi-source-architecture.md)。
 
@@ -141,19 +153,9 @@ Actant 同时扮演：
 | 4 | A-4 测试补强 | quality | 1-2 天 | 集成测试 + bug fix + coverage baseline |
 | 5 | A-5 版本存档 | release | 0.5 天 | v0.4.0 tag |
 
-### B. Phase B — Context-First 架构实施
+### B. Phase B — Context-First 架构实施（✅ 已完成）
 
-详见 [设计文档 §Phase B](../design/context-first-multi-source-architecture.md)。
-
-| 顺序 | 子阶段 | 类型 | 预计 | 说明 |
-|------|--------|------|------|------|
-| 6 | B-0 ContextManager 骨架 | new pkg | 1-2 天 | `@actant/context`：ContextSource + ContextManager + MCP Server |
-| 7 | B-1 DomainContextSource | feature | 2-3 天 | SkillManager/PromptManager → VFS 投影 |
-| 8 | B-2 AgentTemplate 增量 | enhance | 1-2 天 | rules + toolSchema + ContextManager MCP 注入 + Agent→Tool 回注 |
-| 9 | B-3 UnrealProjectSource | feature | 3-5 天 | 大型游戏项目上下文投影 |
-| 10 | B-4 系统桥接 | migrate | 3-5 天 | MCP Server / Hub / CLI 切换 + 通信层适配 |
-| 11 | B-5 重命名与模块收缩 | refactor | 2-3 天 | `@actant/core` → `@actant/agent-runtime` |
-| 12 | B-6 版本发布 | release | 1 天 | v0.5.0 tag |
+详见 [设计文档 §Phase B](../design/context-first-multi-source-architecture.md)。v0.5.0 已发布。
 
 ### C. 架构重构后独立项
 

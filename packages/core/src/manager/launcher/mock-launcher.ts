@@ -8,7 +8,7 @@ let nextPid = 10000;
  *
  * Suitable for unit tests where process lifecycle is not under test.
  * For integration tests that exercise ProcessWatcher, use
- * `createTestLauncher()` from `@actant/core/testing` instead.
+ * `createTestLauncher()` from `@actant/agent-runtime/testing` instead.
  */
 export class MockLauncher implements AgentLauncher {
   readonly launched: AgentProcess[] = [];

@@ -1,4 +1,4 @@
-import type { StreamChunk, ChannelEvent } from "@actant/core";
+import type { StreamChunk, ChannelEvent } from "@actant/agent-runtime";
 import type { SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 
 /**

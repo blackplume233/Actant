@@ -12,7 +12,7 @@ import {
   type Component,
   CombinedAutocompleteProvider,
 } from "@mariozechner/pi-tui";
-import type { StreamChunk } from "@actant/core";
+import type { StreamChunk } from "@actant/agent-runtime";
 import { actantEditorTheme, actantMarkdownTheme } from "./theme.js";
 import { StreamingMarkdown } from "./streaming-markdown.js";
 

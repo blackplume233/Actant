@@ -144,6 +144,8 @@ export const AgentTemplateSchema = z
     archetype: AgentArchetypeSchema.optional(),
     launchMode: LaunchModeSchema.optional(),
     metadata: z.record(z.string(), z.string()).optional(),
+    rules: z.array(z.string()).optional(),
+    toolSchema: z.record(z.string(), z.unknown()).optional(),
   })
   .refine(
     (data) => {

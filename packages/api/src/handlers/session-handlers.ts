@@ -21,7 +21,7 @@ import {
   AgentNotFoundError,
   CancelFailedError,
 } from "@actant/shared";
-import type { SessionLease } from "@actant/core";
+import type { SessionLease } from "@actant/agent-runtime";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

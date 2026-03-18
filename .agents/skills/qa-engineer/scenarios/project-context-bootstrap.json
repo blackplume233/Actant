@@ -1,0 +1,104 @@
+{
+  "name": "project-context-bootstrap",
+  "description": "验证 #298 愿景：项目上下文共享与空目录 Bootstrap 闭环。覆盖全部 6 项验收标准：项目上下文配置、必要上下文完整性、通用 skill、空目录 bootstrap、上下文发现、验证产物。",
+  "tags": ["project-context", "bootstrap", "issue-298", "deep"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock"
+  },
+  "steps": [
+    {
+      "id": "AC1-project-config-exists",
+      "description": "验收1: 项目上下文入口文件存在且可解析",
+      "command": "hub status -f json",
+      "expect": "返回 active=true，projectRoot 非空，projectName 非空，configsDir 为 configs"
+    },
+    {
+      "id": "AC1-project-vfs-context-json",
+      "description": "验收1: /project/context.json VFS 端点可读且包含完整摘要",
+      "command": "vfs read /hub/project/context.json",
+      "expect": "返回 JSON，包含 mode=project-context, projectName, components 计数, entrypoints.readFirst, available 列表"
+    },
+    {
+      "id": "AC1-project-vfs-actant-json",
+      "description": "验收1: /project/actant.project.json VFS 端点可读",
+      "command": "vfs read /hub/project/actant.project.json",
+      "expect": "返回入口配置 JSON，包含 name, version, configsDir, entrypoints"
+    },
+    {
+      "id": "AC2-skill-loaded",
+      "description": "验收2: 至少一份 skill 已加载",
+      "command": "hub status -f json",
+      "expect": "components.skills >= 1"
+    },
+    {
+      "id": "AC2-prompt-loaded",
+      "description": "验收2: 至少一份 prompt 已加载",
+      "command": "hub status -f json",
+      "expect": "components.prompts >= 1"
+    },
+    {
+      "id": "AC2-knowledge-entrypoint",
+      "description": "验收2: 知识入口文件可通过 VFS workspace 访问",
+      "command": "vfs read /hub/workspace/PROJECT_CONTEXT.md",
+      "expect": "返回项目上下文说明文档内容"
+    },
+    {
+      "id": "AC3-universal-skill-content",
+      "description": "验收3: 通用 skill project-context-reader 存在且不绑定单一项目",
+      "command": "vfs ls /hub/skills/",
+      "expect": "包含 project-context-reader 相关条目"
+    },
+    {
+      "id": "AC3-skill-catalog",
+      "description": "验收3: skills VFS 目录包含 _catalog.json",
+      "command": "vfs read /hub/skills/_catalog.json",
+      "expect": "返回包含 project-context-reader 条目的 JSON 数组"
+    },
+    {
+      "id": "AC4-bootstrap-minimal-config",
+      "description": "验收4: examples/project-context-bootstrap/ 的最小配置结构完整",
+      "command": "检查 examples/project-context-bootstrap/ 目录结构",
+      "expect": "至少包含 actant.project.json, PROJECT_CONTEXT.md, configs/skills/, configs/prompts/, configs/templates/"
+    },
+    {
+      "id": "AC4-bootstrap-hub-activate",
+      "description": "验收4: 以空目录 bootstrap 样例为项目根启动 hub 可加载非空上下文",
+      "command": "hub activate <bootstrap-dir> 然后 hub status -f json",
+      "expect": "active=true, projectName=project-context-bootstrap, components 计数非零"
+    },
+    {
+      "id": "AC5-context-discovery-sequence",
+      "description": "验收5: context.json 声明的发现顺序可被遵循",
+      "command": "vfs read /hub/project/context.json",
+      "expect": "entrypoints.readFirst 数组非空，包含 PROJECT_CONTEXT.md"
+    },
+    {
+      "id": "AC5-available-catalogs",
+      "description": "验收5: context.json 的 available 列表包含 skills/prompts/templates",
+      "command": "vfs read /hub/project/context.json",
+      "expect": "available 或 components 字段列出可用的 skill、prompt、template 名称"
+    },
+    {
+      "id": "AC6-template-present",
+      "description": "验收6: 示例模板 project-context-agent 存在且可加载",
+      "command": "template list -f json",
+      "expect": "包含 project-context-agent 或 code-review-agent 模板"
+    },
+    {
+      "id": "EDGE-readFirst-all-accessible",
+      "description": "边界: entrypoints.readFirst 声明的所有文件均可通过 VFS 访问",
+      "command": "逐一 vfs read entrypoints 中声明的文件",
+      "expect": "所有文件均返回非空内容"
+    },
+    {
+      "id": "EDGE-sources-json",
+      "description": "边界: /project/sources.json VFS 端点可读",
+      "command": "vfs read /hub/project/sources.json",
+      "expect": "返回 JSON 数组（可为空）"
+    }
+  ],
+  "cleanup": [
+    "daemon stop"
+  ]
+}

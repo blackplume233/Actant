@@ -56,7 +56,7 @@ VersionedComponent     所有可共享组件的基类（#119）
 
 其中：
 
-- `AgentTemplate` 定义 Agent 的运行时蓝图（backend / provider / domainContext / permissions / archetype / schedule）
+- `AgentTemplate` 定义 Agent 的运行时蓝图（backend / provider / domainContext / permissions / archetype / schedule / rules / toolSchema）
 - `AgentAppManifest` 定义围绕模板的产品层封装（专属 UI、结构化配置、工作流编排、数据输入输出与协作边界）
 - `AgentInstanceMeta` 记录某个模板实例化后的持久化运行时状态；实例可被解析为某个 `Agent App` 的具体视图
 - `Agent App` 绑定模板而不替代模板；它不直接声明底层 backend / provider / permissions，而是复用绑定模板的底座能力
@@ -93,6 +93,8 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 | `launchMode` | [`LaunchMode`](#launchmode) | 否 | 模板级启动模式覆盖。设置后覆盖 archetype 推导的默认值，但仍可被 create-time override 覆盖。优先级：override > template.launchMode > archetype default |
 | `schedule` | [`ScheduleConfig`](#scheduleconfig) | 否 | 雇员型调度配置（Phase 3c 新增） |
 | `metadata` | `Record<string, string>` | 否 | 任意键值元数据 |
+| `rules` | `string[]` | 否 | 行为规则列表，由 `RulesContextProvider` 注入 Agent 系统提示词。用于声明不依赖 skill/prompt 的显式行为约束（Phase B-2 新增） |
+| `toolSchema` | `Record<string, unknown>` | 否 | 将 Agent 暴露为 MCP Tool 时使用的输入 JSON Schema。定义外部调用者与此 Agent 交互的输入契约（Phase B-2 新增） |
 
 ### AgentBackendConfig
 
@@ -692,6 +694,8 @@ Provider 存在两个层次：
 | `workspaceDir` | `string` | 否 | — | Agent workspace 的绝对路径。运行时由 AgentManager 在 `startAgent()` 时填充，持久化到 `.actant.json`，供 Dashboard 等外部系统读取 |
 | `startedAt` | `string` | 否 | — | ISO 8601 时间戳，记录 Agent 进程最近一次启动的时间。由 AgentManager 在 `startAgent()` 时写入 |
 | `metadata` | `Record<string, string>` | 否 | — | 任意元数据 |
+| `rules` | `string[]` | 否 | — | 从模板继承的行为规则，注入系统提示词 |
+| `toolSchema` | `Record<string, unknown>` | 否 | — | 从模板继承的 MCP Tool 输入 Schema |
 
 \* Zod Schema 中标记 optional 以兼容旧文件；读取时缺失则默认 `"cursor"`。`"pi"` 类型实例的 `processOwnership` 始终为 `"managed"`。
 

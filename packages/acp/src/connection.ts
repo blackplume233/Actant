@@ -38,7 +38,7 @@ import {
 import { resolveAcpBinary } from "./binary-resolver";
 import { getAcpPackageVersion } from "./package-version";
 import type { PermissionsConfig } from "@actant/shared";
-import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/core";
+import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/agent-runtime";
 import { LocalTerminalManager } from "./terminal-manager";
 
 const logger = createLogger("acp-connection");

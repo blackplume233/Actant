@@ -8,9 +8,9 @@ import type {
   McpServerStatus,
   McpSetResult,
   McpTransportConfig,
-} from "@actant/core";
-import { DEFAULT_CHANNEL_CAPABILITIES } from "@actant/core";
-import type { StreamChunk } from "@actant/core";
+} from "@actant/agent-runtime";
+import { DEFAULT_CHANNEL_CAPABILITIES } from "@actant/agent-runtime";
+import type { StreamChunk } from "@actant/agent-runtime";
 import { query as sdkQuery } from "@anthropic-ai/claude-agent-sdk";
 import type { Options, SDKMessage } from "@anthropic-ai/claude-agent-sdk";
 import { mapSdkMessage } from "./message-mapper.js";

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import type { ChannelConnectOptions } from "@actant/core";
+import type { ChannelConnectOptions } from "@actant/agent-runtime";
 import { ClaudeChannelManagerAdapter } from "../claude-channel-manager.js";
 import { ClaudeChannelAdapter } from "../claude-channel-adapter.js";
 

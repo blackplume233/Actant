@@ -9,8 +9,8 @@ import type {
   PermissionsInput,
 } from "@actant/shared";
 import { createLogger } from "@actant/shared";
-import { resolvePermissions } from "@actant/core";
-import type { BackendBuilder, VerifyResult } from "@actant/core";
+import { resolvePermissions } from "@actant/agent-runtime";
+import type { BackendBuilder, VerifyResult } from "@actant/agent-runtime";
 
 const logger = createLogger("pi-builder");
 

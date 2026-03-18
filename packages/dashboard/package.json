@@ -1,6 +1,6 @@
 {
   "name": "@actant/dashboard",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Web dashboard for monitoring Actant AI agents",
   "type": "module",
   "license": "MIT",
@@ -28,8 +28,8 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@actant/rest-api": "workspace:0.4.0",
-    "@actant/shared": "workspace:0.4.0"
+    "@actant/rest-api": "workspace:0.5.0",
+    "@actant/shared": "workspace:0.5.0"
   },
   "devDependencies": {
     "@radix-ui/react-slot": "^1.2.4",

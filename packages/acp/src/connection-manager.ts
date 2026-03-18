@@ -5,8 +5,8 @@ import {
   AcpConnectionAlreadyExistsError,
   AcpGatewayNotFoundError,
 } from "@actant/shared";
-import { PermissionPolicyEnforcer, PermissionAuditLogger, type ActivityRecorder } from "@actant/core";
-import type { ActantToolDefinition, ChannelHostServices, McpServerSpec } from "@actant/core";
+import { PermissionPolicyEnforcer, PermissionAuditLogger, type ActivityRecorder } from "@actant/agent-runtime";
+import type { ActantToolDefinition, ChannelHostServices, McpServerSpec } from "@actant/agent-runtime";
 import { AcpConnection, type AcpConnectionOptions, type AcpSessionInfo, type ClientCallbackHandler } from "./connection";
 import { ClientCallbackRouter } from "./callback-router";
 import { RecordingCallbackHandler } from "./recording-handler";

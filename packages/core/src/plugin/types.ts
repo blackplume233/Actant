@@ -1,7 +1,7 @@
 /**
  * ActantPlugin — the full six-plug extension interface.
  *
- * Lives in @actant/core (not shared) because plugs 3 and 4 reference
+ * Lives in @actant/agent-runtime (not shared) because plugs 3 and 4 reference
  * HookEventBus and ContextProvider which are core-only types.
  *
  * Plug summary:

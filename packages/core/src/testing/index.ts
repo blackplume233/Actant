@@ -1,5 +1,5 @@
 /**
- * Shared test utilities for @actant/core.
+ * Shared test utilities for @actant/agent-runtime.
  *
  * Provides real-process-based helpers that replace MockLauncher.
  * All lifecycle tests should use these to avoid fake-PID race conditions.

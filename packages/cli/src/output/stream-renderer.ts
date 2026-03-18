@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import type { StreamChunk } from "@actant/core";
+import type { StreamChunk } from "@actant/agent-runtime";
 
 export interface StreamRendererOptions {
   output?: NodeJS.WritableStream;

@@ -11,7 +11,7 @@
  * With valid auth, real Claude responses flow through.
  */
 import { describe, it, expect } from "vitest";
-import type { StreamChunk } from "@actant/core";
+import type { StreamChunk } from "@actant/agent-runtime";
 import { ClaudeChannelAdapter } from "../claude-channel-adapter.js";
 
 const VALID_CHUNK_TYPES = ["text", "tool_use", "result", "error"] as const;

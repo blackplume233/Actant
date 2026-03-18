@@ -5,7 +5,7 @@ import type {
   PromptResult,
   RunPromptOptions,
   StreamChunk,
-} from "@actant/core";
+} from "@actant/agent-runtime";
 import { createLogger } from "@actant/shared";
 import { createPiAgent, type PiAgentOptions } from "./pi-tool-bridge";
 

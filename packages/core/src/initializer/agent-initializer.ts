@@ -231,6 +231,8 @@ export class AgentInitializer {
         autoStart,
         effectivePermissions,
         metadata: overrides?.metadata,
+        rules: template.rules,
+        toolSchema: template.toolSchema,
       };
 
       await writeInstanceMeta(workspaceDir, meta);

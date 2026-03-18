@@ -30,8 +30,8 @@ import type {
   AgentUpdatePermissionsResult,
 } from "@actant/shared";
 import { AgentNotFoundError } from "@actant/shared";
-import { resolvePermissionsWithMcp, PermissionAuditLogger, EmployeeScheduler, HEARTBEAT_FILENAME, type ScheduleConfigInput } from "@actant/core";
-import { updateInstanceMeta, readInstanceMeta } from "@actant/core";
+import { resolvePermissionsWithMcp, PermissionAuditLogger, EmployeeScheduler, HEARTBEAT_FILENAME, type ScheduleConfigInput } from "@actant/agent-runtime";
+import { updateInstanceMeta, readInstanceMeta } from "@actant/agent-runtime";
 import { createLogger } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";

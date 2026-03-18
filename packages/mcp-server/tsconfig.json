@@ -13,6 +13,9 @@
                            "path":  "../shared"
                        },
                        {
+                           "path":  "../context"
+                       },
+                       {
                            "path":  "../vfs"
                        },
                        {

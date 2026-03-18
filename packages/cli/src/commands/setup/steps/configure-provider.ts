@@ -3,7 +3,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { select, input, password, confirm } from "@inquirer/prompts";
 import chalk from "chalk";
 import type { ModelProviderDescriptor } from "@actant/shared";
-import { modelProviderRegistry, registerBuiltinProviders } from "@actant/core";
+import { modelProviderRegistry, registerBuiltinProviders } from "@actant/agent-runtime";
 import type { CliPrinter } from "../../../output/index";
 import type { ProviderConfig, AppConfig } from "../types";
 

@@ -1,0 +1,38 @@
+{
+  "name": "@actant/context",
+  "version": "0.5.0",
+  "description": "Context-First platform core: ContextManager, ContextSource, and tool registration",
+  "type": "module",
+  "license": "MIT",
+  "author": "blackplume <blackplume233@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/blackplume233/Actant.git",
+    "directory": "packages/context"
+  },
+  "homepage": "https://github.com/blackplume233/Actant#readme",
+  "bugs": "https://github.com/blackplume233/Actant/issues",
+  "keywords": ["actant", "context", "context-manager"],
+  "publishConfig": { "access": "public" },
+  "files": ["dist"],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf dist",
+    "prepublishOnly": "tsup"
+  },
+  "dependencies": {
+    "@actant/shared": "workspace:0.5.0",
+    "@actant/vfs": "workspace:0.5.0"
+  }
+}

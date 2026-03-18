@@ -1,6 +1,6 @@
 {
   "name": "@actant/rest-api",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "Standalone RESTful API server for Actant \u2014 serves dashboard, n8n, and IM integrations",
   "type": "module",
   "license": "MIT",
@@ -25,7 +25,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@actant/shared": "workspace:0.4.0"
+    "@actant/shared": "workspace:0.5.0"
   },
   "devDependencies": {
     "@types/node": "^22",

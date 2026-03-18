@@ -33,6 +33,7 @@ import {
   SessionTokenStore,
   CanvasContextProvider,
   CoreContextProvider,
+  RulesContextProvider,
   SystemBudgetManager,
   PluginHost,
   HeartbeatPlugin,
@@ -51,8 +52,9 @@ import {
   RoutingChannelManager,
   type ActionContext,
   type LauncherMode,
-} from "@actant/core";
+} from "@actant/agent-runtime";
 import { CanvasStore } from "./canvas-store";
+import { ContextManager, DomainContextSource } from "@actant/context";
 import type { HostCapability, HostProfile, HostRuntimeState, ModelApiProtocol } from "@actant/shared";
 import { AcpConnectionManager, AcpChannelManagerAdapter } from "@actant/acp";
 import { ClaudeChannelManagerAdapter } from "@actant/channel-claude";
@@ -132,6 +134,7 @@ export class AppContext {
   readonly sourceFactoryRegistry: SourceFactoryRegistry;
   readonly hostProfile: HostProfile;
   readonly hubContext: HubContextService;
+  readonly contextManager: ContextManager;
   private vfsLifecycleManager?: VfsLifecycleManager;
 
   private initialized = false;
@@ -240,6 +243,7 @@ export class AppContext {
     this.sourceFactoryRegistry.register(vcsSourceFactory);
     this.sourceFactoryRegistry.register(processSourceFactory);
     this.hubContext = new HubContextService(this);
+    this.contextManager = new ContextManager();
   }
 
   async init(): Promise<void> {
@@ -284,6 +288,7 @@ export class AppContext {
     this.sessionContextInjector.setEventBus(this.eventBus);
     this.sessionContextInjector.setTokenStore(this.sessionTokenStore);
     this.sessionContextInjector.register(new CoreContextProvider());
+    this.sessionContextInjector.register(new RulesContextProvider());
     this.sessionContextInjector.register(new CanvasContextProvider());
     this.sessionContextInjector.register(new VfsContextProvider(this.vfsRegistry));
 
@@ -497,7 +502,7 @@ export class AppContext {
    * Augment the Pi builtin backend with runtime-only properties.
    *
    * The static definition (supportedModes, resolveCommand, materialization)
-   * is already registered by `@actant/core/builtin-backends`.
+   * is already registered by `@actant/agent-runtime/builtin-backends`.
    * Here we add:
    *   - `acpOwnsProcess: true`  → AcpConnectionManager owns the process in production
    *   - acpResolver             → reliable path via process.execPath + ACP_BRIDGE_PATH
@@ -687,6 +692,14 @@ export class AppContext {
     reg.mount(createDomainSource(this.workflowManager, "workflow", "/workflows", daemonLifecycle));
     reg.mount(createDomainSource(this.templateRegistry, "template", "/templates", daemonLifecycle));
     reg.mount(createAgentRegistrySource(this.agentManager, "/agents", daemonLifecycle));
+
+    this.contextManager.registerSource(new DomainContextSource({
+      skillManager: this.skillManager,
+      promptManager: this.promptManager,
+      mcpConfigManager: this.mcpConfigManager,
+      workflowManager: this.workflowManager,
+      templateRegistry: this.templateRegistry,
+    }));
 
     logger.info({ mounts: reg.size }, "VFS initialized with default mounts");
   }

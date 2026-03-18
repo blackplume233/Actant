@@ -1,7 +1,7 @@
 {
-  "name": "@actant/core",
-  "version": "0.4.0",
-  "description": "Core runtime engine for the Actant AI agent platform",
+  "name": "@actant/agent-runtime",
+  "version": "0.5.0",
+  "description": "Agent runtime engine for the Actant context-first AI platform",
   "type": "module",
   "license": "MIT",
   "author": "blackplume <blackplume233@gmail.com>",
@@ -41,7 +41,7 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@actant/shared": "workspace:0.4.0",
+    "@actant/shared": "workspace:0.5.0",
     "croner": "^9.0.0",
     "picomatch": "^4.0.3",
     "zod": "^4.3.6"
