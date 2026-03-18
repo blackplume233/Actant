@@ -18,7 +18,6 @@ import type {
   ReleaseTerminalResponse,
 } from "@agentclientprotocol/sdk";
 import { createLogger } from "@actant/shared";
-import type { mapActivityTypeToCategory as _mapFn } from "@actant/shared";
 import type { RecordSystem } from "@actant/agent-runtime";
 import type { ClientCallbackHandler } from "./connection";
 

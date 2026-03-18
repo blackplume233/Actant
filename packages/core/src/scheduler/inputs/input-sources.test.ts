@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { EventEmitter } from "node:events";
 import { TaskQueue } from "../task-queue";
 import { HeartbeatInput } from "./heartbeat-input";
 import { CronInput } from "./cron-input";
-import { HookInput } from "./hook-input";
 import { HookEventBusInput } from "./hook-event-bus-input";
 import { HookEventBus } from "../../hooks/hook-event-bus";
 import { InputRouter } from "./input-router";
@@ -91,83 +89,6 @@ describe("CronInput", () => {
     expect(input.active).toBe(true);
     input.stop();
     expect(input.active).toBe(false);
-  });
-});
-
-describe("HookInput", () => {
-  it("start() subscribes to events", () => {
-    const emitter = new EventEmitter();
-    const input = new HookInput(
-      { eventName: "on-push", prompt: "handle push" },
-      emitter,
-    );
-    input.start("agent-a", vi.fn());
-    expect(input.active).toBe(true);
-    input.stop();
-  });
-
-  it("emitting event produces a task", () => {
-    const emitter = new EventEmitter();
-    const onTask = vi.fn();
-    const input = new HookInput(
-      { eventName: "on-push", prompt: "handle push" },
-      emitter,
-    );
-    input.start("agent-a", onTask);
-
-    emitter.emit("on-push", { repo: "foo" });
-
-    expect(onTask).toHaveBeenCalledTimes(1);
-    const task = onTask.mock.calls[0]?.[0];
-    expect(task?.agentName).toBe("agent-a");
-    expect(task?.prompt).toBe("handle push");
-    expect(task?.source).toBe("hook:on-push");
-  });
-
-  it("stop() unsubscribes from events", () => {
-    const emitter = new EventEmitter();
-    const onTask = vi.fn();
-    const input = new HookInput(
-      { eventName: "on-push", prompt: "handle push" },
-      emitter,
-    );
-    input.start("agent-a", onTask);
-    input.stop();
-
-    emitter.emit("on-push");
-    expect(onTask).not.toHaveBeenCalled();
-  });
-
-  it("prompt template {{payload}} is replaced", () => {
-    const emitter = new EventEmitter();
-    const onTask = vi.fn();
-    const input = new HookInput(
-      { eventName: "data", prompt: "Process: {{payload}}" },
-      emitter,
-    );
-    input.start("agent-a", onTask);
-
-    emitter.emit("data", { id: 42 });
-
-    const task = onTask.mock.calls[0]?.[0];
-    expect(task?.prompt).toBe('Process: {"id":42}');
-    expect(task?.metadata?.payload).toEqual({ id: 42 });
-  });
-
-  it("multiple events produce multiple tasks", () => {
-    const emitter = new EventEmitter();
-    const onTask = vi.fn();
-    const input = new HookInput(
-      { eventName: "tick", prompt: "tick" },
-      emitter,
-    );
-    input.start("agent-a", onTask);
-
-    emitter.emit("tick");
-    emitter.emit("tick");
-    emitter.emit("tick");
-
-    expect(onTask).toHaveBeenCalledTimes(3);
   });
 });
 

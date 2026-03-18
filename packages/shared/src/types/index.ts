@@ -136,7 +136,6 @@ export type {
 } from "./record.types";
 export {
   mapHookEventToCategory,
-  mapActivityTypeToCategory,
 } from "./record.types";
 export {
   RPC_ERROR_CODES,

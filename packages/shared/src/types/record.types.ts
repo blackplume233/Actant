@@ -125,33 +125,3 @@ export function mapHookEventToCategory(event: string): RecordCategory {
   if (event === "error") return "error";
   return "extension";
 }
-
-// ---------------------------------------------------------------------------
-// Legacy ActivityRecordType → RecordCategory mapping
-// ---------------------------------------------------------------------------
-
-/** Maps old ActivityRecordType discriminants to the new unified categories. */
-export function mapActivityTypeToCategory(
-  type: string,
-): RecordCategory {
-  switch (type) {
-    case "session_update":
-      return "communication";
-    case "file_write":
-    case "file_read":
-      return "file";
-    case "terminal_create":
-    case "terminal_output":
-    case "terminal_exit":
-      return "terminal";
-    case "permission_request":
-      return "permission";
-    case "prompt_sent":
-    case "prompt_complete":
-      return "prompt";
-    case "internal_tool_call":
-      return "tool";
-    default:
-      return "extension";
-  }
-}
