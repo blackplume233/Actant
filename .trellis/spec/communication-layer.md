@@ -5,6 +5,8 @@
 > **If code or secondary docs conflict with this document on communication semantics, this document wins.**
 
 > **变更流程**: 通信层协议的任何变更（类型定义、接口签名、行为语义）MUST 先更新本文档及 `docs/design/channel-protocol/` 白皮书，然后再修改代码。详见 [Quality Guidelines §通信层变更流程](backend/quality-guidelines.md#通信层变更流程)。
+>
+> **⚠️ Phase B note**: During Context-First refactoring, `@actant/core` channel implementations will migrate to `@actant/agent-runtime`. The communication model and `ActantChannel` protocol defined here remain valid; only package paths change.
 
 ---
 

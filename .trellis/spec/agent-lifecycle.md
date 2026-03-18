@@ -3,6 +3,8 @@
 > 本文档定义 Actant 中 Agent 的完整生命周期模型、运行模式和外部接入方式。
 > 这是理解"Actant 能做什么、怎么用"的核心文档。
 > **若代码行为与本文档不一致，以本文档为准。**
+>
+> **⚠️ Phase B 迁移预告**：Context-First 重构后，Agent 将区分 **External Agent**（动态浏览 VFS）和 **Internal Agent**（最小冻结 + 动态连接 ContextManager）。本文档中的生命周期模型、LaunchMode、BackendMode 等核心概念保持有效，但 Agent 的上下文获取方式将从"workspace 物化全量"变为"VFS 按需访问"。`@actant/core` 下的实现将迁移到 `@actant/agent-runtime`。
 
 ---
 
@@ -481,7 +483,7 @@ one-shot   Daemon spawn + 等待退出       (不适用: 一次性任务由 Daem
 | `cursor-agent` | **YES** | **YES** | **YES** | Cursor Agent 模式，支持全部三种 |
 | `claude-code` | **YES** | **YES** | **YES** | `open` → `claude` TUI；`resolve`/`acp` → `claude-agent-acp`（ACP bridge） |
 | `pi` | — | — | **YES** | ACP-only，进程由 AcpConnectionManager spawn；无原生 TUI，不支持 open |
-| `custom` | **YES** | — | — | 用户自定义，仅支持外部 spawn |
+| `custom` | **YES** | — | — | 用户自定义后端名称（`AgentBackendType` 为开放类型）。`open` 能力取决于用户是否在 `BackendDefinition` 中声明了 `openCommand`；若未声明则实际也不可 open。ACP 能力取决于用户是否注册了 `acpResolver` |
 
 > **`open` vs `acp` 的可执行文件可能不同**：以 `claude-code` 为例，`open` 使用 `claude`（原生 TUI），而 `resolve`/`acp` 使用 `claude-agent-acp`（ACP 桥接器）。前者是人看的终端界面，后者是 ACP 协议的 stdio 通道。
 
@@ -493,7 +495,7 @@ one-shot   Daemon spawn + 等待退出       (不适用: 一次性任务由 Daem
 
 后端通过 `BackendManager`（继承 `BaseComponentManager<BackendDefinition>`）动态注册和管理。所有后端配置为纯数据的 `BackendDefinition`（`VersionedComponent`），可通过 actant-hub 分发。非序列化的行为扩展（如 `acpResolver` 函数）通过 `BackendManager` 的专用方法单独注册。
 
-> **数据与行为分离**：`BackendDefinition` 是 JSON 可序列化的纯数据对象，不含函数字段。行为性扩展（`acpResolver`）由 `BackendManager` 的 `acpResolvers: Map<string, AcpResolverFn>` 独立管理。旧版 `BackendDescriptor`（含 `acpResolver` 函数字段）保留为兼容层，新代码应直接使用 `BackendDefinition` + `BackendManager`。
+> **数据与行为分离**：`BackendDefinition` 是 JSON 可序列化的纯数据对象，不含函数字段。行为性扩展（`acpResolver`）由 `BackendManager` 的 `acpResolvers: Map<string, AcpResolverFn>` 独立管理。旧版 `BackendDescriptor`（含 `acpResolver` 函数字段）保留为兼容层，新代码应直接使用 `BackendDefinition` + `BackendManager`。**Phase A 期间应将所有 `BackendDescriptor` 的使用方迁移到 `BackendDefinition`，Phase B 时移除兼容层。**
 
 **核心 API**（`packages/core/src/domain/backend/backend-manager.ts`）：
 

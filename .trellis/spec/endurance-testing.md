@@ -203,24 +203,26 @@ ENDURANCE_DURATION_MS=3600000 pnpm test:endurance
 ```
 packages/
   core/src/manager/
-    agent-manager.endurance.test.ts      ← Phase 1: 核心生命周期
+    agent-manager.endurance.test.ts      ← Phase 1: 核心生命周期 ✅
   shared/src/rpc/__tests__/
-    rpc-transport.endurance.test.ts      ← Phase 2: RPC 传输
+    rpc-transport.endurance.test.ts      ← Phase 2: RPC 传输 ✅
   acp/src/__tests__/
-    gateway-lifecycle.endurance.test.ts  ← Phase 2: ACP Gateway
+    gateway-lifecycle.endurance.test.ts  ← Phase 2: ACP Gateway ✅
   rest-api/src/__tests__/
-    rpc-bridge.endurance.test.ts         ← Phase 2: REST RPC Bridge
+    rpc-bridge.endurance.test.ts         ← Phase 2: REST RPC Bridge ✅
+  core/src/scheduler/
+    scheduler.endurance.test.ts          ← Phase 4: Scheduler 多输入源 ✅
   api/src/
     rpc-endurance.test.ts                ← Phase 2: RPC 通信（待建）
   core/src/plugin/
     plugin-host.endurance.test.ts        ← Phase 4: Plugin 生命周期（待建）
-  core/src/scheduler/
-    scheduler.endurance.test.ts          ← Phase 4: Scheduler 多输入源（待建）
   core/src/email/
     email-hub.endurance.test.ts          ← Phase 4: Email 投递（待建）
   agent-memory/store-<backend>/
     memory-store.endurance.test.ts       ← Phase 5: Memory 存储（待建，后端待定）
 ```
+
+> **⚠️ Phase B 迁移预告**：Context-First 重构后，`packages/core/` 下的测试文件将随包拆分迁移到 `packages/agent-runtime/` 或 `packages/context/`。迁移时须同步更新上表路径。
 
 ---
 

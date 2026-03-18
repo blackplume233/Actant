@@ -2,6 +2,8 @@
 
 > 本文档定义 Actant 中所有配置结构、Schema 和环境变量。
 > **代码必须符合此规范。若代码与此文档冲突，以本文档为准。**
+>
+> **⚠️ Phase B 迁移预告**：Context-First 架构重构（v0.5.0）期间，`@actant/core` 将拆分为 `@actant/agent-runtime`（Agent 执行工具包）和 `@actant/context`（ContextManager + ContextSource）。本文档中引用 `@actant/core` 路径的部分将在 Phase B 中同步更新。详见 [Context-First Multi-Source Architecture](../../docs/design/context-first-multi-source-architecture.md)。
 
 ---
 
@@ -107,7 +109,7 @@ AgentTemplate 继承自 [`VersionedComponent`](#versionedcomponent)（#119），
 |------|------|------|------|
 | `type` | `AgentBackendType` | **是** | 后端类型 |
 | `config` | `Record<string, unknown>` | 否 | 后端特定配置 |
-| `interactionModes` | [`InteractionMode[]`](#interactionmode) | 否 | 该 Agent 支持的 CLI 交互命令。省略时使用 BackendDefinition 的 `defaultInteractionModes`，再缺省则默认 `[`start`]`。对于 `service` archetype，交互命令列表仍需服从统一通信层：`proxy`/`prompt`/`session` 是 shared runtime 的主入口，`run` 仅代表兼容或辅助路径。 |
+| `interactionModes` | [`InteractionMode[]`](#interactionmode) | 否 | 该 Agent 支持的 CLI 交互命令。省略时使用 BackendDefinition 的 `defaultInteractionModes`，再缺省则默认 `["start"]`。对于 `service` archetype，交互命令列表仍需服从统一通信层：`proxy`/`prompt`/`session` 是 shared runtime 的主入口，`run` 仅代表兼容或辅助路径。 |
 | `communicationPolicy` | [`CommunicationPolicy`](#communicationpolicy) | 否 | 前向权威的通信路由策略声明。用于描述共享/独占、默认 route、occupied 行为与 prompt target；即使实现未完全落地，也应作为 spec-first 合同维护。 |
 #### AgentBackendType
 
@@ -1409,6 +1411,7 @@ Agent 后端的纯数据配置，JSON 可序列化。由 `BackendManager` 管理
 |------|------|--------|------|
 | `homeDir` | `string` | `~/.actant` | 数据根目录 |
 | `launcherMode` | `"mock" \| "real"` | `"real"` | Launcher 模式 |
+| `hostProfile` | `"bootstrap" \| "runtime" \| "autonomous"` | `"runtime"` | 宿主启动 profile，决定默认加载的模块集。也可通过 `ACTANT_HOST_PROFILE` 环境变量设置 |
 
 ### 派生路径
 

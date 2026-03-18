@@ -1,6 +1,8 @@
 # Actant 愿景
 
-> **定位**: Agent 应用开发平台 —— 为特化 AgentTemplate 构建专属 UI、配置面板、工作流和数据互通层
+> **定位**: Agent 上下文平台 —— VFS 驱动的多源上下文管理与 Agent 服务化运行时
+>
+> **⚠️ 定位演进说明（2026-03）**：Actant 的核心定位已从「Agent 应用开发平台」向「Context-First 多源上下文平台」演进。核心变化是将 **ContextManager** 置于架构顶层，Agent 从"被平台管理的对象"变为"上下文的消费者和提供者之一"。详见 [Context-First Multi-Source Architecture](../../docs/design/context-first-multi-source-architecture.md)。下文中部分"Agent 应用开发平台"的表述保留为历史产品叙事参考。
 
 ---
 
@@ -102,7 +104,20 @@ Actant 致力于成为 **Agent 应用开发平台**。
 - `actant hub`、`acthub` 别名、bootstrap profile、`actant.project.json`、作用域隔离、reactive sync 是当前主线；
 - 默认启动应收敛到 host kernel + hub core，而不是默认拉起完整 runtime service 集；
 - MCP 应移动到消费层，而不是继续占据 bootstrap owner 位置；
-- `@actant/core` 的大规模拆分只应在它明确服务于 project-context / bootstrap 目标时推进。
+- `@actant/core` 的大规模拆分已规划为 Phase B（Context-First 重构），将拆分为 `@actant/agent-runtime` 和 `@actant/context`。
+
+### 下一阶段：Context-First 架构重构（v0.5.0）
+
+> 详见 [Context-First Multi-Source Architecture](../../docs/design/context-first-multi-source-architecture.md) 和 [Roadmap](../../docs/planning/roadmap.md)。
+
+核心架构变化：
+
+1. **ContextManager 置于顶层** — 取代 Daemon 作为唯一的上下文汇聚与分发中枢
+2. **多源上下文模型** — `DomainContextSource`（最高优先）→ `AgentContextSource` → `UnrealProjectSource` 等项目源
+3. **双 Agent 模型**：
+   - External Agent（如 Cursor）：动态浏览 Actant 的 VFS 资源，不需要 Actant 做上下文装配
+   - Internal Agent：最小冻结（rules + dispatcher），其余上下文仍动态连接 ContextManager
+4. **`@actant/core` → `@actant/agent-runtime`** — Agent 执行工具包，复用现有 `WorkspaceBuilder`/`AgentManager`/`ChannelManager` 等
 
 ## 核心抽象
 

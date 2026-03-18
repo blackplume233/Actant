@@ -4,7 +4,13 @@
 >
 > **任何功能扩展或修改，必须先输出文档再实现。** 未经文档化的变更不得进入代码库。
 
-> **当前阶段治理补充（2026-03）**：Actant 的长期使命仍是 Agent 平台与 Agent App 开发平台；当前变化的是阶段主轴，而非产品使命。后续涉及 MCP、DomainContext、bootstrap、自举开发、轻量上下文访问的设计与排期，应优先围绕“项目级上下文入口”和“最小可自举闭环”收敛，而不是默认继续平均推进所有 runtime 能力面。愿景层说明见 [vision.md](./vision.md) 中“当前阶段主轴（2026-03）”。
+> **当前阶段治理补充（2026-03）**：Actant 正处于 **Context-First 架构重构**的准备期。核心定位从「Agent 应用开发平台」向「VFS 驱动的多源上下文平台」演进，ContextManager 将成为架构顶层。当前正在执行 Phase A（工程清理与 v0.4.0 存档），随后进入 Phase B（Context-First 实施）。详见 [Context-First Multi-Source Architecture](../../docs/design/context-first-multi-source-architecture.md) 和 [Roadmap](../../docs/planning/roadmap.md)。
+>
+> **Phase B 对 spec 的影响预告**：
+> - @actant/core 拆分为 @actant/agent-runtime + @actant/context → 所有 spec 中的 packages/core/ 路径引用需更新
+> - Agent 上下文获取从“workspace 物化”变为“VFS 按需访问” → config-spec.md 和 gent-lifecycle.md 需新增 ContextSource/ContextManager 配置
+> - MCP Server 扩展 ContextManager VFS 挂载 → pi-contracts.md §3.12b 需更新
+> - 各 spec 文件已添加 ⚠️ Phase B 迁移预告 标注，标明受影响的具体区域
 ---
 
 ## Documentation-First 原则（最高优先级）

@@ -2,6 +2,8 @@
 
 > Actant 中有四种名称相近但语义完全不同的"session"概念。本文档用四个不同名词加以区分，以消除歧义。
 > **涉及 Chat / Session 相关代码时必读。**
+>
+> **录制架构说明**：对话档案的写入当前由 `ActivityRecorder`（磁盘 JSONL）和 `EventJournal`（租约持久化）承担，但统一录制架构正在向 `RecordSystem`（`packages/core/src/record/`）收敛。`RecordSystem` 通过 `RecordingChannelDecorator` 在 `ActantChannel` 层拦截事件，统一处理所有录制逻辑。Phase B 重构后，`ActivityRecorder` 将作为 `RecordSystem` 的内部实现之一被收编。
 
 ---
 

@@ -2,6 +2,8 @@
 
 > 本文档定义 Actant 的所有对外接口：IPC 协议、RPC 方法、CLI 命令、ACP Proxy 协议和 MCP Server 能力。
 > **代码必须符合此契约。若代码行为与此文档不一致，以本文档为准。**
+>
+> **⚠️ Phase B 迁移预告**：Context-First 架构重构（v0.5.0）期间，`@actant/core` 将拆分为 `@actant/agent-runtime` 和 `@actant/context`。MCP Server 工具将扩展 ContextManager VFS 挂载点。本文档中引用 `@actant/core` 路径的部分将在 Phase B 中同步更新。
 
 ---
 
@@ -152,6 +154,13 @@ Actant 的接口架构（三层协议分工）：
 | `HOOK_EVENT_NOT_SUBSCRIBABLE` | -32012 | 事件不允许 Agent 自注册（订阅模型 C 不支持） |
 | `HOOK_SUBSCRIPTION_NOT_FOUND` | -32013 | 动态订阅 ID 不存在 |
 | `SUBSYSTEM_NOT_FOUND` | -32014 | 子系统不存在 |
+
+> **注意**：以下错误码在 §3 的方法签名中被引用，但尚未在 `rpc.types.ts` 中注册为常量。在 Phase A 清理期间应补齐实现，或在代码中映射到 `GENERIC_BUSINESS`：
+>
+> | 引用名 | 引用位置 | 当前状态 |
+> |--------|---------|---------|
+> | `TEMPLATE_EXISTS` | `template.create` (§3.1) | 代码中使用 `Error("Template already exists")` 映射到 HTTP 409，无独立错误码 |
+> | `INTERACTION_MODE` | `agent.start` (§3.2) | 代码中由 `requireInteractionMode` 抛出通用错误，无独立错误码 |
 
 **映射规则**：`ActantError` 子类在 Socket Server 边界处映射为对应 RPC 错误码；未映射的异常一律返回 `INTERNAL_ERROR`。
 
@@ -1788,7 +1797,7 @@ interface AgentLauncher {
 
 | 实现 | 模式 | 说明 |
 |------|------|------|
-| `MockLauncher` | `"mock"` | 返回假 PID，terminate 无操作。用于测试。 |
+| `MockLauncher` | `"mock"` | 返回假 PID，terminate 无操作。**仅用于测试，Phase B 后将迁移到 `@actant/agent-runtime/testing`。** |
 | `ProcessLauncher` | `"real"` | `child_process.spawn` 启动真实进程。SIGTERM → 超时 → SIGKILL。 |
 
 工厂函数 `createLauncher(config?)` 根据 `config.mode` 或 `ACTANT_LAUNCHER_MODE` 选择实现。
