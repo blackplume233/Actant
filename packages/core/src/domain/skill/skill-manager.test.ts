@@ -53,6 +53,9 @@ describe("SkillManager", () => {
     expect(count).toBe(2);
     expect(mgr.has("code-review")).toBe(true);
     expect(mgr.has("typescript-expert")).toBe(true);
+    expect(mgr.get("code-review")?.content).toContain("Functional alignment");
+    expect(mgr.get("code-review")?.content).toContain("inline imports");
+    expect(mgr.get("code-review")?.content).toContain("magic strings");
   });
 
   it("should skip invalid skill files during directory load", async () => {

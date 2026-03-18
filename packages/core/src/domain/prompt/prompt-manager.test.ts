@@ -39,6 +39,9 @@ describe("PromptManager", () => {
     expect(count).toBe(2);
     expect(mgr.has("system-reviewer")).toBe(true);
     expect(mgr.has("style-guide")).toBe(true);
+    expect(mgr.get("system-reviewer")?.content).toContain("repository intent");
+    expect(mgr.get("system-reviewer")?.content).toContain("inline imports");
+    expect(mgr.get("system-reviewer")?.content).toContain("magic strings");
   });
 
   it("should render prompt with variable interpolation", () => {

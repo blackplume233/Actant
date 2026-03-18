@@ -1,124 +1,141 @@
 # Code Review
 
-对工程中的代码进行严格审查，特别关注测试用例的完整性和质量。
+Review changed code with a bias toward simplicity, repository alignment, and readable implementation. Do not stop at correctness alone.
 
-## 审查范围
+## Scope
 
-1. **获取变更文件**
+1. Collect changed files.
    ```bash
    git diff main...HEAD --name-only
    ```
 
-2. **识别新增/修改的代码**
-   - 源文件 (.ts, .tsx, .js, .py 等)
-   - 测试文件 (*.test.*, *.spec.*, __tests__/)
+2. Focus on:
+   - source files (`.ts`, `.tsx`, `.js`, `.mjs`, `.cjs`, `.py`, etc.)
+   - tests (`*.test.*`, `*.spec.*`, `__tests__/`)
+   - any spec, contract, or workflow docs touched by the change
 
-## 审查步骤
+## Review Order
 
-### 1. 测试用例审查（最高优先级）
+### 1. Expected Behavior Alignment
 
-对每个测试文件进行严格检查：
+Establish what the repository expects before judging the implementation:
 
-- [ ] **测试覆盖率**：每个公共函数/方法是否有对应的测试？
-- [ ] **测试质量**：测试是否真正验证了行为，而不仅仅是执行了代码？
-- [ ] **边界条件**：是否测试了错误输入、边界值、异常情况？
-- [ ] **测试独立性**：测试之间是否有副作用依赖？
-- [ ] **Mock/Stub**：外部依赖是否正确隔离？
-- [ ] **断言质量**：断言是否具体、有意义？
-- [ ] **测试命名**：测试名称是否清晰描述被测行为？
+- Read the relevant issue, task, spec, contract, README section, tests, and nearby code.
+- Infer the intended behavior and constraints from existing patterns.
+- Flag mismatches between the implemented behavior and the repository's expected direction.
+- Flag silent scope expansion, missing acceptance criteria, or behavior changes not reflected in tests/docs.
+- If intent is ambiguous, state the assumption explicitly instead of inventing approval criteria.
 
-### 2. 代码质量审查
+### 2. Design Simplicity And Redundancy
 
-- [ ] **类型安全**：TypeScript 类型是否完整、准确？
-- [ ] **错误处理**：错误是否被适当捕获和处理？
-- [ ] **代码重复**：是否存在可提取的重复模式？
-- [ ] **命名规范**：变量、函数、类名是否清晰？
-- [ ] **注释质量**：复杂逻辑是否有必要注释？
-- [ ] **依赖管理**：导入是否整洁，无循环依赖？
+Review the design with strong pressure toward minimal, direct solutions:
 
-### 3. 架构合规审查
+- Prefer the simplest design that fits the repository's existing architecture.
+- Flag unnecessary abstraction layers, wrapper functions, indirection, speculative extensibility, and pass-through helpers.
+- Flag duplicated logic, repeated transformation pipelines, parallel code paths, and copy-pasted condition handling.
+- Check whether existing utilities, shared types, or established patterns should have been reused.
+- Call out designs that technically work but make future changes harder than necessary.
 
-- [ ] **目录结构**：文件是否放在正确的位置？
-- [ ] **分层原则**：是否遵循项目的分层架构？
-- [ ] **接口契约**：公共 API 是否稳定、文档化？
+### 3. Code Hygiene And Readability
 
-## 输出格式
+Audit for bad habits that reduce maintainability:
 
-### 如果审查通过
+- Avoid inline imports unless there is a clear runtime or bundling reason.
+- Avoid magic strings and magic numbers; prefer named constants, enums, maps, or well-scoped configuration.
+- Flag ambiguous naming, hidden side effects, overly long functions, deep nesting, and mixed responsibilities.
+- Check whether control flow is easy to follow without mentally executing multiple branches.
+- Ensure comments clarify non-obvious intent rather than restating the code.
 
-生成综合设计报告：
+### 4. Correctness, Contracts, And Tests
+
+- Check type safety and contract consistency.
+- Check error handling and failure modes.
+- Check boundary conditions, edge cases, and negative-path behavior.
+- Verify tests cover the real behavior, not just happy-path execution.
+- Ensure tests and docs still match the implementation after the change.
+
+## Output Format
+
+### If review passes
 
 ```markdown
 # Code Review Report - PASSED
 
-## 变更概览
-- 变更文件数: X
-- 新增代码行数: X
-- 删除代码行数: X
-- 测试文件数: X
+## Change Summary
+- Files reviewed: X
+- Source files: X
+- Test files: X
 
-## 功能描述
-<描述这次变更实现了什么功能>
+## Expected Behavior
+<What the repository appears to expect from this change>
 
-## 架构设计
-<描述关键的设计决策和架构模式>
+## Alignment Check
+- [OK] Implementation matches repository intent
+- [OK] No unplanned scope expansion
 
-## 测试覆盖
-- 单元测试: X 个
-- 集成测试: X 个
-- 关键路径覆盖: <描述>
+## Design Assessment
+- [OK] Design is simple enough for current needs
+- [OK] No meaningful redundancy found
 
-## 质量评估
-- [OK] 测试完整性
-- [OK] 类型安全
-- [OK] 错误处理
-- [OK] 代码风格
+## Hygiene Assessment
+- [OK] No major readability issues
+- [OK] No problematic inline imports or magic strings
 
-## 总结
-<综合评价>
+## Test Assessment
+- [OK] Coverage is sufficient for the changed behavior
+
+## Summary
+<Short conclusion>
 ```
 
-### 如果审查不通过
-
-记录所有问题：
+### If issues are found
 
 ```markdown
 # Code Review Report - ISSUES FOUND
 
-## 严重问题（必须修复）
+## Critical Findings
 
-### 1. [文件路径]
-**问题**: <具体问题描述>
-**影响**: <为什么这是个问题>
-**建议**: <如何修复>
+### 1. [file path]
+**Problem**: <Concrete problem>
+**Why it matters**: <Impact on correctness, maintainability, or alignment>
+**Recommendation**: <Specific fix>
 
-## 中等问题（建议修复）
+## Major Findings
 
-### 2. [文件路径]
-**问题**: <具体问题描述>
-**建议**: <如何修复>
+### 2. [file path]
+**Problem**: <Concrete problem>
+**Why it matters**: <Impact>
+**Recommendation**: <Specific fix>
 
-## 轻微问题（可选优化）
+## Minor Findings
 
-### 3. [文件路径]
-**问题**: <具体问题描述>
+### 3. [file path]
+**Problem**: <Concrete problem>
+**Recommendation**: <Specific fix or cleanup direction>
 
-## 测试问题汇总
+## Alignment Notes
+- Expected behavior: <What the repo appears to require>
+- Divergence: <Where the implementation differs>
 
-| 文件 | 问题类型 | 描述 |
-|------|----------|------|
-| | | |
+## Design Notes
+- Redundancy or over-design: <List>
 
-## 修复清单
+## Hygiene Notes
+- Inline imports: <List if any>
+- Magic strings / numbers: <List if any>
+- Readability issues: <List if any>
 
-- [ ] 问题1: [文件路径]
-- [ ] 问题2: [文件路径]
+## Fix Checklist
+- [ ] Fix critical and major findings
+- [ ] Recheck alignment with repository intent
+- [ ] Remove unnecessary indirection or duplication
+- [ ] Clean up readability hazards
 ```
 
-## 执行指令
+## Execution Notes
 
-1. 首先获取 git 变更状态
-2. 对每个变更文件进行审查
-3. 特别关注对应的测试文件
-4. 按照上述格式输出审查报告
-5. 如果不通过，详细记录每个问题以便后续修复
+1. Establish expected behavior from repo context first.
+2. Review every changed file against that expectation.
+3. Prioritize simplicity, redundancy removal, and readability.
+4. Treat inline imports, magic strings, and similar habits as review targets by default.
+5. Output findings with clear severity, file references, and concrete fixes.
