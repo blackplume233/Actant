@@ -78,7 +78,12 @@ function runCommand(
   return new Promise((resolve, reject) => {
     // If the step already provides argv tokens, avoid shell parsing so quoting is preserved.
     // Keep shell execution for shell snippets and Windows command shims.
-    const needsShell = args.length === 0 || (process.platform === "win32" && /\.(cmd|bat)$/i.test(command));
+    const needsShell = args.length === 0 || (
+      process.platform === "win32" && (
+        /\.(cmd|bat)$/i.test(command) ||
+        WINDOWS_SHELL_BUILTINS.has(command.toLowerCase())
+      )
+    );
     const child = spawn(command, args, {
       cwd,
       env: env ? { ...process.env, ...env } : process.env,
@@ -102,3 +107,47 @@ function runCommand(
     });
   });
 }
+
+const WINDOWS_SHELL_BUILTINS = new Set([
+  "assoc",
+  "break",
+  "call",
+  "cd",
+  "chcp",
+  "chdir",
+  "cls",
+  "color",
+  "copy",
+  "date",
+  "del",
+  "dir",
+  "echo",
+  "erase",
+  "for",
+  "ftype",
+  "goto",
+  "if",
+  "md",
+  "mkdir",
+  "mklink",
+  "move",
+  "path",
+  "pause",
+  "popd",
+  "prompt",
+  "pushd",
+  "rd",
+  "ren",
+  "rename",
+  "rmdir",
+  "set",
+  "setlocal",
+  "shift",
+  "start",
+  "time",
+  "title",
+  "type",
+  "ver",
+  "verify",
+  "vol",
+]);

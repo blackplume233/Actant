@@ -3,7 +3,9 @@ import { defineConfig } from "tsup";
 export default defineConfig({
   entry: ["src/index.ts"],
   format: ["esm"],
-  dts: { compilerOptions: { composite: false } },
+  dts: false,
   clean: true,
   sourcemap: true,
+  splitting: false,
+  bundle: true,
 });
