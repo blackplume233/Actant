@@ -1,3 +1,8 @@
+/**
+ * Phase B migration: this subtree moves to `@actant/context` as DomainContextSource.
+ * SkillManager, PromptManager, McpConfigManager, WorkflowManager become ContextSource
+ * implementations that project their data into the VFS.
+ */
 export { BaseComponentManager, type NamedComponent } from "./base-component-manager";
 export { SkillManager } from "./skill/skill-manager";
 export { PromptManager } from "./prompt/prompt-manager";

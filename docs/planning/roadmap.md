@@ -44,11 +44,11 @@ Actant 同时扮演：
 
 > **目标**：在当前 v0.3.0 基础上做充分清理，产出 v0.4.0 存档版本，确保重构前的代码基线干净可回溯。
 
-- [ ] **A-1 废弃代码清理**（2-3 天）：清零全部 17 处 `@deprecated`，删除 EventJournal / ActivityRecorder / MockLauncher / ContextMaterializer / Legacy proxy handlers 等已被替代的代码
-- [ ] **A-2 无效依赖清理**（0.5 天）：移除 `@actant/mcp-server` 对 `@actant/domain` 和 `@actant/source` 的未使用依赖
-- [ ] **A-3 @actant/core 内聚性梳理**（1-2 天）：消除 core 内部 domain/source/vfs 子目录与独立包的重复定义，为每个子模块标注 Phase B 迁移归属
-- [ ] **A-4 测试补强与质量基线**（1-2 天）：补充各 archetype 端到端集成测试，修复 #238/#239/#240 已知 bugs，记录 coverage baseline
-- [ ] **A-5 版本存档**（0.5 天）：全部 package 升至 `0.4.0`，打 tag `v0.4.0` 作为重构前最后存档
+- [x] **A-1 废弃代码清理**（2-3 天）：清除 18/20 处 `@deprecated`，删除 EventJournal / ContextMaterializer / Legacy proxy handlers / BackendDescriptor / AcpConnectionManagerLike 等。剩余 2 处（ActivityRecorder + HookInput）属 Phase B 范畴
+- [x] **A-2 无效依赖清理**（0.5 天）：移除 `@actant/mcp-server` 对 `@actant/domain` 和 `@actant/source` 的幽灵依赖
+- [x] **A-3 @actant/core 内聚性梳理**（1-2 天）：删除 `@actant/domain` 和 `@actant/source` 冗余包，9 个子目录标注 Phase B 迁移归属
+- [x] **A-4 测试补强与质量基线**（1-2 天）：#238/#239/#240 已修复并关闭，新增 dispose 竞态测试。Coverage baseline: **Stmts 52.31% | Branch 42.97% | Funcs 54.83% | Lines 53.45%**（1315 tests / 114 files）
+- [x] **A-5 版本存档**（0.5 天）：全部 14 package 升至 `0.4.0`，打 tag `v0.4.0` 作为重构前最后存档
 
 ### Phase B：Context-First 架构实施（v0.4.0 → v0.5.0）— 预计 12-20 天
 
@@ -82,6 +82,16 @@ Actant 同时扮演：
 ---
 
 ## 已完成里程碑
+
+### v0.4.0 — Phase A 工程清理与重构准备（2026-03-18）
+
+> Phase A 全部完成。在 v0.3.0 基础上执行了全面工程清理，产出干净的重构基线。
+
+- [x] A-1：清除 18/20 处 @deprecated（EventJournal / ContextMaterializer / proxy handlers / BackendDescriptor / AcpConnectionManagerLike 等）
+- [x] A-2：移除 mcp-server 幽灵依赖
+- [x] A-3：删除 `@actant/domain` 和 `@actant/source` 冗余包，9 个子目录标注 Phase B 迁移归属
+- [x] A-4：修复并关闭 #238/#239/#240，Coverage baseline: Stmts 52.31% | Branch 42.97% | Funcs 54.83% | Lines 53.45%（1315 tests / 114 files）
+- [x] A-5：全部 14 package 升至 0.4.0
 
 ### v0.3.0 — CLI-first 自举宿主与 Hub 收口（2026-03-17）
 

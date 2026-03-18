@@ -1,6 +1,6 @@
 {
   "name": "actant-monorepo",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "description": "A platform for building, managing, and composing AI agents",
   "type": "module",
@@ -43,6 +43,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^25.3.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "esbuild": "^0.27.3",
     "eslint": "^10.0.0",
     "playwright": "^1.58.2",

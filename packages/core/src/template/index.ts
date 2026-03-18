@@ -1,3 +1,8 @@
+/**
+ * Phase B migration: Template schemas and TemplateRegistry move to
+ * `@actant/context`. They define the Agent blueprint (context shape) and
+ * belong alongside DomainContextSource.
+ */
 export {
   AgentTemplateSchema,
   ComponentOriginSchema,

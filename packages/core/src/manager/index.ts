@@ -1,3 +1,8 @@
+/**
+ * Phase B migration: AgentManager stays in `@actant/agent-runtime`
+ * (renamed from core). Launcher, channel, and backend subsystems remain
+ * co-located here. BackendRegistry/Resolver stay under manager/launcher.
+ */
 export { AgentManager, type ManagerOptions } from "./agent-manager";
 export {
   getLaunchModeHandler,

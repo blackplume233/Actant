@@ -1,3 +1,9 @@
+/**
+ * Phase B migration: VFS primitives (VfsRegistry, SourceFactoryRegistry, VfsPathResolver)
+ * move to `@actant/context`. Source factories and VfsLifecycleManager remain in
+ * `@actant/agent-runtime` (renamed from core). `@actant/vfs` standalone package
+ * is merged into `@actant/context`.
+ */
 export { VfsRegistry, type VfsRegistryEvents } from "./vfs-registry";
 export { VfsPathResolver } from "./vfs-path-resolver";
 export { VfsLifecycleManager } from "./vfs-lifecycle-manager";

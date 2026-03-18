@@ -657,6 +657,35 @@ describe("AgentManager", () => {
     });
   });
 
+  describe("dispose prevents handleProcessExit restart (#238)", () => {
+    it("should skip restart when disposing flag is set", async () => {
+      const watcherManager = new AgentManager(initializer, launcher, tmpDir, {
+        watcherPollIntervalMs: 50,
+        restartPolicy: { backoffBaseMs: 10, backoffMaxMs: 50 },
+      });
+      await watcherManager.initialize();
+
+      await watcherManager.createAgent("disp-agent", "test-tpl", { launchMode: "acp-service" });
+      await watcherManager.startAgent("disp-agent");
+      expect(watcherManager.getStatus("disp-agent")).toBe("running");
+
+      const processUtils = await import("./launcher/process-utils");
+      const spy = vi.spyOn(processUtils, "isProcessAlive").mockReturnValue(false);
+
+      // Dispose immediately — the disposing flag should prevent any restart
+      await watcherManager.dispose();
+
+      // Give some time for any potential (incorrect) restart attempt
+      await new Promise((r) => setTimeout(r, 200));
+
+      // After dispose, agent should NOT have been restarted
+      // Launcher should only have 1 launch (the original start), not 2
+      expect(launcher.launched).toHaveLength(1);
+
+      spy.mockRestore();
+    });
+  });
+
   describe("startAgent error cleanup (#155)", () => {
     it("should terminate spawned process when channel connection fails", async () => {
       const mockChannelManager = {

@@ -1,6 +1,6 @@
 {
   "name": "@actant/mcp-server",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "MCP server integration for the Actant AI agent platform",
   "type": "module",
   "license": "MIT",
@@ -44,9 +44,9 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@actant/api": "workspace:0.3.0",
-    "@actant/shared": "workspace:0.3.0",
-    "@actant/vfs": "workspace:0.3.0",
+    "@actant/api": "workspace:0.4.0",
+    "@actant/shared": "workspace:0.4.0",
+    "@actant/vfs": "workspace:0.4.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "zod": "^4.3.6"
   }

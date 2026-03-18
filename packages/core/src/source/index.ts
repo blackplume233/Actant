@@ -1,3 +1,8 @@
+/**
+ * Phase B migration: ComponentSource/SourceManager stay in `@actant/agent-runtime`
+ * (renamed from core). They handle external package source management, which is
+ * agent-runtime infrastructure, not context management.
+ */
 export type { ComponentSource, FetchResult } from "./component-source";
 export { GitHubSource } from "./github-source";
 export { LocalSource } from "./local-source";

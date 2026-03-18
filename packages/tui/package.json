@@ -1,6 +1,6 @@
 {
   "name": "@actant/tui",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Unified Terminal UI framework for the Actant AI agent platform, built on pi-tui",
   "type": "module",
   "license": "MIT",
@@ -46,7 +46,7 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@actant/core": "workspace:0.3.0",
+    "@actant/core": "workspace:0.4.0",
     "@mariozechner/pi-tui": "^0.58.1",
     "chalk": "^5.5.0"
   },

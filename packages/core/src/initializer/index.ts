@@ -1,3 +1,8 @@
+/**
+ * Phase B migration: AgentInitializer splits — context-building steps
+ * (DomainManagers, WorkspaceBuilder) move to `@actant/context`, while
+ * process-launch steps stay in `@actant/agent-runtime`.
+ */
 export { AgentInitializer, type InitializerOptions, type InstanceOverrides } from "./agent-initializer";
 export { getArchetypeDefaults, type ArchetypeDefaults } from "./archetype-defaults";
 export type { DomainManagers } from "../builder/workspace-builder";

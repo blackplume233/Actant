@@ -13,12 +13,6 @@
                            "path":  "../shared"
                        },
                        {
-                           "path":  "../domain"
-                       },
-                       {
-                           "path":  "../source"
-                       },
-                       {
                            "path":  "../vfs"
                        },
                        {
