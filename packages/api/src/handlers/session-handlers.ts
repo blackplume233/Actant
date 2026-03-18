@@ -55,7 +55,7 @@ async function handleSessionCreate(
   if (meta.status !== "running") {
     throw new AgentNotRunningError(agentName, meta.status);
   }
-  if (!ctx.agentManager.hasAcpConnection(agentName)) {
+  if (!ctx.agentManager.hasChannel(agentName)) {
     throw new AcpConnectionMissingError(agentName);
   }
 

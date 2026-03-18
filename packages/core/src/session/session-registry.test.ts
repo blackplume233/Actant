@@ -75,8 +75,8 @@ describe("SessionRegistry – conversationId", () => {
     expect(fetched?.conversationId).toBe(convId);
   });
 
-  it("rebuildFromJournal restores conversationId from journal entries", async () => {
-    const mockJournal = {
+  it("rebuildFromRecordSystem restores conversationId from record entries", async () => {
+    const mockRecordSystem = {
       replay: vi.fn(async (_cat: string, fn: (entry: { ts: number; data: unknown }) => void) => {
         fn({
           ts: Date.now(),
@@ -93,15 +93,15 @@ describe("SessionRegistry – conversationId", () => {
       }),
     } as never;
 
-    await registry.rebuildFromJournal(mockJournal);
+    await registry.rebuildFromRecordSystem(mockRecordSystem);
     const restored = registry.get("lease-001");
     expect(restored).toBeDefined();
     expect(restored!.conversationId).toBe("conv-stable-001");
     expect(restored!.sessionId).toBe("lease-001");
   });
 
-  it("falls back to sessionId when journal entry lacks conversationId (backward compat)", async () => {
-    const mockJournal = {
+  it("falls back to sessionId when record entry lacks conversationId (backward compat)", async () => {
+    const mockRecordSystem = {
       replay: vi.fn(async (_cat: string, fn: (entry: { ts: number; data: unknown }) => void) => {
         fn({
           ts: Date.now(),
@@ -110,17 +110,15 @@ describe("SessionRegistry – conversationId", () => {
             sessionId: "legacy-lease",
             agentName: "svc-old",
             clientId: "c1",
-            // no conversationId — old journal entry
           },
         });
         return 1;
       }),
     } as never;
 
-    await registry.rebuildFromJournal(mockJournal);
+    await registry.rebuildFromRecordSystem(mockRecordSystem);
     const restored = registry.get("legacy-lease");
     expect(restored).toBeDefined();
-    // Falls back to sessionId for backward compatibility
     expect(restored!.conversationId).toBe("legacy-lease");
   });
 });

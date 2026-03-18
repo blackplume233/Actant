@@ -1,13 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { join } from "node:path";
 import { TemplateRegistry } from "./template-registry";
 import type { AgentTemplate } from "@actant/shared";
 import {
   TemplateNotFoundError,
   ConfigValidationError,
 } from "@actant/shared";
-
-const FIXTURES = join(import.meta.dirname, "../loader/__fixtures__");
 
 function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
   return {
@@ -142,26 +139,6 @@ describe("TemplateRegistry", () => {
     });
   });
 
-  describe("loadBuiltins", () => {
-    it("should load valid templates from fixture directory", async () => {
-      const count = await registry.loadBuiltins(FIXTURES);
-
-      expect(count).toBe(4);
-      expect(registry.has("code-review-agent")).toBe(true);
-      expect(registry.has("minimal-agent")).toBe(true);
-      expect(registry.has("game-dev-assistant")).toBe(true);
-      expect(registry.has("scheduled-web-searcher")).toBe(true);
-    });
-
-    it("should skip duplicate templates when loading builtins", async () => {
-      registry.register(makeTemplate({ name: "code-review-agent" }));
-      const count = await registry.loadBuiltins(FIXTURES);
-
-      // code-review-agent already exists, should be skipped
-      expect(count).toBe(3);
-      expect(registry.size).toBe(4);
-    });
-  });
 
   describe("integration: register + unregister + re-register", () => {
     it("should allow re-registration after unregister", () => {

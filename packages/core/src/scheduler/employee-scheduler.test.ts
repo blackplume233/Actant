@@ -221,18 +221,4 @@ describe("EmployeeScheduler", () => {
 
   });
 
-  describe("emitEvent", () => {
-    it("triggers HookInput sources", () => {
-      scheduler = new EmployeeScheduler("agent-l", promptAgent);
-      scheduler.configure({
-        hooks: [{ eventName: "test-event", prompt: "event: {{payload}}" }],
-      });
-      scheduler.start();
-      scheduler.emitEvent("test-event", { foo: "bar" });
-      const { tasks } = scheduler.getTasks();
-      expect(tasks.length).toBeGreaterThanOrEqual(1);
-      const task = tasks[0] as { prompt: string };
-      expect(task.prompt).toContain("event:");
-    });
-  });
 });

@@ -19,7 +19,6 @@ export type {
   AgentOpenMode,
   PlatformCommand,
   BackendDefinition,
-  BackendDescriptor,
   BackendExistenceCheck,
   BackendInstallMethod,
   OpenSpawnOptions,

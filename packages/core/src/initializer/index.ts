@@ -1,7 +1,6 @@
 export { AgentInitializer, type InitializerOptions, type InstanceOverrides } from "./agent-initializer";
 export { getArchetypeDefaults, type ArchetypeDefaults } from "./archetype-defaults";
 export type { DomainManagers } from "../builder/workspace-builder";
-export { ContextMaterializer } from "./context/context-materializer";
 export {
   InitializerStepExecutor,
   StepRegistry,

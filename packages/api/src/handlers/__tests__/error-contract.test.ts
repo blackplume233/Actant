@@ -10,7 +10,7 @@ function createSessionCtx(): AppContext {
   return {
     agentManager: {
       getAgent: vi.fn().mockReturnValue({ name: "test-agent", status: "running" }),
-      hasAcpConnection: vi.fn().mockReturnValue(true),
+      hasChannel: vi.fn().mockReturnValue(true),
       promptAgent: vi.fn().mockResolvedValue({ text: "ok", sessionId: "conv-1" }),
     },
     sessionRegistry: {
@@ -106,7 +106,7 @@ describe("error contract: session handlers preserve error codes through daemon s
   });
 
   it("session.create throws ACP_CONNECTION_MISSING when no ACP connection", async () => {
-    (ctx.agentManager.hasAcpConnection as ReturnType<typeof vi.fn>).mockReturnValue(false);
+    (ctx.agentManager.hasChannel as ReturnType<typeof vi.fn>).mockReturnValue(false);
     const handler = registry.get("session.create")!;
     const err = await handler({ agentName: "test-agent", clientId: "c1" }, ctx).catch((e) => e);
     expect((err as CodedError).code).toBe("ACP_CONNECTION_MISSING");

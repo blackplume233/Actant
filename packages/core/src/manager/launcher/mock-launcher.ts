@@ -4,9 +4,11 @@ import type { AgentLauncher, AgentProcess } from "./agent-launcher";
 let nextPid = 10000;
 
 /**
- * @deprecated Use `createTestLauncher()` from `@actant/core/testing` instead.
- * MockLauncher generates fake PIDs that cause race conditions with ProcessWatcher.
- * Real-process-based testing via the `custom` backend is required for all new tests.
+ * Test-only launcher that generates fake PIDs without spawning real processes.
+ *
+ * Suitable for unit tests where process lifecycle is not under test.
+ * For integration tests that exercise ProcessWatcher, use
+ * `createTestLauncher()` from `@actant/core/testing` instead.
  */
 export class MockLauncher implements AgentLauncher {
   readonly launched: AgentProcess[] = [];

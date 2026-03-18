@@ -1,4 +1,4 @@
-import type { AgentBackendType, AgentOpenMode, BackendDefinition, BackendDescriptor, PlatformCommand } from "@actant/shared";
+import type { AgentBackendType, AgentOpenMode, BackendDefinition, PlatformCommand } from "@actant/shared";
 import { BackendManager, type AcpResolverFn, type BuildProviderEnvFn } from "../../domain/backend/backend-manager";
 
 // ---------------------------------------------------------------------------
@@ -17,26 +17,15 @@ export function getBackendManager(): BackendManager {
 // ---------------------------------------------------------------------------
 
 /**
- * Register a backend descriptor (legacy API).
- * Converts `BackendDescriptor.type` → `BackendDefinition.name` and
- * extracts `acpResolver` into the behavioral registry.
- */
-export function registerBackend(descriptor: BackendDescriptor): void {
-  const { type, acpResolver, ...rest } = descriptor;
-  const definition: BackendDefinition = { ...rest, name: type };
-  manager.register(definition);
-  if (acpResolver) {
-    manager.registerAcpResolver(type, acpResolver);
-  }
-}
-
-/**
- * Register a BackendDefinition directly (new API).
+ * Register a BackendDefinition.
  * For behavioral extensions, use `getBackendManager().registerAcpResolver()`.
  */
-export function registerBackendDefinition(definition: BackendDefinition): void {
+export function registerBackend(definition: BackendDefinition): void {
   manager.register(definition);
 }
+
+/** Alias for registerBackend — kept for call-site clarity. */
+export const registerBackendDefinition = registerBackend;
 
 export function getBackendDescriptor(type: AgentBackendType): BackendDefinition {
   const def = manager.get(type);

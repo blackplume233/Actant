@@ -1,7 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { createLogger } from "@actant/shared";
 import type { SessionLifecycleData, RecordEntry } from "@actant/shared";
-import type { EventJournal } from "../journal/event-journal";
 import type { RecordSystem } from "../record/record-system";
 
 const logger = createLogger("session-registry");
@@ -54,7 +53,6 @@ export class SessionRegistry {
   private sweepTimer: ReturnType<typeof setInterval> | null = null;
   private readonly defaultIdleTtlMs: number;
   private onExpireCallback?: (session: SessionLease) => void;
-  private journal: EventJournal | null = null;
   private recordSystem: RecordSystem | null = null;
 
   constructor(options?: SessionRegistryOptions) {
@@ -64,34 +62,14 @@ export class SessionRegistry {
     this.sweepTimer.unref();
   }
 
-  /**
-   * @deprecated Use setRecordSystem() instead. Kept for backward compat.
-   */
-  setJournal(journal: EventJournal | null): void {
-    this.journal = journal;
-  }
-
-  /** Attach the unified RecordSystem. Replaces setJournal(). */
+  /** Attach the unified RecordSystem for session event persistence. */
   setRecordSystem(rs: RecordSystem | null): void {
     this.recordSystem = rs;
   }
 
   /**
-   * @deprecated Use rebuildFromRecordSystem() with RecordSystem. Kept for backward compat.
-   */
-  async rebuildFromJournal(journal: EventJournal): Promise<void> {
-    const count = await journal.replay("session", (entry) => {
-      this.applySessionEntry(entry.ts, entry.data as SessionLifecycleData);
-    });
-
-    if (count > 0) {
-      logger.info({ replayed: count, sessions: this.sessions.size }, "Session state rebuilt from journal");
-    }
-  }
-
-  /**
    * Rebuild in-memory session state by replaying "session" category records
-   * from the unified RecordSystem.
+   * from the RecordSystem.
    */
   async rebuildFromRecordSystem(rs: RecordSystem): Promise<void> {
     const count = await rs.replay("session", (entry: RecordEntry) => {
@@ -301,10 +279,6 @@ export class SessionRegistry {
         data,
       }).catch((err) => {
         logger.warn({ err, action: data.action, sessionId: data.sessionId }, "Failed to record session event");
-      });
-    } else if (this.journal) {
-      this.journal.append("session", `session:${data.action}`, data).catch((err) => {
-        logger.warn({ err, action: data.action, sessionId: data.sessionId }, "Failed to journal session event");
       });
     }
   }

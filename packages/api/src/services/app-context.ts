@@ -27,7 +27,6 @@ import {
   HookCategoryRegistry,
   HookRegistry,
   ActivityRecorder,
-  EventJournal,
   RecordSystem,
   RecordingChannelManager,
   SessionContextInjector,
@@ -123,10 +122,7 @@ export class AppContext {
   readonly hookCategoryRegistry: HookCategoryRegistry;
   readonly hookRegistry: HookRegistry;
   readonly recordSystem: RecordSystem;
-  /** @deprecated Use recordSystem. Kept for backward compat during migration. */
   readonly activityRecorder: ActivityRecorder;
-  /** @deprecated Use recordSystem. Kept for backward compat during migration. */
-  readonly eventJournal: EventJournal;
   readonly sessionContextInjector: SessionContextInjector;
   readonly sessionTokenStore: SessionTokenStore;
   readonly budgetManager: SystemBudgetManager;
@@ -206,7 +202,6 @@ export class AppContext {
       instancesDir: this.instancesDir,
     });
     this.activityRecorder = new ActivityRecorder(this.instancesDir);
-    this.eventJournal = new EventJournal(join(this.homeDir, "journal"));
     this.sessionContextInjector = new SessionContextInjector();
     this.sessionTokenStore = new SessionTokenStore();
     this.canvasStore = new CanvasStore();
@@ -284,11 +279,7 @@ export class AppContext {
       return active?.conversationId ?? active?.sessionId;
     });
     this.sessionRegistry.setRecordSystem(this.recordSystem);
-    try {
-      await this.sessionRegistry.rebuildFromRecordSystem(this.recordSystem);
-    } catch {
-      await this.sessionRegistry.rebuildFromJournal(this.eventJournal);
-    }
+    await this.sessionRegistry.rebuildFromRecordSystem(this.recordSystem);
 
     this.sessionContextInjector.setEventBus(this.eventBus);
     this.sessionContextInjector.setTokenStore(this.sessionTokenStore);

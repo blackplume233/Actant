@@ -658,53 +658,56 @@ describe("AgentManager", () => {
   });
 
   describe("startAgent error cleanup (#155)", () => {
-    it("should terminate spawned process when ACP connection fails", async () => {
-      const mockAcpManager: import("./agent-manager").AcpConnectionManagerLike = {
+    it("should terminate spawned process when channel connection fails", async () => {
+      const mockChannelManager = {
         connect: vi.fn().mockRejectedValue(new Error("ACP handshake timeout")),
         has: vi.fn().mockReturnValue(false),
+        getChannel: vi.fn(),
         getPrimarySessionId: vi.fn(),
-        getConnection: vi.fn(),
+        getCapabilities: vi.fn(),
+        setCurrentActivitySession: vi.fn(),
         disconnect: vi.fn().mockResolvedValue(undefined),
         disposeAll: vi.fn().mockResolvedValue(undefined),
       };
 
-      const acpManager = new AgentManager(initializer, launcher, tmpDir, {
-        acpManager: mockAcpManager,
+      const mgr = new AgentManager(initializer, launcher, tmpDir, {
+        channelManager: mockChannelManager,
       });
 
-      await acpManager.createAgent("acp-fail", "test-tpl");
-      await expect(acpManager.startAgent("acp-fail")).rejects.toThrow(AgentLaunchError);
+      await mgr.createAgent("acp-fail", "test-tpl");
+      await expect(mgr.startAgent("acp-fail")).rejects.toThrow(AgentLaunchError);
 
-      expect(acpManager.getStatus("acp-fail")).toBe("error");
-      expect(acpManager.getAgent("acp-fail")?.pid).toBeUndefined();
+      expect(mgr.getStatus("acp-fail")).toBe("error");
+      expect(mgr.getAgent("acp-fail")?.pid).toBeUndefined();
       expect(launcher.terminated).toHaveLength(1);
 
-      acpManager.dispose();
+      mgr.dispose();
     });
 
     it("should clear process from internal map on start failure", async () => {
-      const mockAcpManager: import("./agent-manager").AcpConnectionManagerLike = {
+      const mockChannelManager = {
         connect: vi.fn().mockRejectedValue(new Error("connection refused")),
         has: vi.fn().mockReturnValue(false),
+        getChannel: vi.fn(),
         getPrimarySessionId: vi.fn(),
-        getConnection: vi.fn(),
+        getCapabilities: vi.fn(),
+        setCurrentActivitySession: vi.fn(),
         disconnect: vi.fn().mockResolvedValue(undefined),
         disposeAll: vi.fn().mockResolvedValue(undefined),
       };
 
-      const acpManager = new AgentManager(initializer, launcher, tmpDir, {
-        acpManager: mockAcpManager,
+      const mgr = new AgentManager(initializer, launcher, tmpDir, {
+        channelManager: mockChannelManager,
       });
 
-      await acpManager.createAgent("proc-leak", "test-tpl");
-      await expect(acpManager.startAgent("proc-leak")).rejects.toThrow();
+      await mgr.createAgent("proc-leak", "test-tpl");
+      await expect(mgr.startAgent("proc-leak")).rejects.toThrow();
 
-      // After failure, the agent should be startable again (not stuck in processes map)
-      mockAcpManager.connect = vi.fn().mockResolvedValue({ sessionId: "s1" });
-      await acpManager.startAgent("proc-leak");
-      expect(acpManager.getStatus("proc-leak")).toBe("running");
+      mockChannelManager.connect = vi.fn().mockResolvedValue({ sessionId: "s1", capabilities: {} });
+      await mgr.startAgent("proc-leak");
+      expect(mgr.getStatus("proc-leak")).toBe("running");
 
-      acpManager.dispose();
+      mgr.dispose();
     });
   });
 

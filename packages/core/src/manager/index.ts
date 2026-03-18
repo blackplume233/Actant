@@ -1,4 +1,4 @@
-export { AgentManager, type ManagerOptions, type AcpConnectionManagerLike, type AcpConnectionLike } from "./agent-manager";
+export { AgentManager, type ManagerOptions } from "./agent-manager";
 export {
   getLaunchModeHandler,
   type LaunchModeHandler,
@@ -12,7 +12,6 @@ export {
   DEFAULT_RESTART_POLICY,
 } from "./restart-tracker";
 export type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
-export { MockLauncher } from "./launcher/mock-launcher";
 export { ProcessLauncher, type ProcessLauncherOptions } from "./launcher/process-launcher";
 export { createLauncher, type LauncherConfig, type LauncherMode } from "./launcher/create-launcher";
 export { resolveBackend, resolveAcpBackend, openBackend, isAcpBackend, isAcpOnlyBackend, requireInteractionMode, type ResolvedBackend } from "./launcher/backend-resolver";

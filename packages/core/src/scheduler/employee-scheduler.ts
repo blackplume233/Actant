@@ -104,14 +104,6 @@ export class EmployeeScheduler {
     });
   }
 
-  /**
-   * Emit an event to trigger HookInput sources (legacy path).
-   * @deprecated Prefer emitting events directly to HookEventBus.
-   */
-  emitEvent(eventName: string, payload?: unknown): void {
-    this.legacyEventBus.emit(eventName, payload);
-  }
-
   /** Register a factory for custom input sources. */
   registerInputType<TConfig = unknown>(type: string, factory: (config: TConfig) => import("./inputs/input-source").InputSource): void {
     this.registry.register(type, factory);

@@ -53,73 +53,15 @@ function toChannelPermissions(p: PermissionsConfig | undefined): ChannelPermissi
 }
 
 
-function toLegacyMcpServers(
-  servers: McpServerSpec[] | undefined,
-): Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }> | undefined {
-  if (!servers) return undefined;
-  return servers.flatMap((server) => {
-    if (server.transport.type !== "stdio") {
-      return [];
-    }
-    return [{
-      name: server.name,
-      command: server.transport.command,
-      args: server.transport.args ?? [],
-      env: server.transport.env
-        ? Object.entries(server.transport.env).map(([name, value]) => ({ name, value }))
-        : undefined,
-    }];
-  });
-}
 
 function getChannelCapabilities(
-  manager: ActantChannelManager | AcpConnectionManagerLike | undefined,
+  manager: ActantChannelManager | undefined,
   name: string,
 ): ChannelCapabilities | undefined {
-  if (!manager || !("getCapabilities" in manager)) {
+  if (!manager?.getCapabilities) {
     return undefined;
   }
   return manager.getCapabilities?.(name);
-}
-
-interface LegacyChannelConnectOptions {
-  command: string;
-  args: string[];
-  cwd: string;
-  resolvePackage?: string;
-  connectionOptions?: {
-    autoApprove?: boolean;
-    env?: Record<string, string>;
-  };
-  activityRecorder?: unknown;
-  mcpServers?: Array<{ name: string; command: string; args: string[]; env?: Array<{ name: string; value: string }> }>;
-  tools?: Array<{ name: string; description: string; parameters: Record<string, unknown>; rpcMethod: string; scope: string; context?: string }>;
-  sessionToken?: string;
-  systemContext?: string[];
-}
-
-/**
- * @deprecated Use ActantChannelManager from channel/types instead.
- * Kept during migration — existing AcpConnectionManager implements this shape.
- */
-export interface AcpConnectionManagerLike {
-  connect(name: string, options: LegacyChannelConnectOptions): Promise<{ sessionId: string }>;
-  setCurrentActivitySession?(name: string, id: string | null): void;
-  has(name: string): boolean;
-  getPrimarySessionId(name: string): string | undefined;
-  getConnection(name: string): AcpConnectionLike | undefined;
-  disconnect(name: string): Promise<void>;
-  disposeAll(): Promise<void>;
-}
-
-/**
- * @deprecated Use ActantChannel from channel/types instead.
- */
-export interface AcpConnectionLike {
-  prompt(sessionId: string, text: string): Promise<{ stopReason: string; text: string }>;
-  streamPrompt(sessionId: string, text: string): AsyncIterable<unknown>;
-  newSession(cwd: string): Promise<{ sessionId: string }>;
-  isConnected: boolean;
 }
 
 export interface ManagerOptions {
@@ -130,11 +72,6 @@ export interface ManagerOptions {
   restartPolicy?: Partial<RestartPolicy>;
   /** Channel manager for backend communication (ActantChannel). */
   channelManager?: ActantChannelManager;
-  /**
-   * @deprecated Use `channelManager` instead.
-   * Kept for backward compatibility — AcpConnectionManager implements this shape.
-   */
-  acpManager?: AcpConnectionManagerLike;
   /** Instance registry for discovering external workspaces. */
   instanceRegistry?: InstanceRegistryAdapter;
   /** Hook event bus for emitting lifecycle events. When provided, AgentManager emits events for all state transitions. */
@@ -153,7 +90,7 @@ export class AgentManager {
   private readonly corruptedDir: string;
   private readonly watcher: ProcessWatcher;
   private readonly restartTracker: RestartTracker;
-  private readonly channelManager?: ActantChannelManager | AcpConnectionManagerLike;
+  private readonly channelManager?: ActantChannelManager;
   private readonly instanceRegistry?: InstanceRegistryAdapter;
   private readonly eventBus?: HookEventBus;
   private readonly activityRecorder?: ActivityRecorder;
@@ -164,16 +101,8 @@ export class AgentManager {
   private readonly channelCapabilities = new Map<string, ChannelCapabilities>();
   private disposing = false;
 
-  /**
-   * Resolve a channel/connection for the given agent from the channel manager,
-   * abstracting over both ActantChannelManager (new) and AcpConnectionManagerLike (legacy).
-   */
-  private resolveChannel(name: string): ActantChannel | AcpConnectionLike | undefined {
-    if (!this.channelManager) return undefined;
-    if ("getChannel" in this.channelManager) {
-      return (this.channelManager as ActantChannelManager).getChannel(name);
-    }
-    return (this.channelManager as AcpConnectionManagerLike).getConnection(name);
+  private resolveChannel(name: string): ActantChannel | undefined {
+    return this.channelManager?.getChannel(name);
   }
 
   private buildHostServices(name: string): ChannelHostServices {
@@ -196,11 +125,6 @@ export class AgentManager {
     }
   }
 
-  private isModernChannelManager(
-    manager: ActantChannelManager | AcpConnectionManagerLike,
-  ): manager is ActantChannelManager {
-    return "getChannel" in manager;
-  }
 
   /**
    * Get the persistent conversation ID for an employee (acp-background) agent.
@@ -244,7 +168,7 @@ export class AgentManager {
       backoffMaxMs: 120_000,
       resetAfterMs: 60_000,
     });
-    this.channelManager = options?.channelManager ?? options?.acpManager;
+    this.channelManager = options?.channelManager;
     this.eventBus = options?.eventBus;
     this.activityRecorder = options?.activityRecorder;
     this.sessionContextInjector = options?.sessionContextInjector;
@@ -523,9 +447,6 @@ export class AgentManager {
   ): Promise<void> {
     const channelManager = this.channelManager;
     if (!channelManager) return;
-    if (!this.isModernChannelManager(channelManager)) {
-      return;
-    }
 
     const backendEnvBuilder = getBuildProviderEnv(meta.backendType);
     const providerEnv = backendEnvBuilder
@@ -613,57 +534,36 @@ export class AgentManager {
         env: server.env ? Object.fromEntries(server.env.map((item) => [item.name, item.value])) : undefined,
       },
     }));
-    const legacyMcpServers = toLegacyMcpServers(modernMcpServers);
-
     const channelManager = this.channelManager;
     if (!channelManager) {
       throw new AgentLaunchError(name, new Error("Channel manager is required to connect ACP backends"));
     }
 
-    let connResult: { sessionId: string };
-    if (this.isModernChannelManager(channelManager)) {
-      connResult = await channelManager.connect(name, {
-        command: acpResolved.command,
-        args: acpResolved.args,
-        cwd: dir,
-        resolvePackage: acpResolved.resolvePackage,
-        env: Object.keys(providerEnv).length > 0 ? providerEnv : undefined,
+    const connResult = await channelManager.connect(name, {
+      command: acpResolved.command,
+      args: acpResolved.args,
+      cwd: dir,
+      resolvePackage: acpResolved.resolvePackage,
+      env: Object.keys(providerEnv).length > 0 ? providerEnv : undefined,
+      autoApprove: true,
+      permissions: toChannelPermissions(meta.effectivePermissions),
+      connectionOptions: {
         autoApprove: true,
-        permissions: toChannelPermissions(meta.effectivePermissions),
-        connectionOptions: {
-          autoApprove: true,
-          ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
-        },
-        activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
-        mcpServers: modernMcpServers,
-        hostTools: sessionCtx?.tools?.map((tool) => ({
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters,
-          scope: tool.scope as "all" | "service" | "employee" | undefined,
-          instructions: tool.context,
-        })),
-        tools: sessionCtx?.tools,
-        sessionToken: sessionCtx?.token,
-        systemContext: sessionCtx?.systemContextAdditions,
-      }, this.buildHostServices(name));
-    } else {
-      connResult = await channelManager.connect(name, {
-        command: acpResolved.command,
-        args: acpResolved.args,
-        cwd: dir,
-        resolvePackage: acpResolved.resolvePackage,
-        connectionOptions: {
-          autoApprove: true,
-          ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
-        },
-        activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
-        mcpServers: legacyMcpServers,
-        tools: sessionCtx?.tools,
-        sessionToken: sessionCtx?.token,
-        systemContext: sessionCtx?.systemContextAdditions,
-      });
-    }
+        ...(Object.keys(providerEnv).length > 0 ? { env: providerEnv } : {}),
+      },
+      activityRecorder: meta.processOwnership === "managed" ? this.activityRecorder : undefined,
+      mcpServers: modernMcpServers,
+      hostTools: sessionCtx?.tools?.map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        parameters: tool.parameters,
+        scope: tool.scope as "all" | "service" | "employee" | undefined,
+        instructions: tool.context,
+      })),
+      tools: sessionCtx?.tools,
+      sessionToken: sessionCtx?.token,
+      systemContext: sessionCtx?.systemContextAdditions,
+    }, this.buildHostServices(name));
 
     this.rememberChannelCapabilities(name, getChannelCapabilities(channelManager, name));
 
@@ -1077,34 +977,12 @@ export class AgentManager {
   }
 
   private async *streamFromChannel(
-    conn: ActantChannel | AcpConnectionLike,
+    conn: ActantChannel,
     sessionId: string,
     prompt: string,
   ): AsyncIterable<StreamChunk> {
     try {
-      if ("cancel" in conn) {
-        yield* conn.streamPrompt(sessionId, prompt) as AsyncIterable<StreamChunk>;
-      } else {
-        for await (const event of conn.streamPrompt(sessionId, prompt)) {
-          const record = event as Record<string, unknown>;
-          const type = record["type"] as string | undefined;
-
-          if (type === "text" || type === "assistant") {
-            const content = (record["content"] as string) ?? (record["message"] as string) ?? "";
-            yield { type: "text", content };
-          } else if (type === "tool_use") {
-            const toolName = record["name"] as string | undefined;
-            yield { type: "tool_use", content: toolName ? `[Tool: ${toolName}]` : "" };
-          } else if (type === "result") {
-            yield { type: "result", content: (record["result"] as string) ?? "" };
-          } else if (type === "error") {
-            const errMsg = (record["error"] as Record<string, unknown>)?.["message"] as string | undefined;
-            yield { type: "error", content: errMsg ?? "Unknown error" };
-          } else if (typeof record["content"] === "string") {
-            yield { type: "text", content: record["content"] };
-          }
-        }
-      }
+      yield* conn.streamPrompt(sessionId, prompt) as AsyncIterable<StreamChunk>;
     } catch (err) {
       yield { type: "error", content: err instanceof Error ? err.message : String(err) };
     }
@@ -1208,13 +1086,6 @@ export class AgentManager {
   /** Check if an agent has an active communication channel. */
   hasChannel(name: string): boolean {
     return this.channelManager?.has(name) ?? false;
-  }
-
-  /**
-   * @deprecated Use hasChannel() instead.
-   */
-  hasAcpConnection(name: string): boolean {
-    return this.hasChannel(name);
   }
 
   /**

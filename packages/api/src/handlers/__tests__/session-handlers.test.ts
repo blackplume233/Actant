@@ -7,7 +7,7 @@ function createMockCtx(): AppContext {
   return {
     agentManager: {
       getAgent: vi.fn().mockReturnValue({ name: "test-agent", status: "running" }),
-      hasAcpConnection: vi.fn().mockReturnValue(true),
+      hasChannel: vi.fn().mockReturnValue(true),
       promptAgent: vi.fn().mockResolvedValue({ text: "ok", sessionId: "conv-1" }),
     },
     sessionRegistry: {

@@ -8,7 +8,7 @@ import {
 } from "./backend-registry";
 import "./builtin-backends";
 
-export type { BackendDefinition, BackendDescriptor, AgentOpenMode, PlatformCommand, OpenSpawnOptions } from "@actant/shared";
+export type { BackendDefinition, AgentOpenMode, PlatformCommand, OpenSpawnOptions } from "@actant/shared";
 
 export interface ResolvedBackend {
   command: string;

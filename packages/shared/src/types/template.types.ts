@@ -226,17 +226,6 @@ export interface BackendInstallMethod {
 }
 
 /**
- * @deprecated Use `BackendDefinition` (extends VersionedComponent) instead.
- * This alias is kept for backward compatibility during migration.
- */
-export interface BackendDescriptor extends BackendDefinition {
-  /** @deprecated Use `name` (from VersionedComponent) instead. */
-  type: AgentBackendType;
-  /** Behavioral extension — not serializable, register via BackendManager.registerAcpResolver(). */
-  acpResolver?: (workspaceDir: string, backendConfig?: Record<string, unknown>) => { command: string; args: string[] };
-}
-
-/**
  * Subset of Node.js `SpawnOptions` that the CLI applies directly.
  * The backend descriptor declares these; the CLI is a pure executor.
  */

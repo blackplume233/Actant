@@ -21,7 +21,7 @@ export interface ResolvedAcpBinary {
  *  3. Return original command (caller will get a proper spawn error)
  *
  * @param command      The command name (e.g. "claude-agent-acp.cmd")
- * @param resolvePackage  npm package that provides the binary (from BackendDescriptor)
+ * @param resolvePackage  npm package that provides the binary (from BackendDefinition)
  */
 export function resolveAcpBinary(command: string, resolvePackage?: string): ResolvedAcpBinary {
   if (isOnPath(command)) {

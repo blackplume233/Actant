@@ -13,7 +13,6 @@ import {
   registerPresetHandlers,
   registerDaemonHandlers,
   registerHubHandlers,
-  registerProxyHandlers,
   registerScheduleHandlers,
   registerGatewayHandlers,
   registerActivityHandlers,
@@ -47,7 +46,6 @@ export class Daemon {
     registerPresetHandlers(this.handlers);
     registerDaemonHandlers(this.handlers, () => this.stop());
     registerHubHandlers(this.handlers);
-    registerProxyHandlers(this.handlers);
     registerScheduleHandlers(this.handlers);
     registerGatewayHandlers(this.handlers);
     registerActivityHandlers(this.handlers);

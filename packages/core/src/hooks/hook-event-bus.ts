@@ -1,7 +1,6 @@
 import { EventEmitter } from "node:events";
 import { createLogger, mapHookEventToCategory } from "@actant/shared";
 import type { HookEventName, HookCallerType, HookEmitContext } from "@actant/shared";
-import type { EventJournal } from "../journal/event-journal";
 import type { RecordSystem } from "../record/record-system";
 
 const logger = createLogger("hook-event-bus");
@@ -42,7 +41,6 @@ export type EmitGuard = (
 export class HookEventBus {
   private readonly emitter = new EventEmitter();
   private emitGuard: EmitGuard | null = null;
-  private journal: EventJournal | null = null;
   private recordSystem: RecordSystem | null = null;
   /**
    * Resolves agent name → current session ID for recording.
@@ -57,14 +55,7 @@ export class HookEventBus {
     this.maxRecent = options?.maxRecentEvents ?? 500;
   }
 
-  /**
-   * @deprecated Use setRecordSystem() instead. Kept for backward compat.
-   */
-  setJournal(journal: EventJournal | null): void {
-    this.journal = journal;
-  }
-
-  /** Attach the unified RecordSystem. Replaces setJournal(). */
+  /** Attach the unified RecordSystem for event persistence. */
   setRecordSystem(rs: RecordSystem | null): void {
     this.recordSystem = rs;
   }
@@ -160,10 +151,6 @@ export class HookEventBus {
         data: payload,
       }).catch((err) => {
         logger.warn({ err, event }, "Failed to record hook event");
-      });
-    } else if (this.journal) {
-      this.journal.append("hook", event, payload).catch((err) => {
-        logger.warn({ err, event }, "Failed to journal hook event");
       });
     }
 

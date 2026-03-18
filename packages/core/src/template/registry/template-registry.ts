@@ -81,11 +81,6 @@ export class TemplateRegistry extends BaseComponentManager<AgentTemplate> {
     return count;
   }
 
-  /** @deprecated Use loadFromDirectory instead. */
-  async loadBuiltins(configDir: string): Promise<number> {
-    return this.loadFromDirectory(configDir);
-  }
-
   /**
    * Validate raw data as an AgentTemplate using the Zod schema.
    * Returns structured ConfigValidationResult (#119).
