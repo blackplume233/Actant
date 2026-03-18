@@ -15,10 +15,9 @@ describe("template-engine", () => {
     expect(content).toContain("{{token}}");
   });
 
-  it("loads canvas-context.md", () => {
-    const content = loadTemplate("canvas-context.md");
-    expect(content).toContain("canvas");
-    expect(content).toContain("actant_canvas_update");
+  it("loads heartbeat-default.md", () => {
+    const content = loadTemplate("heartbeat-default.md");
+    expect(content).toContain("heartbeat");
   });
 
   it("throws on non-existent template", () => {

@@ -8,7 +8,7 @@
  *   1. domainContext    — inject DomainContextConfig into Agent workspace (BackendBuilder)
  *   2. runtime         — lifecycle: init → start → tick → stop → dispose
  *   3. hooks           — register HookEventBus listeners
- *   4. contextProviders — register SessionContextInjector providers
+ *   4. contextProviders — register ContextProvider instances
  *   5. subsystems      — register SubsystemDefinitions (wired in Step 5)
  *   6. sources         — register SourceConfigs (wired in Step 5)
  */
@@ -70,10 +70,9 @@ export interface ActantPlugin {
 
   // ── Plug 4: contextProviders ──────────────────────────────
   /**
-   * Return ContextProvider instances to register with SessionContextInjector.
+   * Return ContextProvider instances for session context injection.
    * Called once during PluginHost.start().
-   * Results are collected via PluginHost.getContextProviders() and wired
-   * into SessionContextInjector by AppContext in Step 5.
+   * Results are collected via PluginHost.getContextProviders().
    */
   contextProviders?: (ctx: PluginContext) => ContextProvider[];
 

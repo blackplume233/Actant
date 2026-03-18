@@ -1,4 +1,4 @@
-import type { AgentArchetype, AgentInstanceMeta } from "@actant/shared";
+import type { AgentInstanceMeta } from "@actant/shared";
 
 /**
  * ACP McpServer (stdio variant) as expected by the ACP SDK's session/new.
@@ -13,9 +13,6 @@ export interface AcpMcpServerStdio {
 
 /** Minimum archetype level required: "all" (any managed) < "service" < "employee". */
 export type ToolScope = "employee" | "service" | "all";
-
-export const ARCHETYPE_LEVEL: Record<AgentArchetype, number> = { repo: 0, service: 1, employee: 2 };
-export const SCOPE_MIN_LEVEL: Record<ToolScope, number> = { all: 0, service: 1, employee: 2 };
 
 /**
  * Definition of an internal tool that can be provided to managed agents.
@@ -47,15 +44,4 @@ export interface ContextProvider {
   getMcpServers?(agentName: string, meta: AgentInstanceMeta): AcpMcpServerStdio[];
   getSystemContext?(agentName: string, meta: AgentInstanceMeta): string | undefined;
   getTools?(agentName: string, meta: AgentInstanceMeta): ActantToolDefinition[];
-}
-
-/**
- * Aggregated session context collected from providers.
- */
-export interface SessionContext {
-  mcpServers: AcpMcpServerStdio[];
-  systemContextAdditions: string[];
-  tools: ActantToolDefinition[];
-  /** Per-session token for internal tool authentication */
-  token: string;
 }
