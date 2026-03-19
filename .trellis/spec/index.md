@@ -14,14 +14,7 @@ Actant 当前只承认一套新的顶层叙述：
 - 核心对象：`Project`、`Source`、`Capability`
 - 首批内置 Source：`SkillSource`、`McpConfigSource`、`McpRuntimeSource`、`AgentRuntime`
 - V1 操作面：`read`、`write`、`list`、`stat`、`watch`、`stream`
-
-以下旧基线已废弃，不再作为实现依据：
-
-- `ContextManager` 作为平台顶层
-- `DomainContext` 作为聚合中心
-- `ContextSourceType` 作为核心分类真相
-- 旧 source-centric VFS 作为最终架构
-- `workflow` 作为 V1 顶层对象
+- V1 边界：只实现当前 spec、design、roadmap 中明确列出的对象、路径约定与操作面
 
 ---
 
@@ -35,8 +28,8 @@ Actant 当前只承认一套新的顶层叙述：
 
 - 先重写 spec/design/roadmap
 - 再进入实现
-- 与新基线冲突的旧文档必须删除或明确废弃
-- 不允许双重真相并存
+- 历史迁移说明集中放在 `docs/history/legacy-architecture-transition.md`
+- 不允许把历史迁移说明和当前规范并列为默认入口
 
 ---
 
@@ -72,7 +65,7 @@ Actant 当前只承认一套新的顶层叙述：
 定义：
 - 哪些词属于哪个层级
 - 哪些命名应保留
-- 哪些旧术语只允许作为废弃参考出现
+- 哪些术语属于当前基线
 
 入口：
 - [terminology.md](./terminology.md)
@@ -121,6 +114,6 @@ Actant 当前只承认一套新的顶层叙述：
 任何后续实现或设计变更，审查时必须确认：
 
 - 是否仍遵守 `ContextFS` / `VFS Kernel` 的层次分工
-- 是否重新引入了旧 `ContextManager` / `DomainContext` 叙事
+- 是否把迁移说明重新写回主线入口
 - 是否把 `workflow`、query view、兼容层偷偷带回 V1
 - 是否在 spec、design、roadmap 三层同步修改

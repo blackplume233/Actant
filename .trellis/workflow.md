@@ -32,7 +32,7 @@ Current repository policy:
 - document first
 - one active architecture narrative only
 - no compatibility-first route
-- remove or trash stale documents instead of preserving parallel truths
+- keep migration notes outside the main entry path
 
 ## Session Start
 
@@ -54,21 +54,19 @@ If the code graph is stale, refresh it with:
 npx gitnexus analyze
 ```
 
-## Current Non-Goals
+## Current Scope Guard
 
-Do not reintroduce these as current architecture truth:
+Do not expand beyond the current ContextFS baseline:
 
-- old `ContextManager`
-- old `DomainContext`
 - `workflow` as a V1 top-level object
 - query/view mounts in V1
 - overlay/fallback behavior in V1
-- dual truth between spec/design/roadmap
+- any second default narrative alongside spec/design/roadmap
 
 ## Documentation Hygiene
 
-For a new Agent, `trash/` should be the only place where historical or invalidated architecture narratives remain.  
-If you find stale material outside `trash/`, clean it before relying on it.
+Main entry docs should describe only the current baseline.  
+If historical explanation is needed, put it in `docs/history/legacy-architecture-transition.md` or `trash/`, not in the default read path.
 
 ## Working Rule
 
