@@ -24,10 +24,10 @@ spec / design / roadmap -> contract -> implementation -> verification
 当前不允许把以下内容重新带回主线：
 
 - `workflow` 作为 V1 顶层对象
-- 旧 `ContextManager`
-- 旧 `DomainContext`
 - 兼容层优先
 - 保留多份互相冲突的架构文档
+
+历史迁移说明只应保留在 `docs/history/legacy-architecture-transition.md` 或 `trash/`，不应重新进入默认开发入口。
 
 ## Source Of Truth
 

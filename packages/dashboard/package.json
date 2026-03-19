@@ -24,7 +24,7 @@
     "build:client": "vite build --config client/vite.config.ts",
     "dev:client": "vite dev --config client/vite.config.ts",
     "dev": "tsx --watch src/index.ts",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc -b --pretty false",
     "clean": "rimraf dist"
   },
   "dependencies": {

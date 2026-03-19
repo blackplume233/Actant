@@ -3,7 +3,22 @@ import type { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 import { AcpConnection, type AcpSessionInfo, type SessionNotification } from "@actant/acp";
 import type { StreamChunk } from "@actant/agent-runtime";
-import { ProcessTerminal, ActantChatView } from "@actant/tui";
+
+type ChatUiModule = typeof import("@actant/tui");
+
+interface ChatViewController {
+  readonly tui: {
+    requestRender(): void;
+  };
+  onUserMessage?: (text: string) => Promise<void>;
+  onCancel?: () => void;
+  onExit?: () => Promise<void>;
+  hideLoader(): void;
+  appendAssistantMessage(text: string): void;
+  appendAssistantStream(stream: AsyncIterable<StreamChunk>): Promise<unknown>;
+  start(): void;
+  stop(): Promise<void>;
+}
 
 export function createAgentChatCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("chat")
@@ -68,9 +83,10 @@ async function runDaemonChat(
   _printer: CliPrinter,
 ): Promise<void> {
   const meta = await client.call("agent.status", { name });
+  const { ProcessTerminal, ActantChatView } = await loadChatUi();
 
   const terminal = new ProcessTerminal();
-  const chatView = new ActantChatView(terminal, {
+  const chatView: ChatViewController = new ActantChatView(terminal, {
     title: `Chat with ${meta.name}`,
     subtitle: `${meta.templateName}@${meta.templateVersion} [daemon-managed]\nType your message and press Enter. Press Escape to cancel. Type "/exit" to quit.`,
   });
@@ -114,6 +130,7 @@ async function runDirectBridgeChat(
     name,
     template: opts.template,
   });
+  const { ProcessTerminal, ActantChatView } = await loadChatUi();
 
   const conn = new AcpConnection({ autoApprove: true });
   let session: AcpSessionInfo | null = null;
@@ -176,7 +193,7 @@ async function runDirectBridgeChat(
     session = await conn.newSession(resolved.workspaceDir);
 
     const terminal = new ProcessTerminal();
-    const chatView = new ActantChatView(terminal, {
+    const chatView: ChatViewController = new ActantChatView(terminal, {
       title: `Chat with ${agentName}`,
       subtitle: `direct bridge, session ${session.sessionId.slice(0, 8)}...\nType your message and press Enter. Press Escape to cancel. Type "/exit" to quit.`,
       cwd: resolved.workspaceDir,
@@ -206,7 +223,11 @@ async function runDirectBridgeChat(
   }
 }
 
-function waitForStop(chatView: ActantChatView): Promise<void> {
+async function loadChatUi(): Promise<ChatUiModule> {
+  return import("@actant/tui");
+}
+
+function waitForStop(chatView: ChatViewController): Promise<void> {
   return new Promise((resolve) => {
     const check = setInterval(() => {
       // ActantChatView.stop() is called internally when /exit is processed

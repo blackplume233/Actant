@@ -40,6 +40,7 @@ export default tseslint.config(
       "**/dist/**",
       "**/dist-standalone/**",
       "**/node_modules/**",
+      "trash/**",
       "**/*.config.ts",
       "**/*.config.js",
       ".agents/**",

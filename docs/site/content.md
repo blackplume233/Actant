@@ -8,7 +8,7 @@
 
 ## Public Message
 
-Actant is resetting its architecture around ContextFS.
+Actant is converging on ContextFS.
 
 The current public baseline is:
 
@@ -20,5 +20,5 @@ The current public baseline is:
 
 ## Public Warning
 
-The repository is in a documentation-first reset stage.
-Historical runtime narratives, workflow-centric models, and DomainContext-era descriptions are not current.
+The repository is in a documentation-first convergence stage.
+Read the spec, design, and roadmap for the active baseline before trusting older narratives.

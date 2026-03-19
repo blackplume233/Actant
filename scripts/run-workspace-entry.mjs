@@ -18,6 +18,7 @@ if (!entryArg) {
 }
 
 const entryPath = resolve(ROOT, entryArg);
+const CHILD_CWD = process.cwd();
 if (!existsSync(entryPath)) {
   console.error(`Entry file not found: ${entryPath}`);
   process.exit(1);
@@ -50,7 +51,7 @@ await esbuild.build({
 });
 
 const child = spawn(process.execPath, [outfile, ...entryArgs], {
-  cwd: ROOT,
+  cwd: CHILD_CWD,
   stdio: "inherit",
   env: {
     ...process.env,

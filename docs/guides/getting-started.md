@@ -28,11 +28,11 @@
 
 以下内容不应再当作当前实现方向：
 
-- 旧 `ContextManager`
-- 旧 `DomainContext`
 - `workflow` 作为 V1 顶层对象
 - query/view mount
 - overlay/fallback 行为实现
+
+如果你需要理解历史术语、迁移背景或残留命名，去看 `docs/history/legacy-architecture-transition.md`，不要把这些内容当作默认入口。
 
 ## Practical Rule
 

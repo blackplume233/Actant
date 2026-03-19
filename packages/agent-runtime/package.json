@@ -35,7 +35,7 @@
   "scripts": {
     "build": "tsup && tsc -p tsconfig.build.json",
     "dev": "tsup --watch",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc -b --pretty false",
     "test": "vitest run",
     "clean": "rimraf dist",
     "prepublishOnly": "pnpm run build"

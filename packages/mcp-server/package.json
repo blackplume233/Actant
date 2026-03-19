@@ -38,7 +38,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsx --watch src/index.ts",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc -b --pretty false",
     "test": "vitest run",
     "clean": "rimraf dist",
     "prepublishOnly": "tsup"

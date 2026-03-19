@@ -21,7 +21,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsx --watch src/index.ts",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc -b --pretty false",
     "clean": "rimraf dist"
   },
   "dependencies": {

@@ -14,6 +14,15 @@ const CLI_BIN = join(import.meta.dirname, "..", "..", "dist", "bin", "actant.js"
 const ACTHUB_BIN = join(import.meta.dirname, "..", "..", "dist", "bin", "acthub.js");
 const CLI_SOURCE_ENTRY = "packages/cli/src/bin/actant.ts";
 const ACTHUB_SOURCE_ENTRY = "packages/cli/src/bin/acthub.ts";
+const USE_DIST = process.env["ACTANT_E2E_USE_DIST"] === "1";
+
+function resolveCommandArgs(binPath: string, args: string[]): string[] {
+  const sourceEntry = binPath === ACTHUB_BIN ? ACTHUB_SOURCE_ENTRY : CLI_SOURCE_ENTRY;
+  if (USE_DIST && existsSync(binPath)) {
+    return [binPath, ...args];
+  }
+  return [SOURCE_RUNNER, sourceEntry, ...args];
+}
 
 function runCli(
   args: string[],
@@ -23,10 +32,7 @@ function runCli(
   cwd?: string,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   return new Promise((resolve) => {
-    const sourceEntry = binPath === ACTHUB_BIN ? ACTHUB_SOURCE_ENTRY : CLI_SOURCE_ENTRY;
-    const commandArgs = existsSync(binPath)
-      ? [binPath, ...args]
-      : [SOURCE_RUNNER, sourceEntry, ...args];
+    const commandArgs = resolveCommandArgs(binPath, args);
     const child: ChildProcess = spawn(process.execPath, commandArgs, {
       cwd,
       env: {
@@ -126,9 +132,7 @@ describe("CLI E2E (stdio)", { timeout: 20_000 }, () => {
     const normalizedOverride = normalizeIpcPath(socketOverride, foregroundHome);
     expect(normalizedOverride).toBe(expectedSocketPath);
     const pidFile = join(foregroundHome, "daemon.pid");
-    const foregroundArgs = existsSync(CLI_BIN)
-      ? [CLI_BIN, "daemon", "start", "--foreground"]
-      : [SOURCE_RUNNER, CLI_SOURCE_ENTRY, "daemon", "start", "--foreground"];
+    const foregroundArgs = resolveCommandArgs(CLI_BIN, ["daemon", "start", "--foreground"]);
     const child = spawn(process.execPath, foregroundArgs, {
       env: {
         ...process.env,

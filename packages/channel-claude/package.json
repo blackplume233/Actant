@@ -39,7 +39,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsx --watch src/index.ts",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc -b --pretty false",
     "test": "vitest run",
     "test:chat": "tsx src/bin/test-chat.ts",
     "clean": "rimraf dist"
