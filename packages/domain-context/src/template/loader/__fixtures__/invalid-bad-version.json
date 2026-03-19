@@ -1,0 +1,11 @@
+{
+  "name": "bad-version-agent",
+  "version": "not-a-semver",
+  "backend": {
+    "type": "cursor"
+  },
+  "provider": {
+    "type": "openai"
+  },
+  "domainContext": {}
+}

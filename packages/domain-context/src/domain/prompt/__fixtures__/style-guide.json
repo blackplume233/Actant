@@ -1,0 +1,5 @@
+{
+  "name": "style-guide",
+  "description": "Coding style guidelines",
+  "content": "Follow the team's coding standards:\n- Use TypeScript strict mode\n- Prefer functional patterns\n- Write descriptive variable names"
+}

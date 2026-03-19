@@ -1,0 +1,11 @@
+{
+  "name": "minimal-agent",
+  "version": "0.1.0",
+  "backend": {
+    "type": "cursor"
+  },
+  "provider": {
+    "type": "openai"
+  },
+  "domainContext": {}
+}

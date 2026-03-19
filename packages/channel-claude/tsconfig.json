@@ -6,5 +6,5 @@
     "composite": true
   },
   "include": ["src"],
-  "references": [{ "path": "../shared" }, { "path": "../core" }, { "path": "../tui" }]
+  "references": [{ "path": "../shared" }, { "path": "../agent-runtime" }, { "path": "../tui" }]
 }

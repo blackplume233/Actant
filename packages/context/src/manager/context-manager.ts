@@ -1,4 +1,5 @@
 import type { VfsSourceRegistration } from "@actant/shared";
+import type { SourceManager } from "@actant/source";
 import type { ContextSource, ToolRegistration, ContextManagerEvents } from "../types";
 
 /**
@@ -12,11 +13,28 @@ import type { ContextSource, ToolRegistration, ContextManagerEvents } from "../t
  * ContextManager is agent-agnostic — it knows about Sources, VFS, and Tools,
  * but nothing about AgentProfile, archetype, or process lifecycle.
  */
+export interface ContextManagerOptions {
+  sourceManager?: SourceManager;
+}
+
 export class ContextManager {
   private readonly sources = new Map<string, ContextSource>();
   private readonly tools = new Map<string, ToolRegistration>();
   private readonly listeners: ContextManagerEvents[] = [];
   private activeMounts = new Map<string, VfsSourceRegistration[]>();
+  private _sourceManager?: SourceManager;
+
+  constructor(options?: ContextManagerOptions) {
+    this._sourceManager = options?.sourceManager;
+  }
+
+  get sourceManager(): SourceManager | undefined {
+    return this._sourceManager;
+  }
+
+  setSourceManager(sourceManager: SourceManager): void {
+    this._sourceManager = sourceManager;
+  }
 
   registerSource(source: ContextSource): void {
     if (this.sources.has(source.name)) {
@@ -148,6 +166,27 @@ export class ContextManager {
       refreshed.push(sourceName);
     }
     return refreshed;
+  }
+
+  /**
+   * Sync all component sources via the SourceManager, then refresh
+   * the domain context VFS projections. No-op if no SourceManager is set.
+   *
+   * @param registry - VFS registry to re-mount updated domain sources on.
+   * @param mountPrefix - Base path prefix for all mounts (default: "").
+   * @returns Names of sources that were synced, or empty array.
+   */
+  async syncSources(
+    registry?: VfsMountTarget,
+    mountPrefix = "",
+  ): Promise<void> {
+    if (!this._sourceManager) return;
+
+    await this._sourceManager.syncAll();
+
+    if (registry) {
+      this.mountSources(registry, mountPrefix);
+    }
   }
 
   addListener(listener: ContextManagerEvents): void {

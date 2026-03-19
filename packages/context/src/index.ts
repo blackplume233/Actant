@@ -7,6 +7,7 @@ export type {
 
 export {
   ContextManager,
+  type ContextManagerOptions,
   type VfsMountTarget,
 } from "./manager/context-manager";
 

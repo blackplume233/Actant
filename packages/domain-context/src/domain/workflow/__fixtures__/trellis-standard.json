@@ -1,0 +1,5 @@
+{
+  "name": "trellis-standard",
+  "description": "Standard Trellis development workflow",
+  "content": "# Development Workflow\n\n## Quick Start\n1. Read context\n2. Plan\n3. Implement\n4. Test\n5. Record"
+}

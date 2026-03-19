@@ -334,6 +334,14 @@ export type {
   AgentUptimeRecord,
 } from "./budget.types";
 export type {
+  AcpMcpServerStdio,
+  ToolScope,
+  ActantToolDefinition,
+  ContextProvider,
+  SessionToken,
+  SessionTokenValidator,
+} from "./context-provider.types";
+export type {
   PluginScope,
   PluginRuntimeState,
   PluginContext,

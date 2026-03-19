@@ -5,12 +5,12 @@ on:
     branches: [main, master]
     paths:
       - "examples/actant-hub/**"
-      - "packages/core/src/source/**"
+      - "packages/agent-runtime/src/source/**"
   pull_request:
     branches: [main, master]
     paths:
       - "examples/actant-hub/**"
-      - "packages/core/src/source/**"
+      - "packages/agent-runtime/src/source/**"
   workflow_dispatch:
 
 jobs:
@@ -35,7 +35,7 @@ jobs:
       - name: Validate examples/actant-hub
         run: |
           node -e "
-            const { SourceValidator } = require('./packages/core/dist/index.js');
+            const { SourceValidator } = require('./packages/agent-runtime/dist/index.js');
             const path = require('path');
             async function main() {
               const validator = new SourceValidator();
@@ -51,4 +51,4 @@ jobs:
           "
 
       - name: Run source validator tests
-        run: pnpm test -- packages/core/src/source/source-validator.test.ts
+        run: pnpm test -- packages/agent-runtime/src/source/source-validator.test.ts

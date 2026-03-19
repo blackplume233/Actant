@@ -86,8 +86,8 @@ async function handleTemplateValidate(
   const { filePath } = params as unknown as TemplateValidateParams;
   try {
     const template = await ctx.templateLoader.loadFromFile(filePath);
-    const { validateTemplate } = await import("@actant/agent-runtime");
-    const deep = validateTemplate(template);
+    const { validateTemplate, createDefaultStepRegistry } = await import("@actant/agent-runtime");
+    const deep = validateTemplate(template, createDefaultStepRegistry());
 
     ctx.eventBus?.emit("template:validated", { callerType: "user", callerId: "api" }, {
       "template.name": template.name, valid: true, errorCount: 0,

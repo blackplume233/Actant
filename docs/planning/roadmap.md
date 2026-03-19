@@ -83,6 +83,17 @@ Actant 同时扮演：
 
 ## 已完成里程碑
 
+### Phase D-1 — Core Split: domain-context / source / context 三层拆分（2026-03-18）
+
+> `@actant/agent-runtime` 拆分为 `@actant/domain-context`、`@actant/source` 三层包，ContextManager 升级为上下文全生命周期管理器。
+
+- [x] D-1-0：`@actant/domain` → `@actant/domain-context`，搬入 domain managers / template / provider / permissions / version
+- [x] D-1-1：创建 `@actant/source` 包（SourceManager + fetch 层 + SourceValidator）
+- [x] D-1-2：升级 `@actant/context`，ContextManager 持有 SourceManager，新增 `syncSources()`
+- [x] D-1-3：瘦身 `@actant/agent-runtime`，re-export 兼容层保持零 breaking change
+- [x] D-1-4：全量验证 — 117 test files, 1320 tests all pass
+- [x] D-1-5：更新 Roadmap 和文档
+
 ### Phase C — 迁移清理（2026-03-18）
 
 > Phase B 标记的全部 @deprecated 模块已完成迁移和删除。
@@ -179,7 +190,29 @@ Actant 同时扮演：
 - [x] **C-5** ActivityRecorder → RecordSystem → ACP 包录制层已迁移到 RecordSystem
 - [x] **C-6** HookInput → HookEventBusInput → EmployeeScheduler 直接监听 HookEventBus
 
-### D. 架构重构后独立项
+### D-1. Phase D-1 — Core Split: domain-context / source / context 三层拆分（进行中）
+
+> **目标**：将 `@actant/agent-runtime` 的职责按 domain-context / source / context 三层拆分，使 ContextManager 成为上下文全生命周期管理器。
+> **关联 Issue**：#296（core 拆分评估）、#302（CRLF 修复）、#303（spec 文档同步）
+
+- [x] **D-1-0** 重命名 `@actant/domain` → `@actant/domain-context`，搬入 domain managers / template / provider / permissions / version
+- [x] **D-1-1** 创建 `@actant/source` 包，搬入 SourceManager + fetch 层 + SourceValidator（注入模式解耦 StepRegistry）
+- [x] **D-1-2** 升级 `@actant/context`，ContextManager 持有 SourceManager，新增 `syncSources()` 能力
+- [x] **D-1-3** 瘦身 `@actant/agent-runtime`，删除已搬出模块源码，保留 re-export 兼容层
+- [x] **D-1-4** 全量验证：build / type-check / test (1320 tests) / lint — 全部通过
+- [x] **D-1-5** 更新 Roadmap 和 Spec 文档
+
+**包依赖图**（新架构）：
+```
+@actant/shared          ← 纯类型 + 工具
+@actant/domain-context  ← Schemas + Managers + Registry + Provider + Permissions + Version
+@actant/source          ← SourceManager + Fetch 层 + SourceValidator
+@actant/vfs             ← 虚拟文件系统
+@actant/context         ← ContextManager + ContextSources + Tool Registry + syncSources
+@actant/agent-runtime   ← AgentInitializer + WorkspaceBuilder + Scheduler + Hooks + State + re-export 兼容层
+```
+
+### D-2. 架构重构后独立项
 
 > 不受 Context-First 阻塞，或在 Phase B 完成后重新评估。
 
@@ -227,7 +260,7 @@ Actant 同时扮演：
 | 原项 | 处理方式 |
 |------|---------|
 | #279 统一通信层 | Phase B-4 桥接阶段处理通信层适配 |
-| #285 core 拆分评估 | Phase B-5 直接执行 `@actant/core` → `@actant/agent-runtime` |
+| #285 core 拆分评估 | Phase B-5 重命名 + Phase D-1 三层拆分完成 |
 | #14 Plugin 体系 | Phase B 后在 ContextManager 架构上重新设计 |
 | #133 env provider | 核心已完成，仅剩文档同步 |
 
@@ -297,8 +330,8 @@ Actant 同时扮演：
 
 ## 维护说明
 
-- **当前进行中**：Phase D 独立项 + Phase E Pi Mono 吸收。
+- **当前进行中**：Phase D-1 Core Split 已完成，Phase D-2 独立项 + Phase E Pi Mono 吸收待推进。
 - **Task 级 Todo**：随开发推进勾选 `[ ]` → `[x]`。
-- **后续优先**：Phase D 独立项 → Phase E Pi Mono 吸收 → Phase F 长期方向。
+- **后续优先**：Phase D-2 独立项 → Phase E Pi Mono 吸收 → Phase F 长期方向。
 - 新增/关闭 Issue 或完成 Task 后同步更新本表。
 - **历史详情**：Phase 1-3 的详细 checklist 已归入 git 历史（v0.3.0 前的 roadmap 版本），如需查看可 `git log -- docs/planning/roadmap.md`。

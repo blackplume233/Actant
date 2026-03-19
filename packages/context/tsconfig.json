@@ -6,5 +6,5 @@
     "rootDir": "./src"
   },
   "include": ["src"],
-  "references": [{ "path": "../shared" }, { "path": "../vfs" }]
+  "references": [{ "path": "../shared" }, { "path": "../domain-context" }, { "path": "../source" }, { "path": "../vfs" }]
 }

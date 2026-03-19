@@ -1,0 +1,6 @@
+{
+  "name": "typescript-expert",
+  "description": "TypeScript best practices and patterns",
+  "content": "- Use strict mode\n- Prefer interfaces over type aliases for object shapes\n- Use discriminated unions for state machines\n- Avoid any, prefer unknown",
+  "tags": ["typescript", "patterns"]
+}

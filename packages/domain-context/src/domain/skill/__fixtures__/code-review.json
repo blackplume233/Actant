@@ -1,0 +1,6 @@
+{
+  "name": "code-review",
+  "description": "Review rules focused on alignment, simplicity, and readable code",
+  "content": "## Code Review Priorities\n\n1. Functional alignment\n- Confirm the implementation matches the repository intent expressed in specs, tests, issues, and nearby patterns.\n- Flag scope creep, missing behavior, and undocumented behavior changes.\n\n2. Design simplicity and redundancy\n- Prefer the simplest design that satisfies the requirement.\n- Flag unnecessary abstraction, indirection, wrapper layers, duplicated logic, and speculative extensibility.\n\n3. Code hygiene and readability\n- Flag inline imports unless they are required for runtime or bundling behavior.\n- Flag magic strings and magic numbers; prefer named constants or structured configuration.\n- Flag unclear naming, long functions, deep nesting, and mixed responsibilities.\n\n4. Correctness and maintainability\n- Check error handling, type safety, contract consistency, edge cases, and test quality.",
+  "tags": ["review", "quality", "design", "readability"]
+}

@@ -3,7 +3,9 @@
   "references": [
     { "path": "packages/shared" },
     { "path": "packages/context" },
-    { "path": "packages/core" },
+    { "path": "packages/domain-context" },
+    { "path": "packages/source" },
+    { "path": "packages/agent-runtime" },
     { "path": "packages/acp" },
     { "path": "packages/api" },
     { "path": "packages/pi" },

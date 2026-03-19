@@ -8,7 +8,7 @@
   "include": ["src"],
   "references": [
     { "path": "../shared" },
-    { "path": "../core" },
+    { "path": "../agent-runtime" },
     { "path": "../acp" },
     { "path": "../api" },
     { "path": "../mcp-server" },

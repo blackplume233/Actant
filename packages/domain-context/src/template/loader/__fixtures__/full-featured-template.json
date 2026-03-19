@@ -1,0 +1,65 @@
+{
+  "name": "scheduled-web-searcher",
+  "version": "1.2.0",
+  "description": "A scheduled web search agent with permissions and plugins",
+  "backend": {
+    "type": "claude-code",
+    "config": { "model": "claude-sonnet-4-20250514" }
+  },
+  "provider": {
+    "type": "anthropic"
+  },
+  "domainContext": {
+    "skills": ["web-search"],
+    "prompts": ["system-searcher"],
+    "mcpServers": [],
+    "workflow": "search-workflow",
+    "subAgents": [],
+    "plugins": ["rate-limiter", "cache"],
+    "extensions": {
+      "customSources": ["rss-feed", "api-endpoint"]
+    }
+  },
+  "permissions": {
+    "allow": ["WebSearch", "WebFetch", "Read"],
+    "deny": ["Write"],
+    "defaultMode": "default",
+    "sandbox": {
+      "enabled": true,
+      "network": {
+        "allowedDomains": ["*.example.com"]
+      }
+    }
+  },
+  "schedule": {
+    "heartbeat": {
+      "intervalMs": 20000,
+      "prompt": "Perform a random web search",
+      "priority": "normal"
+    },
+    "cron": [
+      {
+        "pattern": "0 */6 * * *",
+        "prompt": "Generate daily summary",
+        "timezone": "Asia/Shanghai",
+        "priority": "high"
+      }
+    ],
+    "hooks": [
+      {
+        "eventName": "user:request",
+        "prompt": "Handle user search request",
+        "priority": "critical"
+      }
+    ]
+  },
+  "initializer": {
+    "steps": [
+      { "type": "create-workspace" }
+    ]
+  },
+  "metadata": {
+    "author": "QA Team",
+    "tags": "search,scheduled"
+  }
+}
