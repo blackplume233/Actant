@@ -1,0 +1,1 @@
+{"name":"qa-test-tpl","version":"1.0.0","backend":{"type":"cursor"},"provider":{"type":"anthropic"},"domainContext":{}}

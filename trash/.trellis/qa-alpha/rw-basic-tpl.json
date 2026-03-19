@@ -1,0 +1,1 @@
+{"name":"rw-basic-tpl","version":"1.0.0","description":"QA Alpha basic test template","backend":{"type":"cursor"},"provider":{"type":"anthropic"},"domainContext":{}}

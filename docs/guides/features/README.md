@@ -1,13 +1,11 @@
-# ⚠️ 已迁移至 Wiki
+# Features Guide
 
-本目录下的功能文档已合并入 **`docs/wiki/`** — 基于 VitePress 的完整 Wiki 站点。
+此目录当前不承载活跃特性文档。  
+如果某份历史功能说明需要保留，只能放入 `trash/`，不能继续留在活跃区。
 
-查看方式：
+当前请改读：
 
-```bash
-cd docs/wiki
-pnpm install
-pnpm dev
-```
-
-Wiki 内容为生成产物，**不作为开发参考**。AI Agent 参考源为 `.trellis/spec/`、`docs/stage/`、源码。
+1. `.trellis/spec/index.md`
+2. `docs/design/contextfs-architecture.md`
+3. `docs/design/actant-vfs-reference-architecture.md`
+4. `docs/planning/contextfs-roadmap.md`

@@ -1,0 +1,363 @@
+# Actant
+
+一个用于构建、管理和编排 AI Agent 的平台。面向游戏开发等复杂业务场景，让用户能够快速拼装、复用合适的 Agent，零成本地将 AI 嵌入工作流。
+
+> **当前版本**: [v0.2.6](https://github.com/blackplume233/Actant/releases/tag/v0.2.6) — Phase 4 进行中，Plugin 系统 / Heartbeat 文件约定 / 稳定 conversationId / ACP Keepalive
+
+---
+
+## 功能概览
+
+### 核心能力
+
+| 功能 | 说明 | 状态 |
+|------|------|------|
+| **Agent Template 系统** | JSON 配置文件定义 Agent 模板，引用式组合 Skills、Prompts、MCP、Workflow | ✅ |
+| **Domain Context 拼装** | 通过 Skills、Prompts、MCP Server、Workflow、Plugin 动态组装 Agent 能力 | ✅ |
+| **Agent 生命周期管理** | 创建、启动、监控、重启、停止、销毁 Agent Instance | ✅ |
+| **多后端支持** | Claude Code / Cursor / Cursor Agent / Pi / Custom 五种 Agent Backend | ✅ |
+| **权限控制** | 4 级预设（permissive/standard/restricted/readonly）+ 沙箱配置 | ✅ |
+| **组件源与共享** | 从 GitHub/本地源同步组件和模板，支持 Preset 批量应用 | ✅ |
+| **组件版本管理** | Semver 引用、同步变更报告、Breaking Change 检测 | ✅ |
+| **可扩展架构** | ComponentTypeHandler 注册模式，可添加自定义组件类型 | ✅ |
+| **实例注册表** | 集中管理所有 Agent 实例，支持 adopt/reconcile 孤立实例 | ✅ |
+| **雇员调度器** | Heartbeat/Cron/Hook 三种输入源，优先级任务队列 | ✅ |
+| **交互式 CLI** | 65 子命令，覆盖模板、Agent、组件、源、调度、插件全部操作 | ✅ |
+| **ACP 协议集成** | Direct Bridge + Session Lease 双模式 Agent 通信 | ✅ |
+| **Web Dashboard** | React SPA 实时监控 Agent、Chat、Live Canvas、事件、活动 | ✅ |
+| **REST API** | 35+ HTTP 端点 + SSE 实时推送 + Webhook 集成 | ✅ |
+| **Dashboard i18n** | react-i18next 多语言框架，内置英文 + 中文 | ✅ |
+| **Live Canvas** | Service/Employee Agent 通过 MCP 工具推送实时 HTML 到 Dashboard | ✅ |
+| **安装与自更新** | 一键安装脚本 + self-update 机制 | ✅ |
+| **ActantPlugin 系统** | 6-plug 插件接口 + PluginHost 生命周期 + HeartbeatPlugin 内置 | ✅ |
+| **Hook/事件驱动** | 事件驱动 Workflow、Agent 间通信 | 🔧 Phase 4 |
+| **记忆系统** | 实例记忆、合并、上下文分层 | 🔲 Phase 5 |
+| **ACP-Fleet** | 多 Agent 集群编排 | 🔲 Phase 6 |
+
+---
+
+## Quick Start
+
+### 环境要求
+
+- [Node.js](https://nodejs.org/) >= 22.0.0
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 或 [Cursor](https://cursor.com/) (Agent Backend)
+
+### 安装
+
+安装脚本会自动检测环境、安装 `actant` npm 包并运行配置向导：
+
+```bash
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/blackplume233/Actant/master/scripts/install.sh | bash
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/blackplume233/Actant/master/scripts/install.ps1 | iex
+```
+
+> **Note**: `scripts/install.sh` 和 `scripts/install.ps1` 会随每次版本发布（stage）自动更新，始终指向最新版本。
+
+### 从源码开发
+
+```bash
+git clone https://github.com/blackplume233/Actant.git
+cd Actant
+pnpm install    # 需要 pnpm >= 9.0.0
+pnpm build
+pnpm link --global
+```
+
+### 源码仓库内自举 / Hub 开发
+
+当你需要直接在仓库源码上验证 `hub`、`acthub` 或 MCP 自举链路时，优先使用 repo-local runner，而不是直接执行未构建的 TypeScript 入口：
+
+```bash
+# 在源码模式下运行 CLI / acthub / MCP
+pnpm run dev:actant -- hub status -f json
+pnpm run dev:acthub -- status -f json
+pnpm run dev:mcp
+
+# 运行 repo-local bootstrap smoke
+pnpm run test:bootstrap
+```
+
+推荐把持续保留的自举运行目录统一放在 `.trellis/runtime/bootstrap-dev/`，而不要继续散落到具体 task 目录里。例如：
+
+```powershell
+$env:ACTANT_HOME = (Resolve-Path ".trellis/runtime/bootstrap-dev/home").Path
+pnpm run dev:actant -- hub status -f json
+node scripts/install-local.mjs --standalone --install-dir .trellis/runtime/bootstrap-dev/standalone
+```
+
+任务目录保留日志、报告和结论；运行态 home、standalone 二进制、socket、pid 等本地产物统一放到这个 runtime 区，后续自举开发和问题复现都会更干净。
+
+这些命令会通过 `scripts/run-workspace-entry.mjs` 先把 workspace 入口 bundle 成可运行的临时 ESM，再启动同一套源码包依赖，适合验证：
+
+- `actant hub status` 的 bootstrap host 自动拉起
+- `acthub` 对同一宿主的复用
+- MCP 连接已启动 daemon 的路径
+- MCP 在 daemon 不可达时回退到 standalone project-context 模式
+
+### 基本使用
+
+```bash
+# 启动 Daemon
+actant daemon start
+
+# 查看可用模板和组件
+actant template list
+actant skill list
+
+# 从模板创建 Agent
+actant agent create my-agent -t code-review-agent
+
+# 向 Agent 发送任务
+actant agent run my-agent --prompt "Review the error handling in src/index.ts"
+
+# 交互式对话
+actant agent chat my-agent
+
+# 停止并销毁
+actant agent stop my-agent
+actant agent destroy my-agent --force
+
+# 关闭 Daemon
+actant daemon stop
+```
+
+### 组件源管理
+
+```bash
+# 注册远程组件源
+actant source add https://github.com/user/my-hub --name my-hub
+
+# 同步组件（显示 SyncReport：新增/更新/删除/Breaking Change）
+actant source sync my-hub
+
+# 查看和应用预设
+actant preset list my-hub
+actant preset apply my-hub@dev-suite my-template
+```
+
+### 实例管理
+
+```bash
+# 在指定外部目录创建 Agent
+actant agent create my-agent -t code-review-agent --workspace /path/to/project
+
+# 采纳已有的 Actant 工作目录
+actant agent adopt /path/to/existing-workspace
+
+# 查看所有实例
+actant agent list
+```
+
+---
+
+## 架构
+
+借鉴 Docker 的核心理念：
+
+| Docker 概念 | Actant 对应 |
+|-------------|-------------|
+| Dockerfile | AgentTemplate（模板） |
+| Image | 解析后的模板 + 领域组件 |
+| Container | Agent Instance（有进程、有工作区） |
+| Docker Daemon | Actant Daemon（后台守护进程） |
+| docker CLI | `actant` CLI |
+| Registry | Component Source（组件源） |
+
+### 模块结构
+
+```
+Actant
+├── actant               统一入口（门面包，re-export 所有子包 + CLI bin）
+├── @actant/shared       公共类型、错误、日志、平台
+├── @actant/core         模板、构建器、管理器、调度器、领域组件、Source、版本
+├── @actant/pi           Pi Agent 后端（pi-agent-core、pi-ai）
+├── @actant/api          Daemon 服务层、RPC Handlers、AppContext
+├── @actant/acp          ACP 协议集成（连接、网关、回调路由）
+├── @actant/cli          CLI 前端（65 命令、REPL、流式输出）
+├── @actant/rest-api     RESTful API 服务器（35+ 端点、SSE、Webhook）
+├── @actant/dashboard    Web Dashboard（React SPA + 服务端）
+└── @actant/mcp-server   MCP 协议服务端（Canvas 工具）
+```
+
+### 依赖关系
+
+```
+shared ← core ← pi
+              ← acp
+              ← mcp-server
+              ← api ← cli ← actant (facade)
+```
+
+### 技术栈
+
+| 层面 | 技术 |
+|------|------|
+| 运行时 | Node.js 22+ |
+| 语言 | TypeScript 5.9+（strict） |
+| 包管理 | pnpm 9+（workspace monorepo） |
+| 构建 | tsup |
+| 测试 | Vitest 4（1,027 tests, 78 suites） |
+| Schema 校验 | Zod |
+| CLI 框架 | Commander.js v14 |
+| 日志 | pino |
+| 定时任务 | croner |
+| ACP 协议 | @agentclientprotocol/sdk |
+
+---
+
+## 核心概念
+
+| 概念 | 说明 |
+|------|------|
+| **Agent Template** | Agent 配置蓝图，定义后端、Domain Context、权限、调度 |
+| **Domain Context** | 领域上下文 — Skills + Prompts + MCP Servers + Workflow + Plugins |
+| **Agent Instance** | 可运行的 Agent 实例，拥有工作区和生命周期 |
+| **Component Source** | 组件仓库（GitHub/本地），可同步 Skills、Templates、Presets 等 |
+| **Permission Preset** | 权限预设（permissive/standard/restricted/readonly） |
+| **Employee Scheduler** | 雇员调度器，让 Agent 按心跳/Cron/事件自动执行任务 |
+| **VersionedComponent** | 所有组件的公共信封，含版本号、来源追踪、标签 |
+
+### 启动模式
+
+| 模式 | 生命周期管理方 | 典型场景 |
+|------|---------------|---------|
+| Direct | 用户 | 直接打开 IDE / TUI |
+| ACP Background | 调用方 | 第三方 Client 通过 ACP 管理 |
+| ACP Service | Actant | 持久化雇员 Agent，崩溃自动重启 |
+| One-Shot | Actant | 执行任务后自动终止 |
+
+### Agent 状态机
+
+```
+         create              start              stop
+(none) ─────────► created ─────────► running ─────────► stopped
+                     │                  │                   │
+                     │                  │   error           │
+                     │                  └──────► error      │
+                     │                  │                   │
+                     │              crash (acp-service)     │
+                     │                  └── restart ──┘     │
+                     │                                      │
+                     └──────────── destroy ◄────────────────┘
+```
+
+---
+
+## 项目结构
+
+```
+Actant/
+├── packages/              源码（pnpm workspace）
+│   ├── shared/            公共类型、错误、日志
+│   ├── core/              核心业务逻辑
+│   │   ├── builder/       WorkspaceBuilder + BackendBuilder + ComponentTypeHandler
+│   │   ├── domain/        5 大组件管理器（Skill/Prompt/MCP/Workflow/Plugin）
+│   │   ├── manager/       AgentManager + ProcessWatcher + RestartTracker
+│   │   ├── scheduler/     EmployeeScheduler + TaskQueue + InputRouter
+│   │   ├── source/        SourceManager + LocalSource + GitHubSource + SKILL.md Parser
+│   │   ├── state/         InstanceRegistry + InstanceMetaIO
+│   │   ├── permissions/   权限预设解析
+│   │   ├── version/       ComponentRef + SyncReport
+│   │   └── template/      TemplateRegistry + TemplateLoader + Zod Schema
+│   ├── pi/                Pi Agent 后端
+│   ├── api/               Daemon + RPC Handlers + AppContext
+│   ├── acp/               ACP 协议（Connection/Gateway/Callback）
+│   ├── cli/               CLI 命令（17 组 65 子命令）
+│   ├── rest-api/          RESTful API 服务器（35+ 端点、SSE）
+│   ├── dashboard/         Web Dashboard（React SPA + i18n）
+│   ├── mcp-server/        MCP 服务端（Canvas 工具）
+│   └── actant/            统一入口门面包（npm: actant）
+├── configs/               内置配置（模板、技能、提示词、工作流、插件、MCP）
+├── examples/              示例（actant-hub 组件源仓库）
+├── scripts/               安装脚本 + 自更新脚本
+├── docs/                  项目文档
+│   ├── guides/            使用教程与操作指南
+│   ├── design/            功能设计文档
+│   ├── decisions/         架构决策记录（ADR）
+│   └── stage/             版本快照存档
+└── .trellis/              AI 开发框架（Issue、Roadmap、Spec）
+```
+
+---
+
+## 开发
+
+| 命令 | 说明 |
+|------|------|
+| `pnpm dev` | 开发模式启动 CLI |
+| `pnpm run dev:actant -- <args>` | 通过 repo-local runner 启动源码版 `actant` CLI |
+| `pnpm run dev:acthub -- <args>` | 通过 repo-local runner 启动源码版 `acthub` |
+| `pnpm run dev:mcp` | 通过 repo-local runner 启动源码版 MCP server |
+| `pnpm build` | 构建所有包 |
+| `pnpm test` | 运行全部测试（1,027 tests） |
+| `pnpm run test:bootstrap` | 验证 hub/bootstrap/MCP 的 repo-local 自举链路 |
+| `pnpm test:changed` | 仅运行受变更影响的测试 |
+| `pnpm test:watch` | 测试监听模式 |
+| `pnpm lint` | ESLint 代码检查 |
+| `pnpm type-check` | TypeScript 类型检查（8 packages） |
+| `pnpm clean` | 清理构建产物 |
+
+### 自更新
+
+```bash
+actant self-update              # 从源码更新
+actant self-update --check      # 仅检查版本
+actant self-update --dry-run    # 模拟执行
+```
+
+---
+
+## 文档
+
+### Wiki（功能文档 & 入门指南）
+
+完整的产品文档 Wiki，使用 VitePress 构建：
+
+```bash
+cd docs/wiki && pnpm install && pnpm dev
+```
+
+| 区域 | 内容 |
+|------|------|
+| [快速开始](docs/wiki/guide/getting-started.md) | 5 分钟跑通第一个 Agent |
+| [核心概念](docs/wiki/guide/concepts.md) | Template / Instance / Domain Context |
+| [功能总览](docs/wiki/features/index.md) | 10 项功能说明（模板、生命周期、领域上下文、多后端、权限、调度器、ACP、组件源、可扩展架构、CLI） |
+| [实战教程](docs/wiki/recipes/create-hub.md) | 创建组件仓库、CI/CD 集成、雇员 Agent |
+| [架构概览](docs/wiki/reference/architecture.md) | 模块结构、通信架构、技术栈 |
+
+> Wiki 全部内容为生成产物，不作为开发参考。AI Agent 权威源为 `.trellis/spec/`、`docs/stage/`、源码。
+
+### 教程与参考
+
+| 文档 | 说明 |
+|------|------|
+| [入门指南](docs/guides/getting-started.md) | 安装、配置、第一个 Agent |
+| [开发流程指南](docs/guides/dev-workflow-guide.md) | Plan → Code → Review → PR → Ship 全流程 |
+| [ActantHub 使用指南](docs/guides/actant-hub-usage.md) | 默认组件源的使用 |
+| [创建自定义 Hub](docs/guides/create-custom-hub.md) | 从零创建组件源仓库 |
+| [v0.2.6 架构文档](docs/stage/v0.2.6/architecture.md) | 完整架构（模块、数据流、CLI、配置体系、Plugin 系统） |
+| [v0.2.6 API 接口](docs/stage/v0.2.6/api-surface.md) | 92 个 RPC 方法 + 65 个 CLI 命令 |
+| [v0.2.6 变更日志](docs/stage/v0.2.6/changelog.md) | v0.2.5 → v0.2.6 变更记录 |
+| [ContextFS 架构](docs/design/contextfs-architecture.md) | 新的产品层对象模型 |
+| [ADR-001: 技术栈](docs/decisions/001-tech-stack.md) | TypeScript + pnpm monorepo 选型 |
+| [ADR-002: 目录结构](docs/decisions/002-directory-structure.md) | 项目目录规范 |
+
+---
+
+## 参考项目
+
+| 项目 | 关联 |
+|------|------|
+| [PicoClaw](https://picoclaw.net/) | Agent 持续集成 |
+| [ACP](https://agentclientprotocol.com/) | Agent Client Protocol 框架 |
+| [n8n](https://n8n.io/) | 工作流自动化模式 |
+| [Trellis](https://github.com/mindfold-ai/Trellis) | 工程初始化及 Workflow 设计 |
+| [UnrealFairy](https://github.com/blackplume233/UnrealFairy) | 关联项目 — Actant 将取代其 Agent 子系统 |
+
+## License
+
+[MIT](LICENSE)

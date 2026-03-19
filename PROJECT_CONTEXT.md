@@ -1,23 +1,22 @@
 # Actant Project Context
 
-Actant is a platform for building, bootstrapping, and managing AI agents. The current
-phase is project-context-first bootstrap: a backend should be able to discover what the
-project is, what rules apply, and what assets exist by reading repository files alone.
+本仓库当前采用 `ContextFS` 文档基线。
 
-Read order for this repository:
+建议读取顺序：
 
 1. `actant.project.json`
 2. `.trellis/spec/index.md`
-3. `.trellis/spec/backend/index.md`
-4. `.trellis/spec/guides/cross-layer-thinking-guide.md`
+3. `.trellis/spec/terminology.md`
+4. `docs/design/contextfs-architecture.md`
+5. `docs/design/actant-vfs-reference-architecture.md`
+6. `docs/planning/contextfs-roadmap.md`
 
-Project-local Actant assets live under `configs/`:
+当前有效约束：
 
-- `configs/skills/` for reusable rules
-- `configs/prompts/` for agent behavior prompts
-- `configs/mcp/` for MCP server configs
-- `configs/workflows/` for workflow definitions
-- `configs/templates/` for agent templates
+- 产品层：`ContextFS`
+- 实现层：`VFS Kernel`
+- 核心对象：`Project`、`Source`、`Capability`
+- V1 操作面：`read`、`write`、`list`、`stat`、`watch`、`stream`
+- V1 不包含 `workflow`、query/view mount、overlay/fallback 行为实现、旧 `ContextManager`
 
-When consuming `/project/context.json`, prefer its declared `entrypoints` and
-`available` catalogs over guessing from directory names.
+历史架构材料已移入 `trash/`。如目录结构与历史命名存在残留，以 spec/design/roadmap 新基线为准，不以旧目录名推断产品模型。

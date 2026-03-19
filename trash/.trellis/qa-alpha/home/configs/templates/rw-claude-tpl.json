@@ -1,0 +1,25 @@
+{
+  "name": "rw-claude-tpl",
+  "version": "1.0.0",
+  "description": "QA Alpha claude-code test template",
+  "backend": {
+    "type": "claude-code",
+    "config": {
+      "model": "claude-sonnet-4-20250514"
+    }
+  },
+  "provider": {
+    "type": "anthropic",
+    "config": {
+      "apiKeyEnv": "ANTHROPIC_API_KEY"
+    },
+    "protocol": "anthropic"
+  },
+  "domainContext": {
+    "skills": [],
+    "prompts": [],
+    "mcpServers": [],
+    "subAgents": [],
+    "plugins": []
+  }
+}

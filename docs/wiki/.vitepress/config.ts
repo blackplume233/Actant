@@ -70,7 +70,6 @@ export default defineConfig({
           text: '组件生态',
           items: [
             { text: '组件源', link: '/features/component-source' },
-            { text: '可扩展架构', link: '/features/extensibility' },
           ],
         },
         {
@@ -104,7 +103,7 @@ export default defineConfig({
     },
 
     footer: {
-      message: '本站内容由 AI 辅助生成，仅供人类用户参考。<br>AI Agent 开发参考请使用 <code>.trellis/spec/</code> 和 <code>docs/stage/</code>。',
+      message: '本站内容由 AI 辅助生成，仅供人类用户参考。<br>AI Agent 开发参考请使用 <code>.trellis/spec/</code>、当前 design/planning 基线与源码。',
       copyright: 'MIT License © Actant',
     },
 

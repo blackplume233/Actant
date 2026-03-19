@@ -1,644 +1,143 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Actant — AI Agent Runtime Platform</title>
-  <meta name="description" content="声明式定义 Agent 能力，一条命令创建隔离实例，在 CI、IM、IDE 中无缝运行。开源 AI Agent 运行时平台。">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <title>Actant | ContextFS Reset</title>
+  <meta
+    name="description"
+    content="Actant is resetting its architecture around ContextFS. Read the current spec, design, and roadmap before trusting older repository narratives."
+  >
   <style>
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#0c0c0c;--bg-raised:#151515;--bg-card:#1a1a1a;--bg-card-hover:#1f1f1f;
-  --bg-code:#111;--bg-subtle:rgba(255,255,255,.03);
-  --border:rgba(255,255,255,.07);--border-hover:rgba(255,255,255,.13);
-  --text:#f2efea;--text-2:#a8a29e;--text-3:#6b6560;
-  --accent:#d4644a;--accent-hover:#e0775e;--accent-soft:rgba(212,100,74,.1);
-  --teal:#3db9a2;--teal-soft:rgba(61,185,162,.1);
-  --blue:#5b9cf5;--blue-soft:rgba(91,156,245,.1);
-  --green:#6ec96e;--green-soft:rgba(110,201,110,.1);
-  --purple:#a78bfa;--purple-soft:rgba(167,139,250,.08);
-  --amber:#f0a050;--amber-soft:rgba(240,160,80,.1);
-  --heading:'Plus Jakarta Sans',system-ui,sans-serif;
-  --body:'DM Sans',system-ui,sans-serif;
-  --mono:'Fira Code','SF Mono',monospace;
-  --r-sm:8px;--r-md:12px;--r-lg:16px;--r-xl:20px;--r-full:9999px;
-}
-html{scroll-behavior:smooth;-webkit-font-smoothing:antialiased}
-body{font-family:var(--body);background:var(--bg);color:var(--text);line-height:1.6;overflow-x:hidden}
-::selection{background:var(--accent);color:#fff}
+    :root {
+      --bg: #f4efe6;
+      --card: #fffaf2;
+      --line: #d9cdbf;
+      --ink: #1f1a17;
+      --muted: #6a5f55;
+      --accent: #b94f2d;
+      --accent-soft: #f2dfd6;
+    }
 
-.container{max-width:1140px;margin:0 auto;padding:0 28px}
+    * {
+      box-sizing: border-box;
+    }
 
-/* ════ NAV ════ */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 0;background:rgba(12,12,12,.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border-bottom:1px solid var(--border)}
-.nav .container{display:flex;align-items:center;justify-content:space-between}
-.nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
-.nav-logo{width:32px;height:32px;border-radius:var(--r-sm);background:linear-gradient(135deg,var(--accent),#b84a30);display:grid;place-items:center;font-family:var(--heading);font-weight:800;font-size:14px;color:#fff}
-.nav-wordmark{font-family:var(--heading);font-size:17px;font-weight:700}
-.nav-links{display:flex;align-items:center;gap:6px;list-style:none}
-.nav-links a{display:block;padding:6px 14px;color:var(--text-2);text-decoration:none;font-size:14px;font-weight:500;border-radius:var(--r-full);transition:color .2s,background .2s}
-.nav-links a:hover{color:var(--text);background:var(--bg-subtle)}
-.nav-links .gh{color:var(--text)!important;background:var(--bg-card);border:1px solid var(--border)}
-.nav-links .gh:hover{border-color:var(--border-hover);background:var(--bg-card-hover)}
-.gh svg{vertical-align:-2px;margin-right:4px}
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top, #fff8ef 0%, var(--bg) 55%),
+        var(--bg);
+      color: var(--ink);
+      line-height: 1.6;
+    }
 
-/* ════ HERO ════ */
-.hero{padding:180px 0 100px;text-align:center;position:relative;overflow:hidden}
-.hero-glow{position:absolute;top:-240px;left:50%;transform:translateX(-50%);width:860px;height:640px;background:radial-gradient(ellipse,rgba(212,100,74,.08) 0%,rgba(91,156,245,.04) 50%,transparent 70%);pointer-events:none}
-.hero-pill{display:inline-flex;align-items:center;gap:8px;padding:5px 16px 5px 6px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-full);font-size:13px;color:var(--text-2);margin-bottom:32px}
-.hero-pill .dot{width:8px;height:8px;border-radius:50%;background:var(--green);margin-left:4px;box-shadow:0 0 8px rgba(110,201,110,.4);animation:blink 2.4s ease-in-out infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-.hero h1{font-family:var(--heading);font-size:clamp(42px,6vw,76px);font-weight:800;line-height:1.05;letter-spacing:-.04em;margin-bottom:24px}
-.hero h1 .hl-docker{background:linear-gradient(135deg,var(--teal),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero h1 .hl-agent{background:linear-gradient(135deg,var(--accent),#f0a050);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero-desc{font-size:18px;line-height:1.75;color:var(--text-2);max-width:560px;margin:0 auto 40px}
-.hero-install-wrap{display:inline-flex;flex-direction:column;align-items:center;gap:0}
-.install-tabs{display:flex;gap:2px;margin-bottom:-1px;position:relative;z-index:1}
-.install-tab{padding:6px 16px;font-family:var(--heading);font-size:12px;font-weight:600;color:var(--text-3);background:transparent;border:1px solid transparent;border-bottom:none;border-radius:var(--r-sm) var(--r-sm) 0 0;cursor:pointer;transition:color .2s,background .2s}
-.install-tab:hover{color:var(--text-2)}
-.install-tab.active{color:var(--text);background:var(--bg-code);border-color:var(--border)}
-.hero-install{display:none;align-items:center;gap:12px;padding:14px 20px;background:var(--bg-code);border:1px solid var(--border);border-radius:var(--r-lg);font-family:var(--mono);font-size:13.5px;color:var(--text);cursor:pointer;transition:border-color .25s;max-width:100%;overflow-x:auto}
-.hero-install.active{display:inline-flex}
-.hero-install:hover{border-color:var(--accent)}
-.hero-install .ps1{color:var(--accent);user-select:none}
-.hero-install .copy{color:var(--text-3);margin-left:8px;transition:color .2s;flex-shrink:0}
-.hero-install:hover .copy{color:var(--text-2)}
-.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;border-radius:var(--r-full);font-family:var(--heading);font-size:14px;font-weight:600;text-decoration:none;transition:all .25s;cursor:pointer;border:none}
-.btn-accent{background:var(--accent);color:#fff}
-.btn-accent:hover{background:var(--accent-hover);transform:translateY(-1px);box-shadow:0 6px 20px rgba(212,100,74,.3)}
-.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
-.btn-outline:hover{border-color:var(--border-hover);background:var(--bg-subtle)}
+    main {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 56px 20px 80px;
+    }
 
-/* ════ SECTION COMMON ════ */
-.sec{padding:100px 0}
-.sec-label{font-family:var(--heading);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--accent);margin-bottom:12px}
-.sec-heading{font-family:var(--heading);font-size:clamp(28px,3.5vw,44px);font-weight:800;letter-spacing:-.03em;line-height:1.12;margin-bottom:14px}
-.sec-desc{font-size:17px;line-height:1.75;color:var(--text-2);max-width:520px;margin-bottom:48px}
-.sec-center{text-align:center}.sec-center .sec-desc{margin-left:auto;margin-right:auto}
+    .eyebrow {
+      display: inline-block;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--muted);
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
 
-/* ════ IDENTITY ════ */
-.id-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:32px}
-.id-card{padding:28px 24px;border-radius:var(--r-xl);background:var(--bg-card);border:1px solid var(--border);transition:border-color .3s,transform .3s,box-shadow .3s}
-.id-card:hover{border-color:var(--border-hover);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.25)}
-.id-card-origin{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
-.id-card:nth-child(1) .id-card-origin{color:var(--accent)}
-.id-card:nth-child(2) .id-card-origin{color:var(--blue)}
-.id-card:nth-child(3) .id-card-origin{color:var(--teal)}
-.id-card h3{font-family:var(--heading);font-size:18px;font-weight:700;margin-bottom:10px}
-.id-card p{font-size:14px;color:var(--text-2);line-height:1.7}
-.id-summary{text-align:center;font-size:16px;color:var(--text-2);line-height:1.7;max-width:640px;margin:0 auto;padding:20px 0;border-top:1px solid var(--border)}
-.id-summary strong{color:var(--text);font-weight:700}
+    h1 {
+      margin: 18px 0 16px;
+      font-size: clamp(40px, 8vw, 72px);
+      line-height: 0.96;
+      letter-spacing: -0.04em;
+    }
 
+    p.lead {
+      max-width: 700px;
+      font-size: 20px;
+      color: var(--muted);
+      margin: 0 0 28px;
+    }
 
-/* ════ CAPABILITIES ════ */
-.cap-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.cap-card{padding:24px 22px;border-radius:var(--r-xl);background:var(--bg-card);border:1px solid var(--border);transition:border-color .2s}
-.cap-card:hover{border-color:var(--border-hover)}
-.cap-icon{width:36px;height:36px;border-radius:var(--r-md);display:grid;place-items:center;margin-bottom:14px}
-.cap-card:nth-child(1) .cap-icon{background:var(--accent-soft);color:var(--accent)}
-.cap-card:nth-child(2) .cap-icon{background:var(--blue-soft);color:var(--blue)}
-.cap-card:nth-child(3) .cap-icon{background:var(--teal-soft);color:var(--teal)}
-.cap-card:nth-child(4) .cap-icon{background:var(--purple-soft);color:var(--purple)}
-.cap-card:nth-child(5) .cap-icon{background:var(--green-soft);color:var(--green)}
-.cap-card:nth-child(6) .cap-icon{background:var(--amber-soft);color:var(--amber)}
-.cap-card h4{font-family:var(--heading);font-size:15px;font-weight:700;margin-bottom:6px}
-.cap-card p{font-size:13px;color:var(--text-2);line-height:1.6}
+    .card,
+    .links {
+      margin-top: 28px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      background: var(--card);
+    }
 
-/* ════ USE CASES ════ */
-.uc-list{display:flex;flex-direction:column;gap:32px}
-.uc-item{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:center;padding:28px;border-radius:var(--r-xl);background:var(--bg-card);border:1px solid var(--border)}
-.uc-text h3{font-family:var(--heading);font-size:20px;font-weight:700;margin-bottom:8px}
-.uc-text .uc-tag{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:12px}
-.uc-item:nth-child(1) .uc-tag{color:var(--accent)}
-.uc-item:nth-child(2) .uc-tag{color:var(--blue)}
-.uc-item:nth-child(3) .uc-tag{color:var(--teal)}
-.uc-item:nth-child(4) .uc-tag{color:var(--purple)}
-.uc-item:nth-child(5) .uc-tag{color:var(--green)}
-.uc-text p{font-size:14px;color:var(--text-2);line-height:1.7}
-.uc-code{border-radius:var(--r-lg);background:var(--bg-code);border:1px solid var(--border);padding:16px 18px;font-family:var(--mono);font-size:12px;line-height:1.9;overflow-x:auto}
-.uc-code .t-cmt{color:var(--text-3)}
-.uc-code .t-ps{color:var(--accent);user-select:none}
-.uc-code .t-cmd{color:var(--text)}
-.uc-code .t-fl{color:var(--teal)}
-.uc-code .t-str{color:var(--green)}
-.uc-code .t-out{color:var(--text-2);padding-left:14px}
-.uc-code .t-ok{color:var(--green)}
-.uc-code .t-ln{white-space:nowrap}
-.uc-code .t-gap{height:4px}
+    h2 {
+      margin: 0 0 12px;
+      font-size: 24px;
+    }
 
-/* ════ VISION ════ */
-.evo-diagram{max-width:640px;margin:0 auto 56px;border-radius:var(--r-xl);border:1px solid var(--border);overflow:hidden;background:var(--bg-card)}
-.evo-row{display:grid;grid-template-columns:56px 1fr;border-bottom:1px solid var(--border)}
-.evo-row:last-child{border-bottom:none}
-.evo-idx{display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:500;border-right:1px solid var(--border)}
-.evo-row:nth-child(1) .evo-idx{background:var(--purple-soft);color:var(--purple)}
-.evo-row:nth-child(2) .evo-idx{background:var(--blue-soft);color:var(--blue)}
-.evo-row:nth-child(3) .evo-idx{background:var(--accent-soft);color:var(--accent)}
-.evo-row:nth-child(4) .evo-idx{background:var(--green-soft);color:var(--green)}
-.evo-body{padding:16px 20px}
-.evo-body h4{font-family:var(--heading);font-size:14px;font-weight:700;margin-bottom:2px}
-.evo-body p{font-size:13px;color:var(--text-3)}
+    ul {
+      margin: 0;
+      padding-left: 20px;
+    }
 
-.vision-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.v-card{padding:28px 24px;border-radius:var(--r-xl);background:var(--bg-card);border:1px solid var(--border);transition:border-color .3s,transform .3s,box-shadow .3s}
-.v-card:hover{border-color:var(--border-hover);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.25)}
-.v-card-tag{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px}
-.v-card:nth-child(1) .v-card-tag{color:var(--accent)}
-.v-card:nth-child(2) .v-card-tag{color:var(--blue)}
-.v-card:nth-child(3) .v-card-tag{color:var(--green)}
-.v-card h3{font-family:var(--heading);font-size:18px;font-weight:700;margin-bottom:10px}
-.v-card p{font-size:14px;color:var(--text-2);line-height:1.7}
-.v-card .v-footnote{margin-top:16px;padding-top:14px;border-top:1px solid var(--border);font-size:12px;color:var(--text-3);line-height:1.7;font-style:italic}
+    li + li {
+      margin-top: 8px;
+    }
 
-/* ════ TERMINAL ════ */
-.terminal-wrap{max-width:740px;margin:0 auto}
-.terminal{border-radius:var(--r-xl);border:1px solid var(--border);overflow:hidden;background:var(--bg-code);box-shadow:0 32px 64px rgba(0,0,0,.5)}
-.term-bar{display:flex;align-items:center;padding:12px 16px;background:var(--bg-subtle);border-bottom:1px solid var(--border)}
-.term-dots{display:flex;gap:7px}
-.term-dots span{width:11px;height:11px;border-radius:50%}
-.term-dots .d-r{background:#ef5350}.term-dots .d-y{background:#ffb74d}.term-dots .d-g{background:#66bb6a}
-.term-title{flex:1;text-align:center;font-family:var(--mono);font-size:12px;color:var(--text-3)}
-.term-body{padding:20px 22px;font-family:var(--mono);font-size:12.5px;line-height:1.95;overflow-x:auto}
-.t-cmt{color:var(--text-3)}
-.t-ps{color:var(--accent);user-select:none}.t-cmd{color:var(--text)}.t-fl{color:var(--teal)}.t-str{color:var(--green)}.t-out{color:var(--text-2);padding-left:18px}.t-ok{color:var(--green)}
-.t-gap{height:6px}
-.t-ln{white-space:nowrap}
+    a {
+      color: var(--accent);
+    }
 
-/* ════ FLOW ════ */
-.flow-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
-.flow-step{text-align:center;padding:24px 12px;border-radius:var(--r-xl);background:var(--bg-card);border:1px solid var(--border);transition:border-color .2s}
-.flow-step:hover{border-color:var(--border-hover)}
-.flow-num{font-family:var(--mono);font-size:11px;color:var(--text-3);margin-bottom:10px}
-.flow-step h4{font-family:var(--heading);font-size:15px;font-weight:700;margin-bottom:6px}
-.flow-step:nth-child(1) h4{color:var(--accent)}.flow-step:nth-child(2) h4{color:var(--purple)}.flow-step:nth-child(3) h4{color:var(--blue)}.flow-step:nth-child(4) h4{color:var(--teal)}.flow-step:nth-child(5) h4{color:var(--green)}
-.flow-step p{font-size:12px;color:var(--text-3);line-height:1.5}
-.flow-connector{display:flex;align-items:center;justify-content:center;gap:12px;margin:-6px 0;padding:0 40px;position:relative;z-index:1}
-.flow-connector span{flex:1;height:1px;background:linear-gradient(90deg,var(--accent),var(--purple),var(--blue),var(--teal),var(--green));opacity:.2}
-
-/* ════ ROADMAP ════ */
-.rm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.rm-card{padding:22px 20px;border-radius:var(--r-xl);background:var(--bg-card);border:1px solid var(--border);transition:border-color .2s}
-.rm-card:hover{border-color:var(--border-hover)}
-.rm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.rm-top h4{font-family:var(--heading);font-size:14px;font-weight:700}
-.rm-tag{font-family:var(--mono);font-size:10px;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:var(--r-full)}
-.rm-tag.done{background:var(--green-soft);color:var(--green)}.rm-tag.active{background:var(--accent-soft);color:var(--accent)}.rm-tag.planned{background:var(--bg-subtle);color:var(--text-3)}.rm-tag.vision{background:var(--purple-soft);color:var(--purple)}
-.rm-card p{font-size:13px;color:var(--text-2);line-height:1.5}
-
-/* ════ CTA ════ */
-.cta{padding:120px 0;text-align:center;position:relative}
-.cta-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:400px;background:radial-gradient(ellipse,rgba(212,100,74,.06),transparent 70%);pointer-events:none}
-.cta h2{font-family:var(--heading);font-size:clamp(30px,4vw,50px);font-weight:800;letter-spacing:-.03em;margin-bottom:14px}
-.cta>div>p{font-size:17px;color:var(--text-2);max-width:440px;margin:0 auto 36px;line-height:1.7}
-.cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-
-/* ════ FOOTER ════ */
-.footer{padding:32px 0;border-top:1px solid var(--border)}
-.footer .container{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
-.footer-left{display:flex;align-items:center;gap:8px}
-.footer-left .nav-logo{width:24px;height:24px;font-size:10px;border-radius:6px}
-.footer-left span{font-size:13px;color:var(--text-3)}
-.footer-links{display:flex;gap:20px}
-.footer-links a{font-size:13px;color:var(--text-3);text-decoration:none;transition:color .2s}
-.footer-links a:hover{color:var(--text)}
-.footer-right{font-size:12px;color:var(--text-3);font-style:italic}
-
-/* ════ RESPONSIVE ════ */
-@media(max-width:1024px){
-  .id-cards,.vision-cards,.cap-grid{grid-template-columns:1fr}
-  .rm-grid{grid-template-columns:repeat(2,1fr)}
-  .uc-item{grid-template-columns:1fr}
-}
-@media(max-width:768px){
-  .nav-links{display:none}
-  .hero{padding:140px 0 80px}
-  .flow-row{grid-template-columns:repeat(3,1fr)}
-  .flow-connector{display:none}
-  .rm-grid{grid-template-columns:1fr}
-  .footer .container{flex-direction:column;text-align:center}
-}
-@media(max-width:480px){
-  .flow-row{grid-template-columns:1fr 1fr}
-  .hero-install{font-size:11px;padding:10px 14px}
-  .container{padding:0 18px}
-  .cap-grid{grid-template-columns:1fr}
-}
-
-/* ════ ANIMATE ════ */
-.reveal{opacity:0;transform:translateY(18px);transition:opacity .65s ease,transform .65s ease}
-.reveal.show{opacity:1;transform:none}
-.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}
+    .warning {
+      border-left: 5px solid var(--accent);
+      background: var(--accent-soft);
+    }
   </style>
 </head>
 <body>
+  <main>
+    <div class="eyebrow">Documentation Reset</div>
+    <h1>Actant is converging on ContextFS.</h1>
+    <p class="lead">
+      The repository is in a documentation-first reset stage. If you are trying to
+      understand the current system, read the spec, design, and roadmap before
+      trusting older runtime or workflow narratives.
+    </p>
 
-<!-- NAV -->
-<nav class="nav">
-  <div class="container">
-    <a href="#" class="nav-brand">
-      <div class="nav-logo">A</div>
-      <span class="nav-wordmark">Actant</span>
-    </a>
-    <ul class="nav-links">
-      <li><a href="#identity">Identity</a></li>
-      <li><a href="#features">Features</a></li>
-      <li><a href="#usecases">Use Cases</a></li>
-      <li><a href="#vision">Vision</a></li>
-      <li><a href="#demo">Demo</a></li>
-      <li><a href="#roadmap">Roadmap</a></li>
-      <li><a href="/wiki/">Docs</a></li>
-      <li><a href="https://github.com/blackplume233/Actant" class="gh"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a></li>
-    </ul>
-  </div>
-</nav>
+    <section class="card">
+      <h2>Current Baseline</h2>
+      <ul>
+        <li>Product layer: <code>ContextFS</code></li>
+        <li>Implementation layer: <code>VFS Kernel</code></li>
+        <li>Core objects: <code>Project</code>, <code>Source</code>, <code>Capability</code></li>
+        <li>V1 built-ins: <code>SkillSource</code>, <code>McpConfigSource</code>, <code>McpRuntimeSource</code>, <code>AgentRuntime</code></li>
+        <li>V1 operations: <code>read</code>, <code>write</code>, <code>list</code>, <code>stat</code>, <code>watch</code>, <code>stream</code></li>
+      </ul>
+    </section>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-glow"></div>
-  <div class="container">
-    <div class="hero-pill reveal"><span class="dot"></span> v0.2.6 &middot; Open Source &middot; Agent Runtime Platform</div>
-    <h1 class="reveal d1">The <span class="hl-docker">Docker</span> for<br><span class="hl-agent">AI Agents</span></h1>
-    <p class="hero-desc reveal d2">声明式定义 Agent 能力，一条命令创建隔离实例，在 CI、IM、IDE 中无缝运行。开源 AI Agent 运行时平台。</p>
-    <div class="hero-install-wrap reveal d2">
-      <div class="install-tabs">
-        <button class="install-tab active" onclick="switchInstall('unix')">Linux / macOS</button>
-        <button class="install-tab" onclick="switchInstall('win')">Windows</button>
-        <button class="install-tab" onclick="switchInstall('npm')">npm</button>
-      </div>
-      <div class="hero-install active" data-platform="unix" onclick="copyCmd(this)">
-        <span class="ps1">$</span> curl -fsSL https://raw.githubusercontent.com/blackplume233/Actant/master/scripts/install.sh | bash
-        <svg class="copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-      </div>
-      <div class="hero-install" data-platform="win" onclick="copyCmd(this)">
-        <span class="ps1">&gt;</span> irm https://raw.githubusercontent.com/blackplume233/Actant/master/scripts/install.ps1 | iex
-        <svg class="copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-      </div>
-      <div class="hero-install" data-platform="npm" onclick="copyCmd(this)">
-        <span class="ps1">$</span> npm install -g actant
-        <svg class="copy" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-      </div>
-    </div>
-    <div class="hero-btns reveal d3">
-      <a href="https://github.com/blackplume233/Actant" class="btn btn-accent">Get Started <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14m-7-7l7 7-7 7"/></svg></a>
-      <a href="/wiki/" class="btn btn-outline">Documentation</a>
-      <a href="https://github.com/blackplume233/Actant/releases/tag/v0.2.6" class="btn btn-outline">v0.2.6 Release Notes</a>
-    </div>
-  </div>
-</section>
+    <section class="card warning">
+      <h2>Not Current</h2>
+      <ul>
+        <li>Old <code>ContextManager</code> platform narrative</li>
+        <li>Old <code>DomainContext</code> aggregation model</li>
+        <li><code>workflow</code> as a V1 top-level object</li>
+        <li>query/view mounts and overlay/fallback behavior in V1</li>
+      </ul>
+    </section>
 
-<!-- IDENTITY -->
-<section class="sec" id="identity">
-  <div class="container sec-center">
-    <p class="sec-label reveal">Identity</p>
-    <h2 class="sec-heading reveal">Actant &mdash; 行动者</h2>
-    <p class="sec-desc reveal">一个跨学科的概念。在叙事学、社会学和计算机科学中，Actant 都指向同一件事：能够独立行动并产生影响的实体。</p>
-
-    <div class="id-cards">
-      <div class="id-card reveal">
-        <div class="id-card-origin">Narratology &middot; 叙事学</div>
-        <h3>推动剧情的角色</h3>
-        <p>Greimas 行动元模型中，Actant 是故事中推动事件发展的核心角色元素 &mdash; 不论主角、帮手还是对手。你的工作流就是一个故事，Agent 是其中的行动者。</p>
-      </div>
-      <div class="id-card reveal d1">
-        <div class="id-card-origin">ANT &middot; 行动者网络理论</div>
-        <h3>网络中的作用实体</h3>
-        <p>Latour 的行动者网络理论中，Actant 是任何在网络中产生效果的实体 &mdash; 无论人或非人。AI Agent 就是数字世界中的 Actant，与人类协作构成行动者网络。</p>
-      </div>
-      <div class="id-card reveal d2">
-        <div class="id-card-origin">Actor Model &middot; 并发计算</div>
-        <h3>自治的执行单元</h3>
-        <p>同根词 act-：在并发计算的 Actor Model 中，每个 Actor 是独立的、消息驱动的执行单元。每个 Agent Instance 就是一个拥有状态和行为的 Actor。</p>
-      </div>
-    </div>
-
-    <div class="id-summary reveal">
-      <strong>Actant</strong> = 一个能独立行动、在网络中产生影响、持续进化的实体。<br>这就是我们对 AI Agent 的定义。
-    </div>
-
-  </div>
-</section>
-
-<!-- CAPABILITIES -->
-<section class="sec" id="features">
-  <div class="container">
-    <p class="sec-label reveal">Features</p>
-    <h2 class="sec-heading reveal">What Actant Can Do</h2>
-    <p class="sec-desc reveal">从定义到运行，从单机到协作，覆盖 AI Agent 全生命周期的核心能力。</p>
-
-    <div class="cap-grid reveal">
-      <div class="cap-card">
-        <div class="cap-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
-        <h4>Agent Template</h4>
-        <p>声明式 JSON 定义 Agent 的 Skills、Prompts、MCP 工具、Workflow，一次定义，到处复用。</p>
-      </div>
-      <div class="cap-card">
-        <div class="cap-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg></div>
-        <h4>Multi-Backend</h4>
-        <p>支持 Claude Code、Cursor、Cursor Agent、Pi、Custom 多种 AI 后端，按场景灵活切换。</p>
-      </div>
-      <div class="cap-card">
-        <div class="cap-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
-        <h4>Component Sources</h4>
-        <p>从 GitHub 或本地仓库同步 Skills、Prompts、MCP 组件，Preset 一键批量应用到 Agent。</p>
-      </div>
-      <div class="cap-card">
-        <div class="cap-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-        <h4>Employee Scheduler</h4>
-        <p>Heartbeat 心跳、Cron 定时、Hook 事件三种输入，优先级任务队列，Agent 化身虚拟雇员。</p>
-      </div>
-      <div class="cap-card">
-        <div class="cap-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 00-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0020 4.77 5.07 5.07 0 0019.91 1S18.73.65 16 2.48a13.38 13.38 0 00-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 005 4.77a5.44 5.44 0 00-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 009 18.13V22"/></svg></div>
-        <h4>ACP / MCP Integration</h4>
-        <p>通过 Agent Communication Protocol 和 Model Context Protocol，Agent 可被外部调用或相互协作。</p>
-      </div>
-      <div class="cap-card">
-        <div class="cap-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg></div>
-        <h4>Extensibility</h4>
-        <p>Plugin 体系、ComponentTypeHandler 注册、自定义后端接入 &mdash; 按需扩展平台能力。</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- USE CASES -->
-<section class="sec" id="usecases">
-  <div class="container">
-    <p class="sec-label reveal">Use Cases</p>
-    <h2 class="sec-heading reveal">Agent 在真实场景中工作</h2>
-    <p class="sec-desc reveal">从一次性 CI 任务到持久化虚拟雇员，从内部工具到标准协议外部接入。</p>
-
-    <div class="uc-list">
-      <div class="uc-item reveal">
-        <div class="uc-text">
-          <div class="uc-tag">CI Integration</div>
-          <h3>CI/CD 一次性任务</h3>
-          <p>在 GitHub Actions 或 Jenkins 中，用 one-shot 模式创建 Agent 执行代码审查、安全扫描或文档生成。任务完成后实例自动销毁，干净无残留。</p>
-        </div>
-        <div class="uc-code">
-<div class="t-ln t-cmt"># GitHub Actions 中调用 Actant</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent create ci-reviewer <span class="t-fl">-t</span> code-review-agent</span></div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent run ci-reviewer <span class="t-fl">--one-shot</span> \</span></div>
-<div class="t-ln"><span class="t-cmd">&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-fl">--prompt</span> <span class="t-str">"Review this PR for security issues"</span></span></div>
-<div class="t-ln t-out t-ok">&#10003; Task completed. Instance destroyed.</div>
-        </div>
-      </div>
-
-      <div class="uc-item reveal">
-        <div class="uc-text">
-          <div class="uc-tag">Virtual Employee</div>
-          <h3>持久化虚拟雇员</h3>
-          <p>配置 Heartbeat 心跳和 Cron 定时任务，Agent 作为 acp-service 持久运行。每日自动巡检 PR、生成周报、监控代码质量 &mdash; 像一位不休息的团队成员。</p>
-        </div>
-        <div class="uc-code">
-<div class="t-ln t-cmt"># 创建持久化虚拟雇员</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent create pr-patrol <span class="t-fl">-t</span> pr-patrol-agent</span></div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent start pr-patrol <span class="t-fl">--launch-mode</span> acp-service</span></div>
-<div class="t-ln t-out t-ok">&#10003; Employee agent running (heartbeat: 30s)</div>
-<div class="t-gap"></div>
-<div class="t-ln t-cmt"># 查看调度状态</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant scheduler status pr-patrol</span></div>
-<div class="t-ln t-out">&nbsp;&nbsp;Next cron: 09:00 daily &middot; Heartbeat: active</div>
-        </div>
-      </div>
-
-      <div class="uc-item reveal">
-        <div class="uc-text">
-          <div class="uc-tag">ACP Service</div>
-          <h3>外部应用接入</h3>
-          <p>Unreal Engine、Unity 或任何外部应用，通过 spawn <code>actant proxy</code> 子进程以 stdio ACP 协议调用 Actant 托管的 Agent。Agent 成为你应用架构中的智能服务节点。</p>
-        </div>
-        <div class="uc-code">
-<div class="t-ln t-cmt"># 创建并启动 Agent（崩溃自动重启）</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent create game-ai <span class="t-fl">-t</span> game-assistant</span></div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent start game-ai <span class="t-fl">--launch-mode</span> acp-service</span></div>
-<div class="t-ln t-out t-ok">&#10003; Agent running (acp-service, auto-restart)</div>
-<div class="t-gap"></div>
-<div class="t-ln t-cmt"># 外部应用 spawn proxy 子进程，通过 stdio 通信</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant proxy game-ai <span class="t-fl">--lease</span></span></div>
-        </div>
-      </div>
-
-      <div class="uc-item reveal">
-        <div class="uc-text">
-          <div class="uc-tag">Zed AgentServer</div>
-          <h3>IDE AgentServer 接入</h3>
-          <p>一条命令将 Agent 以前台 TUI 或 ACP Server 形式暴露给 Zed、VS Code 等编辑器。<code>agent open</code> 直接启动后端原生界面，<code>proxy</code> 以标准协议连接。</p>
-        </div>
-        <div class="uc-code">
-<div class="t-ln t-cmt"># 前台打开 Agent 原生 TUI</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent open my-coder <span class="t-fl">-t</span> code-review-agent</span></div>
-<div class="t-ln t-out t-ok">Opening my-coder &rarr; claude-code --workspace ...</div>
-<div class="t-gap"></div>
-<div class="t-ln t-cmt"># 或以 ACP Proxy 暴露给编辑器</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant proxy my-coder <span class="t-fl">--lease</span></span></div>
-<div class="t-ln t-out t-ok">&#10003; Session Lease ready, waiting for client...</div>
-        </div>
-      </div>
-
-      <div class="uc-item reveal">
-        <div class="uc-text">
-          <div class="uc-tag">Unreal Backend</div>
-          <h3>游戏引擎智能后端</h3>
-          <p>Unreal Engine、Unity 通过 spawn <code>actant proxy</code> 子进程，以 stdio ACP 协议与 Agent 通信。获取代码生成、资产分析、关卡设计建议等智能服务。</p>
-        </div>
-        <div class="uc-code">
-<div class="t-ln t-cmt"># 部署 Unreal AI 后端</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent create ue-ai <span class="t-fl">-t</span> unreal-assistant</span></div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent start ue-ai <span class="t-fl">--launch-mode</span> acp-service</span></div>
-<div class="t-ln t-out t-ok">&#10003; Agent running (acp-service, auto-restart)</div>
-<div class="t-gap"></div>
-<div class="t-ln t-cmt"># UE 端 spawn proxy 子进程通信</div>
-<div class="t-ln t-out">&nbsp;&nbsp;UE5 &rarr; spawn actant proxy ue-ai &rarr; stdio ACP &rarr; Agent</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- DEMO -->
-<section class="sec" id="demo">
-  <div class="container sec-center">
-    <p class="sec-label reveal">See It In Action</p>
-    <h2 class="sec-heading reveal">从启动到进化，一气呵成</h2>
-    <p class="sec-desc reveal">Daemon 管理生命周期，Template 定义能力，Memory 积累经验。</p>
-    <div class="terminal-wrap reveal">
-      <div class="terminal">
-        <div class="term-bar"><div class="term-dots"><span class="d-r"></span><span class="d-y"></span><span class="d-g"></span></div><span class="term-title">actant</span></div>
-        <div class="term-body">
-<div class="t-ln t-cmt"># 启动 Daemon 守护进程</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant daemon start</span></div>
-<div class="t-ln t-out t-ok">&#10003; Daemon started (pid: 42851)</div>
-<div class="t-gap"></div>
-<div class="t-ln t-cmt"># 查看可用 Agent 模板</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant template list</span></div>
-<div class="t-ln t-out">&nbsp;&nbsp;code-review-agent&nbsp;&nbsp;&nbsp;Code review + security audit</div>
-<div class="t-ln t-out">&nbsp;&nbsp;bilibili-analyzer&nbsp;&nbsp;&nbsp;Video content analysis</div>
-<div class="t-gap"></div>
-<div class="t-ln t-cmt"># 从模板创建 Agent 实例</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent create reviewer <span class="t-fl">--template</span> code-review-agent</span></div>
-<div class="t-ln t-out t-ok">&#10003; Agent created: reviewer</div>
-<div class="t-ln t-out">&nbsp;&nbsp;Skills &rarr; AGENTS.md | Prompts &rarr; system.md | MCP &rarr; mcp.json</div>
-<div class="t-gap"></div>
-<div class="t-ln t-cmt"># 向 Agent 发送任务</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent run reviewer <span class="t-fl">--prompt</span> <span class="t-str">"Review error handling in src/"</span></span></div>
-<div class="t-ln t-out">Analyzing... Found 3 issues in error handling.</div>
-<div class="t-gap"></div>
-<div class="t-ln t-cmt"># 停止实例，自动提取经验</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent stop reviewer</span></div>
-<div class="t-ln t-out t-ok">&#10003; Memory extracted: 2 error patterns, 1 best practice</div>
-<div class="t-gap"></div>
-<div class="t-ln t-cmt"># 再次启动 — 带着记忆，不再失忆</div>
-<div class="t-ln"><span class="t-ps">$ </span><span class="t-cmd">actant agent start reviewer</span></div>
-<div class="t-ln t-out t-ok">&#10003; Re-materialized with 3 memory insights</div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- VISION -->
-<section class="sec" id="vision">
-  <div class="container sec-center">
-    <p class="sec-label reveal">Vision</p>
-    <h2 class="sec-heading reveal">Agents that learn, share, and<br>embed into your workflow</h2>
-    <p class="sec-desc reveal">Agent 不应该每次启动都失忆。让它进化、共享知识、成为工作流中可插拔的节点。</p>
-
-    <div class="evo-diagram reveal">
-      <div class="evo-row"><div class="evo-idx">L3</div><div class="evo-body"><h4>Template Evolution</h4><p>种群进化 &mdash; 高置信度经验经人工审核写回 Template</p></div></div>
-      <div class="evo-row"><div class="evo-idx">L2</div><div class="evo-body"><h4>Shared Memory</h4><p>跨实例共享 &mdash; 验证过的经验提升到共享知识池</p></div></div>
-      <div class="evo-row"><div class="evo-idx">L1</div><div class="evo-body"><h4>Instance Memory</h4><p>实例记忆 &mdash; 每次 session 结束自动提取经验</p></div></div>
-      <div class="evo-row"><div class="evo-idx">L0</div><div class="evo-body"><h4>Session</h4><p>会话 &mdash; Agent 在 context window 内工作</p></div></div>
-    </div>
-
-    <div class="vision-cards">
-      <div class="v-card reveal">
-        <div class="v-card-tag">01 &middot; Evolve</div>
-        <h3>Agent 会进化</h3>
-        <p>实例在多次会话间积累经验 &mdash; 错误模式、用户偏好、最佳实践。下次启动时 Memory 自动注入，不再重复犯错。</p>
-        <div class="v-footnote">Template 不变 &ne; Agent 不变。DNA 一生不变，但人一直在学习。进化发生在 Memory Layer。</div>
-      </div>
-      <div class="v-card reveal d1">
-        <div class="v-card-tag">02 &middot; Share</div>
-        <h3>Agent 会共享</h3>
-        <p>当经验在多个实例中被验证，自动提升到共享知识池。实例 A 踩过的坑，实例 B 不再重蹈覆辙。</p>
-        <div class="v-footnote">Memory Promotion 将实例经验固化为团队知识，让整个 Agent 集群越来越聪明。</div>
-      </div>
-      <div class="v-card reveal d2">
-        <div class="v-card-tag">03 &middot; Embed</div>
-        <h3>Agent 嵌入工作流</h3>
-        <p>One-Shot 在 CI 中执行后销毁。Service 作为虚拟雇员。ACP Proxy 让外部调用。MCP 让 Agent 协作。</p>
-        <div class="v-footnote">Agent 不是孤岛，是工作流中可插拔的节点 &mdash; 在你需要的地方，按你需要的方式运行。</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- FLOW -->
-<section class="sec" id="flow">
-  <div class="container sec-center">
-    <p class="sec-label reveal">Lifecycle</p>
-    <h2 class="sec-heading reveal">Define &rarr; Create &rarr; Run &rarr; Interact &rarr; Evolve</h2>
-    <div style="height:40px"></div>
-    <div class="flow-connector reveal"><span></span></div>
-    <div class="flow-row reveal">
-      <div class="flow-step"><div class="flow-num">01</div><h4>Define</h4><p>JSON Template 声明 Skills, Prompts, MCP</p></div>
-      <div class="flow-step"><div class="flow-num">02</div><h4>Create</h4><p>物化为隔离的 Instance Workspace</p></div>
-      <div class="flow-step"><div class="flow-num">03</div><h4>Run</h4><p>选择 LaunchMode, Daemon 管理生命周期</p></div>
-      <div class="flow-step"><div class="flow-num">04</div><h4>Interact</h4><p>CLI / ACP 交互, 实时响应</p></div>
-      <div class="flow-step"><div class="flow-num">05</div><h4>Evolve</h4><p>提取经验, Memory 注入下次启动</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- ROADMAP -->
-<section class="sec" id="roadmap">
-  <div class="container">
-    <p class="sec-label reveal">Roadmap</p>
-    <h2 class="sec-heading reveal">Building the full stack</h2>
-    <p class="sec-desc reveal">从核心运行时到记忆系统，一步一个脚印构建完整的 Agent 基础设施。</p>
-    <div class="rm-grid reveal">
-      <div class="rm-card"><div class="rm-top"><h4>Phase 1 &middot; Runtime</h4><span class="rm-tag done">Done</span></div><p>进程管理、LaunchMode 分化、崩溃重启</p></div>
-      <div class="rm-card"><div class="rm-top"><h4>Phase 2 &middot; Assemble</h4><span class="rm-tag done">Done</span></div><p>Domain Context 物化、CLI 交互</p></div>
-      <div class="rm-card"><div class="rm-top"><h4>Phase 3 &middot; Connect</h4><span class="rm-tag done">Done</span></div><p>ACP Proxy &middot; 组件 CRUD &middot; Workspace Builder &middot; Scheduler &middot; Source 生态</p></div>
-      <div class="rm-card"><div class="rm-top"><h4>Phase 4 &middot; Autonomy</h4><span class="rm-tag active">Active</span></div><p>Hook 事件 &middot; Dashboard &middot; Live Canvas &middot; i18n &middot; Plugin &middot; Pi 后端</p></div>
-      <div class="rm-card"><div class="rm-top"><h4>Phase 5 &middot; Memory</h4><span class="rm-tag planned">Planned</span></div><p>Memory Layer &middot; 共享知识池 &middot; 经验进化</p></div>
-      <div class="rm-card"><div class="rm-top"><h4>Phase 6 &middot; Fleet</h4><span class="rm-tag vision">Vision</span></div><p>Daemon &rarr; ACP Server &middot; 多节点协调 &middot; 标准化</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- STATS -->
-<section class="sec" id="stats">
-  <div class="container sec-center">
-    <p class="sec-label reveal">v0.2.6 Stats</p>
-    <h2 class="sec-heading reveal">Built with precision</h2>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;max-width:720px;margin:40px auto 0" class="reveal">
-      <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-xl);text-align:center">
-        <div style="font-family:var(--heading);font-size:32px;font-weight:800;color:var(--accent)">45K+</div>
-        <div style="font-size:13px;color:var(--text-3);margin-top:4px">Lines of Code</div>
-      </div>
-      <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-xl);text-align:center">
-        <div style="font-family:var(--heading);font-size:32px;font-weight:800;color:var(--teal)">1,027</div>
-        <div style="font-size:13px;color:var(--text-3);margin-top:4px">Tests</div>
-      </div>
-      <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-xl);text-align:center">
-        <div style="font-family:var(--heading);font-size:32px;font-weight:800;color:var(--blue)">92</div>
-        <div style="font-size:13px;color:var(--text-3);margin-top:4px">RPC Methods</div>
-      </div>
-      <div style="padding:24px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r-xl);text-align:center">
-        <div style="font-family:var(--heading);font-size:32px;font-weight:800;color:var(--green)">65</div>
-        <div style="font-size:13px;color:var(--text-3);margin-top:4px">CLI Commands</div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- CTA -->
-<section class="cta">
-  <div class="cta-glow"></div>
-  <div class="container">
-    <h2 class="reveal">让 <span class="hl-agent">AI Agent</span> 成为你工作流中的 <span class="hl-docker">Actant</span></h2>
-    <p class="reveal">Define. Create. Run. Evolve. &mdash; 从定义到进化，一站式 Agent 管理。</p>
-    <div class="cta-btns reveal">
-      <a href="https://github.com/blackplume233/Actant" class="btn btn-accent"><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>View on GitHub</a>
-      <a href="/wiki/" class="btn btn-outline">Read the Docs</a>
-    </div>
-  </div>
-</section>
-
-<!-- FOOTER -->
-<footer class="footer">
-  <div class="container">
-    <div class="footer-left"><div class="nav-logo">A</div><span>Actant &copy; 2026 &middot; MIT License</span></div>
-    <div class="footer-links"><a href="https://github.com/blackplume233/Actant">GitHub</a><a href="/wiki/">Docs</a><a href="https://github.com/blackplume233/Actant/issues">Issues</a></div>
-    <span class="footer-right">Built for developers who orchestrate AI.</span>
-  </div>
-</footer>
-
-<script>
-const cmds={
-  unix:'curl -fsSL https://raw.githubusercontent.com/blackplume233/Actant/master/scripts/install.sh | bash',
-  win:'irm https://raw.githubusercontent.com/blackplume233/Actant/master/scripts/install.ps1 | iex',
-  npm:'npm install -g actant'
-};
-function switchInstall(p){
-  document.querySelectorAll('.install-tab').forEach(t=>t.classList.toggle('active',t.textContent.includes(p==='unix'?'Linux':p==='win'?'Windows':'npm')));
-  document.querySelectorAll('.hero-install').forEach(el=>el.classList.toggle('active',el.dataset.platform===p));
-}
-function copyCmd(el){
-  const p=el.dataset.platform;
-  navigator.clipboard.writeText(cmds[p]).then(()=>{
-    const c=el.querySelector('.copy');c.style.color='var(--green)';setTimeout(()=>c.style.color='',1500);
-  });
-}
-if('IntersectionObserver' in window){
-  const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting)e.target.classList.add('show')})},{threshold:.06,rootMargin:'0px 0px -20px 0px'});
-  document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
-}else document.querySelectorAll('.reveal').forEach(el=>el.classList.add('show'));
-</script>
+    <section class="links">
+      <h2>Read Next</h2>
+      <ul>
+        <li><a href="/README.md">README.md</a></li>
+        <li><a href="/PROJECT_CONTEXT.md">PROJECT_CONTEXT.md</a></li>
+        <li><a href="/.trellis/spec/index.md">.trellis/spec/index.md</a></li>
+        <li><a href="/docs/design/contextfs-architecture.md">docs/design/contextfs-architecture.md</a></li>
+        <li><a href="/docs/design/actant-vfs-reference-architecture.md">docs/design/actant-vfs-reference-architecture.md</a></li>
+        <li><a href="/docs/planning/contextfs-roadmap.md">docs/planning/contextfs-roadmap.md</a></li>
+      </ul>
+    </section>
+  </main>
 </body>
 </html>

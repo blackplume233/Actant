@@ -1,0 +1,90 @@
+﻿{
+  "validatedAt": "2026-03-18T02:45:31.758Z",
+  "results": [
+    {
+      "target": "repo-root",
+      "projectDir": "G:\\Workspace\\AgentWorkSpace\\AgentCraft",
+      "projectName": "Actant",
+      "description": "Actant self-bootstrap project context",
+      "readFirst": [
+        "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\actant.project.json",
+        "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\PROJECT_CONTEXT.md",
+        "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\.trellis\\spec\\index.md",
+        "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\.trellis\\spec\\backend\\index.md",
+        "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\.trellis\\spec\\guides\\cross-layer-thinking-guide.md"
+      ],
+      "knowledge": [
+        {
+          "path": "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\PROJECT_CONTEXT.md",
+          "firstLine": "# Actant Project Context"
+        }
+      ],
+      "available": {
+        "skills": [
+          "code-review",
+          "code-review-dir",
+          "project-context-reader",
+          "typescript-expert"
+        ],
+        "prompts": [
+          "project-context-bootstrap",
+          "system-code-reviewer"
+        ],
+        "mcpServers": [
+          "filesystem"
+        ],
+        "workflows": [
+          "trellis-standard"
+        ],
+        "templates": [
+          "code-review-agent"
+        ]
+      },
+      "components": {
+        "skills": 4,
+        "prompts": 2,
+        "mcpServers": 1,
+        "workflows": 1,
+        "templates": 1
+      },
+      "sourceWarnings": []
+    },
+    {
+      "target": "bootstrap-example",
+      "projectDir": "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\examples\\project-context-bootstrap",
+      "projectName": "project-context-bootstrap",
+      "description": "Minimal bootstrap fixture for validating project-context discovery.",
+      "readFirst": [
+        "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\examples\\project-context-bootstrap\\actant.project.json",
+        "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\examples\\project-context-bootstrap\\PROJECT_CONTEXT.md"
+      ],
+      "knowledge": [
+        {
+          "path": "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\examples\\project-context-bootstrap\\PROJECT_CONTEXT.md",
+          "firstLine": "# Project Context Bootstrap Fixture"
+        }
+      ],
+      "available": {
+        "skills": [
+          "project-context-reader"
+        ],
+        "prompts": [
+          "project-context-bootstrap"
+        ],
+        "mcpServers": [],
+        "workflows": [],
+        "templates": [
+          "project-context-agent"
+        ]
+      },
+      "components": {
+        "skills": 1,
+        "prompts": 1,
+        "mcpServers": 0,
+        "workflows": 0,
+        "templates": 1
+      },
+      "sourceWarnings": []
+    }
+  ]
+}

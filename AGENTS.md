@@ -16,7 +16,7 @@ Use `.trellis/` to learn:
 ## Code Intelligence (GitNexus MCP)
 
 本项目已索引代码知识图谱（2091 符号、5354 关系、144 执行流）。
-**修改核心模块前必须执行 impact 分析**。详见 `workflow.md` §Development Process。
+**修改核心模块前必须执行 impact 分析**。详见 `workflow.md`。
 索引过期时执行 `npx gitnexus analyze`。
 
 Keep this managed block so 'trellis update' can refresh the instructions.

@@ -8,7 +8,7 @@
 
 ## 概述
 
-Actant Channel Protocol（ACP-EX）是 Actant 自有的 Agent 通信协议。它在概念上借鉴 ACP（Agent Client Protocol）的良好设计，在 ACP 已覆盖的操作上保持语义一致，同时针对 Actant 作为 Agent Application Development Platform 的需求进行扩展。ACP-EX 不是 ACP 的分支，而是 ACP 的应用层超集——站在 ACP 的设计基础上，增加 ACP 未涉及的能力维度。
+Actant Channel Protocol（ACP-EX）是 Actant 自有的 Agent 通信协议。它在概念上借鉴 ACP（Agent Client Protocol）的良好设计，在 ACP 已覆盖的操作上保持语义一致，同时针对 Actant 作为 Agent 上下文平台（ContextFS）的需求进行扩展。ACP-EX 不是 ACP 的分支，而是 ACP 的应用层超集——站在 ACP 的设计基础上，增加 ACP 未涉及的能力维度。
 
 > **变更流程 (MANDATORY)**
 >
@@ -84,6 +84,4 @@ Actant Channel Protocol（ACP-EX）是 Actant 自有的 Agent 通信协议。它
 
 ## 相关文档
 
-- [ACP 未来发展分析](../acp-future-analysis.md)
-- [Agent 启动场景](../agent-launch-scenarios.md)
-
+- [Unified Communication Layer](../../../.trellis/spec/communication-layer.md)

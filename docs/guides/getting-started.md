@@ -1,121 +1,42 @@
-# Getting Started with Actant
+# Getting Started
 
-## Prerequisites
+当前仓库处于 ContextFS 文档基线重置阶段。  
+如果你是第一次进入这个仓库，不要从旧 CLI 功能、旧站点文案或历史设计稿开始理解系统。
 
-- **Node.js** >= 22
-- **pnpm** >= 9
-- **Claude Code CLI** (for claude-code backend)
-- **Cursor IDE** (for cursor backend)
+## Read This First
 
-## Installation
+按以下顺序读取：
 
-### Quick Install (Recommended)
+1. `README.md`
+2. `PROJECT_CONTEXT.md`
+3. `.trellis/spec/index.md`
+4. `docs/design/contextfs-architecture.md`
+5. `docs/design/actant-vfs-reference-architecture.md`
+6. `docs/planning/contextfs-roadmap.md`
 
-**Linux/macOS:**
+## What Is Current
 
-```bash
-git clone https://github.com/blackplume233/Actant.git
-cd Actant
-bash scripts/install.sh
-```
+当前有效基线只有一套：
 
-**Windows (PowerShell):**
+- 产品层：`ContextFS`
+- 实现层：`VFS Kernel`
+- 核心对象：`Project`、`Source`、`Capability`
+- V1 内置 Source：`SkillSource`、`McpConfigSource`、`McpRuntimeSource`、`AgentRuntime`
+- V1 操作面：`read`、`write`、`list`、`stat`、`watch`、`stream`
 
-```powershell
-git clone https://github.com/blackplume233/Actant.git
-cd Actant
-.\scripts\install.ps1
-```
+## What Is Not Current
 
-### Manual Install
+以下内容不应再当作当前实现方向：
 
-1. Clone the repository and enter the project directory
-2. Run `pnpm install`
-3. Run `pnpm build`
-4. Run `pnpm --filter @actant/cli link --global`
+- 旧 `ContextManager`
+- 旧 `DomainContext`
+- `workflow` 作为 V1 顶层对象
+- query/view mount
+- overlay/fallback 行为实现
 
-## Directory Structure
+## Practical Rule
 
-After installation, Actant creates:
+如果你读到的文档与上述基线冲突：
 
-- **`~/.actant/`** — Actant home directory
-  - `config.json` — Global configuration
-  - `configs/` — Domain components (skills, prompts, etc.)
-  - `instances/` — Agent instance workspaces + registry
-  - `sources/` — Component source management
-  - `logs/` — Daemon and update logs
-  - `backups/` — Self-update backups
-
-## First Steps
-
-### 1. Start the Daemon
-
-```bash
-actant daemon start
-```
-
-### 2. Browse Available Components
-
-```bash
-actant skill list
-actant prompt list
-actant template list
-```
-
-### 3. Create Your First Agent
-
-```bash
-actant agent create my-agent --template code-review-agent
-```
-
-### 4. Start and Chat
-
-```bash
-actant agent start my-agent
-actant agent chat my-agent
-```
-
-### 5. Stop When Done
-
-```bash
-actant agent stop my-agent
-```
-
-## Configuration
-
-Global config at `~/.actant/config.json`:
-
-```json
-{
-  "devSourcePath": "",
-  "update": {
-    "maxBackups": 3,
-    "preUpdateTestCommand": "pnpm test:changed",
-    "autoRestartAgents": true
-  }
-}
-```
-
-Set `devSourcePath` to your Actant source directory for self-update from local development.
-
-## Getting Help
-
-```bash
-actant help
-actant help agent
-actant help <command>
-```
-
-## Common Issues
-
-### "actant: command not found"
-
-Run `pnpm --filter @actant/cli link --global` again, or add pnpm's global bin to PATH.
-
-### Daemon Connection Failed
-
-Ensure daemon is running: `actant daemon status`
-
-### Permission Errors on Global Link
-
-Try with elevated privileges or configure npm prefix.
+1. 先检查该文件是否在 `trash/`
+2. 若不在 `trash/`，视为文档污染并应被清理

@@ -1,0 +1,12 @@
+{
+  "status": "running",
+  "daemonPid": 40716,
+  "socketPath": "\\\\.\\pipe\\actant-qa-alpha",
+  "homePath": "g:\\Workspace\\AgentWorkSpace\\AgentCraft\\.trellis\\qa-alpha\\home",
+  "buildHash": "a034151b6dc34e5be2eec9fc3664b50e74a78688",
+  "buildTimestamp": "2026-02-28T17:52:00.000Z",
+  "startedAt": "2026-02-28T17:52:15.000Z",
+  "roundCounter": 2,
+  "platform": "win32",
+  "templatesLoaded": ["rw-basic-tpl", "rw-claude-tpl", "qa-test-tpl"]
+}

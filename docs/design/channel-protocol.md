@@ -4,7 +4,7 @@
 > **日期**：2026-03-15
 > **作者**：human, cursor-agent
 > **关联 Issue**：#279（统一通信层与 Runtime Facade 收敛）
-> **前置文档**：[ACP 未来发展分析](./acp-future-analysis.md)、[Agent 启动场景](./agent-launch-scenarios.md)
+> **前置文档**：`.trellis/spec/communication-layer.md`
 
 ---
 
@@ -12,7 +12,7 @@
 
 ### 1.1 什么是 Actant Channel Protocol
 
-Actant Channel Protocol（代号 **ACP-EX**，Agent Channel Protocol Extended）是 Actant 自有的 Agent 通信协议。它在概念和术语上**借鉴 ACP（Agent Client Protocol）的良好设计**，在 ACP 已覆盖的操作上**保持语义一致**，同时针对 Actant 作为 Agent Application Development Platform 的需求进行扩展。
+Actant Channel Protocol（代号 **ACP-EX**，Agent Channel Protocol Extended）是 Actant 自有的 Agent 通信协议。它在概念和术语上**借鉴 ACP（Agent Client Protocol）的良好设计**，在 ACP 已覆盖的操作上**保持语义一致**，同时针对 Actant 作为 Agent 上下文平台（ContextFS）的需求进行扩展。
 
 ACP-EX 不是 ACP 的分支（fork），而是 ACP 的**应用层超集**——它站在 ACP 的设计基础上，增加了 ACP 未涉及的能力维度。
 
@@ -281,7 +281,9 @@ interface ChannelHostServices {
   // ================================================================
   // VFS Service（Extended Profile, optional）
   // ACP 无等价物
-  // 虚拟文件系统：/memory/, /proc/, /config/, /canvas/ 等
+  // 虚拟文件系统：由 ContextFS 定义实际命名空间
+  // ContextFS V1: /skills/*, /mcp/configs/*, /mcp/runtime/*, /agents/*, /projects/*
+  // 见 docs/design/contextfs-architecture.md
   // ================================================================
 
   vfsRead?(path: string): Promise<{ content: string }>;
@@ -762,7 +764,7 @@ interface ChannelPromptResult {
 |------|--------|--------|------------|
 | **Backend Built-in Tools** | Backend | Backend | 观察（tool_call event）+ 审批（requestPermission） |
 | **MCP Tools** | External MCP Server | Backend 连接并使用 | 配置透传（mcpServers）+ 动态管理（setMcpServers） |
-| **Host-Provided Tools** | Host（ContextProvider） | Host（via executeTool） | 定义透传（hostTools）+ 执行路由（executeTool） |
+| **Host-Provided Tools** | Host（ContextFS Source） | Host（via executeTool） | 定义透传（hostTools）+ 执行路由（executeTool） |
 | **In-Process SDK Tools** | Backend 内部 | Backend 内部 | 不可见（backendOptions 透传） |
 
 ### 9.2 MCP 服务器配置

@@ -1,0 +1,8 @@
+{
+  "devSourcePath": "",
+  "update": {
+    "maxBackups": 3,
+    "preUpdateTestCommand": "pnpm test:changed",
+    "autoRestartAgents": true
+  }
+}

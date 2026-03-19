@@ -1,0 +1,29 @@
+Started bootstrap host.
+{
+  "daemonStarted": true,
+  "active": true,
+  "hostProfile": "bootstrap",
+  "runtimeState": "inactive",
+  "projectRoot": "G:\\Workspace\\AgentWorkSpace\\AgentCraft",
+  "projectName": "Actant",
+  "configPath": "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\actant.project.json",
+  "configsDir": "G:\\Workspace\\AgentWorkSpace\\AgentCraft\\configs",
+  "sourceWarnings": [],
+  "components": {
+    "skills": 3,
+    "prompts": 1,
+    "mcpServers": 1,
+    "workflows": 1,
+    "templates": 1
+  },
+  "mounts": {
+    "project": "/hub/project",
+    "workspace": "/hub/workspace",
+    "config": "/hub/config",
+    "skills": "/hub/skills",
+    "prompts": "/hub/prompts",
+    "mcp": "/hub/mcp",
+    "workflows": "/hub/workflows",
+    "templates": "/hub/templates"
+  }
+}

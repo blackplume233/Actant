@@ -1,173 +1,126 @@
 # Actant Specifications
 
-> **核心原则**：文档、契约、接口、配置是项目的主要产出，代码是对它们的实现。
->
-> **任何功能扩展或修改，必须先输出文档再实现。** 未经文档化的变更不得进入代码库。
-
-> **当前阶段治理补充（2026-03）**：Actant 正处于 **Context-First 架构重构**的准备期。核心定位从「Agent 应用开发平台」向「VFS 驱动的多源上下文平台」演进，ContextManager 将成为架构顶层。当前正在执行 Phase A（工程清理与 v0.4.0 存档），随后进入 Phase B（Context-First 实施）。详见 [Context-First Multi-Source Architecture](../../docs/design/context-first-multi-source-architecture.md) 和 [Roadmap](../../docs/planning/roadmap.md)。
->
-> **Phase B 对 spec 的影响预告**：
-> - @actant/core 拆分为 @actant/agent-runtime + @actant/context → 所有 spec 中的 packages/core/ 路径引用需更新
-> - Agent 上下文获取从“workspace 物化”变为“VFS 按需访问” → config-spec.md 和 gent-lifecycle.md 需新增 ContextSource/ContextManager 配置
-> - MCP Server 扩展 ContextManager VFS 挂载 → pi-contracts.md §3.12b 需更新
-> - 各 spec 文件已添加 ⚠️ Phase B 迁移预告 标注，标明受影响的具体区域
----
-
-## Documentation-First 原则（最高优先级）
-
-本项目遵循严格的「文档先行」开发模式。以下四类产物的优先级 **高于代码实现**：
-
-| 优先级 | 产物 | 说明 | 示例 |
-|--------|------|------|------|
-| 1 | **契约（Contracts）** | 模块间通信的协议规范 | `api-contracts.md` 中的 RPC 方法签名、错误码 |
-| 2 | **接口（Interfaces）** | TypeScript 类型定义与公共 API | `@actant/shared` 中的类型、`index.ts` barrel exports |
-| 3 | **配置（Configuration）** | Schema 定义与配置结构 | `config-spec.md` 中的 JSON Schema、环境变量 |
-| 4 | **文档（Documentation）** | 设计文档、决策记录、行为规范 | `agent-lifecycle.md`、ADR、spec 文件 |
-
-### 强制流程
-
-```
-需求 → 文档/规范 → 接口/类型 → 实现 → 测试 → 审查
-         ↑                                    |
-         └────── 实现中发现规范缺陷 → 先修规范 ──┘
-```
-
-1. **新功能**：先在相关 spec 文件中描述行为和接口，review 通过后再写代码
-2. **修改功能**：先更新受影响的 spec/契约/配置文档，再修改代码
-3. **Bug 修复**：如果 bug 暴露了规范缺陷，先修正规范再修复代码
-4. **重构**：如果重构改变了公共接口，先更新接口文档
-
-> **违反此原则的 PR 应被 reject。** 即使代码正确，缺少同步文档更新也不应合并。
+> 核心原则：文档、契约、接口、配置先于实现。
+> 当前基线：先完成 ContextFS 文档重置，再进入代码实现。
 
 ---
 
-## 文档层次
+## 当前规范基线
 
-```
-spec/
-├── vision.md             ← 产品愿景与核心定位（最高层级）
-├── agent-lifecycle.md    ← Agent 生命周期与使用模式（主要产出）
-├── config-spec.md        ← 配置规范（主要产出）
-├── api-contracts.md      ← 接口契约（主要产出）
-│
-├── backend/              ← 后端实现指南（实现层）
-├── frontend/             ← 前端实现指南（实现层）
-└── guides/               ← 辅助思考指南
-```
+Actant 当前只承认一套新的顶层叙述：
 
-### 第一层：规范（Specification）
+- 产品层：`ContextFS`
+- 实现层：`VFS Kernel`
+- 核心对象：`Project`、`Source`、`Capability`
+- 首批内置 Source：`SkillSource`、`McpConfigSource`、`McpRuntimeSource`、`AgentRuntime`
+- V1 操作面：`read`、`write`、`list`、`stat`、`watch`、`stream`
 
-**规范定义系统"是什么"**。所有代码必须符合规范；若代码与规范冲突，以规范为准，修正代码。
+以下旧基线已废弃，不再作为实现依据：
 
-> **当前治理基线（#278 第一切片）**：Actant 应稳定理解为 AI Agent 的**底层平台**；`repo -> service -> employee` 是**管理深度递进模型**；其中 **service 是当前主交付形态**，`employee` 是在其上叠加调度与自治能力的增强层。阅读和更新 spec 时，需始终区分 template/domain-context layer 与 platform/runtime-services layer，避免把 agent-side plugin definition 与未来 actant-side PluginHost 混为一谈。
->
-> **验证与契约入口（#278 Slice 3）**：
-> - archetype 级产品承诺与运行边界：以 `agent-lifecycle.md`、`config-spec.md` 为主入口
-> - CLI / RPC / ACP / REST / Email 等外部契约：以 `api-contracts.md` 为主入口
-> - endurance / archetype-oriented validation baseline：以 `endurance-testing.md` 为主入口
-> - 若发现历史 design / planning / wiki 与上述入口冲突，应优先修正周边文档或补充状态说明，而不是回退规范基线
->
-> **#278 冲突项映射状态**：C-01 / C-02 / C-04 / C-05 已在 vision、roadmap、wiki、design 与 spec 索引中建立统一基线；C-08 由 `endurance-testing.md` 中的 archetype-oriented baseline 与 Phase 4 endurance 组织口径承接，后续新增验证资产必须继续围绕 `repo / service / employee` 建立验收入口。
->
-> **统一通信层基线（2026-03-14，#279 升级）**：`service` 是共享 runtime communication target。Actant 建立自有通信层接口 `ActantChannel`（ACP-Like），概念借鉴 ACP 标准但所有权归 Actant；`claude-code` 通过 Claude Agent SDK 封装，`@actant/acp` 退化为外部协议适配器。统一通信语义由 `communication-layer.md` 负责收口。生命周期文档保留 product/runtime 总览，接口契约文档描述可调用 surface，配置规范描述 `communicationPolicy` 等声明面；若出现 `agent.prompt`、`proxy`、`run`、session/lease、Dashboard Chat 或 agent-to-agent communication 的口径分裂，应优先修正这三个入口的交叉引用，而不是继续在 design/wiki 中新增平行定义。
-
-| 文档 | 内容 | 约束力 |
-|------|------|--------|
-| [愿景](./vision.md) | 产品定位、目标场景、核心特性、演进路线 | **指南** — 理解项目长期方向与决策依据 |
-| [Agent 生命周期](./agent-lifecycle.md) | 运行模式、接入方式、使用场景、状态转换；产品/runtime 总览，引用统一通信层定义 | **强制** — 理解系统行为的核心文档 |
-| [统一通信层](./communication-layer.md) | service/shared runtime 通信模型、lease/session/conversation 术语、路由规则、readiness、外部/内部通信统一抽象 | **强制** — 任何 communication / session / proxy / prompt / facade 语义变更必须先更新此文档 |
-| [配置规范](./config-spec.md) | 所有配置结构、Schema、枚举、环境变量 | **强制** — 任何配置变更必须先更新此文档；`Agent App` 的正式配置定义见其中的 `AgentAppManifest` |
-| [接口契约](./api-contracts.md) | RPC 方法、CLI 命令、ACP Proxy、MCP Server、VFS、错误码 | **强制** — 任何接口变更必须先更新此文档；`Agent App` 的产品层 API 边界见其中的 Agent App Contracts |
-| [Session 管理](./session-management.md) | 三种 session 的概念、生命周期、按 archetype 的路由规则 | **强制** — 涉及 Chat/Session 相关代码必读 |
-| [耐久测试规范](./endurance-testing.md) | 覆盖矩阵、不变量、演进策略、维护规范 | **强制** — 生命周期/通信变更必须同步更新耐久测试 |
-
-### 重要设计文档
-
-以下设计文档对理解系统架构至关重要，实现时应作为核心参考：
-
-| 文档 | 内容 | 重要性 |
-|------|------|--------|
-| [统一事件系统设计](../../docs/design/event-system-unified-design.md) | EventBus 统一架构、事件分类与订阅模型、Archetype 感知执行策略、Event-First 设计原则 | **核心** — 所有 Hook/Event/Workflow 相关实现的架构依据 |
-| [Agent 启动场景与 ACP 架构](../../docs/design/agent-launch-scenarios.md) | 7 种启动/交互场景、ACP Gateway 架构、协议分层、控制权谱系 | **核心** — 所有 ACP/Proxy/Chat 相关实现的架构依据 |
-| [ACP 未来发展分析与战略定位](../../docs/design/acp-future-analysis.md) | ACP 演进六大方向（Proxy Chains / MCP-over-ACP / 远程 Agent 等）、Actant 双层定位（ACP Proxy + Runtime Platform）、#279 方向验证 | **核心** — ACP 相关架构决策的战略依据 |
-| [架构 Docker 类比](../../docs/design/architecture-docker-analogy.md) | CLI-Daemon 分层设计的概念映射 | 参考 — 理解整体架构思路 |
-| [Plugin/Memory 审查报告](../../docs/design/plugin-memory-review-report.md) | Plugin 三插口设计、Memory 12 轮审查、安全/性能/兼容性 | **核心** — Plugin 体系的设计依据；其中 Memory 部分当前更适合作为外置组件/后续集成参考 |
-| [记忆层与 Agent 演进](../../docs/design/memory-layer-agent-evolution.md) | 四层记忆架构、MemoryRecord、Promote 机制、Context Broker | 参考 — 当前不属于 Phase 4 内建完成条件，作为外置组件/后续集成蓝图保留 |
-| [Phase 4 推进步骤](../../docs/planning/phase4-employee-steps.md) | 14 步实施计划、依赖关系、并行策略、验收标准 | **活跃** — 当前阶段的执行指南 |
-| [Agent 动态监听场景分析](../../docs/design/scenario-agent-dynamic-listen.md) | Agent 运行时动态注册事件订阅的场景、通信通道选择（ACP/CLI）、三种订阅模型 | 参考 — Agent 自主性扩展的设计分析 |
-| [Subsystem 子系统设计](../../docs/design/subsystem-design.md) | 参考 UE Subsystem 的可热插拔辅助系统框架，四层作用域、声明式注册、生命周期绑定 | **核心** — 插件深层集成和系统功能模块化的架构基础 |
-| [actant-hub 组件仓库设计](../../docs/design/actant-hub-registry-design.md) | 官方 Hub 结构、组件类型、Skill 双格式、Source 集成 | **核心** — Hub 内容和 Source 系统的架构依据 |
-| [Hub Agent 内核设计 (#204)](https://github.com/blackplume233/Actant/issues/204) | 三层平台级 Agent 体系（Kernel/Auxiliary/Spark）、资产系统、`ac://` 统一寻址 | **核心** — actant-hub 初始内容和资产管理的蓝图 |
-| [Actant Channel Protocol (ACP-EX)](../../docs/design/channel-protocol/README.md) | Host-Backend 通信协议、三层 Profile、多适配器架构、Pi 简洁哲学启发的 steering/branching/compaction 语义 | **核心** — 统一通信层的协议定义，#279/#280-#290 实现依据 |
-| [Pi Mono 架构对比分析](https://github.com/badlogic/pi-mono) | Pi 的极简 Agent 核心 (~400 LOC)、Steering/Follow-up 双队列、Session Branching/Compaction、Extension API 设计 | **参考** — ACP-EX 和架构优化方向的外部灵感来源（#280-#290） |
-| `@actant/tui` (`packages/tui/`) | 统一 TUI 层（基于 `@mariozechner/pi-tui`）：`ActantChatView` 高层聊天组件、`StreamingMarkdown` 流式渲染、`VirtualTerminal` 无头测试 | **核心** — 所有 CLI 交互式聊天的唯一入口，禁止 `readline`（#279） |
-
-### 第二层：实现指南（Implementation Guidelines）
-
-**指南描述如何"正确地实现"**。为开发者提供编码规范、错误处理模式、日志策略等。
-
-| 文档 | 描述 |
-|------|------|
-| [后端指南](./backend/index.md) | 模块架构、错误处理、日志、质量标准 |
-| [前端指南](./frontend/index.md) | 组件规范、状态管理、类型安全 |
-
-### 第三层：思考指南（Thinking Guides）
-
-**辅助决策和设计思维**，预防"没想到"导致的缺陷。
-
-| 文档 | 描述 |
-|------|------|
-| [思考指南索引](./guides/index.md) | 跨层、复用、跨平台等思考框架 |
-
-### 项目上下文文档
-
-以下文档不属于规范层，但对理解项目状态和方向至关重要：
-
-| 文档 | 内容 | 位置 |
-|------|------|------|
-| 产品路线图 | Phase 规划、里程碑、Issue 对齐 | `docs/planning/roadmap.md` |
-| 文档目录规范 | docs/ 各子目录职责、写入权限、命名规范 | `docs/README.md` |
-| 目录结构 ADR | 项目目录结构决策及演进记录 | `docs/decisions/002-directory-structure.md` |
+- `ContextManager` 作为平台顶层
+- `DomainContext` 作为聚合中心
+- `ContextSourceType` 作为核心分类真相
+- 旧 source-centric VFS 作为最终架构
+- `workflow` 作为 V1 顶层对象
 
 ---
 
-## 变更规则
+## 强制流程
 
-1. **文档先行**：任何功能扩展或修改，**必须先输出文档再写代码**。未文档化的实现不得合并
-2. **契约驱动**：接口变更先更新 `api-contracts.md` / 类型定义，代码实现必须符合已发布的契约
-3. **配置即规范**：配置 Schema 变更先更新 `config-spec.md`，实现跟随 Schema
-4. **同步提交**：配置/接口的代码变更与规范更新必须在**同一次提交**中
-5. **规范即真相**：若代码行为与规范不一致，视为 Bug — 修正代码，不修正规范（除非规范本身有缺陷）
-6. **审查检查项**：Code Review 必须确认：(a) 相关规范文档已同步更新 (b) 接口/类型先于实现定义 (c) 配置 Schema 与实现一致
-7. **跨层一致性**：跨越前后端的约束（如 archetype 功能限制、接口错误码）必须在**所有涉及层**的 spec 文件中保持一致描述。变更时须同步检查 `agent-lifecycle.md`、`api-contracts.md`、`frontend/index.md`、`quality-guidelines.md` 等所有引用点
-8. **引用而非重复**：子层文件（如 `backend/index.md`）应通过链接引用上层权威定义（如 `spec/index.md`），而非复制相同内容。重复描述会在内容变更时产生不一致
-9. **概念分层先于实现分层**：涉及 archetype、plugin、schedule、Domain Context、Agent App 等术语时，必须先说明它属于 product / template / runtime / protocol 的哪一层，再进入包结构或实现细节
+```text
+需求 -> spec/design/roadmap -> 类型/契约 -> 实现 -> 测试 -> 审查
+```
+
+当前阶段额外约束：
+
+- 先重写 spec/design/roadmap
+- 再进入实现
+- 与新基线冲突的旧文档必须删除或明确废弃
+- 不允许双重真相并存
 
 ---
 
-## Spec 维护常见错误
+## 推荐阅读顺序
 
-### 跨层约束不一致
+1. [愿景](./vision.md)
+2. [术语表](./terminology.md)
+3. [ContextFS Architecture](../../docs/design/contextfs-architecture.md)
+4. [Actant VFS Reference Architecture](../../docs/design/actant-vfs-reference-architecture.md)
+5. [配置规范](./config-spec.md)
+6. [接口契约](./api-contracts.md)
+7. [后端指南](./backend/index.md)
+8. [ContextFS Roadmap](../../docs/planning/contextfs-roadmap.md)
 
-**场景**：archetype 限制（如"只有 employee 才能使用 Canvas"）在不同 spec 文件中描述不同。
+---
 
-**成因**：在一处更新了约束，但遗漏了其他涉及该约束的文件。
+## 文档分层
 
-**防止方法**：修改任何 archetype / 接口 / 错误码约束时，先搜索所有 spec 文件中的相关关键词，确认全量同步。
+### 1. Vision
 
-```bash
-# 检查 Canvas 相关约束的所有出现位置
-grep -r "Canvas\|canvas" .trellis/spec/ --include="*.md" -l
-```
+定义：
 
-### 占位文件污染索引
+- Actant 是什么
+- 长期方向是什么
+- 为什么收敛到 ContextFS
 
-**场景**：spec 文件仅包含 "To be filled by the team" 之类的占位内容，但仍列在索引中，误导读者以为有实质规范。
+入口：
 
-**防止方法**：未填写内容的主题合并为单一 `*-todo.md` 文件，并在索引中明确标注 "Todo"。
+- [vision.md](./vision.md)
 
-### 计划内容混入规范层
+### 1.5 Terminology
 
-**场景**：Phase N 预定设计（尚未实现）与当前有效规范写在同一章节，读者无法判断哪些立即适用。
+定义：
+- 哪些词属于哪个层级
+- 哪些命名应保留
+- 哪些旧术语只允许作为废弃参考出现
 
-**防止方法**：预定/计划内容必须：(a) 在文件顶部加免责声明 (b) 章节标题标注 `⚠️ 待启用` (c) 或移入 `docs/design/` 等计划目录
+入口：
+- [terminology.md](./terminology.md)
+
+### 2. Design
+
+定义：
+
+- ContextFS 产品层对象模型
+- VFS Kernel 实现层边界
+
+入口：
+
+- [ContextFS Architecture](../../docs/design/contextfs-architecture.md)
+- [Actant VFS Reference Architecture](../../docs/design/actant-vfs-reference-architecture.md)
+
+### 3. Spec Contracts
+
+定义：
+
+- 配置结构
+- 文件式操作面
+- 路径约定
+- 权限与边界
+
+入口：
+
+- [config-spec.md](./config-spec.md)
+- [api-contracts.md](./api-contracts.md)
+
+### 4. Implementation Guides
+
+定义：
+
+- 后端如何按新基线实现
+
+入口：
+
+- [backend/index.md](./backend/index.md)
+- [frontend/index.md](./frontend/index.md)
+
+---
+
+## 审查要求
+
+任何后续实现或设计变更，审查时必须确认：
+
+- 是否仍遵守 `ContextFS` / `VFS Kernel` 的层次分工
+- 是否重新引入了旧 `ContextManager` / `DomainContext` 叙事
+- 是否把 `workflow`、query view、兼容层偷偷带回 V1
+- 是否在 spec、design、roadmap 三层同步修改
