@@ -72,7 +72,7 @@ export function InstanceCreatePage() {
   const initFromTemplate = (tpl: TemplateListItem) => {
     const arch = resolveArchetype(tpl.archetype);
     setSelectedArchetype(arch);
-    setCustomSkills(tpl.domainContext?.skills ?? []);
+    setCustomSkills(tpl.project?.skills ?? []);
     setInstanceName(`${tpl.name}-a1`);
     if (tpl.schedule) {
       const sched = tpl.schedule as Record<string, unknown>;
@@ -140,7 +140,7 @@ export function InstanceCreatePage() {
       };
       if (customize) {
         body.overrides = {
-          domainContext: { skills: customSkills },
+          project: { skills: customSkills },
           ...(isEmployee ? { schedule: buildScheduleOverride(customScheduler) } : {}),
         };
       }
@@ -267,7 +267,7 @@ export function InstanceCreatePage() {
                             {t(`archetype.${arch}`)}
                           </Badge>
                           <Badge variant="secondary" className="text-xs">
-                            {t("orchestration.skillCount", { count: tpl.domainContext?.skills?.length ?? 0 })}
+                            {t("orchestration.skillCount", { count: tpl.project?.skills?.length ?? 0 })}
                           </Badge>
                         </div>
                       </CardContent>
@@ -366,7 +366,7 @@ export function InstanceCreatePage() {
               <ConfirmField
                 label={t("orchestration.previewSkillCount")}
                 value={t("orchestration.skillCount", {
-                  count: customize ? customSkills.length : (selectedTemplate?.domainContext?.skills?.length ?? 0),
+                  count: customize ? customSkills.length : (selectedTemplate?.project?.skills?.length ?? 0),
                 })}
               />
               <ConfirmField
@@ -385,7 +385,7 @@ export function InstanceCreatePage() {
                     <pre className="text-xs font-mono whitespace-pre-wrap">
                       {JSON.stringify(
                         {
-                          domainContext: { skills: customSkills },
+                          project: { skills: customSkills },
                           ...(isEmployee ? { schedule: buildScheduleOverride(customScheduler) } : {}),
                         },
                         null,

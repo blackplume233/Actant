@@ -24,9 +24,9 @@ describe("TemplateLoader", () => {
       expect(template.description).toBe("A code review agent powered by Claude");
       expect(template.backend.type).toBe("claude-code");
       expect(template.provider?.type).toBe("anthropic");
-      expect(template.domainContext.skills).toEqual(["code-review", "typescript-expert"]);
-      expect(template.domainContext.mcpServers).toHaveLength(1);
-      expect(template.domainContext.mcpServers?.[0]?.name).toBe("filesystem");
+      expect(template.project.skills).toEqual(["code-review", "typescript-expert"]);
+      expect(template.project.mcpServers).toHaveLength(1);
+      expect(template.project.mcpServers?.[0]?.name).toBe("filesystem");
       expect(template.initializer?.steps).toHaveLength(3);
       expect(template.metadata).toEqual({
         author: "Actant Team",
@@ -42,11 +42,11 @@ describe("TemplateLoader", () => {
       expect(template.description).toBeUndefined();
       expect(template.backend.type).toBe("cursor");
       expect(template.provider?.type).toBe("openai");
-      expect(template.domainContext.skills).toEqual([]);
-      expect(template.domainContext.prompts).toEqual([]);
-      expect(template.domainContext.mcpServers).toEqual([]);
-      expect(template.domainContext.workflow).toBeUndefined();
-      expect(template.domainContext.subAgents).toEqual([]);
+      expect(template.project.skills).toEqual([]);
+      expect(template.project.prompts).toEqual([]);
+      expect(template.project.mcpServers).toEqual([]);
+      expect(template.project.workflow).toBeUndefined();
+      expect(template.project.subAgents).toEqual([]);
       expect(template.initializer).toBeUndefined();
       expect(template.metadata).toBeUndefined();
     });
@@ -56,11 +56,11 @@ describe("TemplateLoader", () => {
 
       expect(template.name).toBe("game-dev-assistant");
       expect(template.version).toBe("2.3.1");
-      expect(template.domainContext.skills).toHaveLength(3);
-      expect(template.domainContext.mcpServers).toHaveLength(2);
-      expect(template.domainContext.subAgents).toEqual(["code-reviewer", "test-runner"]);
+      expect(template.project.skills).toHaveLength(3);
+      expect(template.project.mcpServers).toHaveLength(2);
+      expect(template.project.subAgents).toEqual(["code-reviewer", "test-runner"]);
       expect(template.initializer?.steps).toHaveLength(4);
-      expect(template.domainContext.mcpServers?.[1]?.env).toEqual({
+      expect(template.project.mcpServers?.[1]?.env).toEqual({
         DB_URL: "postgres://localhost:5432/gamedb",
       });
     });
@@ -91,10 +91,10 @@ describe("TemplateLoader", () => {
       expect(perms.sandbox?.enabled).toBe(true);
 
       // plugins
-      expect(template.domainContext.plugins).toEqual(["rate-limiter", "cache"]);
+      expect(template.project.plugins).toEqual(["rate-limiter", "cache"]);
 
       // extensions
-      expect(template.domainContext.extensions).toEqual({
+      expect(template.project.extensions).toEqual({
         customSources: ["rss-feed", "api-endpoint"],
       });
     });
@@ -102,8 +102,8 @@ describe("TemplateLoader", () => {
     it("should default plugins to empty array and omit extensions when absent", async () => {
       const template = await loader.loadFromFile(join(FIXTURES, "minimal-template.json"));
 
-      expect(template.domainContext.plugins).toEqual([]);
-      expect(template.domainContext.extensions).toBeUndefined();
+      expect(template.project.plugins).toEqual([]);
+      expect(template.project.extensions).toBeUndefined();
       expect(template.permissions).toBeUndefined();
       expect(template.schedule).toBeUndefined();
     });
@@ -114,7 +114,7 @@ describe("TemplateLoader", () => {
         version: "1.0.0",
         backend: { type: "cursor" },
         provider: { type: "openai" },
-        domainContext: {},
+        project: {},
         rules: ["Always respond in English", "Be concise"],
         toolSchema: { my_tool: { type: "object", properties: { q: { type: "string" } } } },
       });
@@ -136,7 +136,7 @@ describe("TemplateLoader", () => {
         version: "1.0.0",
         backend: { type: "cursor" },
         provider: { type: "openai" },
-        domainContext: {},
+        project: {},
         permissions: "permissive",
       });
       const template = await loader.loadFromString(json);
@@ -177,7 +177,7 @@ describe("TemplateLoader", () => {
         version: "1.0.0",
         backend: { type: "cursor" },
         provider: { type: "openai" },
-        domainContext: {},
+        project: {},
       });
       const template = await loader.loadFromString(json);
 

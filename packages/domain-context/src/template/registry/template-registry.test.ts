@@ -12,7 +12,7 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
     version: "1.0.0",
     backend: { type: "cursor" },
     provider: { type: "openai" },
-    domainContext: {},
+    project: {},
     ...overrides,
   };
 }

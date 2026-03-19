@@ -25,7 +25,7 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
     backend: { type: "pi" },
     archetype: "service",
     provider: { type: "openai", protocol: "openai" },
-    domainContext: { skills: ["skill-a"] },
+    project: { skills: ["skill-a"] },
     ...overrides,
   };
 }

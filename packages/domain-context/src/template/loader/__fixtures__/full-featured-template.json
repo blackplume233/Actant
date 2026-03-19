@@ -9,7 +9,7 @@
   "provider": {
     "type": "anthropic"
   },
-  "domainContext": {
+  "project": {
     "skills": ["web-search"],
     "prompts": ["system-searcher"],
     "mcpServers": [],

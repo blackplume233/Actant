@@ -16,7 +16,7 @@
       "maxTokens": 8192
     }
   },
-  "domainContext": {
+  "project": {
     "skills": ["unreal-engine", "cpp-expert", "blueprint-specialist"],
     "prompts": ["system-game-dev", "code-style-ue5"],
     "mcpServers": [

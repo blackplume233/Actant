@@ -5,7 +5,7 @@
  * HookEventBus and ContextProvider which are core-only types.
  *
  * Plug summary:
- *   1. domainContext    — inject DomainContextConfig into Agent workspace (BackendBuilder)
+ *   1. project         — inject ProjectContextConfig into Agent workspace (BackendBuilder)
  *   2. runtime         — lifecycle: init → start → tick → stop → dispose
  *   3. hooks           — register HookEventBus listeners
  *   4. contextProviders — register ContextProvider instances
@@ -14,7 +14,7 @@
  */
 
 import type {
-  DomainContextConfig,
+  ProjectContextConfig,
   SourceConfig,
   PluginContext,
   PluginScope,
@@ -40,15 +40,15 @@ export interface ActantPlugin {
    */
   readonly dependencies?: readonly string[];
 
-  // ── Plug 1: domainContext ──────────────────────────────────
+  // ── Plug 1: project ────────────────────────────────────────
   /**
-   * Returns a DomainContextConfig fragment to be merged into the agent's
+   * Returns a ProjectContextConfig fragment to be merged into the agent's
    * workspace during BackendBuilder materialisation.
    *
    * Called once per agent workspace build (not at daemon start).
    * Return undefined to inject nothing.
    */
-  domainContext?: (ctx: PluginContext) => DomainContextConfig | undefined;
+  project?: (ctx: PluginContext) => ProjectContextConfig | undefined;
 
   // ── Plug 2: runtime ───────────────────────────────────────
   /**

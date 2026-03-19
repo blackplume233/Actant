@@ -42,7 +42,7 @@ export function makeSleeperTemplate(overrides?: Partial<AgentTemplate>): AgentTe
       },
     },
     provider: { type: "openai", protocol: "openai" },
-    domainContext: {},
+    project: {},
     ...overrides,
   };
 }

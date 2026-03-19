@@ -153,7 +153,7 @@ describe("SocketServer integration", () => {
       version: "1.0.0",
       backend: { type: "claude-code" },
       provider: { type: "anthropic" },
-      domainContext: {},
+      project: {},
     }));
 
     const loadRes = await rpcCall(socketPath, {

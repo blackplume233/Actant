@@ -41,18 +41,24 @@ import {
   canvasSourceFactory,
   vcsSourceFactory,
   processSourceFactory,
+  createDomainSource,
+  createAgentRegistrySource,
   RoutingChannelManager,
+  type ActantChannel,
+  type ActantChannelManager,
   type ActionContext,
+  type ChannelCapabilities,
+  type ChannelConnectOptions,
+  type ChannelHostServices,
   type LauncherMode,
 } from "@actant/agent-runtime";
 import { CanvasStore } from "./canvas-store";
-import { ContextManager, DomainContextSource, AgentStatusSource, type AgentStatusProvider, type AgentStatusInfo } from "@actant/context";
 import type { HostCapability, HostProfile, HostRuntimeState, ModelApiProtocol } from "@actant/shared";
 import { AcpConnectionManager, AcpChannelManagerAdapter } from "@actant/acp";
-import { ClaudeChannelManagerAdapter } from "@actant/channel-claude";
 import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
 import { createLogger, getIpcPath, initLogDir, normalizeIpcPath } from "@actant/shared";
 import { HubContextService } from "./hub-context";
+import { RuntimeToolRegistry } from "./runtime-tool-registry";
 
 const logger = createLogger("app-context");
 
@@ -73,6 +79,74 @@ interface UserConfig {
     apiKey?: string;
   }>;
   [key: string]: unknown;
+}
+
+class LazyClaudeChannelManagerAdapter implements ActantChannelManager {
+  private manager?: ActantChannelManager;
+  private managerPromise?: Promise<ActantChannelManager>;
+
+  async connect(
+    name: string,
+    options: ChannelConnectOptions,
+    hostServices: ChannelHostServices,
+  ): Promise<{ sessionId: string; capabilities: ChannelCapabilities }> {
+    const manager = await this.getManager();
+    return manager.connect(name, options, hostServices);
+  }
+
+  has(name: string): boolean {
+    return this.manager?.has(name) ?? false;
+  }
+
+  getChannel(name: string): ActantChannel | undefined {
+    return this.manager?.getChannel(name);
+  }
+
+  getPrimarySessionId(name: string): string | undefined {
+    return this.manager?.getPrimarySessionId(name);
+  }
+
+  getCapabilities(name: string): ChannelCapabilities | undefined {
+    const manager = this.manager;
+    if (!manager) return undefined;
+    return manager.getCapabilities?.(name) ?? manager.getChannel(name)?.capabilities;
+  }
+
+  setCurrentActivitySession(name: string, id: string | null): void {
+    this.manager?.setCurrentActivitySession?.(name, id);
+  }
+
+  async disconnect(name: string): Promise<void> {
+    await this.manager?.disconnect(name);
+  }
+
+  async disposeAll(): Promise<void> {
+    await this.manager?.disposeAll();
+  }
+
+  private async getManager(): Promise<ActantChannelManager> {
+    if (this.manager) {
+      return this.manager;
+    }
+
+    if (!this.managerPromise) {
+      this.managerPromise = import("@actant/channel-claude")
+        .then(({ ClaudeChannelManagerAdapter }) => {
+          const manager = new ClaudeChannelManagerAdapter();
+          this.manager = manager;
+          return manager;
+        })
+        .catch((error: unknown) => {
+          this.managerPromise = undefined;
+          const detail = error instanceof Error ? error.message : String(error);
+          throw new Error(
+            `Claude backend is unavailable because @actant/channel-claude or its SDK dependencies could not be loaded: ${detail}`,
+          );
+        });
+    }
+
+    return this.managerPromise;
+  }
 }
 
 export interface AppConfig {
@@ -106,7 +180,7 @@ export class AppContext {
   readonly pluginManager: PluginManager;
   readonly agentInitializer: AgentInitializer;
   readonly acpConnectionManager: AcpConnectionManager;
-  readonly claudeChannelManager: ClaudeChannelManagerAdapter;
+  readonly claudeChannelManager: ActantChannelManager;
   readonly agentManager: AgentManager;
   readonly sessionRegistry: SessionRegistry;
   readonly sourceManager: SourceManager;
@@ -124,7 +198,7 @@ export class AppContext {
   readonly sourceFactoryRegistry: SourceFactoryRegistry;
   readonly hostProfile: HostProfile;
   readonly hubContext: HubContextService;
-  readonly contextManager: ContextManager;
+  readonly toolRegistry: RuntimeToolRegistry;
   private vfsLifecycleManager?: VfsLifecycleManager;
 
   private initialized = false;
@@ -177,7 +251,7 @@ export class AppContext {
       this.templateRegistry,
       this.instancesDir,
       {
-        domainManagers: {
+        projectManagers: {
           skills: this.skillManager,
           prompts: this.promptManager,
           mcp: this.mcpConfigManager,
@@ -188,7 +262,7 @@ export class AppContext {
       },
     );
     this.acpConnectionManager = new AcpConnectionManager();
-    this.claudeChannelManager = new ClaudeChannelManagerAdapter();
+    this.claudeChannelManager = new LazyClaudeChannelManagerAdapter();
     this.sessionRegistry = new SessionRegistry();
     this.recordSystem = new RecordSystem({
       globalDir: join(this.homeDir, "records", "global"),
@@ -230,7 +304,7 @@ export class AppContext {
     this.sourceFactoryRegistry.register(vcsSourceFactory);
     this.sourceFactoryRegistry.register(processSourceFactory);
     this.hubContext = new HubContextService(this);
-    this.contextManager = new ContextManager();
+    this.toolRegistry = new RuntimeToolRegistry();
   }
 
   async init(): Promise<void> {
@@ -598,7 +672,7 @@ export class AppContext {
       if (!agentName) return;
       this.hookRegistry.unregisterAgent(agentName);
       this.canvasStore.remove(agentName);
-      this.contextManager.unregisterTool(`actant_${agentName}`);
+      this.toolRegistry.unregister(`actant_${agentName}`);
     });
 
     this.eventBus.on("process:start", (payload) => {
@@ -607,7 +681,7 @@ export class AppContext {
       const meta = this.agentManager.listAgents().find((a) => a.name === name);
       if (!meta?.toolSchema) return;
       try {
-        this.contextManager.registerTool({
+        this.toolRegistry.register({
           name: `actant_${name}`,
           description: (meta.metadata?.["description"] as string | undefined) ?? `Internal Agent: ${name}`,
           inputSchema: meta.toolSchema,
@@ -615,7 +689,7 @@ export class AppContext {
             return this.agentManager.promptAgent(name, (params["message"] as string) ?? JSON.stringify(params));
           },
         });
-        logger.info({ agent: name }, "Agent registered as ContextManager tool");
+        logger.info({ agent: name }, "Agent registered in runtime tool registry");
       } catch (err) {
         logger.warn({ agent: name, error: err }, "Failed to register agent as tool");
       }
@@ -623,7 +697,7 @@ export class AppContext {
 
     const unregisterAgentTool = (payload: { agentName?: string }) => {
       if (payload.agentName) {
-        this.contextManager.unregisterTool(`actant_${payload.agentName}`);
+        this.toolRegistry.unregister(`actant_${payload.agentName}`);
       }
     };
     this.eventBus.on("process:stop", unregisterAgentTool);
@@ -692,31 +766,31 @@ export class AppContext {
       }
     });
 
-    this.contextManager.registerSource(new DomainContextSource({
-      skillManager: this.skillManager,
-      promptManager: this.promptManager,
-      mcpConfigManager: this.mcpConfigManager,
-      workflowManager: this.workflowManager,
-      templateRegistry: this.templateRegistry,
-    }));
-
-    const agentStatusProvider: AgentStatusProvider = {
-      listAgents: (): AgentStatusInfo[] =>
-        this.agentManager.listAgents().map(agentMetaToStatusInfo),
-      getAgent: (name: string): AgentStatusInfo | undefined => {
-        const meta = this.agentManager.listAgents().find((a) => a.name === name);
-        return meta ? agentMetaToStatusInfo(meta) : undefined;
-      },
-    };
-    this.contextManager.registerSource(new AgentStatusSource(agentStatusProvider));
-    this.contextManager.mountSources(reg);
+    this.mountCoreResourceSources(reg);
 
     logger.info({ mounts: reg.size }, "VFS initialized with default mounts");
   }
 
-  /** Refresh ContextManager VFS mounts (call after sources change). */
+  /** Refresh the default resource mounts after domain content changes. */
   refreshContextMounts(): void {
-    this.contextManager.mountSources(this.vfsRegistry);
+    this.mountCoreResourceSources(this.vfsRegistry);
+  }
+
+  private mountCoreResourceSources(registry: VfsRegistry): void {
+    const lifecycle = { type: "daemon" } as const;
+    const coreSources = [
+      createDomainSource(this.skillManager, "skills", "/skills", lifecycle),
+      createDomainSource(this.promptManager, "prompts", "/prompts", lifecycle),
+      createDomainSource(this.mcpConfigManager, "mcp", "/mcp", lifecycle),
+      createDomainSource(this.workflowManager, "workflows", "/workflows", lifecycle),
+      createDomainSource(this.templateRegistry, "templates", "/templates", lifecycle),
+      createAgentRegistrySource(this.agentManager, "/agents", lifecycle),
+    ];
+
+    for (const source of coreSources) {
+      registry.unmount(source.name);
+      registry.mount(source);
+    }
   }
 
   private async loadDomainComponents(): Promise<void> {
@@ -741,22 +815,4 @@ export class AppContext {
       }
     }
   }
-}
-
-function agentMetaToStatusInfo(meta: {
-  name: string;
-  metadata?: Record<string, string>;
-  archetype?: string;
-  status: string;
-  startedAt?: string;
-  toolSchema?: Record<string, unknown>;
-}): AgentStatusInfo {
-  return {
-    name: meta.name,
-    description: meta.metadata?.["description"],
-    archetype: meta.archetype ?? "repo",
-    status: meta.status,
-    startedAt: meta.startedAt,
-    toolSchema: meta.toolSchema,
-  };
 }

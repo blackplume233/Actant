@@ -4,7 +4,7 @@
   "description": "Actant 升级者 — 版本升级 + 数据迁移 + Hub 源同步。确保系统始终运行在最佳版本。",
   "archetype": "employee",
   "backend": { "type": "claude-code" },
-  "domainContext": {
+  "project": {
     "skills": [
       "version-check",
       "migration-engine",

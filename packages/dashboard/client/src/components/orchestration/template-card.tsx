@@ -15,7 +15,7 @@ export function TemplateCard({ template }: TemplateCardProps) {
   const archetype = resolveArchetype(template.archetype);
   const config = ARCHETYPE_CONFIG[archetype];
   const Icon = config.icon;
-  const skillCount = template.domainContext?.skills?.length ?? 0;
+  const skillCount = template.project?.skills?.length ?? 0;
   const layer = template.metadata?.layer;
 
   return (

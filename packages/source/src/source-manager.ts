@@ -173,7 +173,7 @@ export class SourceManager {
 
   /**
    * Apply a preset to a template — expands preset component refs
-   * into the template's domainContext with `package@name` namespacing.
+   * into the template's project context with `package@name` namespacing.
    * Returns a new template (does not mutate input).
    */
   applyPreset(qualifiedName: string, template: AgentTemplate): AgentTemplate {
@@ -185,12 +185,12 @@ export class SourceManager {
     const packageName = qualifiedName.split("@")[0];
     const ns = (name: string) => `${packageName}@${name}`;
 
-    const dc = { ...template.domainContext };
+    const project = { ...template.project };
     if (preset.skills?.length) {
-      dc.skills = [...(dc.skills ?? []), ...preset.skills.map(ns)];
+      project.skills = [...(project.skills ?? []), ...preset.skills.map(ns)];
     }
     if (preset.prompts?.length) {
-      dc.prompts = [...(dc.prompts ?? []), ...preset.prompts.map(ns)];
+      project.prompts = [...(project.prompts ?? []), ...preset.prompts.map(ns)];
     }
     if (preset.mcpServers?.length) {
       const newRefs = preset.mcpServers.map((mcpName: string) => {
@@ -203,12 +203,12 @@ export class SourceManager {
           env: existing?.env,
         };
       });
-      dc.mcpServers = [...(dc.mcpServers ?? []), ...newRefs];
+      project.mcpServers = [...(project.mcpServers ?? []), ...newRefs];
     }
     if (preset.workflows?.length) {
       const firstWorkflow = preset.workflows[0];
-      if (firstWorkflow && !dc.workflow) {
-        dc.workflow = ns(firstWorkflow);
+      if (firstWorkflow && !project.workflow) {
+        project.workflow = ns(firstWorkflow);
       }
     }
     if (preset.templates?.length && this.managers.templateRegistry) {
@@ -221,7 +221,7 @@ export class SourceManager {
       }
     }
 
-    return { ...template, domainContext: dc };
+    return { ...template, project };
   }
 
   // ---------------------------------------------------------------------------
@@ -308,16 +308,16 @@ export class SourceManager {
     if (this.managers.templateRegistry && result.templates.length > 0) {
       const nsRef = (ref: string) => ref.includes("@") ? ref : `${packageName}@${ref}`;
       for (const template of result.templates) {
-        const dc = template.domainContext;
+        const project = template.project;
         const nsTemplate = {
           ...template,
           name: `${packageName}@${template.name}`,
-          domainContext: {
-            ...dc,
-            skills: dc.skills?.map(nsRef),
-            prompts: dc.prompts?.map(nsRef),
-            subAgents: dc.subAgents?.map(nsRef),
-            workflow: dc.workflow ? nsRef(dc.workflow) : dc.workflow,
+          project: {
+            ...project,
+            skills: project.skills?.map(nsRef),
+            prompts: project.prompts?.map(nsRef),
+            subAgents: project.subAgents?.map(nsRef),
+            workflow: project.workflow ? nsRef(project.workflow) : project.workflow,
           },
         };
         this.managers.templateRegistry.register(nsTemplate);

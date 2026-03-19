@@ -45,7 +45,7 @@ describe("MVP E2E Integration", () => {
     description: "A test code review agent",
     backend: { type: "claude-code", config: { model: "claude-sonnet-4-20250514" } },
     provider: { type: "anthropic" },
-    domainContext: {
+    project: {
       skills: ["test-review"],
       prompts: ["test-system-prompt"],
       mcpServers: [{ name: "fs", command: "npx", args: ["-y", "mcp-fs"] }],

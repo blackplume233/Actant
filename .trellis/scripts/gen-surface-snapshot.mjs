@@ -18,7 +18,7 @@
  * Usage: node gen-surface-snapshot.mjs <output-dir>
  */
 
-import { readFile, writeFile, readdir } from "node:fs/promises";
+import { mkdir, readFile, writeFile, readdir } from "node:fs/promises";
 import { join, dirname, basename } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -34,12 +34,12 @@ const PATHS = {
   rpcTypes: join(ROOT, "packages/shared/src/types/rpc.types.ts"),
   agentTypes: join(ROOT, "packages/shared/src/types/agent.types.ts"),
   templateTypes: join(ROOT, "packages/shared/src/types/template.types.ts"),
-  domainContextTypes: join(ROOT, "packages/shared/src/types/domain-context.types.ts"),
+  projectContextTypes: join(ROOT, "packages/shared/src/types/project-context.types.ts"),
   domainComponentTypes: join(ROOT, "packages/shared/src/types/domain-component.types.ts"),
   sourceTypes: join(ROOT, "packages/shared/src/types/source.types.ts"),
-  templateSchema: join(ROOT, "packages/core/src/template/schema/template-schema.ts"),
-  instanceMetaSchema: join(ROOT, "packages/core/src/state/instance-meta-schema.ts"),
-  scheduleConfigSchema: join(ROOT, "packages/core/src/scheduler/schedule-config.ts"),
+  templateSchema: join(ROOT, "packages/domain-context/src/template/schema/template-schema.ts"),
+  instanceMetaSchema: join(ROOT, "packages/agent-runtime/src/state/instance-meta-schema.ts"),
+  scheduleConfigSchema: join(ROOT, "packages/domain-context/src/schemas/schedule-config.ts"),
   cliCommands: join(ROOT, "packages/cli/src/commands"),
   program: join(ROOT, "packages/cli/src/program.ts"),
 };
@@ -281,13 +281,14 @@ function extractErrorCodes(source) {
 
 async function main() {
   console.log("Generating API surface & config schema snapshots...");
+  await mkdir(outputDir, { recursive: true });
 
   // --- Read all source files ---
-  const [rpcSrc, agentSrc, templateTypeSrc, domainCtxSrc, domainCompSrc, sourceSrc, templateSchemaSrc, metaSchemaSrc, scheduleSchemaSrc] = await Promise.all([
+  const [rpcSrc, agentSrc, templateTypeSrc, projectContextSrc, domainCompSrc, sourceSrc, templateSchemaSrc, metaSchemaSrc, scheduleSchemaSrc] = await Promise.all([
     readFile(PATHS.rpcTypes, "utf8"),
     readFile(PATHS.agentTypes, "utf8"),
     readFile(PATHS.templateTypes, "utf8"),
-    readFile(PATHS.domainContextTypes, "utf8"),
+    readFile(PATHS.projectContextTypes, "utf8"),
     readFile(PATHS.domainComponentTypes, "utf8"),
     readFile(PATHS.sourceTypes, "utf8"),
     readFile(PATHS.templateSchema, "utf8"),
@@ -304,7 +305,7 @@ async function main() {
   const agentInterfaces = extractInterfaces(agentSrc);
   const agentEnums = extractEnums(agentSrc);
   const templateInterfaces = extractInterfaces(templateTypeSrc);
-  const domainCtxInterfaces = extractInterfaces(domainCtxSrc);
+  const projectContextInterfaces = extractInterfaces(projectContextSrc);
   const domainCompInterfaces = extractInterfaces(domainCompSrc);
   const sourceInterfaces = extractInterfaces(sourceSrc);
 
@@ -345,7 +346,7 @@ async function main() {
     typeInterfaces: {
       agent: agentInterfaces,
       template: templateInterfaces,
-      domainContext: domainCtxInterfaces,
+      projectContext: projectContextInterfaces,
       domainComponent: domainCompInterfaces,
       source: sourceInterfaces,
     },
@@ -368,7 +369,7 @@ async function main() {
 
   console.log(`✓ api-surface.md    (${rpcMethods.length} RPC methods, ${apiJson.cli.totalSubcommands} CLI commands)`);
   console.log(`✓ api-surface.json`);
-  console.log(`✓ config-schemas.md (${templateSchemas.length + metaSchemas.length + scheduleSchemas.length} Zod schemas, ${agentInterfaces.length + templateInterfaces.length + domainCtxInterfaces.length + domainCompInterfaces.length + sourceInterfaces.length} interfaces)`);
+  console.log(`✓ config-schemas.md (${templateSchemas.length + metaSchemas.length + scheduleSchemas.length} Zod schemas, ${agentInterfaces.length + templateInterfaces.length + projectContextInterfaces.length + domainCompInterfaces.length + sourceInterfaces.length} interfaces)`);
   console.log(`✓ config-schemas.json`);
   console.log(`  Output: ${outputDir}`);
 }
@@ -553,7 +554,7 @@ function generateConfigMd(config) {
   const ifaceGroups = [
     ["Agent 实例类型", config.typeInterfaces.agent],
     ["Template 模板类型", config.typeInterfaces.template],
-    ["DomainContext 领域上下文", config.typeInterfaces.domainContext],
+    ["ProjectContext 项目上下文", config.typeInterfaces.projectContext],
     ["DomainComponent 领域组件", config.typeInterfaces.domainComponent],
     ["Source 组件源", config.typeInterfaces.source],
   ];

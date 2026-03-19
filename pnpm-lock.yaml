@@ -95,9 +95,6 @@ importers:
 
   packages/agent-runtime:
     dependencies:
-      '@actant/context':
-        specifier: workspace:0.5.0
-        version: link:../context
       '@actant/domain-context':
         specifier: workspace:0.5.0
         version: link:../domain-context
@@ -135,9 +132,6 @@ importers:
       '@actant/channel-claude':
         specifier: workspace:0.5.0
         version: link:../channel-claude
-      '@actant/context':
-        specifier: workspace:0.5.0
-        version: link:../context
       '@actant/pi':
         specifier: workspace:0.5.0
         version: link:../pi
@@ -302,9 +296,6 @@ importers:
       '@actant/api':
         specifier: workspace:0.5.0
         version: link:../api
-      '@actant/context':
-        specifier: workspace:0.5.0
-        version: link:../context
       '@actant/shared':
         specifier: workspace:0.5.0
         version: link:../shared

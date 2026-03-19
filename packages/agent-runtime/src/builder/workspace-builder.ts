@@ -1,7 +1,7 @@
 import { createLogger } from "@actant/shared";
 import type {
   AgentBackendType,
-  DomainContextConfig,
+  ProjectContextConfig,
   McpServerDefinition,
   PermissionsInput,
 } from "@actant/shared";
@@ -22,7 +22,7 @@ import {
 
 const logger = createLogger("workspace-builder");
 
-export interface DomainManagers {
+export interface ProjectComponentManagers {
   skills?: SkillManager;
   prompts?: PromptManager;
   mcp?: McpConfigManager;
@@ -39,7 +39,7 @@ export class WorkspaceBuilder {
   private readonly builders: Map<AgentBackendType, BackendBuilder>;
   private readonly handlers: ComponentTypeHandler[] = [];
 
-  constructor(private readonly managers?: DomainManagers) {
+  constructor(private readonly managers?: ProjectComponentManagers) {
     this.builders = new Map<AgentBackendType, BackendBuilder>([
       ["cursor", new CursorBuilder()],
       ["claude-code", new ClaudeCodeBuilder()],
@@ -70,7 +70,7 @@ export class WorkspaceBuilder {
 
   /**
    * Build workspace using the 6-step pipeline:
-   * 1. Resolve — select builder + resolve domain context names to definitions
+   * 1. Resolve — select builder + resolve project resource names to definitions
    * 2. Validate — check that required components exist
    * 3. Scaffold — create directory structure
    * 4. Materialize — write component files
@@ -79,7 +79,7 @@ export class WorkspaceBuilder {
    */
   async build(
     workspaceDir: string,
-    domainContext: DomainContextConfig,
+    project: ProjectContextConfig,
     backendType: AgentBackendType = "cursor",
     permissions?: PermissionsInput,
   ): Promise<WorkspaceBuildResult> {
@@ -118,7 +118,7 @@ export class WorkspaceBuilder {
     let resolvedMcpServers: McpServerDefinition[] = [];
 
     for (const handler of this.handlers) {
-      const refs = domainContext[handler.contextKey as keyof DomainContextConfig];
+      const refs = project[handler.contextKey as keyof ProjectContextConfig];
       if (refs === undefined || refs === null) continue;
       if (Array.isArray(refs) && refs.length === 0) continue;
 
@@ -132,8 +132,8 @@ export class WorkspaceBuilder {
       }
     }
 
-    if (domainContext.extensions) {
-      for (const [key, refs] of Object.entries(domainContext.extensions)) {
+    if (project.extensions) {
+      for (const [key, refs] of Object.entries(project.extensions)) {
         const handler = this.handlers.find((h) => h.contextKey === key);
         if (handler && Array.isArray(refs) && refs.length > 0) {
           const defs = handler.resolve(refs, this.getManager(key));

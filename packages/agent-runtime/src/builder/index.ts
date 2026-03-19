@@ -7,6 +7,6 @@ export type { CustomBuilderConfig } from "./custom-builder";
 export { DeclarativeBuilder } from "./declarative-builder";
 export {
   WorkspaceBuilder,
-  type DomainManagers,
+  type ProjectComponentManagers,
   type WorkspaceBuildResult,
 } from "./workspace-builder";

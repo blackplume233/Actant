@@ -4,7 +4,7 @@
   "description": "Actant 引导员 — 新用户引导 + 交互式教学。帮助用户快速上手 Actant 平台。",
   "archetype": "tool",
   "backend": { "type": "claude-code" },
-  "domainContext": {
+  "project": {
     "skills": [
       "guided-setup",
       "interactive-tutorial",

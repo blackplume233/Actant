@@ -111,19 +111,19 @@ export function toAgentTemplate(output: AgentTemplateOutput): AgentTemplate {
     tags: output.tags,
     backend: output.backend,
     provider: output.provider,
-    domainContext: {
-      skills: output.domainContext.skills,
-      prompts: output.domainContext.prompts,
-      mcpServers: output.domainContext.mcpServers.map((s) => ({
+    project: {
+      skills: output.project.skills,
+      prompts: output.project.prompts,
+      mcpServers: output.project.mcpServers.map((s) => ({
         name: s.name,
         command: s.command,
         args: s.args,
         env: s.env,
       })),
-      workflow: output.domainContext.workflow,
-      subAgents: output.domainContext.subAgents,
-      plugins: output.domainContext.plugins,
-      extensions: output.domainContext.extensions,
+      workflow: output.project.workflow,
+      subAgents: output.project.subAgents,
+      plugins: output.project.plugins,
+      extensions: output.project.extensions,
     },
     initializer: output.initializer,
     permissions: output.permissions,

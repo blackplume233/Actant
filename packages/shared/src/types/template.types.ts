@@ -1,4 +1,4 @@
-import type { DomainContextConfig } from "./domain-context.types";
+import type { ProjectContextConfig } from "./project-context.types";
 import type { VersionedComponent } from "./domain-component.types";
 import type { LaunchMode } from "./agent.types";
 
@@ -48,7 +48,7 @@ export interface AgentTemplate extends VersionedComponent {
   backend: AgentBackendConfig;
   /** Model provider. Optional — when omitted, uses the default provider from config.json. */
   provider?: ModelProviderConfig;
-  domainContext: DomainContextConfig;
+  project: ProjectContextConfig;
   /** Tool/file/network permission control, aligned with Claude Code permissions. */
   permissions?: PermissionsInput;
   initializer?: InitializerConfig;

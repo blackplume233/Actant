@@ -3,7 +3,7 @@ import type {
   AgentTemplate,
   AgentBackendConfig,
   ModelProviderConfig,
-  DomainContextConfig,
+  ProjectContextConfig,
   McpServerRef,
   InitializerConfig,
 } from "@actant/shared";
@@ -27,12 +27,12 @@ describe("Schema type alignment with shared types", () => {
     expectTypeOf<SchemaProvider>().toMatchTypeOf<ModelProviderConfig>();
   });
 
-  it("schema domainContext matches DomainContextConfig", () => {
-    expectTypeOf<AgentTemplateOutput["domainContext"]>().toMatchTypeOf<DomainContextConfig>();
+  it("schema project matches ProjectContextConfig", () => {
+    expectTypeOf<AgentTemplateOutput["project"]>().toMatchTypeOf<ProjectContextConfig>();
   });
 
   it("schema mcpServers item matches McpServerRef", () => {
-    type SchemaServer = NonNullable<AgentTemplateOutput["domainContext"]["mcpServers"]>[number];
+    type SchemaServer = NonNullable<AgentTemplateOutput["project"]["mcpServers"]>[number];
     expectTypeOf<SchemaServer>().toMatchTypeOf<McpServerRef>();
   });
 

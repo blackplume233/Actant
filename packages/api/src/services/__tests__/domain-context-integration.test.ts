@@ -41,7 +41,7 @@ describe("Domain Context Full Pipeline", () => {
     version: "1.0.0",
     backend: { type: "cursor" },
     provider: { type: "anthropic" },
-    domainContext: {
+    project: {
       skills: ["test-skill"],
       prompts: ["test-prompt"],
       mcpServers: [{ name: "inline-mcp", command: "node", args: ["server.js"] }],
@@ -142,7 +142,7 @@ describe("Domain Context Full Pipeline", () => {
       version: "1.0.0",
       backend: { type: "claude-code" },
       provider: { type: "anthropic" },
-      domainContext: {
+      project: {
         skills: ["test-skill"],
         mcpServers: [{ name: "fs", command: "npx", args: ["mcp-fs"] }],
       },

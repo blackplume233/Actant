@@ -1,5 +1,24 @@
 {
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@actant/shared": ["packages/shared/src/index.ts"],
+      "@actant/context": ["packages/context/src/index.ts"],
+      "@actant/domain-context": ["packages/domain-context/src/index.ts"],
+      "@actant/source": ["packages/source/src/index.ts"],
+      "@actant/vfs": ["packages/vfs/src/index.ts"],
+      "@actant/agent-runtime": ["packages/agent-runtime/src/index.ts"],
+      "@actant/api": ["packages/api/src/index.ts"],
+      "@actant/rest-api": ["packages/rest-api/src/index.ts"],
+      "@actant/acp": ["packages/acp/src/index.ts"],
+      "@actant/channel-claude": ["packages/channel-claude/src/index.ts"],
+      "@actant/mcp-server": ["packages/mcp-server/src/index.ts"],
+      "@actant/pi": ["packages/pi/src/index.ts"],
+      "@actant/tui": ["packages/tui/src/index.ts"],
+      "@actant/tui/testing": ["packages/tui/src/testing.ts"],
+      "@actant/cli": ["packages/cli/src/index.ts"],
+      "@actant/actant": ["packages/actant/src/index.ts"]
+    },
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",

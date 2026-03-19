@@ -1,9 +1,9 @@
-import type { DomainContextConfig, PluginDefinition } from "@actant/shared";
+import type { ProjectContextConfig, PluginDefinition } from "@actant/shared";
 import type { ActantPlugin } from "./types";
 
 /**
  * Adapts a legacy PluginDefinition (workspace-materialisation config) into
- * an ActantPlugin that only uses the domainContext plug.
+ * an ActantPlugin that only uses the project plug.
  *
  * Legacy PluginDefinitions represent external tool configurations (npm packages,
  * Cursor extensions, etc.) managed by BackendBuilder.  They have no system-level
@@ -21,7 +21,7 @@ export function adaptLegacyPlugin(def: PluginDefinition): ActantPlugin {
     name: def.name,
     scope: "actant",
 
-    domainContext(): DomainContextConfig | undefined {
+    project(): ProjectContextConfig | undefined {
       if (def.enabled === false) return undefined;
       return {
         plugins: [def.name],

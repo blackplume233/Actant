@@ -5,7 +5,7 @@
 export {
   AgentTemplateSchema,
   ComponentOriginSchema,
-  DomainContextSchema,
+  ProjectContextSchema,
   AgentBackendSchema,
   ModelProviderSchema,
   InitializerSchema,
@@ -20,7 +20,7 @@ export {
   validateProviderConfig,
   validatePermissionsConfig,
   validateScheduleConfig,
-  validateDomainContextConfig,
+  validateProjectContextConfig,
   validateTemplate,
   TemplateLoader,
   toAgentTemplate,

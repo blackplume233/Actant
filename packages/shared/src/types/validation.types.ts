@@ -7,7 +7,7 @@ export type ValidationSeverity = "error" | "warning" | "info";
 
 /** A single validation issue with path, message, and severity. */
 export interface ValidationIssue {
-  /** Dot-separated path to the problematic field (e.g. "domainContext.skills") */
+  /** Dot-separated path to the problematic field (e.g. "project.skills") */
   path: string;
   message: string;
   severity: ValidationSeverity;

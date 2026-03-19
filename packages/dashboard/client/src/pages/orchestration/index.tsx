@@ -171,7 +171,7 @@ function TemplateTable({ templates }: { templates: TemplateListItem[] }) {
                 <TableCell className="capitalize">
                   {tpl.metadata?.layer ?? "—"}
                 </TableCell>
-                <TableCell>{tpl.domainContext?.skills?.length ?? 0}</TableCell>
+                <TableCell>{tpl.project?.skills?.length ?? 0}</TableCell>
                 <TableCell>{tpl.version ?? "—"}</TableCell>
               </TableRow>
             );

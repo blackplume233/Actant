@@ -17,7 +17,7 @@ const minimalTemplate: AgentTemplate = {
   version: "1.0.0",
   backend: { type: "cursor" },
   provider: { type: "anthropic" },
-  domainContext: {},
+  project: {},
 };
 
 const fullTemplate: AgentTemplate = {
@@ -26,7 +26,7 @@ const fullTemplate: AgentTemplate = {
   description: "A full template",
   backend: { type: "cursor", config: { executablePath: "/bin/cursor" } },
   provider: { type: "anthropic", config: { model: "claude-3" } },
-  domainContext: {
+  project: {
     skills: ["skill-a", "skill-b"],
     prompts: ["prompt-1"],
     mcpServers: [
@@ -106,7 +106,7 @@ describe("formatTemplateDetail", () => {
     const parsed = JSON.parse(out) as AgentTemplate;
     expect(parsed.name).toBe("full-tpl");
     expect(parsed.version).toBe("2.0.0");
-    expect(parsed.domainContext.skills).toEqual(["skill-a", "skill-b"]);
+    expect(parsed.project.skills).toEqual(["skill-a", "skill-b"]);
   });
 
   it("quiet format", () => {
@@ -125,7 +125,7 @@ describe("formatTemplateDetail", () => {
     expect(plain).toContain("cursor");
     expect(plain).toContain("Provider:");
     expect(plain).toContain("anthropic");
-    expect(plain).toContain("Domain Context:");
+    expect(plain).toContain("Project Context:");
     expect(plain).toContain("skill-a");
     expect(plain).toContain("skill-b");
     expect(plain).toContain("prompt-1");

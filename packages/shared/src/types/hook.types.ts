@@ -61,7 +61,7 @@
  *  Registration Methods
  * ═══════════════════════════════════════════════════════════════
  *
- *  1. Declarative — Workflow JSON loaded from DomainContext
+ *  1. Declarative — Workflow JSON loaded from project context
  *     or actant-hub packages.
  *  2. Programmatic — HookRegistry.registerWorkflow() from system
  *     code or plugin initializers.

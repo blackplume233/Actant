@@ -13,7 +13,7 @@ export { PluginManager } from "./domain/plugin/plugin-manager";
 export {
   AgentTemplateSchema,
   ComponentOriginSchema,
-  DomainContextSchema,
+  ProjectContextSchema,
   AgentBackendSchema,
   ModelProviderSchema,
   InitializerSchema,
@@ -30,7 +30,7 @@ export {
   validateProviderConfig,
   validatePermissionsConfig,
   validateScheduleConfig,
-  validateDomainContextConfig,
+  validateProjectContextConfig,
   validateTemplate,
   type StepRegistryLike,
 } from "./template/schema/config-validators";

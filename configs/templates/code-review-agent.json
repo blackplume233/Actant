@@ -14,7 +14,7 @@
       "apiKeyEnv": "ANTHROPIC_API_KEY"
     }
   },
-  "domainContext": {
+  "project": {
     "skills": ["code-review", "typescript-expert"],
     "prompts": ["system-code-reviewer"],
     "mcpServers": [

@@ -6,5 +6,12 @@
     "rootDir": "./src"
   },
   "include": ["src", "bin"],
-  "references": [{ "path": "../shared" }, { "path": "../agent-runtime" }, { "path": "../acp" }, { "path": "../api" }, { "path": "../tui" }]
+  "references": [
+    { "path": "../shared" },
+    { "path": "../agent-runtime" },
+    { "path": "../acp" },
+    { "path": "../api" },
+    { "path": "../rest-api" },
+    { "path": "../tui" }
+  ]
 }

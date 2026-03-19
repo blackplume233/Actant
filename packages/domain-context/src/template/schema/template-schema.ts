@@ -9,7 +9,7 @@ export const McpServerRefSchema = z.object({
   env: z.record(z.string(), z.string()).optional().default({}),
 });
 
-export const DomainContextSchema = z.object({
+export const ProjectContextSchema = z.object({
   skills: z.array(z.string()).optional().default([]),
   prompts: z.array(z.string()).optional().default([]),
   mcpServers: z.array(McpServerRefSchema).optional().default([]),
@@ -137,7 +137,7 @@ export const AgentTemplateSchema = z
     tags: z.array(z.string()).optional(),
     backend: AgentBackendSchema,
     provider: ModelProviderSchema.optional(),
-    domainContext: DomainContextSchema,
+    project: ProjectContextSchema,
     permissions: PermissionsInputSchema.optional(),
     initializer: InitializerSchema.optional(),
     schedule: ScheduleConfigSchema.optional(),

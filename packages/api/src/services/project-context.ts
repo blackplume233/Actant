@@ -342,16 +342,16 @@ function injectSourceComponents(
     managers.workflowManager.register(ns(workflow));
   }
   for (const template of result.templates) {
-    const dc = template.domainContext;
+    const project = template.project;
     managers.templateRegistry.register({
       ...template,
       name: `${packageName}@${template.name}`,
-      domainContext: {
-        ...dc,
-        skills: dc.skills?.map(nsRef),
-        prompts: dc.prompts?.map(nsRef),
-        subAgents: dc.subAgents?.map(nsRef),
-        workflow: dc.workflow ? nsRef(dc.workflow) : dc.workflow,
+      project: {
+        ...project,
+        skills: project.skills?.map(nsRef),
+        prompts: project.prompts?.map(nsRef),
+        subAgents: project.subAgents?.map(nsRef),
+        workflow: project.workflow ? nsRef(project.workflow) : project.workflow,
       },
     } as AgentTemplate);
   }

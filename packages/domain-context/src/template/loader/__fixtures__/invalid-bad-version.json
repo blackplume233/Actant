@@ -7,5 +7,5 @@
   "provider": {
     "type": "openai"
   },
-  "domainContext": {}
+  "project": {}
 }

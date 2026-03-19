@@ -58,7 +58,7 @@ async function createLocalPackage(dir: string) {
       version: "1.0.0",
       backend: { type: "cursor" },
       provider: { type: "anthropic" },
-      domainContext: {},
+      project: {},
     }),
   );
 }
@@ -218,12 +218,12 @@ describe("SourceManager", () => {
         version: "1.0.0",
         backend: { type: "cursor" as const },
         provider: { type: "anthropic" as const },
-        domainContext: {},
+        project: {},
       };
 
       const result = sourceMgr.applyPreset("p@test-bundle", template);
-      expect(result.domainContext.skills).toContain("p@test-skill");
-      expect(result.domainContext.prompts).toContain("p@test-prompt");
+      expect(result.project.skills).toContain("p@test-skill");
+      expect(result.project.prompts).toContain("p@test-prompt");
       expect(result.name).toBe("test-tmpl");
     });
 
@@ -233,7 +233,7 @@ describe("SourceManager", () => {
         version: "1.0.0",
         backend: { type: "cursor" as const },
         provider: { type: "anthropic" as const },
-        domainContext: {},
+        project: {},
       };
       expect(() => sourceMgr.applyPreset("nope@missing", template)).toThrow(/not found/);
     });
@@ -247,10 +247,10 @@ describe("SourceManager", () => {
         version: "1.0.0",
         backend: { type: "cursor" as const },
         provider: { type: "anthropic" as const },
-        domainContext: {},
+        project: {},
       };
       const result = sourceMgr.applyPreset("p@template-preset", template);
-      expect(result.domainContext.skills).toContain("p@test-skill");
+      expect(result.project.skills).toContain("p@test-skill");
       expect(managers.templateRegistry.get("p@test-template")).toBeDefined();
     });
   });

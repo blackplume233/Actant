@@ -18,7 +18,7 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
     version: "1.0.0",
     backend: { type: "cursor" },
     provider: { type: "openai" },
-    domainContext: {
+    project: {
       skills: ["skill-a", "skill-b"],
       prompts: ["system-prompt"],
       mcpServers: [
@@ -63,7 +63,7 @@ describe("AgentInitializer", () => {
       expect(metaParsed.name).toBe("my-agent");
     });
 
-    it("should materialize domain context files", async () => {
+    it("should materialize project context files", async () => {
       await initializer.createInstance("my-agent", "test-template");
       const base = join(tmpDir, "my-agent");
 
@@ -86,7 +86,7 @@ describe("AgentInitializer", () => {
         makeTemplate({
           name: "claude-template",
           backend: { type: "claude-code", config: { executablePath: "/usr/bin/claude" } },
-          domainContext: { mcpServers: [{ name: "m1", command: "cmd", args: [] }] },
+          project: { mcpServers: [{ name: "m1", command: "cmd", args: [] }] },
         }),
       );
       const meta = await initializer.createInstance("claude-agent", "claude-template");
@@ -159,10 +159,10 @@ describe("AgentInitializer", () => {
       expect(meta.workspacePolicy).toBe("persistent");
     });
 
-    it("should create instance with minimal template (empty domainContext)", async () => {
+    it("should create instance with minimal template (empty project)", async () => {
       registry.register(makeTemplate({
         name: "minimal",
-        domainContext: {},
+        project: {},
       }));
       const meta = await initializer.createInstance("minimal-agent", "minimal");
 

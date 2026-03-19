@@ -123,6 +123,7 @@ Permission 表示当前 caller“能不能执行该操作”。
 - `ContextFS`
 - `VFS Kernel`
 - `Project`
+- `ProjectContext`
 - `ProjectManifest`
 - `Source`
 - `Capability`
@@ -176,6 +177,7 @@ Permission 表示当前 caller“能不能执行该操作”。
 优先使用：
 
 - `AgentRuntime`
+- `ProjectContext`
 - `Control Node`
 - `Stream Node`
 - `Session`

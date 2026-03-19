@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { DomainContextConfig } from "@actant/shared";
+import type { ProjectContextConfig } from "@actant/shared";
 import {
   SkillManager,
   PromptManager,
@@ -25,14 +25,14 @@ describe("WorkspaceBuilder", () => {
   describe("build() with cursor backend", () => {
     it("creates correct files for cursor backend", async () => {
       const builder = new WorkspaceBuilder();
-      const domainContext: DomainContextConfig = {
+      const project: ProjectContextConfig = {
         skills: ["skill-a", "skill-b"],
         prompts: ["system-prompt"],
         mcpServers: [{ name: "fs", command: "npx", args: ["-y", "mcp-fs"] }],
         workflow: "standard",
       };
 
-      const result = await builder.build(tmpDir, domainContext, "cursor");
+      const result = await builder.build(tmpDir, project, "cursor");
 
       expect(result.backendType).toBe("cursor");
       expect(result.verify.valid).toBe(true);
@@ -57,12 +57,12 @@ describe("WorkspaceBuilder", () => {
   describe("build() with claude-code backend", () => {
     it("creates correct files for claude-code backend", async () => {
       const builder = new WorkspaceBuilder();
-      const domainContext: DomainContextConfig = {
+      const project: ProjectContextConfig = {
         skills: ["review"],
         mcpServers: [{ name: "m1", command: "cmd", args: [] }],
       };
 
-      const result = await builder.build(tmpDir, domainContext, "claude-code");
+      const result = await builder.build(tmpDir, project, "claude-code");
 
       expect(result.backendType).toBe("claude-code");
 
@@ -81,12 +81,12 @@ describe("WorkspaceBuilder", () => {
 
     it("writes permission preset to settings when permissions provided", async () => {
       const builder = new WorkspaceBuilder();
-      const domainContext: DomainContextConfig = {
+      const project: ProjectContextConfig = {
         skills: ["review"],
         mcpServers: [{ name: "m1", command: "cmd", args: [] }],
       };
 
-      const result = await builder.build(tmpDir, domainContext, "claude-code", "standard");
+      const result = await builder.build(tmpDir, project, "claude-code", "standard");
 
       expect(result.backendType).toBe("claude-code");
 
@@ -101,11 +101,11 @@ describe("WorkspaceBuilder", () => {
   describe("build() with custom/unknown backend", () => {
     it("falls back to cursor when no builder registered", async () => {
       const builder = new WorkspaceBuilder();
-      const domainContext: DomainContextConfig = {
+      const project: ProjectContextConfig = {
         skills: ["test"],
       };
 
-      const result = await builder.build(tmpDir, domainContext, "custom");
+      const result = await builder.build(tmpDir, project, "custom");
 
       // Should use cursor fallback
       expect(result.backendType).toBe("cursor");
@@ -120,8 +120,8 @@ describe("WorkspaceBuilder", () => {
       const customBuilder = new CustomBuilder();
       builder.registerBuilder(customBuilder);
 
-      const domainContext: DomainContextConfig = { skills: ["test"] };
-      const result = await builder.build(tmpDir, domainContext, "custom");
+      const project: ProjectContextConfig = { skills: ["test"] };
+      const result = await builder.build(tmpDir, project, "custom");
 
       expect(result.backendType).toBe("custom");
       expect(result.verify.valid).toBe(true);
@@ -140,7 +140,7 @@ describe("WorkspaceBuilder", () => {
   });
 
   describe("build() with no managers", () => {
-    it("works with empty domain context", async () => {
+    it("works with an empty project context", async () => {
       const builder = new WorkspaceBuilder();
       const result = await builder.build(tmpDir, {}, "cursor");
 
@@ -151,15 +151,15 @@ describe("WorkspaceBuilder", () => {
       expect(cursorStat.isDirectory()).toBe(true);
     });
 
-    it("uses placeholders when domain context has names but no managers", async () => {
+    it("uses placeholders when project context has names but no managers", async () => {
       const builder = new WorkspaceBuilder();
-      const domainContext: DomainContextConfig = {
+      const project: ProjectContextConfig = {
         skills: ["skill-a"],
         prompts: ["prompt-a"],
         workflow: "wf-standard",
       };
 
-      const result = await builder.build(tmpDir, domainContext, "cursor");
+      const result = await builder.build(tmpDir, project, "cursor");
 
       expect(result.verify.valid).toBe(true);
 
@@ -175,7 +175,7 @@ describe("WorkspaceBuilder", () => {
     });
   });
 
-  describe("build() resolves domain context", () => {
+  describe("build() resolves project context", () => {
     it("resolves skills via SkillManager when provided", async () => {
       const skillManager = new SkillManager();
       skillManager.register({
@@ -183,12 +183,12 @@ describe("WorkspaceBuilder", () => {
         content: "Resolved content from manager",
         description: "A skill",
       });
-      const domainContext: DomainContextConfig = {
+      const project: ProjectContextConfig = {
         skills: ["resolved-skill"],
       };
 
       const wsBuilder = new WorkspaceBuilder({ skills: skillManager });
-      const result = await wsBuilder.build(tmpDir, domainContext, "cursor");
+      const result = await wsBuilder.build(tmpDir, project, "cursor");
 
       expect(result.verify.valid).toBe(true);
 
