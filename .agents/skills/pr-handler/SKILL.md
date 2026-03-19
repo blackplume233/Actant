@@ -310,7 +310,25 @@ git branch -d <headRefName>
 
 仅在 PR 来自同一仓库的 feature 分支时执行（非 fork）。如果删除失败，记录警告但不中止。
 
-#### 5.5 输出最终摘要
+#### 5.5 Return To Main-Branch Context
+
+Ship 完成前，必须把本地仓库上下文完整带回目标主分支。
+
+Required checks:
+
+- 当前最终交付分支必须是 `baseRefName`
+- `baseRefName` 必须已经 push 到 `origin/<baseRefName>`
+- 结束时要明确说明本地仓库上下文已经回到 `master` / `main`
+
+If you used a dedicated merge worktree to protect unrelated local changes:
+
+- keep the original dirty worktree untouched
+- but still ensure there is a clean local main-branch context available and report which worktree now represents the final `master` / `main` state
+- do not claim the ship is complete if the repo is still effectively left in feature-branch-only state
+
+If returning the canonical local main-branch context would overwrite unrelated local modifications, stop and report the blocking state for manual follow-up.
+
+#### 5.6 输出最终摘要
 
 ```
 ## PR Handle Complete - #<N>
@@ -322,6 +340,7 @@ git branch -d <headRefName>
 - PR: Closed #<N>
 - Issue: N 个 Issue 已同步
 - 分支: <headRefName> 已清理 / 保留
+- 本地上下文: 已回到 <baseRefName>
 ```
 
 ---

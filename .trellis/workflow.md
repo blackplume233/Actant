@@ -33,6 +33,7 @@ Current repository policy:
 - one active architecture narrative only
 - no compatibility-first route
 - keep migration notes outside the main entry path
+- a ship is only complete when the local repository context is back on `master`/`main`
 
 ## Session Start
 
@@ -91,3 +92,14 @@ Repository verification should prefer current workspace source over stale build 
 - Treat pre-existing `dist/` output as cache, not as active truth for local verification.
 - When CLI or package-level tests can run against workspace source, prefer that path over relying on previously built package output.
 - Keep historical, generated, or archived material such as `trash/` out of the default verification surface unless the task specifically targets it.
+
+## Delivery Completion
+
+Treat child-branch push as an intermediate state, not the end of delivery.
+
+- If work is developed on a child branch, push that branch first.
+- Then run the main-branch merge flow (for this repo, `handle-pr`).
+- Delivery is only complete after the merge is pushed to `master`/`main`.
+- The final local repository context must also be back on `master`/`main`.
+
+If returning the canonical local repository context to `master`/`main` would overwrite unrelated local work, stop and report the blocking local state instead of claiming ship is complete.

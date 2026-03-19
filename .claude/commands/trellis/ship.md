@@ -19,6 +19,7 @@ Delivery semantics:
 - If `ship` runs on a child branch, its responsibility is only to finish review, verification, commit, and push of that child branch.
 - After a child-branch push, return to the main branch context and run `handle-pr` to execute the merge-to-main flow.
 - Do not treat "feature branch pushed" as equivalent to "delivered to master/main".
+- Do not mark ship complete until the final local repository context is back on `master` or `main`.
 
 **Timing**: after implementation and verification are complete, before final delivery
 
@@ -246,12 +247,17 @@ Branch-aware rule:
 - If `<current-branch>` is `master` or `main`, continue to Phase 5 directly.
 - If `<current-branch>` is not `master` or `main`, stop after the push and record that the next required action is to switch to the main branch workflow and run `handle-pr`.
 - In that case, `ship` is only complete for the child-branch delivery stage. Main-branch delivery is completed by `handle-pr`, not by the child-branch `ship` itself.
+- Full delivery is complete only after:
+  1. the change is merged into `master`/`main`
+  2. the merged main branch is pushed
+  3. the final local repository context is back on `master`/`main`
 
 Required handoff note for child-branch push:
 
 ```text
 Child branch push completed: <current-branch>
 Next step: switch to master/main context and run /handle-pr to validate and merge the branch into the main line.
+Ship is not complete until local context has returned to master/main after the merge flow.
 ```
 
 ---
@@ -317,6 +323,7 @@ If `gh` is unavailable, mark the step as skipped and note the manual follow-up.
 - never bypass hooks with `--no-verify`
 - never treat unsynced docs as acceptable for later cleanup
 - never keep competing architecture truth outside `trash/`
+- never leave the repository in a child-branch context and call ship "complete"
 
 ---
 
