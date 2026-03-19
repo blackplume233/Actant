@@ -1,6 +1,6 @@
 # ContextFS Roadmap
 
-> Status: `in progress`
+> Status: `M0 completed, M1 next`
 > Owner: Actant core architecture
 > Scope: 文档基线重置 -> 实现前准备 -> V1 实施顺序
 
@@ -213,10 +213,11 @@ Actant 需要收敛到一个更单一的核心：
 
 | Item | Status |
 |------|--------|
-| M0 文档基线重置 | in progress |
-| M1-M7 实施阶段 | planned |
+| M0 文档基线重置 | completed |
+| M1 契约与类型替换 | next |
+| M2-M7 实施阶段 | planned |
 
 当前下一步：
-1. 完成 spec/design/roadmap 重写
-2. 清理主线入口中的历史迁移说明
-3. 做一轮全仓术语检查，确认默认阅读路径只有当前基线
+1. 以当前 ContextFS / VFS Kernel 文档基线作为唯一真相源进入 M1
+2. 替换公共对象模型与类型命名，清理遗留公共契约
+3. 为后续 `packages/context` / `packages/vfs` 重建准备新的契约边界

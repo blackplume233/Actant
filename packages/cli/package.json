@@ -1,7 +1,7 @@
 {
   "name": "@actant/cli",
   "version": "0.5.0",
-  "description": "CLI for the context-driven Actant agent platform",
+  "description": "CLI for Actant's ContextFS workspace and source management",
   "type": "module",
   "license": "MIT",
   "author": "blackplume <blackplume233@gmail.com>",
@@ -16,7 +16,7 @@
     "actant",
     "ai-agent",
     "cli",
-    "agent-platform"
+    "contextfs"
   ],
   "publishConfig": {
     "access": "public"

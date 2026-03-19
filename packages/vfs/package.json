@@ -1,7 +1,7 @@
 {
     "name":  "@actant/vfs",
     "version":  "0.5.0",
-    "description":  "Virtual file system primitives for Actant",
+    "description":  "VFS Kernel primitives for Actant",
     "type":  "module",
     "license":  "MIT",
     "author":  "blackplume \u003cblackplume233@gmail.com\u003e",

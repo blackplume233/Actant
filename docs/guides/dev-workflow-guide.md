@@ -27,7 +27,7 @@ spec / design / roadmap -> contract -> implementation -> verification
 - 兼容层优先
 - 保留多份互相冲突的架构文档
 
-历史迁移说明只应保留在 `docs/history/legacy-architecture-transition.md` 或 `trash/`，不应重新进入默认开发入口。
+历史迁移说明只应保留在默认入口之外，不应重新进入默认开发入口。
 
 ## Source Of Truth
 

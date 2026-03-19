@@ -1,7 +1,7 @@
 {
   "name": "@actant/mcp-server",
   "version": "0.5.0",
-  "description": "MCP server integration for the Actant AI agent platform",
+  "description": "MCP server integration for Actant's ContextFS runtime",
   "type": "module",
   "license": "MIT",
   "author": "blackplume <blackplume233@gmail.com>",

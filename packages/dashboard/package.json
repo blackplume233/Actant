@@ -1,7 +1,7 @@
 {
   "name": "@actant/dashboard",
   "version": "0.5.0",
-  "description": "Web dashboard for monitoring Actant AI agents",
+  "description": "Web dashboard for Actant runtime and ContextFS operations",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",

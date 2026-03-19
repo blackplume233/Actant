@@ -1,7 +1,7 @@
 {
   "name": "@actant/tui",
   "version": "0.5.0",
-  "description": "Unified Terminal UI framework for the Actant AI agent platform, built on pi-tui",
+  "description": "Terminal UI framework for Actant's ContextFS tooling, built on pi-tui",
   "type": "module",
   "license": "MIT",
   "author": "blackplume <blackplume233@gmail.com>",

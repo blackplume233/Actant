@@ -28,7 +28,7 @@ Actant 当前只承认一套新的顶层叙述：
 
 - 先重写 spec/design/roadmap
 - 再进入实现
-- 历史迁移说明集中放在 `docs/history/legacy-architecture-transition.md`
+- 历史迁移说明必须留在默认入口之外
 - 不允许把历史迁移说明和当前规范并列为默认入口
 
 ---

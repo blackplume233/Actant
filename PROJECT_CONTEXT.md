@@ -19,4 +19,4 @@
 - V1 操作面：`read`、`write`、`list`、`stat`、`watch`、`stream`
 - V1 不包含 `workflow`、query/view mount、overlay/fallback 行为实现
 
-历史迁移说明集中放在 `docs/history/legacy-architecture-transition.md`。默认以当前 spec/design/roadmap 为准，只有在处理迁移或清理残留时才读取历史说明。
+默认以当前 spec/design/roadmap 为准。只有在处理迁移残留或历史清理时，才读取历史说明文档。

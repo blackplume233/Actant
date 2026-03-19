@@ -32,7 +32,7 @@
 - query/view mount
 - overlay/fallback 行为实现
 
-如果你需要理解历史术语、迁移背景或残留命名，去看 `docs/history/legacy-architecture-transition.md`，不要把这些内容当作默认入口。
+如果你需要理解历史术语、迁移背景或残留命名，去看历史材料，不要把这些内容当作默认入口。
 
 ## Practical Rule
 

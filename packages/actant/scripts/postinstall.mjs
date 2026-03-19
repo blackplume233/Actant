@@ -13,7 +13,6 @@ const dirs = [
   "configs/skills",
   "configs/prompts",
   "configs/mcp",
-  "configs/workflows",
   "configs/plugins",
   "configs/templates",
   "instances",

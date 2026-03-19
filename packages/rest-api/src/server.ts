@@ -151,7 +151,7 @@ function generateOpenApiSummary(version: string): object {
     info: {
       title: "Actant REST API",
       version,
-      description: "RESTful API for the Actant AI agent platform. Serves dashboard, n8n, and IM integrations.",
+      description: "REST API for Actant's runtime and integration surfaces.",
     },
     servers: [{ url: "/v1", description: "API v1" }],
     paths: {

@@ -1,7 +1,7 @@
 {
   "name": "@actant/channel-claude",
   "version": "0.5.0",
-  "description": "Claude Agent SDK channel adapter for the Actant platform",
+  "description": "Claude Agent SDK channel adapter for Actant's runtime integrations",
   "type": "module",
   "license": "MIT",
   "author": "blackplume <blackplume233@gmail.com>",

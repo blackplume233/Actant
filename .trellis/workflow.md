@@ -66,7 +66,7 @@ Do not expand beyond the current ContextFS baseline:
 ## Documentation Hygiene
 
 Main entry docs should describe only the current baseline.  
-If historical explanation is needed, put it in `docs/history/legacy-architecture-transition.md` or `trash/`, not in the default read path.
+If historical explanation is needed, keep it outside the default read path, such as under `docs/history/` or `trash/`.
 
 ## Working Rule
 

@@ -1,7 +1,7 @@
 {
   "name": "@actant/rest-api",
   "version": "0.5.0",
-  "description": "Standalone RESTful API server for Actant \u2014 serves dashboard, n8n, and IM integrations",
+  "description": "Standalone REST API server for Actant runtime and integration surfaces",
   "type": "module",
   "license": "MIT",
   "main": "./dist/index.js",
