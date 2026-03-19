@@ -79,3 +79,15 @@ When a change affects:
 - lifecycle
 
 update the relevant spec/design/roadmap docs before changing implementation.
+
+## Verification Baseline
+
+Repository verification should prefer current workspace source over stale build artifacts.
+
+- Run repository checks from the workspace root:
+  - `pnpm lint`
+  - `pnpm type-check`
+  - `pnpm test`
+- Treat pre-existing `dist/` output as cache, not as active truth for local verification.
+- When CLI or package-level tests can run against workspace source, prefer that path over relying on previously built package output.
+- Keep historical, generated, or archived material such as `trash/` out of the default verification surface unless the task specifically targets it.
