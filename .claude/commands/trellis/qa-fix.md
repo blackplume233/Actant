@@ -153,7 +153,7 @@ pnpm build
 1. 停止所有 Agent（若有）：`agent destroy <name> --force`
 2. 停止 Daemon：`daemon stop` + 杀死 PID
 3. 重启 Daemon（qa-alpha Phase 1.4 流程）
-4. 重新加载模板（qa-alpha Phase 1.5 流程）
+4. Reload the QA seed resources (`qa-alpha` Phase 1.5)
 5. 更新 env-state.json：新 PID、新 buildHash、新 buildTimestamp
 
 #### Step 3.3: 等待就绪

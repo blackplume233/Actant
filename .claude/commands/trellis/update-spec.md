@@ -1,213 +1,178 @@
-# Update Spec - Capture Knowledge into Specifications
+# Update Spec - Sync the Active ContextFS Baseline
 
-When you learn something valuable (from debugging, implementing, or discussion), use this command to update the relevant spec documents.
+Use this command when new knowledge changes the active repository truth.
 
-**Timing**: After completing a task, fixing a bug, or discovering a new pattern
+This command is not for writing free-floating notes.
+It is for updating the current ContextFS baseline so the next Agent reads one consistent model.
 
----
-
-## When to Update Specs
-
-| Trigger | Example | Target Spec |
-|---------|---------|-------------|
-| **Fixed a bug** | Found a subtle issue with error handling | `backend/error-handling.md` |
-| **Discovered a pattern** | Found a better way to structure code | Relevant guidelines file |
-| **Hit a gotcha** | Learned that X must be done before Y | Relevant spec + "Common Mistakes" section |
-| **Established a convention** | Team agreed on naming pattern | `quality-guidelines.md` |
-| **Cross-layer insight** | Understood how data flows between layers | `guides/cross-layer-thinking-guide.md` |
+**Timing**: after clarifying a rule, fixing a mismatch, or learning something that changes current contracts or naming
 
 ---
 
-## Spec Structure Overview
+## What Counts as a Spec Update
 
-```
-.trellis/spec/
-├── backend/           # Backend development standards
-│   ├── index.md       # Overview and links
-│   └── *.md           # Topic-specific guidelines
-├── frontend/          # Frontend development standards
-│   ├── index.md       # Overview and links
-│   └── *.md           # Topic-specific guidelines
-└── guides/            # Thinking guides
-    ├── index.md       # Guide index
-    └── *.md           # Topic-specific guides
-```
+Update the active docs when you change any of the following:
+
+- product meaning
+- object boundaries
+- terminology
+- path layout
+- operation surface
+- permissions
+- lifecycle
+- kernel layering
+- milestone scope
+- repository review rules
+
+If the learning only belongs to history, move it to `trash/` instead of expanding active docs.
+
+---
+
+## Active Documentation Baseline
+
+Current active truth lives here:
+
+1. `.trellis/spec/index.md`
+2. `.trellis/spec/vision.md`
+3. `.trellis/spec/terminology.md`
+4. `docs/design/contextfs-architecture.md`
+5. `docs/design/actant-vfs-reference-architecture.md`
+6. `.trellis/spec/config-spec.md`
+7. `.trellis/spec/api-contracts.md`
+8. `.trellis/spec/backend/index.md`
+9. `docs/planning/contextfs-roadmap.md`
+10. `.trellis/workflow.md`
+
+Do not create a parallel source of truth outside this baseline.
+
+---
+
+## Routing Guide
+
+Use this mapping to decide where to update:
+
+| If You Learned About | Update These Docs |
+|----------------------|-------------------|
+| what Actant is, what ContextFS means | `.trellis/spec/vision.md` |
+| naming, role boundaries, forbidden terms | `.trellis/spec/terminology.md` |
+| `Project`, `Source`, `Capability`, `Tool`, `Agent` product semantics | `docs/design/contextfs-architecture.md` |
+| namespace, mount, middleware, node, backend, metadata, lifecycle, events | `docs/design/actant-vfs-reference-architecture.md`, `.trellis/spec/backend/index.md` |
+| `ProjectManifest`, mounts, permissions, children | `.trellis/spec/config-spec.md` |
+| paths, operations, control nodes, stream nodes | `.trellis/spec/api-contracts.md` |
+| scope, milestones, non-goals, acceptance | `docs/planning/contextfs-roadmap.md` |
+| repository process and review gates | `.trellis/workflow.md` |
 
 ---
 
 ## Update Process
 
-### Step 1: Identify What You Learned
+### Step 1: State the Change Clearly
 
-Answer these questions:
+Write down:
 
-1. **What did you learn?** (Be specific)
-2. **Why is it important?** (What problem does it prevent?)
-3. **Where does it belong?** (Which spec file?)
+1. what changed
+2. why it changed
+3. which active docs now need synchronization
 
-### Step 2: Classify the Update Type
+### Step 2: Read the Target Docs
 
-| Type | Description | Action |
-|------|-------------|--------|
-| **New Pattern** | A reusable approach discovered | Add to "Patterns" section |
-| **Forbidden Pattern** | Something that causes problems | Add to "Anti-patterns" or "Don't" section |
-| **Common Mistake** | Easy-to-make error | Add to "Common Mistakes" section |
-| **Convention** | Agreed-upon standard | Add to relevant section |
-| **Gotcha** | Non-obvious behavior | Add warning callout |
+Before editing, read the current active doc set so you do not create double truth.
 
-### Step 3: Read the Target Spec
+### Step 3: Update the Highest-Level Truth First
 
-Before editing, read the current spec to:
-- Understand existing structure
-- Avoid duplicating content
-- Find the right section for your update
+Preferred order:
 
-```bash
-cat .trellis/spec/<category>/<file>.md
-```
+1. `vision.md` if meaning changed
+2. `terminology.md` if naming changed
+3. design docs if object or kernel boundaries changed
+4. contract docs if config or API changed
+5. roadmap if scope or milestone changed
+6. workflow if review or process changed
 
-### Step 4: Make the Update
+### Step 4: Remove Conflicting Material
 
-Follow these principles:
+If an active doc now conflicts with the new baseline:
 
-1. **Be Specific**: Include concrete examples, not just abstract rules
-2. **Explain Why**: State the problem this prevents
-3. **Show Code**: Add code snippets for patterns
-4. **Keep it Short**: One concept per section
+- rewrite it
+- remove it
+- or move it to `trash/`
 
-### Step 5: Update the Index (if needed)
+Do not leave conflicting active docs in place for later cleanup.
 
-If you added a new section or the spec status changed, update the category's `index.md`.
+### Step 5: Verify Single Truth
 
----
+After editing, confirm:
 
-## Update Templates
-
-### Adding a New Pattern
-
-```markdown
-### Pattern Name
-
-**Problem**: What problem does this solve?
-
-**Solution**: Brief description of the approach.
-
-**Example**:
-\`\`\`
-// Good
-code example
-
-// Bad
-code example
-\`\`\`
-
-**Why**: Explanation of why this works better.
-```
-
-### Adding a Forbidden Pattern
-
-```markdown
-### Don't: Pattern Name
-
-**Problem**:
-\`\`\`
-// Don't do this
-bad code example
-\`\`\`
-
-**Why it's bad**: Explanation of the issue.
-
-**Instead**:
-\`\`\`
-// Do this instead
-good code example
-\`\`\`
-```
-
-### Adding a Common Mistake
-
-```markdown
-### Common Mistake: Description
-
-**Symptom**: What goes wrong
-
-**Cause**: Why this happens
-
-**Fix**: How to correct it
-
-**Prevention**: How to avoid it in the future
-```
-
-### Adding a Gotcha
-
-```markdown
-> **Warning**: Brief description of the non-obvious behavior.
->
-> Details about when this happens and how to handle it.
-```
+- the same term does not mean different things in different docs
+- there is only one active architecture narrative
+- forbidden old terms appear only when explicitly rejected or historically referenced
 
 ---
 
-## Interactive Mode
+## Update Patterns
 
-If you're unsure what to update, answer these prompts:
+### Naming Boundary Change
 
-1. **What did you just finish?**
-   - [ ] Fixed a bug
-   - [ ] Implemented a feature
-   - [ ] Refactored code
-   - [ ] Had a discussion about approach
+Use when clarifying terms such as `Source` vs `Provider`.
 
-2. **What surprised you or was non-obvious?**
-   - (Describe the insight)
+Required checks:
 
-3. **Would this help someone else avoid the same problem?**
-   - Yes → Proceed to update spec
-   - No → Maybe not worth documenting
+- update `.trellis/spec/terminology.md`
+- update product or kernel docs that use the term
+- remove conflicting usage in active docs
 
-4. **Which area does it relate to?**
-   - [ ] Backend code
-   - [ ] Frontend code
-   - [ ] Cross-layer data flow
-   - [ ] Code organization/reuse
-   - [ ] Quality/testing
+### Object Model Change
+
+Use when changing the role of `Project`, `Source`, `Capability`, `Agent`, or `Tool`.
+
+Required checks:
+
+- update `vision.md` if product meaning changed
+- update `docs/design/contextfs-architecture.md`
+- update `config-spec.md` or `api-contracts.md` if contracts changed
+- update roadmap if V1 scope changed
+
+### Kernel Boundary Change
+
+Use when changing namespace, mount, middleware, node, backend, metadata, lifecycle, or events.
+
+Required checks:
+
+- update `docs/design/actant-vfs-reference-architecture.md`
+- update `.trellis/spec/backend/index.md`
+- update `api-contracts.md` if external behavior changed
+
+### Review Rule Change
+
+Use when changing how the repo should be audited or delivered.
+
+Required checks:
+
+- update `.trellis/workflow.md`
+- update command docs that enforce the rule
 
 ---
 
 ## Quality Checklist
 
-Before finishing your spec update:
-
-- [ ] Is the content specific and actionable?
-- [ ] Did you include a code example?
-- [ ] Did you explain WHY, not just WHAT?
-- [ ] Is it in the right spec file?
-- [ ] Does it duplicate existing content?
-- [ ] Would a new team member understand it?
+- [ ] The updated docs belong to the active baseline
+- [ ] The naming matches `terminology.md`
+- [ ] The change does not reintroduce old `ContextManager` or `DomainContext` truth
+- [ ] `workflow` is not reintroduced as a V1 top-level product object
+- [ ] There is no second architecture narrative outside `trash/`
+- [ ] The roadmap and contracts still match the design docs
 
 ---
 
 ## Relationship to Other Commands
 
-```
-Development Flow:
-  Learn something → /trellis-update-spec → Knowledge captured
-       ↑                                  ↓
-  /trellis-break-loop ←──────────────────── Future sessions benefit
-  (deep bug analysis)
-```
+| Command | Role |
+|---------|------|
+| `/trellis-update-spec` | update active truth before ship |
+| `/trellis-finish-work` | confirm spec sync and naming consistency |
+| `/trellis-ship` | blocks delivery if docs are unsynced |
+| `/trellis-record-session` | record what was delivered after commit |
 
-- `/trellis-break-loop` - Analyzes bugs deeply, often reveals spec updates needed
-- `/trellis-update-spec` - Actually makes the updates (this command)
-- `/trellis-finish-work` - Reminds you to check if specs need updates
+Core principle:
 
----
-
-## Core Philosophy
-
-> **Specs are living documents. Every debugging session, every "aha moment" is an opportunity to make the spec better.**
-
-The goal is **institutional memory**:
-- What one person learns, everyone benefits from
-- What AI learns in one session, persists to future sessions
-- Mistakes become documented guardrails
+> Specs are not a memory dump. They are the active contract for future implementation and review.

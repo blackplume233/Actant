@@ -1,83 +1,188 @@
-# Ship - 审查、提交、推送、同步 Issue 一站式流程
+# Ship - ContextFS Delivery Gate
 
-编排 `/trellis-finish-work` 的审查清单，并追加 Commit、Push、Issue 同步操作，一次完成交付。
+Use this command only when work is ready to deliver.
 
-**时机**: 代码编写完成后，准备交付时执行。
+This command is the final gate for:
 
----
+- active-truth review
+- spec and design sync review
+- verification
+- commit
+- push
+- issue sync
 
-## 执行流程
+If any blocking gate fails, stop the ship flow first. Do not push partial truth.
 
-### Phase 1: Review（执行 finish-work 审查清单）
-
-**执行 `/trellis-finish-work` 中定义的全部检查项**，包括：
-
-1. **代码质量** — 运行 `pnpm lint`、`pnpm type-check`、`pnpm test`
-2. **代码模式扫描** — 检查 `console.log`、`any` 类型、非空断言
-3. **Spec 文档同步** — **必须检查**，按下方规则判断是否需要更新
-4. **API / 数据库 / 跨层变更** — 按变更范围检查对应项
-
-如果命令因依赖未安装而失败，标记为 "⚠️ 跳过" 并继续。
-如果有实质性错误（❌），**停止流程**，先修复再重新执行。
-
-#### 1.3 Spec 文档同步检查（强制）
-
-Spec 文档同步是 **必选项**（❌ 级别），不通过则阻止提交。
-
-**检测方法**：分析本次变更涉及的文件和代码，判断是否命中以下触发条件。
-
-| 触发条件 | 需更新的 Spec 文档 |
-|---------|------------------|
-| `packages/shared/src/types/` 下类型定义变更（新增/删除/改签名） | `config-spec.md` |
-| `packages/core/src/template/schema/` 下 Zod schema 变更 | `config-spec.md` |
-| 环境变量增删改 | `config-spec.md` |
-| `packages/shared/src/types/rpc.types.ts` 中 RPC 方法/参数/返回变更 | `api-contracts.md` |
-| `packages/api/src/handlers/` 中 handler 行为变更 | `api-contracts.md` |
-| `packages/cli/src/commands/` 中命令签名/选项变更 | `api-contracts.md` |
-| 错误码增删改 | `api-contracts.md` |
-| 内部契约接口（Launcher/Manager/Communicator）签名变更 | `api-contracts.md` |
-
-**判断流程**：
-1. 运行 `git diff --name-only` 获取变更文件列表
-2. 匹配上述触发路径
-3. 若命中，检查对应 spec 文档是否也在变更列表中
-4. 若 spec 文档未更新，标记为 **❌ spec 未同步**，列出需要更新的文档和触发原因
-5. **立即中止 ship 流程**，不进入 Phase 2
-
-**重要：ship 不负责修改 spec 文件。** 检测到不同步时，输出诊断信息后终止，要求用户先通过 `/trellis-update-spec` 或手动更新 spec 文档，然后重新执行 `/trellis-ship`。
-
-**输出格式（中止时）**：
-```
-spec 文档同步检查：
-  - config-spec.md: ❌ 需更新（检测到 packages/shared/src/types/ 变更）
-  - api-contracts.md: ✅ 已同步
-
-❌ Ship 已中止：spec 文档未同步。
-请先更新以上标记为 ❌ 的 spec 文档，然后重新执行 /trellis-ship。
-```
-
-#### 输出审查报告
-
-```
-## 审查报告
-
-| 检查项 | 结果 |
-|--------|------|
-| pnpm lint | ✅ 通过 / ⚠️ 跳过 / ❌ 失败 |
-| pnpm type-check | ✅ / ⚠️ / ❌ |
-| pnpm test | ✅ / ⚠️ / ❌ |
-| console.log | ✅ 无 / ❌ 发现 N 处 |
-| any 类型 | ✅ 无 / ❌ 发现 N 处 |
-| 非空断言 | ✅ 无 / ❌ 发现 N 处 |
-| spec/config-spec.md | ✅ 已同步 / ❌ 需更新 / — 无关 |
-| spec/api-contracts.md | ✅ 已同步 / ❌ 需更新 / — 无关 |
-```
+**Timing**: after implementation and verification are complete, before final delivery
 
 ---
 
-### Phase 2: Commit（提交）
+## Current Baseline
 
-#### 2.1 查看变更
+All delivery decisions must follow the current repository baseline:
+
+- product layer: `ContextFS`
+- implementation layer: `VFS Kernel`
+- core objects: `Project`, `Source`, `Capability`
+- V1 built-in sources: `SkillSource`, `McpConfigSource`, `McpRuntimeSource`, `AgentRuntime`
+- V1 operation surface: `read`, `write`, `list`, `stat`, `watch`, `stream`
+
+The following are not current truth:
+
+- old `ContextManager`
+- old `DomainContext`
+- `workflow` as a V1 top-level product object
+- query or view mounts in V1
+- overlay or fallback behavior in V1
+- parallel architecture narratives outside `trash/`
+
+Important:
+
+- `workflow` in `.trellis/workflow.md` means developer process only.
+- It does not mean a current product object in ContextFS V1.
+
+---
+
+## Read Before Shipping
+
+Before running this flow, read:
+
+1. `README.md`
+2. `PROJECT_CONTEXT.md`
+3. `.trellis/workflow.md`
+4. `.trellis/spec/index.md`
+5. `.trellis/spec/terminology.md`
+6. `docs/design/contextfs-architecture.md`
+7. `docs/design/actant-vfs-reference-architecture.md`
+8. `docs/planning/contextfs-roadmap.md`
+
+If the change touches backend behavior, also read:
+
+9. `.trellis/spec/backend/index.md`
+
+---
+
+## Phase 1: Blocking Review
+
+### 1.1 Active-Truth Gate
+
+Check whether the current diff introduces or preserves wrong architecture information outside `trash/`.
+
+Fail this gate if any changed or newly added active document:
+
+- presents `ContextManager` as a current platform core
+- presents `DomainContext` as the current aggregation model
+- presents `workflow` as a V1 top-level object
+- treats `Tool` as a separate top-level system instead of a file-style resource
+- collapses `ContextFS` and `VFS Kernel` into one layer
+- treats `Project` as a `Source`
+- treats `Capability` as permission
+- introduces a second "current architecture" narrative
+
+If this gate fails:
+
+- stop shipping immediately
+- remove or move stale material to `trash/`
+- re-run the review
+
+### 1.2 Terminology Gate
+
+Check naming against `.trellis/spec/terminology.md`.
+
+Required rules:
+
+- `ContextFS` = product model
+- `VFS Kernel` = implementation kernel
+- `Source` = mounted external resource boundary
+- `Provider` = internal supplier or adapter
+- `Project` != `Source`
+- `Capability` != permission
+- `Tool` is not a separate top-level system
+
+If the diff changes naming, confirm the terminology doc is still correct.
+
+### 1.3 Spec and Design Sync Gate
+
+Spec and design sync is mandatory. Ship does not fix these files for you.
+
+Map the diff to the docs that must already be updated:
+
+| Change Type | Required Docs |
+|-------------|---------------|
+| product model, object roles, resource boundaries | `.trellis/spec/vision.md`, `.trellis/spec/terminology.md`, `docs/design/contextfs-architecture.md` |
+| path layout, control nodes, stream nodes, operation surface | `.trellis/spec/api-contracts.md` |
+| `ProjectManifest`, mounts, permissions, children | `.trellis/spec/config-spec.md` |
+| kernel layering, namespace, mount, middleware, node, backend, events, lifecycle | `docs/design/actant-vfs-reference-architecture.md`, `.trellis/spec/backend/index.md` |
+| source scope, V1 source list, milestone scope, non-goals | `docs/planning/contextfs-roadmap.md` |
+| repository process or review rules | `.trellis/workflow.md` |
+
+Decision flow:
+
+1. Inspect the changed files.
+2. Match them to the table above.
+3. Verify that the required docs are already updated in the same delivery set.
+4. If any required doc is missing, stop the ship flow.
+
+Required stop message:
+
+```text
+Spec/design sync review:
+  - <doc-path>: missing update for <reason>
+
+Ship stopped: documentation baseline is not synchronized.
+Update the required docs first, then rerun /trellis-ship.
+```
+
+### 1.4 Verification Gate
+
+Run the relevant checks:
+
+```bash
+pnpm lint
+pnpm type-check
+pnpm test
+```
+
+If a command cannot run because the dependency is not installed, mark it as skipped and explain why.
+If a command fails for a real project issue, stop the ship flow.
+
+### 1.5 Pattern Scan
+
+Review the diff for obvious delivery regressions:
+
+- leftover `console.log`
+- new `any`
+- new non-null assertions
+- undocumented path or contract changes
+- new active docs outside the baseline reading order
+
+---
+
+## Review Report Format
+
+```text
+## Review Report
+
+| Check | Result |
+|-------|--------|
+| active-truth gate | pass / fail |
+| terminology gate | pass / fail |
+| spec-design sync | pass / fail |
+| pnpm lint | pass / skip / fail |
+| pnpm type-check | pass / skip / fail |
+| pnpm test | pass / skip / fail |
+| console.log scan | pass / fail |
+| any scan | pass / fail |
+| non-null assertion scan | pass / fail |
+```
+
+Do not continue to commit if any blocking item fails.
+
+---
+
+## Phase 2: Inspect the Change Set
+
+Run:
 
 ```bash
 git status
@@ -85,19 +190,33 @@ git diff --stat
 git log --oneline -5
 ```
 
-#### 2.2 暂存并提交
+Confirm:
+
+- the branch and diff are correct
+- no sensitive files are staged
+- no unintended files are included
+- no stale architecture docs outside `trash/` are being reintroduced
+
+---
+
+## Phase 3: Commit
+
+Stage and commit only after Phase 1 and Phase 2 pass.
 
 ```bash
 git add -A
-git commit -m "<type>: <描述>"
+git commit -m "<type>: <description>"
 ```
 
-Commit message 规则：
-- 使用 **英文**，遵循 Conventional Commits（`feat` / `fix` / `docs` / `refactor` / `test` / `chore`）
-- 简洁描述 "why" 而非 "what"
-- **不要提交** `.env`、`credentials.json` 等敏感文件（发现时警告并排除）
+Commit rules:
 
-#### 2.3 验证
+- use English commit messages
+- use Conventional Commits
+- explain the change intent, not a file list
+- do not commit secrets such as `.env` or credential files
+- do not use `--no-verify`
+
+After commit:
 
 ```bash
 git status
@@ -105,118 +224,92 @@ git status
 
 ---
 
-### Phase 3: Push（推送）
+## Phase 4: Push
+
+Push the current branch normally:
 
 ```bash
-git push origin <当前分支>
+git push origin <current-branch>
 ```
+
+Never force push unless the human explicitly asks for it.
 
 ---
 
-### Phase 4: Issue Sync（同步相关 Issue）
+## Phase 5: Issue Sync
 
-推送成功后，检查本次变更是否关联 Issue，并自动同步状态。
+After push, inspect whether the delivery references any issue.
 
-#### 4.1 识别关联 Issue
+Possible sources:
 
-从以下来源识别本次变更关联的 Issue：
+1. commit message references such as `#123`
+2. changed files under `.trellis/issues/`
+3. code or docs that explicitly reference an issue number
 
-1. **Commit message** — 解析 `#N` 引用（如 `fix(acp): ... (#95)`）
-2. **变更文件** — 检查 `.trellis/issues/` 目录下是否有新建或修改的 issue 文件
-3. **代码注释** — 检查变更代码中引用的 `#N`（如 `// see #116`）
-
-#### 4.2 更新 Issue 状态
-
-**必须直接使用 `gh` CLI 操作 GitHub（权威源），再更新本地缓存。** 不依赖 `issue.sh` 的 bash 脚本（在 Windows 环境下不可靠）。
-
-对识别到的每个 Issue：
+Use `gh` directly when available:
 
 ```bash
-# 1. 先确认 GitHub 上的实际状态
 gh issue view <N> --json state
-
-# 2a. 需要关闭的 Issue（fixes/closes/resolves 引用，或 fix 类型 commit 的括号引用）
-gh issue close <N> -c "Completed in <commit-hash>."
-
-# 2b. 仅需添加评论的 Issue（docs/refactor 类型的括号引用）
 gh issue comment <N> -b "Progress: addressed in <commit-hash>."
-
-# 3. 更新本地缓存文件（如存在）
-#    修改 .trellis/issues/NNNN-*.md 中的 status/closedAt 字段
+gh issue close <N> -c "Completed in <commit-hash>."
 ```
 
-**判断规则**：
-- commit message 包含 `fix` 类型且引用了 Issue → 关闭该 Issue
-- commit message 仅括号引用 `(#NNN)` → 根据上下文判断：修复类 commit 则关闭，文档/重构类仅评论
-- 如果 GitHub 上 Issue 已关闭，跳过
+Rules:
 
-#### 4.3 验证同步
+- closing is appropriate for a real fix that resolves the issue
+- commenting is appropriate for docs, refactor, or partial progress
+- if the GitHub issue is already closed, do not repeat the action
 
-操作完成后，验证 GitHub 状态与本地缓存一致：
+If `gh` is unavailable, mark the step as skipped and note the manual follow-up.
 
-```bash
-# 验证 GitHub 实际状态
-gh issue view <N> --json state,closedAt
-```
+---
 
-如果 `gh` CLI 不可用，标记为 "⚠️ 跳过" 并在报告中提醒手动操作。
+## Issue Sync Report Format
 
-#### 4.4 输出 Issue 同步报告
+```text
+## Issue Sync Report
 
-```
-## Issue 同步报告
-
-| Issue | 操作 | 状态 |
-|-------|------|------|
-| #95 | 添加评论 (progress) | ✅ 已同步 |
-| #116 | 确认 GitHub 已创建 | ✅ |
-| #117 | 确认 GitHub 已创建 | ✅ |
+| Issue | Action | Result |
+|-------|--------|--------|
+| #123 | comment | pass |
+| #124 | close | pass |
 ```
 
 ---
 
-推送和 Issue 同步完成后输出最终摘要：
+## Final Summary Format
 
-```
-## 完成摘要
+```text
+## Delivery Summary
 
-- 提交: <hash> <message>
-- 分支: <branch> → origin/<branch>
-- 变更: N files changed, +insertions, -deletions
-- Issue: N 个 Issue 已同步
+- commit: <hash> <message>
+- branch: <branch> -> origin/<branch>
+- change summary: <files changed>, +<insertions>, -<deletions>
+- issue sync: <summary>
 ```
 
 ---
 
-## 安全规则
+## Safety Rules
 
-- **绝不** `git push --force`（除非用户明确要求）
-- **绝不** 提交含密钥的文件
-- **绝不** 修改 git config
-- **绝不** 使用 `--no-verify` 跳过 hooks
-- 如 pre-commit hook 失败，修复后创建 **新提交**，不要 amend
+- never use `git push --force` unless explicitly requested
+- never commit secrets
+- never bypass hooks with `--no-verify`
+- never treat unsynced docs as acceptable for later cleanup
+- never keep competing architecture truth outside `trash/`
 
 ---
 
-## 与其他命令的关系
+## Relationship to Other Commands
 
-```
-开发流程:
-  编写代码 → 测试 → /trellis-ship → /trellis-record-session
-                      |
-          ┌───────────┼──────────────┬────────────┐
-          ↓           ↓              ↓            ↓
-   Phase 1: Review    Phase 2:     Phase 3:    Phase 4:
-   ├─ 代码质量        Commit       Push        Issue Sync
-   ├─ 模式扫描
-   └─ Spec 同步 (❌ 阻断)
-       ├─ config-spec.md
-       └─ api-contracts.md
-```
+| Command | Role |
+|---------|------|
+| `/trellis-finish-work` | pre-ship review checklist |
+| `/trellis-update-spec` | updates active spec and design docs before shipping |
+| `/trellis-record-session` | records delivered work after commit |
 
-| 命令 | 职责 |
-|------|------|
-| `/trellis-finish-work` | 审查清单（被本命令调用） |
-| `/trellis-ship` | 审查 + Spec 同步 + 提交 + 推送 + Issue 同步（本命令） |
-| `/trellis-record-session` | 记录会话和进度 |
-| `/trellis-update-spec` | 更新规范文档 |
+Recommended flow:
+
+```text
+implement -> verify -> /trellis-finish-work -> /trellis-ship -> /trellis-record-session
+```

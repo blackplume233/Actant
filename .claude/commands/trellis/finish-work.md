@@ -1,129 +1,138 @@
-# Finish Work - Pre-Commit Checklist
+# Finish Work - Pre-Ship Checklist
 
-Before submitting or committing, use this checklist to ensure work completeness.
+Use this checklist before commit or final delivery.
 
-**Timing**: After code is written and tested, before commit
+The goal is not only to check code quality, but also to confirm that a new Agent cannot learn the wrong architecture from active documents.
+
+**Timing**: after implementation and local verification, before `/trellis-ship`
+
+---
+
+## Read First
+
+1. `README.md`
+2. `PROJECT_CONTEXT.md`
+3. `.trellis/workflow.md`
+4. `.trellis/spec/index.md`
+5. `.trellis/spec/terminology.md`
+
+If the change affects architecture or contracts, also read:
+
+6. `docs/design/contextfs-architecture.md`
+7. `docs/design/actant-vfs-reference-architecture.md`
+8. `docs/planning/contextfs-roadmap.md`
 
 ---
 
 ## Checklist
 
-### 1. Code Quality
+### 1. Active-Truth Review
+
+- [ ] No active document outside `trash/` introduces stale architecture truth
+- [ ] No changed file presents `ContextManager` as current architecture
+- [ ] No changed file presents `DomainContext` as current architecture
+- [ ] No changed file presents `workflow` as a V1 top-level product object
+- [ ] No changed file creates a second "current" architecture narrative
+
+### 2. Terminology Review
+
+- [ ] `ContextFS` is used as the product layer name
+- [ ] `VFS Kernel` is used as the implementation layer name
+- [ ] `Source` is used for mounted external resource boundaries
+- [ ] `Provider` is used only for internal suppliers or adapters
+- [ ] `Project` is not described as a `Source`
+- [ ] `Capability` is not described as permission
+- [ ] `Tool` is described as a file-style executable or stream resource, not a separate top-level system
+
+### 3. Spec and Design Sync
+
+Use this rule:
+
+> If the change affects object model, naming, path layout, operations, permissions, lifecycle, or kernel boundaries, the relevant docs must already be updated before ship.
+
+- [ ] `vision.md` updated if product direction or object meaning changed
+- [ ] `terminology.md` updated if naming or boundary rules changed
+- [ ] `contextfs-architecture.md` updated if product object model changed
+- [ ] `actant-vfs-reference-architecture.md` updated if kernel layering changed
+- [ ] `config-spec.md` updated if mounts, permissions, or children changed
+- [ ] `api-contracts.md` updated if paths or operations changed
+- [ ] `backend/index.md` updated if implementation baseline changed
+- [ ] `contextfs-roadmap.md` updated if milestone scope changed
+- [ ] `.trellis/workflow.md` updated if repository process changed
+
+### 4. Verification
 
 ```bash
-# Must pass
 pnpm lint
 pnpm type-check
 pnpm test
 ```
 
-- [ ] `pnpm lint` passes with 0 errors?
-- [ ] `pnpm type-check` passes with no type errors?
-- [ ] Tests pass?
-- [ ] No `console.log` statements (use logger)?
-- [ ] No non-null assertions (the `x!` operator)?
-- [ ] No `any` types?
+- [ ] `pnpm lint` passes
+- [ ] `pnpm type-check` passes
+- [ ] `pnpm test` passes or the skip reason is explicit
 
-### 2. Documentation Sync
+### 5. Pattern Scan
 
-**Spec Docs**:
-- [ ] Does `.trellis/spec/backend/` need updates?
-  - New patterns, new modules, new conventions
-- [ ] Does `.trellis/spec/frontend/` need updates?
-  - New components, new hooks, new patterns
-- [ ] Does `.trellis/spec/guides/` need updates?
-  - New cross-layer flows, lessons from bugs
+- [ ] No leftover `console.log`
+- [ ] No new `any`
+- [ ] No new non-null assertions
+- [ ] No silent contract drift
+- [ ] No active docs added in the wrong place
 
-**Key Question**: 
-> "If I fixed a bug or discovered something non-obvious, should I document it so future me (or others) won't hit the same issue?"
+### 6. Change Review
 
-If YES -> Update the relevant spec doc.
-
-### 3. API Changes
-
-If you modified API endpoints:
-
-- [ ] Input schema updated?
-- [ ] Output schema updated?
-- [ ] API documentation updated?
-- [ ] Client code updated to match?
-
-### 4. Database Changes
-
-If you modified database schema:
-
-- [ ] Migration file created?
-- [ ] Schema file updated?
-- [ ] Related queries updated?
-- [ ] Seed data updated (if applicable)?
-
-### 5. Cross-Layer Verification
-
-If the change spans multiple layers:
-
-- [ ] Data flows correctly through all layers?
-- [ ] Error handling works at each boundary?
-- [ ] Types are consistent across layers?
-- [ ] Loading states handled?
-
-### 6. Manual Testing
-
-- [ ] Feature works in browser/app?
-- [ ] Edge cases tested?
-- [ ] Error states tested?
-- [ ] Works after page refresh?
+- [ ] `git status` is understood
+- [ ] `git diff --name-only` matches intended scope
+- [ ] `git diff --stat` matches intended scope
+- [ ] No sensitive files are staged
 
 ---
 
-## Quick Check Flow
+## Quick Flow
 
 ```bash
-# 1. Code checks
-pnpm lint && pnpm type-check
-
-# 2. View changes
+pnpm lint
+pnpm type-check
+pnpm test
 git status
 git diff --name-only
-
-# 3. Based on changed files, check relevant items above
+git diff --stat
 ```
+
+Then answer:
+
+1. Would a new Agent read any wrong architecture information from the active tree?
+2. Did this change require spec or design updates?
+3. Is the naming still consistent with `terminology.md`?
+
+If any answer is uncertain, stop and fix it before ship.
 
 ---
 
 ## Common Oversights
 
-| Oversight | Consequence | Check |
-|-----------|-------------|-------|
-| Spec docs not updated | Others don't know the change | Check .trellis/spec/ |
-| Migration not created | Schema out of sync | Check db/migrations/ |
-| Types not synced | Runtime errors | Check shared types |
-| Tests not updated | False confidence | Run full test suite |
-| Console.log left in | Noisy production logs | Search for console.log |
+| Oversight | Consequence | Required Fix |
+|-----------|-------------|--------------|
+| changed contracts without doc sync | implementation outruns spec | update the active baseline docs |
+| used `Provider` where product docs require `Source` | naming drift | fix the doc or code naming boundary |
+| left old architecture terms in active docs | new Agents learn wrong model | move or remove stale docs |
+| changed path layout without updating contracts | broken assumptions | update `api-contracts.md` |
+| changed `ProjectManifest` shape without updating config spec | config drift | update `config-spec.md` |
 
 ---
 
 ## Relationship to Other Commands
 
+| Command | Role |
+|---------|------|
+| `/trellis-finish-work` | this checklist |
+| `/trellis-update-spec` | updates active baseline docs |
+| `/trellis-ship` | final delivery gate, commit, push, issue sync |
+| `/trellis-record-session` | records delivered work after commit |
+
+Core rule:
+
+```text
+spec / design / roadmap -> implementation -> verification -> ship
 ```
-Development Flow:
-  Write code -> Test -> /trellis-finish-work -> git commit -> /trellis-record-session
-                          |                              |
-                   Ensure completeness              Record progress
-                   
-Debug Flow:
-  Hit bug -> Fix -> /trellis-break-loop -> Knowledge capture
-                       |
-                  Deep analysis
-```
-
-- `/trellis-finish-work` - Check work completeness (this command)
-- `/trellis-record-session` - Record session and commits
-- `/trellis-break-loop` - Deep analysis after debugging
-
----
-
-## Core Principle
-
-> **Delivery includes not just code, but also documentation, verification, and knowledge capture.**
-
-Complete work = Code + Docs + Tests + Verification
