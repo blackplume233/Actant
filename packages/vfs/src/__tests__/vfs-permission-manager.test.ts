@@ -46,6 +46,7 @@ describe("VfsPermissionManager", () => {
       const source = createSource("agent-a");
       expect(pm.check(identity, "/memory/agent-a/notes.md", "read", source)).toBe("allow");
       expect(pm.check(identity, "/memory/agent-a/notes.md", "write", source)).toBe("allow");
+      expect(pm.check(identity, "/memory/agent-a/notes.md", "stat", source)).toBe("allow");
     });
 
     it("allows any agent to read other's memory", () => {

@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { VfsEntry } from "@actant/shared";
 import { createProcessSource, OutputBuffer, type ProcessHandle } from "../sources/process-source";
 
 describe("ProcessSource", () => {
@@ -64,9 +65,9 @@ describe("ProcessSource", () => {
     const handle = createTestProcess();
     const mount = createProcessSource("proc-1", "/proc/agent-a/12345", handle, { type: "process", pid: 12345 });
     const entries = await mount.handlers.list!("");
-    expect(entries.map((e) => e.name)).toContain("status");
-    expect(entries.map((e) => e.name)).toContain("stdout");
-    expect(entries.map((e) => e.name)).toContain("cmd");
+    expect(entries.map((entry: VfsEntry) => entry.name)).toContain("status");
+    expect(entries.map((entry: VfsEntry) => entry.name)).toContain("stdout");
+    expect(entries.map((entry: VfsEntry) => entry.name)).toContain("cmd");
   });
 
   it("greps across stdout and stderr", async () => {

@@ -1,9 +1,13 @@
 import { Command } from "commander";
+import { getBridgeSessionToken } from "@actant/shared";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 
 export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   const vfs = new Command("vfs").description("Virtual File System operations");
+  const sessionToken = getBridgeSessionToken();
+  const withToken = <T extends Record<string, unknown>>(params: T): T & { token?: string } =>
+    sessionToken ? { ...params, token: sessionToken } : params;
 
   // ── L0 Core ──────────────────────────────────────────────────────────
 
@@ -19,6 +23,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
           path,
           startLine: opts.start,
           endLine: opts.end,
+          token: sessionToken,
         });
         if (opts.json) {
           printer.log(JSON.stringify(result, null, 2));
@@ -47,7 +52,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
           for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
           content = Buffer.concat(chunks).toString("utf-8");
         }
-        const result = await client.call("vfs.write", { path, content });
+        const result = await client.call("vfs.write", withToken({ path, content }));
         const r = result as { bytesWritten: number; created: boolean };
         printer.log(`Written ${r.bytesWritten} bytes (created: ${r.created})`);
       } catch (err) {
@@ -69,6 +74,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
           oldStr: opts.old,
           newStr: opts.new,
           replaceAll: opts.all,
+          token: sessionToken,
         });
         const r = result as { replacements: number };
         printer.log(`${r.replacements} replacement(s) made`);
@@ -84,7 +90,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
     .description("Delete a VFS file")
     .action(async (path: string) => {
       try {
-        await client.call("vfs.delete", { path });
+        await client.call("vfs.delete", withToken({ path }));
         printer.log("Deleted");
       } catch (err) {
         presentError(err, printer);
@@ -109,6 +115,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
           recursive: opts.recursive,
           showHidden: opts.hidden,
           long: opts.long,
+          token: sessionToken,
         });
         const entries = result as Array<{ name: string; path: string; type: string; size?: number; mtime?: string }>;
         if (opts.json) {
@@ -134,7 +141,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
     .option("--json", "Output as JSON")
     .action(async (path: string, opts: { json?: boolean }) => {
       try {
-        const result = await client.call("vfs.stat", { path });
+        const result = await client.call("vfs.stat", withToken({ path }));
         if (opts.json) {
           printer.log(JSON.stringify(result, null, 2));
         } else {
@@ -157,7 +164,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
     .option("--json", "Output as JSON")
     .action(async (path: string | undefined, opts: { depth?: number; pattern?: string; json?: boolean }) => {
       try {
-        const result = await client.call("vfs.tree", { path, depth: opts.depth, pattern: opts.pattern });
+        const result = await client.call("vfs.tree", withToken({ path, depth: opts.depth, pattern: opts.pattern }));
         if (opts.json) {
           printer.log(JSON.stringify(result, null, 2));
         } else {
@@ -180,6 +187,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
           pattern,
           cwd: opts.cwd,
           type: opts.type as "file" | "directory" | "all" | undefined,
+          token: sessionToken,
         });
         const r = result as { matches: string[] };
         for (const m of r.matches) printer.log(m);
@@ -213,6 +221,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
           contextLines: opts.context,
           glob: opts.glob,
           maxResults: opts.max,
+          token: sessionToken,
         });
         const r = result as { matches: Array<{ path: string; line: number; content: string }>; totalMatches: number; truncated: boolean };
 
@@ -242,7 +251,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
     .option("--json", "Output as JSON")
     .action(async (path: string, opts: { json?: boolean }) => {
       try {
-        const result = await client.call("vfs.describe", { path });
+        const result = await client.call("vfs.describe", withToken({ path }));
         if (opts.json) {
           printer.log(JSON.stringify(result, null, 2));
         } else {
@@ -296,7 +305,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
     .description("Unmount a VFS source by name")
     .action(async (name: string) => {
       try {
-        const result = await client.call("vfs.unmount", { name });
+        const result = await client.call("vfs.unmount", withToken({ name }));
         const r = result as { ok: boolean };
         printer.log(r.ok ? "Unmounted" : "Not found");
       } catch (err) {

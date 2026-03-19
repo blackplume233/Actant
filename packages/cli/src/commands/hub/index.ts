@@ -15,6 +15,7 @@ import type {
   VfsListRpcResult,
   VfsReadResult,
 } from "@actant/shared";
+import { getBridgeSessionToken } from "@actant/shared";
 import type { RpcClient } from "../../client/rpc-client";
 import { ensureDaemonRunning } from "../daemon/start";
 import { presentError, type CliPrinter, defaultPrinter, type OutputFormat } from "../../output/index";
@@ -206,19 +207,20 @@ async function resolveHubBackend(
 }
 
 async function createConnectedHubBackend(client: RpcClient, projectDir: string): Promise<HubBackend> {
+  const sessionToken = getBridgeSessionToken();
   await client.call("hub.activate", { projectDir }) as HubActivateResult;
   const status = await client.call("hub.status", {}) as HubStatusResult;
   return {
     mode: "connected",
     status,
     read(path, startLine, endLine) {
-      return client.call("vfs.read", { path, startLine, endLine }) as Promise<VfsReadResult>;
+      return client.call("vfs.read", { path, startLine, endLine, token: sessionToken }) as Promise<VfsReadResult>;
     },
     list(path = "/hub/workspace", recursive, long) {
-      return client.call("vfs.list", { path, recursive, long }) as Promise<VfsListRpcResult>;
+      return client.call("vfs.list", { path, recursive, long, token: sessionToken }) as Promise<VfsListRpcResult>;
     },
     grep(pattern, path = "/hub/workspace", caseInsensitive, maxResults) {
-      return client.call("vfs.grep", { pattern, path, caseInsensitive, maxResults }) as Promise<VfsGrepRpcResult>;
+      return client.call("vfs.grep", { pattern, path, caseInsensitive, maxResults, token: sessionToken }) as Promise<VfsGrepRpcResult>;
     },
   };
 }

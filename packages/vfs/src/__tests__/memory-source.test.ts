@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import type { VfsEntry } from "@actant/shared";
 import { memorySourceFactory } from "../sources/memory-source";
 
 describe("MemorySource", () => {
@@ -30,7 +31,7 @@ describe("MemorySource", () => {
     await mount.handlers.write!("b.md", "B");
     const entries = await mount.handlers.list!("");
     expect(entries).toHaveLength(2);
-    expect(entries.map((e) => e.name)).toContain("a.md");
+    expect(entries.map((entry: VfsEntry) => entry.name)).toContain("a.md");
   });
 
   it("overwrites existing file", async () => {
@@ -41,6 +42,14 @@ describe("MemorySource", () => {
     expect(r2.created).toBe(false);
     const result = await mount.handlers.read!("f.md");
     expect(result.content).toBe("v2");
+  });
+
+  it("stats written files", async () => {
+    const mount = createMemoryMount();
+    await mount.handlers.write!("f.md", "v1");
+    const stat = await mount.handlers.stat!("f.md");
+    expect(stat.type).toBe("file");
+    expect(stat.size).toBe(2);
   });
 
   it("greps content across files", async () => {
