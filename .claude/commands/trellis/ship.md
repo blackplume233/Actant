@@ -13,6 +13,13 @@ This command is the final gate for:
 
 If any blocking gate fails, stop the ship flow first. Do not push partial truth.
 
+Delivery semantics:
+
+- If `ship` runs on `master` or `main`, it may complete the full delivery directly on that branch.
+- If `ship` runs on a child branch, its responsibility is only to finish review, verification, commit, and push of that child branch.
+- After a child-branch push, return to the main branch context and run `handle-pr` to execute the merge-to-main flow.
+- Do not treat "feature branch pushed" as equivalent to "delivered to master/main".
+
 **Timing**: after implementation and verification are complete, before final delivery
 
 ---
@@ -233,6 +240,19 @@ git push origin <current-branch>
 ```
 
 Never force push unless the human explicitly asks for it.
+
+Branch-aware rule:
+
+- If `<current-branch>` is `master` or `main`, continue to Phase 5 directly.
+- If `<current-branch>` is not `master` or `main`, stop after the push and record that the next required action is to switch to the main branch workflow and run `handle-pr`.
+- In that case, `ship` is only complete for the child-branch delivery stage. Main-branch delivery is completed by `handle-pr`, not by the child-branch `ship` itself.
+
+Required handoff note for child-branch push:
+
+```text
+Child branch push completed: <current-branch>
+Next step: switch to master/main context and run /handle-pr to validate and merge the branch into the main line.
+```
 
 ---
 
