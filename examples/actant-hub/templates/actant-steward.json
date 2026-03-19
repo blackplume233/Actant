@@ -4,7 +4,7 @@
   "description": "Actant 管家 — 人类唯一入口，替代 CLI。理解意图、路由任务、汇报结果。",
   "archetype": "service",
   "backend": { "type": "claude-code" },
-  "domainContext": {
+  "project": {
     "skills": [
       "intent-routing",
       "conversation-management",

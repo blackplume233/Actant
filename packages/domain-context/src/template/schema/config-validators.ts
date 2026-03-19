@@ -9,14 +9,14 @@ import type {
   AgentBackendConfig,
   ModelProviderConfig,
   PermissionsInput,
-  DomainContextConfig,
+  ProjectContextConfig,
   AgentTemplate,
 } from "@actant/shared";
 import {
   AgentBackendSchema,
   ModelProviderSchema,
   PermissionsInputSchema,
-  DomainContextSchema,
+  ProjectContextSchema,
   AgentTemplateSchema,
 } from "./template-schema";
 import { ScheduleConfigSchema, type ScheduleConfig } from "../../schemas/schedule-config";
@@ -113,8 +113,8 @@ export function validateScheduleConfig(data: unknown): ConfigValidationResult<Sc
   return { valid: true, data: result.data, errors: [], warnings };
 }
 
-export function validateDomainContextConfig(data: unknown): ConfigValidationResult<DomainContextConfig> {
-  const result = DomainContextSchema.safeParse(data);
+export function validateProjectContextConfig(data: unknown): ConfigValidationResult<ProjectContextConfig> {
+  const result = ProjectContextSchema.safeParse(data);
   if (!result.success) {
     return { valid: false, errors: zodToIssues(result.error), warnings: [] };
   }
@@ -123,13 +123,13 @@ export function validateDomainContextConfig(data: unknown): ConfigValidationResu
   const ctx = result.data;
   if (ctx.subAgents && ctx.subAgents.length > 0 && (!ctx.skills || ctx.skills.length === 0) && (!ctx.prompts || ctx.prompts.length === 0)) {
     warnings.push(warning(
-      "domainContext",
-      "subAgents are defined but no skills or prompts; the agent may lack domain context",
-      "EMPTY_DOMAIN_WITH_SUBAGENTS",
+      "project",
+      "subAgents are defined but no skills or prompts; the agent may lack project context",
+      "EMPTY_PROJECT_WITH_SUBAGENTS",
     ));
   }
 
-  return { valid: true, data: result.data as DomainContextConfig, errors: [], warnings };
+  return { valid: true, data: result.data as ProjectContextConfig, errors: [], warnings };
 }
 
 // ---------------------------------------------------------------------------
@@ -168,9 +168,9 @@ export function validateTemplate(data: unknown, stepRegistry?: StepRegistryLike)
   }
 
   // Semantic: domain context checks
-  const dcResult = validateDomainContextConfig(template.domainContext);
-  if (dcResult.warnings.length > 0) {
-    warnings.push(...dcResult.warnings);
+  const projectResult = validateProjectContextConfig(template.project);
+  if (projectResult.warnings.length > 0) {
+    warnings.push(...projectResult.warnings);
   }
 
   // Semantic: custom backend without config

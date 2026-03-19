@@ -45,9 +45,9 @@ export type {
   PermissionsInput,
 } from "./template.types";
 export type {
-  DomainContextConfig,
+  ProjectContextConfig,
   McpServerRef,
-} from "./domain-context.types";
+} from "./project-context.types";
 export type {
   VersionedComponent,
   ComponentOrigin,

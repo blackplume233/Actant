@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   AgentTemplateSchema,
-  DomainContextSchema,
+  ProjectContextSchema,
   McpServerRefSchema,
 } from "./template-schema";
 
@@ -17,7 +17,7 @@ const VALID_TEMPLATE = {
     type: "anthropic" as const,
     config: { apiKeyEnv: "ANTHROPIC_API_KEY" },
   },
-  domainContext: {
+  project: {
     skills: ["code-review", "typescript-expert"],
     prompts: ["system-code-reviewer"],
     mcpServers: [
@@ -47,7 +47,7 @@ const MINIMAL_TEMPLATE = {
   version: "0.1.0",
   backend: { type: "cursor" as const },
   provider: { type: "openai" as const },
-  domainContext: {},
+  project: {},
 };
 
 describe("AgentTemplateSchema", () => {
@@ -57,8 +57,8 @@ describe("AgentTemplateSchema", () => {
     if (result.success) {
       expect(result.data.name).toBe("code-review-agent");
       expect(result.data.version).toBe("1.0.0");
-      expect(result.data.domainContext.skills).toEqual(["code-review", "typescript-expert"]);
-      expect(result.data.domainContext.mcpServers).toHaveLength(1);
+      expect(result.data.project.skills).toEqual(["code-review", "typescript-expert"]);
+      expect(result.data.project.mcpServers).toHaveLength(1);
     }
   });
 
@@ -67,10 +67,10 @@ describe("AgentTemplateSchema", () => {
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.name).toBe("minimal");
-      expect(result.data.domainContext.skills).toEqual([]);
-      expect(result.data.domainContext.prompts).toEqual([]);
-      expect(result.data.domainContext.mcpServers).toEqual([]);
-      expect(result.data.domainContext.subAgents).toEqual([]);
+      expect(result.data.project.skills).toEqual([]);
+      expect(result.data.project.prompts).toEqual([]);
+      expect(result.data.project.mcpServers).toEqual([]);
+      expect(result.data.project.subAgents).toEqual([]);
       expect(result.data.description).toBeUndefined();
       expect(result.data.initializer).toBeUndefined();
       expect(result.data.metadata).toBeUndefined();
@@ -151,9 +151,9 @@ describe("AgentTemplateSchema", () => {
     }
   });
 
-  it("rejects missing domainContext", () => {
-    const { domainContext: _, ...noDC } = MINIMAL_TEMPLATE;
-    const result = AgentTemplateSchema.safeParse(noDC);
+  it("rejects missing project", () => {
+    const { project: _, ...noProject } = MINIMAL_TEMPLATE;
+    const result = AgentTemplateSchema.safeParse(noProject);
     expect(result.success).toBe(false);
   });
 
@@ -225,9 +225,9 @@ describe("AgentTemplateSchema", () => {
   });
 });
 
-describe("DomainContextSchema", () => {
+describe("ProjectContextSchema", () => {
   it("applies defaults for all optional arrays", () => {
-    const result = DomainContextSchema.safeParse({});
+    const result = ProjectContextSchema.safeParse({});
     expect(result.success).toBe(true);
     if (result.success) {
       expect(result.data.skills).toEqual([]);
@@ -238,8 +238,8 @@ describe("DomainContextSchema", () => {
     }
   });
 
-  it("accepts full domain context", () => {
-    const result = DomainContextSchema.safeParse({
+  it("accepts full project context", () => {
+    const result = ProjectContextSchema.safeParse({
       skills: ["a", "b"],
       prompts: ["p1"],
       mcpServers: [{ name: "fs", command: "npx", args: ["-y", "fs-server"] }],

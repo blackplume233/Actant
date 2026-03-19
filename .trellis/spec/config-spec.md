@@ -15,6 +15,10 @@
 
 旧模板聚合配置、旧 DomainContext 聚合配置若仍存在于代码中，当前视为历史实现遗留，不作为新的规范入口。
 
+M1 契约替换期间，仓库中的 agent template / workspace materialization 接口统一使用 `project` 字段表达项目级资源选择。
+它只表示当前 agent workspace 需要装配哪些 skills、prompts、MCP servers、plugins 等资源引用，
+不重新引入旧 `DomainContext` 作为新的默认配置真相。
+
 ---
 
 ## 2. ProjectManifest

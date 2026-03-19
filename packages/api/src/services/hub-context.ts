@@ -5,7 +5,6 @@ import type {
   HubStatusResult,
   VfsSourceRegistration,
 } from "@actant/shared";
-import { DomainContextSource } from "@actant/context";
 import {
   createProjectContextFactoryRegistry,
   createProjectContextRegistrations,
@@ -35,8 +34,6 @@ export interface ActiveHubContext {
   mounts: HubActivateResult["mounts"];
   sourceNames: string[];
 }
-
-const HUB_DOMAIN_SOURCE_NAME = "hub-domain";
 
 export class HubContextService {
   private readonly factoryRegistry = createProjectContextFactoryRegistry();
@@ -104,18 +101,6 @@ export class HubContextService {
     const context = await loadProjectContext(projectDir);
     const registrations = buildHubRegistrations(context, this.factoryRegistry);
     await this.replaceActiveContext(registrations);
-
-    this.appContext.contextManager.unregisterSource(HUB_DOMAIN_SOURCE_NAME);
-    this.appContext.contextManager.registerSource(new DomainContextSource(
-      {
-        skillManager: context.managers.skillManager,
-        promptManager: context.managers.promptManager,
-        mcpConfigManager: context.managers.mcpConfigManager,
-        workflowManager: context.managers.workflowManager,
-        templateRegistry: context.managers.templateRegistry,
-      },
-      { name: HUB_DOMAIN_SOURCE_NAME },
-    ));
 
     const next: ActiveHubContext = {
       projectRoot: context.projectRoot,

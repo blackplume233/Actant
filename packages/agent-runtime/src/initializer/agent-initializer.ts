@@ -10,7 +10,7 @@ import {
   createLogger,
 } from "@actant/shared";
 import type { TemplateRegistry } from "@actant/domain-context";
-import { WorkspaceBuilder, type DomainManagers } from "../builder/workspace-builder";
+import { WorkspaceBuilder, type ProjectComponentManagers } from "../builder/workspace-builder";
 import { resolvePermissions } from "@actant/domain-context";
 import { readInstanceMeta, writeInstanceMeta } from "../state/index";
 import { InitializationPipeline } from "./pipeline/initialization-pipeline";
@@ -25,7 +25,7 @@ const logger = createLogger("agent-initializer");
 
 export interface InitializerOptions {
   defaultLaunchMode?: LaunchMode;
-  domainManagers?: DomainManagers;
+  projectManagers?: ProjectComponentManagers;
   /** Step registry for InitializerConfig pipeline execution. When provided, template.initializer.steps will be executed during createInstance(). */
   stepRegistry?: StepRegistry;
 }
@@ -55,7 +55,7 @@ export class AgentInitializer {
     private readonly instancesBaseDir: string,
     private readonly options?: InitializerOptions,
   ) {
-    this.builder = new WorkspaceBuilder(options?.domainManagers);
+    this.builder = new WorkspaceBuilder(options?.projectManagers);
     if (options?.stepRegistry) {
       this.pipeline = new InitializationPipeline(options.stepRegistry);
     }
@@ -69,7 +69,7 @@ export class AgentInitializer {
    * Create a new Agent Instance.
    * 1. Resolve template from registry
    * 2. Create workspace directory {instancesBaseDir}/{name}/
-   * 3. Materialize Domain Context files
+   * 3. Materialize project resource files
    * 4. Write .actant.json metadata
    *
    * @throws {TemplateNotFoundError} if template is not in registry
@@ -122,7 +122,7 @@ export class AgentInitializer {
       const finalPermissions = overrides?.permissions ?? template.permissions;
       await this.builder.build(
         workspaceDir,
-        template.domainContext,
+        template.project,
         template.backend.type,
         finalPermissions,
       );

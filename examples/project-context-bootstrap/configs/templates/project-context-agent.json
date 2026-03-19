@@ -8,7 +8,7 @@
   "provider": {
     "type": "anthropic"
   },
-  "domainContext": {
+  "project": {
     "skills": ["project-context-reader"],
     "prompts": ["project-context-bootstrap"]
   }

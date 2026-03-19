@@ -41,7 +41,6 @@
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
-    "@actant/context": "workspace:0.5.0",
     "@actant/domain-context": "workspace:0.5.0",
     "@actant/shared": "workspace:0.5.0",
     "@actant/source": "workspace:0.5.0",

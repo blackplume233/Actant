@@ -51,7 +51,7 @@ function makeContext(overrides?: Partial<StepContext>): StepContext {
       version: "1.0.0",
       backend: { type: "cursor" },
       provider: { type: "openai" },
-      domainContext: {},
+      project: {},
     } as AgentTemplate,
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
     state: new Map(),

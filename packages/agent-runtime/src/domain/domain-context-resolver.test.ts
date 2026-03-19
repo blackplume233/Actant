@@ -13,7 +13,7 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
     version: "1.0.0",
     backend: { type: "cursor" },
     provider: { type: "anthropic" },
-    domainContext: {
+    project: {
       skills: ["code-review", "ts-expert"],
       prompts: ["system-reviewer"],
       mcpServers: [{ name: "fs", command: "npx", args: ["-y", "mcp-fs"] }],
@@ -52,7 +52,7 @@ describe("Domain Context Resolution Integration", () => {
 
   it("should materialize resolved skills into AGENTS.md with full content", async () => {
     const initializer = new AgentInitializer(registry, tmpDir, {
-      domainManagers: { skills: skillMgr, prompts: promptMgr, workflows: workflowMgr },
+      projectManagers: { skills: skillMgr, prompts: promptMgr, workflows: workflowMgr },
     });
     await initializer.createInstance("test-agent", "integration-tpl");
 
@@ -65,7 +65,7 @@ describe("Domain Context Resolution Integration", () => {
 
   it("should materialize resolved prompts into prompts/system.md", async () => {
     const initializer = new AgentInitializer(registry, tmpDir, {
-      domainManagers: { skills: skillMgr, prompts: promptMgr, workflows: workflowMgr },
+      projectManagers: { skills: skillMgr, prompts: promptMgr, workflows: workflowMgr },
     });
     await initializer.createInstance("test-agent", "integration-tpl");
 
@@ -76,7 +76,7 @@ describe("Domain Context Resolution Integration", () => {
 
   it("should materialize resolved workflow into .trellis/workflow.md", async () => {
     const initializer = new AgentInitializer(registry, tmpDir, {
-      domainManagers: { skills: skillMgr, prompts: promptMgr, workflows: workflowMgr },
+      projectManagers: { skills: skillMgr, prompts: promptMgr, workflows: workflowMgr },
     });
     await initializer.createInstance("test-agent", "integration-tpl");
 
@@ -87,7 +87,7 @@ describe("Domain Context Resolution Integration", () => {
 
   it("should materialize inline MCP configs (not name-resolved)", async () => {
     const initializer = new AgentInitializer(registry, tmpDir, {
-      domainManagers: { skills: skillMgr, prompts: promptMgr, workflows: workflowMgr },
+      projectManagers: { skills: skillMgr, prompts: promptMgr, workflows: workflowMgr },
     });
     await initializer.createInstance("test-agent", "integration-tpl");
 
@@ -98,7 +98,7 @@ describe("Domain Context Resolution Integration", () => {
   it("should throw ComponentReferenceError when skill is not registered", async () => {
     const emptySkillMgr = new SkillManager();
     const initializer = new AgentInitializer(registry, tmpDir, {
-      domainManagers: { skills: emptySkillMgr, prompts: promptMgr, workflows: workflowMgr },
+      projectManagers: { skills: emptySkillMgr, prompts: promptMgr, workflows: workflowMgr },
     });
 
     await expect(
@@ -109,7 +109,7 @@ describe("Domain Context Resolution Integration", () => {
   it("should throw ComponentReferenceError when prompt is not registered", async () => {
     const emptyPromptMgr = new PromptManager();
     const initializer = new AgentInitializer(registry, tmpDir, {
-      domainManagers: { skills: skillMgr, prompts: emptyPromptMgr, workflows: workflowMgr },
+      projectManagers: { skills: skillMgr, prompts: emptyPromptMgr, workflows: workflowMgr },
     });
 
     await expect(
@@ -120,7 +120,7 @@ describe("Domain Context Resolution Integration", () => {
   it("should throw ComponentReferenceError when workflow is not registered", async () => {
     const emptyWfMgr = new WorkflowManager();
     const initializer = new AgentInitializer(registry, tmpDir, {
-      domainManagers: { skills: skillMgr, prompts: promptMgr, workflows: emptyWfMgr },
+      projectManagers: { skills: skillMgr, prompts: promptMgr, workflows: emptyWfMgr },
     });
 
     await expect(
@@ -139,7 +139,7 @@ describe("Domain Context Resolution Integration", () => {
 
   it("should work with partial managers (only skills resolved)", async () => {
     const initializer = new AgentInitializer(registry, tmpDir, {
-      domainManagers: { skills: skillMgr },
+      projectManagers: { skills: skillMgr },
     });
     await initializer.createInstance("partial-agent", "integration-tpl");
 

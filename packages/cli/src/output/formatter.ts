@@ -55,7 +55,7 @@ export function formatTemplateDetail(
     return template.name;
   }
 
-  const ctx = template.domainContext;
+  const ctx = template.project;
   const lines = [
     `${chalk.bold("Template:")} ${template.name}`,
     `${chalk.bold("Version:")}  ${template.version}`,
@@ -68,7 +68,7 @@ export function formatTemplateDetail(
   }
 
   lines.push("");
-  lines.push(chalk.bold("Domain Context:"));
+  lines.push(chalk.bold("Project Context:"));
   lines.push(`  Skills:      ${ctx.skills?.length ?? 0} ref(s)   ${(ctx.skills ?? []).join(", ") || chalk.dim("none")}`);
   lines.push(`  Prompts:     ${ctx.prompts?.length ?? 0} ref(s)   ${(ctx.prompts ?? []).join(", ") || chalk.dim("none")}`);
   lines.push(`  MCP Servers: ${ctx.mcpServers?.length ?? 0} ref(s)   ${(ctx.mcpServers ?? []).map((s) => s.name).join(", ") || chalk.dim("none")}`);

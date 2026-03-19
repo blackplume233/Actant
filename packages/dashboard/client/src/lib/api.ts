@@ -39,7 +39,7 @@ export interface TemplateListItem {
   description?: string;
   archetype?: string;
   metadata?: Record<string, string>;
-  domainContext?: { skills?: string[]; prompts?: string[]; mcpServers?: string[] };
+  project?: { skills?: string[]; prompts?: string[]; mcpServers?: string[] };
   schedule?: Record<string, unknown>;
 }
 

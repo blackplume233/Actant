@@ -4,7 +4,7 @@
   "description": "Actant 维护者 — 自修复 + 自进化免疫系统。监控健康、诊断问题、自动修复、生成进化报告。",
   "archetype": "employee",
   "backend": { "type": "claude-code" },
-  "domainContext": {
+  "project": {
     "skills": [
       "self-diagnosis",
       "self-repair",

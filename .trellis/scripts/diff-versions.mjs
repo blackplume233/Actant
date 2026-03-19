@@ -69,6 +69,13 @@ function diffFields(oldFields, newFields) {
   return diffArrayByKey(oldFields || [], newFields || [], f => f.name);
 }
 
+function getTypeInterfaceGroup(config, groupKey) {
+  if (groupKey === "projectContext") {
+    return config.typeInterfaces.projectContext || config.typeInterfaces.domainContext || [];
+  }
+  return config.typeInterfaces[groupKey] || [];
+}
+
 async function main() {
   const [api1, api2, cfg1, cfg2] = await Promise.all([
     loadJson(v1, "api-surface.json"),
@@ -300,9 +307,9 @@ async function main() {
     w("## 6. TypeScript 接口变更");
     w("");
 
-    for (const groupKey of ["agent", "template", "domainContext", "domainComponent", "source"]) {
-      const old = cfg1.typeInterfaces[groupKey] || [];
-      const cur = cfg2.typeInterfaces[groupKey] || [];
+    for (const groupKey of ["agent", "template", "projectContext", "domainComponent", "source"]) {
+      const old = getTypeInterfaceGroup(cfg1, groupKey);
+      const cur = getTypeInterfaceGroup(cfg2, groupKey);
       const diff = diffArrayByKey(old, cur, i => i.name);
 
       if (diff.added.length || diff.removed.length || diff.modified.length) {

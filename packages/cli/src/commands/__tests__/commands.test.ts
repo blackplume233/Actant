@@ -50,7 +50,7 @@ const minimalTemplate = {
   version: "1.0.0",
   backend: { type: "cursor" as const },
   provider: { type: "anthropic" as const },
-  domainContext: {},
+  project: {},
 };
 
 describe("createAgentCreateCommand", () => {

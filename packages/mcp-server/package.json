@@ -45,7 +45,6 @@
   },
   "dependencies": {
     "@actant/api": "workspace:0.5.0",
-    "@actant/context": "workspace:0.5.0",
     "@actant/shared": "workspace:0.5.0",
     "@actant/vfs": "workspace:0.5.0",
     "@modelcontextprotocol/sdk": "^1.27.1",

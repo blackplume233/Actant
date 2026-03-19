@@ -99,7 +99,7 @@ export function buildTemplateJson(
     description: basic.description,
     archetype: arch,
     backend: { type: basic.backend },
-    domainContext: {
+    project: {
       skills,
       prompts: basic.prompt ? [`${basic.name}-system-prompt`] : [],
       mcpServers: [],

@@ -1,4 +1,4 @@
-export interface DomainContextConfig {
+export interface ProjectContextConfig {
   skills?: string[];
   prompts?: string[];
   mcpServers?: McpServerRef[];

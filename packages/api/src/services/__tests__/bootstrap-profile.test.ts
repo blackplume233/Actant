@@ -21,7 +21,7 @@ describe("AppContext bootstrap profile", () => {
         version: "1.0.0",
         backend: { type: "claude-code" },
         provider: { type: "anthropic" },
-        domainContext: {},
+        project: {},
       }),
       "utf-8",
     );

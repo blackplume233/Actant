@@ -4,7 +4,7 @@
   "description": "Actant 资产管家 — 记忆治理 + 托管资产管理 + 运行记录归档。一切即 file。",
   "archetype": "employee",
   "backend": { "type": "claude-code" },
-  "domainContext": {
+  "project": {
     "skills": [
       "memory-governance",
       "asset-registry",

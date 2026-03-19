@@ -35,7 +35,7 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
     version: "1.0.0",
     backend: { type: "claude-code" },
     provider: { type: "openai", protocol: "openai" },
-    domainContext: { skills: ["skill-a"] },
+    project: { skills: ["skill-a"] },
     ...overrides,
   };
 }

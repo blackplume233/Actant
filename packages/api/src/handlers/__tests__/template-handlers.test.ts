@@ -17,7 +17,7 @@ describe("template handlers", () => {
     version: "1.0.0",
     backend: { type: "cursor" },
     provider: { type: "anthropic" },
-    domainContext: {},
+    project: {},
   };
 
   beforeAll(async () => {

@@ -4,7 +4,7 @@
   "description": "Actant 研究员 — 信息检索 + 知识采集。为其他 Agent 和人类提供外部知识支持。",
   "archetype": "service",
   "backend": { "type": "claude-code" },
-  "domainContext": {
+  "project": {
     "skills": [
       "web-research",
       "knowledge-synthesis",

@@ -49,7 +49,7 @@ function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
     version: "1.0.0",
     backend: { type: "test-acp" },
     provider: { type: "openai", protocol: "openai" },
-    domainContext: { skills: ["skill-a"] },
+    project: { skills: ["skill-a"] },
     archetype: "service",
     ...overrides,
   };

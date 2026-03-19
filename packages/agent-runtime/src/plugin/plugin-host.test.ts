@@ -418,26 +418,26 @@ describe("adaptLegacyPlugin", () => {
     expect(plugin.scope).toBe("actant");
   });
 
-  it("only has domainContext plug — no runtime, hooks, contextProviders, etc.", () => {
+  it("only has project plug — no runtime, hooks, contextProviders, etc.", () => {
     const plugin = adaptLegacyPlugin(legacyDef);
     expect(plugin.runtime).toBeUndefined();
     expect(plugin.hooks).toBeUndefined();
     expect(plugin.contextProviders).toBeUndefined();
     expect(plugin.subsystems).toBeUndefined();
     expect(plugin.sources).toBeUndefined();
-    expect(plugin.domainContext).toBeDefined();
+    expect(plugin.project).toBeDefined();
   });
 
-  it("domainContext returns plugin name in plugins array when enabled", () => {
+  it("project returns plugin name in plugins array when enabled", () => {
     const plugin = adaptLegacyPlugin(legacyDef);
-    const ctx = plugin.domainContext!(baseCtx);
+    const ctx = plugin.project!(baseCtx);
     expect(ctx?.plugins).toContain("my-ext");
   });
 
-  it("domainContext returns undefined when enabled === false", () => {
+  it("project returns undefined when enabled === false", () => {
     const disabled: PluginDefinition = { ...legacyDef, enabled: false };
     const plugin = adaptLegacyPlugin(disabled);
-    expect(plugin.domainContext!(baseCtx)).toBeUndefined();
+    expect(plugin.project!(baseCtx)).toBeUndefined();
   });
 
   it("can be registered and started in PluginHost", async () => {

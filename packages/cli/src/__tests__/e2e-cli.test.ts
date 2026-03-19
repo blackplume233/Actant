@@ -79,7 +79,7 @@ describe("CLI E2E (stdio)", { timeout: 20_000 }, () => {
     version: "1.0.0",
     backend: { type: "claude-code" },
     provider: { type: "anthropic" },
-    domainContext: {},
+    project: {},
   };
 
   beforeAll(async () => {

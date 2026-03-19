@@ -70,7 +70,7 @@ describe("SourceValidator", () => {
       version: "1.0.0",
       description: "A template",
       backend: { type: "claude-code" },
-      domainContext: { skills: ["my-skill"], prompts: ["my-prompt"] },
+      project: { skills: ["my-skill"], prompts: ["my-prompt"] },
     };
     await writeFile(join(tmpDir, "templates/my-tpl.json"), JSON.stringify(template));
 
@@ -223,7 +223,7 @@ describe("SourceValidator", () => {
   describe("template validation", () => {
     it("reports error for template missing backend", async () => {
       await createMinimalSource({
-        template: { name: "bad-tpl", version: "1.0.0", domainContext: {} },
+        template: { name: "bad-tpl", version: "1.0.0", project: {} },
       });
       const report = await validator.validate(tmpDir);
 

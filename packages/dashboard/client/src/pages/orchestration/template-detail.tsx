@@ -72,8 +72,8 @@ export function TemplateDetailPage() {
   const archetype = resolveArchetype(template.archetype);
   const config = ARCHETYPE_CONFIG[archetype];
   const Icon = config.icon;
-  const skills = template.domainContext?.skills ?? [];
-  const prompts = template.domainContext?.prompts ?? [];
+  const skills = template.project?.skills ?? [];
+  const prompts = template.project?.prompts ?? [];
   const layer = template.metadata?.layer;
   const schedule = template.schedule as Record<string, unknown> | undefined;
   const hasSchedule = schedule && Object.keys(schedule).length > 0;
