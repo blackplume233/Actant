@@ -33,6 +33,16 @@ export {
   createDomainSource,
   createAgentRegistrySource,
   createDaemonInfoSource,
+  createSkillSource,
+  createMcpConfigSource,
+  createMcpRuntimeSource,
+  createAgentRuntimeSource,
+  type McpRuntimeRecord,
+  type McpRuntimeSourceProvider,
+  type McpRuntimeWatchEvent,
+  type AgentRuntimeSourceProvider,
+  type AgentRuntimeWatchEvent,
+  type AgentControlRequest,
 } from "./sources/index";
 export {
   VfsDataStore,

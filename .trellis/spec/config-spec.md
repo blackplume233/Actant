@@ -68,6 +68,29 @@ V1 内置路径约定：
 - `/mcp/runtime`
 - `/agents`
 
+调用面布局约定：
+
+```ts
+interface HubMountLayout {
+  workspace: string;
+  config: string;
+  skills: string;
+  agents: string;
+  mcpConfigs: string;
+  mcpRuntime: string;
+  mcpLegacy: string;
+  prompts: string;
+  workflows: string;
+  templates: string;
+}
+```
+
+说明：
+
+- `mcpConfigs` 是 MCP 静态配置的标准挂载位
+- `mcpRuntime` 是 MCP 运行时状态与流节点的标准挂载位
+- `mcpLegacy` 只作为兼容别名保留给旧 `/mcp` 入口，不能替代 `/mcp/configs`
+
 ---
 
 ## 4. PermissionConfig
@@ -132,6 +155,20 @@ V1 内置 Source 及其最小配置职责：
 | `McpConfigSource` | `/mcp/configs/*` | 声明 MCP 静态配置来源 |
 | `McpRuntimeSource` | `/mcp/runtime/*` | 运行时来源，无需复杂静态配置 |
 | `AgentRuntime` | `/agents/*` | 运行时来源，无需复杂静态配置 |
+
+运行时 source 的最小节点结构：
+
+- `/_catalog.json`
+- `/<name>/status.json`
+- `/<name>/streams/*`
+- `/<name>/control/request.json`
+
+能力约束：
+
+- 运行时 source 至少要表达 `read/list/stat/watch`
+- 流节点额外表达 `stream`
+- 控制节点是否允许 `write` 由 provider 决定，但节点命名和路径必须稳定
+- 权限配置中的 `watch` / `stream` 位必须与实际 capability 对齐，不能只对 `read/write` 建模
 
 ---
 

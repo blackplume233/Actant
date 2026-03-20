@@ -20,8 +20,11 @@ const HUB_LAYOUT = {
   workspace: "/hub/workspace",
   config: "/hub/config",
   skills: "/hub/skills",
+  agents: "/hub/agents",
+  mcpConfigs: "/hub/mcp/configs",
+  mcpRuntime: "/hub/mcp/runtime",
+  mcpLegacy: "/hub/mcp",
   prompts: "/hub/prompts",
-  mcp: "/hub/mcp",
   workflows: "/hub/workflows",
   templates: "/hub/templates",
 } as const;

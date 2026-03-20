@@ -20,6 +20,10 @@ import {
   type VfsGrepRpcResult,
   type VfsDescribeParams,
   type VfsDescribeRpcResult,
+  type VfsWatchParams,
+  type VfsWatchRpcResult,
+  type VfsStreamParams,
+  type VfsStreamRpcResult,
   type VfsMountRpcParams,
   type VfsMountRpcResult,
   type VfsMountListResult,
@@ -41,6 +45,8 @@ export function registerVfsHandlers(registry: HandlerRegistry): void {
   registry.register("vfs.glob", handleVfsGlob);
   registry.register("vfs.grep", handleVfsGrep);
   registry.register("vfs.describe", handleVfsDescribe);
+  registry.register("vfs.watch", handleVfsWatch);
+  registry.register("vfs.stream", handleVfsStream);
   registry.register("vfs.mount", handleVfsMount);
   registry.register("vfs.unmount", handleVfsUnmount);
   registry.register("vfs.mountList", handleVfsMountList);
@@ -328,6 +334,60 @@ async function handleVfsDescribe(
   };
 }
 
+async function handleVfsWatch(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<VfsWatchRpcResult> {
+  const { path, token, maxEvents, timeoutMs, pattern, events } = params as unknown as VfsWatchParams;
+  const { kernel, requestContext } = selectVfsKernel(ctx, token);
+  const resolved = kernel.resolve(path);
+  if (!resolved) {
+    throw createPathNotFoundError(path);
+  }
+
+  try {
+    const iterable = await kernel.watch(path, requestContext, { pattern, events });
+    const result = await collectAsyncIterable(iterable, {
+      maxItems: maxEvents ?? 1,
+      timeoutMs: timeoutMs ?? 250,
+    });
+    return {
+      events: result.items,
+      truncated: result.truncated,
+      timedOut: result.timedOut,
+    };
+  } catch (error) {
+    maybeWrapKernelError(error);
+  }
+}
+
+async function handleVfsStream(
+  params: Record<string, unknown>,
+  ctx: AppContext,
+): Promise<VfsStreamRpcResult> {
+  const { path, token, maxChunks, timeoutMs } = params as unknown as VfsStreamParams;
+  const { kernel, requestContext } = selectVfsKernel(ctx, token);
+  const resolved = kernel.resolve(path);
+  if (!resolved) {
+    throw createPathNotFoundError(path);
+  }
+
+  try {
+    const iterable = await kernel.stream(path, requestContext);
+    const result = await collectAsyncIterable(iterable, {
+      maxItems: maxChunks ?? 1,
+      timeoutMs: timeoutMs ?? 250,
+    });
+    return {
+      chunks: result.items,
+      truncated: result.truncated,
+      timedOut: result.timedOut,
+    };
+  } catch (error) {
+    maybeWrapKernelError(error);
+  }
+}
+
 async function handleVfsMount(
   params: Record<string, unknown>,
   ctx: AppContext,
@@ -374,4 +434,61 @@ async function handleVfsMountList(
       fileCount: m.fileCount,
     })),
   };
+}
+
+async function collectAsyncIterable<T>(
+  iterable: AsyncIterable<T>,
+  options: { maxItems: number; timeoutMs: number },
+): Promise<{ items: T[]; truncated: boolean; timedOut: boolean }> {
+  const items: T[] = [];
+  const iterator = iterable[Symbol.asyncIterator]();
+  const deadline = Date.now() + Math.max(options.timeoutMs, 0);
+  let truncated = false;
+  let timedOut = false;
+
+  try {
+    while (items.length < options.maxItems) {
+      const remainingMs = Math.max(deadline - Date.now(), 0);
+      const next = await nextWithTimeout(iterator, remainingMs);
+      if (next === "timeout") {
+        timedOut = true;
+        break;
+      }
+      if (next.done) {
+        break;
+      }
+      items.push(next.value);
+    }
+
+    if (items.length >= options.maxItems) {
+      truncated = true;
+    }
+  } finally {
+    await iterator.return?.();
+  }
+
+  return { items, truncated, timedOut };
+}
+
+async function nextWithTimeout<T>(
+  iterator: AsyncIterator<T>,
+  timeoutMs: number,
+): Promise<IteratorResult<T> | "timeout"> {
+  if (timeoutMs <= 0) {
+    return "timeout";
+  }
+
+  return new Promise<IteratorResult<T> | "timeout">((resolve, reject) => {
+    const timer = setTimeout(() => resolve("timeout"), timeoutMs);
+    iterator.next().then(
+      (result) => {
+        clearTimeout(timer);
+        resolve(result);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
 }

@@ -6,6 +6,7 @@ import type { SourceEntry, SourceConfig, PresetDefinition } from "./source.types
 import type { HostCapability, HostProfile, HostRuntimeState } from "./host.types";
 import type { ActivityRecord, ActivitySessionSummary, ConversationTurn } from "./activity.types";
 import type { PluginRef } from "./plugin.types";
+import type { VfsStreamChunk, VfsWatchEvent } from "./vfs.types";
 
 // ---------------------------------------------------------------------------
 // JSON-RPC 2.0 base types
@@ -531,8 +532,11 @@ export interface HubMountLayout {
   workspace: string;
   config: string;
   skills: string;
+  agents: string;
+  mcpConfigs: string;
+  mcpRuntime: string;
+  mcpLegacy: string;
   prompts: string;
-  mcp: string;
   workflows: string;
   templates: string;
 }
@@ -949,6 +953,8 @@ export interface RpcMethodMap {
   "vfs.glob": { params: VfsGlobRpcParams; result: VfsGlobRpcResult };
   "vfs.grep": { params: VfsGrepRpcParams; result: VfsGrepRpcResult };
   "vfs.describe": { params: VfsDescribeParams; result: VfsDescribeRpcResult };
+  "vfs.watch": { params: VfsWatchParams; result: VfsWatchRpcResult };
+  "vfs.stream": { params: VfsStreamParams; result: VfsStreamRpcResult };
   "vfs.mount": { params: VfsMountRpcParams; result: VfsMountRpcResult };
   "vfs.unmount": { params: VfsUnmountParams; result: VfsUnmountResult };
   "vfs.mountList": { params: VfsMountListParams; result: VfsMountListResult };
@@ -1075,6 +1081,32 @@ export interface VfsDescribeRpcResult {
   sourceType: string;
   capabilities: string[];
   metadata: Record<string, unknown>;
+}
+
+export interface VfsWatchParams {
+  path: string;
+  maxEvents?: number;
+  timeoutMs?: number;
+  pattern?: string;
+  events?: VfsWatchEvent["type"][];
+  token?: string;
+}
+export interface VfsWatchRpcResult {
+  events: VfsWatchEvent[];
+  truncated: boolean;
+  timedOut: boolean;
+}
+
+export interface VfsStreamParams {
+  path: string;
+  maxChunks?: number;
+  timeoutMs?: number;
+  token?: string;
+}
+export interface VfsStreamRpcResult {
+  chunks: VfsStreamChunk[];
+  truncated: boolean;
+  timedOut: boolean;
 }
 
 export interface VfsMountRpcParams {

@@ -164,6 +164,11 @@ export class SourceNodeAdapter {
   }
 
   async stream(_context: VfsRequestContext): Promise<AsyncIterable<VfsStreamChunk>> {
+    const streamHandler = this.resolved.source.handlers.stream;
+    if (streamHandler) {
+      return streamHandler(this.resolved.relativePath);
+    }
+
     const readable = this.resolved.source.handlers.read;
     const supportsSyntheticStream = this.resolved.fileSchema?.type === "stream" && readable != null;
 

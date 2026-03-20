@@ -24,6 +24,7 @@ export const VFS_CAPABILITIES = [
   "git_status",
   "git_diff",
   "watch",
+  "stream",
   "on_change",
 ] as const;
 
@@ -126,6 +127,13 @@ export interface VfsWatchEvent {
   timestamp: number;
 }
 
+export interface VfsStreamChunk {
+  content: string;
+  mimeType?: string;
+  encoding?: string;
+  timestamp: number;
+}
+
 export type VfsWatchCallback = (event: VfsWatchEvent) => void;
 export type VfsDisposer = () => void;
 
@@ -197,6 +205,7 @@ export interface VfsCapabilityHandlers {
   git_status(opts?: { path?: string }): Promise<VfsStatusEntry[]>;
   git_diff(opts?: VfsGitDiffOptions): Promise<VfsDiffResult>;
   watch(pattern: string, callback: VfsWatchCallback, opts?: VfsWatchOptions): VfsDisposer;
+  stream(path: string): Promise<AsyncIterable<VfsStreamChunk>>;
   on_change(
     event: VfsWatchEvent["type"],
     path: string,

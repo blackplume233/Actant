@@ -17,6 +17,10 @@ import {
   GitHubSource,
   CommunitySource,
   createDomainSource,
+  createSkillSource,
+  createMcpConfigSource,
+  createMcpRuntimeSource,
+  createAgentRuntimeSource,
   SourceFactoryRegistry,
   workspaceSourceFactory,
   type FetchResult,
@@ -97,8 +101,11 @@ export interface ProjectContextMountLayout {
   workspace: string;
   config: string;
   skills: string;
+  agents: string;
+  mcpConfigs: string;
+  mcpRuntime: string;
+  mcpLegacy: string;
   prompts: string;
-  mcp: string;
   workflows: string;
   templates: string;
 }
@@ -508,6 +515,18 @@ function buildProjectMountDeclarations(
       path: "/skills",
     },
     {
+      source: "agents",
+      path: "/agents",
+    },
+    {
+      source: "mcp-configs",
+      path: "/mcp/configs",
+    },
+    {
+      source: "mcp-runtime",
+      path: "/mcp/runtime",
+    },
+    {
       source: "prompts",
       path: "/prompts",
     },
@@ -552,9 +571,28 @@ function createProjectRegistrationsForScope(
       spec: { type: "filesystem", path: context.projectRoot, readOnly: options?.workspaceReadOnly ?? false },
       lifecycle,
     }),
-    createDomainSource(context.managers.skillManager, `${prefix}-skills`, layout.skills, lifecycle),
+    {
+      ...createSkillSource(context.managers.skillManager, layout.skills, lifecycle),
+      name: `${prefix}-skills`,
+    },
+    {
+      ...createAgentRuntimeSource(createEmptyAgentRuntimeProvider(), layout.agents, lifecycle),
+      name: `${prefix}-agents`,
+    },
+    {
+      ...createMcpConfigSource(context.managers.mcpConfigManager, layout.mcpConfigs, lifecycle),
+      name: `${prefix}-mcp-configs`,
+    },
+    {
+      ...createMcpRuntimeSource(
+        createProjectMcpRuntimeProvider(context.managers.mcpConfigManager),
+        layout.mcpRuntime,
+        lifecycle,
+      ),
+      name: `${prefix}-mcp-runtime`,
+    },
     createDomainSource(context.managers.promptManager, `${prefix}-prompts`, layout.prompts, lifecycle),
-    createDomainSource(context.managers.mcpConfigManager, `${prefix}-mcp`, layout.mcp, lifecycle),
+    createDomainSource(context.managers.mcpConfigManager, `${prefix}-mcp-legacy`, layout.mcpLegacy, lifecycle),
     createDomainSource(context.managers.workflowManager, `${prefix}-workflows`, layout.workflows, lifecycle),
     createDomainSource(context.managers.templateRegistry, `${prefix}-templates`, layout.templates, lifecycle),
   ];
@@ -596,8 +634,11 @@ function childLayoutForScope(
     workspace: joinMountedPath(scopeRoot, "workspace"),
     config: joinMountedPath(scopeRoot, "config"),
     skills: joinMountedPath(scopeRoot, "skills"),
+    agents: joinMountedPath(scopeRoot, "agents"),
+    mcpConfigs: joinMountedPath(scopeRoot, "mcp", "configs"),
+    mcpRuntime: joinMountedPath(scopeRoot, "mcp", "runtime"),
+    mcpLegacy: joinMountedPath(scopeRoot, "mcp"),
     prompts: joinMountedPath(scopeRoot, "prompts"),
-    mcp: joinMountedPath(scopeRoot, "mcp"),
     workflows: joinMountedPath(scopeRoot, "workflows"),
     templates: joinMountedPath(scopeRoot, "templates"),
   };
@@ -1033,6 +1074,44 @@ function joinMountedPath(base: string, ...parts: string[]): string {
 
 function sanitizeMountName(value: string): string {
   return value.replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "project";
+}
+
+function createProjectMcpRuntimeProvider(
+  manager: McpConfigManager,
+): Parameters<typeof createMcpRuntimeSource>[0] {
+  type McpConfigLike = { name: string; command?: string; args?: string[] };
+
+  return {
+    listRuntimes: () => manager.list().map((server: McpConfigLike) => ({
+      name: server.name,
+      status: "inactive",
+      command: "command" in server && typeof server.command === "string" ? server.command : undefined,
+      args: "args" in server && Array.isArray(server.args) ? server.args as string[] : undefined,
+      transport: "stdio",
+      updatedAt: new Date().toISOString(),
+    })),
+    getRuntime: (name: string) => {
+      const server = manager.get(name);
+      if (!server) {
+        return undefined;
+      }
+      return {
+        name: server.name,
+        status: "inactive",
+        command: "command" in server && typeof server.command === "string" ? server.command : undefined,
+        args: "args" in server && Array.isArray(server.args) ? server.args as string[] : undefined,
+        transport: "stdio",
+        updatedAt: new Date().toISOString(),
+      };
+    },
+  };
+}
+
+function createEmptyAgentRuntimeProvider(): Parameters<typeof createAgentRuntimeSource>[0] {
+  return {
+    listAgents: () => [],
+    getAgent: () => undefined,
+  };
 }
 
 async function resolveProjectRoot(projectDir?: string): Promise<{

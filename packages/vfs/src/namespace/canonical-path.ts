@@ -1,4 +1,5 @@
 import type { VfsIdentity } from "@actant/shared";
+export type { VfsStreamChunk } from "@actant/shared";
 
 export interface CanonicalUri {
   path: string;
@@ -17,13 +18,6 @@ export type VfsKernelOperation =
   | "stat"
   | "watch"
   | "stream";
-
-export interface VfsStreamChunk {
-  content: string;
-  mimeType?: string;
-  encoding?: string;
-  timestamp: number;
-}
 
 export function normalizeVfsPath(input: string): string {
   if (!input.trim()) {
