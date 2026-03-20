@@ -36,6 +36,27 @@ V1 固定标准路径：
 
 这些路径属于当前契约的一部分，后续实现必须与此保持一致。
 
+M4 落地后的内置节点约定：
+
+- `/skills/_catalog.json`
+- `/mcp/configs/_catalog.json`
+- `/mcp/runtime/_catalog.json`
+- `/mcp/runtime/<name>/status.json`
+- `/mcp/runtime/<name>/streams/events`
+- `/mcp/runtime/<name>/control/request.json`
+- `/agents/_catalog.json`
+- `/agents/<name>/status.json`
+- `/agents/<name>/streams/stdout`
+- `/agents/<name>/streams/stderr`
+- `/agents/<name>/control/request.json`
+
+说明：
+
+- `_catalog.json` 是内置 source 的目录总览文件
+- `status.json` 是运行时状态快照
+- `streams/*` 是流节点
+- `control/request.json` 是控制节点；节点存在属于路径契约，是否允许 `write` 由具体 provider 能力决定
+
 ---
 
 ## 3. File Operations
@@ -47,10 +68,11 @@ V1 固定标准路径：
 适用对象：
 
 - `_project.json`
-- skills
-- mcp config
-- runtime status
-- agent status / schema / config
+- skill / mcp config 文件
+- `_catalog.json`
+- runtime `status.json`
+- agent `status.json`
+- stream 节点的当前快照读取
 
 ### 3.2 `write(path, content)`
 
@@ -60,7 +82,7 @@ V1 允许的典型用法：
 
 - 更新 skill
 - 更新 mcp config
-- 写入控制节点触发执行
+- 在支持控制能力的运行时 source 上写入 `control/request.json`
 
 ### 3.3 `list(path)`
 
@@ -90,6 +112,39 @@ V1 主要用于：
 - agent 状态变更
 - 动态资源变更通知
 
+RPC / MCP 暴露面：
+
+- RPC 方法：`vfs.watch`
+- MCP tool：`vfs_watch`
+
+参数契约：
+
+```ts
+interface VfsWatchParams {
+  path: string;
+  maxEvents?: number;
+  timeoutMs?: number;
+  pattern?: string;
+  events?: Array<"create" | "modify" | "delete">;
+  token?: string;
+}
+
+interface VfsWatchRpcResult {
+  events: VfsWatchEvent[];
+  truncated: boolean;
+  timedOut: boolean;
+}
+```
+
+批量收集约定：
+
+- `watch` 对外返回的是有限事件批次，不是无限阻塞订阅
+- `maxEvents` 表示本次最多收集多少条事件
+- `timeoutMs` 表示等待事件的最长时间
+- 命中上限时返回 `truncated: true`
+- 超时返回时标记 `timedOut: true`
+- API / standalone backend 当前默认行为是 `maxEvents = 1`、`timeoutMs = 250`
+
 ### 3.6 `stream(path)`
 
 消费持续输出。
@@ -98,6 +153,37 @@ V1 主要用于：
 
 - agent 输出流
 - runtime 输出流
+
+RPC / MCP 暴露面：
+
+- RPC 方法：`vfs.stream`
+- MCP tool：`vfs_stream`
+
+参数契约：
+
+```ts
+interface VfsStreamParams {
+  path: string;
+  maxChunks?: number;
+  timeoutMs?: number;
+  token?: string;
+}
+
+interface VfsStreamRpcResult {
+  chunks: VfsStreamChunk[];
+  truncated: boolean;
+  timedOut: boolean;
+}
+```
+
+批量收集约定：
+
+- `stream` 对外返回的是有限 chunk 批次，不是无限长连接
+- `maxChunks` 表示本次最多收集多少个 chunk
+- `timeoutMs` 表示等待 chunk 的最长时间
+- 命中上限时返回 `truncated: true`
+- 超时返回时标记 `timedOut: true`
+- API / standalone backend 当前默认行为是 `maxChunks = 1`、`timeoutMs = 250`
 
 ---
 
@@ -108,14 +194,17 @@ V1 的执行能力通过控制节点和流节点表达，而不是通过旧 tool
 最小路径约定：
 
 - `/agents/<name>/control/request.json`
-- `/agents/<name>/streams/<id>`
-- `/mcp/runtime/<name>/streams/<id>`
+- `/agents/<name>/streams/stdout`
+- `/agents/<name>/streams/stderr`
+- `/mcp/runtime/<name>/control/request.json`
+- `/mcp/runtime/<name>/streams/events`
 
 规则：
 
-- 向控制节点 `write` 触发执行
+- 控制节点和流节点都属于标准 VFS 节点，不单独引入额外执行 API
+- 向控制节点 `write` 是触发执行的唯一保留入口
 - 从流节点 `stream` 消费输出
-- 执行与输出都仍然处在文件式资源契约内
+- M4 已固定这些路径；M5 再把控制请求 payload、执行生命周期和稳定输出语义冻结为正式模型
 
 ---
 
@@ -126,6 +215,7 @@ V1 的执行能力通过控制节点和流节点表达，而不是通过旧 tool
 - `read`
 - `write`
 - `list`
+- `stat`
 - 可选 `grep`
 
 ### 5.2 McpConfigSource
@@ -133,18 +223,23 @@ V1 的执行能力通过控制节点和流节点表达，而不是通过旧 tool
 - `read`
 - `write`
 - `list`
+- `stat`
 
 ### 5.3 McpRuntimeSource
 
 - `read`
+- `write`（仅控制节点）
 - `list`
+- `stat`
 - `watch`
 - `stream`
 
 ### 5.4 AgentRuntime
 
 - `read`
+- `write`（仅控制节点）
 - `list`
+- `stat`
 - `watch`
 - `stream`
 

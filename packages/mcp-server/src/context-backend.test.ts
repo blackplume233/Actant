@@ -68,12 +68,22 @@ describe("createStandaloneContext", () => {
   it("builds a standalone project-context view from local configs", async () => {
     const projectDir = await makeTempProject();
     await mkdir(join(projectDir, "configs", "skills"), { recursive: true });
+    await mkdir(join(projectDir, "configs", "mcp"), { recursive: true });
     await writeFile(
       join(projectDir, "configs", "skills", "local-skill.json"),
       JSON.stringify({
         name: "local-skill",
         description: "A local project skill",
         content: "Use the local project rules.",
+      }, null, 2),
+      "utf-8",
+    );
+    await writeFile(
+      join(projectDir, "configs", "mcp", "local-runtime.json"),
+      JSON.stringify({
+        name: "local-runtime",
+        command: "npx",
+        args: ["-y", "example-mcp"],
       }, null, 2),
       "utf-8",
     );
@@ -84,7 +94,16 @@ describe("createStandaloneContext", () => {
 
     const mounts = await backend.list("/");
     expect(mounts.map((entry) => entry.path)).toEqual(
-      expect.arrayContaining(["/_project.json", "/project", "/workspace", "/skills", "/daemon", "/config"]),
+      expect.arrayContaining([
+        "/_project.json",
+        "/project",
+        "/workspace",
+        "/skills",
+        "/agents",
+        "/mcp",
+        "/daemon",
+        "/config",
+      ]),
     );
 
     const context = JSON.parse((await backend.read("/project/context.json")).content) as {
@@ -99,12 +118,51 @@ describe("createStandaloneContext", () => {
       expect.arrayContaining(["_catalog.json", "local-skill"]),
     );
 
+    const mcpConfigs = await backend.list("/mcp/configs");
+    expect(mcpConfigs.map((entry) => entry.path)).toEqual(
+      expect.arrayContaining(["_catalog.json", "local-runtime"]),
+    );
+
+    const mcpRuntime = await backend.list("/mcp/runtime");
+    expect(mcpRuntime.map((entry) => entry.path)).toEqual(
+      expect.arrayContaining(["_catalog.json", "local-runtime"]),
+    );
+
+    const runtimeStatus = JSON.parse((await backend.read("/mcp/runtime/local-runtime/status.json")).content) as {
+      name: string;
+      status: string;
+    };
+    expect(runtimeStatus).toMatchObject({
+      name: "local-runtime",
+      status: "inactive",
+    });
+
+    const runtimeStream = await backend.stream("/mcp/runtime/local-runtime/streams/events", {
+      maxChunks: 1,
+      timeoutMs: 250,
+    });
+    expect(runtimeStream.chunks).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        content: expect.stringContaining("\"local-runtime\""),
+      }),
+    ]));
+
+    const runtimeWatch = await backend.watch("/mcp/runtime/local-runtime/status.json", {
+      maxEvents: 1,
+      timeoutMs: 50,
+    });
+    expect(runtimeWatch.events).toEqual([]);
+    expect(runtimeWatch.timedOut).toBe(true);
+
+    const agents = await backend.list("/agents");
+    expect(agents.map((entry) => entry.path)).toEqual(expect.arrayContaining(["_catalog.json"]));
+
     const manifest = JSON.parse((await backend.read("/_project.json")).content) as {
       manifest: { name: string; mounts: Array<{ path: string }> };
     };
     expect(manifest.manifest.name).toBe(projectDir.split(/[/\\\\]/).pop());
     expect(manifest.manifest.mounts.map((entry) => entry.path)).toEqual(
-      expect.arrayContaining(["/workspace", "/skills"]),
+      expect.arrayContaining(["/workspace", "/skills", "/agents", "/mcp/configs", "/mcp/runtime"]),
     );
   });
 
@@ -316,7 +374,14 @@ describe("createStandaloneContext", () => {
 
     const childMounts = await backend.list("/projects/child");
     expect(childMounts.map((entry) => entry.path)).toEqual(
-      expect.arrayContaining(["/projects/child/_project.json", "/projects/child/project", "/projects/child/workspace", "/projects/child/skills"]),
+      expect.arrayContaining([
+        "/projects/child/_project.json",
+        "/projects/child/project",
+        "/projects/child/workspace",
+        "/projects/child/skills",
+        "/projects/child/agents",
+        "/projects/child/mcp",
+      ]),
     );
 
     const childManifest = JSON.parse((await backend.read("/projects/child/_project.json")).content) as {

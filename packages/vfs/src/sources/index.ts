@@ -7,3 +7,17 @@ export { vcsSourceFactory } from "./vcs-source";
 export { createDomainSource } from "./domain-source";
 export { createAgentRegistrySource } from "./agent-registry-source";
 export { createDaemonInfoSource } from "./daemon-source";
+export { createSkillSource } from "./skill-source";
+export { createMcpConfigSource } from "./mcp-config-source";
+export {
+  createMcpRuntimeSource,
+  type McpRuntimeRecord,
+  type McpRuntimeSourceProvider,
+  type McpRuntimeWatchEvent,
+} from "./mcp-runtime-source";
+export {
+  createAgentRuntimeSource,
+  type AgentRuntimeSourceProvider,
+  type AgentRuntimeWatchEvent,
+  type AgentControlRequest,
+} from "./agent-runtime-source";

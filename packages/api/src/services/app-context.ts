@@ -46,7 +46,10 @@ import {
   vcsSourceFactory,
   processSourceFactory,
   createDomainSource,
-  createAgentRegistrySource,
+  createSkillSource,
+  createMcpConfigSource,
+  createMcpRuntimeSource,
+  createAgentRuntimeSource,
   RoutingChannelManager,
   type ActantChannel,
   type ActantChannelManager,
@@ -83,6 +86,17 @@ interface UserConfig {
     apiKey?: string;
   }>;
   [key: string]: unknown;
+}
+
+function parseAgentControlRequest(content: string): { prompt: string; sessionId?: string } {
+  const parsed = JSON.parse(content) as Record<string, unknown>;
+  if (typeof parsed.prompt !== "string" || parsed.prompt.trim().length === 0) {
+    throw new Error('Agent control request must include a non-empty "prompt"');
+  }
+  return {
+    prompt: parsed.prompt,
+    sessionId: typeof parsed.sessionId === "string" ? parsed.sessionId : undefined,
+  };
 }
 
 class LazyClaudeChannelManagerAdapter implements ActantChannelManager {
@@ -802,18 +816,161 @@ export class AppContext {
   private mountCoreResourceSources(registry: VfsRegistry): void {
     const lifecycle = { type: "daemon" } as const;
     const coreSources = [
-      createDomainSource(this.skillManager, "skills", "/skills", lifecycle),
+      {
+        ...createSkillSource(this.skillManager, "/skills", lifecycle),
+        name: "skills",
+      },
       createDomainSource(this.promptManager, "prompts", "/prompts", lifecycle),
+      {
+        ...createMcpConfigSource(this.mcpConfigManager, "/mcp/configs", lifecycle),
+        name: "mcp-configs",
+      },
+      {
+        ...createMcpRuntimeSource(this.createMcpRuntimeProvider(), "/mcp/runtime", lifecycle),
+        name: "mcp-runtime",
+      },
       createDomainSource(this.mcpConfigManager, "mcp", "/mcp", lifecycle),
       createDomainSource(this.workflowManager, "workflows", "/workflows", lifecycle),
       createDomainSource(this.templateRegistry, "templates", "/templates", lifecycle),
-      createAgentRegistrySource(this.agentManager, "/agents", lifecycle),
+      {
+        ...createAgentRuntimeSource(this.createAgentRuntimeProvider(), "/agents", lifecycle),
+        name: "agents",
+      },
     ];
 
     for (const source of coreSources) {
       registry.unmount(source.name);
       registry.mount(source);
     }
+  }
+
+  private createMcpRuntimeProvider(): Parameters<typeof createMcpRuntimeSource>[0] {
+    type McpConfigLike = { name: string; command?: string; args?: string[] };
+
+    return {
+      listRuntimes: () => this.mcpConfigManager.list().map((server: McpConfigLike) => ({
+        name: server.name,
+        status: "inactive",
+        command: "command" in server && typeof server.command === "string" ? server.command : undefined,
+        args: "args" in server && Array.isArray(server.args) ? server.args as string[] : undefined,
+        transport: "stdio",
+        updatedAt: new Date().toISOString(),
+      })),
+      getRuntime: (name: string) => {
+        const server = this.mcpConfigManager.get(name);
+        if (!server) {
+          return undefined;
+        }
+        return {
+          name: server.name,
+          status: "inactive",
+          command: "command" in server && typeof server.command === "string" ? server.command : undefined,
+          args: "args" in server && Array.isArray(server.args) ? server.args as string[] : undefined,
+          transport: "stdio",
+          updatedAt: new Date().toISOString(),
+        };
+      },
+    };
+  }
+
+  private createAgentRuntimeProvider(): Parameters<typeof createAgentRuntimeSource>[0] {
+    return {
+      listAgents: () => this.agentManager.listAgents(),
+      getAgent: (name: string) => this.agentManager.getAgent(name),
+      readStream: (name: string, stream: "stdout" | "stderr") => ({
+        content: this.readAgentLog(name, stream),
+      }),
+      stream: (name: string, stream: "stdout" | "stderr") => this.streamAgentLog(name, stream),
+      writeControl: async (name: string, controlPath: string, content: string) => {
+        if (controlPath !== "request.json") {
+          throw new Error(`Unknown agent control file: ${controlPath}`);
+        }
+
+        const request = parseAgentControlRequest(content);
+        if (request.sessionId) {
+          await this.agentManager.promptAgent(name, request.prompt, request.sessionId);
+        } else {
+          await this.agentManager.runPrompt(name, request.prompt);
+        }
+
+        return {
+          bytesWritten: Buffer.byteLength(content),
+          created: false,
+        };
+      },
+      subscribe: (
+        listener: Parameters<NonNullable<Parameters<typeof createAgentRuntimeSource>[0]["subscribe"]>>[0],
+      ) => {
+        const forward = (type: "create" | "modify" | "delete") => (payload: { agentName?: string }) => {
+          listener({ type, agentName: payload.agentName });
+        };
+
+        const created = forward("create");
+        const modified = forward("modify");
+        const removed = forward("delete");
+
+        this.eventBus.on("agent:created", created);
+        this.eventBus.on("agent:modified", modified);
+        this.eventBus.on("agent:destroyed", removed);
+
+        return () => {
+          this.eventBus.off("agent:created", created);
+          this.eventBus.off("agent:modified", modified);
+          this.eventBus.off("agent:destroyed", removed);
+        };
+      },
+    };
+  }
+
+  private readAgentLog(name: string, stream: "stdout" | "stderr"): string {
+    const logFile = join(this.instancesDir, name, "logs", `${stream}.log`);
+    try {
+      return readFileSync(logFile, "utf-8");
+    } catch {
+      return "";
+    }
+  }
+
+  private streamAgentLog(
+    name: string,
+    stream: "stdout" | "stderr",
+  ): AsyncIterable<{ content: string; timestamp: number }> {
+    const logFile = join(this.instancesDir, name, "logs", `${stream}.log`);
+
+    return {
+      async *[Symbol.asyncIterator](): AsyncGenerator<{ content: string; timestamp: number }> {
+        let cursor = 0;
+
+        const readDelta = () => {
+          const content = readFileSync(logFile, "utf-8");
+          if (content.length <= cursor) {
+            return null;
+          }
+
+          const delta = content.slice(cursor);
+          cursor = content.length;
+          return delta;
+        };
+
+        try {
+          const initial = readDelta();
+          if (initial) {
+            yield { content: initial, timestamp: Date.now() };
+          }
+        } catch {
+          return;
+        }
+
+        while (true) {
+          await new Promise((resolve) => setTimeout(resolve, 20));
+          const delta = readDelta();
+          if (!delta) {
+            continue;
+          }
+          yield { content: delta, timestamp: Date.now() };
+        }
+      },
+    };
   }
 
   private async loadDomainComponents(): Promise<void> {

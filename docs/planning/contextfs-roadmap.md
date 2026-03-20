@@ -1,6 +1,6 @@
 # ContextFS Roadmap
 
-> Status: `M0-M2 completed, M3 next`
+> Status: `M0-M4 completed, M5 next`
 > Owner: Actant core architecture
 > Scope: 文档基线重置 -> 实现前准备 -> V1 实施顺序
 
@@ -216,10 +216,12 @@ Actant 需要收敛到一个更单一的核心：
 | M0 文档基线重置 | completed |
 | M1 契约与类型替换 | completed |
 | M2 VFS Kernel 重建 | completed |
-| M3 ContextFS 编排层重建 | next |
-| M4-M7 实施阶段 | planned |
+| M3 ContextFS 编排层重建 | completed |
+| M4 4 个 Built-In Source 落地 | completed |
+| M5 控制节点与流节点执行模型 | next |
+| M6-M7 实施阶段 | planned |
 
 当前下一步：
-1. 以当前 ContextFS / VFS Kernel 基线进入 M3 `packages/context` 重建
-2. 引入 `ProjectManifest` 与 project/permissions 语义
-3. 继续把外部调用面逐步收敛到统一 facade
+1. 冻结 `control/request.json` 的 payload 契约与错误语义
+2. 统一 agent/runtime 执行生命周期与流式输出稳定性
+3. 继续把 CLI/API/daemon/adapter 收敛到同一 facade

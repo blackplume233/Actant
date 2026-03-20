@@ -1,4 +1,4 @@
-import { createDaemonInfoSource, VfsRegistry } from "@actant/vfs";
+import { createDaemonInfoSource, VfsKernel, VfsRegistry } from "@actant/vfs";
 import {
   createProjectContextFactoryRegistry,
   createProjectContextRegistrations,
@@ -9,6 +9,9 @@ import type {
   VfsGrepRpcResult,
   VfsListRpcResult,
   VfsReadResult,
+  VfsStreamRpcResult,
+  VfsWatchEvent,
+  VfsWatchRpcResult,
   VfsWriteRpcResult,
 } from "@actant/shared";
 import { getBridgeSessionToken, getBridgeSocketPath } from "@actant/shared";
@@ -20,6 +23,11 @@ export interface ContextBackend {
   write(path: string, content: string): Promise<VfsWriteRpcResult>;
   list(path?: string, recursive?: boolean, long?: boolean): Promise<VfsListRpcResult>;
   describe(path: string): Promise<VfsDescribeRpcResult>;
+  watch(
+    path: string,
+    options?: { maxEvents?: number; timeoutMs?: number; pattern?: string; events?: VfsWatchEvent["type"][] },
+  ): Promise<VfsWatchRpcResult>;
+  stream(path: string, options?: { maxChunks?: number; timeoutMs?: number }): Promise<VfsStreamRpcResult>;
   grep(
     pattern: string,
     path?: string,
@@ -98,6 +106,26 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
       });
       return result as VfsDescribeRpcResult;
     },
+    async watch(path, options) {
+      const result = await rpc.call("vfs.watch", {
+        path: mapConnectedPath(path),
+        maxEvents: options?.maxEvents,
+        timeoutMs: options?.timeoutMs,
+        pattern: options?.pattern,
+        events: options?.events,
+        token: sessionToken,
+      });
+      return result as VfsWatchRpcResult;
+    },
+    async stream(path, options) {
+      const result = await rpc.call("vfs.stream", {
+        path: mapConnectedPath(path),
+        maxChunks: options?.maxChunks,
+        timeoutMs: options?.timeoutMs,
+        token: sessionToken,
+      });
+      return result as VfsStreamRpcResult;
+    },
     async grep(pattern, path, caseInsensitive, maxResults) {
       const result = await rpc.call("vfs.grep", {
         pattern,
@@ -117,6 +145,7 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
 export async function createStandaloneContext(projectDir?: string): Promise<StandaloneContext> {
   const context = await loadProjectContext(projectDir);
   const registry = new VfsRegistry();
+  const kernel = new VfsKernel();
   const factoryRegistry = createProjectContextFactoryRegistry();
 
   for (const registration of createProjectContextRegistrations(
@@ -127,8 +156,11 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
       workspace: "/workspace",
       config: "/config",
       skills: "/skills",
+      agents: "/agents",
+      mcpConfigs: "/mcp/configs",
+      mcpRuntime: "/mcp/runtime",
+      mcpLegacy: "/mcp",
       prompts: "/prompts",
-      mcp: "/mcp",
       workflows: "/workflows",
       templates: "/templates",
     },
@@ -140,9 +172,10 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
     },
   )) {
     registry.mount(registration);
+    kernel.mount(registration);
   }
 
-  registry.mount(createDaemonInfoSource({
+  const daemonSource = createDaemonInfoSource({
     getVersion: () => "standalone",
     getUptime: () => 0,
     getAgentCount: () => 0,
@@ -155,7 +188,9 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
       projectName: context.summary.projectName,
       configPath: context.configPath,
     }),
-  }, "/daemon", { type: "daemon" }));
+  }, "/daemon", { type: "daemon" });
+  registry.mount(daemonSource);
+  kernel.mount(daemonSource);
 
   return {
     mode: "standalone",
@@ -227,6 +262,33 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
         metadata: desc.metadata,
       };
     },
+    async watch(path, options) {
+      const resolved = kernel.resolve(path);
+      if (!resolved) {
+        throw new Error(`VFS path not found: ${path}`);
+      }
+      const iterable = await kernel.watch(path, {}, {
+        pattern: options?.pattern,
+        events: options?.events,
+      });
+      return collectAsyncIterable(iterable, {
+        maxItems: options?.maxEvents ?? 1,
+        timeoutMs: options?.timeoutMs ?? 250,
+        mapItems: (events) => ({ events }),
+      });
+    },
+    async stream(path, options) {
+      const resolved = kernel.resolve(path);
+      if (!resolved) {
+        throw new Error(`VFS path not found: ${path}`);
+      }
+      const iterable = await kernel.stream(path);
+      return collectAsyncIterable(iterable, {
+        maxItems: options?.maxChunks ?? 1,
+        timeoutMs: options?.timeoutMs ?? 250,
+        mapItems: (chunks) => ({ chunks }),
+      });
+    },
     async grep(pattern, path = "/workspace", caseInsensitive, maxResults) {
       const resolved = registry.resolve(path);
       if (!resolved) {
@@ -252,6 +314,9 @@ function mapConnectedPath(path?: string): string {
     ["/workspace", "/hub/workspace"],
     ["/config", "/hub/config"],
     ["/skills", "/hub/skills"],
+    ["/agents", "/hub/agents"],
+    ["/mcp/configs", "/hub/mcp/configs"],
+    ["/mcp/runtime", "/hub/mcp/runtime"],
     ["/prompts", "/hub/prompts"],
     ["/mcp", "/hub/mcp"],
     ["/workflows", "/hub/workflows"],
@@ -276,4 +341,69 @@ function requireHandler<T>(handler: T | undefined | null, capability: string, pa
     throw new Error(`Capability "${capability}" not supported for path "${path}"`);
   }
   return handler;
+}
+
+async function collectAsyncIterable<T, TResult extends { truncated: boolean; timedOut: boolean }>(
+  iterable: AsyncIterable<T>,
+  options: {
+    maxItems: number;
+    timeoutMs: number;
+    mapItems(items: T[]): Omit<TResult, "truncated" | "timedOut">;
+  },
+): Promise<TResult> {
+  const items: T[] = [];
+  const iterator = iterable[Symbol.asyncIterator]();
+  const deadline = Date.now() + Math.max(options.timeoutMs, 0);
+  let truncated = false;
+  let timedOut = false;
+
+  try {
+    while (items.length < options.maxItems) {
+      const remainingMs = Math.max(deadline - Date.now(), 0);
+      const next = await nextWithTimeout(iterator, remainingMs);
+      if (next === "timeout") {
+        timedOut = true;
+        break;
+      }
+      if (next.done) {
+        break;
+      }
+      items.push(next.value);
+    }
+
+    if (items.length >= options.maxItems) {
+      truncated = true;
+    }
+  } finally {
+    await iterator.return?.();
+  }
+
+  return {
+    ...options.mapItems(items),
+    truncated,
+    timedOut,
+  } as TResult;
+}
+
+async function nextWithTimeout<T>(
+  iterator: AsyncIterator<T>,
+  timeoutMs: number,
+): Promise<IteratorResult<T> | "timeout"> {
+  if (timeoutMs <= 0) {
+    return "timeout";
+  }
+
+  return new Promise<IteratorResult<T> | "timeout">((resolve, reject) => {
+    const timer = setTimeout(() => resolve("timeout"), timeoutMs);
+    iterator.next().then(
+      (result) => {
+        clearTimeout(timer);
+        resolve(result);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
 }

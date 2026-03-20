@@ -94,6 +94,46 @@ export async function startServer(): Promise<void> {
   );
 
   server.tool(
+    "vfs_watch",
+    "Watch a VFS path for bounded change events. This collects a limited batch of events and then returns them.",
+    {
+      path: z.string().describe("VFS path to watch"),
+      maxEvents: z.number().optional().describe("Maximum number of events to collect before returning"),
+      timeoutMs: z.number().optional().describe("Maximum time to wait for events before returning"),
+    },
+    async ({ path, maxEvents, timeoutMs }) => {
+      try {
+        const result = await backend.watch(path, { maxEvents, timeoutMs });
+        const text = JSON.stringify(result, null, 2);
+        return { content: [{ type: "text" as const, text }] };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { content: [{ type: "text" as const, text: `VFS watch failed: ${msg}` }], isError: true };
+      }
+    },
+  );
+
+  server.tool(
+    "vfs_stream",
+    "Read a bounded batch of chunks from a VFS stream node such as /agents/<name>/streams/stdout or /mcp/runtime/<name>/streams/events.",
+    {
+      path: z.string().describe("VFS stream path to consume"),
+      maxChunks: z.number().optional().describe("Maximum number of chunks to collect before returning"),
+      timeoutMs: z.number().optional().describe("Maximum time to wait for chunks before returning"),
+    },
+    async ({ path, maxChunks, timeoutMs }) => {
+      try {
+        const result = await backend.stream(path, { maxChunks, timeoutMs });
+        const text = JSON.stringify(result, null, 2);
+        return { content: [{ type: "text" as const, text }] };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return { content: [{ type: "text" as const, text: `VFS stream failed: ${msg}` }], isError: true };
+      }
+    },
+  );
+
+  server.tool(
     "vfs_grep",
     "Search for a regex pattern across VFS file contents.",
     {
