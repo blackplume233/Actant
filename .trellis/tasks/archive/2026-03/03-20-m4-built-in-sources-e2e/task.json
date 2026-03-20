@@ -1,0 +1,41 @@
+{
+  "id": "m4-built-in-sources-e2e",
+  "name": "m4-built-in-sources-e2e",
+  "title": "Complete M4 end-to-end: implement the four built-in sources SkillSource, McpConfigSource, McpRuntimeSource, and AgentRuntime on top of ContextFS/VFS, ensure all four are reachable through one unified interface with dynamic watch/stream support where required, and establish end-to-end tests from this milestone onward to prove the integrated source surfaces work through the real stack.",
+  "description": "",
+  "status": "completed",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-20",
+  "completedAt": "2026-03-20",
+  "branch": "codex/03-20-m4-built-in-sources-e2e",
+  "base_branch": "master",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m4-built-in-sources-e2e",
+  "current_phase": 3,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}
