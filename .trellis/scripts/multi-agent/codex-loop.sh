@@ -274,8 +274,13 @@ record_round_session() {
 
   local changed_files=()
   local task_artifacts=()
-  mapfile -t changed_files < <(collect_git_changed_files)
-  mapfile -t task_artifacts < <(collect_task_artifact_files)
+  local path_item
+  while IFS= read -r path_item; do
+    changed_files+=("$path_item")
+  done < <(collect_git_changed_files)
+  while IFS= read -r path_item; do
+    task_artifacts+=("$path_item")
+  done < <(collect_task_artifact_files)
 
   {
     echo "## 轮次概览"
