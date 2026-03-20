@@ -1,6 +1,6 @@
 import { createDaemonInfoSource, VfsKernel, VfsRegistry } from "@actant/vfs";
 import {
-  createProjectContextFactoryRegistry,
+  createProjectContextSourceTypeRegistry,
   createProjectContextRegistrations,
   loadProjectContext,
 } from "@actant/api";
@@ -146,7 +146,7 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
   const context = await loadProjectContext(projectDir);
   const registry = new VfsRegistry();
   const kernel = new VfsKernel();
-  const factoryRegistry = createProjectContextFactoryRegistry();
+  const factoryRegistry = createProjectContextSourceTypeRegistry();
 
   for (const registration of createProjectContextRegistrations(
     context,
@@ -257,7 +257,8 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
         path: desc.path,
         mountPoint: desc.mountPoint,
         sourceName: desc.sourceName,
-        sourceType: desc.sourceType,
+        label: desc.label,
+        traits: Array.from(desc.traits),
         capabilities: desc.capabilities,
         metadata: desc.metadata,
       };

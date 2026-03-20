@@ -1,4 +1,5 @@
 import type {
+  SourceTrait,
   VfsSourceRegistration,
   VfsFileSchemaMap,
   VfsLifecycle,
@@ -9,6 +10,8 @@ import type {
   VfsStatResult,
   VfsWriteResult,
 } from "@actant/shared";
+
+const MCP_CONFIG_TRAITS = new Set<SourceTrait>(["persistent", "writable"]);
 
 interface McpConfigRecord {
   name: string;
@@ -178,7 +181,8 @@ export function createMcpConfigSource(
   return {
     name: "mcp-configs",
     mountPoint,
-    sourceType: "component-source",
+    label: "mcp-config",
+    traits: new Set(MCP_CONFIG_TRAITS),
     lifecycle,
     metadata: { description: "Built-in MCP config source", virtual: true },
     fileSchema: MCP_CONFIG_FILE_SCHEMA,

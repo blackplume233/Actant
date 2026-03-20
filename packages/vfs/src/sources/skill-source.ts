@@ -1,4 +1,5 @@
 import type {
+  SourceTrait,
   VfsSourceRegistration,
   VfsFileSchemaMap,
   VfsLifecycle,
@@ -9,6 +10,8 @@ import type {
   VfsStatResult,
   VfsWriteResult,
 } from "@actant/shared";
+
+const SKILL_TRAITS = new Set<SourceTrait>(["persistent", "writable", "watchable"]);
 
 interface SkillRecord {
   name: string;
@@ -181,7 +184,8 @@ export function createSkillSource(
   return {
     name: "skills",
     mountPoint,
-    sourceType: "component-source",
+    label: "skill",
+    traits: new Set(SKILL_TRAITS),
     lifecycle,
     metadata: { description: "Built-in skill source", virtual: true },
     fileSchema: SKILL_FILE_SCHEMA,

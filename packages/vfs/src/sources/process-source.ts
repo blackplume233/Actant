@@ -1,7 +1,7 @@
 import {
+  type SourceTrait,
+  type SourceTypeDefinition,
   type VfsSourceRegistration,
-  type VfsSourceFactory,
-  type VfsSourceSpec,
   type VfsLifecycle,
   type VfsHandlerMap,
   type VfsFileContent,
@@ -13,7 +13,14 @@ import {
   type VfsListOptions,
 } from "@actant/shared";
 
-type ProcessSpec = Extract<VfsSourceSpec, { type: "process" }>;
+export interface ProcessSourceConfig {
+  command?: string;
+  args?: string[];
+  pid?: number;
+  bufferSize?: number;
+}
+
+const PROCESS_TRAITS = new Set<SourceTrait>(["executable", "streamable", "ephemeral"]);
 
 /**
  * Ring buffer that stores process output lines with a configurable capacity.
@@ -206,7 +213,8 @@ export function createProcessSource(
   return {
     name,
     mountPoint,
-    sourceType: "process",
+    label: "process",
+    traits: new Set(PROCESS_TRAITS),
     lifecycle,
     metadata: {
       description: `Process: ${handle.command ?? "unknown"} (PID: ${handle.pid})`,
@@ -218,17 +226,19 @@ export function createProcessSource(
   };
 }
 
-export const processSourceFactory: VfsSourceFactory<ProcessSpec> = {
+export const processSourceFactory: SourceTypeDefinition<ProcessSourceConfig> = {
   type: "process",
+  label: "process",
+  defaultTraits: PROCESS_TRAITS,
 
-  validate(spec: ProcessSpec) {
+  validate(spec: ProcessSourceConfig) {
     if (!spec.pid && !spec.command) {
       return { valid: false, errors: ["Either pid or command is required"] };
     }
     return { valid: true };
   },
 
-  create(spec: ProcessSpec, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
+  create(spec: ProcessSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
     const bufferSize = spec.bufferSize ?? 10000;
     const handle: ProcessHandle = {
       pid: spec.pid ?? 0,

@@ -54,7 +54,7 @@ export class VfsRegistry {
     this.rebuildResolver();
 
     logger.info(
-      { name, mountPoint, sourceType: registration.sourceType },
+      { name, mountPoint, label: registration.label, traits: Array.from(registration.traits) },
       "VFS source mounted",
     );
 
@@ -137,7 +137,8 @@ export class VfsRegistry {
       path,
       mountPoint: source.mountPoint,
       sourceName: source.name,
-      sourceType: source.sourceType,
+      label: source.label,
+      traits: source.traits,
       fileSchema,
       capabilities,
       metadata: source.metadata,
@@ -153,7 +154,8 @@ export class VfsRegistry {
     return Array.from(this.sources.values()).map((s) => ({
       name: s.name,
       mountPoint: s.mountPoint,
-      sourceType: s.sourceType,
+      label: s.label,
+      traits: s.traits,
       lifecycle: s.lifecycle,
       metadata: s.metadata,
       capabilities: Object.keys(s.handlers) as VfsCapabilityId[],

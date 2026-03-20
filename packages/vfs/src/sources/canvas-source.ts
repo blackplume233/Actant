@@ -1,7 +1,7 @@
 import {
+  type SourceTrait,
+  type SourceTypeDefinition,
   type VfsSourceRegistration,
-  type VfsSourceFactory,
-  type VfsSourceSpec,
   type VfsLifecycle,
   type VfsHandlerMap,
   type VfsFileContent,
@@ -10,7 +10,11 @@ import {
   type VfsListOptions,
 } from "@actant/shared";
 
-type CanvasSpec = Extract<VfsSourceSpec, { type: "canvas" }>;
+export interface CanvasSourceConfig {
+  maxItems?: number;
+}
+
+const CANVAS_TRAITS = new Set<SourceTrait>(["ephemeral", "writable"]);
 
 interface CanvasItem {
   id: string;
@@ -53,10 +57,12 @@ function createHandlers(items: Map<string, CanvasItem>, maxItems: number): VfsHa
   return handlers;
 }
 
-export const canvasSourceFactory: VfsSourceFactory<CanvasSpec> = {
+export const canvasSourceFactory: SourceTypeDefinition<CanvasSourceConfig> = {
   type: "canvas",
+  label: "canvas",
+  defaultTraits: CANVAS_TRAITS,
 
-  create(spec: CanvasSpec, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
+  create(spec: CanvasSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
     const items = new Map<string, CanvasItem>();
     const maxItems = spec.maxItems ?? 100;
     const handlers = createHandlers(items, maxItems);
@@ -64,7 +70,8 @@ export const canvasSourceFactory: VfsSourceFactory<CanvasSpec> = {
     return {
       name: "",
       mountPoint,
-      sourceType: "canvas",
+      label: "canvas",
+      traits: new Set(CANVAS_TRAITS),
       lifecycle,
       metadata: {
         description: "Canvas data store",

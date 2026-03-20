@@ -1,4 +1,5 @@
 import type {
+  SourceTrait,
   VfsSourceRegistration,
   VfsLifecycle,
   VfsHandlerMap,
@@ -8,6 +9,8 @@ import type {
   VfsStatResult,
   AgentInstanceMeta,
 } from "@actant/shared";
+
+const AGENT_REGISTRY_TRAITS = new Set<SourceTrait>(["ephemeral", "watchable"]);
 
 interface AgentManagerLike {
   listAgents(): AgentInstanceMeta[];
@@ -114,7 +117,8 @@ export function createAgentRegistrySource(
   return {
     name: "agents",
     mountPoint,
-    sourceType: "component-source",
+    label: "agent-registry",
+    traits: new Set(AGENT_REGISTRY_TRAITS),
     lifecycle,
     metadata: { description: "Agent instances registry (read-only, virtual)", virtual: true },
     fileSchema: {},

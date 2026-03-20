@@ -10,7 +10,8 @@ const logger = createLogger("vfs-data-store");
  * Written to `<filename>.meta.json` in the same directory.
  */
 export interface VfsFileMeta {
-  sourceType: string;
+  label: string;
+  traits: string[];
   mountPoint: string;
   createdAt: string;
   updatedAt: string;
@@ -25,7 +26,8 @@ export interface VfsFileMeta {
 export interface PersistedMount {
   name: string;
   mountPoint: string;
-  sourceType: string;
+  label: string;
+  traits: string[];
   lifecycle: Record<string, unknown>;
   metadata: Record<string, unknown>;
 }

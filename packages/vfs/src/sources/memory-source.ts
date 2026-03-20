@@ -1,7 +1,7 @@
 import {
+  type SourceTrait,
+  type SourceTypeDefinition,
   type VfsSourceRegistration,
-  type VfsSourceFactory,
-  type VfsSourceSpec,
   type VfsLifecycle,
   type VfsHandlerMap,
   type VfsFileContent,
@@ -13,7 +13,12 @@ import {
   type VfsStatResult,
 } from "@actant/shared";
 
-type MemorySpec = Extract<VfsSourceSpec, { type: "memory" }>;
+export interface MemorySourceConfig {
+  maxSize?: string;
+  persistent?: boolean;
+}
+
+const MEMORY_TRAITS = new Set<SourceTrait>(["ephemeral", "writable"]);
 
 interface MemoryFile {
   content: string;
@@ -147,10 +152,12 @@ function parseMaxSize(str?: string): number {
   return num * (multipliers[unit] ?? 1024 * 1024);
 }
 
-export const memorySourceFactory: VfsSourceFactory<MemorySpec> = {
+export const memorySourceFactory: SourceTypeDefinition<MemorySourceConfig> = {
   type: "memory",
+  label: "memory",
+  defaultTraits: MEMORY_TRAITS,
 
-  create(spec: MemorySpec, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
+  create(spec: MemorySourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
     const files = new Map<string, MemoryFile>();
     const maxSize = parseMaxSize(spec.maxSize);
     const handlers = createHandlers(files, maxSize);
@@ -158,7 +165,8 @@ export const memorySourceFactory: VfsSourceFactory<MemorySpec> = {
     return {
       name: "",
       mountPoint,
-      sourceType: "memory",
+      label: "memory",
+      traits: new Set(MEMORY_TRAITS),
       lifecycle,
       metadata: {
         description: "In-memory context store",

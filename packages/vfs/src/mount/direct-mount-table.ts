@@ -57,7 +57,8 @@ export class DirectMountTable {
     return Array.from(this.sources.values()).map((source) => ({
       name: source.name,
       mountPoint: source.mountPoint,
-      sourceType: source.sourceType,
+      label: source.label,
+      traits: source.traits,
       lifecycle: source.lifecycle,
       metadata: source.metadata,
       capabilities: Object.keys(source.handlers) as VfsCapabilityId[],

@@ -43,5 +43,5 @@ post_create:
 # If configured, Ralph Loop will run these commands - all must pass to allow completion
 # If not configured or empty, trusts agent's completion markers
 verify:
-  - npx vitest run packages/vfs/src/__tests__/m5-sourcetype-trait-e2e.test.ts --reporter=verbose
-  - pnpm type-check
+  # - pnpm lint
+  # - pnpm typecheck

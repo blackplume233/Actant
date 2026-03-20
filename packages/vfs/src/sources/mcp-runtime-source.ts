@@ -1,4 +1,5 @@
 import type {
+  SourceTrait,
   VfsFileContent,
   VfsEntry,
   VfsFileSchemaMap,
@@ -12,6 +13,14 @@ import type {
   VfsWatchOptions,
   VfsWriteResult,
 } from "@actant/shared";
+
+const MCP_RUNTIME_TRAITS = new Set<SourceTrait>([
+  "executable",
+  "streamable",
+  "watchable",
+  "ephemeral",
+  "virtual",
+]);
 
 export interface McpRuntimeRecord {
   name: string;
@@ -377,7 +386,8 @@ export function createMcpRuntimeSource(
   return {
     name: "mcp-runtime",
     mountPoint,
-    sourceType: "component-source",
+    label: "mcp-runtime",
+    traits: new Set(MCP_RUNTIME_TRAITS),
     lifecycle,
     metadata: { description: "Built-in MCP runtime source", virtual: true },
     fileSchema: MCP_RUNTIME_FILE_SCHEMA,

@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { VfsLifecycleManager } from "../vfs-lifecycle-manager";
 import { VfsRegistry } from "../vfs-registry";
-import type { VfsSourceRegistration } from "@actant/shared";
+import type { SourceTrait, VfsSourceRegistration } from "@actant/shared";
+
+const MEMORY_TRAITS = new Set<SourceTrait>(["ephemeral", "writable"]);
 
 function createSource(name: string, mountPoint: string, lifecycle: VfsSourceRegistration["lifecycle"]): VfsSourceRegistration {
   return {
     name,
     mountPoint,
-    sourceType: "memory",
+    label: "memory",
+    traits: new Set(MEMORY_TRAITS),
     lifecycle,
     metadata: {},
     fileSchema: {},

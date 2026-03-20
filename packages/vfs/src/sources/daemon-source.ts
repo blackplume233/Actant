@@ -1,4 +1,5 @@
 import type {
+  SourceTrait,
   VfsSourceRegistration,
   VfsLifecycle,
   VfsHandlerMap,
@@ -7,6 +8,8 @@ import type {
   VfsListOptions,
   VfsStatResult,
 } from "@actant/shared";
+
+const DAEMON_INFO_TRAITS = new Set<SourceTrait>(["ephemeral", "virtual"]);
 
 interface DaemonInfoProvider {
   getVersion(): string;
@@ -86,7 +89,8 @@ export function createDaemonInfoSource(
   return {
     name: "daemon",
     mountPoint,
-    sourceType: "component-source",
+    label: "daemon-info",
+    traits: new Set(DAEMON_INFO_TRAITS),
     lifecycle,
     metadata: { description: "Daemon health & RPC catalog (read-only, virtual)", virtual: true },
     fileSchema: {},

@@ -257,11 +257,12 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
         } else {
           const r = result as {
             path: string; mountPoint: string; sourceName: string;
-            sourceType: string; capabilities: string[];
+            label: string; traits: string[]; capabilities: string[];
           };
           printer.log(`Path:         ${r.path}`);
           printer.log(`Mount Point:  ${r.mountPoint}`);
-          printer.log(`Source:       ${r.sourceName} (${r.sourceType})`);
+          printer.log(`Source:       ${r.sourceName} (${r.label})`);
+          printer.log(`Traits:       ${r.traits.join(", ")}`);
           printer.log(`Capabilities: ${r.capabilities.join(", ")}`);
         }
       } catch (err) {
@@ -280,7 +281,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
     .action(async (opts: { json?: boolean }) => {
       try {
         const result = await client.call("vfs.mountList", {});
-        const r = result as { mounts: Array<{ name: string; mountPoint: string; sourceType: string; capabilities: string[]; fileCount: number }> };
+        const r = result as { mounts: Array<{ name: string; mountPoint: string; label: string; traits: string[]; capabilities: string[]; fileCount: number }> };
         if (opts.json) {
           printer.log(JSON.stringify(r.mounts, null, 2));
         } else {
@@ -288,7 +289,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
             const caps = m.capabilities.length <= 4
               ? m.capabilities.join(", ")
               : `${m.capabilities.slice(0, 3).join(", ")}, ... (${m.capabilities.length})`;
-            printer.log(`${m.mountPoint.padEnd(30)} ${m.sourceType.padEnd(14)} [${caps}]`);
+            printer.log(`${m.mountPoint.padEnd(30)} ${m.label.padEnd(14)} [${caps}]`);
           }
           if (r.mounts.length === 0) printer.dim("(no mounts)");
         }

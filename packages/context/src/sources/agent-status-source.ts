@@ -1,4 +1,5 @@
 import type {
+  SourceTrait,
   VfsSourceRegistration,
   VfsLifecycle,
   VfsFileContent,
@@ -6,6 +7,8 @@ import type {
   VfsStatResult,
 } from "@actant/shared";
 import type { ContextSource, ContextSourceType } from "../types";
+
+const AGENT_STATUS_TRAITS = new Set<SourceTrait>(["ephemeral", "virtual"]);
 
 /**
  * Minimal agent info required for VFS projection.
@@ -63,7 +66,8 @@ export class AgentStatusSource implements ContextSource {
       {
         name: "agent-status",
         mountPoint,
-        sourceType: "process",
+        label: "agent-status",
+        traits: new Set(AGENT_STATUS_TRAITS),
         lifecycle: this.lifecycle,
         metadata: { description: "Internal Agent status and tool schemas", virtual: true },
         fileSchema: {},

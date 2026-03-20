@@ -29,7 +29,6 @@ import {
   type VfsMountListResult,
   type VfsUnmountParams,
   type VfsUnmountResult,
-  type VfsSourceSpec,
 } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
@@ -328,7 +327,8 @@ async function handleVfsDescribe(
     path: desc.path,
     mountPoint: desc.mountPoint,
     sourceName: desc.sourceName,
-    sourceType: desc.sourceType,
+    label: desc.label,
+    traits: Array.from(desc.traits),
     capabilities: desc.capabilities,
     metadata: desc.metadata,
   };
@@ -395,12 +395,13 @@ async function handleVfsMount(
   const { name, mountPoint, spec, lifecycle } = params as unknown as VfsMountRpcParams;
   assertBootstrapVfsMutationAllowed(ctx, mountPoint);
   const registry = requireVfsRegistry(ctx);
-  const factoryRegistry = ctx.sourceFactoryRegistry;
+  const factoryRegistry = ctx.sourceTypeRegistry;
 
-  const registration = factoryRegistry.create({
+  const registration = factoryRegistry.createMount({
     name,
     mountPoint,
-    spec: spec as unknown as VfsSourceSpec,
+    type: spec.type,
+    config: spec,
     lifecycle: (lifecycle ?? { type: "manual" }) as import("@actant/shared").VfsLifecycle,
   });
 
@@ -429,7 +430,8 @@ async function handleVfsMountList(
     mounts: mounts.map((m) => ({
       name: m.name,
       mountPoint: m.mountPoint,
-      sourceType: m.sourceType,
+      label: m.label,
+      traits: Array.from(m.traits),
       capabilities: m.capabilities,
       fileCount: m.fileCount,
     })),

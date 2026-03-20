@@ -2,6 +2,7 @@ import type {
   PermissionConfig,
   PermissionSet,
   ProjectManifest,
+  SourceTrait,
   VfsCapabilityId,
   VfsEntry,
   VfsLifecycle,
@@ -9,6 +10,8 @@ import type {
   VfsSourceRegistration,
   VfsStatResult,
 } from "@actant/shared";
+
+const PROJECT_MANIFEST_TRAITS = new Set<SourceTrait>(["persistent", "virtual"]);
 
 const FULL_PROJECT_ACCESS: PermissionConfig = {
   defaults: {
@@ -153,7 +156,8 @@ function createProjectManifestRegistration(
   return {
     name: toRegistrationName(namePrefix, mountPoint),
     mountPoint,
-    sourceType: "component-source",
+    label: "project-manifest",
+    traits: new Set(PROJECT_MANIFEST_TRAITS),
     lifecycle,
     metadata: {
       description: `Project manifest projection for ${project.name}`,

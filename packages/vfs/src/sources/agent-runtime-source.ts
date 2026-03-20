@@ -1,5 +1,6 @@
 import type {
   AgentInstanceMeta,
+  SourceTrait,
   VfsFileContent,
   VfsEntry,
   VfsFileSchemaMap,
@@ -13,6 +14,14 @@ import type {
   VfsWatchOptions,
   VfsWriteResult,
 } from "@actant/shared";
+
+const AGENT_RUNTIME_TRAITS = new Set<SourceTrait>([
+  "executable",
+  "streamable",
+  "watchable",
+  "ephemeral",
+  "virtual",
+]);
 
 export interface AgentControlRequest {
   prompt: string;
@@ -397,7 +406,8 @@ export function createAgentRuntimeSource(
   return {
     name: "agents",
     mountPoint,
-    sourceType: "component-source",
+    label: "agent-runtime",
+    traits: new Set(AGENT_RUNTIME_TRAITS),
     lifecycle,
     metadata: { description: "Built-in agent runtime source", virtual: true },
     fileSchema: AGENT_RUNTIME_FILE_SCHEMA,

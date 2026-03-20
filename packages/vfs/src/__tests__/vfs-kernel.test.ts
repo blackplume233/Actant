@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
-import type { VfsSourceRegistration, VfsWatchCallback, VfsWatchEvent } from "@actant/shared";
+import type { SourceTrait, VfsSourceRegistration, VfsWatchCallback, VfsWatchEvent } from "@actant/shared";
 import { VfsPermissionManager, DEFAULT_PERMISSION_RULES } from "../vfs-permission-manager";
 import { createPermissionMiddleware } from "../middleware/permission-middleware";
 import { VfsKernel } from "../core/vfs-kernel";
 import { memorySourceFactory } from "../sources/memory-source";
 import { createProcessSource, OutputBuffer, type ProcessHandle } from "../sources/process-source";
+
+const WORKSPACE_TRAITS = new Set<SourceTrait>(["persistent", "writable", "watchable"]);
 
 function createKernel() {
   const kernel = new VfsKernel();
@@ -23,7 +25,7 @@ function createIdentity(agentName: string) {
 
 function createMemoryMount() {
   const mount = memorySourceFactory.create(
-    { type: "memory", maxSize: "1mb" },
+    { maxSize: "1mb" },
     "/memory/agent-a",
     { type: "agent", agentName: "agent-a" },
   );
@@ -56,7 +58,8 @@ function createWatchSource(events: VfsWatchEvent[]): VfsSourceRegistration {
   return {
     name: "watch-a",
     mountPoint: "/workspace",
-    sourceType: "filesystem",
+    label: "workspace",
+    traits: new Set(WORKSPACE_TRAITS),
     lifecycle: { type: "manual" },
     metadata: { owner: "agent-a" },
     fileSchema: {},
