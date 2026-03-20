@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ship Sub"
+  short_description: "子分支提交 PR，主分支 handle-pr 交付"
+  default_prompt: "Use $ship-sub to review the current child branch, create or reuse its PR, then switch to the base branch and finish delivery with handle-pr."
