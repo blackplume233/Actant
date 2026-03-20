@@ -62,8 +62,11 @@ describe("VfsRegistry", () => {
       registry.mount(createSource("mem-a", "/memory/agent-a"));
       const result = registry.resolve("/memory/agent-a");
       expect(result).not.toBeNull();
-      expect(result!.source.name).toBe("mem-a");
-      expect(result!.relativePath).toBe("");
+      if (!result) {
+        throw new Error("Expected mount resolution for /memory/agent-a");
+      }
+      expect(result.source.name).toBe("mem-a");
+      expect(result.relativePath).toBe("");
     });
 
     it("resolves a file within a mount", () => {
@@ -83,6 +86,36 @@ describe("VfsRegistry", () => {
       registry.mount(createSource("proc-a", "/proc/agent-a"));
       const result = registry.resolve("/proc/agent-a/stdout");
       expect(result!.source.name).toBe("proc-a");
+    });
+
+    it("resolves files beneath a root mount", () => {
+      registry.mount(createSource("root", "/"));
+      const result = registry.resolve("/_project.json");
+      expect(result).not.toBeNull();
+      if (!result) {
+        throw new Error("Expected root mount resolution for /_project.json");
+      }
+      expect(result.source.name).toBe("root");
+      expect(result.relativePath).toBe("_project.json");
+    });
+  });
+
+  describe("listChildMounts", () => {
+    it("prefers the shallowest descendant per segment when listing root mounts", () => {
+      registry.mount(createSource("root", "/"));
+      registry.mount(createSource("child-scope", "/projects/child"));
+      registry.mount(createSource("child-workspace", "/projects/child/workspace"));
+
+      const mounts = registry.listChildMounts("/");
+      expect(mounts.map((mount) => mount.mountPoint)).toEqual(["/projects/child"]);
+    });
+
+    it("prefers the direct child project scope over nested mounts", () => {
+      registry.mount(createSource("child-scope", "/projects/child"));
+      registry.mount(createSource("child-workspace", "/projects/child/workspace"));
+
+      const mounts = registry.listChildMounts("/projects");
+      expect(mounts.map((mount) => mount.mountPoint)).toEqual(["/projects/child"]);
     });
   });
 

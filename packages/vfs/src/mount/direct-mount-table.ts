@@ -68,8 +68,7 @@ export class DirectMountTable {
   listChildMounts(dirPath: string): VfsSourceRegistration[] {
     const normalized = normalizeVfsPath(dirPath);
     const prefix = normalized === "/" ? "/" : `${normalized}/`;
-    const children: VfsSourceRegistration[] = [];
-    const seen = new Set<string>();
+    const children = new Map<string, MountRecord>();
 
     for (const { mountPoint, source } of this.mounts) {
       if (normalized !== "/" && !mountPoint.startsWith(prefix)) {
@@ -83,26 +82,33 @@ export class DirectMountTable {
         ? mountPoint.slice(1)
         : mountPoint.slice(prefix.length);
       const firstSegment = remainder.split("/")[0];
-      if (!firstSegment || seen.has(firstSegment)) {
+      if (!firstSegment) {
         continue;
       }
 
-      seen.add(firstSegment);
-      children.push(source);
+      const existing = children.get(firstSegment);
+      if (!existing || mountPoint.length < existing.mountPoint.length) {
+        children.set(firstSegment, { mountPoint, source });
+      }
     }
 
-    return children;
+    return Array.from(children.values(), ({ source }) => source);
   }
 
   resolve(path: string): VfsResolveResult | null {
     const normalized = normalizeVfsPath(path);
 
     for (const { mountPoint, source } of this.mounts) {
-      if (normalized !== mountPoint && !normalized.startsWith(`${mountPoint}/`)) {
+      const matchesMount = mountPoint === "/"
+        ? normalized.startsWith("/")
+        : normalized === mountPoint || normalized.startsWith(`${mountPoint}/`);
+      if (!matchesMount) {
         continue;
       }
 
-      const relativePath = normalized === mountPoint ? "" : normalized.slice(mountPoint.length + 1);
+      const relativePath = mountPoint === "/"
+        ? (normalized === "/" ? "" : normalized.slice(1))
+        : (normalized === mountPoint ? "" : normalized.slice(mountPoint.length + 1));
       const fileSchema = resolveFileSchema(relativePath, source.fileSchema);
       return { source, relativePath, fileSchema };
     }

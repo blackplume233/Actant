@@ -189,14 +189,29 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
       const resolved = registry.resolve(path);
       if (!resolved) {
         const childMounts = registry.listChildMounts(path);
-        return childMounts.map((s) => ({
+        return childMounts.map((s: { mountPoint: string; name: string }) => ({
           name: s.mountPoint.split("/").pop() ?? s.name,
           path: s.mountPoint,
           type: "directory" as const,
         }));
       }
       const handler = requireHandler(resolved.source.handlers.list, "list", path);
-      return handler(resolved.relativePath, { recursive, long });
+      const entries = await handler(resolved.relativePath, { recursive, long });
+      if (resolved.relativePath !== "") {
+        return entries;
+      }
+
+      const childMounts = registry.listChildMounts(path);
+      const projectedMounts = childMounts.map((s: { mountPoint: string; name: string }) => ({
+        name: s.mountPoint.split("/").pop() ?? s.name,
+        path: s.mountPoint,
+        type: "directory" as const,
+      }));
+      const deduped = new Map<string, (typeof entries)[number]>();
+      for (const entry of [...entries, ...projectedMounts]) {
+        deduped.set(entry.path, entry);
+      }
+      return [...deduped.values()];
     },
     async describe(path) {
       const desc = registry.describe(path);
@@ -231,7 +246,9 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
 function mapConnectedPath(path?: string): string {
   const raw = path ?? "/";
   const aliases: Array<[string, string]> = [
+    ["/_project.json", "/hub/_project.json"],
     ["/project", "/hub/project"],
+    ["/projects", "/hub/projects"],
     ["/workspace", "/hub/workspace"],
     ["/config", "/hub/config"],
     ["/skills", "/hub/skills"],

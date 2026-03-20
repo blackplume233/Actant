@@ -94,6 +94,12 @@ export type {
 } from "./source.types";
 export type {
   ProjectSourceEntry,
+  MountDeclaration,
+  PermissionSet,
+  PermissionRule,
+  PermissionConfig,
+  ChildProjectRef,
+  ProjectManifest,
   ActantProjectEntrypoints,
   ActantProjectConfig,
 } from "./project.types";

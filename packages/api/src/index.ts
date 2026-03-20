@@ -2,6 +2,8 @@ export { Daemon } from "./daemon/index";
 export { AppContext, type AppConfig } from "./services/app-context";
 export {
   loadProjectContext,
+  buildProjectScopeSnapshot,
+  createProjectContextPermissionRules,
   createProjectContextFactoryRegistry,
   createProjectContextRegistrations,
   type LoadedProjectContext,
