@@ -37,7 +37,7 @@ import {
   createPermissionMiddleware,
   VfsPermissionManager,
   DEFAULT_PERMISSION_RULES,
-  SourceFactoryRegistry,
+  SourceTypeRegistry,
   VfsLifecycleManager,
   workspaceSourceFactory,
   memorySourceFactory,
@@ -216,7 +216,7 @@ export class AppContext {
   readonly vfsKernel: VfsKernel;
   readonly vfsSecuredKernel: VfsKernel;
   readonly vfsPermissionManager: VfsPermissionManager;
-  readonly sourceFactoryRegistry: SourceFactoryRegistry;
+  readonly sourceTypeRegistry: SourceTypeRegistry;
   readonly hostProfile: HostProfile;
   readonly hubContext: HubContextService;
   readonly toolRegistry: RuntimeToolRegistry;
@@ -333,13 +333,13 @@ export class AppContext {
         this.vfsSecuredKernel.unmount(name);
       },
     });
-    this.sourceFactoryRegistry = new SourceFactoryRegistry();
-    this.sourceFactoryRegistry.register(workspaceSourceFactory);
-    this.sourceFactoryRegistry.register(memorySourceFactory);
-    this.sourceFactoryRegistry.register(configSourceFactory);
-    this.sourceFactoryRegistry.register(canvasSourceFactory);
-    this.sourceFactoryRegistry.register(vcsSourceFactory);
-    this.sourceFactoryRegistry.register(processSourceFactory);
+    this.sourceTypeRegistry = new SourceTypeRegistry();
+    this.sourceTypeRegistry.register(workspaceSourceFactory);
+    this.sourceTypeRegistry.register(memorySourceFactory);
+    this.sourceTypeRegistry.register(configSourceFactory);
+    this.sourceTypeRegistry.register(canvasSourceFactory);
+    this.sourceTypeRegistry.register(vcsSourceFactory);
+    this.sourceTypeRegistry.register(processSourceFactory);
     this.hubContext = new HubContextService(this);
     this.toolRegistry = new RuntimeToolRegistry();
   }
@@ -753,26 +753,29 @@ export class AppContext {
 
   private initializeVfs(): void {
     const reg = this.vfsRegistry;
-    const factory = this.sourceFactoryRegistry;
+    const factory = this.sourceTypeRegistry;
 
-    reg.mount(factory.create({
+    reg.mount(factory.createMount({
       name: "config",
       mountPoint: "/config",
-      spec: { type: "config" },
+      type: "config",
+      config: {},
       lifecycle: { type: "daemon" },
     }));
 
-    reg.mount(factory.create({
+    reg.mount(factory.createMount({
       name: "memory",
       mountPoint: "/memory",
-      spec: { type: "memory", maxSize: "16MB" },
+      type: "memory",
+      config: { maxSize: "16MB" },
       lifecycle: { type: "daemon" },
     }));
 
-    reg.mount(factory.create({
+    reg.mount(factory.createMount({
       name: "canvas",
       mountPoint: "/canvas",
-      spec: { type: "canvas" },
+      type: "canvas",
+      config: {},
       lifecycle: { type: "daemon" },
     }));
 
@@ -785,10 +788,11 @@ export class AppContext {
       if (!agent?.workspaceDir) return;
 
       try {
-        reg.mount(factory.create({
+        reg.mount(factory.createMount({
           name: `workspace-${name}`,
           mountPoint: `/workspace/${name}`,
-          spec: { type: "filesystem", path: agent.workspaceDir },
+          type: "filesystem",
+          config: { path: agent.workspaceDir },
           lifecycle: { type: "agent", agentName: name },
           metadata: { agentName: name },
         }));

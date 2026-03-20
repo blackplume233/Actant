@@ -253,16 +253,14 @@ export type VfsFileSchemaMap = Record<string, VfsFileSchema>;
 // Source Type — mount-point level registration
 // ---------------------------------------------------------------------------
 
-export type VfsSourceType =
-  | "filesystem"
-  | "process"
-  | "config"
-  | "memory"
-  | "canvas"
-  | "vcs"
-  | "notebook"
-  | "schedule"
-  | "component-source"
+export type SourceTrait =
+  | "persistent"
+  | "ephemeral"
+  | "watchable"
+  | "streamable"
+  | "writable"
+  | "virtual"
+  | "executable"
   | (string & Record<never, never>);
 
 // ---------------------------------------------------------------------------
@@ -296,7 +294,8 @@ export interface VfsSourceMeta {
 export interface VfsSourceRegistration {
   name: string;
   mountPoint: string;
-  sourceType: VfsSourceType;
+  label: string;
+  traits: ReadonlySet<SourceTrait>;
   lifecycle: VfsLifecycle;
   metadata: VfsSourceMeta;
   fileSchema: VfsFileSchemaMap;
@@ -304,32 +303,32 @@ export interface VfsSourceRegistration {
 }
 
 // ---------------------------------------------------------------------------
-// Source Spec — declarative specification for RPC/CLI/Template registration
+// Source Type Definitions — declarative factory registration
 // ---------------------------------------------------------------------------
 
-export type VfsSourceSpec =
-  | { type: "filesystem"; path: string; readOnly?: boolean; watchEnabled?: boolean }
-  | { type: "process"; command?: string; args?: string[]; pid?: number; bufferSize?: number }
-  | { type: "memory"; maxSize?: string; persistent?: boolean }
-  | { type: "config"; namespace?: string }
-  | { type: "canvas"; maxItems?: number }
-  | { type: "vcs"; repoPath?: string }
-  | { type: "custom"; factory: string; config: Record<string, unknown> };
-
-export interface VfsSourceFactory<S extends VfsSourceSpec = VfsSourceSpec> {
+export interface SourceTypeDefinition<TConfig = Record<string, unknown>> {
   readonly type: string;
-  create(spec: S, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration;
-  validate?(spec: S): { valid: boolean; errors?: string[] };
+  readonly label: string;
+  readonly defaultTraits: ReadonlySet<SourceTrait>;
+  readonly configSchema?: Record<string, unknown>;
+  create(config: TConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration;
+  validate?(config: TConfig): { valid: boolean; errors?: string[] };
+}
+
+export interface SourceRequirement {
+  required: SourceTrait[];
+  optional?: SourceTrait[];
 }
 
 // ---------------------------------------------------------------------------
 // Mount parameters (for RPC / CLI callers that don't provide handlers)
 // ---------------------------------------------------------------------------
 
-export interface VfsMountParams {
+export interface VfsMountParams<TConfig = Record<string, unknown>> {
   name: string;
   mountPoint: string;
-  spec: VfsSourceSpec;
+  type: string;
+  config: TConfig;
   lifecycle: VfsLifecycle;
   metadata?: VfsSourceMeta;
 }
@@ -373,7 +372,8 @@ export interface VfsDescribeResult {
   path: string;
   mountPoint: string;
   sourceName: string;
-  sourceType: VfsSourceType;
+  label: string;
+  traits: ReadonlySet<SourceTrait>;
   fileSchema?: VfsFileSchema;
   capabilities: VfsCapabilityId[];
   metadata: VfsSourceMeta;
@@ -387,7 +387,8 @@ export interface VfsDescribeResult {
 export interface VfsMountInfo {
   name: string;
   mountPoint: string;
-  sourceType: VfsSourceType;
+  label: string;
+  traits: ReadonlySet<SourceTrait>;
   lifecycle: VfsLifecycle;
   metadata: VfsSourceMeta;
   capabilities: VfsCapabilityId[];

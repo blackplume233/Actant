@@ -2,9 +2,9 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { existsSync } from "node:fs";
 import {
+  type SourceTrait,
+  type SourceTypeDefinition,
   type VfsSourceRegistration,
-  type VfsSourceFactory,
-  type VfsSourceSpec,
   type VfsLifecycle,
   type VfsHandlerMap,
   type VfsFileContent,
@@ -21,7 +21,13 @@ import {
   type VfsGrepMatch,
 } from "@actant/shared";
 
-type FilesystemSpec = Extract<VfsSourceSpec, { type: "filesystem" }>;
+export interface WorkspaceSourceConfig {
+  path: string;
+  readOnly?: boolean;
+  watchEnabled?: boolean;
+}
+
+const WORKSPACE_TRAITS = new Set<SourceTrait>(["persistent", "writable", "watchable"]);
 
 function resolveAbsolute(rootDir: string, relativePath: string): string {
   const resolved = path.resolve(rootDir, relativePath);
@@ -264,15 +270,17 @@ function matchGlobSimple(pattern: string, filePath: string): boolean {
   return new RegExp(`^${regexStr}$`).test(filePath);
 }
 
-export const workspaceSourceFactory: VfsSourceFactory<FilesystemSpec> = {
+export const workspaceSourceFactory: SourceTypeDefinition<WorkspaceSourceConfig> = {
   type: "filesystem",
+  label: "workspace",
+  defaultTraits: WORKSPACE_TRAITS,
 
-  validate(spec: FilesystemSpec) {
-    if (!spec.path) return { valid: false, errors: ["path is required"] };
+  validate(config: WorkspaceSourceConfig) {
+    if (!config.path) return { valid: false, errors: ["path is required"] };
     return { valid: true };
   },
 
-  create(spec: FilesystemSpec, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
+  create(spec: WorkspaceSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
     const rootDir = path.resolve(spec.path);
     const readOnly = spec.readOnly ?? false;
     const handlers = createHandlers(rootDir, readOnly);
@@ -280,7 +288,8 @@ export const workspaceSourceFactory: VfsSourceFactory<FilesystemSpec> = {
     return {
       name: "",
       mountPoint,
-      sourceType: "filesystem",
+      label: "workspace",
+      traits: new Set(WORKSPACE_TRAITS),
       lifecycle,
       metadata: {
         description: `Workspace: ${rootDir}`,

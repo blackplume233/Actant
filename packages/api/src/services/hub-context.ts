@@ -7,7 +7,7 @@ import type {
 } from "@actant/shared";
 import {
   createProjectContextPermissionRules,
-  createProjectContextFactoryRegistry,
+  createProjectContextSourceTypeRegistry,
   createProjectContextRegistrations,
   loadProjectContext,
   type LoadedProjectContext,
@@ -41,7 +41,7 @@ export interface ActiveHubContext {
 }
 
 export class HubContextService {
-  private readonly factoryRegistry = createProjectContextFactoryRegistry();
+  private readonly sourceTypeRegistry = createProjectContextSourceTypeRegistry();
   private active?: ActiveHubContext;
   private activationPromise?: Promise<HubActivateResult>;
   private activationTargetRoot?: string;
@@ -104,7 +104,7 @@ export class HubContextService {
 
   private async doActivate(projectDir?: string): Promise<HubActivateResult> {
     const context = await loadProjectContext(projectDir);
-    const registrations = buildHubRegistrations(context, this.factoryRegistry);
+    const registrations = buildHubRegistrations(context, this.sourceTypeRegistry);
     this.appContext.vfsPermissionManager.setRules([
       ...DEFAULT_PERMISSION_RULES,
       ...createProjectContextPermissionRules(context, { project: HUB_LAYOUT.project }),
@@ -149,7 +149,7 @@ export class HubContextService {
 
 function buildHubRegistrations(
   context: LoadedProjectContext,
-  factoryRegistry: ReturnType<typeof createProjectContextFactoryRegistry>,
+  factoryRegistry: ReturnType<typeof createProjectContextSourceTypeRegistry>,
 ): VfsSourceRegistration[] {
   return createProjectContextRegistrations(
     context,

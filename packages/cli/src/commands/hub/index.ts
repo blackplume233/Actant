@@ -4,7 +4,7 @@ import {
   createDaemonInfoSource,
 } from "@actant/agent-runtime";
 import {
-  createProjectContextFactoryRegistry,
+  createProjectContextSourceTypeRegistry,
   createProjectContextRegistrations,
   loadProjectContext,
 } from "@actant/api";
@@ -236,7 +236,7 @@ async function createConnectedHubBackend(client: RpcClient, projectDir: string):
 async function createStandaloneHubBackend(projectDir: string): Promise<HubBackend> {
   const context = await loadProjectContext(projectDir);
   const registry = new VfsRegistry();
-  const factoryRegistry = createProjectContextFactoryRegistry();
+  const factoryRegistry = createProjectContextSourceTypeRegistry();
 
   for (const registration of createProjectContextRegistrations(
     context,

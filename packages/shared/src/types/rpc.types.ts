@@ -1078,7 +1078,8 @@ export interface VfsDescribeRpcResult {
   path: string;
   mountPoint: string;
   sourceName: string;
-  sourceType: string;
+  label: string;
+  traits: string[];
   capabilities: string[];
   metadata: Record<string, unknown>;
 }
@@ -1141,7 +1142,8 @@ export interface VfsMountListResult {
   mounts: Array<{
     name: string;
     mountPoint: string;
-    sourceType: string;
+    label: string;
+    traits: string[];
     capabilities: string[];
     fileCount: number;
   }>;

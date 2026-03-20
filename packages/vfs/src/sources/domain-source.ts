@@ -1,4 +1,5 @@
 import type {
+  SourceTrait,
   VfsSourceRegistration,
   VfsLifecycle,
   VfsHandlerMap,
@@ -7,6 +8,8 @@ import type {
   VfsListOptions,
   VfsStatResult,
 } from "@actant/shared";
+
+const DOMAIN_TRAITS = new Set<SourceTrait>(["persistent", "watchable"]);
 
 interface MinimalComponent {
   name: string;
@@ -85,7 +88,8 @@ export function createDomainSource(
   return {
     name: domain,
     mountPoint,
-    sourceType: "component-source",
+    label: "domain",
+    traits: new Set(DOMAIN_TRAITS),
     lifecycle,
     metadata: { description: `${domain} components (read-only, virtual)`, virtual: true },
     fileSchema: {},

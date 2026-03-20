@@ -11,6 +11,7 @@
  */
 import { describe, expect, it, beforeEach } from "vitest";
 import type {
+  AgentInstanceMeta,
   VfsSourceRegistration,
   SourceTrait,
   SourceTypeDefinition,
@@ -32,20 +33,27 @@ import {
 // ---------------------------------------------------------------------------
 
 function createMinimalAgentProvider(): AgentRuntimeSourceProvider {
+  const now = new Date().toISOString();
+  const agent: AgentInstanceMeta = {
+    id: "agent-1",
+    name: "test-agent",
+    templateName: "default",
+    templateVersion: "1.0.0",
+    backendType: "claude-code",
+    interactionModes: ["chat"],
+    status: "running",
+    launchMode: "direct",
+    workspacePolicy: "persistent",
+    processOwnership: "managed",
+    createdAt: now,
+    updatedAt: now,
+    archetype: "repo",
+    autoStart: false,
+  };
+
   return {
-    listAgents: () => [
-      {
-        name: "test-agent",
-        status: "running",
-        archetype: "repo",
-        template: "default",
-        autoStart: false,
-      },
-    ],
-    getAgent: (name: string) =>
-      name === "test-agent"
-        ? { name: "test-agent", status: "running", archetype: "repo", template: "default", autoStart: false }
-        : undefined,
+    listAgents: () => [agent],
+    getAgent: (name: string) => (name === "test-agent" ? agent : undefined),
     readStream: () => ({ content: "" }),
     stream: (_name: string, _stream: "stdout" | "stderr") => ({
       async *[Symbol.asyncIterator]() {
@@ -111,42 +119,48 @@ describe("M5: VfsSourceRegistration uses traits + label", () => {
   it("AgentRuntimeSource registration has traits (Set) and label (string), no sourceType", () => {
     const provider = createMinimalAgentProvider();
     const source = createAgentRuntimeSource(provider, "/agents", { type: "daemon" });
+    const sourceRecord = source as unknown as Record<string, unknown>;
 
     expect(source.traits).toBeInstanceOf(Set);
     expect(source.traits.size).toBeGreaterThan(0);
     expect(typeof source.label).toBe("string");
     expect(source.label.length).toBeGreaterThan(0);
-    expect((source as Record<string, unknown>)["sourceType"]).toBeUndefined();
+    expect(sourceRecord["sourceType"]).toBeUndefined();
   });
 
   it("McpRuntimeSource registration has traits + label, no sourceType", () => {
     const provider = createMinimalMcpRuntimeProvider();
     const source = createMcpRuntimeSource(provider, "/mcp/runtime", { type: "daemon" });
+    const sourceRecord = source as unknown as Record<string, unknown>;
 
     expect(source.traits).toBeInstanceOf(Set);
     expect(source.traits.size).toBeGreaterThan(0);
     expect(typeof source.label).toBe("string");
-    expect((source as Record<string, unknown>)["sourceType"]).toBeUndefined();
+    expect(sourceRecord["sourceType"]).toBeUndefined();
   });
 
   it("SkillSource registration has traits + label, no sourceType", () => {
     const manager = createMinimalSkillManager();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager matches internal interface structurally
     const source = createSkillSource(manager as any, "/skills", { type: "daemon" });
+    const sourceRecord = source as unknown as Record<string, unknown>;
 
     expect(source.traits).toBeInstanceOf(Set);
     expect(source.traits.size).toBeGreaterThan(0);
     expect(typeof source.label).toBe("string");
-    expect((source as Record<string, unknown>)["sourceType"]).toBeUndefined();
+    expect(sourceRecord["sourceType"]).toBeUndefined();
   });
 
   it("McpConfigSource registration has traits + label, no sourceType", () => {
     const manager = createMinimalMcpConfigManager();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager matches internal interface structurally
     const source = createMcpConfigSource(manager as any, "/mcp/configs", { type: "daemon" });
+    const sourceRecord = source as unknown as Record<string, unknown>;
 
     expect(source.traits).toBeInstanceOf(Set);
     expect(source.traits.size).toBeGreaterThan(0);
     expect(typeof source.label).toBe("string");
-    expect((source as Record<string, unknown>)["sourceType"]).toBeUndefined();
+    expect(sourceRecord["sourceType"]).toBeUndefined();
   });
 });
 
@@ -178,6 +192,7 @@ describe("M5: Built-in Sources declare correct Trait sets", () => {
 
   it("SkillSource has persistent + writable traits", () => {
     const manager = createMinimalSkillManager();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager
     const source = createSkillSource(manager as any, "/skills", { type: "daemon" });
 
     expect(source.traits.has("persistent")).toBe(true);
@@ -188,6 +203,7 @@ describe("M5: Built-in Sources declare correct Trait sets", () => {
 
   it("McpConfigSource has persistent + writable traits", () => {
     const manager = createMinimalMcpConfigManager();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager
     const source = createMcpConfigSource(manager as any, "/mcp/configs", { type: "daemon" });
 
     expect(source.traits.has("persistent")).toBe(true);
@@ -305,7 +321,7 @@ describe("M5: SourceRequirement trait constraint matching", () => {
   it("satisfies() returns true when all required traits are present", () => {
     const source = {
       traits: new Set(["executable", "streamable", "ephemeral", "virtual"] as SourceTrait[]),
-    } as VfsSourceRegistration;
+    };
 
     const requirement: SourceRequirement = {
       required: ["executable", "streamable"],
@@ -317,7 +333,7 @@ describe("M5: SourceRequirement trait constraint matching", () => {
   it("satisfies() returns false when a required trait is missing", () => {
     const source = {
       traits: new Set(["ephemeral", "writable"] as SourceTrait[]),
-    } as VfsSourceRegistration;
+    };
 
     const requirement: SourceRequirement = {
       required: ["persistent", "writable"],
@@ -329,7 +345,7 @@ describe("M5: SourceRequirement trait constraint matching", () => {
   it("satisfies() with empty required always returns true", () => {
     const source = {
       traits: new Set([] as SourceTrait[]),
-    } as VfsSourceRegistration;
+    };
 
     const requirement: SourceRequirement = { required: [] };
     expect(SourceTypeRegistry.satisfies(source, requirement)).toBe(true);
@@ -338,7 +354,7 @@ describe("M5: SourceRequirement trait constraint matching", () => {
   it("optional traits do not affect matching", () => {
     const source = {
       traits: new Set(["persistent", "writable"] as SourceTrait[]),
-    } as VfsSourceRegistration;
+    };
 
     const requirement: SourceRequirement = {
       required: ["persistent"],
@@ -416,6 +432,7 @@ describe("M5: VfsKernel works with trait-based registrations", () => {
     const kernel = new VfsKernel();
 
     const agentSource = createAgentRuntimeSource(createMinimalAgentProvider(), "/agents", { type: "daemon" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager
     const skillSource = createSkillSource(createMinimalSkillManager() as any, "/skills", { type: "daemon" });
 
     kernel.mount({ ...agentSource, name: "agents" });

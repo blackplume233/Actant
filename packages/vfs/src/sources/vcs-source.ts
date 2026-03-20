@@ -1,9 +1,9 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
+  type SourceTrait,
+  type SourceTypeDefinition,
   type VfsSourceRegistration,
-  type VfsSourceFactory,
-  type VfsSourceSpec,
   type VfsLifecycle,
   type VfsHandlerMap,
   type VfsFileContent,
@@ -18,7 +18,11 @@ import {
 
 const execFileAsync = promisify(execFile);
 
-type VcsSpec = Extract<VfsSourceSpec, { type: "vcs" }>;
+export interface VcsSourceConfig {
+  repoPath?: string;
+}
+
+const VCS_TRAITS = new Set<SourceTrait>(["persistent", "watchable"]);
 
 const VCS_FILE_SCHEMA: VfsFileSchemaMap = {
   status: { type: "json", capabilities: ["read", "git_status"], dynamic: true },
@@ -127,17 +131,20 @@ function createHandlers(repoPath: string): VfsHandlerMap {
   return handlers;
 }
 
-export const vcsSourceFactory: VfsSourceFactory<VcsSpec> = {
+export const vcsSourceFactory: SourceTypeDefinition<VcsSourceConfig> = {
   type: "vcs",
+  label: "vcs",
+  defaultTraits: VCS_TRAITS,
 
-  create(spec: VcsSpec, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
+  create(spec: VcsSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
     const repoPath = spec.repoPath ?? process.cwd();
     const handlers = createHandlers(repoPath);
 
     return {
       name: "",
       mountPoint,
-      sourceType: "vcs",
+      label: "vcs",
+      traits: new Set(VCS_TRAITS),
       lifecycle,
       metadata: {
         description: `VCS: ${repoPath}`,

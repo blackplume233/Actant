@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VfsPermissionManager, DEFAULT_PERMISSION_RULES } from "../vfs-permission-manager";
-import type { VfsIdentity, VfsSourceRegistration } from "@actant/shared";
+import type { SourceTrait, VfsIdentity, VfsSourceRegistration } from "@actant/shared";
+
+const MEMORY_TRAITS = new Set<SourceTrait>(["ephemeral", "writable"]);
 
 function agentIdentity(name: string, archetype: "repo" | "service" | "employee" = "repo"): VfsIdentity {
   return { type: "agent", agentName: name, archetype, sessionId: "s1" };
@@ -12,7 +14,8 @@ function createSource(owner?: string): VfsSourceRegistration {
   return {
     name: "test",
     mountPoint: "/test",
-    sourceType: "memory",
+    label: "memory",
+    traits: new Set(MEMORY_TRAITS),
     lifecycle: { type: "manual" },
     metadata: { owner },
     fileSchema: {},

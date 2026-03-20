@@ -44,10 +44,11 @@ describe("vfs handlers", () => {
 
   it("uses secured kernel permissions when a session token is provided", async () => {
     const token = ctx.sessionTokenStore.generate("agent-a", "session-a");
-    ctx.vfsRegistry.mount(ctx.sourceFactoryRegistry.create({
+    ctx.vfsRegistry.mount(ctx.sourceTypeRegistry.createMount({
       name: "memory-agent-a",
       mountPoint: "/memory/agent-a",
-      spec: { type: "memory" },
+      type: "memory",
+      config: {},
       lifecycle: { type: "manual" },
       metadata: { owner: "agent-a" },
     }));
@@ -89,10 +90,11 @@ describe("vfs handlers", () => {
   });
 
   it("preserves direct child mount listing for unresolved parent paths", async () => {
-    ctx.vfsRegistry.mount(ctx.sourceFactoryRegistry.create({
+    ctx.vfsRegistry.mount(ctx.sourceTypeRegistry.createMount({
       name: "workspace-agent-a",
       mountPoint: "/workspace/agent-a",
-      spec: { type: "memory" },
+      type: "memory",
+      config: {},
       lifecycle: { type: "manual" },
       metadata: { owner: "agent-a" },
     }));

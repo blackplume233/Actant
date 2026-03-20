@@ -1,4 +1,5 @@
 import type {
+  SourceTrait,
   VfsSourceRegistration,
   VfsLifecycle,
   VfsFileContent,
@@ -7,6 +8,8 @@ import type {
   VfsListOptions,
 } from "@actant/shared";
 import type { ContextSource, ContextSourceType } from "../types";
+
+const PROJECT_SOURCE_TRAITS = new Set<SourceTrait>(["persistent", "virtual"]);
 
 /**
  * Structured project overview produced by ProjectSource implementations.
@@ -90,7 +93,8 @@ export abstract class ProjectSource implements ContextSource {
       {
         name: `project-${this.name}`,
         mountPoint,
-        sourceType: "filesystem",
+        label: "project",
+        traits: new Set(PROJECT_SOURCE_TRAITS),
         lifecycle: this.lifecycle,
         metadata: {
           description: `Project context: ${this.overview?.name ?? this.name}`,

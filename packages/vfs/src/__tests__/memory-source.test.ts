@@ -5,7 +5,7 @@ import { memorySourceFactory } from "../sources/memory-source";
 describe("MemorySource", () => {
   function createMemoryMount() {
     const reg = memorySourceFactory.create(
-      { type: "memory", maxSize: "1mb" },
+      { maxSize: "1mb" },
       "/memory/agent-a",
       { type: "agent", agentName: "agent-a" },
     );

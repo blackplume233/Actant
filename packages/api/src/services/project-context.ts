@@ -21,7 +21,7 @@ import {
   createMcpConfigSource,
   createMcpRuntimeSource,
   createAgentRuntimeSource,
-  SourceFactoryRegistry,
+  SourceTypeRegistry,
   workspaceSourceFactory,
   type FetchResult,
 } from "@actant/agent-runtime";
@@ -33,12 +33,15 @@ import type {
   PermissionConfig,
   ProjectManifest,
   ProjectSourceEntry,
+  SourceTrait,
   SourceConfig,
   VfsPermissionRule,
   VfsLifecycle,
   VfsSourceRegistration,
 } from "@actant/shared";
 import { ensureWithinWorkspace } from "@actant/shared";
+
+const PROJECT_CONTEXT_TRAITS = new Set<SourceTrait>(["persistent", "virtual"]);
 
 export interface ProjectContextSummary {
   mode: "project-context";
@@ -145,7 +148,7 @@ export function createProjectContextPermissionRules(
 
 export function createProjectContextRegistrations(
   context: LoadedProjectContext,
-  factoryRegistry: SourceFactoryRegistry,
+  factoryRegistry: SourceTypeRegistry,
   layout: ProjectContextMountLayout,
   lifecycle: VfsLifecycle,
   options?: ProjectContextRegistrationOptions,
@@ -317,8 +320,8 @@ async function loadProjectContextInternal(
   };
 }
 
-export function createProjectContextFactoryRegistry(): SourceFactoryRegistry {
-  const registry = new SourceFactoryRegistry();
+export function createProjectContextSourceTypeRegistry(): SourceTypeRegistry {
+  const registry = new SourceTypeRegistry();
   registry.register(workspaceSourceFactory);
   return registry;
 }
@@ -557,7 +560,7 @@ function buildProjectMountDeclarations(
 
 function createProjectRegistrationsForScope(
   context: LoadedProjectContext,
-  factoryRegistry: SourceFactoryRegistry,
+  factoryRegistry: SourceTypeRegistry,
   layout: ProjectContextMountLayout,
   lifecycle: VfsLifecycle,
   prefix: string,
@@ -565,10 +568,11 @@ function createProjectRegistrationsForScope(
 ): VfsSourceRegistration[] {
   const regs: VfsSourceRegistration[] = [
     createProjectSource(`${prefix}-project`, context, layout.project, lifecycle),
-    factoryRegistry.create({
+    factoryRegistry.createMount({
       name: `${prefix}-workspace`,
       mountPoint: layout.workspace,
-      spec: { type: "filesystem", path: context.projectRoot, readOnly: options?.workspaceReadOnly ?? false },
+      type: "filesystem",
+      config: { path: context.projectRoot, readOnly: options?.workspaceReadOnly ?? false },
       lifecycle,
     }),
     {
@@ -598,10 +602,11 @@ function createProjectRegistrationsForScope(
   ];
 
   if (context.configExists) {
-    regs.splice(2, 0, factoryRegistry.create({
+    regs.splice(2, 0, factoryRegistry.createMount({
       name: `${prefix}-config`,
       mountPoint: layout.config,
-      spec: { type: "filesystem", path: context.configsDir, readOnly: options?.configReadOnly ?? false },
+      type: "filesystem",
+      config: { path: context.configsDir, readOnly: options?.configReadOnly ?? false },
       lifecycle,
     }));
   }
@@ -766,7 +771,8 @@ function createProjectSource(
   return {
     name,
     mountPoint,
-    sourceType: "component-source",
+    label: "project-context",
+    traits: new Set(PROJECT_CONTEXT_TRAITS),
     lifecycle,
     metadata: { description: "Project-level Actant context (virtual)", virtual: true },
     fileSchema: {},

@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { VfsSourceRegistration, VfsFileContent, VfsEntry } from "@actant/shared";
+import type { SourceTrait, VfsSourceRegistration, VfsFileContent, VfsEntry } from "@actant/shared";
 import { ContextManager } from "../manager/context-manager";
 import type { ContextSource, ToolRegistration, ContextManagerEvents } from "../types";
+
+const CONFIG_TRAITS = new Set<SourceTrait>(["persistent", "writable"]);
 
 function createMockSource(
   name: string,
@@ -22,7 +24,8 @@ function createMockMount(
   return {
     name,
     mountPoint,
-    sourceType: "config",
+    label: "config",
+    traits: new Set(CONFIG_TRAITS),
     lifecycle: { type: "daemon" },
     metadata: { description: `Mock mount ${name}`, virtual: true },
     fileSchema: {},

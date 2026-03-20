@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VfsRegistry } from "../vfs-registry";
-import type { VfsSourceRegistration } from "@actant/shared";
+import type { SourceTrait, VfsSourceRegistration } from "@actant/shared";
+
+const MEMORY_TRAITS = new Set<SourceTrait>(["ephemeral", "writable"]);
 
 function createSource(name: string, mountPoint: string, overrides?: Partial<VfsSourceRegistration>): VfsSourceRegistration {
   return {
     name,
     mountPoint,
-    sourceType: "memory",
+    label: "memory",
+    traits: new Set(MEMORY_TRAITS),
     lifecycle: { type: "manual" },
     metadata: { description: `test: ${name}` },
     fileSchema: {
@@ -143,7 +146,7 @@ describe("VfsRegistry", () => {
       const desc = registry.describe("/memory/agent-a/config.json");
       expect(desc).not.toBeNull();
       expect(desc!.sourceName).toBe("mem-a");
-      expect(desc!.sourceType).toBe("memory");
+      expect(desc!.label).toBe("memory");
       expect(desc!.capabilities).toContain("read");
       expect(desc!.capabilities).toContain("edit");
     });
