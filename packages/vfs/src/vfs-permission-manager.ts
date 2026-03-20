@@ -31,21 +31,21 @@ export const DEFAULT_PERMISSION_RULES: VfsPermissionRule[] = [
 
   // /memory/${self}/** — owner RW, others R
   { pathPattern: "/memory/${self}/**", principal: { type: "self" }, actions: [
-    "read", "write", "list", "grep",
+    "read", "write", "list", "stat", "grep",
   ], effect: "allow", priority: 20 },
   { pathPattern: "/memory/**", principal: { type: "any" }, actions: [
-    "read", "list",
+    "read", "list", "stat",
   ], effect: "allow", priority: 10 },
 
   // /proc/${self}/** — owner RW (including cmd), parent RW, others R
   { pathPattern: "/proc/${self}/**", principal: { type: "self" }, actions: [
-    "read", "read_range", "write", "list", "grep",
+    "read", "read_range", "write", "list", "stat", "grep",
   ], effect: "allow", priority: 20 },
   { pathPattern: "/proc/${self}/**", principal: { type: "parent" }, actions: [
-    "read", "read_range", "write", "list", "grep",
+    "read", "read_range", "write", "list", "stat", "grep",
   ], effect: "allow", priority: 15 },
   { pathPattern: "/proc/**", principal: { type: "any" }, actions: [
-    "read", "read_range", "list",
+    "read", "read_range", "list", "stat",
   ], effect: "allow", priority: 10 },
 
   // /config/** — service+ RW, others R, public can read /config/public/
@@ -58,15 +58,15 @@ export const DEFAULT_PERMISSION_RULES: VfsPermissionRule[] = [
 
   // /canvas/${self}/** — owner RW, others R
   { pathPattern: "/canvas/${self}/**", principal: { type: "self" }, actions: [
-    "read", "write", "list",
+    "read", "write", "list", "stat",
   ], effect: "allow", priority: 20 },
   { pathPattern: "/canvas/**", principal: { type: "any" }, actions: [
-    "read", "list",
+    "read", "list", "stat",
   ], effect: "allow", priority: 10 },
 
   // /vcs/** — read-only for all
   { pathPattern: "/vcs/**", principal: { type: "any" }, actions: [
-    "read", "list", "git_status", "git_diff",
+    "read", "list", "stat", "git_status", "git_diff",
   ], effect: "allow", priority: 10 },
 ];
 

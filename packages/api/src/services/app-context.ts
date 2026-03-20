@@ -33,6 +33,10 @@ import {
   PluginHost,
   HeartbeatPlugin,
   VfsRegistry,
+  VfsKernel,
+  createPermissionMiddleware,
+  VfsPermissionManager,
+  DEFAULT_PERMISSION_RULES,
   SourceFactoryRegistry,
   VfsLifecycleManager,
   workspaceSourceFactory,
@@ -195,6 +199,9 @@ export class AppContext {
   readonly canvasStore: CanvasStore;
   readonly pluginHost: PluginHost;
   readonly vfsRegistry: VfsRegistry;
+  readonly vfsKernel: VfsKernel;
+  readonly vfsSecuredKernel: VfsKernel;
+  readonly vfsPermissionManager: VfsPermissionManager;
   readonly sourceFactoryRegistry: SourceFactoryRegistry;
   readonly hostProfile: HostProfile;
   readonly hubContext: HubContextService;
@@ -296,6 +303,22 @@ export class AppContext {
     this.pluginHost.register(new HeartbeatPlugin());
 
     this.vfsRegistry = new VfsRegistry();
+    this.vfsPermissionManager = new VfsPermissionManager([...DEFAULT_PERMISSION_RULES]);
+    this.vfsPermissionManager.setTokenStore(this.sessionTokenStore);
+    this.vfsKernel = new VfsKernel();
+    this.vfsSecuredKernel = new VfsKernel({
+      middleware: [createPermissionMiddleware(this.vfsPermissionManager)],
+    });
+    this.vfsRegistry.addListener({
+      onMount: (source) => {
+        this.vfsKernel.mount(source);
+        this.vfsSecuredKernel.mount(source);
+      },
+      onUnmount: (name) => {
+        this.vfsKernel.unmount(name);
+        this.vfsSecuredKernel.unmount(name);
+      },
+    });
     this.sourceFactoryRegistry = new SourceFactoryRegistry();
     this.sourceFactoryRegistry.register(workspaceSourceFactory);
     this.sourceFactoryRegistry.register(memorySourceFactory);

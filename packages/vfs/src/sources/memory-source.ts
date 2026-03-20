@@ -10,6 +10,7 @@ import {
   type VfsGrepResult,
   type VfsGrepMatch,
   type VfsListOptions,
+  type VfsStatResult,
 } from "@actant/shared";
 
 type MemorySpec = Extract<VfsSourceSpec, { type: "memory" }>;
@@ -77,6 +78,36 @@ function createHandlers(
       }
     }
     return entries;
+  };
+
+  handlers.stat = async (filePath: string): Promise<VfsStatResult> => {
+    const file = files.get(filePath);
+    if (file) {
+      return {
+        size: Buffer.byteLength(file.content),
+        mtime: new Date(file.updatedAt).toISOString(),
+        type: "file",
+      };
+    }
+
+    const prefix = filePath ? `${filePath}/` : "";
+    let latestMtime = 0;
+
+    for (const [key, candidate] of files) {
+      if (filePath === "" || key.startsWith(prefix)) {
+        latestMtime = Math.max(latestMtime, candidate.updatedAt);
+      }
+    }
+
+    if (filePath === "" || latestMtime > 0) {
+      return {
+        size: 0,
+        mtime: new Date(latestMtime).toISOString(),
+        type: "directory",
+      };
+    }
+
+    throw new Error(`File not found: ${filePath}`);
   };
 
   handlers.grep = async (pattern: string): Promise<VfsGrepResult> => {

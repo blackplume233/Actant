@@ -11,7 +11,7 @@ import type {
   VfsReadResult,
   VfsWriteRpcResult,
 } from "@actant/shared";
-import { getBridgeSocketPath } from "@actant/shared";
+import { getBridgeSessionToken, getBridgeSocketPath } from "@actant/shared";
 import { createRpcClient } from "./rpc-client.js";
 
 export interface ContextBackend {
@@ -62,6 +62,7 @@ export async function createContextBackend(options?: ContextBackendOptions): Pro
 }
 
 function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): ContextBackend {
+  const sessionToken = getBridgeSessionToken();
   return {
     mode: "connected",
     async read(path, startLine, endLine) {
@@ -69,11 +70,16 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
         path: mapConnectedPath(path),
         startLine,
         endLine,
+        token: sessionToken,
       });
       return result as VfsReadResult;
     },
     async write(path, content) {
-      const result = await rpc.call("vfs.write", { path: mapConnectedPath(path), content });
+      const result = await rpc.call("vfs.write", {
+        path: mapConnectedPath(path),
+        content,
+        token: sessionToken,
+      });
       return result as VfsWriteRpcResult;
     },
     async list(path, recursive, long) {
@@ -81,11 +87,15 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
         path: mapConnectedPath(path ?? "/"),
         recursive,
         long,
+        token: sessionToken,
       });
       return result as VfsListRpcResult;
     },
     async describe(path) {
-      const result = await rpc.call("vfs.describe", { path: mapConnectedPath(path) });
+      const result = await rpc.call("vfs.describe", {
+        path: mapConnectedPath(path),
+        token: sessionToken,
+      });
       return result as VfsDescribeRpcResult;
     },
     async grep(pattern, path, caseInsensitive, maxResults) {
@@ -94,6 +104,7 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
         path: mapConnectedPath(path ?? "/workspace"),
         caseInsensitive,
         maxResults,
+        token: sessionToken,
       });
       return result as VfsGrepRpcResult;
     },
