@@ -66,9 +66,19 @@ V1 允许的典型用法：
 
 列举路径下的目录项。
 
+补充约定：
+
+- daemon / API / connected CLI 在运行时路径上应通过 `VFS Kernel` 分发 `list`
+- 当请求命中未直接挂载的父路径时，可以返回其 direct child mounts 作为目录项投影
+
 ### 3.4 `stat(path)`
 
 返回节点元信息。
+
+补充约定：
+
+- daemon / API / connected CLI 在运行时路径上应通过 `VFS Kernel` 分发 `stat`
+- permission middleware 必须在 token-backed caller 的真实运行路径上生效
 
 ### 3.5 `watch(path)`
 
@@ -150,6 +160,11 @@ V1 最少需要以下错误类别：
 - invalid project boundary
 - invalid control request
 - stream not found
+
+对于 daemon-connected 的运行时调用，还要求：
+
+- `permission denied` 由 kernel middleware 链路统一给出，而不是由 caller 旁路判定
+- `path not found` 与 `capability not supported` 保持和 kernel dispatch 一致的语义
 
 具体错误码可以在实现阶段细化，但不得绕开上述语义类别。
 
