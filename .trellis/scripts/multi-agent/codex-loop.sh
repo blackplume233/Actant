@@ -216,6 +216,105 @@ update_status() {
     }' > "$STATUS_FILE"
 }
 
+strip_ansi_stream() {
+  sed -E $'s/\x1B\\[[0-9;]*[[:alpha:]]//g'
+}
+
+append_excerpt_block() {
+  local title="$1"
+  local file="$2"
+  local limit="$3"
+  local output_file="$4"
+
+  [[ -f "$file" ]] || return 0
+
+  {
+    echo "## $title"
+    echo
+    echo '```text'
+    strip_ansi_stream < "$file" | sed -n "1,${limit}p"
+    echo '```'
+    echo
+  } >> "$output_file"
+}
+
+append_path_list() {
+  local title="$1"
+  local output_file="$2"
+  shift 2
+
+  {
+    echo "## $title"
+    if [[ $# -eq 0 ]]; then
+      echo
+      echo "- 无"
+    else
+      local item
+      echo
+      for item in "$@"; do
+        [[ -n "$item" ]] || continue
+        echo "- \`$item\`"
+      done
+    fi
+    echo
+  } >> "$output_file"
+}
+
+record_round_session() {
+  local round="$1"
+  local round_outcome="$2"
+  local check_result="$3"
+  local verify_result="$4"
+  local detail="$5"
+  local round_dir="$6"
+
+  local content_file="$round_dir/session-record.md"
+  local title="Codex Loop 第${round}轮 - ${TASK_NAME}"
+  local summary="第${round}轮${round_outcome}。检查结果：${check_result}；Shell Verify：${verify_result}。${detail}"
+
+  local changed_files=()
+  local task_artifacts=()
+  mapfile -t changed_files < <(collect_git_changed_files)
+  mapfile -t task_artifacts < <(collect_task_artifact_files)
+
+  {
+    echo "## 轮次概览"
+    echo
+    echo "- 任务名称：\`$TASK_NAME\`"
+    echo "- 任务目录：\`$TASK_DIR_REL\`"
+    echo "- 分支：\`$BRANCH\`"
+    echo "- 工作树：\`$WORKTREE_PATH\`"
+    echo "- 轮次：\`$round / $MAX_ROUNDS\`"
+    echo "- 本轮结论：$round_outcome"
+    echo "- 检查结果：$check_result"
+    echo "- Shell Verify：$verify_result"
+    echo "- 说明：$detail"
+    echo
+  } > "$content_file"
+
+  append_path_list "本轮变更文件" "$content_file" "${changed_files[@]}"
+  append_path_list "任务产物" "$content_file" "${task_artifacts[@]}"
+  append_excerpt_block "Implement 输出摘录" "$round_dir/implement-last.md" 80 "$content_file"
+  append_excerpt_block "Check 输出摘录" "$round_dir/check-last.md" 120 "$content_file"
+  append_excerpt_block "Shell Verify 摘录" "$round_dir/verify.log" 120 "$content_file"
+  append_excerpt_block "最新反馈摘录" "$LAST_FEEDBACK_FILE" 120 "$content_file"
+
+  if ! (
+    cd "$PROJECT_ROOT"
+    "$PROJECT_ROOT/.trellis/scripts/add-session.sh" \
+      --title "$title" \
+      --commit "-" \
+      --lang zh \
+      --summary "$summary" \
+      --content-file "$content_file"
+  ); then
+    log_warn "Round $round/$MAX_ROUNDS: failed to record session"
+    return 1
+  fi
+
+  log_info "Round $round/$MAX_ROUNDS: session recorded"
+}
+
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -688,6 +787,7 @@ main() {
     write_implement_prompt "$implement_prompt" "$round"
     if ! run_codex_exec "$implement_prompt" "$implement_log" "$implement_last"; then
       mark_failure "failed" "$round" "Implement exec failed; see $implement_log"
+      record_round_session "$round" "实现阶段失败" "未执行" "未执行" "Implement 执行失败，详见 $(basename "$implement_log")" "$round_dir" || true
       log_error "Implement round $round failed. See $implement_log"
       exit 1
     fi
@@ -698,6 +798,7 @@ main() {
     write_check_prompt "$check_prompt" "$round"
     if ! run_codex_exec "$check_prompt" "$check_log" "$check_last"; then
       mark_failure "failed" "$round" "Check exec failed; see $check_log"
+      record_round_session "$round" "检查阶段失败" "未生成结果" "未执行" "Check 执行失败，详见 $(basename "$check_log")" "$round_dir" || true
       log_error "Check round $round failed. See $check_log"
       exit 1
     fi
@@ -732,8 +833,23 @@ main() {
       NO_PROGRESS_ROUNDS=0
     fi
 
+    local check_result="FAIL"
+    if [[ $check_pass -eq 1 ]]; then
+      check_result="PASS"
+    fi
+
+    local verify_result="未配置，已跳过"
+    if [[ "$VERIFY_MODE" == "shell" ]]; then
+      if [[ $shell_verify_pass -eq 1 ]]; then
+        verify_result="通过"
+      else
+        verify_result="失败"
+      fi
+    fi
+
     if [[ $check_pass -eq 1 && $shell_verify_pass -eq 1 ]]; then
       mark_success "$round"
+      record_round_session "$round" "已通过" "$check_result" "$verify_result" "本轮已通过全部检查门禁。" "$round_dir" || true
       log_success "Codex loop passed in round $round"
       echo "Status: $STATUS_FILE"
       echo "Worktree: $WORKTREE_PATH"
@@ -742,18 +858,23 @@ main() {
 
     if [[ $NO_PROGRESS_ROUNDS -ge 2 ]]; then
       mark_failure "stalled" "$round" "No diff progress across consecutive rounds"
+      record_round_session "$round" "已停滞" "$check_result" "$verify_result" "连续两轮没有新的实质进展，loop 已停止。" "$round_dir" || true
       log_warn "Loop stalled after round $round. See $LAST_FEEDBACK_FILE"
       exit 1
     fi
 
+    if [[ $round -eq $MAX_ROUNDS ]]; then
+      mark_failure "failed" "$MAX_ROUNDS" "Reached max rounds without passing verification"
+      record_round_session "$round" "未通过并结束" "$check_result" "$verify_result" "已达到最大轮数，仍未通过验证。" "$round_dir" || true
+      log_error "Codex loop exhausted $MAX_ROUNDS rounds without passing."
+      log_error "Last feedback: $LAST_FEEDBACK_FILE"
+      exit 1
+    fi
+
     update_status "running" "$round" "Round $round failed verification; retrying"
+    record_round_session "$round" "未通过，准备重试" "$check_result" "$verify_result" "本轮未通过，下一轮将基于最新反馈继续修复。" "$round_dir" || true
     log_info "Round $round/$MAX_ROUNDS: retrying with latest feedback"
   done
-
-  mark_failure "failed" "$MAX_ROUNDS" "Reached max rounds without passing verification"
-  log_error "Codex loop exhausted $MAX_ROUNDS rounds without passing."
-  log_error "Last feedback: $LAST_FEEDBACK_FILE"
-  exit 1
 }
 
 main "$@"

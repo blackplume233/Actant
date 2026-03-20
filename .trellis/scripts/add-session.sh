@@ -26,6 +26,68 @@ INDEX_FILE="$DEV_DIR/index.md"
 # Helper Functions
 # =============================================================================
 
+ensure_workspace_files() {
+  mkdir -p "$DEV_DIR"
+
+  local journal_file="$DEV_DIR/${FILE_JOURNAL_PREFIX}1.md"
+  if [[ ! -f "$journal_file" ]]; then
+    cat > "$journal_file" << JOURNAL_EOF
+# Journal - $DEVELOPER (Part 1)
+
+> AI development session journal
+> Started: $TODAY
+
+---
+
+JOURNAL_EOF
+  fi
+
+  if [[ ! -f "$INDEX_FILE" ]]; then
+    cat > "$INDEX_FILE" << INDEX_EOF
+# Workspace Index - $DEVELOPER
+
+> Journal tracking for AI development sessions.
+
+---
+
+## Current Status
+
+<!-- @@@auto:current-status -->
+- **Active File**: \`journal-1.md\`
+- **Total Sessions**: 0
+- **Last Active**: -
+<!-- @@@/auto:current-status -->
+
+---
+
+## Active Documents
+
+<!-- @@@auto:active-documents -->
+| File | Lines | Status |
+|------|-------|--------|
+| \`journal-1.md\` | ~0 | Active |
+<!-- @@@/auto:active-documents -->
+
+---
+
+## Session History
+
+<!-- @@@auto:session-history -->
+| # | Date | Title | Commits |
+|---|------|-------|---------|
+<!-- @@@/auto:session-history -->
+
+---
+
+## Notes
+
+- Sessions are appended to journal files
+- New journal file created when current exceeds 2000 lines
+- Use \`add-session.sh\` to record sessions
+INDEX_EOF
+  fi
+}
+
 get_latest_journal_info() {
   local latest_file=""
   local latest_num=-1  # Start at -1 so journal-0.md can be detected (0 > -1)
@@ -99,8 +161,39 @@ generate_session_content() {
   local commit=$3
   local summary=$4
   local extra_content=$5
+  local lang="${6:-en}"
 
   local commit_table=""
+  local session_label="Session"
+  local date_label="Date"
+  local task_label="Task"
+  local summary_label="Summary"
+  local main_changes_label="Main Changes"
+  local commits_label="Git Commits"
+  local testing_label="Testing"
+  local status_label="Status"
+  local next_steps_label="Next Steps"
+  local no_commit_label="(No commits - planning session)"
+  local testing_body="- [OK] (Add test results)"
+  local status_body="[OK] **Completed**"
+  local next_steps_body="- None - task complete"
+
+  if [[ "$lang" == "zh" ]]; then
+    session_label="会话"
+    date_label="日期"
+    task_label="任务"
+    summary_label="摘要"
+    main_changes_label="详细记录"
+    commits_label="Git 提交"
+    testing_label="检查与测试"
+    status_label="状态"
+    next_steps_label="下一步"
+    no_commit_label="（无提交，本次为过程记录）"
+    testing_body="- [OK] 自动记录，详见上方检查结果"
+    status_body="[OK] **已记录**"
+    next_steps_body="- 参考本轮检查结果继续推进"
+  fi
+
   if [[ -n "$commit" && "$commit" != "-" ]]; then
     commit_table="| Hash | Message |
 |------|---------|"
@@ -111,39 +204,39 @@ generate_session_content() {
 | \`$c\` | (see git log) |"
     done
   else
-    commit_table="(No commits - planning session)"
+    commit_table="$no_commit_label"
   fi
 
   cat << EOF
 
-## Session $session_num: $title
+## $session_label $session_num: $title
 
-**Date**: $TODAY
-**Task**: $title
+**$date_label**: $TODAY
+**$task_label**: $title
 
-### Summary
+### $summary_label
 
 $summary
 
-### Main Changes
+### $main_changes_label
 
 $extra_content
 
-### Git Commits
+### $commits_label
 
 $commit_table
 
-### Testing
+### $testing_label
 
-- [OK] (Add test results)
+$testing_body
 
-### Status
+### $status_label
 
-[OK] **Completed**
+$status_body
 
-### Next Steps
+### $next_steps_label
 
-- None - task complete
+$next_steps_body
 EOF
 }
 
@@ -262,6 +355,7 @@ add_session() {
   local summary="(Add summary)"
   local content_file=""
   local extra_content="(Add details)"
+  local lang="en"
 
   while [[ $# -gt 0 ]]; do
     case $1 in
@@ -281,6 +375,10 @@ add_session() {
         content_file="$2"
         shift 2
         ;;
+      --lang)
+        lang="$2"
+        shift 2
+        ;;
       *)
         shift
         ;;
@@ -292,6 +390,16 @@ add_session() {
     echo "Usage: $0 --title \"Session Title\" [--commit \"hash1,hash2\"] [--summary \"Brief summary\"]" >&2
     exit 1
   fi
+
+  case "$lang" in
+    en|zh) ;;
+    *)
+      echo "Error: --lang must be 'en' or 'zh'" >&2
+      exit 1
+      ;;
+  esac
+
+  ensure_workspace_files
 
   if [[ -n "$content_file" && -f "$content_file" ]]; then
     extra_content=$(cat "$content_file")
@@ -306,7 +414,7 @@ add_session() {
   local current_session=$(get_current_session)
   local new_session=$((current_session + 1))
 
-  local session_content=$(generate_session_content "$new_session" "$title" "$commit" "$summary" "$extra_content")
+  local session_content=$(generate_session_content "$new_session" "$title" "$commit" "$summary" "$extra_content" "$lang")
   local content_lines=$(echo "$session_content" | wc -l | tr -d ' ')
 
   echo "========================================" >&2
@@ -362,6 +470,7 @@ show_help() {
   echo "  --commit HASHES    Comma-separated commit hashes (optional)"
   echo "  --summary TEXT     Brief summary of the session (optional)"
   echo "  --content-file     Path to file with detailed content (optional)"
+  echo "  --lang en|zh       Output language for generated sections (default: en)"
   echo ""
   echo "You can also pipe content via stdin:"
   echo "  echo \"Details\" | $0 --title \"Title\" --commit \"abc123\""

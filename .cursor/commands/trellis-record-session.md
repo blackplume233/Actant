@@ -2,6 +2,9 @@
 
 **AI must NOT execute git commit** - only read history (`git log`, `git status`, `git diff`).
 
+> `codex-loop` 是例外：它会在每一轮结束后自动调用底层 `add-session.sh` 记录运行轨迹。  
+> 这些自动记录可以没有 commit，重点是保留 round 级别的检查结果；不替代人工在任务收尾时执行的 `/trellis-record-session`。
+
 ---
 
 ## Record Work Progress (Simplified - Only 2 Steps)

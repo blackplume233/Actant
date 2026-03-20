@@ -127,6 +127,18 @@ dry-run 无误后，默认通过 live 包装脚本执行正式 loop：
 - `stalled`: 连续两轮无 diff 进展，需要人工改策略
 - `failed`: implement/check/shell verify 失败，汇总最后反馈
 
+## Session 记录
+
+`codex-loop.sh` 每一轮结束后都会自动执行一次 session 记录，写入当前开发者的 journal：
+
+- 记录标题固定为 `Codex Loop 第N轮 - <task-name>`
+- 摘要与详细内容使用中文
+- 必须包含本轮 `check` 结果
+- 若存在 `shell verify`，必须同时记录通过/失败结果
+- 若工作区 journal 目录不存在，脚本应先自动补齐再写入
+
+这类记录属于 loop 的运行轨迹，即使当前轮尚未 commit，也应该照常记录；不要把它和用户在任务收尾时手动执行的 `/trellis-record-session` 混为一谈。
+
 ## 质量门解释
 
 `codex-loop` 有两层通过条件，缺一不可：
@@ -176,6 +188,7 @@ dry-run 无误后，默认通过 live 包装脚本执行正式 loop：
 - 生成或复用的 task / branch / worktree
 - 当前结果是 `passed`、`stalled` 还是 `failed`
 - 若未通过，指出下一步阻塞来自哪里：implement、check 或 shell verify
+- 若实际执行了 round，补充说明本轮 session 已自动记录
 
 ## 实时汇报要求
 
