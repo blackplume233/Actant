@@ -1,6 +1,12 @@
 import { access, readFile, stat } from "node:fs/promises";
-import { basename, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import {
+  createProjectManifestRegistrations,
+  compileProjectPermissionRules,
+  resolveProjectPermissionConfig,
+  type ProjectScopeSnapshot,
+} from "@actant/context";
 import {
   SkillManager,
   PromptManager,
@@ -19,11 +25,16 @@ import type {
   AgentTemplate,
   ActantProjectEntrypoints,
   ActantProjectConfig,
+  ChildProjectRef,
+  PermissionConfig,
+  ProjectManifest,
   ProjectSourceEntry,
   SourceConfig,
+  VfsPermissionRule,
   VfsLifecycle,
   VfsSourceRegistration,
 } from "@actant/shared";
+import { ensureWithinWorkspace } from "@actant/shared";
 
 export interface ProjectContextSummary {
   mode: "project-context";
@@ -52,14 +63,25 @@ export interface ProjectContextSummary {
     workflows: number;
     templates: number;
   };
+  manifest: ProjectManifest;
+  effectivePermissions: PermissionConfig;
+  children: Array<{
+    name: string;
+    projectRoot: string;
+    manifestPath: string | null;
+  }>;
 }
 
 export interface LoadedProjectContext {
+  mountName: string;
   projectRoot: string;
   configPath: string | null;
   configsDir: string;
   configExists: boolean;
   projectConfig: ActantProjectConfig;
+  projectManifest: ProjectManifest;
+  effectivePermissions: PermissionConfig;
+  children: LoadedProjectContext[];
   summary: ProjectContextSummary;
   managers: {
     skillManager: SkillManager;
@@ -88,11 +110,83 @@ export interface ProjectContextRegistrationOptions {
 }
 
 export async function loadProjectContext(projectDir?: string): Promise<LoadedProjectContext> {
+  return loadProjectContextInternal(projectDir, {
+    visitedManifestPaths: new Set<string>(),
+  });
+}
+
+export function buildProjectScopeSnapshot(context: LoadedProjectContext): ProjectScopeSnapshot {
+  return {
+    name: context.mountName,
+    projectRoot: context.projectRoot,
+    manifestPath: context.configPath,
+    manifest: context.projectManifest,
+    effectivePermissions: context.effectivePermissions,
+    children: context.children.map((child) => buildProjectScopeSnapshot(child)),
+  };
+}
+
+export function createProjectContextPermissionRules(
+  context: LoadedProjectContext,
+  layout: Pick<ProjectContextMountLayout, "project">,
+): VfsPermissionRule[] {
+  return compileProjectPermissionRules(
+    buildProjectScopeSnapshot(context),
+    deriveProjectScopeRoot(layout.project),
+  );
+}
+
+export function createProjectContextRegistrations(
+  context: LoadedProjectContext,
+  factoryRegistry: SourceFactoryRegistry,
+  layout: ProjectContextMountLayout,
+  lifecycle: VfsLifecycle,
+  options?: ProjectContextRegistrationOptions,
+): VfsSourceRegistration[] {
+  const prefix = options?.namePrefix ?? "project-context";
+  const regs: VfsSourceRegistration[] = [
+    ...createProjectManifestRegistrations(
+      buildProjectScopeSnapshot(context),
+      lifecycle,
+      deriveProjectScopeRoot(layout.project),
+      `${prefix}-scope`,
+    ),
+    ...createProjectRegistrationsForScope(
+      context,
+      factoryRegistry,
+      layout,
+      lifecycle,
+      prefix,
+      options,
+    ),
+  ];
+
+  return regs;
+}
+
+async function loadProjectContextInternal(
+  projectDir: string | undefined,
+  options: {
+    inheritedPermissions?: PermissionConfig;
+    mountNameOverride?: string;
+    visitedManifestPaths: Set<string>;
+  },
+): Promise<LoadedProjectContext> {
   const rootResolution = await resolveProjectRoot(projectDir);
   const projectRoot = rootResolution.projectRoot;
   const projectConfigResult = await loadProjectConfig(projectRoot);
+  const visitedManifestPaths = new Set(options.visitedManifestPaths);
+  if (projectConfigResult.path) {
+    visitedManifestPaths.add(projectConfigResult.path);
+  }
   const projectConfig = projectConfigResult.config;
+  const projectName = projectConfig.name ?? basename(projectRoot);
+  const mountName = options.mountNameOverride ?? projectName;
   const configsDir = resolve(projectRoot, projectConfig.configsDir ?? "configs");
+  const effectivePermissions = resolveProjectPermissionConfig(
+    projectConfig.permissions,
+    options.inheritedPermissions,
+  );
 
   const skillManager = new SkillManager();
   const promptManager = new PromptManager();
@@ -154,21 +248,40 @@ export async function loadProjectContext(projectDir?: string): Promise<LoadedPro
   sourceWarnings.push(...entrypointInfo.warnings);
 
   const available = {
-    skills: sortNames(skillManager.list().map((skill) => skill.name)),
-    prompts: sortNames(promptManager.list().map((prompt) => prompt.name)),
-    mcpServers: sortNames(mcpConfigManager.list().map((server) => server.name)),
-    workflows: sortNames(workflowManager.list().map((workflow) => workflow.name)),
-    templates: sortNames(templateRegistry.list().map((template) => template.name)),
+    skills: sortNames(skillManager.list().map((skill: { name: string }) => skill.name)),
+    prompts: sortNames(promptManager.list().map((prompt: { name: string }) => prompt.name)),
+    mcpServers: sortNames(mcpConfigManager.list().map((server: { name: string }) => server.name)),
+    workflows: sortNames(workflowManager.list().map((workflow: { name: string }) => workflow.name)),
+    templates: sortNames(templateRegistry.list().map((template: { name: string }) => template.name)),
   };
 
+  const childProjects = await loadChildProjects(
+    projectRoot,
+    projectConfig.children ?? [],
+    effectivePermissions,
+    visitedManifestPaths,
+  );
+  sourceWarnings.push(...childProjects.warnings);
+
+  const projectManifest = buildProjectManifest(
+    projectName,
+    projectConfig,
+    buildProjectMountDeclarations(projectRoot, configsDir, await pathExists(configsDir)),
+  );
+
   return {
+    mountName,
     projectRoot,
     configPath: projectConfigResult.path,
     configsDir,
     configExists: await pathExists(configsDir),
     projectConfig,
+    projectManifest,
+    effectivePermissions,
+    children: childProjects.contexts,
     summary: buildProjectContextSummary(
       projectRoot,
+      projectName,
       projectConfigResult.path,
       configsDir,
       projectConfig,
@@ -183,6 +296,9 @@ export async function loadProjectContext(projectDir?: string): Promise<LoadedPro
         workflows: available.workflows.length,
         templates: available.templates.length,
       },
+      projectManifest,
+      effectivePermissions,
+      childProjects.contexts,
     ),
     managers: {
       skillManager,
@@ -192,41 +308,6 @@ export async function loadProjectContext(projectDir?: string): Promise<LoadedPro
       templateRegistry,
     },
   };
-}
-
-export function createProjectContextRegistrations(
-  context: LoadedProjectContext,
-  factoryRegistry: SourceFactoryRegistry,
-  layout: ProjectContextMountLayout,
-  lifecycle: VfsLifecycle,
-  options?: ProjectContextRegistrationOptions,
-): VfsSourceRegistration[] {
-  const prefix = options?.namePrefix ?? "project-context";
-  const regs: VfsSourceRegistration[] = [
-    createProjectSource(`${prefix}-project`, context, layout.project, lifecycle),
-    factoryRegistry.create({
-      name: `${prefix}-workspace`,
-      mountPoint: layout.workspace,
-      spec: { type: "filesystem", path: context.projectRoot, readOnly: options?.workspaceReadOnly ?? false },
-      lifecycle,
-    }),
-    createDomainSource(context.managers.skillManager, `${prefix}-skills`, layout.skills, lifecycle),
-    createDomainSource(context.managers.promptManager, `${prefix}-prompts`, layout.prompts, lifecycle),
-    createDomainSource(context.managers.mcpConfigManager, `${prefix}-mcp`, layout.mcp, lifecycle),
-    createDomainSource(context.managers.workflowManager, `${prefix}-workflows`, layout.workflows, lifecycle),
-    createDomainSource(context.managers.templateRegistry, `${prefix}-templates`, layout.templates, lifecycle),
-  ];
-
-  if (context.configExists) {
-    regs.splice(2, 0, factoryRegistry.create({
-      name: `${prefix}-config`,
-      mountPoint: layout.config,
-      spec: { type: "filesystem", path: context.configsDir, readOnly: options?.configReadOnly ?? false },
-      lifecycle,
-    }));
-  }
-
-  return regs;
 }
 
 export function createProjectContextFactoryRegistry(): SourceFactoryRegistry {
@@ -359,6 +440,7 @@ function injectSourceComponents(
 
 function buildProjectContextSummary(
   projectRoot: string,
+  projectName: string,
   configPath: string | null,
   configsDir: string,
   config: ActantProjectConfig,
@@ -367,11 +449,14 @@ function buildProjectContextSummary(
   entrypoints: ProjectContextSummary["entrypoints"],
   available: ProjectContextSummary["available"],
   counts: ProjectContextSummary["components"],
+  manifest: ProjectManifest,
+  effectivePermissions: PermissionConfig,
+  children: LoadedProjectContext[],
 ): ProjectContextSummary {
   return {
     mode: "project-context",
     projectRoot,
-    projectName: config.name ?? basename(projectRoot),
+    projectName,
     description: config.description,
     configPath,
     configsDir,
@@ -380,7 +465,180 @@ function buildProjectContextSummary(
     entrypoints,
     available,
     components: counts,
+    manifest,
+    effectivePermissions,
+    children: children.map((child) => ({
+      name: child.mountName,
+      projectRoot: child.projectRoot,
+      manifestPath: child.configPath,
+    })),
   };
+}
+
+function buildProjectManifest(
+  projectName: string,
+  config: ActantProjectConfig,
+  mounts: ProjectManifest["mounts"],
+): ProjectManifest {
+  return {
+    name: projectName,
+    mounts,
+    ...(config.permissions ? { permissions: config.permissions } : {}),
+    ...(config.children?.length ? { children: config.children } : {}),
+  };
+}
+
+function buildProjectMountDeclarations(
+  projectRoot: string,
+  configsDir: string,
+  configExists: boolean,
+): ProjectManifest["mounts"] {
+  const mounts: ProjectManifest["mounts"] = [
+    {
+      source: "project",
+      path: "/project",
+    },
+    {
+      source: "workspace",
+      path: "/workspace",
+      config: { path: projectRoot },
+    },
+    {
+      source: "skills",
+      path: "/skills",
+    },
+    {
+      source: "prompts",
+      path: "/prompts",
+    },
+    {
+      source: "mcp",
+      path: "/mcp",
+    },
+    {
+      source: "workflows",
+      path: "/workflows",
+    },
+    {
+      source: "templates",
+      path: "/templates",
+    },
+  ];
+
+  if (configExists) {
+    mounts.splice(1, 0, {
+      source: "config",
+      path: "/config",
+      config: { path: configsDir },
+    });
+  }
+
+  return mounts;
+}
+
+function createProjectRegistrationsForScope(
+  context: LoadedProjectContext,
+  factoryRegistry: SourceFactoryRegistry,
+  layout: ProjectContextMountLayout,
+  lifecycle: VfsLifecycle,
+  prefix: string,
+  options?: ProjectContextRegistrationOptions,
+): VfsSourceRegistration[] {
+  const regs: VfsSourceRegistration[] = [
+    createProjectSource(`${prefix}-project`, context, layout.project, lifecycle),
+    factoryRegistry.create({
+      name: `${prefix}-workspace`,
+      mountPoint: layout.workspace,
+      spec: { type: "filesystem", path: context.projectRoot, readOnly: options?.workspaceReadOnly ?? false },
+      lifecycle,
+    }),
+    createDomainSource(context.managers.skillManager, `${prefix}-skills`, layout.skills, lifecycle),
+    createDomainSource(context.managers.promptManager, `${prefix}-prompts`, layout.prompts, lifecycle),
+    createDomainSource(context.managers.mcpConfigManager, `${prefix}-mcp`, layout.mcp, lifecycle),
+    createDomainSource(context.managers.workflowManager, `${prefix}-workflows`, layout.workflows, lifecycle),
+    createDomainSource(context.managers.templateRegistry, `${prefix}-templates`, layout.templates, lifecycle),
+  ];
+
+  if (context.configExists) {
+    regs.splice(2, 0, factoryRegistry.create({
+      name: `${prefix}-config`,
+      mountPoint: layout.config,
+      spec: { type: "filesystem", path: context.configsDir, readOnly: options?.configReadOnly ?? false },
+      lifecycle,
+    }));
+  }
+
+  for (const child of context.children) {
+    const childLayout = childLayoutForScope(layout, child.mountName);
+    const childPrefix = `${prefix}-${sanitizeMountName(child.mountName)}`;
+    regs.push(
+      ...createProjectRegistrationsForScope(
+        child,
+        factoryRegistry,
+        childLayout,
+        lifecycle,
+        childPrefix,
+        options,
+      ),
+    );
+  }
+
+  return regs;
+}
+
+function childLayoutForScope(
+  layout: ProjectContextMountLayout,
+  childName: string,
+): ProjectContextMountLayout {
+  const scopeRoot = joinMountedPath(deriveProjectScopeRoot(layout.project), "projects", childName);
+  return {
+    project: joinMountedPath(scopeRoot, "project"),
+    workspace: joinMountedPath(scopeRoot, "workspace"),
+    config: joinMountedPath(scopeRoot, "config"),
+    skills: joinMountedPath(scopeRoot, "skills"),
+    prompts: joinMountedPath(scopeRoot, "prompts"),
+    mcp: joinMountedPath(scopeRoot, "mcp"),
+    workflows: joinMountedPath(scopeRoot, "workflows"),
+    templates: joinMountedPath(scopeRoot, "templates"),
+  };
+}
+
+async function loadChildProjects(
+  projectRoot: string,
+  children: ChildProjectRef[],
+  inheritedPermissions: PermissionConfig,
+  visitedManifestPaths: Set<string>,
+): Promise<{
+  contexts: LoadedProjectContext[];
+  warnings: string[];
+}> {
+  const contexts: LoadedProjectContext[] = [];
+  const warnings: string[] = [];
+
+  for (const child of children) {
+    try {
+      const childManifestPath = ensureWithinWorkspace(projectRoot, child.manifest);
+      if (visitedManifestPaths.has(childManifestPath)) {
+        warnings.push(`Child project "${child.name}" creates a manifest cycle at "${child.manifest}"`);
+        continue;
+      }
+
+      const nextVisited = new Set(visitedManifestPaths);
+      nextVisited.add(childManifestPath);
+
+      const context = await loadProjectContextInternal(dirname(childManifestPath), {
+        inheritedPermissions,
+        mountNameOverride: child.name,
+        visitedManifestPaths: nextVisited,
+      });
+      contexts.push(context);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      warnings.push(`Child project "${child.name}" failed: ${msg}`);
+    }
+  }
+
+  return { contexts, warnings };
 }
 
 async function detectRepoLocalSource(
@@ -460,6 +718,8 @@ function createProjectSource(
     configsDir: context.projectConfig.configsDir ?? "configs",
     ...(context.projectConfig.sources ? { sources: context.projectConfig.sources } : {}),
     ...(context.projectConfig.entrypoints ? { entrypoints: context.projectConfig.entrypoints } : {}),
+    ...(context.projectConfig.permissions ? { permissions: context.projectConfig.permissions } : {}),
+    ...(context.projectConfig.children ? { children: context.projectConfig.children } : {}),
   };
 
   return {
@@ -470,7 +730,7 @@ function createProjectSource(
     metadata: { description: "Project-level Actant context (virtual)", virtual: true },
     fileSchema: {},
     handlers: {
-      read: async (filePath) => {
+      read: async (filePath: string) => {
         const normalized = filePath.replace(/^\/+/, "");
         switch (normalized) {
           case "context.json":
@@ -490,7 +750,7 @@ function createProjectSource(
           { name: "sources.json", path: "sources.json", type: "file" as const },
         ];
       },
-      stat: async (filePath) => {
+      stat: async (filePath: string) => {
         const normalized = filePath.replace(/^\/+/, "");
         if (["context.json", "actant.project.json", "sources.json"].includes(normalized)) {
           return { type: "file" as const, size: 0, mtime: new Date().toISOString() };
@@ -525,6 +785,12 @@ function validateProjectConfig(input: unknown):
   }
   if (value.entrypoints !== undefined) {
     warnings.push(...validateProjectEntrypoints(value.entrypoints));
+  }
+  if (value.permissions !== undefined) {
+    warnings.push(...validateProjectPermissions(value.permissions));
+  }
+  if (value.children !== undefined) {
+    warnings.push(...validateChildProjects(value.children));
   }
 
   const sourcesInput = value.sources;
@@ -622,6 +888,83 @@ function validateProjectSourceEntry(source: unknown, index: number): string[] {
   return warnings;
 }
 
+function validateProjectPermissions(permissions: unknown): string[] {
+  if (!permissions || typeof permissions !== "object" || Array.isArray(permissions)) {
+    return ["permissions must be an object"];
+  }
+
+  const value = permissions as Record<string, unknown>;
+  const warnings = validatePermissionSet(value.defaults, "permissions.defaults");
+  if (value.rules !== undefined) {
+    if (!Array.isArray(value.rules)) {
+      warnings.push("permissions.rules must be an array");
+    } else {
+      value.rules.forEach((rule, index) => {
+        warnings.push(...validatePermissionRule(rule, index));
+      });
+    }
+  }
+
+  return warnings;
+}
+
+function validateChildProjects(children: unknown): string[] {
+  if (!Array.isArray(children)) {
+    return ["children must be an array"];
+  }
+
+  const warnings: string[] = [];
+  children.forEach((child, index) => {
+    if (!child || typeof child !== "object" || Array.isArray(child)) {
+      warnings.push(`children.${index} must be an object`);
+      return;
+    }
+
+    const value = child as Record<string, unknown>;
+    if (typeof value.name !== "string" || value.name.trim().length === 0) {
+      warnings.push(`children.${index}.name must be a non-empty string`);
+    }
+    if (typeof value.manifest !== "string" || value.manifest.trim().length === 0) {
+      warnings.push(`children.${index}.manifest must be a non-empty string`);
+    }
+  });
+
+  return warnings;
+}
+
+function validatePermissionRule(rule: unknown, index: number): string[] {
+  if (!rule || typeof rule !== "object" || Array.isArray(rule)) {
+    return [`permissions.rules.${index} must be an object`];
+  }
+
+  const value = rule as Record<string, unknown>;
+  const warnings = validatePermissionSet(value, `permissions.rules.${index}`);
+  if (typeof value.agent !== "string" || value.agent.trim().length === 0) {
+    warnings.push(`permissions.rules.${index}.agent must be a non-empty string`);
+  }
+  if (typeof value.path !== "string" || value.path.trim().length === 0) {
+    warnings.push(`permissions.rules.${index}.path must be a non-empty string`);
+  }
+
+  return warnings;
+}
+
+function validatePermissionSet(value: unknown, prefix: string): string[] {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return [`${prefix} must be an object`];
+  }
+
+  const record = value as Record<string, unknown>;
+  const warnings: string[] = [];
+  for (const field of ["read", "write", "watch", "stream"] as const) {
+    if (record[field] !== undefined && typeof record[field] !== "boolean") {
+      warnings.push(`${prefix}.${field} must be a boolean`);
+    }
+  }
+
+  return warnings;
+}
+
 async function pathExists(filePath: string): Promise<boolean> {
   try {
     await access(filePath);
@@ -673,6 +1016,23 @@ function dedupeStrings(values: string[]): string[] {
 
 function sortNames(values: string[]): string[] {
   return [...values].sort((left, right) => left.localeCompare(right));
+}
+
+function deriveProjectScopeRoot(projectMountPath: string): string {
+  const resolved = dirname(projectMountPath);
+  return resolved === "." ? "/" : resolved;
+}
+
+function joinMountedPath(base: string, ...parts: string[]): string {
+  const allParts = [
+    ...base.split("/").filter(Boolean),
+    ...parts.flatMap((part) => part.split("/").filter(Boolean)),
+  ];
+  return allParts.length === 0 ? "/" : `/${allParts.join("/")}`;
+}
+
+function sanitizeMountName(value: string): string {
+  return value.replace(/[^a-zA-Z0-9_-]+/g, "-").replace(/^-+|-+$/g, "") || "project";
 }
 
 async function resolveProjectRoot(projectDir?: string): Promise<{

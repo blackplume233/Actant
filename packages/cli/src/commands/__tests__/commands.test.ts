@@ -454,4 +454,135 @@ describe("createHubCommand", () => {
     expect(output.logs.some((line) => line.includes("Project:      repo"))).toBe(true);
     expect(output.logs.some((line) => line.includes("standalone project-context mode"))).toBe(true);
   });
+
+  it("hub read routes the root project manifest through the daemon hub mount", async () => {
+    const mock = createMockClient();
+    mock.ping.mockResolvedValue(true);
+    mock.call
+      .mockResolvedValueOnce({
+        projectRoot: "/repo",
+        projectName: "repo",
+        configPath: null,
+        configsDir: "/repo/configs",
+        sourceWarnings: [],
+        components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
+        mounts: {
+          project: "/hub/project",
+          workspace: "/hub/workspace",
+          config: "/hub/config",
+          skills: "/hub/skills",
+          prompts: "/hub/prompts",
+          mcp: "/hub/mcp",
+          workflows: "/hub/workflows",
+          templates: "/hub/templates",
+        },
+      })
+      .mockResolvedValueOnce({
+        active: true,
+        hostProfile: "bootstrap",
+        runtimeState: "inactive",
+        projectRoot: "/repo",
+        projectName: "repo",
+        configPath: null,
+        configsDir: "/repo/configs",
+        sourceWarnings: [],
+        components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
+        mounts: {
+          project: "/hub/project",
+          workspace: "/hub/workspace",
+          config: "/hub/config",
+          skills: "/hub/skills",
+          prompts: "/hub/prompts",
+          mcp: "/hub/mcp",
+          workflows: "/hub/workflows",
+          templates: "/hub/templates",
+        },
+      })
+      .mockResolvedValueOnce({
+        content: "{\"name\":\"repo\"}",
+        mimeType: "application/json",
+      });
+
+    const client = mock as unknown as RpcClient;
+    const { printer } = createTestPrinter();
+    const parent = new Command();
+    parent.exitOverride();
+    parent.addCommand(createHubCommand(client, printer));
+
+    await parent.parseAsync(["node", "test", "hub", "read", "/_project.json"]);
+
+    expect(mock.call).toHaveBeenNthCalledWith(3, "vfs.read", {
+      path: "/hub/_project.json",
+      startLine: undefined,
+      endLine: undefined,
+      token: undefined,
+    });
+  });
+
+  it("hub list routes child project paths through the daemon hub mount", async () => {
+    const mock = createMockClient();
+    mock.ping.mockResolvedValue(true);
+    mock.call
+      .mockResolvedValueOnce({
+        projectRoot: "/repo",
+        projectName: "repo",
+        configPath: null,
+        configsDir: "/repo/configs",
+        sourceWarnings: [],
+        components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
+        mounts: {
+          project: "/hub/project",
+          workspace: "/hub/workspace",
+          config: "/hub/config",
+          skills: "/hub/skills",
+          prompts: "/hub/prompts",
+          mcp: "/hub/mcp",
+          workflows: "/hub/workflows",
+          templates: "/hub/templates",
+        },
+      })
+      .mockResolvedValueOnce({
+        active: true,
+        hostProfile: "bootstrap",
+        runtimeState: "inactive",
+        projectRoot: "/repo",
+        projectName: "repo",
+        configPath: null,
+        configsDir: "/repo/configs",
+        sourceWarnings: [],
+        components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
+        mounts: {
+          project: "/hub/project",
+          workspace: "/hub/workspace",
+          config: "/hub/config",
+          skills: "/hub/skills",
+          prompts: "/hub/prompts",
+          mcp: "/hub/mcp",
+          workflows: "/hub/workflows",
+          templates: "/hub/templates",
+        },
+      })
+      .mockResolvedValueOnce([
+        {
+          name: "child",
+          path: "/hub/projects/child",
+          type: "directory",
+        },
+      ]);
+
+    const client = mock as unknown as RpcClient;
+    const { printer } = createTestPrinter();
+    const parent = new Command();
+    parent.exitOverride();
+    parent.addCommand(createHubCommand(client, printer));
+
+    await parent.parseAsync(["node", "test", "hub", "list", "/projects/child"]);
+
+    expect(mock.call).toHaveBeenNthCalledWith(3, "vfs.list", {
+      path: "/hub/projects/child",
+      recursive: undefined,
+      long: undefined,
+      token: undefined,
+    });
+  });
 });

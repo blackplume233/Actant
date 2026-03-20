@@ -21,7 +21,9 @@ import { ensureDaemonRunning } from "../daemon/start";
 import { presentError, type CliPrinter, defaultPrinter, type OutputFormat } from "../../output/index";
 
 const HUB_ALIASES: Record<string, string> = {
+  "/_project.json": "/hub/_project.json",
   "/project": "/hub/project",
+  "/projects": "/hub/projects",
   "/workspace": "/hub/workspace",
   "/config": "/hub/config",
   "/skills": "/hub/skills",
@@ -300,7 +302,22 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
         }));
       }
       const handler = requireHandler(resolved.source.handlers.list, "list", path);
-      return handler(resolved.relativePath, { recursive, long });
+      const entries = await handler(resolved.relativePath, { recursive, long });
+      if (resolved.relativePath !== "") {
+        return entries;
+      }
+
+      const childMounts = registry.listChildMounts(path);
+      const projectedMounts = childMounts.map((source) => ({
+        name: source.mountPoint.split("/").pop() ?? source.name,
+        path: source.mountPoint,
+        type: "directory" as const,
+      }));
+      const deduped = new Map<string, (typeof entries)[number]>();
+      for (const entry of [...entries, ...projectedMounts]) {
+        deduped.set(entry.path, entry);
+      }
+      return [...deduped.values()];
     },
     async grep(pattern, path = "/hub/workspace", caseInsensitive, maxResults) {
       const resolved = registry.resolve(path);

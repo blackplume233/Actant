@@ -84,7 +84,7 @@ describe("createStandaloneContext", () => {
 
     const mounts = await backend.list("/");
     expect(mounts.map((entry) => entry.path)).toEqual(
-      expect.arrayContaining(["/project", "/workspace", "/skills", "/daemon", "/config"]),
+      expect.arrayContaining(["/_project.json", "/project", "/workspace", "/skills", "/daemon", "/config"]),
     );
 
     const context = JSON.parse((await backend.read("/project/context.json")).content) as {
@@ -97,6 +97,14 @@ describe("createStandaloneContext", () => {
     const skillCatalog = await backend.list("/skills");
     expect(skillCatalog.map((entry) => entry.path)).toEqual(
       expect.arrayContaining(["_catalog.json", "local-skill"]),
+    );
+
+    const manifest = JSON.parse((await backend.read("/_project.json")).content) as {
+      manifest: { name: string; mounts: Array<{ path: string }> };
+    };
+    expect(manifest.manifest.name).toBe(projectDir.split(/[/\\\\]/).pop());
+    expect(manifest.manifest.mounts.map((entry) => entry.path)).toEqual(
+      expect.arrayContaining(["/workspace", "/skills"]),
     );
   });
 
@@ -237,6 +245,90 @@ describe("createStandaloneContext", () => {
     ]);
     expect(context.available.skills).toEqual(expect.arrayContaining(["reader"]));
     expect(context.available.prompts).toEqual(expect.arrayContaining(["bootstrap"]));
+  });
+
+  it("mounts child projects under /projects with narrowed effective permissions", async () => {
+    const projectDir = await makeTempProject();
+    const childDir = join(projectDir, "packages", "child-project");
+
+    await mkdir(join(projectDir, "configs", "skills"), { recursive: true });
+    await mkdir(join(childDir, "configs", "skills"), { recursive: true });
+    await writeFile(
+      join(projectDir, "configs", "skills", "root-skill.json"),
+      JSON.stringify({
+        name: "root-skill",
+        description: "Root project skill",
+        content: "Available to the root project.",
+      }, null, 2),
+      "utf-8",
+    );
+    await writeFile(
+      join(childDir, "configs", "skills", "child-skill.json"),
+      JSON.stringify({
+        name: "child-skill",
+        description: "Child project skill",
+        content: "Available to the child project.",
+      }, null, 2),
+      "utf-8",
+    );
+    await writeFile(
+      join(childDir, "actant.project.json"),
+      JSON.stringify({
+        version: 1,
+        name: "child-project",
+        permissions: {
+          defaults: {
+            read: true,
+            write: false,
+            watch: false,
+            stream: false,
+          },
+        },
+      }, null, 2),
+      "utf-8",
+    );
+    await writeFile(
+      join(projectDir, "actant.project.json"),
+      JSON.stringify({
+        version: 1,
+        name: "root-project",
+        permissions: {
+          defaults: {
+            read: true,
+            write: true,
+            watch: true,
+            stream: true,
+          },
+        },
+        children: [
+          {
+            name: "child",
+            manifest: "./packages/child-project/actant.project.json",
+          },
+        ],
+      }, null, 2),
+      "utf-8",
+    );
+
+    const backend = await createStandaloneContext(projectDir);
+    const mounts = await backend.list("/");
+    expect(mounts.map((entry) => entry.path)).toEqual(expect.arrayContaining(["/projects/child"]));
+
+    const childMounts = await backend.list("/projects/child");
+    expect(childMounts.map((entry) => entry.path)).toEqual(
+      expect.arrayContaining(["/projects/child/_project.json", "/projects/child/project", "/projects/child/workspace", "/projects/child/skills"]),
+    );
+
+    const childManifest = JSON.parse((await backend.read("/projects/child/_project.json")).content) as {
+      name: string;
+      effectivePermissions: { defaults: { write: boolean; watch: boolean } };
+    };
+    expect(childManifest.name).toBe("child");
+    expect(childManifest.effectivePermissions.defaults.write).toBe(false);
+    expect(childManifest.effectivePermissions.defaults.watch).toBe(false);
+
+    const childSkills = await backend.list("/projects/child/skills");
+    expect(childSkills.map((entry) => entry.path)).toEqual(expect.arrayContaining(["child-skill"]));
   });
 
   it("dedupes missing entrypoint warnings when knowledge and readFirst overlap", async () => {

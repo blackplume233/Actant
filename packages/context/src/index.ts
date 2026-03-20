@@ -12,6 +12,14 @@ export {
 } from "./manager/context-manager";
 
 export {
+  createProjectManifestRegistrations,
+  compileProjectPermissionRules,
+  resolveProjectPermissionConfig,
+  type ProjectScopeSnapshot,
+  type ProjectManifestProjection,
+} from "./project/project-manifest";
+
+export {
   DomainContextSource,
   type DomainManagers,
   type DomainComponentManager,

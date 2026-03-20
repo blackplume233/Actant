@@ -6,12 +6,14 @@ import type {
   VfsSourceRegistration,
 } from "@actant/shared";
 import {
+  createProjectContextPermissionRules,
   createProjectContextFactoryRegistry,
   createProjectContextRegistrations,
   loadProjectContext,
   type LoadedProjectContext,
 } from "./project-context";
 import type { AppContext } from "./app-context";
+import { DEFAULT_PERMISSION_RULES } from "@actant/agent-runtime";
 
 const HUB_LAYOUT = {
   project: "/hub/project",
@@ -100,6 +102,10 @@ export class HubContextService {
   private async doActivate(projectDir?: string): Promise<HubActivateResult> {
     const context = await loadProjectContext(projectDir);
     const registrations = buildHubRegistrations(context, this.factoryRegistry);
+    this.appContext.vfsPermissionManager.setRules([
+      ...DEFAULT_PERMISSION_RULES,
+      ...createProjectContextPermissionRules(context, { project: HUB_LAYOUT.project }),
+    ]);
     await this.replaceActiveContext(registrations);
 
     const next: ActiveHubContext = {

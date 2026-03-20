@@ -5,6 +5,41 @@ export interface ProjectSourceEntry {
   config: SourceConfig;
 }
 
+export interface MountDeclaration {
+  source: string;
+  path: string;
+  config?: Record<string, unknown>;
+}
+
+export interface PermissionSet {
+  read?: boolean;
+  write?: boolean;
+  watch?: boolean;
+  stream?: boolean;
+}
+
+export interface PermissionRule extends PermissionSet {
+  agent: string;
+  path: string;
+}
+
+export interface PermissionConfig {
+  defaults: PermissionSet;
+  rules?: PermissionRule[];
+}
+
+export interface ChildProjectRef {
+  name: string;
+  manifest: string;
+}
+
+export interface ProjectManifest {
+  name: string;
+  mounts: MountDeclaration[];
+  permissions?: PermissionConfig;
+  children?: ChildProjectRef[];
+}
+
 export interface ActantProjectEntrypoints {
   /**
    * Ordered project-root-relative files a backend should inspect after
@@ -24,8 +59,9 @@ export interface ActantProjectEntrypoints {
  * - selects the configs directory for local domain components
  * - declares extra component sources visible to the current project
  * - points backends at the project knowledge files they should read first
+ * - now also carries M3 project-boundary permissions + child-project refs
  */
-export interface ActantProjectConfig {
+export interface ActantProjectConfig extends Partial<ProjectManifest> {
   version?: 1;
   name?: string;
   description?: string;
