@@ -147,14 +147,34 @@ interface ChildProjectRef {
 
 ## 6. Built-In Source Config Expectations
 
-V1 内置 Source 及其最小配置职责：
+### 6.1 SourceType Registry
 
-| Source | 路径 | 配置职责 |
-|------|------|------|
-| `SkillSource` | `/skills/*` | 声明技能文件来源与可写策略 |
-| `McpConfigSource` | `/mcp/configs/*` | 声明 MCP 静态配置来源 |
-| `McpRuntimeSource` | `/mcp/runtime/*` | 运行时来源，无需复杂静态配置 |
-| `AgentRuntime` | `/agents/*` | 运行时来源，无需复杂静态配置 |
+M5 起，所有 Source 通过 `SourceTypeRegistry` 注册。新增 Source 类型只需调用 `registry.register(definition)` —— 无需修改中心类型定义。
+
+```ts
+interface SourceTypeDefinition<TConfig = Record<string, unknown>> {
+  readonly type: string;
+  readonly label: string;
+  readonly defaultTraits: ReadonlySet<SourceTrait>;
+  readonly configSchema?: Record<string, unknown>;
+  create(config: TConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration;
+  validate?(config: TConfig): { valid: boolean; errors?: string[] };
+}
+```
+
+`VfsSourceRegistration` 不再包含 `sourceType` 字段，改为：
+
+- `label: string` — 人类可读的 Source 类型标签
+- `traits: ReadonlySet<SourceTrait>` — 原子能力特征集
+
+### 6.2 内置 Source 及其 Trait 声明
+
+| Source | 路径 | Traits | 配置职责 |
+|------|------|------|------|
+| `SkillSource` | `/skills/*` | `persistent`, `writable` | 声明技能文件来源与可写策略 |
+| `McpConfigSource` | `/mcp/configs/*` | `persistent`, `writable` | 声明 MCP 静态配置来源 |
+| `McpRuntimeSource` | `/mcp/runtime/*` | `executable`, `streamable`, `ephemeral` | 运行时来源 |
+| `AgentRuntime` | `/agents/*` | `executable`, `streamable`, `ephemeral` | 运行时来源 |
 
 运行时 source 的最小节点结构：
 
@@ -169,6 +189,12 @@ V1 内置 Source 及其最小配置职责：
 - 流节点额外表达 `stream`
 - 控制节点是否允许 `write` 由 provider 决定，但节点命名和路径必须稳定
 - 权限配置中的 `watch` / `stream` 位必须与实际 capability 对齐，不能只对 `read/write` 建模
+
+### 6.3 Trait 互斥约束
+
+`persistent` 与 `ephemeral` 互斥 —— `SourceTypeRegistry.register()` 在注册时拒绝同时声明两者的 `SourceTypeDefinition`。
+
+实例可以收窄（narrowing）继承的 trait 集但不可扩展。
 
 ---
 

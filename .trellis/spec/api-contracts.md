@@ -210,8 +210,57 @@ V1 的执行能力通过控制节点和流节点表达，而不是通过旧 tool
 
 ## 5. Built-In Source Surface
 
+M5 起，每个 Source 通过 `SourceTrait` 声明自身特征，通过 `SourceTypeRegistry` 注册。
+`VfsSourceRegistration` 不再携带 `sourceType` 字段，改为 `label: string` + `traits: ReadonlySet<SourceTrait>`。
+
+### 5.0 SourceTrait 定义
+
+```ts
+type SourceTrait =
+  | "persistent"   // 持久化存储
+  | "ephemeral"    // 生命周期绑定，进程退出即消失
+  | "watchable"    // 支持 watch 事件
+  | "streamable"   // 支持 stream 消费
+  | "writable"     // 支持 write 操作
+  | "virtual"      // 纯计算/投影节点
+  | "executable"   // 支持控制节点执行
+  | (string & Record<never, never>);  // 开放扩展
+```
+
+互斥约束：`persistent` 与 `ephemeral` 不可同时声明。
+
+### 5.0.1 VfsDescribeRpcResult
+
+```ts
+interface VfsDescribeRpcResult {
+  path: string;
+  mountPoint: string;
+  sourceName: string;
+  label: string;           // 替代旧 sourceType
+  traits: string[];        // SourceTrait[] 序列化
+  capabilities: string[];
+  metadata: Record<string, unknown>;
+}
+```
+
+### 5.0.2 VfsMountListResult
+
+```ts
+interface VfsMountListResult {
+  mounts: Array<{
+    name: string;
+    mountPoint: string;
+    label: string;          // 替代旧 sourceType
+    traits: string[];       // SourceTrait[] 序列化
+    capabilities: string[];
+    fileCount: number;
+  }>;
+}
+```
+
 ### 5.1 SkillSource
 
+- traits: `persistent`, `writable`
 - `read`
 - `write`
 - `list`
@@ -220,6 +269,7 @@ V1 的执行能力通过控制节点和流节点表达，而不是通过旧 tool
 
 ### 5.2 McpConfigSource
 
+- traits: `persistent`, `writable`
 - `read`
 - `write`
 - `list`
@@ -227,6 +277,7 @@ V1 的执行能力通过控制节点和流节点表达，而不是通过旧 tool
 
 ### 5.3 McpRuntimeSource
 
+- traits: `executable`, `streamable`, `ephemeral`
 - `read`
 - `write`（仅控制节点）
 - `list`
@@ -236,6 +287,7 @@ V1 的执行能力通过控制节点和流节点表达，而不是通过旧 tool
 
 ### 5.4 AgentRuntime
 
+- traits: `executable`, `streamable`, `ephemeral`
 - `read`
 - `write`（仅控制节点）
 - `list`
