@@ -21,6 +21,22 @@ allowed-tools: Shell, Read, Write, Glob, Grep, SemanticSearch, Task, StrReplace
 - **中英混排**：标题和术语用英文，说明用中文，与现有 wiki 风格一致
 - **标记生成**：所有自动生成/更新的页面必须保留 `generated: true` frontmatter
 
+## 统一流程骨架
+
+### 前置检查
+
+开始前先确认：
+
+- 当前是 stage 后同步、ship 后同步，还是用户显式要求文档刷新
+- 变更范围是否已确定，可以据此判断文档受影响面
+- 若需要构建验证，当前环境是否具备最小依赖
+
+### 完成状态
+
+- `DONE`: 相关文档已同步，且完成了最小验证
+- `PARTIAL`: 已完成内容更新，但构建或链接验证未完全执行
+- `BLOCKED`: 无法确认代码真相、文档影响面或验证环境
+
 ---
 
 ## 触发条件
@@ -84,6 +100,16 @@ git diff --name-only master..HEAD
 3. **对比**：wiki 描述的 API/参数/行为是否与代码一致？
 4. 标记为：`accurate` / `needs-update` / `missing`
 
+**Step 2.4** — 发布收口检查：
+
+除 `docs/wiki/` 外，还要检查以下入口文档是否因本次变更而陈旧：
+
+- `README.md`
+- `.trellis/spec/` 中直接描述当前行为的入口文档
+- `docs/` 下用户首先会看到的说明页
+
+如果这些入口文档与代码行为冲突，必须在报告中标为 `release-doc-drift`，并优先修补最靠近入口的文档。
+
 ### Phase 3: 内容生成与修复
 
 根据 Phase 2 的分析结果执行：
@@ -139,6 +165,14 @@ cd docs/wiki && pnpm install && pnpm build
 
 ### 未变更
 - features/lifecycle.md — 内容准确，无需更新
+```
+
+若发现入口文档漂移，报告中必须单列：
+
+```markdown
+### Release doc drift
+- README.md — 命令示例仍为旧行为
+- .trellis/spec/<page>.md — 术语与代码实现不一致
 ```
 
 ---

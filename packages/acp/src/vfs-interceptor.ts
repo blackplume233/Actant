@@ -6,10 +6,9 @@ import type {
 } from "@agentclientprotocol/sdk";
 import {
   createLogger,
-  type VfsCapabilityId,
   type VfsIdentity,
 } from "@actant/shared";
-import type { VfsRegistry, VfsPermissionManager } from "@actant/agent-runtime";
+import type { VfsKernel, VfsRequestContext } from "@actant/agent-runtime";
 
 const logger = createLogger("vfs-interceptor");
 
@@ -32,13 +31,24 @@ const VFS_PREFIXES = [
  * Intercepts ACP readTextFile / writeTextFile calls for VFS virtual paths.
  *
  * When injected into a ClientCallbackRouter, virtual paths (e.g. /proc/agent-a/123/stdout)
- * are resolved through the VfsRegistry instead of the real filesystem.
+ * are resolved through the VfsKernel instead of the real filesystem.
  */
 export class VfsInterceptor {
   constructor(
-    private registry: VfsRegistry,
-    private permissions?: VfsPermissionManager,
+    private readonly kernel: VfsKernel,
+    private readonly defaultContext: VfsRequestContext = {},
   ) {}
+
+  private buildContext(identity?: VfsIdentity): VfsRequestContext {
+    if (identity == null) {
+      return this.defaultContext;
+    }
+
+    return {
+      ...this.defaultContext,
+      identity,
+    };
+  }
 
   /**
    * Returns true if the given path should be intercepted by VFS.
@@ -56,26 +66,13 @@ export class VfsInterceptor {
   ): Promise<ReadTextFileResponse | null> {
     if (!this.isVfsPath(params.path)) return null;
 
-    const resolved = this.registry.resolve(params.path);
+    const resolved = this.kernel.resolve(params.path);
     if (!resolved) {
       logger.debug({ path: params.path }, "VFS path not found");
       return null;
     }
 
-    if (this.permissions && identity) {
-      const capability: VfsCapabilityId = "read";
-      const decision = this.permissions.check(identity, params.path, capability, resolved.source);
-      if (decision === "deny") {
-        throw new Error(`VFS permission denied: ${capability} on ${params.path}`);
-      }
-    }
-
-    const handler = resolved.source.handlers.read;
-    if (!handler) {
-      throw new Error(`VFS source "${resolved.source.name}" does not support read`);
-    }
-
-    const result = await handler(resolved.relativePath);
+    const result = await this.kernel.read(params.path, this.buildContext(identity));
     logger.debug({ path: params.path, source: resolved.source.name }, "VFS readTextFile");
 
     return { content: result.content };
@@ -90,26 +87,13 @@ export class VfsInterceptor {
   ): Promise<WriteTextFileResponse | null> {
     if (!this.isVfsPath(params.path)) return null;
 
-    const resolved = this.registry.resolve(params.path);
+    const resolved = this.kernel.resolve(params.path);
     if (!resolved) {
       logger.debug({ path: params.path }, "VFS path not found for write");
       return null;
     }
 
-    if (this.permissions && identity) {
-      const capability: VfsCapabilityId = "write";
-      const decision = this.permissions.check(identity, params.path, capability, resolved.source);
-      if (decision === "deny") {
-        throw new Error(`VFS permission denied: ${capability} on ${params.path}`);
-      }
-    }
-
-    const handler = resolved.source.handlers.write;
-    if (!handler) {
-      throw new Error(`VFS source "${resolved.source.name}" does not support write`);
-    }
-
-    await handler(resolved.relativePath, params.content);
+    await this.kernel.write(params.path, params.content, this.buildContext(identity));
     logger.debug({ path: params.path, source: resolved.source.name }, "VFS writeTextFile");
 
     return {};

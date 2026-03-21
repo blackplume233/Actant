@@ -7,6 +7,9 @@ dependencies:
   - skill: issue-manager
     path: .agents/skills/issue-manager
     usage: Issue 同步（Ship 阶段识别并更新关联 Issue）
+  - skill: wiki-updater
+    path: .agents/skills/wiki-updater
+    usage: 当 PR 影响入口文档或用户可见行为时补做文档收口
 ---
 
 # PR Handler SubAgent
@@ -20,6 +23,38 @@ dependencies:
 - **全流程自动化**：验证通过后自动执行本地合并、Spec 更新、Push 和 Issue 同步，无需人工干预
 - **安全第一**：验证失败时立即中止，不做任何合并操作；合并冲突时中止并输出诊断
 - **继承 Ship 安全规则**：绝不 `git push --force`、绝不提交含密钥文件、绝不 `--no-verify`、绝不修改 git config
+
+## 统一流程骨架
+
+### 前置检查
+
+开始前先确认：
+
+- 当前本地工作区不存在会污染合并结果的未提交改动
+- 目标 PR 可读取，且 base/head 分支都可访问
+- 验证命令、测试命令和必要依赖可在当前环境执行
+- 本轮处理范围是“验证并交付当前 PR”，不是顺手修 unrelated 问题
+
+### 升级规则
+
+出现以下情况立即停止自动推进并报告用户：
+
+- Validation Gate 任一关键项失败
+- 合并冲突无法在当前上下文中安全解决
+- 文档或 spec 漂移影响入口说明，但当前无法确定正确文本
+- 本地工作区已有无关脏改动，无法安全切换分支或合并
+
+### 完成状态
+
+- `DONE`: PR 完成验证、合并、必要的 spec/doc 收口和交付动作
+- `PARTIAL`: 只完成验证或部分交付，仍需人工完成后续阶段
+- `BLOCKED`: 因验证失败、冲突、权限或文档不确定性无法继续
+
+### 禁止行为
+
+- Gate 未通过仍继续 merge
+- 以“文档之后再补”为理由忽略明确的入口文档漂移
+- 为了尽快交付而跳过验证或 Spec 同步判断
 
 ---
 
@@ -151,7 +186,17 @@ git diff <baseRefName>...<headRefName> --name-only --diff-filter=ACMR | grep '\.
 
 预检结果标记为「需更新」或「无需更新」，**不阻断**合并流程（Phase 4 处理）。
 
-#### 2.6 输出验证报告
+#### 2.6 文档漂移预检
+
+除 spec 外，还要显式检查入口文档是否受影响：
+
+- `README.md`
+- `.trellis/spec/` 下与本次变更直接相关的入口文档
+- `docs/` 下描述用户可见行为的页面
+
+如果代码行为已变而上述文档仍旧描述旧行为，标记为 `DOC DRIFT`，在 Phase 4 一并收口；无法安全判断时标记 `BLOCKED`。
+
+#### 2.7 输出验证报告
 
 ```
 ## PR Validation Report - #<N>
@@ -166,6 +211,7 @@ git diff <baseRefName>...<headRefName> --name-only --diff-filter=ACMR | grep '\.
 | 非空断言 | PASS / FAIL (N处) |
 | Code Review | PASSED / ISSUES FOUND |
 | Spec 同步 | 无需更新 / 需更新 <文件列表> |
+| Doc Drift | 无 / 需更新 <文件列表> / BLOCKED |
 
 结论: GATE PASSED / GATE FAILED
 ```

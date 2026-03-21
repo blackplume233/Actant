@@ -202,3 +202,236 @@ CODEX_LOOP_CHECK_PASS```
 ### 下一步
 
 - 参考本轮检查结果继续推进
+
+## 会话 11: Codex Loop 第1轮 - m6-converge-acp
+
+**日期**: 2026-03-21
+**任务**: Codex Loop 第1轮 - m6-converge-acp
+
+### 摘要
+
+第1轮已通过。检查结果：PASS；Shell Verify：通过。本轮已通过全部检查门禁。
+
+### 详细记录
+
+## 轮次概览
+
+- 任务名称：`m6-converge-acp`
+- 任务目录：`.trellis/tasks/03-20-m6-converge-acp`
+- 分支：`codex/03-20-m6-converge-acp`
+- 工作树：`/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp`
+- 轮次：`1 / 5`
+- 本轮结论：已通过
+- 检查结果：PASS
+- Shell Verify：通过
+- 说明：本轮已通过全部检查门禁。
+
+## 本轮变更文件
+
+- `packages/acp/src/__tests__/vfs-interceptor.test.ts`
+- `packages/acp/src/vfs-interceptor.ts`
+
+## 任务产物
+
+- `.trellis/tasks/03-20-m6-converge-acp/check.jsonl`
+- `.trellis/tasks/03-20-m6-converge-acp/implement.jsonl`
+- `.trellis/tasks/03-20-m6-converge-acp/prd.md`
+- `.trellis/tasks/03-20-m6-converge-acp/task.json`
+
+## Implement 输出摘录
+
+```text
+**This Round**
+Updated [packages/acp/src/vfs-interceptor.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/vfs-interceptor.ts) to take a `VfsKernel`-shaped dependency and route ACP file operations through `kernel.resolve()`, `kernel.read()`, and `kernel.write()`. I removed the direct `registry.resolve()` + source handler path and the manual `VfsPermissionManager` checks so kernel middleware owns permissions as intended.
+
+Added [packages/acp/src/__tests__/vfs-interceptor.test.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/__tests__/vfs-interceptor.test.ts) to lock in the new behavior. The tests deliberately give mounts whose direct handlers throw, so the only passing path is through `kernel.read()` / `kernel.write()`. I also confirmed there are no actual `new VfsInterceptor(...)` call sites in this worktree, so there was nothing else to update there this round.
+
+**Commands Run**
+- `source .worktree-env.sh 2>/dev/null || true && bash ./.trellis/scripts/get-context.sh`
+- `source .worktree-env.sh 2>/dev/null || true && bash ./.trellis/scripts/task.sh list`
+- `sed -n ...` on the required Trellis docs and task PRD
+- `rg -n "class VfsInterceptor|new VfsInterceptor\(|setVfsInterceptor\(|registry\.resolve\(" ...`
+- `source .worktree-env.sh 2>/dev/null || true && pnpm exec tsc -p packages/acp/tsconfig.json --noEmit --pretty false`
+- `source .worktree-env.sh 2>/dev/null || true && pnpm type-check`
+- `source .worktree-env.sh 2>/dev/null || true && pnpm exec vitest run --config /tmp/actant-vitest-acp.config.ts`
+
+Validation result:
+- `pnpm type-check`: passed
+- ACP tests via temp Vitest config: passed, `6` files / `47` tests
+
+**Remaining Blockers**
+No code blocker remains from this round. The only wrinkle was sandboxed Vitest temp-file writing under the symlinked `node_modules`, which I worked around with `/tmp/actant-vitest-acp.config.ts`; with that workaround, ACP tests passed.```
+
+## Check 输出摘录
+
+```text
+## Check Result
+### Diff Summary
+- Reviewed the M6 Phase 7 task PRD and Trellis/design baseline: `.trellis/workflow.md`, `.trellis/spec/index.md`, `.trellis/spec/backend/index.md`, `.trellis/spec/backend/quality-guidelines.md`, `.trellis/spec/api-contracts.md`, `docs/design/contextfs-architecture.md`, `docs/design/actant-vfs-reference-architecture.md`, `docs/planning/contextfs-roadmap.md`, and ACP index `https://agentclientprotocol.com/llms.txt`.
+- The working diff in [packages/acp/src/vfs-interceptor.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/vfs-interceptor.ts) does the intended convergence:
+  - constructor now takes `VfsKernel`
+  - `readTextFile`/`writeTextFile` use `kernel.resolve()` for existence checks and `kernel.read()`/`kernel.write()` for execution
+  - manual permission checks and direct `source.handlers.*` calls are removed
+  - VFS-prefix interception semantics and ACP callback-router integration remain unchanged
+- Repo state also includes an untracked ACP test file: [packages/acp/src/__tests__/vfs-interceptor.test.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/__tests__/vfs-interceptor.test.ts).
+
+### Verification
+- Ran `source .worktree-env.sh 2>/dev/null || true && pnpm exec vitest run packages/acp/src/__tests__/callback-router.test.ts --configLoader runner`
+  - Passed: 22 tests
+- Ran `source .worktree-env.sh 2>/dev/null || true && pnpm exec vitest run packages/acp/src/__tests__/vfs-interceptor.test.ts --configLoader runner`
+  - Passed: 4 tests
+- Ran `source .worktree-env.sh 2>/dev/null || true && pnpm type-check`
+  - Passed
+
+### Self-fixes
+- Corrected the mock `VfsIdentity` shape in the untracked test [packages/acp/src/__tests__/vfs-interceptor.test.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/__tests__/vfs-interceptor.test.ts) so `pnpm type-check` could complete.
+- Updated stale comments in [packages/acp/src/vfs-interceptor.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/vfs-interceptor.ts) to describe kernel-based interception rather than registry-based routing.
+
+### Remaining Problems
+- No blocking problems found.
+- One repo-state note: [packages/acp/src/__tests__/vfs-interceptor.test.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/__tests__/vfs-interceptor.test.ts) is still untracked, so it should be added intentionally if this test is meant to ship with the change.
+
+### Marker
+CODEX_LOOP_CHECK_PASS```
+
+## Shell Verify 摘录
+
+```text
+>>> pnpm exec vitest run packages/acp/src/__tests__/callback-router.test.ts --configLoader runner
+
+ RUN  v4.0.18 /Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp
+
+ ✓ packages/acp/src/__tests__/callback-router.test.ts (22 tests) 19ms
+
+ Test Files  1 passed (1)
+      Tests  22 passed (22)
+   Start at  09:40:38
+   Duration  429ms (transform 143ms, setup 0ms, import 216ms, tests 19ms, environment 0ms)
+
+
+>>> pnpm exec vitest run packages/api/src/handlers/__tests__/vfs-handlers.test.ts --configLoader runner
+
+ RUN  v4.0.18 /Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp
+
+ ✓ packages/api/src/handlers/__tests__/vfs-handlers.test.ts (7 tests) 265ms
+
+ Test Files  1 passed (1)
+      Tests  7 passed (7)
+   Start at  09:40:39
+   Duration  2.36s (transform 1.02s, setup 0ms, import 1.90s, tests 265ms, environment 0ms)
+
+
+>>> pnpm exec vitest run packages/vfs/src/__tests__/m6-facade-e2e.test.ts --configLoader runner
+
+ RUN  v4.0.18 /Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp
+
+ ✓ packages/vfs/src/__tests__/m6-facade-e2e.test.ts (2 tests) 25ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed (2)
+   Start at  09:40:43
+   Duration  695ms (transform 262ms, setup 0ms, import 363ms, tests 25ms, environment 0ms)
+
+
+>>> pnpm exec vitest run packages/shared/src/__tests__/hub-paths.test.ts --configLoader runner
+
+ RUN  v4.0.18 /Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp
+
+ ✓ packages/shared/src/__tests__/hub-paths.test.ts (4 tests) 3ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  09:40:44
+   Duration  197ms (transform 15ms, setup 0ms, import 23ms, tests 3ms, environment 0ms)
+
+
+>>> pnpm type-check
+
+> actant-monorepo@0.5.0 type-check /Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp
+> pnpm -r run type-check
+
+Scope: 17 of 18 workspace projects
+packages/shared type-check$ tsc -b --pretty false
+packages/shared type-check: Done
+packages/rest-api type-check$ tsc -b --pretty false
+packages/domain-context type-check$ tsc -b --pretty false
+packages/vfs type-check$ tsc -b --pretty false
+packages/rest-api type-check: Done
+packages/vfs type-check: Done
+packages/domain-context type-check: Done
+packages/dashboard type-check$ tsc -b --pretty false
+packages/source type-check$ tsc -b --pretty false
+packages/dashboard type-check: Done
+packages/source type-check: Done
+packages/agent-runtime type-check$ tsc -b --pretty false
+packages/context type-check$ tsc -b --pretty false
+packages/context type-check: Done
+packages/agent-runtime type-check: Done
+packages/acp type-check$ tsc -b --pretty false
+packages/pi type-check$ tsc -b --pretty false
+packages/tui type-check$ tsc -b --pretty false
+packages/tui type-check: Done
+packages/pi type-check: Done
+packages/acp type-check: Done
+packages/channel-claude type-check$ tsc -b --pretty false
+packages/channel-claude type-check: Done
+packages/api type-check$ tsc -b --pretty false
+packages/api type-check: Done
+packages/mcp-server type-check$ tsc -b --pretty false
+packages/cli type-check$ tsc -b --pretty false
+packages/mcp-server type-check: Done
+packages/cli type-check: Done
+packages/actant type-check$ tsc -b --pretty false
+packages/actant type-check: Done
+
+```
+
+## 最新反馈摘录
+
+```text
+Latest verifier result:
+
+## Check Result
+### Diff Summary
+- Reviewed the M6 Phase 7 task PRD and Trellis/design baseline: `.trellis/workflow.md`, `.trellis/spec/index.md`, `.trellis/spec/backend/index.md`, `.trellis/spec/backend/quality-guidelines.md`, `.trellis/spec/api-contracts.md`, `docs/design/contextfs-architecture.md`, `docs/design/actant-vfs-reference-architecture.md`, `docs/planning/contextfs-roadmap.md`, and ACP index `https://agentclientprotocol.com/llms.txt`.
+- The working diff in [packages/acp/src/vfs-interceptor.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/vfs-interceptor.ts) does the intended convergence:
+  - constructor now takes `VfsKernel`
+  - `readTextFile`/`writeTextFile` use `kernel.resolve()` for existence checks and `kernel.read()`/`kernel.write()` for execution
+  - manual permission checks and direct `source.handlers.*` calls are removed
+  - VFS-prefix interception semantics and ACP callback-router integration remain unchanged
+- Repo state also includes an untracked ACP test file: [packages/acp/src/__tests__/vfs-interceptor.test.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/__tests__/vfs-interceptor.test.ts).
+
+### Verification
+- Ran `source .worktree-env.sh 2>/dev/null || true && pnpm exec vitest run packages/acp/src/__tests__/callback-router.test.ts --configLoader runner`
+  - Passed: 22 tests
+- Ran `source .worktree-env.sh 2>/dev/null || true && pnpm exec vitest run packages/acp/src/__tests__/vfs-interceptor.test.ts --configLoader runner`
+  - Passed: 4 tests
+- Ran `source .worktree-env.sh 2>/dev/null || true && pnpm type-check`
+  - Passed
+
+### Self-fixes
+- Corrected the mock `VfsIdentity` shape in the untracked test [packages/acp/src/__tests__/vfs-interceptor.test.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/__tests__/vfs-interceptor.test.ts) so `pnpm type-check` could complete.
+- Updated stale comments in [packages/acp/src/vfs-interceptor.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/vfs-interceptor.ts) to describe kernel-based interception rather than registry-based routing.
+
+### Remaining Problems
+- No blocking problems found.
+- One repo-state note: [packages/acp/src/__tests__/vfs-interceptor.test.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m6-converge-acp/packages/acp/src/__tests__/vfs-interceptor.test.ts) is still untracked, so it should be added intentionally if this test is meant to ship with the change.
+
+### Marker
+CODEX_LOOP_CHECK_PASS```
+
+### Git 提交
+
+（无提交，本次为过程记录）
+
+### 检查与测试
+
+- [OK] 自动记录，详见上方检查结果
+
+### 状态
+
+[OK] **已记录**
+
+### 下一步
+
+- 参考本轮检查结果继续推进
