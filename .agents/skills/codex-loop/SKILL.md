@@ -13,6 +13,7 @@ allowed-tools: Shell, Read, Glob, Grep
 
 - `.trellis/scripts/multi-agent/codex-loop.sh`
 - `.trellis/scripts/multi-agent/codex-loop-live.sh`
+- `.trellis/scripts/multi-agent/codex-loop-batch.sh`
 - `.trellis/worktree.yaml`
 - 任务目录中的 `task.json` / `prd.md` / `codex-loop/`
 
@@ -213,10 +214,139 @@ dry-run 无误后，默认通过 live 包装脚本执行正式 loop：
 
 如果运行方式不支持自动流式展示脚本内部输出，就必须主动轮询并读取产物，把最新状态不断同步到当前界面，直到 loop 结束；不允许因为“工具不支持流式”而退化为静默执行。
 
+## 批量模式（Multi-Todo）
+
+当用户有多个 todo 需要依次 loop 执行时，使用 `codex-loop-batch.sh` 包装器。
+
+### Todos JSON 格式
+
+创建一个 JSON 文件描述所有待执行 todo：
+
+```json
+{
+  "verify": ["pnpm type-check"],
+  "todos": [
+    {
+      "name": "m6-converge-acp",
+      "todo_id": "m6-phase7",
+      "type": "backend",
+      "requirement": "Refactor VfsInterceptor to use VfsKernel...",
+      "task_dir": ".trellis/tasks/03-20-m6-converge-acp",
+      "rounds": 5
+    },
+    {
+      "name": "m6-cleanup-legacy",
+      "todo_id": "m6-phase8",
+      "type": "backend",
+      "requirement": "Remove ContextManager exports...",
+      "rounds": 3
+    }
+  ]
+}
+```
+
+字段说明：
+
+- `verify`（可选）：batch 级别的 verify 命令，会临时覆盖 `worktree.yaml` 中的 `verify:` 配置，全部 todo 执行完后自动恢复
+- `todos[].name`：任务名（必填）
+- `todos[].todo_id`（可选）：关联的 Cursor TodoWrite ID，用于自动同步进度
+- `todos[].type`：开发类型（必填）
+- `todos[].requirement`：需求描述（必填）
+- `todos[].task_dir`（可选）：续跑已有 task 目录；为空时自动创建
+- `todos[].rounds`（可选）：最大轮数，默认 3
+
+### 批量执行流程
+
+```bash
+# dry-run 预览
+./.trellis/scripts/multi-agent/codex-loop-batch.sh \
+  --todos-file path/to/todos.json \
+  --dry-run
+
+# 正式执行
+./.trellis/scripts/multi-agent/codex-loop-batch.sh \
+  --todos-file path/to/todos.json
+
+# 失败后继续下一个
+./.trellis/scripts/multi-agent/codex-loop-batch.sh \
+  --todos-file path/to/todos.json \
+  --continue-on-failure
+```
+
+### 进度文件
+
+脚本自动在 todos JSON 同目录下写入 `batch-progress.json`，每个 todo 状态变化时即时更新：
+
+```json
+{
+  "total": 2,
+  "current_index": 1,
+  "updated_at": "2026-03-20T15:30:00+08:00",
+  "results": [
+    {
+      "name": "m6-converge-acp",
+      "todo_id": "m6-phase7",
+      "state": "passed",
+      "round": 3,
+      "task_dir": ".trellis/tasks/03-20-m6-converge-acp"
+    },
+    {
+      "name": "m6-cleanup-legacy",
+      "todo_id": "m6-phase8",
+      "state": "running",
+      "round": 1,
+      "task_dir": ""
+    }
+  ]
+}
+```
+
+`state` 取值：`pending` / `running` / `passed` / `failed` / `stalled` / `skipped`
+
+## Todo 进度同步协议
+
+codex-loop 的执行结果必须实时同步到 Cursor 的 TodoWrite。这是强制规则，不允许全部跑完后才一次性更新。
+
+### 状态映射
+
+| codex-loop state | TodoWrite status |
+|---|---|
+| `running` | `in_progress` |
+| `passed` | `completed` |
+| `failed` / `stalled` | 保持 `in_progress`（由 assistant 决定下一步） |
+
+### 单任务模式
+
+直接调用 `codex-loop-live.sh` 执行单个 todo 时：
+
+1. 启动前：如果 assistant 当前有活跃 todo list 且本次 loop 对应某个 todo，立即 `TodoWrite` 将其标记为 `in_progress`
+2. 监控中：持续轮询 `status.json`，检测到 state 变化时在汇报的同时判断是否需要更新 TodoWrite
+3. 结束后：读取 `status.json` 最终 state
+   - `passed` → `TodoWrite` 该 todo 为 `completed`
+   - `failed` / `stalled` → 保持 `in_progress`，汇报失败原因后由 assistant 或用户决定下一步
+
+### 批量模式
+
+调用 `codex-loop-batch.sh` 执行多个 todo 时：
+
+1. 启动前：根据 todos JSON 中的 `todo_id` 字段创建或更新 TodoWrite 条目，全部初始化为 `pending`
+2. 监控中：轮询 `batch-progress.json`，每当检测到某个 todo 的 `state` 发生变化：
+   - `state` 变为 `running` → `TodoWrite` 对应 todo 为 `in_progress`
+   - `state` 变为 `passed` → `TodoWrite` 对应 todo 为 `completed`
+   - `state` 变为 `failed` / `stalled` → 保持 `in_progress`
+   - `state` 变为 `skipped` → 保持 `pending`
+3. 结束后：做一次最终同步，确认 `batch-progress.json` 中所有 `todo_id` 非空的条目状态都已同步到 TodoWrite
+
+### 跳过同步条件
+
+- `todo_id` 字段为空或不存在时，跳过 TodoWrite 同步，不报错
+- assistant 当前没有活跃 todo list 时，跳过同步
+
 ## 注意事项
 
 - 不要手工模拟 `codex-loop` 的多轮逻辑，优先直接调用脚本
 - 默认使用 `codex-loop-live.sh`，只有在用户明确要求底层原始脚本时才直接调用 `codex-loop.sh`
+- 批量执行多个 todo 时使用 `codex-loop-batch.sh`
 - 不要在主工作区修改 loop 目标代码；脚本会在独立 worktree 中执行
 - 不要假设验证命令存在；先读 `.trellis/worktree.yaml`
 - 若用户只想创建技能或文档而非实际跑 loop，可以只更新技能文件，不执行脚本
