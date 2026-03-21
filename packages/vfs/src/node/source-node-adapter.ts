@@ -1,9 +1,15 @@
 import type {
+  VfsEditResult,
   VfsEntry,
   VfsFileContent,
+  VfsGlobOptions,
+  VfsGrepOptions,
+  VfsGrepResult,
   VfsListOptions,
   VfsResolveResult,
   VfsStatResult,
+  VfsTreeNode,
+  VfsTreeOptions,
   VfsWatchEvent,
   VfsWatchOptions,
   VfsWriteResult,
@@ -66,6 +72,31 @@ class AsyncPushIterator<T> implements AsyncIterable<T>, AsyncIterator<T> {
   }
 }
 
+function scopeGlobPattern(basePath: string, pattern: string): string {
+  if (!basePath) {
+    return pattern;
+  }
+
+  if (!pattern) {
+    return `${basePath}/**`;
+  }
+
+  return `${basePath}/${pattern}`;
+}
+
+function relativeToBasePath(basePath: string, entryPath: string): string {
+  if (!basePath || !entryPath) {
+    return entryPath;
+  }
+
+  if (entryPath === basePath) {
+    return "";
+  }
+
+  const prefix = `${basePath}/`;
+  return entryPath.startsWith(prefix) ? entryPath.slice(prefix.length) : entryPath;
+}
+
 export class SourceNodeAdapter {
   constructor(private readonly resolved: VfsResolveResult) {}
 
@@ -92,6 +123,42 @@ export class SourceNodeAdapter {
       : new TextDecoder().decode(content);
 
     return handler(this.resolved.relativePath, normalizedContent);
+  }
+
+  async readRange(
+    startLine: number,
+    endLine?: number,
+    _context?: VfsRequestContext,
+  ): Promise<VfsFileContent> {
+    const handler = this.resolved.source.handlers.read_range;
+    if (!handler) {
+      throw new Error(`Mount "${this.resolved.source.name}" does not support read_range`);
+    }
+
+    return handler(this.resolved.relativePath, startLine, endLine);
+  }
+
+  async editFile(
+    oldStr: string,
+    newStr: string,
+    replaceAll?: boolean,
+    _context?: VfsRequestContext,
+  ): Promise<VfsEditResult> {
+    const handler = this.resolved.source.handlers.edit;
+    if (!handler) {
+      throw new Error(`Mount "${this.resolved.source.name}" does not support edit`);
+    }
+
+    return handler(this.resolved.relativePath, oldStr, newStr, replaceAll);
+  }
+
+  async deleteFile(_context?: VfsRequestContext): Promise<void> {
+    const handler = this.resolved.source.handlers.delete;
+    if (!handler) {
+      throw new Error(`Mount "${this.resolved.source.name}" does not support delete`);
+    }
+
+    await handler(this.resolved.relativePath);
   }
 
   async readDir(
@@ -130,6 +197,66 @@ export class SourceNodeAdapter {
     }
 
     return null;
+  }
+
+  async tree(
+    options?: VfsTreeOptions,
+    _context?: VfsRequestContext,
+  ): Promise<VfsTreeNode> {
+    const handler = this.resolved.source.handlers.tree;
+    if (!handler) {
+      throw new Error(`Mount "${this.resolved.source.name}" does not support tree`);
+    }
+
+    return handler(this.resolved.relativePath, options);
+  }
+
+  async globFiles(
+    pattern: string,
+    options?: VfsGlobOptions,
+    _context?: VfsRequestContext,
+  ): Promise<string[]> {
+    const handler = this.resolved.source.handlers.glob;
+    if (!handler) {
+      throw new Error(`Mount "${this.resolved.source.name}" does not support glob`);
+    }
+
+    const scopedOptions = this.resolved.relativePath
+      ? { ...options, cwd: options?.cwd ?? this.resolved.relativePath }
+      : options;
+
+    return handler(pattern, scopedOptions);
+  }
+
+  async grepFiles(
+    pattern: string,
+    options?: VfsGrepOptions,
+    _context?: VfsRequestContext,
+  ): Promise<VfsGrepResult> {
+    const handler = this.resolved.source.handlers.grep;
+    if (!handler) {
+      throw new Error(`Mount "${this.resolved.source.name}" does not support grep`);
+    }
+
+    const scopedOptions = this.resolved.relativePath
+      ? {
+        ...options,
+        glob: scopeGlobPattern(this.resolved.relativePath, options?.glob ?? "**"),
+      }
+      : options;
+
+    const result = await handler(pattern, scopedOptions);
+    if (!this.resolved.relativePath) {
+      return result;
+    }
+
+    return {
+      ...result,
+      matches: result.matches.map((match) => ({
+        ...match,
+        path: relativeToBasePath(this.resolved.relativePath, match.path),
+      })),
+    };
   }
 
   async watch(

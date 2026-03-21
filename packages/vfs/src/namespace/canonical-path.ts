@@ -13,9 +13,15 @@ export interface VfsRequestContext {
 
 export type VfsKernelOperation =
   | "read"
+  | "read_range"
   | "write"
+  | "edit"
+  | "delete"
   | "list"
   | "stat"
+  | "tree"
+  | "glob"
+  | "grep"
   | "watch"
   | "stream";
 

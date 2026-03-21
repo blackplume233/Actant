@@ -5,6 +5,7 @@ import type {
   HubStatusResult,
   VfsSourceRegistration,
 } from "@actant/shared";
+import { HUB_MOUNT_LAYOUT } from "@actant/shared";
 import {
   createProjectContextPermissionRules,
   createProjectContextSourceTypeRegistry,
@@ -14,20 +15,6 @@ import {
 } from "./project-context";
 import type { AppContext } from "./app-context";
 import { DEFAULT_PERMISSION_RULES } from "@actant/agent-runtime";
-
-const HUB_LAYOUT = {
-  project: "/hub/project",
-  workspace: "/hub/workspace",
-  config: "/hub/config",
-  skills: "/hub/skills",
-  agents: "/hub/agents",
-  mcpConfigs: "/hub/mcp/configs",
-  mcpRuntime: "/hub/mcp/runtime",
-  mcpLegacy: "/hub/mcp",
-  prompts: "/hub/prompts",
-  workflows: "/hub/workflows",
-  templates: "/hub/templates",
-} as const;
 
 export interface ActiveHubContext {
   projectRoot: string;
@@ -81,7 +68,7 @@ export class HubContextService {
         active: false,
         hostProfile,
         runtimeState,
-        mounts: HUB_LAYOUT,
+        mounts: HUB_MOUNT_LAYOUT,
       };
     }
     return {
@@ -107,7 +94,7 @@ export class HubContextService {
     const registrations = buildHubRegistrations(context, this.sourceTypeRegistry);
     this.appContext.vfsPermissionManager.setRules([
       ...DEFAULT_PERMISSION_RULES,
-      ...createProjectContextPermissionRules(context, { project: HUB_LAYOUT.project }),
+      ...createProjectContextPermissionRules(context, { project: HUB_MOUNT_LAYOUT.project }),
     ]);
     await this.replaceActiveContext(registrations);
 
@@ -118,7 +105,7 @@ export class HubContextService {
       configsDir: context.configsDir,
       sourceWarnings: context.summary.sourceWarnings,
       components: context.summary.components,
-      mounts: HUB_LAYOUT,
+      mounts: HUB_MOUNT_LAYOUT,
       sourceNames: registrations.map((registration) => registration.name),
     };
     this.active = next;
@@ -154,7 +141,7 @@ function buildHubRegistrations(
   return createProjectContextRegistrations(
     context,
     factoryRegistry,
-    HUB_LAYOUT,
+    HUB_MOUNT_LAYOUT,
     { type: "manual" },
     {
       namePrefix: "hub",

@@ -1,4 +1,5 @@
 export { VfsRegistry, type VfsRegistryEvents } from "./vfs-registry";
+export { VfsFacade } from "./vfs-facade";
 export { VfsPathResolver } from "./vfs-path-resolver";
 export { VfsLifecycleManager } from "./vfs-lifecycle-manager";
 export { VfsKernel, type VfsKernelOptions } from "./core/vfs-kernel";

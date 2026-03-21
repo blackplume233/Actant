@@ -100,19 +100,15 @@ function maybeWrapKernelError(error: unknown): never {
     throw Object.assign(error, { code: RPC_ERROR_CODES.GENERIC_BUSINESS });
   }
 
+  if (
+    error instanceof Error &&
+    (error.message.includes('does not support') || error.message.startsWith('Capability "'))
+  ) {
+    throw Object.assign(error, { code: RPC_ERROR_CODES.INVALID_PARAMS });
+  }
+
   throw error;
 }
-
-function requireHandler<T>(handler: T | undefined | null, name: string, path: string): T {
-  if (!handler) {
-    throw Object.assign(
-      new Error(`Capability "${name}" not supported for path "${path}"`),
-      { code: RPC_ERROR_CODES.INVALID_PARAMS },
-    );
-  }
-  return handler;
-}
-
 async function handleVfsRead(
   params: Record<string, unknown>,
   ctx: AppContext,
@@ -133,25 +129,12 @@ async function handleVfsRead(
     }
   }
 
-  const registry = requireVfsRegistry(ctx);
-  const directResolved = registry.resolve(path);
-  if (!directResolved) {
-    throw createPathNotFoundError(path);
+  try {
+    const result = await kernel.readRange(path, startLine, endLine, requestContext);
+    return { content: result.content, mimeType: result.mimeType };
+  } catch (error) {
+    maybeWrapKernelError(error);
   }
-
-  if (typeof token === "string" && token.length > 0) {
-    const identity = ctx.vfsPermissionManager.resolveIdentity(token);
-    const decision = ctx.vfsPermissionManager.check(identity, path, "read_range", directResolved.source);
-    if (decision === "deny") {
-      throw Object.assign(new Error(`Permission denied for read ${path}`), {
-        code: RPC_ERROR_CODES.GENERIC_BUSINESS,
-      });
-    }
-  }
-
-  const handler = requireHandler(directResolved.source.handlers.read_range, "read_range", path);
-  const result = await handler(directResolved.relativePath, startLine, endLine);
-  return { content: result.content, mimeType: result.mimeType };
 }
 
 async function handleVfsWrite(
@@ -177,35 +160,39 @@ async function handleVfsEdit(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<VfsEditRpcResult> {
-  const { path, oldStr, newStr, replaceAll } = params as unknown as VfsEditParams;
+  const { path, oldStr, newStr, replaceAll, token } = params as unknown as VfsEditParams;
   assertBootstrapVfsMutationAllowed(ctx, path);
-  const registry = requireVfsRegistry(ctx);
-  const resolved = registry.resolve(path);
+  const { kernel, requestContext } = selectVfsKernel(ctx, token);
+  const resolved = kernel.resolve(path);
   if (!resolved) {
-    throw Object.assign(new Error(`VFS path not found: ${path}`), {
-      code: RPC_ERROR_CODES.INVALID_PARAMS,
-    });
+    throw createPathNotFoundError(path);
   }
-  const handler = requireHandler(resolved.source.handlers.edit, "edit", path);
-  return handler(resolved.relativePath, oldStr, newStr, replaceAll);
+
+  try {
+    return await kernel.edit(path, oldStr, newStr, replaceAll, requestContext);
+  } catch (error) {
+    maybeWrapKernelError(error);
+  }
 }
 
 async function handleVfsDelete(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<VfsDeleteResult> {
-  const { path } = params as unknown as VfsDeleteParams;
+  const { path, token } = params as unknown as VfsDeleteParams;
   assertBootstrapVfsMutationAllowed(ctx, path);
-  const registry = requireVfsRegistry(ctx);
-  const resolved = registry.resolve(path);
+  const { kernel, requestContext } = selectVfsKernel(ctx, token);
+  const resolved = kernel.resolve(path);
   if (!resolved) {
-    throw Object.assign(new Error(`VFS path not found: ${path}`), {
-      code: RPC_ERROR_CODES.INVALID_PARAMS,
-    });
+    throw createPathNotFoundError(path);
   }
-  const handler = requireHandler(resolved.source.handlers.delete, "delete", path);
-  await handler(resolved.relativePath);
-  return { ok: true };
+
+  try {
+    await kernel.delete(path, requestContext);
+    return { ok: true };
+  } catch (error) {
+    maybeWrapKernelError(error);
+  }
 }
 
 async function handleVfsList(
@@ -262,53 +249,59 @@ async function handleVfsTree(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<VfsTreeRpcResult> {
-  const { path: treePath, depth, pattern } = params as unknown as VfsTreeParams;
-  const registry = requireVfsRegistry(ctx);
+  const { path: treePath, depth, pattern, token } = params as unknown as VfsTreeParams;
+  const { kernel, requestContext } = selectVfsKernel(ctx, token);
   const vfsPath = treePath ?? "/";
-  const resolved = registry.resolve(vfsPath);
+  const resolved = kernel.resolve(vfsPath);
   if (!resolved) {
-    throw Object.assign(new Error(`VFS path not found: ${vfsPath}`), {
-      code: RPC_ERROR_CODES.INVALID_PARAMS,
-    });
+    throw createPathNotFoundError(vfsPath);
   }
-  const handler = requireHandler(resolved.source.handlers.tree, "tree", vfsPath);
-  return handler(resolved.relativePath, { depth, pattern });
+
+  try {
+    return await kernel.tree(vfsPath, { depth, pattern }, requestContext);
+  } catch (error) {
+    maybeWrapKernelError(error);
+  }
 }
 
 async function handleVfsGlob(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<VfsGlobRpcResult> {
-  const { pattern, cwd, type } = params as unknown as VfsGlobRpcParams;
-  const registry = requireVfsRegistry(ctx);
+  const { pattern, cwd, type, token } = params as unknown as VfsGlobRpcParams;
+  const { kernel, requestContext } = selectVfsKernel(ctx, token);
   const vfsPath = cwd ?? "/workspace";
-  const resolved = registry.resolve(vfsPath);
+  const resolved = kernel.resolve(vfsPath);
   if (!resolved) {
-    throw Object.assign(new Error(`VFS path not found: ${vfsPath}`), {
-      code: RPC_ERROR_CODES.INVALID_PARAMS,
-    });
+    throw createPathNotFoundError(vfsPath);
   }
-  const handler = requireHandler(resolved.source.handlers.glob, "glob", vfsPath);
-  const matches = await handler(pattern, { cwd: resolved.relativePath, type });
-  return { matches };
+
+  try {
+    const matches = await kernel.glob(vfsPath, pattern, { type }, requestContext);
+    return { matches };
+  } catch (error) {
+    maybeWrapKernelError(error);
+  }
 }
 
 async function handleVfsGrep(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<VfsGrepRpcResult> {
-  const { pattern, path: grepPath, caseInsensitive, contextLines, glob, maxResults } =
+  const { pattern, path: grepPath, caseInsensitive, contextLines, glob, maxResults, token } =
     params as unknown as VfsGrepRpcParams;
-  const registry = requireVfsRegistry(ctx);
+  const { kernel, requestContext } = selectVfsKernel(ctx, token);
   const vfsPath = grepPath ?? "/workspace";
-  const resolved = registry.resolve(vfsPath);
+  const resolved = kernel.resolve(vfsPath);
   if (!resolved) {
-    throw Object.assign(new Error(`VFS path not found: ${vfsPath}`), {
-      code: RPC_ERROR_CODES.INVALID_PARAMS,
-    });
+    throw createPathNotFoundError(vfsPath);
   }
-  const handler = requireHandler(resolved.source.handlers.grep, "grep", vfsPath);
-  return handler(pattern, { caseInsensitive, contextLines, glob, maxResults });
+
+  try {
+    return await kernel.grep(vfsPath, pattern, { caseInsensitive, contextLines, glob, maxResults }, requestContext);
+  } catch (error) {
+    maybeWrapKernelError(error);
+  }
 }
 
 async function handleVfsDescribe(

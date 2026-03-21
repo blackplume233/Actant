@@ -14,7 +14,7 @@ import type {
   VfsWatchRpcResult,
   VfsWriteRpcResult,
 } from "@actant/shared";
-import { getBridgeSessionToken, getBridgeSocketPath } from "@actant/shared";
+import { getBridgeSessionToken, getBridgeSocketPath, mapHubPath } from "@actant/shared";
 import { createRpcClient } from "./rpc-client.js";
 
 export interface ContextBackend {
@@ -75,7 +75,7 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
     mode: "connected",
     async read(path, startLine, endLine) {
       const result = await rpc.call("vfs.read", {
-        path: mapConnectedPath(path),
+        path: mapHubPath(path),
         startLine,
         endLine,
         token: sessionToken,
@@ -84,7 +84,7 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
     },
     async write(path, content) {
       const result = await rpc.call("vfs.write", {
-        path: mapConnectedPath(path),
+        path: mapHubPath(path),
         content,
         token: sessionToken,
       });
@@ -92,7 +92,7 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
     },
     async list(path, recursive, long) {
       const result = await rpc.call("vfs.list", {
-        path: mapConnectedPath(path ?? "/"),
+        path: mapHubPath(path ?? "/"),
         recursive,
         long,
         token: sessionToken,
@@ -101,14 +101,14 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
     },
     async describe(path) {
       const result = await rpc.call("vfs.describe", {
-        path: mapConnectedPath(path),
+        path: mapHubPath(path),
         token: sessionToken,
       });
       return result as VfsDescribeRpcResult;
     },
     async watch(path, options) {
       const result = await rpc.call("vfs.watch", {
-        path: mapConnectedPath(path),
+        path: mapHubPath(path),
         maxEvents: options?.maxEvents,
         timeoutMs: options?.timeoutMs,
         pattern: options?.pattern,
@@ -119,7 +119,7 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
     },
     async stream(path, options) {
       const result = await rpc.call("vfs.stream", {
-        path: mapConnectedPath(path),
+        path: mapHubPath(path),
         maxChunks: options?.maxChunks,
         timeoutMs: options?.timeoutMs,
         token: sessionToken,
@@ -129,7 +129,7 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
     async grep(pattern, path, caseInsensitive, maxResults) {
       const result = await rpc.call("vfs.grep", {
         pattern,
-        path: mapConnectedPath(path ?? "/workspace"),
+        path: mapHubPath(path ?? "/workspace"),
         caseInsensitive,
         maxResults,
         token: sessionToken,
@@ -304,33 +304,6 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
       );
     },
   };
-}
-
-function mapConnectedPath(path?: string): string {
-  const raw = path ?? "/";
-  const aliases: Array<[string, string]> = [
-    ["/_project.json", "/hub/_project.json"],
-    ["/project", "/hub/project"],
-    ["/projects", "/hub/projects"],
-    ["/workspace", "/hub/workspace"],
-    ["/config", "/hub/config"],
-    ["/skills", "/hub/skills"],
-    ["/agents", "/hub/agents"],
-    ["/mcp/configs", "/hub/mcp/configs"],
-    ["/mcp/runtime", "/hub/mcp/runtime"],
-    ["/prompts", "/hub/prompts"],
-    ["/mcp", "/hub/mcp"],
-    ["/workflows", "/hub/workflows"],
-    ["/templates", "/hub/templates"],
-  ];
-
-  for (const [from, to] of aliases) {
-    if (raw === from || raw.startsWith(`${from}/`)) {
-      return `${to}${raw.slice(from.length)}`;
-    }
-  }
-
-  return raw;
 }
 
 function logBridgeInfo(message: string): void {

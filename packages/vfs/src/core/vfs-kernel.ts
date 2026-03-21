@@ -1,17 +1,29 @@
 import type {
+  VfsEditResult,
   VfsEntry,
+  VfsFileContent,
+  VfsGlobOptions,
+  VfsGrepOptions,
+  VfsGrepResult,
   VfsResolveResult,
   VfsSourceRegistration,
   VfsStatResult,
+  VfsTreeNode,
+  VfsTreeOptions,
   VfsWatchEvent,
   VfsWatchOptions,
   VfsWriteResult,
 } from "@actant/shared";
 import { DirectMountTable } from "../mount/direct-mount-table";
-import type { VfsMiddleware, VfsMiddlewareNext } from "../middleware/types";
+import type {
+  VfsKernelDispatchState,
+  VfsMiddleware,
+  VfsMiddlewareNext,
+} from "../middleware/types";
 import {
   createCanonicalUri,
   normalizeVfsPath,
+  type VfsKernelOperation,
   type VfsRequestContext,
   type VfsStreamChunk,
 } from "../namespace/canonical-path";
@@ -54,8 +66,22 @@ export class VfsKernel {
   async read(
     path: string,
     context: VfsRequestContext = {},
-  ) {
+  ): Promise<VfsFileContent> {
     return this.dispatch("read", path, context, (adapter) => adapter.readFile(context));
+  }
+
+  async readRange(
+    path: string,
+    startLine: number,
+    endLine?: number,
+    context: VfsRequestContext = {},
+  ): Promise<VfsFileContent> {
+    return this.dispatch(
+      "read_range",
+      path,
+      context,
+      (adapter) => adapter.readRange(startLine, endLine, context),
+    );
   }
 
   async write(
@@ -64,6 +90,28 @@ export class VfsKernel {
     context: VfsRequestContext = {},
   ): Promise<VfsWriteResult> {
     return this.dispatch("write", path, context, (adapter) => adapter.writeFile(content, context));
+  }
+
+  async edit(
+    path: string,
+    oldStr: string,
+    newStr: string,
+    replaceAll?: boolean,
+    context: VfsRequestContext = {},
+  ): Promise<VfsEditResult> {
+    return this.dispatch(
+      "edit",
+      path,
+      context,
+      (adapter) => adapter.editFile(oldStr, newStr, replaceAll, context),
+    );
+  }
+
+  async delete(
+    path: string,
+    context: VfsRequestContext = {},
+  ): Promise<void> {
+    return this.dispatch("delete", path, context, (adapter) => adapter.deleteFile(context));
   }
 
   async list(
@@ -79,6 +127,42 @@ export class VfsKernel {
     context: VfsRequestContext = {},
   ): Promise<VfsStatResult | null> {
     return this.dispatch("stat", path, context, (adapter) => adapter.stat(context));
+  }
+
+  async tree(
+    path: string,
+    options?: VfsTreeOptions,
+    context: VfsRequestContext = {},
+  ): Promise<VfsTreeNode> {
+    return this.dispatch("tree", path, context, (adapter) => adapter.tree(options, context));
+  }
+
+  async glob(
+    path: string,
+    pattern: string,
+    options?: VfsGlobOptions,
+    context: VfsRequestContext = {},
+  ): Promise<string[]> {
+    return this.dispatch(
+      "glob",
+      path,
+      context,
+      (adapter) => adapter.globFiles(pattern, options, context),
+    );
+  }
+
+  async grep(
+    path: string,
+    pattern: string,
+    options?: VfsGrepOptions,
+    context: VfsRequestContext = {},
+  ): Promise<VfsGrepResult> {
+    return this.dispatch(
+      "grep",
+      path,
+      context,
+      (adapter) => adapter.grepFiles(pattern, options, context),
+    );
   }
 
   async watch(
@@ -97,7 +181,7 @@ export class VfsKernel {
   }
 
   private async dispatch<T>(
-    operation: "read" | "write" | "list" | "stat" | "watch" | "stream",
+    operation: VfsKernelOperation,
     path: string,
     context: VfsRequestContext,
     invoke: (adapter: SourceNodeAdapter) => Promise<T>,
@@ -125,13 +209,7 @@ export class VfsKernel {
   }
 
   private async runMiddlewareChain<T>(
-    state: {
-      operation: "read" | "write" | "list" | "stat" | "watch" | "stream";
-      path: string;
-      uri: ReturnType<typeof createCanonicalUri>;
-      context: VfsRequestContext;
-      resolved: VfsResolveResult;
-    },
+    state: VfsKernelDispatchState,
     index: number,
     terminal: VfsMiddlewareNext<T>,
   ): Promise<T> {

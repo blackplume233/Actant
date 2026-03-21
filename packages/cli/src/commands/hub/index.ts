@@ -15,40 +15,10 @@ import type {
   VfsListRpcResult,
   VfsReadResult,
 } from "@actant/shared";
-import { getBridgeSessionToken } from "@actant/shared";
+import { getBridgeSessionToken, HUB_MOUNT_LAYOUT, mapHubPath } from "@actant/shared";
 import type { RpcClient } from "../../client/rpc-client";
 import { ensureDaemonRunning } from "../daemon/start";
 import { presentError, type CliPrinter, defaultPrinter, type OutputFormat } from "../../output/index";
-
-const HUB_ALIASES: Record<string, string> = {
-  "/_project.json": "/hub/_project.json",
-  "/project": "/hub/project",
-  "/projects": "/hub/projects",
-  "/workspace": "/hub/workspace",
-  "/config": "/hub/config",
-  "/skills": "/hub/skills",
-  "/agents": "/hub/agents",
-  "/mcp/configs": "/hub/mcp/configs",
-  "/mcp/runtime": "/hub/mcp/runtime",
-  "/prompts": "/hub/prompts",
-  "/mcp": "/hub/mcp",
-  "/workflows": "/hub/workflows",
-  "/templates": "/hub/templates",
-};
-
-const HUB_MOUNTS = {
-  project: "/hub/project",
-  workspace: "/hub/workspace",
-  config: "/hub/config",
-  skills: "/hub/skills",
-  agents: "/hub/agents",
-  mcpConfigs: "/hub/mcp/configs",
-  mcpRuntime: "/hub/mcp/runtime",
-  mcpLegacy: "/hub/mcp",
-  prompts: "/hub/prompts",
-  workflows: "/hub/workflows",
-  templates: "/hub/templates",
-} as const;
 
 interface HubBackend {
   readonly mode: "connected" | "standalone";
@@ -241,7 +211,7 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
   for (const registration of createProjectContextRegistrations(
     context,
     factoryRegistry,
-    HUB_MOUNTS,
+    HUB_MOUNT_LAYOUT,
     { type: "daemon" },
     {
       namePrefix: "standalone-hub",
@@ -279,7 +249,7 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
       configsDir: context.configsDir,
       sourceWarnings: context.summary.sourceWarnings,
       components: context.summary.components,
-      mounts: HUB_MOUNTS,
+      mounts: HUB_MOUNT_LAYOUT,
     },
     async read(path, startLine, endLine) {
       const resolved = registry.resolve(path);
@@ -354,10 +324,9 @@ function resolveHubPath(path: string): string {
     return "/hub/workspace";
   }
 
-  const alias = Object.entries(HUB_ALIASES).find(([prefix]) => normalized === prefix || normalized.startsWith(`${prefix}/`));
-  if (alias) {
-    const [from, to] = alias;
-    return `${to}${normalized.slice(from.length)}`;
+  const mapped = mapHubPath(normalized);
+  if (mapped !== normalized) {
+    return mapped;
   }
 
   if (normalized.startsWith("/")) {

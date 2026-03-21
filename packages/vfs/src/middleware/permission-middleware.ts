@@ -10,9 +10,15 @@ const ANONYMOUS_IDENTITY: VfsIdentity = {
 
 const OPERATION_TO_PERMISSION: Record<VfsKernelOperation, VfsCapabilityId> = {
   read: "read",
+  read_range: "read_range",
   write: "write",
+  edit: "edit",
+  delete: "delete",
   list: "list",
   stat: "stat",
+  tree: "tree",
+  glob: "glob",
+  grep: "grep",
   watch: "watch",
   stream: "read",
 };

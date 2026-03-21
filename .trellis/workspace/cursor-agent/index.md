@@ -7,8 +7,8 @@
 ## Current Status
 
 <!-- @@@auto:current-status -->
-- **Active File**: `journal-1.md`
-- **Total Sessions**: 1
+- **Active File**: `journal-2.md`
+- **Total Sessions**: 10
 - **Last Active**: 2026-03-20
 <!-- @@@/auto:current-status -->
 
@@ -19,7 +19,8 @@
 <!-- @@@auto:active-documents -->
 | File | Lines | Status |
 |------|-------|--------|
-| `journal-1.md` | ~62 | Active |
+| `journal-2.md` | ~204 | Active |
+| `journal-1.md` | ~1900 | Archived |
 <!-- @@@/auto:active-documents -->
 
 ---
@@ -29,6 +30,15 @@
 <!-- @@@auto:session-history -->
 | # | Date | Title | Commits |
 |---|------|-------|---------|
+| 10 | 2026-03-20 | Codex Loop 第2轮 - m6-converge-handlers | - |
+| 9 | 2026-03-20 | Codex Loop 第1轮 - m6-converge-handlers | - |
+| 8 | 2026-03-20 | Codex Loop 第2轮 - m6-hub-paths | - |
+| 7 | 2026-03-20 | Codex Loop 第1轮 - m6-hub-paths | - |
+| 6 | 2026-03-20 | Codex Loop 第3轮 - m6-facade-unify | - |
+| 5 | 2026-03-20 | Codex Loop 第2轮 - m6-facade-unify | - |
+| 4 | 2026-03-20 | Codex Loop 第1轮 - m6-facade-unify | - |
+| 3 | 2026-03-20 | Codex Loop 第1轮 - m5-trait-system | - |
+| 2 | 2026-03-20 | Codex Loop 第1轮 - m5-control-stream | - |
 | 1 | 2026-03-20 | 完成 M4 built-in sources 交付 | `05212e7`, `b55bfb9` |
 <!-- @@@/auto:session-history -->
 

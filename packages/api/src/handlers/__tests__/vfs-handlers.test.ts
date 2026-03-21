@@ -117,6 +117,96 @@ describe("vfs handlers", () => {
     }
   });
 
+  it("routes readRange/edit/delete/tree/glob/grep through the token-backed kernel", async () => {
+    const mountName = "workspace-token-routes";
+    const mountPoint = "/workspace/token-agent-a";
+    const workspaceDir = await mkdtemp(join(tmpdir(), "actant-vfs-token-routes-"));
+    const token = ctx.sessionTokenStore.generate("agent-a", "session-token-routes");
+    const readHandler = registry.get("vfs.read")!;
+    const editHandler = registry.get("vfs.edit")!;
+    const deleteHandler = registry.get("vfs.delete")!;
+    const treeHandler = registry.get("vfs.tree")!;
+    const globHandler = registry.get("vfs.glob")!;
+    const grepHandler = registry.get("vfs.grep")!;
+
+    await mkdir(join(workspaceDir, "nested"), { recursive: true });
+    await writeFile(join(workspaceDir, "nested", "notes.txt"), "alpha\nbeta\nneedle", "utf-8");
+    await writeFile(join(workspaceDir, "nested", "keep.ts"), "const needle = true;\n", "utf-8");
+    await writeFile(join(workspaceDir, "nested", "remove.ts"), "const removeMe = true;\n", "utf-8");
+
+    ctx.vfsRegistry.mount(ctx.sourceTypeRegistry.createMount({
+      name: mountName,
+      mountPoint,
+      type: "filesystem",
+      config: { path: workspaceDir, readOnly: false },
+      lifecycle: { type: "manual" },
+      metadata: { owner: "agent-a" },
+    }));
+
+    try {
+      const rangedRead = await readHandler({
+        path: `${mountPoint}/nested/notes.txt`,
+        startLine: 2,
+        endLine: 3,
+        token,
+      }, ctx) as { content: string };
+      expect(rangedRead.content).toBe("beta\nneedle");
+
+      const editResult = await editHandler({
+        path: `${mountPoint}/nested/notes.txt`,
+        oldStr: "beta",
+        newStr: "beta-updated",
+        token,
+      }, ctx) as { replacements: number };
+      expect(editResult.replacements).toBe(1);
+
+      const editedRead = await readHandler({
+        path: `${mountPoint}/nested/notes.txt`,
+        token,
+      }, ctx) as { content: string };
+      expect(editedRead.content).toContain("beta-updated");
+
+      const treeResult = await treeHandler({
+        path: `${mountPoint}/nested`,
+        pattern: "keep",
+        token,
+      }, ctx) as { children?: Array<{ name: string }> };
+      expect(treeResult.children?.map((child) => child.name)).toEqual(["keep.ts"]);
+
+      const globResult = await globHandler({
+        cwd: `${mountPoint}/nested`,
+        pattern: "*.ts",
+        token,
+      }, ctx) as { matches: string[] };
+      expect(globResult.matches.sort()).toEqual(["keep.ts", "remove.ts"]);
+
+      const grepResult = await grepHandler({
+        path: `${mountPoint}/nested`,
+        pattern: "needle",
+        token,
+      }, ctx) as { matches: Array<{ path: string; line: number }> };
+      expect(grepResult.matches).toEqual(expect.arrayContaining([
+        expect.objectContaining({ path: "notes.txt", line: 3 }),
+        expect.objectContaining({ path: "keep.ts", line: 1 }),
+      ]));
+
+      await expect(deleteHandler({
+        path: `${mountPoint}/nested/remove.ts`,
+        token,
+      }, ctx)).resolves.toEqual({ ok: true });
+
+      const postDeleteGlob = await globHandler({
+        cwd: `${mountPoint}/nested`,
+        pattern: "*.ts",
+        token,
+      }, ctx) as { matches: string[] };
+      expect(postDeleteGlob.matches).toEqual(["keep.ts"]);
+    } finally {
+      ctx.vfsRegistry.unmount(mountName);
+      await rm(workspaceDir, { recursive: true, force: true });
+    }
+  });
+
   it("collects built-in agent watch events through the VFS handler surface", async () => {
     const watchHandler = registry.get("vfs.watch")!;
     const createAgent = registry.get("agent.create")!;
@@ -191,5 +281,85 @@ describe("vfs handlers", () => {
         content: "streamed output\n",
       }),
     ]));
+  });
+
+  it("enforces token permissions for the converged data handlers", async () => {
+    const mountName = "workspace-token-deny";
+    const mountPoint = "/workspace/token-deny-agent-a";
+    const workspaceDir = await mkdtemp(join(tmpdir(), "actant-vfs-token-deny-"));
+    const token = ctx.sessionTokenStore.generate("agent-a", "session-token-deny");
+    const readHandler = registry.get("vfs.read")!;
+    const editHandler = registry.get("vfs.edit")!;
+    const deleteHandler = registry.get("vfs.delete")!;
+    const treeHandler = registry.get("vfs.tree")!;
+    const globHandler = registry.get("vfs.glob")!;
+    const grepHandler = registry.get("vfs.grep")!;
+
+    await mkdir(join(workspaceDir, "nested"), { recursive: true });
+    await writeFile(join(workspaceDir, "nested", "notes.txt"), "alpha\nbeta\nneedle", "utf-8");
+    await writeFile(join(workspaceDir, "nested", "keep.ts"), "const needle = true;\n", "utf-8");
+
+    ctx.vfsRegistry.mount(ctx.sourceTypeRegistry.createMount({
+      name: mountName,
+      mountPoint,
+      type: "filesystem",
+      config: { path: workspaceDir, readOnly: false },
+      lifecycle: { type: "manual" },
+      metadata: { owner: "agent-a" },
+    }));
+
+    ctx.vfsPermissionManager.addRule({
+      pathPattern: `${mountPoint}/**`,
+      principal: { type: "any" },
+      actions: ["read_range", "edit", "delete", "tree", "glob", "grep"],
+      effect: "deny",
+      priority: 100,
+    });
+
+    try {
+      const unsecuredRead = await readHandler({
+        path: `${mountPoint}/nested/notes.txt`,
+        startLine: 1,
+      }, ctx) as { content: string };
+      expect(unsecuredRead.content).toBe("alpha\nbeta\nneedle");
+
+      await expect(readHandler({
+        path: `${mountPoint}/nested/notes.txt`,
+        startLine: 1,
+        token,
+      }, ctx)).rejects.toMatchObject({ code: RPC_ERROR_CODES.GENERIC_BUSINESS });
+
+      await expect(editHandler({
+        path: `${mountPoint}/nested/notes.txt`,
+        oldStr: "beta",
+        newStr: "blocked",
+        token,
+      }, ctx)).rejects.toMatchObject({ code: RPC_ERROR_CODES.GENERIC_BUSINESS });
+
+      await expect(deleteHandler({
+        path: `${mountPoint}/nested/notes.txt`,
+        token,
+      }, ctx)).rejects.toMatchObject({ code: RPC_ERROR_CODES.GENERIC_BUSINESS });
+
+      await expect(treeHandler({
+        path: `${mountPoint}/nested`,
+        token,
+      }, ctx)).rejects.toMatchObject({ code: RPC_ERROR_CODES.GENERIC_BUSINESS });
+
+      await expect(globHandler({
+        cwd: `${mountPoint}/nested`,
+        pattern: "*.ts",
+        token,
+      }, ctx)).rejects.toMatchObject({ code: RPC_ERROR_CODES.GENERIC_BUSINESS });
+
+      await expect(grepHandler({
+        path: `${mountPoint}/nested`,
+        pattern: "needle",
+        token,
+      }, ctx)).rejects.toMatchObject({ code: RPC_ERROR_CODES.GENERIC_BUSINESS });
+    } finally {
+      ctx.vfsRegistry.unmount(mountName);
+      await rm(workspaceDir, { recursive: true, force: true });
+    }
   });
 });

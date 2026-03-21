@@ -64,6 +64,29 @@ Do not expand beyond the current ContextFS baseline:
 - overlay/fallback behavior in V1
 - any second default narrative alongside spec/design/roadmap
 
+## Change Impact Review
+
+Every change must be classified by its impact level before implementation starts.
+See [Change Impact Protocol](../docs/design/actant-vfs-reference-architecture.md#9-change-impact-protocol) for the full decision tree and layer definitions.
+
+Summary of review gates:
+
+- **L3 (Source)**: normal review
+- **L2 (Orchestration)**: check Project/Mount semantic impact
+- **L1 (Infrastructure)**: justify why the change cannot be done in L2/L3
+- **L0 (Kernel)**: prove that the abstraction boundary must change; update spec first
+- **L4 (Types)**: backward compatibility review + sync api-contracts
+
+Commit messages and PR descriptions should include the impact level prefix: `[L0]`–`[L4]`.
+
+Anti-pattern checklist for reviewers:
+
+1. Does this change add code to the Kernel core without removing equivalent duplication?
+2. Does the change introduce a new discriminated union or switch-case dispatch?
+3. Does a new capability require every existing Source to change?
+4. Does the package dependency graph become deeper or introduce new cycles?
+5. Does the total L0 line count exceed the 780-line budget?
+
 ## Documentation Hygiene
 
 Main entry docs should describe only the current baseline.  
