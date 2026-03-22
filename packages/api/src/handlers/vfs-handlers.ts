@@ -1,5 +1,6 @@
 import {
   RPC_ERROR_CODES,
+  HUB_MOUNT_LAYOUT,
   type VfsReadParams,
   type VfsReadResult,
   type VfsWriteParams,
@@ -32,6 +33,14 @@ import {
 } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
+import {
+  addNamespaceMount,
+  listNamespaceMountDeclarations,
+  readNamespaceConfigDocument,
+  removeNamespaceMount,
+  validateNamespaceDocument,
+  writeNamespaceConfigDocument,
+} from "../services/namespace-authoring";
 
 function inferNodeTypeFromStatType(type: "file" | "directory" | "symlink"): "regular" | "directory" | "symlink" {
   switch (type) {
@@ -125,6 +134,17 @@ function assertContextVfsMutationAllowed(ctx: AppContext, path?: string): void {
 
 function requireVfsRegistry(ctx: AppContext): import("@actant/agent-runtime").VfsRegistry {
   return ctx.vfsRegistry;
+}
+
+function requireActiveProject(ctx: AppContext): import("../services/hub-context").ActiveHubContext {
+  const active = ctx.hubContext.getActiveProject();
+  if (!active) {
+    throw Object.assign(
+      new Error('No active project. Run "actant hub status" first to activate a namespace.'),
+      { code: RPC_ERROR_CODES.GENERIC_BUSINESS },
+    );
+  }
+  return active;
 }
 
 function selectVfsKernel(
@@ -464,52 +484,67 @@ async function handleVfsMount(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<VfsMountAddRpcResult> {
-  const { name, mountPoint, spec, lifecycle } = params as unknown as VfsMountAddRpcParams;
-  assertContextVfsMutationAllowed(ctx, mountPoint);
-  const registry = requireVfsRegistry(ctx);
-  const factoryRegistry = ctx.filesystemTypeRegistry;
+  const { name, path, type, options } = params as unknown as VfsMountAddRpcParams;
+  assertContextVfsMutationAllowed(ctx, path);
+  const active = requireActiveProject(ctx);
+  const document = await addNamespaceMount(active.projectRoot, { name, path, type, options });
+  const validation = validateNamespaceDocument(document);
+  if (!validation.valid) {
+    throw Object.assign(
+      new Error(
+        [...validation.mountDeclarationIssues, ...validation.derivedViewPreconditions]
+          .map((issue) => issue.path ? `${issue.path}: ${issue.message}` : issue.message)
+          .join("; "),
+      ),
+      { code: RPC_ERROR_CODES.INVALID_PARAMS },
+    );
+  }
 
-  const registration = factoryRegistry.createMount({
-    name,
-    mountPoint,
-    type: spec.type,
-    config: spec,
-    lifecycle: (lifecycle ?? { type: "manual" }) as import("@actant/shared").VfsLifecycle,
-  });
+  await writeNamespaceConfigDocument(document);
+  await ctx.hubContext.activate(active.projectRoot);
 
-  registry.mount(registration);
-  return { name: registration.name, mountPoint: registration.mountPoint };
+  return {
+    mount: {
+      name,
+      path,
+      filesystemType: type,
+      mounted: true,
+      options,
+    },
+  };
 }
 
 async function handleVfsUnmount(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<VfsMountRemoveResult> {
-  const { name } = params as unknown as VfsMountRemoveParams;
-  assertContextVfsMutationAllowed(ctx, name);
-  const registry = requireVfsRegistry(ctx);
-  const ok = registry.unmount(name);
-  return { ok };
+  const { path } = params as unknown as VfsMountRemoveParams;
+  assertContextVfsMutationAllowed(ctx, path);
+  const active = requireActiveProject(ctx);
+  const { document, removed } = await removeNamespaceMount(active.projectRoot, path);
+  if (removed) {
+    await writeNamespaceConfigDocument(document);
+    await ctx.hubContext.activate(active.projectRoot);
+  }
+  return { ok: removed, path };
 }
 
 async function handleVfsMountList(
   _params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<VfsMountListResult> {
-  const registry = requireVfsRegistry(ctx);
-  const mounts = registry.listMounts();
+  const active = requireActiveProject(ctx);
+  const document = await readNamespaceConfigDocument(active.projectRoot);
+  const mounts = listNamespaceMountDeclarations(document, ctx.vfsRegistry, deriveNamespaceRoot(HUB_MOUNT_LAYOUT.project));
   return {
-    mounts: mounts.map((m) => ({
-      name: m.name,
-      mountPoint: m.mountPoint,
-      mountType: m.mountType,
-      filesystemType: m.filesystemType,
-      label: m.label,
-      features: Array.from(m.features),
-      capabilities: m.capabilities,
-      fileCount: m.fileCount,
-    })),
+    mounts,
   };
+}
+
+function deriveNamespaceRoot(projectMountPoint: string): string {
+  return projectMountPoint.endsWith("/project")
+    ? projectMountPoint.slice(0, -"/project".length) || "/"
+    : projectMountPoint;
 }
 
 async function collectAsyncIterable<T>(

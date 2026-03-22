@@ -55,6 +55,18 @@ describe("SocketServer integration", () => {
   beforeAll(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "ac-socket-test-"));
     socketPath = getIpcPath(tmpDir);
+    await writeFile(
+      join(tmpDir, "actant.namespace.json"),
+      JSON.stringify({
+        version: 1,
+        name: "socket-project",
+        mounts: [
+          { type: "hostfs", path: "/workspace", options: { hostPath: "." } },
+          { type: "hostfs", path: "/config", options: { hostPath: "configs" } },
+        ],
+      }),
+      "utf-8",
+    );
     ctx = new AppContext({ homeDir: tmpDir, launcherMode: "mock" });
     await ctx.init();
 

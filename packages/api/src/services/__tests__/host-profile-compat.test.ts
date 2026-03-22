@@ -25,6 +25,18 @@ describe("AppContext context profile", () => {
       }),
       "utf-8",
     );
+    await writeFile(
+      join(tmpDir, "actant.namespace.json"),
+      JSON.stringify({
+        version: 1,
+        name: "context-profile",
+        mounts: [
+          { type: "hostfs", path: "/workspace", options: { hostPath: "." } },
+          { type: "hostfs", path: "/config", options: { hostPath: "configs" } },
+        ],
+      }),
+      "utf-8",
+    );
 
     ctx = new AppContext({ homeDir: tmpDir, launcherMode: "mock", hostProfile: "context" });
     await ctx.init();

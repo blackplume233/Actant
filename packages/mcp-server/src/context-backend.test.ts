@@ -21,6 +21,7 @@ afterEach(async () => {
 describe("createStandaloneContext", () => {
   it("loads explicit local catalogs from actant.namespace.json", async () => {
     const projectDir = await makeTempProject();
+    await mkdir(join(projectDir, "configs"), { recursive: true });
     await mkdir(join(projectDir, "skills"), { recursive: true });
     await mkdir(join(projectDir, "templates"), { recursive: true });
     await writeFile(
@@ -33,7 +34,13 @@ describe("createStandaloneContext", () => {
       JSON.stringify({
         version: 1,
         name: "repo-hub",
-        mounts: [],
+        mounts: [
+          {
+            type: "hostfs",
+            path: "/config",
+            options: { hostPath: "configs" },
+          },
+        ],
         catalogs: [
           {
             name: "repo-hub",
@@ -94,8 +101,8 @@ describe("createStandaloneContext", () => {
         version: 1,
         name: "standalone-project",
         mounts: [
-          { type: "hostfs", path: "/workspace" },
-          { type: "hostfs", path: "/config" },
+          { type: "hostfs", path: "/workspace", options: { hostPath: "." } },
+          { type: "hostfs", path: "/config", options: { hostPath: "configs" } },
           { type: "runtimefs", path: "/agents" },
           { type: "runtimefs", path: "/mcp/runtime" },
         ],
@@ -219,7 +226,7 @@ describe("createStandaloneContext", () => {
     );
   });
 
-  it("requires explicit migration when only actant.project.json exists", async () => {
+  it("rejects the legacy actant.project.json runtime entry", async () => {
     const projectDir = await makeTempProject();
     await writeFile(
       join(projectDir, "actant.project.json"),
@@ -230,7 +237,7 @@ describe("createStandaloneContext", () => {
       "utf-8",
     );
 
-    await expect(createStandaloneContext(projectDir)).rejects.toThrow(/actant namespace migrate/i);
+    await expect(createStandaloneContext(projectDir)).rejects.toThrow(/actant\.namespace\.json/i);
   });
 
   it("surfaces namespace entrypoints and available assets in project context", async () => {
@@ -243,7 +250,9 @@ describe("createStandaloneContext", () => {
       JSON.stringify({
         version: 1,
         name: "entrypoint-project",
-        mounts: [],
+        mounts: [
+          { type: "hostfs", path: "/config", options: { hostPath: "configs" } },
+        ],
         entrypoints: {
           knowledge: ["PROJECT_CONTEXT.md"],
           readFirst: ["PROJECT_CONTEXT.md"],
@@ -311,7 +320,10 @@ describe("createStandaloneContext", () => {
       JSON.stringify({
         version: 1,
         name: "child-project",
-        mounts: [{ type: "hostfs", path: "/workspace" }],
+        mounts: [
+          { type: "hostfs", path: "/workspace", options: { hostPath: "." } },
+          { type: "hostfs", path: "/config", options: { hostPath: "configs" } },
+        ],
         permissions: {
           defaults: {
             read: true,
@@ -328,7 +340,10 @@ describe("createStandaloneContext", () => {
       JSON.stringify({
         version: 1,
         name: "root-project",
-        mounts: [{ type: "hostfs", path: "/workspace" }],
+        mounts: [
+          { type: "hostfs", path: "/workspace", options: { hostPath: "." } },
+          { type: "hostfs", path: "/config", options: { hostPath: "configs" } },
+        ],
         permissions: {
           defaults: {
             read: true,
@@ -359,7 +374,6 @@ describe("createStandaloneContext", () => {
         "/projects/child/workspace",
         "/projects/child/config",
         "/projects/child/skills",
-        "/projects/child/agents",
         "/projects/child/mcp",
       ]),
     );
@@ -397,6 +411,17 @@ describe("createStandaloneContext", () => {
     const projectDir = await makeTempProject();
     const previousCwd = process.cwd();
     const expectedProjectRoot = await realpath(projectDir);
+    await writeFile(
+      join(projectDir, "actant.namespace.json"),
+      JSON.stringify({
+        version: 1,
+        name: "cwd-project",
+        mounts: [
+          { type: "hostfs", path: "/workspace", options: { hostPath: "." } },
+        ],
+      }, null, 2),
+      "utf-8",
+    );
 
     process.chdir(projectDir);
     try {

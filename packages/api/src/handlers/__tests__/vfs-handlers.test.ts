@@ -1,4 +1,4 @@
-import { appendFile, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -382,5 +382,68 @@ describe("vfs handlers", () => {
       ctx.vfsRegistry.unmount(mountName);
       await rm(workspaceDir, { recursive: true, force: true });
     }
+  });
+
+  it("writes namespace-backed mount declarations for add/remove/list", async () => {
+    const projectDir = await mkdtemp(join(tmpdir(), "actant-vfs-authoring-"));
+    await mkdir(join(projectDir, "configs"), { recursive: true });
+    await writeFile(
+      join(projectDir, "actant.namespace.json"),
+      JSON.stringify({
+        version: 1,
+        name: "authoring-project",
+        mounts: [
+          { type: "hostfs", path: "/workspace", options: { hostPath: "." } },
+          { type: "hostfs", path: "/config", options: { hostPath: "configs" } },
+        ],
+      }),
+      "utf-8",
+    );
+
+    await ctx.hubContext.activate(projectDir);
+
+    const mountAddHandler = registry.get("vfs.mountAdd")!;
+    const mountListHandler = registry.get("vfs.mountList")!;
+    const mountRemoveHandler = registry.get("vfs.mountRemove")!;
+
+    await expect(mountAddHandler({
+      path: "/scratch",
+      type: "memfs",
+    }, ctx)).resolves.toMatchObject({
+      mount: {
+        path: "/scratch",
+        filesystemType: "memfs",
+        mounted: true,
+      },
+    });
+
+    const listResult = await mountListHandler({}, ctx) as {
+      mounts: Array<{ path: string; filesystemType: string; mounted: boolean }>;
+    };
+    expect(listResult.mounts).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        path: "/scratch",
+        filesystemType: "memfs",
+        mounted: true,
+      }),
+    ]));
+
+    const persisted = JSON.parse(await readFile(join(projectDir, "actant.namespace.json"), "utf-8")) as {
+      mounts: Array<{ path: string; type: string }>;
+    };
+    expect(persisted.mounts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: "/scratch", type: "memfs" }),
+    ]));
+
+    await expect(mountRemoveHandler({
+      path: "/scratch",
+    }, ctx)).resolves.toEqual({ ok: true, path: "/scratch" });
+
+    const afterRemove = JSON.parse(await readFile(join(projectDir, "actant.namespace.json"), "utf-8")) as {
+      mounts: Array<{ path: string }>;
+    };
+    expect(afterRemove.mounts.map((mount) => mount.path)).not.toContain("/scratch");
+
+    await rm(projectDir, { recursive: true, force: true });
   });
 });

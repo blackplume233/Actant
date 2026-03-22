@@ -7,6 +7,7 @@ export { registerCatalogHandlers } from "./catalog-handlers";
 export { registerPresetHandlers } from "./preset-handlers";
 export { registerDaemonHandlers } from "./daemon-handlers";
 export { registerHubHandlers } from "./hub-handlers";
+export { registerNamespaceHandlers } from "./namespace-handlers";
 export { registerScheduleHandlers } from "./schedule-handlers";
 export { registerGatewayHandlers, disposeAllLeases } from "./gateway-handlers";
 export { registerActivityHandlers } from "./activity-handlers";

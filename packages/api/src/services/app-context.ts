@@ -71,7 +71,7 @@ const logger = createLogger("app-context");
 
 const DEFAULT_HOME = join(homedir(), ".actant");
 
-/** Shape of ~/.actant/config.json as written by `actant setup`. */
+/** Shape of ~/.actant/config.json as written by local host configuration flows. */
 interface UserConfig {
   provider?: {
     type: string;

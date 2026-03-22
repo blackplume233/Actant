@@ -20,7 +20,7 @@
 - [x] M4 内置挂载族首轮落地
 - [x] M5 控制节点执行模型 + 开放类型注册
 - [x] M6 Facade 统一（内部收敛）
-- [ ] M7 Mount Namespace 配置面 + Filesystem Type 闭环
+- [x] M7 Mount Namespace 配置面 + Filesystem Type 闭环
 - [ ] M8 V1 Freeze
 
 ## Milestones
@@ -119,22 +119,22 @@ Canceled scope:
 - [x] 已取消: Phase 5 MCP standalone 收敛
 - [x] 已取消: Phase 6 CLI hub standalone 收敛
 
-### [ ] M7 Mount Namespace 配置面 + Filesystem Type 闭环
+### [x] M7 Mount Namespace 配置面 + Filesystem Type 闭环
 
-Status: todo
+Status: completed
 Owner: namespace and filesystem convergence
 
 Definition of done:
 
-- [ ] M7.1 声明式 namespace 配置：`actant.namespace.json` 生效
-- [ ] M7.2 `mount table` 配置闭环：`root` / `direct` mount 可声明、可解析、可持久化
-- [ ] M7.3 `filesystem type` 闭环：`hostfs` / `runtimefs` / `memfs` 可注册、可实例化、可描述
-- [ ] M7.4 `node type` 出口闭环：`stat` / `describe` / CLI / RPC 都稳定暴露 `directory` / `regular` / `control` / `stream`
-- [ ] M7.5 `actant init` 与 `actant vfs mount add` 生成新 namespace 配置，而不是旧 Source 配置入口
-- [ ] M7.6 挂载状态持久化：mount instance 与 namespace 状态可恢复，且不把普通读取绑定到 daemon
-- [ ] M7.7 无常驻进程读取闭环：`hostfs` / `memfs` 直连读取可用，runtime 增强路径与常驻进程解耦
-- [ ] M7.8 E2E 验收测试覆盖 namespace 配置、自举读取、控制节点、流节点
-- [ ] M7.9 Quickstart 与工作目录文档改写完成，默认术语切到 Linux 语义
+- [x] M7.1 声明式 namespace 配置：`actant.namespace.json` 生效
+- [x] M7.2 `mount table` 配置闭环：`root` / `direct` mount 可声明、可解析、可持久化
+- [x] M7.3 `filesystem type` 闭环：`hostfs` / `runtimefs` / `memfs` 可注册、可实例化、可描述
+- [x] M7.4 `node type` 出口闭环：`stat` / `describe` / CLI / RPC 都稳定暴露 `directory` / `regular` / `control` / `stream`
+- [x] M7.5 `actant init` 与 `actant vfs mount add` 生成新 namespace 配置，而不是旧 Source 配置入口
+- [x] M7.6 挂载状态持久化：mount instance 与 namespace 状态可恢复，且不把普通读取绑定到 daemon
+- [x] M7.7 无常驻进程读取闭环：`hostfs` / `memfs` 直连读取可用，runtime 增强路径与常驻进程解耦
+- [x] M7.8 E2E 验收测试覆盖 namespace 配置、自举读取、控制节点、流节点
+- [x] M7.9 Quickstart 与工作目录文档改写完成，默认术语切到 Linux 语义
 
 Canceled scope:
 
@@ -155,8 +155,6 @@ Definition of done:
 
 ## Next Actions
 
-- [ ] 从 M7.1 开始推进 `actant.namespace.json` 与 `mount table` 配置闭环
-- [ ] 优先打通 `hostfs` / `runtimefs` / `memfs` 的 `filesystem type` 最小闭环
-- [ ] 为公共接口补齐 `node type`
-- [ ] 为 M7 建立新的 active task，而不是复用已完成的 M0-M6 任务目录
-- [ ] release 前继续把 changelog draft 汇总进 `docs/stage/<version>/changelog.md`
+- [ ] 开始 M8：清理剩余遗留接口与历史旁路
+- [ ] 冻结 V1 公共边界，避免在活跃实现里回流旧术语或旧入口
+- [ ] 持续执行 release hardening，并把 changelog draft 汇总进 `docs/stage/<version>/changelog.md`

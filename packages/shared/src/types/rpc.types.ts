@@ -7,6 +7,7 @@ import type { HostCapability, HostProfile, HostRuntimeState } from "./host.types
 import type { ActivityRecord, ActivitySessionSummary, ConversationTurn } from "./activity.types";
 import type { PluginRef } from "./plugin.types";
 import type { VfsStreamChunk, VfsWatchEvent } from "./vfs.types";
+import type { MountDeclaration } from "./project.types";
 
 // ---------------------------------------------------------------------------
 // JSON-RPC 2.0 base types
@@ -572,6 +573,25 @@ export interface HubStatusResult {
   mounts: HubMountLayout;
 }
 
+// namespace.*
+
+export type NamespaceValidateParams = Record<string, never>;
+
+export interface NamespaceValidationIssue {
+  path?: string;
+  message: string;
+}
+
+export interface NamespaceValidateResult {
+  valid: boolean;
+  schemaValid: boolean;
+  configPath: string | null;
+  projectRoot: string;
+  mountDeclarationIssues: NamespaceValidationIssue[];
+  derivedViewPreconditions: NamespaceValidationIssue[];
+  warnings: NamespaceValidationIssue[];
+}
+
 // ---------------------------------------------------------------------------
 // Gateway lease — request an ACP Gateway socket for Session Lease
 // ---------------------------------------------------------------------------
@@ -929,6 +949,7 @@ export interface RpcMethodMap {
   "daemon.shutdown": { params: DaemonShutdownParams; result: DaemonShutdownResult };
   "hub.activate": { params: HubActivateParams; result: HubActivateResult };
   "hub.status": { params: HubStatusParams; result: HubStatusResult };
+  "namespace.validate": { params: NamespaceValidateParams; result: NamespaceValidateResult };
   "gateway.lease": { params: GatewayLeaseParams; result: GatewayLeaseResult };
   "activity.sessions": { params: ActivitySessionsParams; result: ActivitySessionsResult };
   "activity.stream": { params: ActivityStreamParams; result: ActivityStreamResult };
@@ -1123,42 +1144,38 @@ export interface VfsStreamRpcResult {
 }
 
 export interface VfsMountAddRpcParams {
-  name: string;
-  mountPoint: string;
-  spec: {
-    type: string;
-    [key: string]: unknown;
-  };
-  lifecycle: {
-    type: string;
-    [key: string]: unknown;
-  };
-  metadata?: Record<string, unknown>;
+  name?: string;
+  path: string;
+  type: MountDeclaration["type"];
+  options?: Record<string, unknown>;
   token?: string;
 }
 export interface VfsMountAddRpcResult {
-  name: string;
-  mountPoint: string;
+  mount: {
+    name?: string;
+    path: string;
+    filesystemType: MountDeclaration["type"];
+    mounted: boolean;
+    options?: Record<string, unknown>;
+  };
 }
 
 export interface VfsMountRemoveParams {
-  name: string;
+  path: string;
   token?: string;
 }
 export interface VfsMountRemoveResult {
   ok: boolean;
+  path: string;
 }
 
 export type VfsMountListParams = Record<string, never>;
 export interface VfsMountListResult {
   mounts: Array<{
-    name: string;
-    mountPoint: string;
-    mountType: string;
-    filesystemType: string;
-    label: string;
-    features: string[];
-    capabilities: string[];
-    fileCount: number;
+    name?: string;
+    path: string;
+    filesystemType: MountDeclaration["type"];
+    mounted: boolean;
+    options?: Record<string, unknown>;
   }>;
 }

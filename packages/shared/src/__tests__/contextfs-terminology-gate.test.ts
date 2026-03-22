@@ -19,9 +19,10 @@ const activeTruthFiles = [
 const bannedPhrases = [
   "仅保留兼容输入",
   "若不存在，再回退到 `actant.project.json`",
-  "actant source sync",
-  "source type, capabilities",
-  "Manage component sources",
+  "actant namespace migrate",
+  "actant setup",
+  "sourceName",
+  "traits",
 ] as const;
 
 describe("ContextFS terminology gate", () => {

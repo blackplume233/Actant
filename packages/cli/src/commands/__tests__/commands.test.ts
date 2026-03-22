@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { Command } from "commander";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { RpcCallError, type RpcClient } from "../../client/rpc-client";
 import { CliPrinter } from "../../output/printer";
 import { createAgentCreateCommand } from "../agent/create";
@@ -11,6 +14,9 @@ import { createTemplateListCommand } from "../template/list";
 import { createTemplateLoadCommand } from "../template/load";
 import { createDaemonStopCommand } from "../daemon/stop";
 import { createHubCommand } from "../hub/index";
+import { createInitCommand } from "../init/index";
+import { createNamespaceCommand } from "../namespace/index";
+import { createVfsCommand } from "../vfs/index";
 
 function createMockClient(): {
   call: ReturnType<typeof vi.fn>;
@@ -584,5 +590,143 @@ describe("createHubCommand", () => {
       long: undefined,
       token: undefined,
     });
+  });
+});
+
+describe("createInitCommand", () => {
+  let savedCwd: string;
+
+  beforeEach(() => {
+    savedCwd = process.cwd();
+  });
+
+  afterEach(() => {
+    process.chdir(savedCwd);
+  });
+
+  it("writes a minimal namespace scaffold locally", async () => {
+    const projectDir = await mkdtemp(join(tmpdir(), "actant-init-test-"));
+    process.chdir(projectDir);
+
+    try {
+      const { printer } = createTestPrinter();
+      const parent = new Command();
+      parent.exitOverride();
+      parent.addCommand(createInitCommand(printer));
+
+      await parent.parseAsync(["node", "test", "init", "--scaffold", "minimal"]);
+
+      const raw = await readFile(join(projectDir, "actant.namespace.json"), "utf-8");
+      const parsed = JSON.parse(raw) as { mounts: Array<{ path: string; type: string; options?: { hostPath?: string } }> };
+      expect(parsed.mounts).toEqual([
+        { type: "hostfs", path: "/workspace", options: { hostPath: "." } },
+        { type: "hostfs", path: "/config", options: { hostPath: "configs" } },
+      ]);
+    } finally {
+      await rm(projectDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("createNamespaceCommand", () => {
+  let savedExitCode: number | undefined;
+
+  beforeEach(() => {
+    const raw = process.exitCode;
+    savedExitCode = typeof raw === "number" ? raw : undefined;
+  });
+
+  afterEach(() => {
+    process.exitCode = savedExitCode;
+  });
+
+  it("marks invalid validation results as exit code 1", async () => {
+    const mock = createMockClient();
+    mock.call.mockResolvedValue({
+      valid: false,
+      schemaValid: true,
+      projectRoot: "/repo",
+      configPath: "/repo/actant.namespace.json",
+      mountDeclarationIssues: [{ path: "mounts[0].path", message: "duplicate" }],
+      derivedViewPreconditions: [],
+      warnings: [],
+    });
+
+    const client = mock as unknown as RpcClient;
+    const { printer } = createTestPrinter();
+    const parent = new Command();
+    parent.exitOverride();
+    parent.addCommand(createNamespaceCommand(client, printer));
+
+    await parent.parseAsync(["node", "test", "namespace", "validate"]);
+
+    expect(mock.call).toHaveBeenCalledWith("namespace.validate", {});
+    expect(process.exitCode).toBe(1);
+  });
+});
+
+describe("createVfsCommand", () => {
+  let savedExitCode: number | undefined;
+
+  beforeEach(() => {
+    const raw = process.exitCode;
+    savedExitCode = typeof raw === "number" ? raw : undefined;
+  });
+
+  afterEach(() => {
+    process.exitCode = savedExitCode;
+  });
+
+  it("routes mount add to namespace authoring params", async () => {
+    const mock = createMockClient();
+    mock.call.mockResolvedValue({
+      mount: {
+        path: "/extra",
+        filesystemType: "hostfs",
+        mounted: true,
+      },
+    });
+
+    const client = mock as unknown as RpcClient;
+    const { printer } = createTestPrinter();
+    const parent = new Command();
+    parent.exitOverride();
+    parent.addCommand(createVfsCommand(client, printer));
+
+    await parent.parseAsync([
+      "node",
+      "test",
+      "vfs",
+      "mount",
+      "add",
+      "--type",
+      "hostfs",
+      "--path",
+      "/extra",
+      "--host-path",
+      "./extra",
+    ]);
+
+    expect(mock.call).toHaveBeenCalledWith("vfs.mountAdd", {
+      name: undefined,
+      path: "/extra",
+      type: "hostfs",
+      options: { hostPath: "./extra" },
+    });
+  });
+
+  it("routes mount remove by path", async () => {
+    const mock = createMockClient();
+    mock.call.mockResolvedValue({ ok: true, path: "/scratch" });
+
+    const client = mock as unknown as RpcClient;
+    const { printer } = createTestPrinter();
+    const parent = new Command();
+    parent.exitOverride();
+    parent.addCommand(createVfsCommand(client, printer));
+
+    await parent.parseAsync(["node", "test", "vfs", "mount", "remove", "/scratch"]);
+
+    expect(mock.call).toHaveBeenCalledWith("vfs.mountRemove", { path: "/scratch" });
   });
 });

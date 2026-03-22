@@ -3,8 +3,8 @@
   "name": "project-context-discovery",
   "description": "Minimal fixture for validating project-context discovery.",
   "mounts": [
-    { "type": "hostfs", "path": "/workspace" },
-    { "type": "hostfs", "path": "/config" },
+    { "type": "hostfs", "path": "/workspace", "options": { "hostPath": "." } },
+    { "type": "hostfs", "path": "/config", "options": { "hostPath": "configs" } },
     { "type": "runtimefs", "path": "/agents" },
     { "type": "runtimefs", "path": "/mcp/runtime" }
   ],

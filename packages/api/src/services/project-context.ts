@@ -14,6 +14,7 @@ import {
   TemplateRegistry,
   FilesystemTypeRegistry,
   workspaceSourceFactory,
+  memorySourceFactory,
   createDomainSource,
   createMcpRuntimeSource,
   createAgentRuntimeSource,
@@ -40,6 +41,12 @@ import type {
   VfsStatResult,
 } from "@actant/shared";
 import { ensureWithinWorkspace } from "@actant/shared";
+import {
+  joinNamespaceMountPoint,
+  readNamespaceConfigDocument,
+  resolveConfigHostDirectory,
+  validateNamespaceDocument,
+} from "./namespace-authoring";
 
 const PROJECT_CONTEXT_FEATURES = new Set<VfsFeature>(["persistent", "virtual"]);
 
@@ -163,51 +170,16 @@ export function createProjectContextRegistrations(
 
   registrations.push(
     createProjectContextProjection(context, normalizeMountPoint(layout.project), lifecycle, `${prefix}-project`),
-    factoryRegistry.createMount({
-      name: `${prefix}-workspace`,
-      mountPoint: normalizeMountPoint(layout.workspace),
-      type: "filesystem",
-      config: {
-        path: context.projectRoot,
-        readOnly: options?.workspaceReadOnly ?? false,
-      },
-      lifecycle,
-      metadata: {
-        filesystemType: "hostfs",
-        mountType: "direct",
-        description: `Workspace mount for ${context.summary.projectName}`,
-      },
-    }),
   );
 
-  if (context.configExists) {
-    registrations.push(
-      factoryRegistry.createMount({
-        name: `${prefix}-config`,
-        mountPoint: normalizeMountPoint(layout.config),
-        type: "filesystem",
-        config: {
-          path: context.configsDir,
-          readOnly: options?.configReadOnly ?? false,
-        },
-        lifecycle,
-        metadata: {
-          filesystemType: "hostfs",
-          mountType: "direct",
-          description: `Config mount for ${context.summary.projectName}`,
-        },
-      }),
-    );
-  }
+  registrations.push(
+    ...createDeclaredMountRegistrations(context, factoryRegistry, namespaceRoot, lifecycle, prefix, options),
+  );
 
   registrations.push(
     {
       ...createDomainSource(context.managers.skillManager, "skills", normalizeMountPoint(layout.skills), lifecycle),
       name: `${prefix}-skills`,
-    },
-    {
-      ...createAgentRuntimeSource(createProjectAgentRuntimeProvider(), normalizeMountPoint(layout.agents), lifecycle),
-      name: `${prefix}-agents`,
     },
     {
       ...createDomainSource(context.managers.promptManager, "prompts", normalizeMountPoint(layout.prompts), lifecycle),
@@ -220,14 +192,6 @@ export function createProjectContextRegistrations(
     {
       ...createDomainSource(context.managers.mcpConfigManager, "mcp", normalizeMountPoint(layout.mcpConfigs), lifecycle),
       name: `${prefix}-mcp-configs`,
-    },
-    {
-      ...createMcpRuntimeSource(
-        createProjectMcpRuntimeProvider(context.managers.mcpConfigManager),
-        normalizeMountPoint(layout.mcpRuntime),
-        lifecycle,
-      ),
-      name: `${prefix}-mcp-runtime`,
     },
     {
       ...createDomainSource(
@@ -268,9 +232,100 @@ export function createProjectContextRegistrations(
   return registrations;
 }
 
+function createDeclaredMountRegistrations(
+  context: LoadedProjectContext,
+  factoryRegistry: FilesystemTypeRegistry,
+  namespaceRoot: string,
+  lifecycle: VfsLifecycle,
+  prefix: string,
+  options?: ProjectContextRegistrationOptions,
+): VfsMountRegistration[] {
+  const registrations: VfsMountRegistration[] = [];
+
+  for (const declaration of context.projectConfig.mounts) {
+    const mountPoint = joinNamespaceMountPoint(namespaceRoot, declaration.path);
+    const mountName = declaration.name
+      ?? (declaration.path.replace(/[^\w]+/g, "-").replace(/^-+|-+$/g, "") || "root");
+
+    switch (declaration.type) {
+      case "hostfs": {
+        const hostPath = typeof declaration.options?.hostPath === "string"
+          ? resolve(context.projectRoot, declaration.options.hostPath)
+          : context.projectRoot;
+        const readOnly = declaration.path === "/workspace"
+          ? options?.workspaceReadOnly ?? false
+          : declaration.path === "/config"
+            ? options?.configReadOnly ?? false
+            : false;
+        registrations.push(
+          factoryRegistry.createMount({
+            name: `${prefix}-${mountName}`,
+            mountPoint,
+            type: "filesystem",
+            config: {
+              path: hostPath,
+              readOnly,
+            },
+            lifecycle,
+            metadata: {
+              filesystemType: "hostfs",
+              mountType: "direct",
+              description: `hostfs mount for ${context.summary.projectName} at ${declaration.path}`,
+            },
+          }),
+        );
+        break;
+      }
+      case "memfs":
+        registrations.push(
+          factoryRegistry.createMount({
+            name: `${prefix}-${mountName}`,
+            mountPoint,
+            type: "memory",
+            config: declaration.options ?? {},
+            lifecycle,
+            metadata: {
+              filesystemType: "memfs",
+              mountType: "direct",
+              description: `memfs mount for ${context.summary.projectName} at ${declaration.path}`,
+            },
+          }),
+        );
+        break;
+      case "runtimefs":
+        if (declaration.path === "/agents") {
+          registrations.push(createRuntimeRegistration(
+            {
+              ...createAgentRuntimeSource(createProjectAgentRuntimeProvider(), mountPoint, lifecycle),
+              name: `${prefix}-${mountName}`,
+            },
+          ));
+          break;
+        }
+
+        if (declaration.path === "/mcp/runtime") {
+          registrations.push(createRuntimeRegistration(
+            {
+              ...createMcpRuntimeSource(
+                createProjectMcpRuntimeProvider(context.managers.mcpConfigManager),
+                mountPoint,
+                lifecycle,
+              ),
+              name: `${prefix}-${mountName}`,
+            },
+          ));
+        }
+        break;
+    }
+  }
+
+  return registrations;
+}
+
 export function createProjectContextSourceTypeRegistry(): FilesystemTypeRegistry {
   const registry = new FilesystemTypeRegistry();
   registry.register(workspaceSourceFactory);
+  registry.register(memorySourceFactory);
   return registry;
 }
 
@@ -283,12 +338,22 @@ async function loadProjectContextInternal(
   },
 ): Promise<LoadedProjectContext> {
   const projectRoot = projectDir ? resolve(projectDir) : process.cwd();
-  const configResult = await loadNamespaceConfig(projectRoot);
-  const projectConfig = configResult.config;
+  const configDocument = await readNamespaceConfigDocument(projectRoot);
+  const validation = validateNamespaceDocument(configDocument);
+  if (!validation.schemaValid || validation.mountDeclarationIssues.length > 0 || validation.derivedViewPreconditions.length > 0) {
+    const issues = [
+      ...validation.mountDeclarationIssues,
+      ...validation.derivedViewPreconditions,
+    ].map((issue) => issue.path ? `${issue.path}: ${issue.message}` : issue.message);
+    throw new Error(`Invalid namespace config for "${projectRoot}": ${issues.join("; ")}`);
+  }
+
+  const projectConfig = configDocument.config;
   const projectName = projectConfig.name ?? basename(projectRoot);
   const mountName = options.mountNameOverride ?? projectName;
-  const configsDir = resolve(projectRoot, "configs");
-  const configExists = await pathExists(configsDir);
+  const resolvedConfigsDir = resolveConfigHostDirectory(projectRoot, projectConfig);
+  const configsDir = resolvedConfigsDir ?? resolve(projectRoot, "configs");
+  const configExists = resolvedConfigsDir != null && await pathExists(resolvedConfigsDir);
   const effectivePermissions = resolveProjectPermissionConfig(
     projectConfig.permissions,
     options.inheritedPermissions,
@@ -300,14 +365,16 @@ async function loadProjectContextInternal(
   const workflowManager = new WorkflowManager();
   const templateRegistry = new TemplateRegistry({ allowOverwrite: true });
 
-  const catalogWarnings: string[] = [...configResult.warnings];
-  await loadLocalConfigComponents(configsDir, {
-    skillManager,
-    promptManager,
-    mcpConfigManager,
-    workflowManager,
-    templateRegistry,
-  });
+  const catalogWarnings: string[] = [...validation.warnings.map((warning) => warning.message)];
+  if (resolvedConfigsDir != null && configExists) {
+    await loadLocalConfigComponents(resolvedConfigsDir, {
+      skillManager,
+      promptManager,
+      mcpConfigManager,
+      workflowManager,
+      templateRegistry,
+    });
+  }
 
   for (const catalog of projectConfig.catalogs ?? []) {
     try {
@@ -345,7 +412,7 @@ async function loadProjectContextInternal(
   return {
     mountName,
     projectRoot,
-    configPath: configResult.path,
+    configPath: configDocument.configPath,
     configsDir,
     configExists,
     projectConfig,
@@ -357,7 +424,7 @@ async function loadProjectContextInternal(
       projectRoot,
       projectName,
       description: projectConfig.description,
-      configPath: configResult.path,
+      configPath: configDocument.configPath,
       configsDir,
       catalogWarnings,
       entrypoints,
@@ -377,50 +444,6 @@ async function loadProjectContextInternal(
       workflowManager,
       templateRegistry,
     },
-  };
-}
-
-async function loadNamespaceConfig(projectRoot: string): Promise<{
-  config: ActantNamespaceConfig;
-  path: string | null;
-  warnings: string[];
-}> {
-  const namespacePath = join(projectRoot, "actant.namespace.json");
-  if (await pathExists(namespacePath)) {
-    const raw = await import("node:fs/promises").then(({ readFile }) => readFile(namespacePath, "utf-8"));
-    const parsed = JSON.parse(raw) as ActantNamespaceConfig;
-    return {
-      config: {
-        version: 1,
-        mounts: parsed.mounts ?? [],
-        catalogs: parsed.catalogs ?? [],
-        name: parsed.name,
-        description: parsed.description,
-        entrypoints: parsed.entrypoints,
-        permissions: parsed.permissions,
-        children: parsed.children,
-      },
-      path: namespacePath,
-      warnings: [],
-    };
-  }
-
-  const legacyPath = join(projectRoot, "actant.project.json");
-  if (await pathExists(legacyPath)) {
-    throw new Error(
-      `Legacy config "${legacyPath}" is no longer loaded automatically. Run "actant namespace migrate" first.`,
-    );
-  }
-
-  return {
-    config: {
-      version: 1,
-      name: basename(projectRoot),
-      mounts: [],
-      catalogs: [],
-    },
-    path: null,
-    warnings: [],
   };
 }
 
@@ -677,6 +700,17 @@ function createProjectAgentRuntimeProvider(): Parameters<typeof createAgentRunti
   return {
     listAgents: () => [],
     getAgent: () => undefined,
+  };
+}
+
+function createRuntimeRegistration(registration: VfsMountRegistration): VfsMountRegistration {
+  return {
+    ...registration,
+    metadata: {
+      ...registration.metadata,
+      filesystemType: "runtimefs",
+      mountType: "direct",
+    },
   };
 }
 

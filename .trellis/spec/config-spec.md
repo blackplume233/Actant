@@ -47,8 +47,8 @@ interface ActantNamespaceConfig {
 运行时规则：
 
 - 实现层只读取 `actant.namespace.json`
-- 若仓库中只存在 legacy project config，运行时必须显式报迁移错误
-- 旧配置只允许由 `actant namespace migrate` 读取和转换
+- 若仓库中只存在 legacy project config，运行时必须显式报错并拒绝加载
+- 不提供 `namespace migrate`；旧仓库升级由人工改写 `actant.namespace.json` 完成
 
 ---
 
@@ -76,6 +76,10 @@ interface MountDeclaration {
 
 - 不再把挂载声明当作内容类型声明
 - 运行时节点形态由 `filesystem type` 与 `node type` 决定
+- `hostfs` 必须声明 `options.hostPath`
+- `runtimefs` 在 V1 只允许 `/agents` 与 `/mcp/runtime`
+- 允许最长前缀嵌套挂载，不允许 exact duplicate `path`
+- 若声明了 `catalogs`，则必须声明 `"/config"` 的 `hostfs` 挂载
 
 V1 当前必须支持的 `filesystem type`：
 

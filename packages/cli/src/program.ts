@@ -16,12 +16,13 @@ import {
   createProxyCommand,
   createHelpCommand,
   createSelfUpdateCommand,
-  createSetupCommand,
+  createInitCommand,
   createDashboardCommand,
   createApiCommand,
   createInternalCommand,
   createVfsCommand,
   createHubCommand,
+  createNamespaceCommand,
 } from "./commands/index";
 import { presentError, type CliPrinter } from "./output/index";
 import { getCliPackageVersion } from "./package-version";
@@ -54,12 +55,13 @@ export function createProgram(
   program.addCommand(createProxyCommand(printer));
   program.addCommand(createHelpCommand());
   program.addCommand(createSelfUpdateCommand());
-  program.addCommand(createSetupCommand(printer));
+  program.addCommand(createInitCommand(printer));
   program.addCommand(createDashboardCommand(printer));
   program.addCommand(createApiCommand(printer));
   program.addCommand(createInternalCommand(printer));
   program.addCommand(createVfsCommand(client, printer));
   program.addCommand(createHubCommand(client, printer));
+  program.addCommand(createNamespaceCommand(client, printer));
 
   program.exitOverride();
 

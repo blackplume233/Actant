@@ -293,23 +293,94 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
   const mount = new Command("mount").description("Mount point operations");
 
   mount
+    .command("add")
+    .description("Add a mount declaration to the active namespace config")
+    .requiredOption("--type <type>", "Filesystem type: hostfs, memfs, runtimefs")
+    .requiredOption("--path <path>", "Mount path inside the namespace")
+    .option("--name <name>", "Optional mount name")
+    .option("--host-path <path>", "Required for hostfs: host path relative to the project root")
+    .option("--json", "Output as JSON")
+    .action(async (opts: {
+      type: "hostfs" | "memfs" | "runtimefs";
+      path: string;
+      name?: string;
+      hostPath?: string;
+      json?: boolean;
+    }) => {
+      try {
+        const options = opts.type === "hostfs"
+          ? { hostPath: opts.hostPath }
+          : undefined;
+        const result = await client.call("vfs.mountAdd", withToken({
+          name: opts.name,
+          path: opts.path,
+          type: opts.type,
+          options,
+        }));
+        const mountResult = result as {
+          mount: {
+            name?: string;
+            path: string;
+            filesystemType: string;
+            mounted: boolean;
+            options?: Record<string, unknown>;
+          };
+        };
+        if (opts.json) {
+          printer.log(JSON.stringify(mountResult.mount, null, 2));
+        } else {
+          printer.log(`Path:       ${mountResult.mount.path}`);
+          printer.log(`Filesystem: ${mountResult.mount.filesystemType}`);
+          printer.log(`Mounted:    ${mountResult.mount.mounted ? "yes" : "no"}`);
+        }
+      } catch (err) {
+        presentError(err, printer);
+        process.exitCode = 1;
+      }
+    });
+
+  mount
+    .command("remove <path>")
+    .description("Remove a mount declaration from the active namespace config")
+    .option("--json", "Output as JSON")
+    .action(async (path: string, opts: { json?: boolean }) => {
+      try {
+        const result = await client.call("vfs.mountRemove", withToken({ path }));
+        const mountResult = result as { ok: boolean; path: string };
+        if (opts.json) {
+          printer.log(JSON.stringify(mountResult, null, 2));
+        } else {
+          printer.log(mountResult.ok ? `Removed ${mountResult.path}` : `Mount not found: ${mountResult.path}`);
+        }
+      } catch (err) {
+        presentError(err, printer);
+        process.exitCode = 1;
+      }
+    });
+
+  mount
     .command("list")
     .alias("ls")
-    .description("List all VFS mount points")
+    .description("List mount declarations from the active namespace config")
     .option("--json", "Output as JSON")
     .action(async (opts: { json?: boolean }) => {
       try {
         const result = await client.call("vfs.mountList", {});
-        const r = result as { mounts: Array<{ name: string; mountPoint: string; mountType: string; filesystemType: string; label: string; features: string[]; capabilities: string[]; fileCount: number }> };
+        const r = result as {
+          mounts: Array<{
+            name?: string;
+            path: string;
+            filesystemType: string;
+            mounted: boolean;
+            options?: Record<string, unknown>;
+          }>;
+        };
         if (opts.json) {
           printer.log(JSON.stringify(r.mounts, null, 2));
         } else {
           for (const m of r.mounts) {
-            const caps = m.capabilities.length <= 4
-              ? m.capabilities.join(", ")
-              : `${m.capabilities.slice(0, 3).join(", ")}, ... (${m.capabilities.length})`;
             printer.log(
-              `${m.mountPoint.padEnd(26)} ${m.mountType.padEnd(8)} ${m.filesystemType.padEnd(10)} [${caps}]`,
+              `${m.path.padEnd(24)} ${m.filesystemType.padEnd(10)} ${m.mounted ? "mounted" : "pending"}`,
             );
           }
           if (r.mounts.length === 0) printer.dim("(no mounts)");
@@ -321,20 +392,6 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
     });
 
   vfs.addCommand(mount);
-
-  vfs
-    .command("unmount <name>")
-    .description("Unmount a VFS mount by name")
-    .action(async (name: string) => {
-      try {
-        const result = await client.call("vfs.mountRemove", withToken({ name }));
-        const r = result as { ok: boolean };
-        printer.log(r.ok ? "Unmounted" : "Not found");
-      } catch (err) {
-        presentError(err, printer);
-        process.exitCode = 1;
-      }
-    });
 
   return vfs;
 }

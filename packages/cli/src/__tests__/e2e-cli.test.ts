@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtemp, writeFile, rm, access, realpath } from "node:fs/promises";
+import { mkdtemp, writeFile, rm, access, realpath, mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -104,7 +104,21 @@ describe("CLI E2E (stdio)", { timeout: 40_000 }, () => {
     }
 
     fixtureFile = join(tmpDir, "e2e-tpl.json");
+    await mkdir(join(tmpDir, "configs"), { recursive: true });
     await writeFile(fixtureFile, JSON.stringify(validTemplate));
+    await writeFile(
+      join(tmpDir, "actant.namespace.json"),
+      JSON.stringify({
+        version: 1,
+        name: "e2e-project",
+        mounts: [
+          { type: "hostfs", path: "/workspace", options: { hostPath: "." } },
+          { type: "hostfs", path: "/config", options: { hostPath: "configs" } },
+        ],
+      }),
+      "utf-8",
+    );
+    await writeFile(join(tmpDir, "README.md"), "# E2E Project\n", "utf-8");
   });
 
   afterAll(async () => {

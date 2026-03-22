@@ -92,9 +92,9 @@ interface VfsDescribeRpcResult {
   mountType: string;
   filesystemType: string;
   nodeType: string;
-  sourceName: string; // legacy compatibility
-  label: string;      // human-readable label
-  traits: string[];   // legacy compatibility
+  mountName: string;
+  label: string;
+  features: string[];
   capabilities: string[];
   metadata: Record<string, unknown>;
   tags: string[];
@@ -108,14 +108,11 @@ interface VfsDescribeRpcResult {
 ```ts
 interface VfsMountListResult {
   mounts: Array<{
-    name: string;
-    mountPoint: string;
-    mountType: string;
+    name?: string;
+    path: string;
     filesystemType: string;
-    label: string;
-    traits: string[];
-    capabilities: string[];
-    fileCount: number;
+    mounted: boolean;
+    options?: Record<string, unknown>;
   }>;
 }
 ```
@@ -173,7 +170,7 @@ V1 最少需要以下错误类别：
 
 ## 7. Compatibility Rules
 
-- 旧 `actant.project.json` 只允许出现在显式迁移命令或迁移文档中
+- 旧 `actant.project.json` 不再是运行时入口；活跃实现只读取 `actant.namespace.json`
 - 旧 `type=sourceType` 等表述只允许出现在历史说明或迁移说明中
 - 活跃文档、新接口说明、新 CLI 帮助文本必须使用：
   - `mount point`
