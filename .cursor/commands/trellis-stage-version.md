@@ -75,7 +75,7 @@ bash .trellis/scripts/stage-version.sh snapshot <version>
 - **全部 RPC 方法签名**（从 `RpcMethodMap`）含 Params/Result 类型
 - **全部 CLI 命令**（从 `packages/cli/src/commands/`）含参数、选项
 - **全部 Zod Schema**（AgentTemplate、InstanceMeta、ScheduleConfig）含字段和类型
-- **全部 TypeScript 接口**（Agent、Template、DomainContext、DomainComponent、Source）
+- **全部当前公共 TypeScript 接口**（namespace config、mount declaration、VFS / RPC 输出、节点描述）
 - **RPC 错误码**
 
 生成 4 个文件：`api-surface.md` + `.json`、`config-schemas.md` + `.json`。

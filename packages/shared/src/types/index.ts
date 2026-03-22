@@ -102,6 +102,8 @@ export type {
   ProjectManifest,
   ActantProjectEntrypoints,
   ActantProjectConfig,
+  ActantNamespaceEntrypoints,
+  ActantNamespaceConfig,
 } from "./project.types";
 export type {
   HostProfile,
@@ -367,6 +369,9 @@ export type {
 export {
   VFS_CAPABILITIES,
   type VfsCapabilityId,
+  type VfsNodeType,
+  type VfsMountType,
+  type VfsFilesystemType,
   type VfsFileContent,
   type VfsWriteResult,
   type VfsEditResult,

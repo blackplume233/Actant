@@ -52,3 +52,5 @@
 - Sessions are appended to journal files
 - New journal file created when current exceeds 2000 lines
 - Use `add-session.sh` to record sessions
+- Journals are historical collaboration records, not active architecture truth sources
+- 当前活跃真相源以 `docs/design/contextfs-v1-linux-terminology.md` 与 `docs/planning/contextfs-roadmap.md` 为准

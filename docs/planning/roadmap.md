@@ -5,7 +5,7 @@
 ## Current Scope
 
 - ContextFS 文档与实现基线
-- M7 Source 配置面 + 自举就绪
+- M7 Mount Namespace 配置面 + Filesystem Type 闭环
 - M8 V1 Freeze
 
 ## Progress Source

@@ -74,9 +74,14 @@ export class SourceTypeRegistry {
   createMount<TConfig>(params: VfsMountParams<TConfig>): VfsSourceRegistration {
     const registration = this.create(params.type, params.config, params.mountPoint, params.lifecycle);
     registration.name = params.name;
-    if (params.metadata) {
-      registration.metadata = { ...registration.metadata, ...params.metadata };
-    }
+    registration.metadata = {
+      ...registration.metadata,
+      filesystemType: typeof registration.metadata.filesystemType === "string"
+        ? registration.metadata.filesystemType
+        : params.type,
+      mountType: params.mountType ?? registration.metadata.mountType ?? "direct",
+      ...(params.metadata ?? {}),
+    };
     return registration;
   }
 

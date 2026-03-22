@@ -1,6 +1,7 @@
 # 配置规范 (Configuration Specification)
 
-> 本文档定义 ContextFS V1 的配置真相。当前阶段只规范新的 ContextFS 基线，不再为旧 `ContextManager` / `DomainContext` 聚合模型背书。
+> 本文档定义 ContextFS V1 的配置真相。
+> 当前默认入口是 `actant.namespace.json`；`actant.project.json` 只作为兼容输入保留。
 
 ---
 
@@ -8,61 +9,48 @@
 
 本文件当前只定义与 ContextFS V1 直接相关的配置：
 
-- `ProjectManifest`
-- mount 声明
-- permissions 声明
+- `mount namespace` 声明
+- `mount table` 声明
+- permission 声明
 - child project 关系
 
-旧模板聚合配置、旧 DomainContext 聚合配置若仍存在于代码中，当前视为历史实现遗留，不作为新的规范入口。
-
-M1 契约替换期间，仓库中的 agent template / workspace materialization 接口统一使用 `project` 字段表达项目级资源选择。
-它只表示当前 agent workspace 需要装配哪些 skills、prompts、MCP servers、plugins 等资源引用，
-不重新引入旧 `DomainContext` 作为新的默认配置真相。
+旧的资源分类配置、旧的 `Source` 配置叙事、旧的 prompt/workflow 顶层配置都不再是默认规范入口。
 
 ---
 
-## 2. ProjectManifest
+## 2. Namespace Config
 
-`ProjectManifest` 是 ContextFS V1 的装载与权限配置入口。
+`actant.namespace.json` 是 ContextFS V1 的默认配置入口。
 
 它负责：
 
-- 声明挂载哪些 Source
-- 将它们挂到哪些路径
-- 定义默认权限与路径级规则
-- 声明子 Project
+- 声明命名空间中挂载哪些子树
+- 定义这些子树挂到哪些路径
+- 指定最小的权限与子项目收窄规则
+
+最小结构：
 
 ```ts
-interface ProjectManifest {
-  name: string;
-  mounts: MountDeclaration[];
+interface ActantNamespaceConfig {
+  version?: 1;
+  name?: string;
+  mounts?: MountDeclaration[];
   permissions?: PermissionConfig;
   children?: ChildProjectRef[];
 }
 ```
 
-### 2.1 HostProfile Input
+兼容规则：
 
-守护进程与独立 backend 的 host profile 配置也属于当前配置契约的一部分。
-
-```ts
-type HostProfile = "context" | "runtime" | "autonomous";
-```
-
-规则：
-
-- `ACTANT_HOST_PROFILE` 和 CLI `daemon start --profile` 的规范值是 `context`、`runtime`、`autonomous`
-- `context` 表示只装载项目上下文与 hub / VFS / domain 能力，不主动激活 runtime 家族能力
-- `runtime` 表示正常运行态，可继续激活 agents / sessions / schedules 等 runtime 能力
-- `autonomous` 保留给更高权限的自动执行态
-- 历史输入 `bootstrap` 只作为兼容别名保留；实现层必须把它规范化为 `context`
-- 活跃文档、用户可见 CLI 文案、示例配置和新增 task / roadmap 不得再把旧 profile 名称当作当前 profile 名称
+- 实现层必须优先读取 `actant.namespace.json`
+- 若不存在，再回退到 `actant.project.json`
+- 活跃文档、CLI 帮助和示例配置不得再把 `actant.project.json` 当默认入口
 
 ---
 
-## 3. MountDeclaration
+## 3. Mount Table Declaration
 
-V1 只支持 `direct mount`。
+V1 当前只支持 `root` 与 `direct` 两种 `mount type`，其中用户声明面只暴露 `direct`。
 
 ```ts
 interface MountDeclaration {
@@ -72,47 +60,46 @@ interface MountDeclaration {
 }
 ```
 
-约束：
+当前语义解释如下：
 
-- `source` 指向一个已注册 Source 类型
-- `path` 是该 Source 在 ContextFS 中的挂载路径
-- V1 不支持 overlay/fallback/view/query mount
+- `source`：兼容字段名；当前语义应理解为将要实例化的 `filesystem type` 或挂载定义名
+- `path`：`mount point`
+- `config`：用于实例化该挂载的具体参数
 
-V1 内置路径约定：
+配置解释约束：
 
-- `/skills`
-- `/mcp/configs`
-- `/mcp/runtime`
-- `/agents`
+- 不再把 `source` 当作业务资源分类
+- 不再把挂载声明当作内容类型声明
+- 运行时节点形态由 `filesystem type` 与 `node type` 决定
 
-调用面布局约定：
+V1 当前必须支持的 `filesystem type`：
 
-```ts
-interface HubMountLayout {
-  workspace: string;
-  config: string;
-  skills: string;
-  agents: string;
-  mcpConfigs: string;
-  mcpRuntime: string;
-  mcpLegacy: string;
-  prompts: string;
-  workflows: string;
-  templates: string;
-}
-```
-
-说明：
-
-- `mcpConfigs` 是 MCP 静态配置的标准挂载位
-- `mcpRuntime` 是 MCP 运行时状态与流节点的标准挂载位
-- `mcpLegacy` 只作为兼容别名保留给旧 `/mcp` 入口，不能替代 `/mcp/configs`
+- `hostfs`
+- `runtimefs`
+- `memfs`
 
 ---
 
-## 4. PermissionConfig
+## 4. Host Profile
 
-权限由 Project 边界负责。
+守护进程与独立 backend 的 host profile 仍属于当前配置契约的一部分：
+
+```ts
+type HostProfile = "context" | "runtime" | "autonomous";
+```
+
+规则：
+
+- `context` 表示可读上下文优先，不主动激活 runtime 家族能力
+- `runtime` 表示正常运行态，可继续激活 agents / sessions / schedules 等 runtime 能力
+- `autonomous` 保留给更高权限的自动执行态
+- 历史输入 `bootstrap` 只作为兼容别名保留；实现层必须把它规范化为 `context`
+
+---
+
+## 5. PermissionConfig
+
+权限由命名空间边界负责，而不是由内容类别负责。
 
 ```ts
 interface PermissionConfig {
@@ -137,93 +124,50 @@ interface PermissionRule {
 }
 ```
 
-说明：
+执行顺序固定为：
 
-- `agent` 是 caller 身份标识
-- `path` 是路径级规则匹配目标
-- V1 由 Project 先做权限判定，再由 Source/Backend 判定能力是否支持
-
----
-
-## 5. ChildProjectRef
-
-```ts
-interface ChildProjectRef {
-  name: string;
-  manifest: string;
-}
-```
-
-子 Project 规则：
-
-- 继承父 Project 的上下文边界
-- 只能收窄父 Project 的可见性和权限
-- 不能扩大父 Project 已声明的权限
+1. `mount namespace` 解析路径
+2. permission 判断 caller 是否允许操作
+3. 节点再判断 capability 是否支持
 
 ---
 
-## 6. Built-In Source Config Expectations
+## 6. Built-In Filesystem Expectations
 
-### 6.1 SourceType Registry
+### 6.1 `hostfs`
 
-M5 起，所有 Source 通过 `SourceTypeRegistry` 注册。新增 Source 类型只需调用 `registry.register(definition)` —— 无需修改中心类型定义。
+- 用于工作目录、配置目录或宿主机真实文件树
+- 默认暴露 `directory node` 与 `regular node`
+- 普通读取不依赖常驻进程
 
-```ts
-interface SourceTypeDefinition<TConfig = Record<string, unknown>> {
-  readonly type: string;
-  readonly label: string;
-  readonly defaultTraits: ReadonlySet<SourceTrait>;
-  readonly configSchema?: Record<string, unknown>;
-  create(config: TConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration;
-  validate?(config: TConfig): { valid: boolean; errors?: string[] };
-}
-```
+### 6.2 `runtimefs`
 
-`VfsSourceRegistration` 不再包含 `sourceType` 字段，改为：
+- 用于 `/agents/*`、`/mcp/runtime/*` 等运行时子树
+- 必须稳定暴露 `regular node`、`control node`、`stream node`
 
-- `label: string` — 人类可读的 Source 类型标签
-- `traits: ReadonlySet<SourceTrait>` — 原子能力特征集
-
-### 6.2 内置 Source 及其 Trait 声明
-
-| Source | 路径 | Traits | 配置职责 |
-|------|------|------|------|
-| `SkillSource` | `/skills/*` | `persistent`, `writable` | 声明技能文件来源与可写策略 |
-| `McpConfigSource` | `/mcp/configs/*` | `persistent`, `writable` | 声明 MCP 静态配置来源 |
-| `McpRuntimeSource` | `/mcp/runtime/*` | `executable`, `streamable`, `ephemeral` | 运行时来源 |
-| `AgentRuntime` | `/agents/*` | `executable`, `streamable`, `ephemeral` | 运行时来源 |
-
-运行时 source 的最小节点结构：
+最小结构：
 
 - `/_catalog.json`
 - `/<name>/status.json`
-- `/<name>/streams/*`
 - `/<name>/control/request.json`
+- `/<name>/streams/*`
 
-能力约束：
+### 6.3 `memfs`
 
-- 运行时 source 至少要表达 `read/list/stat/watch`
-- 流节点额外表达 `stream`
-- 控制节点是否允许 `write` 由 provider 决定，但节点命名和路径必须稳定
-- 权限配置中的 `watch` / `stream` 位必须与实际 capability 对齐，不能只对 `read/write` 建模
-
-### 6.3 Trait 互斥约束
-
-`persistent` 与 `ephemeral` 互斥 —— `SourceTypeRegistry.register()` 在注册时拒绝同时声明两者的 `SourceTypeDefinition`。
-
-实例可以收窄（narrowing）继承的 trait 集但不可扩展。
+- 用于短生命周期、无宿主持久化依赖的挂载
+- 主要服务于自举、测试或临时视图
 
 ---
 
-## 7. `_project.json` Projection
+## 7. Project Projection
 
-每个 Project 在 VFS 中必须投影为 `/_project.json`。
+每个 project 在 VFS 中仍需投影为 `/_project.json`。
 
 说明：
 
-- 它是 Project 的可读投影文件
+- 它是 project 的只读投影
 - 它不是底层事实源
-- 它用于让 Agent 和外部调用方理解当前作用域、挂载与权限边界
+- 它用于让 consumer 理解当前作用域、挂载和权限边界
 
 ---
 
@@ -231,10 +175,8 @@ interface SourceTypeDefinition<TConfig = Record<string, unknown>> {
 
 以下内容不进入当前配置规范：
 
-- `workflow` 配置
+- `workflow` 顶层配置
 - query/view mount 配置
 - overlay/fallback mount 配置
-- 旧 `DomainContext` 聚合配置继续扩展
-- 旧 `ContextManager` 注入链配置
-
-这些内容在进入下一阶段前不得重新写回为 V1 正式配置真相。
+- 旧资源分类继续扩展
+- 旧 `Prompt` 一级对象配置

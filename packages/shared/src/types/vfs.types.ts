@@ -30,6 +30,23 @@ export const VFS_CAPABILITIES = [
 
 export type VfsCapabilityId = (typeof VFS_CAPABILITIES)[number];
 
+export type VfsNodeType =
+  | "directory"
+  | "regular"
+  | "control"
+  | "stream"
+  | "symlink";
+
+export type VfsMountType =
+  | "root"
+  | "direct";
+
+export type VfsFilesystemType =
+  | "hostfs"
+  | "runtimefs"
+  | "memfs"
+  | (string & Record<never, never>);
+
 // ---------------------------------------------------------------------------
 // Handler signatures for each capability
 // ---------------------------------------------------------------------------
@@ -61,6 +78,7 @@ export interface VfsStatResult {
   size: number;
   mtime: string;
   type: "file" | "directory" | "symlink";
+  nodeType?: VfsNodeType;
   permissions?: string;
   mimeType?: string;
 }
@@ -328,6 +346,7 @@ export interface VfsMountParams<TConfig = Record<string, unknown>> {
   name: string;
   mountPoint: string;
   type: string;
+  mountType?: VfsMountType;
   config: TConfig;
   lifecycle: VfsLifecycle;
   metadata?: VfsSourceMeta;
@@ -373,10 +392,14 @@ export interface VfsDescribeResult {
   mountPoint: string;
   sourceName: string;
   label: string;
+  mountType: VfsMountType;
+  filesystemType: VfsFilesystemType;
+  nodeType: VfsNodeType;
   traits: ReadonlySet<SourceTrait>;
   fileSchema?: VfsFileSchema;
   capabilities: VfsCapabilityId[];
   metadata: VfsSourceMeta;
+  tags: string[];
   lifecycle: VfsLifecycle;
 }
 
@@ -388,6 +411,8 @@ export interface VfsMountInfo {
   name: string;
   mountPoint: string;
   label: string;
+  mountType: VfsMountType;
+  filesystemType: VfsFilesystemType;
   traits: ReadonlySet<SourceTrait>;
   lifecycle: VfsLifecycle;
   metadata: VfsSourceMeta;

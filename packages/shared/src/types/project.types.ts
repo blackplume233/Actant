@@ -52,6 +52,8 @@ export interface ActantProjectEntrypoints {
   knowledge?: string[];
 }
 
+export type ActantNamespaceEntrypoints = ActantProjectEntrypoints;
+
 /**
  * Project-level context declaration for context-oriented Actant MCP usage.
  *
@@ -69,3 +71,5 @@ export interface ActantProjectConfig extends Partial<ProjectManifest> {
   sources?: ProjectSourceEntry[];
   entrypoints?: ActantProjectEntrypoints;
 }
+
+export type ActantNamespaceConfig = ActantProjectConfig;

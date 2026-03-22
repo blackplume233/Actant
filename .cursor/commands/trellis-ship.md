@@ -14,7 +14,7 @@
 
 1. **代码质量** — 运行 `pnpm lint`、`pnpm type-check`、`pnpm test`
 2. **代码模式扫描** — 检查 `console.log`、`any` 类型、非空断言
-3. **废弃术语扫描** — **必须检查**，活跃文件里不得继续扩散 `bootstrap` 等废弃概念
+3. **术语扫描** — **必须检查**，活跃文件里不得继续把旧 `SourceType` / `Source` / `Trait` / `Prompt` 写成当前真相
 4. **Changelog Draft** — **必须检查**，缺失或结构不完整直接阻止交付
 5. **Spec 文档同步** — **必须检查**，按下方规则判断是否需要更新
 6. **API / 数据库 / 跨层变更** — 按变更范围检查对应项
@@ -58,10 +58,10 @@ Spec 文档同步是 **必选项**（❌ 级别），不通过则阻止提交。
 
 | 触发条件 | 需更新的 Spec 文档 |
 |---------|------------------|
-| `packages/shared/src/types/` 下类型定义变更（新增/删除/改签名） | `config-spec.md` |
+| `packages/shared/src/types/` 下 namespace / mount / node / RPC 相关类型变更（新增/删除/改签名） | `config-spec.md` |
 | `packages/core/src/template/schema/` 下 Zod schema 变更 | `config-spec.md` |
 | 环境变量增删改 | `config-spec.md` |
-| `packages/shared/src/types/rpc.types.ts` 中 RPC 方法/参数/返回变更 | `api-contracts.md` |
+| `packages/shared/src/types/rpc.types.ts` 中 RPC 方法/参数/返回或 `node type` / `filesystem type` 输出变更 | `api-contracts.md` |
 | `packages/api/src/handlers/` 中 handler 行为变更 | `api-contracts.md` |
 | `packages/cli/src/commands/` 中命令签名/选项变更 | `api-contracts.md` |
 | 错误码增删改 | `api-contracts.md` |
@@ -99,7 +99,7 @@ spec 文档同步检查：
 | console.log | ✅ 无 / ❌ 发现 N 处 |
 | any 类型 | ✅ 无 / ❌ 发现 N 处 |
 | 非空断言 | ✅ 无 / ❌ 发现 N 处 |
-| deprecated terms | ✅ 无 / ❌ 发现废弃术语 |
+| terminology drift | ✅ 无 / ❌ 发现旧术语回流 |
 | changelog draft | ✅ 已就绪 / ❌ 缺失 / ❌ 结构不完整 |
 | spec/config-spec.md | ✅ 已同步 / ❌ 需更新 / — 无关 |
 | spec/api-contracts.md | ✅ 已同步 / ❌ 需更新 / — 无关 |

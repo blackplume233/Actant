@@ -1026,10 +1026,18 @@ export interface VfsStatParams {
   token?: string;
 }
 export interface VfsStatRpcResult {
+  canonicalPath: string;
+  mountPoint: string;
+  filesystemType: string;
+  nodeType: string;
   size: number;
   mtime: string;
   type: "file" | "directory" | "symlink";
   permissions?: string;
+  mimeType?: string;
+  capabilities?: string[];
+  metadata?: Record<string, unknown>;
+  tags?: string[];
 }
 
 export interface VfsTreeParams {
@@ -1077,11 +1085,15 @@ export interface VfsDescribeParams {
 export interface VfsDescribeRpcResult {
   path: string;
   mountPoint: string;
+  mountType: string;
+  filesystemType: string;
+  nodeType: string;
   sourceName: string;
   label: string;
   traits: string[];
   capabilities: string[];
   metadata: Record<string, unknown>;
+  tags: string[];
 }
 
 export interface VfsWatchParams {
@@ -1142,6 +1154,8 @@ export interface VfsMountListResult {
   mounts: Array<{
     name: string;
     mountPoint: string;
+    mountType: string;
+    filesystemType: string;
     label: string;
     traits: string[];
     capabilities: string[];

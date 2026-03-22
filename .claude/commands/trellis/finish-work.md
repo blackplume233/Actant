@@ -37,11 +37,12 @@ If the change affects architecture or contracts, also read:
 ### 2. Terminology Review
 
 - [ ] `ContextFS` is used as the product layer name
-- [ ] `VFS Kernel` is used as the implementation layer name
-- [ ] `Source` is used for mounted external resource boundaries
+- [ ] `VFS` is used as the implementation layer name
+- [ ] `mount namespace`, `mount table`, `filesystem type`, `mount instance`, `node type` are used as the active core object terms
 - [ ] `Provider` is used only for internal suppliers or adapters
-- [ ] `Project` is not described as a `Source`
+- [ ] Old `SourceType` / `Source` / `Trait` terms appear only in compatibility or historical mapping
 - [ ] `Capability` is not described as permission
+- [ ] `Prompt` is not described as a V1 top-level object
 - [ ] `Tool` is described as a file-style executable or stream resource, not a separate top-level system
 
 ### 3. Spec and Design Sync
@@ -115,10 +116,10 @@ If any answer is uncertain, stop and fix it before ship.
 | Oversight | Consequence | Required Fix |
 |-----------|-------------|--------------|
 | changed contracts without doc sync | implementation outruns spec | update the active baseline docs |
-| used `Provider` where product docs require `Source` | naming drift | fix the doc or code naming boundary |
+| used legacy `Source` terms where product docs require Linux terminology | naming drift | fix the doc or code naming boundary |
 | left old architecture terms in active docs | new Agents learn wrong model | move or remove stale docs |
 | changed path layout without updating contracts | broken assumptions | update `api-contracts.md` |
-| changed `ProjectManifest` shape without updating config spec | config drift | update `config-spec.md` |
+| changed `actant.namespace.json` shape without updating config spec | config drift | update `config-spec.md` |
 
 ---
 

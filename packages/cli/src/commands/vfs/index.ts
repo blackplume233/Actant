@@ -145,10 +145,26 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
         if (opts.json) {
           printer.log(JSON.stringify(result, null, 2));
         } else {
-          const r = result as { size: number; mtime: string; type: string };
-          printer.log(`Type: ${r.type}`);
+          const r = result as {
+            canonicalPath: string;
+            mountPoint: string;
+            filesystemType: string;
+            nodeType: string;
+            size: number;
+            mtime: string;
+            type: string;
+            capabilities?: string[];
+          };
+          printer.log(`Path: ${r.canonicalPath}`);
+          printer.log(`Mount Point: ${r.mountPoint}`);
+          printer.log(`Filesystem: ${r.filesystemType}`);
+          printer.log(`Node Type: ${r.nodeType}`);
+          printer.log(`Legacy Type: ${r.type}`);
           printer.log(`Size: ${r.size}`);
           printer.log(`Modified: ${r.mtime}`);
+          if (r.capabilities?.length) {
+            printer.log(`Capabilities: ${r.capabilities.join(", ")}`);
+          }
         }
       } catch (err) {
         presentError(err, printer);
@@ -256,12 +272,15 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
           printer.log(JSON.stringify(result, null, 2));
         } else {
           const r = result as {
-            path: string; mountPoint: string; sourceName: string;
-            label: string; traits: string[]; capabilities: string[];
+            path: string; mountPoint: string; mountType: string; filesystemType: string;
+            nodeType: string; sourceName: string; label: string; traits: string[]; capabilities: string[];
           };
           printer.log(`Path:         ${r.path}`);
           printer.log(`Mount Point:  ${r.mountPoint}`);
-          printer.log(`Source:       ${r.sourceName} (${r.label})`);
+          printer.log(`Mount Type:   ${r.mountType}`);
+          printer.log(`Filesystem:   ${r.filesystemType}`);
+          printer.log(`Node Type:    ${r.nodeType}`);
+          printer.log(`Mount:        ${r.sourceName} (${r.label})`);
           printer.log(`Traits:       ${r.traits.join(", ")}`);
           printer.log(`Capabilities: ${r.capabilities.join(", ")}`);
         }
@@ -281,7 +300,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
     .action(async (opts: { json?: boolean }) => {
       try {
         const result = await client.call("vfs.mountList", {});
-        const r = result as { mounts: Array<{ name: string; mountPoint: string; label: string; traits: string[]; capabilities: string[]; fileCount: number }> };
+        const r = result as { mounts: Array<{ name: string; mountPoint: string; mountType: string; filesystemType: string; label: string; traits: string[]; capabilities: string[]; fileCount: number }> };
         if (opts.json) {
           printer.log(JSON.stringify(r.mounts, null, 2));
         } else {
@@ -289,7 +308,9 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
             const caps = m.capabilities.length <= 4
               ? m.capabilities.join(", ")
               : `${m.capabilities.slice(0, 3).join(", ")}, ... (${m.capabilities.length})`;
-            printer.log(`${m.mountPoint.padEnd(30)} ${m.label.padEnd(14)} [${caps}]`);
+            printer.log(
+              `${m.mountPoint.padEnd(26)} ${m.mountType.padEnd(8)} ${m.filesystemType.padEnd(10)} [${caps}]`,
+            );
           }
           if (r.mounts.length === 0) printer.dim("(no mounts)");
         }

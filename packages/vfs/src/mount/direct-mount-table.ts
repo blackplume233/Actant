@@ -1,7 +1,9 @@
 import type {
   VfsCapabilityId,
+  VfsFilesystemType,
   VfsFileSchema,
   VfsMountInfo,
+  VfsMountType,
   VfsResolveResult,
   VfsSourceRegistration,
 } from "@actant/shared";
@@ -10,6 +12,42 @@ import { normalizeVfsPath } from "../namespace/canonical-path";
 interface MountRecord {
   mountPoint: string;
   source: VfsSourceRegistration;
+}
+
+function inferFilesystemType(source: VfsSourceRegistration): VfsFilesystemType {
+  const configured = source.metadata.filesystemType;
+  if (typeof configured === "string" && configured.length > 0) {
+    if (configured === "memory") {
+      return "memfs";
+    }
+    if (configured === "filesystem") {
+      return "hostfs";
+    }
+    return configured as VfsFilesystemType;
+  }
+
+  if (source.label === "memory" || source.name.includes("memory")) {
+    return "memfs";
+  }
+
+  if (
+    source.name.includes("runtime")
+    || source.name.includes("agents")
+    || source.label.includes("runtime")
+    || source.label.includes("agent")
+  ) {
+    return "runtimefs";
+  }
+
+  return "hostfs";
+}
+
+function inferMountType(source: VfsSourceRegistration): VfsMountType {
+  const configured = source.metadata.mountType;
+  if (configured === "root" || configured === "direct") {
+    return configured;
+  }
+  return source.mountPoint === "/" ? "root" : "direct";
 }
 
 export class DirectMountTable {
@@ -58,6 +96,8 @@ export class DirectMountTable {
       name: source.name,
       mountPoint: source.mountPoint,
       label: source.label,
+      mountType: inferMountType(source),
+      filesystemType: inferFilesystemType(source),
       traits: source.traits,
       lifecycle: source.lifecycle,
       metadata: source.metadata,

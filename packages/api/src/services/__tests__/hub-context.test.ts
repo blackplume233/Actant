@@ -29,7 +29,7 @@ describe("HubContextService", () => {
     );
 
     await writeFile(
-      join(projectA, "actant.project.json"),
+      join(projectA, "actant.namespace.json"),
       JSON.stringify({ version: 1, name: "project-a", configsDir: "configs" }),
       "utf-8",
     );
@@ -62,5 +62,10 @@ describe("HubContextService", () => {
     expect(second.projectRoot).toBe(projectB);
     expect(ctx.hubContext.getActiveProject()?.projectRoot).toBe(projectB);
     expect(ctx.hubContext.getActiveProject()?.projectName).toBe("project-b");
+  });
+
+  it("prefers actant.namespace.json over the legacy project config entrypoint", async () => {
+    const context = await ctx.hubContext.activate(projectA);
+    expect(context.configPath).toContain("actant.namespace.json");
   });
 });

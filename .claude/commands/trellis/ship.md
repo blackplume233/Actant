@@ -30,9 +30,11 @@ Delivery semantics:
 All delivery decisions must follow the current repository baseline:
 
 - product layer: `ContextFS`
-- implementation layer: `VFS Kernel`
-- core objects: `Project`, `Source`, `Capability`
-- V1 built-in sources: `SkillSource`, `McpConfigSource`, `McpRuntimeSource`, `AgentRuntime`
+- implementation layer: `VFS`
+- core objects: `mount namespace`, `mount table`, `filesystem type`, `mount instance`, `node type`
+- V1 mount types: `root`, `direct`
+- V1 filesystem types: `hostfs`, `runtimefs`, `memfs`
+- V1 node types: `directory`, `regular`, `control`, `stream`
 - V1 operation surface: `read`, `write`, `list`, `stat`, `watch`, `stream`
 
 The following are not current truth:
@@ -81,10 +83,12 @@ Fail this gate if any changed or newly added active document:
 - presents `ContextManager` as a current platform core
 - presents `DomainContext` as the current aggregation model
 - presents `workflow` as a V1 top-level object
+- presents `Prompt` as a V1 top-level object instead of consumer interpretation
 - treats `Tool` as a separate top-level system instead of a file-style resource
-- collapses `ContextFS` and `VFS Kernel` into one layer
-- treats `Project` as a `Source`
+- collapses `ContextFS` and `VFS` into one layer
+- treats `SourceType` / `Source` / `Trait` as the current V1 object model
 - treats `Capability` as permission
+- treats `control` / `stream` as capability bundles instead of `node type`
 - introduces a second "current architecture" narrative
 
 If this gate fails:
@@ -100,11 +104,13 @@ Check naming against `.trellis/spec/terminology.md`.
 Required rules:
 
 - `ContextFS` = product model
-- `VFS Kernel` = implementation kernel
-- `Source` = mounted external resource boundary
+- `VFS` = implementation kernel
+- `mount instance` = mounted external resource boundary
+- `filesystem type` = implementation family, not business classification
 - `Provider` = internal supplier or adapter
-- `Project` != `Source`
+- `mount namespace` / `mount table` / `node type` are current core terms
 - `Capability` != permission
+- `Prompt` is not a V1 top-level object
 - `Tool` is not a separate top-level system
 
 If the diff changes naming, confirm the terminology doc is still correct.
@@ -117,11 +123,11 @@ Map the diff to the docs that must already be updated:
 
 | Change Type | Required Docs |
 |-------------|---------------|
-| product model, object roles, resource boundaries | `.trellis/spec/vision.md`, `.trellis/spec/terminology.md`, `docs/design/contextfs-architecture.md` |
-| path layout, control nodes, stream nodes, operation surface | `.trellis/spec/api-contracts.md` |
-| `ProjectManifest`, mounts, permissions, children | `.trellis/spec/config-spec.md` |
+| product model, object roles, interpretation boundary | `.trellis/spec/vision.md`, `.trellis/spec/terminology.md`, `docs/design/contextfs-architecture.md` |
+| path layout, control nodes, stream nodes, output fields, operation surface | `.trellis/spec/api-contracts.md` |
+| `actant.namespace.json`, mount table, mount types, compatibility config entrypoints | `.trellis/spec/config-spec.md` |
 | kernel layering, namespace, mount, middleware, node, backend, events, lifecycle | `docs/design/actant-vfs-reference-architecture.md`, `.trellis/spec/backend/index.md` |
-| source scope, V1 source list, milestone scope, non-goals | `docs/planning/contextfs-roadmap.md` |
+| filesystem scope, node taxonomy, milestone scope, non-goals | `docs/planning/contextfs-roadmap.md` |
 | repository process or review rules | `.trellis/workflow.md` |
 
 Decision flow:

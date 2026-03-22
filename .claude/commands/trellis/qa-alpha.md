@@ -145,13 +145,13 @@ Record the daemon PID and poll `daemon status` until it is ready.
 If the scenario needs initial resources, seed them from the active docs:
 
 1. read `.trellis/spec/config-spec.md`
-2. create a minimal `ProjectManifest`
-3. mount only the built-in sources needed for the scenario
+2. create a minimal `actant.namespace.json`
+3. mount only the required `mount instance` entries for the scenario
 4. record the seed artifacts in `.trellis/qa-alpha/seed-state.json`
 
 Seeding rules:
 
-- prefer `ProjectManifest`, `Project`, and built-in `Source` concepts
+- prefer `mount namespace`, `mount table`, `filesystem type`, and `mount instance` concepts
 - use only the current V1 paths such as `/skills`, `/mcp/configs`, `/mcp/runtime`, `/agents`, and `/_project.json`
 - do not write `domainContext` as if it were current truth
 - do not describe QA setup as the old template aggregation model

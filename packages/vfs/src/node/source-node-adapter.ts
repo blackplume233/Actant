@@ -179,6 +179,7 @@ export class SourceNodeAdapter {
         size: 0,
         mtime: new Date(0).toISOString(),
         type: "directory",
+        nodeType: "directory",
       };
     }
 
@@ -188,10 +189,18 @@ export class SourceNodeAdapter {
     }
 
     if (this.resolved.fileSchema) {
+      const nodeType = this.resolved.fileSchema.type === "directory"
+        ? "directory"
+        : this.resolved.fileSchema.type === "control"
+          ? "control"
+          : this.resolved.fileSchema.type === "stream"
+            ? "stream"
+            : "regular";
       return {
         size: 0,
         mtime: new Date(0).toISOString(),
         type: this.resolved.fileSchema.type === "directory" ? "directory" : "file",
+        nodeType,
         mimeType: this.resolved.fileSchema.mimeType,
       };
     }

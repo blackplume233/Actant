@@ -256,11 +256,15 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
       return {
         path: desc.path,
         mountPoint: desc.mountPoint,
+        mountType: desc.mountType,
+        filesystemType: desc.filesystemType,
+        nodeType: desc.nodeType,
         sourceName: desc.sourceName,
         label: desc.label,
         traits: Array.from(desc.traits),
         capabilities: desc.capabilities,
         metadata: desc.metadata,
+        tags: desc.tags,
       };
     },
     async watch(path, options) {

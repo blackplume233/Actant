@@ -23,17 +23,23 @@ pnpm test
 - [ ] No `console.log` statements (use logger)?
 - [ ] No non-null assertions (the `x!` operator)?
 - [ ] No `any` types?
-- [ ] No deprecated active terminology leaked back into changed files (for this repo: `bootstrap`)?
+- [ ] No legacy `SourceType` / `Source` / `Trait` / `Prompt` terminology leaked back into active changed files?
 
 ### 2. Documentation Sync
 
-**Spec Docs**:
-- [ ] Does `.trellis/spec/backend/` need updates?
-  - New patterns, new modules, new conventions
-- [ ] Does `.trellis/spec/frontend/` need updates?
-  - New components, new hooks, new patterns
-- [ ] Does `.trellis/spec/guides/` need updates?
-  - New cross-layer flows, lessons from bugs
+**Active Truth Docs**:
+- [ ] Does `.trellis/spec/terminology.md` need updates?
+  - Naming changes, object boundaries, forbidden legacy terms
+- [ ] Does `docs/design/contextfs-architecture.md` need updates?
+  - `mount namespace` / consumer interpretation / layer boundaries
+- [ ] Does `docs/design/actant-vfs-reference-architecture.md` need updates?
+  - mount, node, backend, lifecycle, namespace implementation details
+- [ ] Does `.trellis/spec/config-spec.md` need updates?
+  - `actant.namespace.json`, mount table, compatibility entrypoints
+- [ ] Does `.trellis/spec/api-contracts.md` need updates?
+  - `node type`, `filesystem type`, `stat` / `describe` / CLI / RPC outputs
+- [ ] Does `docs/planning/contextfs-roadmap.md` need updates?
+  - milestone scope or acceptance changes
 
 **Key Question**: 
 > "If I fixed a bug or discovered something non-obvious, should I document it so future me (or others) won't hit the same issue?"
@@ -95,9 +101,9 @@ git diff --name-only
 
 | Oversight | Consequence | Check |
 |-----------|-------------|-------|
-| Spec docs not updated | Others don't know the change | Check .trellis/spec/ |
+| Active truth docs not updated | Others don't know the current model | Check spec/design/roadmap |
 | Migration not created | Schema out of sync | Check db/migrations/ |
-| Types not synced | Runtime errors | Check shared types |
+| Types not synced | Runtime errors | Check shared namespace/mount/node types |
 | Tests not updated | False confidence | Run full test suite |
 | Console.log left in | Noisy production logs | Search for console.log |
 

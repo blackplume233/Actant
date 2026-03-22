@@ -1,25 +1,26 @@
 # Backend Development Guidelines
 
-> 本文档定义 ContextFS/VFS Kernel 基线下的后端实现方向。
+> 本文档定义 ContextFS / VFS 基线下的后端实现方向。
 
 ---
 
 ## 1. Current Backend Baseline
 
-后端开发当前必须以以下对象模型为前提：
+后端开发当前必须以前述 Linux 语义对象模型为前提：
 
-- `Source`
-- `Capability` traits
-- `ProjectManifest`
+- `mount namespace`
+- `mount table`
+- `filesystem type`
+- `mount instance`
+- `node type`
 - `VfsBackend`
-- `VFS Kernel` 分层
 
 旧模型不再作为新增实现依据：
 
+- 旧 `Source` / `SourceType` / `Trait` 作为主对象模型
 - `ContextManager` 作为平台核心
-- handler-centric source registration
 - `DomainContext` 作为聚合中心
-- SessionContextInjector / ContextProvider 路线继续扩展
+- 旧 prompt/resource 分类继续扩展
 
 ---
 
@@ -29,22 +30,22 @@
 
 负责：
 
-- `Project` 装载
-- source 编排
+- namespace 配置输入
+- 挂载组合
 - 权限边界输入
-- 文件式资源语义
+- 文件系统语义对齐
 
-### VFS Kernel Layer
+### VFS Layer
 
 负责：
 
-- namespace
-- mount
-- middleware
-- node/backend
-- metadata
-- lifecycle
-- events
+- `mount namespace`
+- `mount table`
+- `middleware`
+- `node / backend`
+- `metadata`
+- `lifecycle`
+- `events`
 
 ### Backend Layer
 
@@ -57,43 +58,38 @@
 Backend 不负责：
 
 - 权限判定
-- mount 路由
-- 项目编排
+- 挂载路由
+- consumer interpretation
 
 ---
 
-## 3. Built-In V1 Target
+## 3. V1 Required Types
 
-V1 后端实现只围绕这 4 类 Source 设计：
+V1 后端实现必须围绕以下固定类型工作：
 
-- `SkillSource`
-- `McpConfigSource`
-- `McpRuntimeSource`
-- `AgentRuntime`
-
-新增后端或 source 设计时，不得要求 V1 先引入 workflow、query view 或兼容层。
-
----
-
-## 4. Required Traits
-
-所有 Source/Backend 设计都必须先说明其 capability：
-
-- `Readable`
-- `Writable`
-- `Listable`
-- `Watchable`
-- `Streamable`
-- `Searchable`
-- `Versionable`（可后置）
+- `mount type`: `root` / `direct`
+- `filesystem type`: `hostfs` / `runtimefs` / `memfs`
+- `node type`: `directory` / `regular` / `control` / `stream`
 
 实现文档和代码评审时，必须先回答：
 
-- 它暴露哪些路径
-- 它支持哪些能力
-- 哪些能力不支持
-- 权限由谁判定
+- 它属于哪个 `filesystem type`
+- 它会暴露哪些 `node type`
+- 哪些 capability 支持，哪些不支持
+- permission 由谁判定
 - 生命周期由谁持有
+
+---
+
+## 4. Runtime Contract
+
+运行时相关 backend 必须按 `runtimefs` 建模：
+
+- `status.json` -> `regular`
+- `control/request.json` -> `control`
+- `streams/*` -> `stream`
+
+不得继续旁路 VFS 引入第二套执行模型。
 
 ---
 
@@ -105,8 +101,7 @@ V1 后端实现只围绕这 4 类 Source 设计：
 - query/view mount
 - overlay/fallback 行为实现
 - 兼容旧 `ContextManager`
-- 兼容旧 source handler 模型
-- 旧 tool registry 中心模型
+- 兼容旧资源分类中心模型
 
 ---
 
@@ -114,9 +109,9 @@ V1 后端实现只围绕这 4 类 Source 设计：
 
 任何后端相关设计或实现评审，至少确认：
 
-1. 是否符合 [spec/index.md](../index.md) 的新基线
+1. 是否符合 [spec/index.md](../index.md) 的 Linux 语义基线
 2. 是否遵守 [ContextFS Architecture](../../../docs/design/contextfs-architecture.md) 的对象模型
 3. 是否遵守 [Actant VFS Reference Architecture](../../../docs/design/actant-vfs-reference-architecture.md) 的实现分层
-4. 是否明确了 Source/Backend 的 capability 边界
-5. 是否避免引入 V1 非目标
+4. 是否明确了 `filesystem type`、`node type` 与 capability 边界
+5. 是否避免把 consumer interpretation 写回内核对象模型
 6. 是否同步更新 spec/design/roadmap

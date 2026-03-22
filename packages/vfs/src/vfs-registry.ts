@@ -3,13 +3,84 @@ import {
   type VfsSourceRegistration,
   type VfsCapabilityId,
   type VfsDescribeResult,
+  type VfsFileType,
+  type VfsFilesystemType,
   type VfsMountInfo,
+  type VfsMountType,
+  type VfsNodeType,
   type VfsResolveResult,
   type VfsHandlerMap,
 } from "@actant/shared";
 import { VfsPathResolver } from "./vfs-path-resolver";
 
 const logger = createLogger("vfs-registry");
+
+function inferFilesystemType(source: VfsSourceRegistration): VfsFilesystemType {
+  const configured = source.metadata.filesystemType;
+  if (typeof configured === "string" && configured.length > 0) {
+    if (configured === "memory") {
+      return "memfs";
+    }
+    if (configured === "filesystem") {
+      return "hostfs";
+    }
+    return configured as VfsFilesystemType;
+  }
+
+  if (source.label === "memory" || source.name.includes("memory")) {
+    return "memfs";
+  }
+
+  if (
+    source.name.includes("runtime")
+    || source.name.includes("agents")
+    || source.label.includes("runtime")
+    || source.label.includes("agent")
+  ) {
+    return "runtimefs";
+  }
+
+  return "hostfs";
+}
+
+function inferMountType(source: VfsSourceRegistration): VfsMountType {
+  const configured = source.metadata.mountType;
+  if (configured === "root" || configured === "direct") {
+    return configured;
+  }
+  return source.mountPoint === "/" ? "root" : "direct";
+}
+
+function inferNodeType(resolved: VfsResolveResult): VfsNodeType {
+  if (!resolved.relativePath) {
+    return "directory";
+  }
+
+  const fileType = resolved.fileSchema?.type;
+  if (fileType) {
+    return mapFileTypeToNodeType(fileType);
+  }
+
+  return "regular";
+}
+
+function mapFileTypeToNodeType(type: VfsFileType): VfsNodeType {
+  switch (type) {
+    case "directory":
+      return "directory";
+    case "control":
+      return "control";
+    case "stream":
+      return "stream";
+    default:
+      return "regular";
+  }
+}
+
+function extractTags(source: VfsSourceRegistration): string[] {
+  const tags = source.metadata.tags;
+  return Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : [];
+}
 
 export interface VfsRegistryEvents {
   onMount?(source: VfsSourceRegistration): void;
@@ -138,10 +209,14 @@ export class VfsRegistry {
       mountPoint: source.mountPoint,
       sourceName: source.name,
       label: source.label,
+      mountType: inferMountType(source),
+      filesystemType: inferFilesystemType(source),
+      nodeType: inferNodeType(resolved),
       traits: source.traits,
       fileSchema,
       capabilities,
       metadata: source.metadata,
+      tags: extractTags(source),
       lifecycle: source.lifecycle,
     };
   }
@@ -155,6 +230,8 @@ export class VfsRegistry {
       name: s.name,
       mountPoint: s.mountPoint,
       label: s.label,
+      mountType: inferMountType(s),
+      filesystemType: inferFilesystemType(s),
       traits: s.traits,
       lifecycle: s.lifecycle,
       metadata: s.metadata,

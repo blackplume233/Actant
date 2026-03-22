@@ -82,11 +82,32 @@ describe("vfs handlers", () => {
       const statResult = await statHandler({
         path: "/memory/agent-a/note.md",
         token,
-      }, ctx) as { type: string };
+      }, ctx) as { type: string; nodeType: string; filesystemType: string; mountPoint: string };
       expect(statResult.type).toBe("file");
+      expect(statResult.nodeType).toBe("regular");
+      expect(statResult.filesystemType).toBe("memfs");
+      expect(statResult.mountPoint).toBe("/memory/agent-a");
     } finally {
       ctx.vfsRegistry.unmount("memory-agent-a");
     }
+  });
+
+  it("exposes mount and node semantics through describe", async () => {
+    const describeHandler = registry.get("vfs.describe")!;
+
+    const result = await describeHandler({
+      path: "/agents",
+    }, ctx) as {
+      mountType: string;
+      filesystemType: string;
+      nodeType: string;
+      tags: string[];
+    };
+
+    expect(result.mountType).toBe("direct");
+    expect(result.filesystemType).toBe("runtimefs");
+    expect(result.nodeType).toBe("directory");
+    expect(result.tags).toEqual([]);
   });
 
   it("preserves direct child mount listing for unresolved parent paths", async () => {

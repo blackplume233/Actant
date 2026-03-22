@@ -326,34 +326,43 @@ export function createProjectContextSourceTypeRegistry(): SourceTypeRegistry {
   return registry;
 }
 
+const PROJECT_NAMESPACE_CONFIG_FILES = [
+  "actant.namespace.json",
+  "actant.project.json",
+] as const;
+
 async function loadProjectConfig(projectRoot: string): Promise<{
   config: ActantProjectConfig;
   path: string | null;
   warnings: string[];
 }> {
-  const configPath = join(projectRoot, "actant.project.json");
-  try {
-    const raw = await readFile(configPath, "utf-8");
-    const parsed = validateProjectConfig(JSON.parse(raw));
-    if (!parsed.valid) {
+  for (const filename of PROJECT_NAMESPACE_CONFIG_FILES) {
+    const configPath = join(projectRoot, filename);
+    try {
+      const raw = await readFile(configPath, "utf-8");
+      const parsed = validateProjectConfig(JSON.parse(raw));
+      if (!parsed.valid) {
+        return {
+          config: { version: 1 },
+          path: configPath,
+          warnings: parsed.warnings.map((warning) => `${filename}: ${warning}`),
+        };
+      }
+      return { config: parsed.data, path: configPath, warnings: [] };
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === "ENOENT") {
+        continue;
+      }
       return {
         config: { version: 1 },
         path: configPath,
-        warnings: parsed.warnings.map((warning) => `actant.project.json: ${warning}`),
+        warnings: [`Failed to read ${filename}: ${err instanceof Error ? err.message : String(err)}`],
       };
     }
-    return { config: parsed.data, path: configPath, warnings: [] };
-  } catch (err) {
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code === "ENOENT") {
-      return { config: { version: 1 }, path: null, warnings: [] };
-    }
-    return {
-      config: { version: 1 },
-      path: configPath,
-      warnings: [`Failed to read actant.project.json: ${err instanceof Error ? err.message : String(err)}`],
-    };
   }
+
+  return { config: { version: 1 }, path: null, warnings: [] };
 }
 
 async function loadLocalDomainComponents(
@@ -782,6 +791,7 @@ function createProjectSource(
         switch (normalized) {
           case "context.json":
             return { content: JSON.stringify(summary, null, 2), mimeType: "application/json" };
+          case "actant.namespace.json":
           case "actant.project.json":
             return { content: JSON.stringify(generatedConfig, null, 2), mimeType: "application/json" };
           case "sources.json":
@@ -793,13 +803,13 @@ function createProjectSource(
       list: async () => {
         return [
           { name: "context.json", path: "context.json", type: "file" as const },
-          { name: "actant.project.json", path: "actant.project.json", type: "file" as const },
+          { name: "actant.namespace.json", path: "actant.namespace.json", type: "file" as const },
           { name: "sources.json", path: "sources.json", type: "file" as const },
         ];
       },
       stat: async (filePath: string) => {
         const normalized = filePath.replace(/^\/+/, "");
-        if (["context.json", "actant.project.json", "sources.json"].includes(normalized)) {
+        if (["context.json", "actant.namespace.json", "actant.project.json", "sources.json"].includes(normalized)) {
           return { type: "file" as const, size: 0, mtime: new Date().toISOString() };
         }
         throw new Error(`Unknown project file: ${filePath}`);

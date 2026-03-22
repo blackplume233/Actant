@@ -1,6 +1,6 @@
 # Quality Guidelines
 
-> 当前质量基线服务于 `ContextFS` / `VFS Kernel` 文档收口后的实现阶段。
+> 当前质量基线服务于 `ContextFS` / `VFS` 文档收口后的实现阶段。
 
 ---
 

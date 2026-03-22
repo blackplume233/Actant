@@ -55,9 +55,9 @@ Use this mapping to decide where to update:
 |----------------------|-------------------|
 | what Actant is, what ContextFS means | `.trellis/spec/vision.md` |
 | naming, role boundaries, forbidden terms | `.trellis/spec/terminology.md` |
-| `Project`, `Source`, `Capability`, `Tool`, `Agent` product semantics | `docs/design/contextfs-architecture.md` |
+| `mount namespace`, `mount table`, `filesystem type`, `mount instance`, `node type`, consumer interpretation boundaries | `docs/design/contextfs-architecture.md` |
 | namespace, mount, middleware, node, backend, metadata, lifecycle, events | `docs/design/actant-vfs-reference-architecture.md`, `.trellis/spec/backend/index.md` |
-| `ProjectManifest`, mounts, permissions, children | `.trellis/spec/config-spec.md` |
+| `actant.namespace.json`, mount table, compatibility entrypoints, permissions | `.trellis/spec/config-spec.md` |
 | paths, operations, control nodes, stream nodes | `.trellis/spec/api-contracts.md` |
 | scope, milestones, non-goals, acceptance | `docs/planning/contextfs-roadmap.md` |
 | repository process and review gates | `.trellis/workflow.md` |
@@ -113,7 +113,7 @@ After editing, confirm:
 
 ### Naming Boundary Change
 
-Use when clarifying terms such as `Source` vs `Provider`.
+Use when clarifying terms such as `mount instance` vs `provider`.
 
 Required checks:
 
@@ -123,7 +123,7 @@ Required checks:
 
 ### Object Model Change
 
-Use when changing the role of `Project`, `Source`, `Capability`, `Agent`, or `Tool`.
+Use when changing the role of `mount namespace`, `filesystem type`, `mount instance`, `node type`, `capability`, or `Tool`.
 
 Required checks:
 

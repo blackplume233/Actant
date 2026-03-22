@@ -33,6 +33,66 @@ import {
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 
+function inferNodeTypeFromStatType(type: "file" | "directory" | "symlink"): "regular" | "directory" | "symlink" {
+  switch (type) {
+    case "directory":
+      return "directory";
+    case "symlink":
+      return "symlink";
+    default:
+      return "regular";
+  }
+}
+
+function inferNodeTypeFromResolved(
+  resolved: import("@actant/shared").VfsResolveResult,
+  fallbackType: "file" | "directory" | "symlink",
+): string {
+  const schemaType = resolved.fileSchema?.type;
+  switch (schemaType) {
+    case "directory":
+      return "directory";
+    case "control":
+      return "control";
+    case "stream":
+      return "stream";
+    case undefined:
+      return inferNodeTypeFromStatType(fallbackType);
+    default:
+      return "regular";
+  }
+}
+
+function inferFilesystemTypeFromSource(
+  source: import("@actant/shared").VfsSourceRegistration,
+): string {
+  const configured = source.metadata.filesystemType;
+  if (typeof configured === "string" && configured.length > 0) {
+    if (configured === "memory") {
+      return "memfs";
+    }
+    if (configured === "filesystem") {
+      return "hostfs";
+    }
+    return configured;
+  }
+
+  if (source.label === "memory" || source.name.includes("memory")) {
+    return "memfs";
+  }
+
+  if (
+    source.name.includes("runtime")
+    || source.name.includes("agents")
+    || source.label.includes("runtime")
+    || source.label.includes("agent")
+  ) {
+    return "runtimefs";
+  }
+
+  return "hostfs";
+}
+
 export function registerVfsHandlers(registry: HandlerRegistry): void {
   registry.register("vfs.read", handleVfsRead);
   registry.register("vfs.write", handleVfsWrite);
@@ -239,7 +299,22 @@ async function handleVfsStat(
         code: RPC_ERROR_CODES.INVALID_PARAMS,
       });
     }
-    return result;
+    return {
+      canonicalPath: path,
+      mountPoint: resolved.source.mountPoint,
+      filesystemType: inferFilesystemTypeFromSource(resolved.source),
+      nodeType: result.nodeType ?? inferNodeTypeFromResolved(resolved, result.type),
+      size: result.size,
+      mtime: result.mtime,
+      type: result.type,
+      permissions: result.permissions,
+      mimeType: result.mimeType,
+      capabilities: resolved.fileSchema?.capabilities ?? Object.keys(resolved.source.handlers),
+      metadata: resolved.source.metadata,
+      tags: Array.isArray(resolved.source.metadata.tags)
+        ? resolved.source.metadata.tags.filter((tag): tag is string => typeof tag === "string")
+        : [],
+    };
   } catch (error) {
     maybeWrapKernelError(error);
   }
@@ -319,11 +394,15 @@ async function handleVfsDescribe(
   return {
     path: desc.path,
     mountPoint: desc.mountPoint,
+    mountType: desc.mountType,
+    filesystemType: desc.filesystemType,
+    nodeType: desc.nodeType,
     sourceName: desc.sourceName,
     label: desc.label,
     traits: Array.from(desc.traits),
     capabilities: desc.capabilities,
     metadata: desc.metadata,
+    tags: desc.tags,
   };
 }
 
@@ -423,6 +502,8 @@ async function handleVfsMountList(
     mounts: mounts.map((m) => ({
       name: m.name,
       mountPoint: m.mountPoint,
+      mountType: m.mountType,
+      filesystemType: m.filesystemType,
       label: m.label,
       traits: Array.from(m.traits),
       capabilities: m.capabilities,
