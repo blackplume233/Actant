@@ -193,6 +193,18 @@ The `/check-*` commands focus on code quality within a single layer. But real ch
 
 ---
 
+### /trellis-create-changelog-draft - Preserve Delivery Facts
+
+**WHY IT EXISTS**:
+Ship / merge delivery now requires a changelog draft before PR creation or ship. This keeps delivery facts aligned across workflow, release aggregation, and session records.
+
+**WHAT IT ACTUALLY DOES**:
+1. Creates a draft under `docs/agent/changelog-drafts/`
+2. Enforces the required title and delivery sections
+3. Gives ship / create-pr a concrete artifact to validate against
+
+---
+
 ### /trellis-record-session - Persist Memory for Future
 
 **WHY IT EXISTS**:
@@ -209,14 +221,15 @@ All the context AI built during this session will be lost when session ends. The
 
 ### Example 1: Bug Fix Session
 
-**[1/8] /trellis-start** - AI needs project context before touching code
-**[2/8] bash ./.trellis/scripts/task.sh create "Fix bug" --slug fix-bug** - Track work for future reference
-**[3/8] /trellis-before-frontend-dev** - Inject project-specific frontend knowledge
-**[4/8] Investigate and fix the bug** - Actual development work
-**[5/8] /trellis-check-frontend** - Re-verify code against guidelines
-**[6/8] /trellis-finish-work** - Holistic cross-layer review
-**[7/8] Human tests and commits** - Human validates before code enters repo
-**[8/8] /trellis-record-session** - Persist memory for future sessions
+**[1/9] /trellis-start** - AI needs project context before touching code
+**[2/9] bash ./.trellis/scripts/task.sh create "Fix bug" --slug fix-bug** - Track work for future reference
+**[3/9] /trellis-before-frontend-dev** - Inject project-specific frontend knowledge
+**[4/9] Investigate and fix the bug** - Actual development work
+**[5/9] /trellis-check-frontend** - Re-verify code against guidelines
+**[6/9] /trellis-finish-work** - Holistic cross-layer review
+**[7/9] /trellis-create-changelog-draft** - Preserve required delivery facts before ship / create-pr
+**[8/9] Human tests and commits** - Human validates before code enters repo
+**[9/9] /trellis-record-session** - Persist memory for future sessions
 
 ### Example 2: Planning Session (No Code)
 
@@ -227,29 +240,32 @@ All the context AI built during this session will be lost when session ends. The
 
 ### Example 3: Code Review Fixes
 
-**[1/6] /trellis-start** - Resume context from previous session
-**[2/6] /trellis-before-backend-dev** - Re-inject guidelines before fixes
-**[3/6] Fix each CR issue** - Address feedback with guidelines in context
-**[4/6] /trellis-check-backend** - Verify fixes didn't introduce new issues
-**[5/6] /trellis-finish-work** - Document lessons from CR
-**[6/6] Human commits, then /trellis-record-session** - Preserve CR lessons
+**[1/7] /trellis-start** - Resume context from previous session
+**[2/7] /trellis-before-backend-dev** - Re-inject guidelines before fixes
+**[3/7] Fix each CR issue** - Address feedback with guidelines in context
+**[4/7] /trellis-check-backend** - Verify fixes didn't introduce new issues
+**[5/7] /trellis-finish-work** - Document lessons from CR
+**[6/7] /trellis-create-changelog-draft** - Prepare required delivery artifact before handoff
+**[7/7] Human commits, then /trellis-record-session** - Preserve CR lessons
 
 ### Example 4: Large Refactoring
 
-**[1/5] /trellis-start** - Clear baseline before major changes
-**[2/5] Plan phases** - Break into verifiable chunks
-**[3/5] Execute phase by phase with /check-* after each** - Incremental verification
-**[4/5] /trellis-finish-work** - Check if new patterns should be documented
-**[5/5] Record with multiple commit hashes** - Link all commits to one feature
+**[1/6] /trellis-start** - Clear baseline before major changes
+**[2/6] Plan phases** - Break into verifiable chunks
+**[3/6] Execute phase by phase with /check-* after each** - Incremental verification
+**[4/6] /trellis-finish-work** - Check if new patterns should be documented
+**[5/6] /trellis-create-changelog-draft** - Capture delivery facts before merge flow
+**[6/6] Record with multiple commit hashes** - Link all commits to one feature
 
 ### Example 5: Debug Session
 
-**[1/6] /trellis-start** - See if this bug was investigated before
-**[2/6] /trellis-before-backend-dev** - Guidelines might document known gotchas
-**[3/6] Investigation** - Actual debugging work
-**[4/6] /trellis-check-backend** - Verify debug changes don't break other things
-**[5/6] /trellis-finish-work** - Debug findings might need documentation
-**[6/6] Human commits, then /trellis-record-session** - Debug knowledge is valuable
+**[1/7] /trellis-start** - See if this bug was investigated before
+**[2/7] /trellis-before-backend-dev** - Guidelines might document known gotchas
+**[3/7] Investigation** - Actual debugging work
+**[4/7] /trellis-check-backend** - Verify debug changes don't break other things
+**[5/7] /trellis-finish-work** - Debug findings might need documentation
+**[6/7] /trellis-create-changelog-draft** - Required if the debug fix is heading to ship / merge
+**[7/7] Human commits, then /trellis-record-session** - Debug knowledge is valuable
 
 ---
 
@@ -258,7 +274,8 @@ All the context AI built during this session will be lost when session ends. The
 1. **AI NEVER commits** - Human tests and approves. AI prepares, human validates.
 2. **Guidelines before code** - /before-*-dev commands inject project knowledge.
 3. **Check after code** - /check-* commands catch context drift.
-4. **Record everything** - /trellis-record-session persists memory.
+4. **Preserve delivery facts** - /trellis-create-changelog-draft is mandatory before ship / create-pr.
+5. **Record everything** - /trellis-record-session persists memory.
 
 ---
 
@@ -351,8 +368,9 @@ After covering all three parts, summarize:
 - Part 3: Guidelines status (empty templates need filling / already customized)
 
 **Next steps** (tell user):
-1. Run `/trellis-record-session` to record this onboard session
-2. [If guidelines empty] Start filling in `.trellis/spec/` guidelines
-3. [If guidelines ready] Start your first development task
+1. If the session is preparing ship / merge work, run `/trellis-create-changelog-draft` first
+2. Run `/trellis-record-session` to record this onboard session
+3. [If guidelines empty] Start filling in `.trellis/spec/` guidelines
+4. [If guidelines ready] Start your first development task
 
 What would you like to do first?"

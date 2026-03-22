@@ -478,3 +478,42 @@ CODEX_LOOP_CHECK_PASS```
 ### 下一步
 
 - 参考本轮检查结果继续推进
+
+## 会话 13: Trellis 治理巡检第 4 轮
+
+**日期**: 2026-03-22
+**任务**: Trellis 治理巡检第 4 轮
+
+### 摘要
+
+处理 governance-context-sync 扫出的 onboard 缺口与两处编码异常，并完成复筛收口。
+
+### 详细记录
+
+- 变更摘要：
+  - 更新 `.cursor/commands/trellis-onboard.md`，补入 `/trellis-create-changelog-draft` 的职责说明，并把示例流程改成包含交付草稿门禁的版本。
+  - 修复 `.cursor/commands/trellis-plan-start.md` 中的 mojibake 与损坏标题，恢复为可读的中英混合文案。
+  - 修复 `.trellis/issues/0278-faq.md` 中两处损坏字符，保留原问题语义不变。
+- 检查结果：
+  - `python3 /Users/muyuli/.codex/skills/governance-context-sync/scripts/scan_governance_context.py --root /Users/muyuli/Workspace/AgentCraft`：0 findings。
+  - `rg -n "鈥|寮€|韬唤|銆|�" ...`：未再命中。
+  - `rg -n "trellis-create-changelog-draft|changelog draft|ship / create-pr" .cursor/commands/trellis-onboard.md`：已命中新增门禁说明。
+- 巡回筛查结论：
+  - 本轮治理目标已收口，没有新增高风险治理缺口。
+  - 当前 `governance-context-sync` 技能对本仓库的默认扫描结果已清零，可作为后续治理回归入口。
+
+### Git 提交
+
+（无提交，本次为过程记录）
+
+### 检查与测试
+
+- [OK] 自动记录，详见上方检查结果
+
+### 状态
+
+[OK] **已记录**
+
+### 下一步
+
+- 参考本轮检查结果继续推进

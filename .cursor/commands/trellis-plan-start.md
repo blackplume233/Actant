@@ -1,6 +1,6 @@
 # Plan & Start Session
 
-Enhanced version of `trellis-start` 鈥?adds a **Plan Phase** before execution.
+Enhanced version of `trellis-start` - adds a **Plan Phase** before execution.
 First builds a structured plan document for user review, then executes confirmed tasks through the standard trellis workflow.
 
 ---
@@ -33,7 +33,7 @@ Ensure your Actant Agent identity is initialized. Check if already set, if not, 
 bash ./.trellis/scripts/get-developer.sh || bash ./.trellis/scripts/init-developer.sh actant-cursor-agent
 ```
 
-> **Actant Agent 韬唤**: AI 寮€鍙戣€呮槸涓€涓?Actant Agent 瀹炰緥銆侰ursor AI 浣跨敤 `actant-cursor-agent` 浣滀负韬唤鏍囪瘑銆?
+> **Actant Agent 身份**: AI 开发者是一个 Actant Agent 实例。Cursor AI 使用 `actant-cursor-agent` 作为身份标识。
 
 ### Step 0.3: Get Current Status
 
@@ -61,7 +61,7 @@ bash ./.trellis/scripts/task.sh list
 
 Output initialization summary (same as trellis-start), then:
 
-> Initialization complete. Please describe your task 鈥?I'll create a plan for us to review before starting.
+> Initialization complete. Please describe your task - I'll create a plan for us to review before starting.
 
 ---
 
@@ -111,15 +111,15 @@ isProject: false
 
 ---
 
-## 涓€銆佽儗鏅垎鏋?
+## 一、背景分析
 
 <Why this task is needed, what problem it solves>
 
-## 浜屻€佹柟妗堣璁?
+## 二、方案设计
 
 <Technical approach, architecture decisions, alternatives considered>
 
-## 涓夈€佸疄鏂借鍒?
+## 三、实施计划
 
 ### Phase 1: <Phase Name>
 
@@ -134,7 +134,7 @@ isProject: false
 |---|------|----------|--------------|-----------------|
 | 3 | <task> | P1 | Phase 1 | <effort> |
 
-## 鍥涖€佸奖鍝嶈寖鍥?
+## 四、影响范围
 
 ### Files to Modify
 - `<path>`: <what changes>
@@ -146,12 +146,12 @@ isProject: false
 - <risk 1>: <mitigation>
 - <risk 2>: <mitigation>
 
-## 浜斻€侀獙鏀舵爣鍑?
+## 五、验收标准
 
 - [ ] <Criterion 1>
 - [ ] <Criterion 2>
 
-## 鍏€佺浉鍏冲弬鑰?
+## 六、相关参考
 
 - <spec/code/doc references>
 ```
@@ -161,15 +161,15 @@ isProject: false
 - **Todos in frontmatter** must map 1:1 to actionable implementation steps
 - **Priority levels**: P0 (must-have), P1 (important), P2 (nice-to-have)
 - **Status values**: `pending`, `in_progress`, `completed`
-- **Dependencies** must be explicit 鈥?no circular references
-- Keep the plan **concise but complete** 鈥?the user should be able to understand the full scope at a glance
+- **Dependencies** must be explicit - no circular references
+- Keep the plan **concise but complete** - the user should be able to understand the full scope at a glance
 
 ### Step 1.4: Present Plan to User `[COLLAB]`
 
 Output the plan and ask:
 
 ```markdown
-## 馃搵 Plan Ready for Review
+## Plan Ready for Review
 
 I've created the plan document: `<plan-file-path>`
 
@@ -181,8 +181,8 @@ I've created the plan document: `<plan-file-path>`
 - **Estimated scope**: {files} files, {phases} phases
 
 ### Key Decisions
-1. <decision 1 鈥?why this approach>
-2. <decision 2 鈥?trade-off made>
+1. <decision 1 - why this approach>
+2. <decision 2 - trade-off made>
 
 ---
 
