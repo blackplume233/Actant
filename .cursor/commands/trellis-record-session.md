@@ -42,6 +42,13 @@ EOF
 - [OK] Auto-detects line count, creates new file if >2000 lines
 - [OK] Updates index.md (Total Sessions +1, Last Active, line stats, history)
 
+Session summary should preserve the same delivery facts used by changelog drafts:
+
+- 变更摘要
+- 验证结果
+- 关联 PR / commit / issue
+- 如本轮是 ship / merge 级交付，补充对应 `docs/agent/changelog-drafts/*.md` 路径
+
 ---
 
 ## Archive Completed Task (if any)

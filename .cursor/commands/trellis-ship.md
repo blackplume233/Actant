@@ -14,11 +14,39 @@
 
 1. **代码质量** — 运行 `pnpm lint`、`pnpm type-check`、`pnpm test`
 2. **代码模式扫描** — 检查 `console.log`、`any` 类型、非空断言
-3. **Spec 文档同步** — **必须检查**，按下方规则判断是否需要更新
-4. **API / 数据库 / 跨层变更** — 按变更范围检查对应项
+3. **Changelog Draft** — **必须检查**，缺失或结构不完整直接阻止交付
+4. **Spec 文档同步** — **必须检查**，按下方规则判断是否需要更新
+5. **API / 数据库 / 跨层变更** — 按变更范围检查对应项
 
 如果命令因依赖未安装而失败，标记为 "⚠️ 跳过" 并继续。
 如果有实质性错误（❌），**停止流程**，先修复再重新执行。
+
+#### 1.2 Changelog Draft 检查（强制）
+
+ship / merge 级交付必须先保留 changelog draft，采用“先草稿后汇总”。
+
+强制目录与命名：
+
+- 目录：`docs/agent/changelog-drafts/`
+- 文件名：`YYYY-MM-DD-<agent>-<topic>.md`
+
+最小结构：
+
+- `# 标题`
+- `## 变更摘要`
+- `## 用户可见影响`
+- `## 破坏性变更/迁移说明`
+- `## 验证结果`
+- `## 关联 PR / Commit / Issue`
+
+检查规则：
+
+1. 根据当前 task 名或分支 topic 查找对应 draft
+2. 如果找不到 draft，标记 **❌ 缺少 changelog draft**
+3. 如果 draft 缺少必填 section，标记 **❌ changelog draft 不完整**
+4. **立即中止 ship 流程**，先补齐 draft 再继续
+
+正式 release changelog 仍通过 `docs/stage/<version>/changelog.md` 汇总生成；draft 不是替代品。
 
 #### 1.3 Spec 文档同步检查（强制）
 
@@ -69,6 +97,7 @@ spec 文档同步检查：
 | console.log | ✅ 无 / ❌ 发现 N 处 |
 | any 类型 | ✅ 无 / ❌ 发现 N 处 |
 | 非空断言 | ✅ 无 / ❌ 发现 N 处 |
+| changelog draft | ✅ 已就绪 / ❌ 缺失 / ❌ 结构不完整 |
 | spec/config-spec.md | ✅ 已同步 / ❌ 需更新 / — 无关 |
 | spec/api-contracts.md | ✅ 已同步 / ❌ 需更新 / — 无关 |
 ```

@@ -30,6 +30,8 @@ Actant 当前只承认一套新的顶层叙述：
 - 再进入实现
 - 历史迁移说明必须留在默认入口之外
 - 不允许把历史迁移说明和当前规范并列为默认入口
+- 所有 ship / merge 级交付必须先产出 changelog draft，再汇总正式 release changelog
+- `docs/planning/` 下仍作为真相源的 roadmap 必须使用 checklist / todolist 主格式
 
 ---
 
@@ -96,6 +98,20 @@ Actant 当前只承认一套新的顶层叙述：
 - [config-spec.md](./config-spec.md)
 - [api-contracts.md](./api-contracts.md)
 
+### 3.5 Delivery Contracts
+
+定义：
+
+- `task.json` 最小字段契约：`id`、`name`、`title`、`status`、`dev_type`、`branch`、`base_branch`、`current_phase`、`createdAt`、`completedAt`
+- changelog draft 交付契约：`docs/agent/changelog-drafts/`
+- active roadmap 结构契约：`docs/planning/*.md` 使用 checklist/todolist
+
+入口：
+
+- [workflow.md](../workflow.md)
+- [ContextFS Roadmap](../../docs/planning/contextfs-roadmap.md)
+- [Product Roadmap](../../docs/planning/roadmap.md)
+
 ### 4. Implementation Guides
 
 定义：
@@ -117,3 +133,5 @@ Actant 当前只承认一套新的顶层叙述：
 - 是否把迁移说明重新写回主线入口
 - 是否把 `workflow`、query view、兼容层偷偷带回 V1
 - 是否在 spec、design、roadmap 三层同步修改
+- 是否保留了对应 changelog draft，并确保 release changelog 仍由 stage 汇总生成
+- 是否把活跃 roadmap 保持为 checklist/todolist，而不是叙事式状态说明

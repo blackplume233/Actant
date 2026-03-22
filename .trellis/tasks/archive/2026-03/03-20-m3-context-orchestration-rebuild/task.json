@@ -1,0 +1,41 @@
+{
+  "id": "m3-context-orchestration-rebuild",
+  "name": "m3-context-orchestration-rebuild",
+  "title": "Complete M3 ContextFS orchestration end-to-end: rebuild packages/context around ProjectManifest plus root/child project loading and project-scoped permissions semantics, leaving root project and child project mounting usable with clear permission-boundary narrowing.",
+  "description": "",
+  "status": "archived",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-20",
+  "completedAt": "2026-03-20",
+  "branch": "codex/03-20-m3-context-orchestration-rebuild",
+  "base_branch": "master",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m3-context-orchestration-rebuild",
+  "current_phase": 4,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": "f9a70db",
+  "pr_url": "https://github.com/blackplume233/Actant/pull/306",
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}

@@ -1,0 +1,41 @@
+{
+  "id": "m5-trait-system",
+  "name": "m5-trait-system",
+  "title": "M5 SourceType/Trait System",
+  "description": "",
+  "status": "archived",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-20T07:30:00Z",
+  "completedAt": "2026-03-20",
+  "branch": "codex/03-20-m5-trait-system",
+  "base_branch": "master",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m5-trait-system",
+  "current_phase": 4,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": "c4daaea",
+  "pr_url": "https://github.com/blackplume233/Actant/pull/311",
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}

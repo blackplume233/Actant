@@ -45,6 +45,12 @@
 - `roadmap.md`
 - `contextfs-roadmap.md`
 
+规则：
+
+- 这两个活跃 roadmap 必须保持 checklist / todolist 结构
+- 里程碑完成态、进行中、待开始、取消都要用显式 todo 标记表达
+- 历史分析或回顾不要写回活跃 roadmap，转移到 `docs/history/` 或 `docs/agent/`
+
 ### `site/`
 
 `docs/site/` 只是对外站点源文件，不是实现真相入口。  

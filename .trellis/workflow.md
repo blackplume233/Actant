@@ -34,6 +34,8 @@ Current repository policy:
 - no compatibility-first route
 - keep migration notes outside the main entry path
 - a ship is only complete when the local repository context is back on `master`/`main`
+- every ship / merge delivery must preserve a changelog draft before release aggregation
+- active roadmap files under `docs/planning/` must use checklist / todolist structure
 
 ## Session Start
 
@@ -92,6 +94,37 @@ Anti-pattern checklist for reviewers:
 Main entry docs should describe only the current baseline.  
 If historical explanation is needed, keep it outside the default read path, such as under `docs/history/` or `trash/`.
 
+## Changelog Draft Rule
+
+Changelog uses a two-step model: `先草稿后汇总`.
+
+- Every ship / merge level delivery must have a valid draft under `docs/agent/changelog-drafts/`
+- Child-branch development does not need to update `docs/stage/<version>/changelog.md` on every commit
+- `create-pr` / ship level delivery must fail if the matching changelog draft is missing or malformed
+- Release aggregation still happens in `docs/stage/<version>/changelog.md`
+
+Required draft contract:
+
+- Filename: `YYYY-MM-DD-<agent>-<topic>.md`
+- Required sections:
+  - title (`# ...`)
+  - `## 变更摘要`
+  - `## 用户可见影响`
+  - `## 破坏性变更/迁移说明`
+  - `## 验证结果`
+  - `## 关联 PR / Commit / Issue`
+
+`/trellis-record-session` should record the same delivery facts: what changed, how it was verified, and which PR / commit / issue it relates to.
+
+## Roadmap Rule
+
+`docs/planning/` is the active planning truth source and must stay executable.
+
+- Active roadmap files must use explicit checklist / todolist structure
+- Milestones and phases must express status with todo markers, not long narrative status paragraphs
+- Historical reviews and analysis belong in `docs/history/` or `docs/agent/`, not in active roadmap files
+- If roadmap state says a milestone is done, corresponding active tasks must be completed or archived
+
 ## Working Rule
 
 When a change affects:
@@ -122,6 +155,7 @@ Treat child-branch push as an intermediate state, not the end of delivery.
 
 - If work is developed on a child branch, push that branch first.
 - Then run the main-branch merge flow (for this repo, `handle-pr`).
+- Before create-pr / merge / ship, ensure the matching changelog draft already exists and passes validation.
 - Delivery is only complete after the merge is pushed to `master`/`main`.
 - The final local repository context must also be back on `master`/`main`.
 

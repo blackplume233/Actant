@@ -13,6 +13,11 @@ set -e
 COMMON_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$COMMON_DIR/paths.sh"
 source "$COMMON_DIR/developer.sh"
+source "$COMMON_DIR/task-utils.sh"
+
+json_escape() {
+  printf '%s' "$1" | jq -Rsa .
+}
 
 # =============================================================================
 # JSON Output
@@ -54,26 +59,47 @@ output_json() {
 
   # Build tasks JSON
   local tasks_json="["
+  local warnings_json="["
   first=true
   if [[ -d "$tasks_dir" ]]; then
     for d in "$tasks_dir"/*/; do
       if [[ -d "$d" ]] && [[ "$(basename "$d")" != "archive" ]]; then
+        local dir_name=$(basename "$d")
         local task_json="$d/$FILE_TASK_JSON"
+        local name="$dir_name"
+        local status="unknown"
+        local task_warning_lines=""
+
         if [[ -f "$task_json" ]]; then
-          local dir_name=$(basename "$d")
-          local name=$(jq -r '.name // .id // "unknown"' "$task_json" 2>/dev/null)
-          local status=$(jq -r '.status // "unknown"' "$task_json" 2>/dev/null)
-          if [[ "$first" == "true" ]]; then
-            first=false
-          else
-            tasks_json+=","
+          name=$(resolve_task_name "$task_json")
+          status=$(resolve_task_status "$task_json")
+          task_warning_lines=$(collect_task_schema_warnings "$task_json" "$dir_name")
+          if [[ "$status" == "completed" ]]; then
+            task_warning_lines="${task_warning_lines}"$'\n'"WARNING [$dir_name] completed task still lives in active tasks"
           fi
-          tasks_json+="{\"dir\":\"$dir_name\",\"name\":\"$name\",\"status\":\"$status\"}"
+        else
+          task_warning_lines="WARNING [$dir_name] missing task.json"
         fi
+
+        if [[ "$first" == "true" ]]; then
+          first=false
+        else
+          tasks_json+=","
+        fi
+        tasks_json+="{\"dir\":\"$dir_name\",\"name\":$(json_escape "$name"),\"status\":$(json_escape "$status")}"
+
+        while IFS= read -r warning; do
+          [[ -z "$warning" ]] && continue
+          if [[ "$warnings_json" != "[" ]]; then
+            warnings_json+=","
+          fi
+          warnings_json+=$(json_escape "$warning")
+        done <<< "$task_warning_lines"
       fi
     done
   fi
   tasks_json+="]"
+  warnings_json+="]"
 
   cat << EOF
 {
@@ -86,7 +112,8 @@ output_json() {
   },
   "tasks": {
     "active": $tasks_json,
-    "directory": "$DIR_WORKFLOW/$DIR_TASKS"
+    "directory": "$DIR_WORKFLOW/$DIR_TASKS",
+    "warnings": $warnings_json
   },
   "journal": {
     "file": "$journal_relative",
@@ -144,17 +171,23 @@ output_text() {
 
     if [[ -f "$task_json" ]]; then
       if command -v jq &> /dev/null; then
-        local t_name=$(jq -r '.name // .id // "unknown"' "$task_json")
-        local t_status=$(jq -r '.status // "unknown"' "$task_json")
-        local t_created=$(jq -r '.createdAt // "unknown"' "$task_json")
-        local t_desc=$(jq -r '.description // ""' "$task_json")
+        local t_name=$(resolve_task_name "$task_json")
+        local t_status=$(resolve_task_status "$task_json")
+        local t_created=$(jq -r '.createdAt // .created // "unknown"' "$task_json")
+        local t_desc=$(jq -r '.description // .requirement // ""' "$task_json")
         echo "Name: $t_name"
         echo "Status: $t_status"
         echo "Created: $t_created"
         if [[ -n "$t_desc" ]]; then
           echo "Description: $t_desc"
         fi
+        while IFS= read -r warning; do
+          [[ -z "$warning" ]] && continue
+          echo "$warning"
+        done < <(collect_task_schema_warnings "$task_json" "$(basename "$current_task_dir")")
       fi
+    else
+      echo "WARNING [$(basename "$current_task_dir")] missing task.json"
     fi
 
     # Check for prd.md
@@ -177,11 +210,25 @@ output_text() {
         local t_json="$d/$FILE_TASK_JSON"
         local status="unknown"
         local assignee="-"
+        local warnings=()
         if [[ -f "$t_json" ]] && command -v jq &> /dev/null; then
-          status=$(jq -r '.status // "unknown"' "$t_json")
+          status=$(resolve_task_status "$t_json")
           assignee=$(jq -r '.assignee // "-"' "$t_json")
+          while IFS= read -r warning; do
+            [[ -z "$warning" ]] && continue
+            warnings+=("$warning")
+          done < <(collect_task_schema_warnings "$t_json" "$dir_name")
+          if [[ "$status" == "completed" ]]; then
+            warnings+=("WARNING [$dir_name] completed task still lives in active tasks")
+          fi
+        else
+          warnings+=("WARNING [$dir_name] missing task.json")
         fi
         echo "- $dir_name/ ($status) @$assignee"
+        local warning
+        for warning in "${warnings[@]}"; do
+          echo "  $warning"
+        done
         ((task_count++)) || true
       fi
     done
@@ -200,9 +247,9 @@ output_text() {
         local t_json="$d/$FILE_TASK_JSON"
         if [[ -f "$t_json" ]] && command -v jq &> /dev/null; then
           local assignee=$(jq -r '.assignee // ""' "$t_json")
-          local status=$(jq -r '.status // "planning"' "$t_json")
+          local status=$(resolve_task_status "$t_json")
           if [[ "$assignee" == "$developer" ]] && [[ "$status" != "done" ]]; then
-            local title=$(jq -r '.title // .name // "unknown"' "$t_json")
+            local title=$(resolve_task_title "$t_json")
             local priority=$(jq -r '.priority // "P2"' "$t_json")
             echo "- [$priority] $title ($status)"
             ((my_task_count++)) || true
@@ -235,18 +282,22 @@ output_text() {
   local issues_dir="$repo_root/$DIR_WORKFLOW/$DIR_ISSUES"
   local issue_count=0
   if [[ -d "$issues_dir" ]]; then
-    for f in "$issues_dir"/*.json; do
+    for f in "$issues_dir"/[0-9][0-9][0-9][0-9]-*.md; do
       [[ ! -f "$f" ]] && continue
       local i_status
-      i_status=$(jq -r '.status' "$f" 2>/dev/null)
+      i_status=$(grep -m1 '^status:' "$f" 2>/dev/null | sed 's/^status:[[:space:]]*//')
       [[ "$i_status" == "closed" ]] && continue
       local i_id i_title i_milestone i_labels
-      i_id=$(jq -r '.id' "$f")
-      i_title=$(jq -r '.title' "$f")
-      i_milestone=$(jq -r '.milestone // ""' "$f")
-      i_labels=$(jq -r '.labels | join(", ")' "$f")
+      i_id=$(grep -m1 '^id:' "$f" 2>/dev/null | sed 's/^id:[[:space:]]*//')
+      i_title=$(grep -m1 '^title:' "$f" 2>/dev/null | sed 's/^title:[[:space:]]*//')
+      i_milestone=$(grep -m1 '^milestone:' "$f" 2>/dev/null | sed 's/^milestone:[[:space:]]*//')
+      i_labels=$(awk '
+        /^labels:/ { capture=1; next }
+        capture && /^  - / { sub(/^  - /, ""); gsub(/"/, ""); print; next }
+        capture { exit }
+      ' "$f" | paste -sd ',' - | sed 's/,/, /g')
       local ms_str=""
-      [[ -n "$i_milestone" ]] && ms_str=" [$i_milestone]"
+      [[ -n "$i_milestone" && "$i_milestone" != "null" ]] && ms_str=" [$i_milestone]"
       local lbl_str=""
       [[ -n "$i_labels" ]] && lbl_str=" {$i_labels}"
       echo "- #${i_id} ${i_title}${ms_str}${lbl_str}"

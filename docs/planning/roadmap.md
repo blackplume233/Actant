@@ -1,66 +1,28 @@
 # Product Roadmap
 
-> ContextFS 文档基线重置已完成；下一步进入 M1 契约与类型替换。
+> Active product planning uses checklist / todolist only.
 
----
+## Current Focus
 
-## Current Priority
+- [x] ContextFS 文档基线重置
+- [x] M1 契约与类型替换
+- [x] M2 Kernel 重建
+- [x] M3 编排层重建
+- [x] M4 Built-In Sources
+- [x] M5 执行模型 + Trait 体系
+- [x] M6 Facade 统一
+- [ ] M7 Source 配置面 + 自举就绪
+- [ ] M8 V1 Freeze
 
-Actant 的当前目标是在已完成的文档基线上推进下一阶段替换：
+## Active Priority
 
-- 产品层统一为 `ContextFS`
-- 实现层统一为 `VFS Kernel`
-- 文档基线先于实现
+- [ ] 以 `docs/planning/contextfs-roadmap.md` 作为详细执行清单继续推进 M7
+- [ ] 新任务必须围绕 M7 / M8 建立，不再把已交付的 M0-M6 任务留在 active tasks
+- [ ] ship / merge 前先补 changelog draft，再汇总正式 changelog
 
-当前阶段的直接任务是：
+## Planning Rules
 
-1. 以已完成的 ContextFS 基线为唯一真相源
-2. 进入 M1 契约与类型替换
-3. 删除与当前基线冲突的遗留公共契约
-4. 为 `packages/context` / `packages/vfs` 的后续重建固定边界
-
-详细计划见 [ContextFS Roadmap](./contextfs-roadmap.md)。
-
----
-
-## Active Roadmap
-
-### ContextFS 文档基线重置
-
-- 状态：`completed`
-- 目标：把 spec、design、roadmap 三层文档统一到新的 ContextFS 基线
-- 入口文档：[ContextFS Roadmap](./contextfs-roadmap.md)
-
-本阶段完成标准：
-
-- 只有 `ContextFS` / `VFS Kernel` 这一套有效叙述
-- spec、design、roadmap 三层文档术语一致
-- 历史迁移说明不再占用主线入口
-- 下一阶段实现者无需再决定核心对象模型和 V1 范围
-
-下一阶段：
-
-- M1 契约与类型替换
-- 以当前文档基线为前提推进实现准备，不再回到基线重写阶段
-
----
-
-## Deferred Until After Baseline Reset
-
-以下事项在进入更深实现前仍需等 M1 完成：
-
-- ContextFS / VFS Kernel 实际代码重构
-- `packages/context` / `packages/vfs` 的 breaking changes
-- CLI / API / daemon 接入新内核
-- Source / Backend / ProjectManifest 的真实实现
-- 任何脱离当前 ContextFS 基线的增量功能扩展
-
----
-
-## Planning Rule
-
-在当前阶段：
-
-- 不再把 `workflow` 作为 V1 顶层概念写入计划
-- 任何后续开发计划都必须引用 [ContextFS Roadmap](./contextfs-roadmap.md)
-- 历史迁移信息应放在单独文档中，按需读取
+- [x] 活跃 roadmap 只能使用 checklist / todolist 结构
+- [x] roadmap 是可执行任务清单，不再使用叙事型状态段落作为主格式
+- [x] 历史回顾与分析迁移到 `docs/history/` 或 `docs/agent/`
+- [x] 详细里程碑与验收标准统一维护在 [ContextFS Roadmap](./contextfs-roadmap.md)

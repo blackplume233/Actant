@@ -20,6 +20,8 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../common/paths.sh"
 source "$SCRIPT_DIR/../common/phase.sh"
+source "$SCRIPT_DIR/../common/task-utils.sh"
+source "$SCRIPT_DIR/../common/changelog-draft.sh"
 
 # Colors
 RED='\033[0;31m'
@@ -97,8 +99,15 @@ fi
 echo ""
 
 # Read task config
-TASK_NAME=$(jq -r '.name' "$TASK_JSON")
-BASE_BRANCH=$(jq -r '.base_branch // "main"' "$TASK_JSON")
+if ! validate_task_schema "$TASK_JSON" "$TASK_JSON" true; then
+  while IFS= read -r warning; do
+    [[ -z "$warning" ]] && continue
+    echo -e "${YELLOW}${warning}${NC}"
+  done < <(collect_task_schema_warnings "$TASK_JSON" "$(basename "$TARGET_DIR")")
+fi
+
+TASK_NAME=$(resolve_task_name "$TASK_JSON")
+BASE_BRANCH=$(resolve_task_base_branch "$TASK_JSON" "$REPO_ROOT")
 SCOPE=$(jq -r '.scope // "core"' "$TASK_JSON")
 DEV_TYPE=$(jq -r '.dev_type // "feature"' "$TASK_JSON")
 
@@ -121,6 +130,12 @@ echo ""
 # Get current branch
 CURRENT_BRANCH=$(git branch --show-current)
 echo -e "Current branch: ${CURRENT_BRANCH}"
+
+echo -e "${YELLOW}Validating changelog draft...${NC}"
+if ! require_matching_changelog_draft "$REPO_ROOT" "$TASK_NAME" "$CURRENT_BRANCH"; then
+  exit 1
+fi
+echo -e "${GREEN}Changelog draft: present${NC}"
 
 # Check for changes
 echo -e "${YELLOW}Checking for changes...${NC}"
@@ -225,8 +240,8 @@ else
     CREATE_PR_PHASE=4  # Default fallback
   fi
 
-  jq --arg url "$PR_URL" --argjson phase "$CREATE_PR_PHASE" \
-    '.status = "completed" | .pr_url = $url | .current_phase = $phase' "$TASK_JSON" > "${TASK_JSON}.tmp"
+  jq --arg url "$PR_URL" --arg base "$BASE_BRANCH" --argjson phase "$CREATE_PR_PHASE" \
+    '.status = "completed" | .base_branch = $base | .pr_url = $url | .current_phase = $phase' "$TASK_JSON" > "${TASK_JSON}.tmp"
   mv "${TASK_JSON}.tmp" "$TASK_JSON"
   echo -e "${GREEN}Task status updated to 'completed', phase ${CREATE_PR_PHASE}${NC}"
 fi

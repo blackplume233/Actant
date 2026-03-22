@@ -1,0 +1,41 @@
+{
+  "id": "m1-contract-type-replacement",
+  "name": "m1-contract-type-replacement",
+  "title": "Complete M1 contract and type replacement end-to-end: start with impact analysis on core contracts, replace the public object model and type naming with Project/Source/Capability-aligned contracts, remove active references to legacy core interfaces from implementation surfaces, update spec/docs required by contract changes, and leave the repository satisfying the M1 acceptance criteria.",
+  "description": "",
+  "status": "archived",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-19",
+  "completedAt": "2026-03-19",
+  "branch": "codex/03-19-m1-contract-type-replacement",
+  "base_branch": "master",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-19-m1-contract-type-replacement",
+  "current_phase": 4,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}

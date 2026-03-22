@@ -1,0 +1,41 @@
+{
+  "id": "m0-contextfs-baseline",
+  "name": "m0-contextfs-baseline",
+  "title": "Complete M0 ContextFS baseline reset end-to-end: finish default-entry cleanup, eliminate active-path second truths, align roadmap/spec/workflow/public package messaging, and leave the repository in a state where the M0 acceptance criteria are actually satisfied.",
+  "description": "",
+  "status": "archived",
+  "dev_type": "docs",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-19",
+  "completedAt": "2026-03-19",
+  "branch": "codex/03-19-m0-contextfs-baseline",
+  "base_branch": "master",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-19-m0-contextfs-baseline",
+  "current_phase": 4,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}

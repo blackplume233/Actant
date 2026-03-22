@@ -1,0 +1,41 @@
+{
+  "id": "m5-control-stream",
+  "name": "m5-control-stream",
+  "title": "完整实现 M5 控制节点与流节点执行模型。需要创建 4 个缺失的 Built-In Source 文件（skill-source.ts、mcp-config-source.ts、mcp-runtime-source.ts、agent-runtime-source.ts）在 packages/vfs/src/sources/ 下，并确保 packages/vfs/src/__tests__/m5-control-stream-e2e.test.ts 的全部测试通过。核心验收：1) 向 control/request.json 写入触发执行，2) 从 streams/* 稳定消费输出，3) 正确的错误语义，4) 无需额外顶层执行系统。参照 process-source.ts 的 control/stream 模式，以及 AppContext.createAgentRuntimeProvider() 的 provider 接口签名。文件布局参考现有 api-contracts.md 中的路径契约和 config-spec.md 中的节点结构。",
+  "description": "",
+  "status": "archived",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-20",
+  "completedAt": "2026-03-20",
+  "branch": "codex/03-20-m5-control-stream",
+  "base_branch": "master",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m5-control-stream",
+  "current_phase": 4,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": "36f1874",
+  "pr_url": "https://github.com/blackplume233/Actant/pull/309",
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}

@@ -6,6 +6,7 @@
 #   ./.trellis/scripts/task.sh init-context <dir> <type>   # Initialize jsonl files
 #   ./.trellis/scripts/task.sh add-context <dir> <file> <path> [reason] # Add jsonl entry
 #   ./.trellis/scripts/task.sh validate <dir>              # Validate jsonl files
+#   ./.trellis/scripts/task.sh validate-task <dir>         # Validate task.json schema
 #   ./.trellis/scripts/task.sh list-context <dir>          # List jsonl entries
 #   ./.trellis/scripts/task.sh start <dir>                 # Set as current task
 #   ./.trellis/scripts/task.sh finish                      # Clear current task
@@ -242,8 +243,12 @@ cmd_create() {
   fi
 
   local today=$(date +%Y-%m-%d)
-  # Record current branch as base_branch (PR target)
-  local current_branch=$(git branch --show-current 2>/dev/null || echo "main")
+  # Record current branch as base_branch (PR target). Fall back to repo default
+  # when running detached or in unusual shell states.
+  local current_branch=$(git branch --show-current 2>/dev/null || true)
+  if [[ -z "$current_branch" ]]; then
+    current_branch=$(resolve_repo_default_branch "$REPO_ROOT")
+  fi
 
   cat > "$task_json" << EOF
 {
@@ -522,6 +527,34 @@ cmd_validate() {
 }
 
 # =============================================================================
+# Command: validate-task
+# =============================================================================
+
+cmd_validate_task() {
+  local target_dir="$1"
+
+  if [[ -z "$target_dir" ]]; then
+    echo -e "${RED}Error: task directory required${NC}"
+    echo "Usage: $0 validate-task <task-dir>"
+    exit 1
+  fi
+
+  if [[ ! "$target_dir" = /* ]]; then
+    target_dir="$REPO_ROOT/$target_dir"
+  fi
+
+  local task_json="$target_dir/$FILE_TASK_JSON"
+  local label
+  label=$(basename "$target_dir")
+
+  if validate_task_schema "$task_json" "$label"; then
+    echo -e "${GREEN}✓ Task schema valid: ${label}${NC}"
+  else
+    exit 1
+  fi
+}
+
+# =============================================================================
 # Command: list-context
 # =============================================================================
 
@@ -640,7 +673,7 @@ cmd_archive() {
   local today=$(date +%Y-%m-%d)
   if [[ -f "$task_json" ]] && command -v jq &> /dev/null; then
     local temp_file=$(mktemp)
-    jq --arg date "$today" '.status = "completed" | .completedAt = $date' "$task_json" > "$temp_file"
+    jq --arg date "$today" '.status = "archived" | .completedAt = (.completedAt // $date) | .completedAt = (if .completedAt == null or .completedAt == "" then $date else .completedAt end)' "$task_json" > "$temp_file"
     mv "$temp_file" "$task_json"
   fi
 
@@ -718,10 +751,17 @@ cmd_list() {
       local status="unknown"
       local assignee="-"
       local relative_path="$DIR_WORKFLOW/$DIR_TASKS/$dir_name"
+      local warnings=()
 
       if [[ -f "$task_json" ]] && command -v jq &> /dev/null; then
-        status=$(jq -r '.status // "unknown"' "$task_json")
+        status=$(resolve_task_status "$task_json")
         assignee=$(jq -r '.assignee // "-"' "$task_json")
+        while IFS= read -r warning; do
+          [[ -z "$warning" ]] && continue
+          warnings+=("$warning")
+        done < <(collect_task_schema_warnings "$task_json" "$dir_name")
+      else
+        warnings+=("WARNING [$dir_name] missing task.json")
       fi
 
       # Apply --mine filter
@@ -744,6 +784,10 @@ cmd_list() {
       else
         echo -e "  - $dir_name/ ($status) [${CYAN}$assignee${NC}]$marker"
       fi
+      local warning
+      for warning in "${warnings[@]}"; do
+        echo -e "    ${YELLOW}${warning}${NC}"
+      done
       ((count++))
     fi
   done
@@ -820,6 +864,13 @@ cmd_set_branch() {
   if [[ ! -f "$task_json" ]]; then
     echo -e "${RED}Error: task.json not found at $target_dir${NC}"
     exit 1
+  fi
+
+  if ! validate_task_schema "$task_json" "$task_json" true; then
+    while IFS= read -r warning; do
+      [[ -z "$warning" ]] && continue
+      echo -e "${YELLOW}${warning}${NC}"
+    done < <(collect_task_schema_warnings "$task_json" "$(basename "$target_dir")")
   fi
 
   # Update branch field
@@ -953,8 +1004,8 @@ cmd_create_pr() {
   echo ""
 
   # Read task config
-  local task_name=$(jq -r '.name' "$task_json")
-  local base_branch=$(jq -r '.base_branch // "main"' "$task_json")
+  local task_name=$(resolve_task_name "$task_json")
+  local base_branch=$(resolve_task_base_branch "$task_json" "$REPO_ROOT")
   local scope=$(jq -r '.scope // "core"' "$task_json")
   local dev_type=$(jq -r '.dev_type // "feature"' "$task_json")
 
@@ -1077,8 +1128,8 @@ cmd_create_pr() {
   else
     # Find the phase number for create-pr action
     local create_pr_phase=$(jq -r '.next_action[] | select(.action == "create-pr") | .phase // 4' "$task_json")
-    jq --arg url "$pr_url" --argjson phase "$create_pr_phase" \
-      '.status = "review" | .pr_url = $url | .current_phase = $phase' "$task_json" > "${task_json}.tmp"
+    jq --arg url "$pr_url" --arg base "$base_branch" --argjson phase "$create_pr_phase" \
+      '.status = "review" | .base_branch = $base | .pr_url = $url | .current_phase = $phase' "$task_json" > "${task_json}.tmp"
     mv "${task_json}.tmp" "$task_json"
     echo -e "${GREEN}Task status updated to 'review', phase ${create_pr_phase}${NC}"
   fi
@@ -1108,6 +1159,7 @@ Usage:
   $0 init-context <dir> <type> [--platform claude|cursor]  Initialize jsonl files
   $0 add-context <dir> <jsonl> <path> [reason]  Add entry to jsonl
   $0 validate <dir>                     Validate jsonl files
+  $0 validate-task <dir>                Validate task.json schema
   $0 list-context <dir>                 List jsonl entries
   $0 start <dir>                        Set as current task
   $0 finish                             Clear current task
@@ -1160,6 +1212,9 @@ case "${1:-}" in
     ;;
   validate)
     cmd_validate "$2"
+    ;;
+  validate-task)
+    cmd_validate_task "$2"
     ;;
   list-context)
     cmd_list_context "$2"

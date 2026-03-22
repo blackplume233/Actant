@@ -1,0 +1,41 @@
+{
+  "id": "m6-phase-5-mcp-standalone-convergence-canceled",
+  "name": "m6-phase-5-mcp-standalone-convergence-canceled",
+  "title": "M6 Phase 5 MCP Standalone Convergence (Canceled)",
+  "description": "",
+  "status": "archived",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-20",
+  "completedAt": "2026-03-21",
+  "branch": "codex/03-20-m6-converge-mcp",
+  "base_branch": "master",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": "Canceled after standalone mode was removed from the active roadmap."
+}

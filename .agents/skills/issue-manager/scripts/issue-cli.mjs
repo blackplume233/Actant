@@ -301,12 +301,47 @@ async function nextId() {
   return next;
 }
 
+async function ensureCounterAtLeast(id) {
+  await ensureDir();
+  const counterVal = parseInt(await readFile(COUNTER_FILE, "utf-8").catch(() => "0"), 10) || 0;
+  if (id > counterVal) {
+    await writeFile(COUNTER_FILE, String(id), "utf-8");
+  }
+}
+
 function slugify(title) {
   return title
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 60) || "untitled";
+}
+
+function normalizeDuplicateText(value) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function duplicateBodyKey(value) {
+  return normalizeDuplicateText(value).slice(0, 240);
+}
+
+function isSimilarBody(a, b) {
+  const left = duplicateBodyKey(a);
+  const right = duplicateBodyKey(b);
+
+  if (!left || !right) return true;
+  return left === right || left.includes(right) || right.includes(left);
+}
+
+function isDuplicateIssueCandidate(expectedTitle, expectedBody, actualTitle, actualBody) {
+  if (normalizeDuplicateText(expectedTitle) !== normalizeDuplicateText(actualTitle)) {
+    return false;
+  }
+  return isSimilarBody(expectedBody, actualBody);
 }
 
 async function listIssueFiles() {
@@ -326,8 +361,26 @@ async function findIssueFile(id) {
   const files = await listIssueFiles();
   const found = files.find(f => basename(f).startsWith(padded + "-"));
   if (found) return found;
+
+  for (const file of files) {
+    const { meta } = await readIssue(file);
+    if (meta.id === id || extractGhNumber(meta.githubRef) === id) {
+      return file;
+    }
+  }
+
   const archived = await listArchivedFiles();
-  return archived.find(f => basename(f).startsWith(padded + "-"));
+  const archivedFound = archived.find(f => basename(f).startsWith(padded + "-"));
+  if (archivedFound) return archivedFound;
+
+  for (const file of archived) {
+    const { meta } = await readIssue(file);
+    if (meta.id === id || extractGhNumber(meta.githubRef) === id) {
+      return file;
+    }
+  }
+
+  return undefined;
 }
 
 async function listArchivedFiles() {
@@ -397,6 +450,73 @@ async function clearDirty(id) {
   } else {
     await saveDirtySet(set);
   }
+}
+
+async function replaceDirtyId(oldId, newId) {
+  if (oldId === newId) return;
+
+  const set = await loadDirtySet();
+  if (!set.has(oldId)) return;
+  set.delete(oldId);
+  set.add(newId);
+  await saveDirtySet(set);
+}
+
+async function reconcileLocalIssueIdentity(filepath, meta, body, desiredId, desiredTitle = meta.title) {
+  const previousId = meta.id;
+  const targetDir = dirname(filepath);
+  meta.id = desiredId;
+  meta.title = desiredTitle;
+  meta.githubRef = `${GH_OWNER}/${GH_REPO}#${desiredId}`;
+  meta.updatedAt = now();
+
+  const desiredPath = join(targetDir, issueFilenameForSlug(desiredId, slugify(meta.title)));
+  if (desiredPath !== filepath) {
+    await rename(filepath, desiredPath);
+    filepath = desiredPath;
+  }
+
+  await ensureCounterAtLeast(desiredId);
+  await replaceDirtyId(previousId, desiredId);
+  const allFiles = await listIssueFiles();
+  await writeIssue(filepath, meta, body, allFiles);
+  return filepath;
+}
+
+async function upsertLocalIssueFromGitHub(ghNum, issueData = {}) {
+  const existingPath = await findIssueFile(ghNum);
+  const existing = existingPath ? await readIssue(existingPath) : null;
+  const filepath = existingPath || join(ISSUES_DIR, issueFilenameForSlug(ghNum, slugify(issueData.title || existing?.meta.title || `issue-${ghNum}`)));
+  const timestamp = now();
+
+  const meta = {
+    id: ghNum,
+    title: issueData.title || existing?.meta.title || `Issue #${ghNum}`,
+    status: issueData.status || existing?.meta.status || "open",
+    labels: issueData.labels || existing?.meta.labels || [],
+    milestone: issueData.milestone ?? existing?.meta.milestone ?? null,
+    author: existing?.meta.author || getAuthor(),
+    assignees: issueData.assignees || existing?.meta.assignees || [],
+    relatedIssues: issueData.relatedIssues || existing?.meta.relatedIssues || [],
+    relatedFiles: issueData.relatedFiles || existing?.meta.relatedFiles || [],
+    taskRef: existing?.meta.taskRef || null,
+    githubRef: `${GH_OWNER}/${GH_REPO}#${ghNum}`,
+    closedAs: issueData.closedAs ?? existing?.meta.closedAs ?? null,
+    createdAt: issueData.createdAt || existing?.meta.createdAt || timestamp,
+    updatedAt: issueData.updatedAt || timestamp,
+    closedAt: issueData.closedAt ?? existing?.meta.closedAt ?? null,
+    _comments: existing?.meta._comments || [],
+  };
+
+  await ensureCounterAtLeast(ghNum);
+  const allFiles = await listIssueFiles();
+  await writeIssue(filepath, meta, issueData.body ?? existing?.body ?? "", allFiles);
+
+  if (existingPath) {
+    return reconcileLocalIssueIdentity(filepath, meta, issueData.body ?? existing.body ?? "", ghNum, meta.title);
+  }
+
+  return filepath;
 }
 
 // ─── GitHub Sync via gh CLI ──────────────────────────────────────────────────
@@ -497,15 +617,20 @@ function ghCreateNew(meta, ghBody) {
 }
 
 async function syncToGitHub(id, { silent = false } = {}) {
-  const filepath = await findIssueFile(id);
+  let filepath = await findIssueFile(id);
   if (!filepath) {
     if (!silent) console.error(C.red(`Sync: issue #${id} not found locally`));
     return false;
   }
 
-  const { meta, body } = await readIssue(filepath);
+  let { meta, body } = await readIssue(filepath);
   const ghNum = extractGhNumber(meta.githubRef);
   const ghBody = buildGhBody(meta, body);
+
+  if (ghNum && meta.id !== ghNum) {
+    filepath = await reconcileLocalIssueIdentity(filepath, meta, body, ghNum, meta.title);
+    ({ meta, body } = await readIssue(filepath));
+  }
 
   try {
     if (ghNum) {
@@ -513,18 +638,16 @@ async function syncToGitHub(id, { silent = false } = {}) {
     } else {
       const newNum = ghCreateNew(meta, ghBody);
       if (newNum) {
-        meta.githubRef = `${GH_OWNER}/${GH_REPO}#${newNum}`;
-        meta.updatedAt = now();
-        const allFiles = await listIssueFiles();
-        await writeIssue(filepath, meta, body, allFiles);
+        filepath = await reconcileLocalIssueIdentity(filepath, meta, body, newNum, meta.title);
+        ({ meta } = await readIssue(filepath));
       }
     }
 
-    await clearDirty(id);
-    if (!silent) console.error(C.green(`  ✓ Synced #${id} → GitHub`));
+    await clearDirty(meta.id);
+    if (!silent) console.error(C.green(`  ✓ Synced #${meta.id} → GitHub`));
     return true;
   } catch (e) {
-    if (!silent) console.error(C.yellow(`  ⚠ Sync failed for #${id}: ${e.message}`));
+    if (!silent) console.error(C.yellow(`  ⚠ Sync failed for #${meta.id}: ${e.message}`));
     return false;
   }
 }
@@ -535,6 +658,46 @@ async function pullFromGitHub(ghNum) {
     "--json", "number,title,state,labels,body,assignees,createdAt,updatedAt,closedAt",
   ]);
   return JSON.parse(json);
+}
+
+async function findLocalDuplicateIssue(title, body) {
+  const files = [...await listIssueFiles(), ...await listArchivedFiles()];
+
+  for (const filepath of files) {
+    const issue = await readIssue(filepath);
+    if (issue.meta.status === "closed") continue;
+    if (isDuplicateIssueCandidate(title, body, issue.meta.title, issue.body)) {
+      return { filepath, ...issue };
+    }
+  }
+
+  return null;
+}
+
+function ghSearchIssues(query) {
+  const json = ghSpawn([
+    "api", "search/issues",
+    "--method", "GET",
+    "-f", `q=${query}`,
+    "-f", "per_page=10",
+  ]);
+  return JSON.parse(json);
+}
+
+async function findGitHubDuplicateIssue(title, body) {
+  if (!ghAvailable()) return null;
+
+  const query = `repo:${GH_OWNER}/${GH_REPO} is:issue state:open in:title "${title.replace(/"/g, '\\"')}"`;
+  const result = ghSearchIssues(query);
+  const items = Array.isArray(result.items) ? result.items.slice().sort((a, b) => a.number - b.number) : [];
+
+  for (const item of items) {
+    if (isDuplicateIssueCandidate(title, body, item.title, item.body || "")) {
+      return item;
+    }
+  }
+
+  return null;
 }
 
 async function afterMutation(id, { silent = false } = {}) {
@@ -623,22 +786,11 @@ async function cmdCreate(args) {
   }
 
   await ensureDir();
-  const id = explicitId || await nextId();
-  if (explicitId) {
-    const counterVal = parseInt(await readFile(COUNTER_FILE, "utf-8"), 10) || 0;
-    if (explicitId > counterVal) {
-      await writeFile(COUNTER_FILE, String(explicitId), "utf-8");
-    }
-  }
-  const slug = slugify(title);
-  const filename = issueFilenameForSlug(id, slug);
-  const filepath = join(ISSUES_DIR, filename);
   const author = getAuthor();
   const timestamp = now();
-  const allFiles = await listIssueFiles();
 
   const meta = {
-    id,
+    id: explicitId || null,
     title,
     status: "open",
     labels: [...new Set(labels)],
@@ -648,7 +800,7 @@ async function cmdCreate(args) {
     relatedIssues,
     relatedFiles,
     taskRef: null,
-    githubRef: explicitId ? `blackplume233/Actant#${id}` : null,
+    githubRef: explicitId ? `${GH_OWNER}/${GH_REPO}#${explicitId}` : null,
     closedAs: null,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -656,9 +808,114 @@ async function cmdCreate(args) {
     _comments: [],
   };
 
+  const localDuplicate = await findLocalDuplicateIssue(title, body);
+  const githubDuplicate = explicitId ? null : await findGitHubDuplicateIssue(title, body);
+
+  if (localDuplicate) {
+    const existingGh = extractGhNumber(localDuplicate.meta.githubRef);
+    if (existingGh) {
+      const filepath = await reconcileLocalIssueIdentity(localDuplicate.filepath, localDuplicate.meta, localDuplicate.body || body, existingGh, localDuplicate.meta.title);
+      const linked = await readIssue(filepath);
+      await clearDirty(linked.meta.id);
+      console.error(C.yellow(`Reused existing local issue #${linked.meta.id}: ${linked.meta.title}`));
+      console.log(linked.meta.id);
+      return;
+    }
+  }
+
+  if (githubDuplicate) {
+    const ghLabels = (githubDuplicate.labels || []).map(label => typeof label === "string" ? label : label.name);
+    const filepath = await upsertLocalIssueFromGitHub(githubDuplicate.number, {
+      title: githubDuplicate.title,
+      body: githubDuplicate.body || body,
+      status: githubDuplicate.state === "closed" ? "closed" : "open",
+      labels: ghLabels.length ? ghLabels : meta.labels,
+      assignees: [],
+      relatedIssues,
+      relatedFiles,
+      milestone: milestone || null,
+      createdAt: githubDuplicate.created_at || timestamp,
+      updatedAt: githubDuplicate.updated_at || timestamp,
+      closedAt: githubDuplicate.closed_at || null,
+      closedAs: githubDuplicate.state === "closed" ? "completed" : null,
+    });
+    const reused = await readIssue(filepath);
+    await clearDirty(reused.meta.id);
+    console.error(C.yellow(`Reused GitHub issue #${reused.meta.id}: ${reused.meta.title}`));
+    console.log(reused.meta.id);
+    return;
+  }
+
+  if (explicitId) {
+    const filepath = await upsertLocalIssueFromGitHub(explicitId, {
+      title,
+      body,
+      status: "open",
+      labels: meta.labels,
+      assignees: [],
+      relatedIssues,
+      relatedFiles,
+      milestone: milestone || null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+    const linked = await readIssue(filepath);
+    console.error(C.green(`Linked local cache to GitHub issue #${linked.meta.id}: ${linked.meta.title}`));
+    console.log(linked.meta.id);
+    return;
+  }
+
+  if (localDuplicate) {
+    if (ghAvailable()) {
+      const newNum = ghCreateNew(localDuplicate.meta, buildGhBody(localDuplicate.meta, localDuplicate.body || body));
+      if (newNum) {
+        const filepath = await reconcileLocalIssueIdentity(localDuplicate.filepath, localDuplicate.meta, localDuplicate.body || body, newNum, localDuplicate.meta.title);
+        const linked = await readIssue(filepath);
+        await clearDirty(linked.meta.id);
+        console.error(C.yellow(`Reused existing local draft and linked GitHub issue #${linked.meta.id}: ${linked.meta.title}`));
+        console.log(linked.meta.id);
+        return;
+      }
+    }
+
+    console.error(C.yellow(`Reused existing local issue #${localDuplicate.meta.id}: ${localDuplicate.meta.title}`));
+    console.log(localDuplicate.meta.id);
+    return;
+  }
+
+  if (ghAvailable()) {
+    const newNum = ghCreateNew(meta, buildGhBody(meta, body));
+    const filepath = await upsertLocalIssueFromGitHub(newNum, {
+      title,
+      body,
+      status: "open",
+      labels: meta.labels,
+      assignees: [],
+      relatedIssues,
+      relatedFiles,
+      milestone: milestone || null,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+    const created = await readIssue(filepath);
+    console.error(C.green(`Created #${created.meta.id}: ${created.meta.title}`));
+    if (labels.length) {
+      console.error(`  Labels: ${labels.map(colorLabel).join(", ")}`);
+    }
+    console.log(created.meta.id);
+    return;
+  }
+
+  const id = await nextId();
+  meta.id = id;
+  const slug = slugify(title);
+  const filename = issueFilenameForSlug(id, slug);
+  const filepath = join(ISSUES_DIR, filename);
+  const allFiles = await listIssueFiles();
+
   await writeIssue(filepath, meta, body, allFiles);
 
-  console.error(C.green(`Created #${id}: ${title}`));
+  console.error(C.green(`Created local-only #${id}: ${title}`));
   if (labels.length) {
     console.error(`  Labels: ${labels.map(colorLabel).join(", ")}`);
   }
@@ -1233,9 +1490,14 @@ async function cmdLink(args) {
   meta.updatedAt = now();
 
   await writeIssue(filepath, meta, body, allFiles);
+  let mutationId = id;
+  if (owner === GH_OWNER && repo === GH_REPO) {
+    filepath = await reconcileLocalIssueIdentity(filepath, meta, body, Number(number), meta.title);
+    mutationId = Number(number);
+  }
   console.log(C.green(`Linked #${id} → ${C.cyan(`https://github.com/${owner}/${repo}/issues/${number}`)}`));
 
-  await afterMutation(id);
+  await afterMutation(mutationId);
 }
 
 async function cmdUnlink(idStr) {
@@ -1349,41 +1611,28 @@ async function cmdPull(args) {
     meta.updatedAt = now();
     if (gh.closedAt) meta.closedAt = gh.closedAt;
     await writeIssue(filepath, meta, gh.body || existingBody, allFiles);
+    filepath = await reconcileLocalIssueIdentity(filepath, meta, gh.body || existingBody, ghNum, gh.title);
     await clearDirty(ghNum);
     console.error(C.green(`  ✓ Updated local #${ghNum} from GitHub`));
   } else {
     await ensureDir();
-    const slug = slugify(gh.title);
-    const filename = issueFilenameForSlug(ghNum, slug);
-    const newpath = join(ISSUES_DIR, filename);
     const author = getAuthor();
     const timestamp = now();
 
-    const meta = {
-      id: ghNum,
+    await upsertLocalIssueFromGitHub(ghNum, {
       title: gh.title,
+      body: gh.body || "",
       status: gh.state === "OPEN" ? "open" : "closed",
       labels: ghLabels,
       milestone: null,
-      author,
       assignees: ghAssignees,
       relatedIssues: [],
       relatedFiles: [],
-      taskRef: null,
-      githubRef: `${GH_OWNER}/${GH_REPO}#${ghNum}`,
       closedAs: gh.state === "OPEN" ? null : "completed",
       createdAt: gh.createdAt || timestamp,
       updatedAt: timestamp,
       closedAt: gh.closedAt || null,
-      _comments: [],
-    };
-
-    const counterVal = parseInt(await readFile(COUNTER_FILE, "utf-8").catch(() => "0"), 10) || 0;
-    if (ghNum > counterVal) {
-      await writeFile(COUNTER_FILE, String(ghNum), "utf-8");
-    }
-
-    await writeIssue(newpath, meta, gh.body || "", allFiles);
+    });
     console.error(C.green(`  ✓ Created local #${ghNum} from GitHub`));
   }
 }

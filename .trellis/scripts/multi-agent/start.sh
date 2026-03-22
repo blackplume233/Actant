@@ -26,6 +26,7 @@ source "$SCRIPT_DIR/../common/paths.sh"
 source "$SCRIPT_DIR/../common/worktree.sh"
 source "$SCRIPT_DIR/../common/developer.sh"
 source "$SCRIPT_DIR/../common/registry.sh"
+source "$SCRIPT_DIR/../common/task-utils.sh"
 
 # Colors
 RED='\033[0;31m'
@@ -94,11 +95,18 @@ echo ""
 echo -e "${BLUE}=== Multi-Agent Pipeline: Start ===${NC}"
 log_info "Task: ${TASK_DIR_ABS}"
 
-BRANCH=$(jq -r '.branch' "$TASK_JSON")
-TASK_NAME=$(jq -r '.name' "$TASK_JSON")
-TASK_STATUS=$(jq -r '.status' "$TASK_JSON")
+if ! validate_task_schema "$TASK_JSON" "$TASK_JSON" true; then
+  while IFS= read -r warning; do
+    [[ -z "$warning" ]] && continue
+    log_warn "$warning"
+  done < <(collect_task_schema_warnings "$TASK_JSON" "$(basename "$TASK_DIR_ABS")")
+fi
+
+BRANCH=$(task_field_or_empty "$TASK_JSON" "branch")
+TASK_NAME=$(resolve_task_name "$TASK_JSON")
+TASK_STATUS=$(resolve_task_status "$TASK_JSON")
 WORKTREE_PATH=$(jq -r '.worktree_path // empty' "$TASK_JSON")
-CONFIGURED_BASE_BRANCH=$(jq -r '.base_branch // empty' "$TASK_JSON")
+CONFIGURED_BASE_BRANCH=$(task_field_or_empty "$TASK_JSON" "base_branch")
 
 # Check if task was rejected
 if [ "$TASK_STATUS" = "rejected" ]; then
@@ -136,14 +144,11 @@ log_info "Name: ${TASK_NAME}"
 if [ -z "$WORKTREE_PATH" ] || [ ! -d "$WORKTREE_PATH" ]; then
   log_info "Step 1: Creating worktree..."
 
-  # Determine base_branch (PR target)
-  # Priority: 1) task.json configured value, 2) current branch
+  BASE_BRANCH=$(resolve_task_base_branch "$TASK_JSON" "$PROJECT_ROOT")
   if [ -n "$CONFIGURED_BASE_BRANCH" ]; then
-    BASE_BRANCH="$CONFIGURED_BASE_BRANCH"
     log_info "Base branch (from task.json): ${BASE_BRANCH}"
   else
-    BASE_BRANCH=$(git -C "$PROJECT_ROOT" branch --show-current)
-    log_info "Base branch (current branch): ${BASE_BRANCH}"
+    log_warn "base_branch missing in task.json, resolved via repository default: ${BASE_BRANCH}"
   fi
 
   # Calculate worktree path

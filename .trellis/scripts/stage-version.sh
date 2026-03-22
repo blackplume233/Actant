@@ -16,6 +16,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/common/paths.sh"
+source "$SCRIPT_DIR/common/changelog-draft.sh"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -92,6 +93,17 @@ collect_issues_by_label() {
       echo "#${id} ${title}"
     fi
   done
+}
+
+extract_markdown_section() {
+  local file="$1"
+  local header="$2"
+
+  awk -v header="$header" '
+    $0 == header { capture=1; next }
+    capture && /^## / { exit }
+    capture { print }
+  ' "$file" | sed '/^[[:space:]]*$/d'
 }
 
 # =============================================================================
@@ -474,6 +486,14 @@ cmd_changelog() {
   open_issues=$(cat /tmp/actant_open_issues.tmp 2>/dev/null || echo "")
   rm -f /tmp/actant_open_issues.tmp
 
+  # Collect validated changelog drafts
+  local validated_drafts=()
+  local draft_file=""
+  while IFS= read -r draft_file; do
+    [[ -z "$draft_file" ]] && continue
+    validated_drafts+=("$draft_file")
+  done < <(find_matching_changelog_drafts "$REPO_ROOT")
+
   # Write changelog
   {
     echo "# Changelog — $version"
@@ -528,6 +548,27 @@ cmd_changelog() {
       echo ""
       echo "$chore_commits"
       echo ""
+    fi
+
+    if [[ "${#validated_drafts[@]}" -gt 0 ]]; then
+      echo "## 🧾 交付草稿汇总"
+      echo ""
+      for draft_file in "${validated_drafts[@]}"; do
+        local draft_title
+        draft_title=$(grep -m1 '^# ' "$draft_file" | sed 's/^# //')
+        local draft_summary
+        draft_summary=$(extract_markdown_section "$draft_file" "## 变更摘要")
+        echo "### ${draft_title}"
+        echo ""
+        echo "_来源_: \`docs/agent/changelog-drafts/$(basename "$draft_file")\`"
+        echo ""
+        if [[ -n "$draft_summary" ]]; then
+          echo "$draft_summary"
+        else
+          echo "_无摘要_"
+        fi
+        echo ""
+      done
     fi
 
     echo "---"

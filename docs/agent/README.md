@@ -7,11 +7,24 @@ This directory contains AI-agent-generated content. All content here should be t
 - `sessions/` — AI development session summaries
 - `analysis/` — Code analysis and architecture review reports
 - `reviews/` — AI-generated code review reports
-- `changelog-drafts/` — AI-drafted changelog entries for human editing
+- `changelog-drafts/` — 交付前必须保留的 changelog 草稿区；正式 release changelog 仍由 `docs/stage/<version>/changelog.md` 汇总
 
 ## File Naming
 
 Use `YYYY-MM-DD-agent-topic.md` format. Include the agent identifier (e.g., `cursor`, `claude`) in the filename.
+
+## Changelog Draft Contract
+
+`docs/agent/changelog-drafts/` 现在是交付流程中的强制中间件，而不是可选记录。
+
+- 文件名必须为 `YYYY-MM-DD-<agent>-<topic>.md`
+- 每个 draft 必须包含：
+  - `# 标题`
+  - `## 变更摘要`
+  - `## 用户可见影响`
+  - `## 破坏性变更/迁移说明`
+  - `## 验证结果`
+  - `## 关联 PR / Commit / Issue`
 
 ## Important
 

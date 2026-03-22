@@ -1,0 +1,41 @@
+{
+  "id": "m2-vfs-kernel-rebuild",
+  "name": "m2-vfs-kernel-rebuild",
+  "title": "Complete M2 VFS Kernel rebuild end-to-end: rebuild packages/vfs from source-centric routing to kernel layering, make direct mount usable, make middleware permission chaining usable, route read/write/list/stat/watch/stream through the new kernel, and leave the repository satisfying the M2 acceptance criteria.",
+  "description": "",
+  "status": "archived",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-20",
+  "completedAt": "2026-03-20",
+  "branch": "codex/03-20-m2-vfs-kernel-rebuild",
+  "base_branch": "master",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-20-m2-vfs-kernel-rebuild",
+  "current_phase": 4,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": "d35a997",
+  "pr_url": "https://github.com/blackplume233/Actant/pull/305",
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}
