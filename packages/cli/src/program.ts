@@ -1,6 +1,6 @@
 import { Command } from "commander";
-import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared";
 import { RpcClient } from "./client/rpc-client";
+import { defaultSocketPath } from "./socket-path";
 import {
   createTemplateCommand,
   createAgentCommand,
@@ -25,15 +25,6 @@ import {
 } from "./commands/index";
 import { presentError, type CliPrinter } from "./output/index";
 import { getCliPackageVersion } from "./package-version";
-
-export function defaultSocketPath(): string {
-  const home = process.env["ACTANT_HOME"];
-  const socketOverride = process.env["ACTANT_SOCKET"];
-  if (socketOverride) {
-    return normalizeIpcPath(socketOverride, home);
-  }
-  return getDefaultIpcPath(home);
-}
 
 export function createProgram(
   socketPath?: string,

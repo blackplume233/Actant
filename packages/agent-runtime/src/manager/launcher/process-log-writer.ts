@@ -26,6 +26,8 @@ export class ProcessLogWriter {
   private readonly maxFiles: number;
   private stdoutStream: WriteStream | null = null;
   private stderrStream: WriteStream | null = null;
+  private stdoutRotation: Promise<void> | null = null;
+  private stderrRotation: Promise<void> | null = null;
   private stdoutBytes = 0;
   private stderrBytes = 0;
   private closed = false;
@@ -70,8 +72,12 @@ export class ProcessLogWriter {
         if (this.closed || !this.stdoutStream) return;
         this.stdoutStream.write(chunk);
         this.stdoutBytes += chunk.length;
-        if (this.stdoutBytes >= this.maxSize) {
-          this.rotateFile("stdout.log").catch(() => {});
+        if (this.stdoutBytes >= this.maxSize && !this.stdoutRotation) {
+          this.stdoutRotation = this.rotateFile("stdout.log")
+            .catch(() => {})
+            .finally(() => {
+              this.stdoutRotation = null;
+            });
         }
       });
     }
@@ -81,8 +87,12 @@ export class ProcessLogWriter {
         if (this.closed || !this.stderrStream) return;
         this.stderrStream.write(chunk);
         this.stderrBytes += chunk.length;
-        if (this.stderrBytes >= this.maxSize) {
-          this.rotateFile("stderr.log").catch(() => {});
+        if (this.stderrBytes >= this.maxSize && !this.stderrRotation) {
+          this.stderrRotation = this.rotateFile("stderr.log")
+            .catch(() => {})
+            .finally(() => {
+              this.stderrRotation = null;
+            });
         }
       });
     }
@@ -93,6 +103,7 @@ export class ProcessLogWriter {
    */
   async close(): Promise<void> {
     this.closed = true;
+    await Promise.all([this.stdoutRotation, this.stderrRotation]);
     await Promise.all([
       this.closeStream(this.stdoutStream),
       this.closeStream(this.stderrStream),
@@ -124,6 +135,11 @@ export class ProcessLogWriter {
     const isStdout = filename === "stdout.log";
 
     const stream = isStdout ? this.stdoutStream : this.stderrStream;
+    if (isStdout) {
+      this.stdoutStream = null;
+    } else {
+      this.stderrStream = null;
+    }
     if (stream) {
       await this.closeStream(stream);
     }
@@ -137,6 +153,15 @@ export class ProcessLogWriter {
     try {
       await rename(basePath, `${basePath}.1`);
     } catch { /* file may not exist */ }
+
+    if (this.closed) {
+      if (isStdout) {
+        this.stdoutBytes = 0;
+      } else {
+        this.stderrBytes = 0;
+      }
+      return;
+    }
 
     const newStream = createWriteStream(basePath, { flags: "a" });
     if (isStdout) {

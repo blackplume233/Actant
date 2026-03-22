@@ -148,15 +148,15 @@ Options:
 
 Examples:
   ./.trellis/scripts/multi-agent/codex-loop.sh \
-    --name hub-bootstrap \
+    --name hub-context \
     --type backend \
-    --requirement "Make CLI-first hub/bootstrap usable for self-hosting"
+    --requirement "Make the CLI-first context hub usable for self-hosting"
 
   ./.trellis/scripts/multi-agent/codex-loop.sh \
-    --task-dir .trellis/tasks/03-17-hub-bootstrap \
-    --name hub-bootstrap \
+    --task-dir .trellis/tasks/03-17-hub-context \
+    --name hub-context \
     --type backend \
-    --requirement "Continue the bootstrap loop"
+    --requirement "Continue the context hub loop"
 EOF
 }
 

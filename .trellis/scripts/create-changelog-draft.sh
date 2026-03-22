@@ -3,7 +3,7 @@
 #
 # Usage:
 #   ./.trellis/scripts/create-changelog-draft.sh --topic governance-repair
-#   ./.trellis/scripts/create-changelog-draft.sh --topic m7-bootstrap --title "M7 Bootstrap"
+#   ./.trellis/scripts/create-changelog-draft.sh --topic m7-context-flow --title "M7 Context Flow"
 
 set -e
 

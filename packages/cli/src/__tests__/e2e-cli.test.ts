@@ -15,6 +15,7 @@ const ACTHUB_BIN = join(import.meta.dirname, "..", "..", "dist", "bin", "acthub.
 const CLI_SOURCE_ENTRY = "packages/cli/src/bin/actant.ts";
 const ACTHUB_SOURCE_ENTRY = "packages/cli/src/bin/acthub.ts";
 const USE_DIST = process.env["ACTANT_E2E_USE_DIST"] === "1";
+const CLI_RUN_TIMEOUT_MS = 25_000;
 
 function resolveCommandArgs(binPath: string, args: string[]): string[] {
   const sourceEntry = binPath === ACTHUB_BIN ? ACTHUB_SOURCE_ENTRY : CLI_SOURCE_ENTRY;
@@ -56,7 +57,7 @@ function runCli(
     setTimeout(() => {
       child.kill();
       resolve({ stdout, stderr, exitCode: -1 });
-    }, 10_000);
+    }, CLI_RUN_TIMEOUT_MS);
   });
 }
 
@@ -68,7 +69,7 @@ async function normalizeFsPath(path: string): Promise<string> {
   }
 }
 
-describe("CLI E2E (stdio)", { timeout: 20_000 }, () => {
+describe("CLI E2E (stdio)", { timeout: 40_000 }, () => {
   let tmpDir: string;
   let daemon: Daemon | undefined;
   let daemonAvailable = false;

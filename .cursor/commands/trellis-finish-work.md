@@ -23,6 +23,7 @@ pnpm test
 - [ ] No `console.log` statements (use logger)?
 - [ ] No non-null assertions (the `x!` operator)?
 - [ ] No `any` types?
+- [ ] No deprecated active terminology leaked back into changed files (for this repo: `bootstrap`)?
 
 ### 2. Documentation Sync
 

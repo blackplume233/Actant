@@ -95,6 +95,7 @@ Current hard rules:
 - active roadmap must use checklist / todolist format
 - live project progress must be atomically maintained in `docs/planning/contextfs-roadmap.md` only
 - `docs/planning/roadmap.md` and similar entry docs may summarize scope, but must not duplicate milestone status checkboxes
+- deprecated terms such as `bootstrap` must be removed from active truth and replaced with current terminology or isolated behind explicit compatibility notes
 
 ---
 

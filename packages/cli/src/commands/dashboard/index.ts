@@ -1,7 +1,7 @@
 import { Command } from "commander";
-import { defaultSocketPath } from "../../program";
 import type { CliPrinter } from "../../output/index";
 import { defaultPrinter } from "../../output/index";
+import { defaultSocketPath } from "../../socket-path";
 
 export function createDashboardCommand(printer: CliPrinter = defaultPrinter): Command {
   return new Command("dashboard")

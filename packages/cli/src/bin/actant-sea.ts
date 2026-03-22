@@ -26,6 +26,7 @@ async function main(): Promise<void> {
     const { run } = await import("../program");
     const invocation = resolveSeaInvocation(process.argv, process.execPath);
     await run(invocation.argv, invocation.name ? { name: invocation.name } : undefined);
+    process.exit(process.exitCode ?? 0);
   }
 }
 

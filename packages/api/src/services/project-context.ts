@@ -727,7 +727,7 @@ async function looksLikeRepoLocalSource(projectRoot: string): Promise<boolean> {
         return true;
       }
     } catch {
-      // Ignore missing directories during bootstrap discovery.
+      // Ignore missing directories during project-context discovery.
     }
   }
 

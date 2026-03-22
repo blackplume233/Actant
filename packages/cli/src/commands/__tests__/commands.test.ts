@@ -374,7 +374,7 @@ describe("createHubCommand", () => {
       })
       .mockResolvedValueOnce({
         active: true,
-        hostProfile: "bootstrap",
+        hostProfile: "context",
         runtimeState: "inactive",
         projectRoot: "/repo",
         projectName: "repo",
@@ -404,7 +404,7 @@ describe("createHubCommand", () => {
 
     expect(mock.call).toHaveBeenNthCalledWith(1, "hub.activate", { projectDir: process.cwd() });
     expect(mock.call).toHaveBeenNthCalledWith(2, "hub.status", {});
-    expect(output.logs.some((line) => line.includes("Host Profile: bootstrap"))).toBe(true);
+    expect(output.logs.some((line) => line.includes("Host Profile: context"))).toBe(true);
     expect(output.logs.some((line) => line.includes("Project:      repo"))).toBe(true);
   });
 
@@ -422,7 +422,7 @@ describe("createHubCommand", () => {
         mode: "standalone",
         status: {
           active: true,
-          hostProfile: "bootstrap",
+          hostProfile: "context",
           runtimeState: "inactive",
           projectRoot: "/repo",
           projectName: "repo",
@@ -450,7 +450,7 @@ describe("createHubCommand", () => {
     await parent.parseAsync(["node", "test", "hub", "status"]);
 
     expect(mock.call).not.toHaveBeenCalled();
-    expect(output.logs.some((line) => line.includes("Host Profile: bootstrap"))).toBe(true);
+    expect(output.logs.some((line) => line.includes("Host Profile: context"))).toBe(true);
     expect(output.logs.some((line) => line.includes("Project:      repo"))).toBe(true);
     expect(output.logs.some((line) => line.includes("standalone project-context mode"))).toBe(true);
   });
@@ -479,7 +479,7 @@ describe("createHubCommand", () => {
       })
       .mockResolvedValueOnce({
         active: true,
-        hostProfile: "bootstrap",
+        hostProfile: "context",
         runtimeState: "inactive",
         projectRoot: "/repo",
         projectName: "repo",
@@ -543,7 +543,7 @@ describe("createHubCommand", () => {
       })
       .mockResolvedValueOnce({
         active: true,
-        hostProfile: "bootstrap",
+        hostProfile: "context",
         runtimeState: "inactive",
         projectRoot: "/repo",
         projectName: "repo",

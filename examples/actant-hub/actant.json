@@ -27,7 +27,7 @@
       "skills/context-assessment.json",
       "skills/code-generation.json",
       "skills/pr-management.json",
-      "skills/self-bootstrap.json",
+      "skills/self-setup.json",
       "skills/contribution-policy.json"
     ],
     "prompts": [

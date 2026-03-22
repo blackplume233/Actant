@@ -108,6 +108,9 @@ export type {
   HostRuntimeState,
   HostCapability,
 } from "./host.types";
+export {
+  normalizeHostProfile,
+} from "./host.types";
 export type {
   ContentRef,
   ActivityRecord,

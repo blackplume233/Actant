@@ -57,6 +57,15 @@ M4 落地后的内置节点约定：
 - `streams/*` 是流节点
 - `control/request.json` 是控制节点；节点存在属于路径契约，是否允许 `write` 由具体 provider 能力决定
 
+### 2.1 Daemon / Hub Profile Surface
+
+与当前路径契约一起对外暴露的还有 daemon / hub 的 host profile 语义：
+
+- `actant daemon start --profile <profile>` 规范接受值为 `context`、`runtime`、`autonomous`
+- `context` 是当前 CLI-first project context hub 的标准 profile 名称
+- `actant hub status`、connected hub backend 和 standalone backend 输出的 `hostProfile` 也必须返回 `context`
+- 历史输入 `bootstrap` 仅允许作为兼容别名被解析，不得再作为新的用户可见输出值
+
 ---
 
 ## 3. File Operations

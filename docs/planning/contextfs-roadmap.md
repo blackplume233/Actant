@@ -125,7 +125,7 @@ Canceled scope:
 ### [ ] M7 Source 配置面 + 自举就绪
 
 Status: todo
-Owner: external bootstrap flow
+Owner: external context flow
 
 Definition of done:
 
@@ -133,7 +133,7 @@ Definition of done:
 - [ ] M7.2 `actant init` 命令
 - [ ] M7.3 `actant vfs mount add` CLI
 - [ ] M7.4 挂载持久化：`VfsDataStore` 接入 daemon
-- [ ] M7.5 Bootstrap 写策略解除 Codex 冷启动限制
+- [ ] M7.5 Context profile 写策略解除 Codex 冷启动限制
 - [ ] M7.7 E2E 验收测试覆盖自举开发流程
 - [ ] M7.8 Quickstart 文档
 

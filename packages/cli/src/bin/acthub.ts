@@ -12,3 +12,4 @@ const args = buildHubAliasArgs(rawArgs);
 
 const { run } = await import("../program");
 await run(["node", "acthub", ...args], { name: "acthub" });
+process.exit(process.exitCode ?? 0);

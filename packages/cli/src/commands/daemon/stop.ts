@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { RpcClient } from "../../client/rpc-client";
 import { type CliPrinter, defaultPrinter } from "../../output/index";
-import { defaultSocketPath } from "../../program";
+import { defaultSocketPath } from "../../socket-path";
 
 export function createDaemonStopCommand(
   printer: CliPrinter = defaultPrinter,

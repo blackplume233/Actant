@@ -7,12 +7,12 @@ import { AppContext } from "../app-context";
 import { HandlerRegistry } from "../../handlers/handler-registry";
 import { registerVfsHandlers } from "../../handlers/vfs-handlers";
 
-describe("AppContext bootstrap profile", () => {
+describe("AppContext context profile", () => {
   let tmpDir: string;
   let ctx: AppContext;
 
   beforeAll(async () => {
-    tmpDir = await mkdtemp(join(tmpdir(), "actant-bootstrap-"));
+    tmpDir = await mkdtemp(join(tmpdir(), "actant-context-"));
     await mkdir(join(tmpDir, "configs", "templates"), { recursive: true });
     await writeFile(
       join(tmpDir, "configs", "templates", "minimal.json"),
@@ -26,7 +26,7 @@ describe("AppContext bootstrap profile", () => {
       "utf-8",
     );
 
-    ctx = new AppContext({ homeDir: tmpDir, launcherMode: "mock", hostProfile: "bootstrap" });
+    ctx = new AppContext({ homeDir: tmpDir, launcherMode: "mock", hostProfile: "context" });
     await ctx.init();
   });
 
@@ -43,7 +43,7 @@ describe("AppContext bootstrap profile", () => {
     expect(ctx.getHostCapabilities()).not.toContain("runtime");
   });
 
-  it("rejects VFS mutations in bootstrap profile", async () => {
+  it("rejects VFS mutations in context profile", async () => {
     await ctx.hubContext.activate(tmpDir);
 
     const handlers = new HandlerRegistry();

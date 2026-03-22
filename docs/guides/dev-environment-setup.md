@@ -9,7 +9,7 @@
 - pnpm 9+
 - Git
 
-## Repository Bootstrap
+## Repository Setup
 
 ```bash
 git clone https://github.com/blackplume233/Actant.git

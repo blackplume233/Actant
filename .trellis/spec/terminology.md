@@ -174,8 +174,27 @@ Permission 表示当前 caller"能不能执行该操作"。
 - `DomainContext`
 - `ContextSourceType`
 - `VfsSourceType`（旧名义类型标签，已被 `Trait` 替代）
+- `bootstrap` 作为当前活跃概念
 - `workflow` 作为 V1 顶层对象
 - `tool registry` 作为平台中心
+
+### Deprecated Term: `bootstrap`
+
+`bootstrap` 不再是当前基线下允许自由扩散的活跃概念。
+
+使用替代口径：
+
+- 项目上下文装载 / 只读预备态：`context`
+- 仓库或环境准备：`setup`
+- 从声明式项目上下文恢复认知：`project-context discovery`
+
+允许保留 `bootstrap` 的范围仅限：
+
+- 明确标注为历史引用的文档
+- archive / history / trash
+- 兼容性别名输入或迁移说明
+
+禁止在活跃 spec / workflow / roadmap / command docs / 用户可见 CLI 文案中继续把 `bootstrap` 当作当前能力名、流程名、profile 名或推荐术语。
 
 ---
 

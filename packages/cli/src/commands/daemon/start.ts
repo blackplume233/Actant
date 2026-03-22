@@ -3,10 +3,10 @@ import { join } from "node:path";
 import { fork, spawn } from "node:child_process";
 import chalk from "chalk";
 import type { HostProfile } from "@actant/shared";
-import { onShutdownSignal, isWindows, normalizeIpcPath } from "@actant/shared";
+import { onShutdownSignal, isWindows, normalizeHostProfile, normalizeIpcPath } from "@actant/shared";
 import { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
-import { defaultSocketPath } from "../../program";
+import { defaultSocketPath } from "../../socket-path";
 import { shouldSpawnEmbeddedDaemon } from "./runtime-mode";
 
 /**
@@ -90,8 +90,17 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
   return new Command("start")
     .description("Start the Actant daemon")
     .option("--foreground", "Run in foreground (don't daemonize)", false)
-    .option("--profile <profile>", "Host profile: bootstrap, runtime, autonomous", "runtime")
-    .action(async (opts: { foreground: boolean; profile: HostProfile }) => {
+    .option("--profile <profile>", "Host profile: context, runtime, autonomous", "runtime")
+    .action(async (opts: { foreground: boolean; profile: string }) => {
+      let profile: HostProfile;
+      try {
+        profile = normalizeHostProfile(opts.profile);
+      } catch (err) {
+        presentError(err, printer);
+        process.exitCode = 1;
+        return;
+      }
+
       const client = new RpcClient(defaultSocketPath());
 
       const alive = await client.ping();
@@ -108,8 +117,8 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
           if (socketOverride) {
             process.env["ACTANT_SOCKET"] = normalizeIpcPath(socketOverride, homeDir);
           }
-          process.env["ACTANT_HOST_PROFILE"] = opts.profile;
-          const daemon = new Daemon({ hostProfile: opts.profile });
+          process.env["ACTANT_HOST_PROFILE"] = profile;
+          const daemon = new Daemon({ hostProfile: profile });
 
           onShutdownSignal(async () => {
             await daemon.stop();
@@ -117,7 +126,7 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
           });
 
           await daemon.start();
-          printer.log(`${chalk.green("Daemon started (foreground).")} PID: ${process.pid} [${opts.profile}]`);
+          printer.log(`${chalk.green("Daemon started (foreground).")} PID: ${process.pid} [${profile}]`);
           printer.dim("Press Ctrl+C to stop.");
 
           await new Promise(() => {});
@@ -126,7 +135,7 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
           process.exitCode = 1;
         }
       } else {
-        const child = spawnDaemonChild(opts.profile);
+        const child = spawnDaemonChild(profile);
         const stderrChunks: Buffer[] = [];
 
         const outcome = await waitForReady(child, stderrChunks);
@@ -153,7 +162,7 @@ export function createDaemonStartCommand(printer: CliPrinter = defaultPrinter): 
         child.unref();
 
         if (healthy) {
-          printer.log(`${chalk.green("Daemon started.")} PID: ${child.pid} [${opts.profile}]`);
+          printer.log(`${chalk.green("Daemon started.")} PID: ${child.pid} [${profile}]`);
         } else {
           const stderr = Buffer.concat(stderrChunks).toString().trim();
           printer.error("Daemon process started but is not responding.");

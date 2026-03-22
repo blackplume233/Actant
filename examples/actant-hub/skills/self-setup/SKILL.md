@@ -1,16 +1,16 @@
 ---
-name: self-bootstrap
-description: 自举 — 自主 fork 仓库、搭建开发环境、理解代码库结构，具备独立开发能力
+name: self-setup
+description: 自配置 — 自主 fork 仓库、搭建开发环境、理解代码库结构，具备独立开发能力
 version: "1.0.0"
 license: MIT
 metadata:
   author: blackplume233
-  actant-tags: "bootstrap,setup,autonomy,spark"
+  actant-tags: "setup,autonomy,spark,contributor"
   layer: spark
   agent: actant-spark
 ---
 
-# Self-Bootstrap
+# Self-Setup
 
 ## Overview
 

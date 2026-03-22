@@ -53,7 +53,7 @@ export interface ActantProjectEntrypoints {
 }
 
 /**
- * Project-level context declaration for bootstrap-oriented Actant MCP usage.
+ * Project-level context declaration for context-oriented Actant MCP usage.
  *
  * This file is intentionally narrow in v1:
  * - selects the configs directory for local domain components
