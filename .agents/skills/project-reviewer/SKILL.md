@@ -229,7 +229,7 @@ gh issue create --title "<title>" \
   --body "## 审查发现\n\n<描述>\n\n## 关联本地 Issue\n\nLocal Issue #<id>"
 
 # 记录 GitHub 关联到本地 Issue 的 githubRef 字段
-# 编辑 .trellis/issues/NNNN-*.json 设置 "githubRef": "owner/repo#N"
+# 更新 .trellis/issues/NNNN-*.md frontmatter 中的 githubRef: "owner/repo#N"
 
 # 关闭已修复的 GitHub Issue
 gh issue close <number> --comment "Fixed in <commit-hash>"

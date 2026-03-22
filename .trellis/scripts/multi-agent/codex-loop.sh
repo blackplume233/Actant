@@ -22,6 +22,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../common/paths.sh"
 source "$SCRIPT_DIR/../common/worktree.sh"
 source "$SCRIPT_DIR/../common/developer.sh"
+source "$SCRIPT_DIR/../common/task-utils.sh"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -442,10 +443,7 @@ Use Codex implement/check rounds until the change is ready for the configured ve
 EOF
   fi
 
-  BASE_BRANCH=$(jq -r '.base_branch // empty' "$TASK_JSON")
-  if [[ -z "$BASE_BRANCH" || "$BASE_BRANCH" == "null" ]]; then
-    BASE_BRANCH=$(git -C "$PROJECT_ROOT" branch --show-current)
-  fi
+  BASE_BRANCH=$(resolve_task_base_branch "$TASK_JSON" "$PROJECT_ROOT")
 
   BRANCH=$(jq -r '.branch // empty' "$TASK_JSON")
   if [[ -z "$BRANCH" || "$BRANCH" == "null" ]]; then

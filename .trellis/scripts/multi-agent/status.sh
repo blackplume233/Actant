@@ -20,6 +20,7 @@ source "$SCRIPT_DIR/../common/worktree.sh"
 source "$SCRIPT_DIR/../common/developer.sh"
 source "$SCRIPT_DIR/../common/phase.sh"
 source "$SCRIPT_DIR/../common/task-queue.sh"
+source "$SCRIPT_DIR/../common/task-utils.sh"
 
 # Colors
 RED='\033[0;31m'
@@ -341,11 +342,13 @@ cmd_summary() {
     local status="unknown"
     local assignee="unassigned"
     local priority="P2"
+    local task_warning=""
 
     if [ -f "$task_json" ]; then
-      status=$(jq -r '.status // "unknown"' "$task_json")
+      status=$(resolve_task_status "$task_json")
       assignee=$(jq -r '.assignee // "unassigned"' "$task_json")
       priority=$(jq -r '.priority // "P2"' "$task_json")
+      task_warning=$(collect_task_schema_warnings "$task_json" "$name" | head -1)
     fi
 
     # Filter by assignee if specified
@@ -393,7 +396,8 @@ cmd_summary() {
       local phase_info=$(get_phase_info "$phase_source")
       local elapsed=$(calc_elapsed "$started")
       local modified=$(count_modified_files "$worktree")
-      local branch=$(jq -r '.branch // "N/A"' "$phase_source" 2>/dev/null)
+      local branch=$(task_field_or_empty "$phase_source" "branch")
+      [ -z "$branch" ] && branch="N/A"
       local log_file="$worktree/.agent-log"
       local last_tool=$(get_last_tool "$log_file")
 
@@ -404,6 +408,7 @@ cmd_summary() {
         echo -e "  Branch:   ${DIM}${branch}${NC}"
         echo -e "  Modified: ${modified} file(s)"
         [ -n "$last_tool" ] && echo -e "  Activity: ${YELLOW}${last_tool}${NC}"
+        [ -n "$task_warning" ] && echo -e "  Warning:  ${YELLOW}${task_warning}${NC}"
         echo -e "  PID:      ${DIM}${pid}${NC}"
         echo ""
       } >> "$running_file"
@@ -414,13 +419,14 @@ cmd_summary() {
       local worktree_task_json="$worktree/$task_dir_rel/task.json"
       local worktree_status="unknown"
       if [ -f "$worktree_task_json" ]; then
-        worktree_status=$(jq -r '.status // "unknown"' "$worktree_task_json")
+        worktree_status=$(resolve_task_status "$worktree_task_json")
       fi
 
-      if [ "$worktree_status" = "completed" ]; then
+      if [ "$worktree_status" = "completed" ] || [ "$worktree_status" = "archived" ]; then
         # Agent completed successfully
         {
           echo -e "${GREEN}✓${NC} ${name} ${GREEN}[completed]${NC}"
+          [ -n "$task_warning" ] && echo -e "  ${YELLOW}${task_warning}${NC}"
           echo ""
         } >> "$stopped_file"
       else
@@ -436,9 +442,11 @@ cmd_summary() {
             if [ -n "$last_msg" ]; then
               echo -e "${DIM}\"${last_msg}\"${NC}"
             fi
+            [ -n "$task_warning" ] && echo -e "${YELLOW}${task_warning}${NC}"
             echo -e "${YELLOW}cd ${worktree} && claude --resume ${session_id}${NC}"
           else
             echo -e "${RED}○${NC} ${name} ${RED}[stopped]${NC} ${DIM}(no session-id)${NC}"
+            [ -n "$task_warning" ] && echo -e "${YELLOW}${task_warning}${NC}"
           fi
           echo ""
         } >> "$stopped_file"
@@ -664,12 +672,17 @@ cmd_detail() {
     echo ""
     echo -e "${BLUE}=== Task Info ===${NC}"
     echo ""
-    local status=$(jq -r '.status // "unknown"' "$task_json")
-    local branch=$(jq -r '.branch // "N/A"' "$task_json")
-    local base=$(jq -r '.base_branch // "N/A"' "$task_json")
+    local status=$(resolve_task_status "$task_json")
+    local branch=$(task_field_or_empty "$task_json" "branch")
+    local base=$(task_field_or_empty "$task_json" "base_branch")
+    [ -z "$branch" ] && branch="N/A"
+    [ -z "$base" ] && base="N/A"
     echo "  Status:      $status"
     echo "  Branch:      $branch"
     echo "  Base Branch: $base"
+    while IFS= read -r warning; do
+      [ -n "$warning" ] && echo "  Warning:     $warning"
+    done < <(collect_task_schema_warnings "$task_json" "$(basename "$(dirname "$task_json")")")
   fi
 
   # Git changes
