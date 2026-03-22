@@ -15,15 +15,13 @@
 
 - 产品层：`ContextFS`
 - 实现层：`VFS Kernel`
-- 核心对象：`Project`、`Source`、`Capability`
+- 核心对象：`Project`、`SourceType`、`Source`、`Trait`、`Capability`
 - V1 操作面：`read`、`write`、`list`、`stat`、`watch`、`stream`
 - V1 不包含 `workflow`、query/view mount、overlay/fallback 行为实现
+- 里程碑进度与状态只在 `docs/planning/contextfs-roadmap.md` 中原子维护
 
-当前阶段：
+当前进度：
 
-- M0 文档基线重置已完成
-- M1 契约与类型替换已完成
-- M2 VFS Kernel 重建已完成
-- 下一步进入 M3 ContextFS 编排层重建
+- 以 `docs/planning/contextfs-roadmap.md` 为唯一 live progress truth file
 
 默认以当前 spec/design/roadmap 为准。只有在处理迁移残留或历史清理时，才读取历史说明文档。

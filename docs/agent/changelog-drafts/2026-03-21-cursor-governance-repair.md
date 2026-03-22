@@ -6,12 +6,14 @@
 - 修复 PR base branch 回退逻辑，优先使用 `task.json.base_branch`，缺失时回退到 `origin/HEAD` / `master` / `main`
 - 将 issue-manager 改为 GitHub-first 创建流程，补充重复 issue 检测、本地缓存身份对齐与恢复逻辑
 - 固化 changelog draft 与 roadmap checklist 规则，并让 `create-pr` / `stage-version changelog` 使用统一 draft 契约
+- 收敛顶层入口文档中的进度表述，改为只引用 `docs/planning/contextfs-roadmap.md` 作为唯一进度真相源
 
 ## 用户可见影响
 
 - `task list` 和 `/trellis:start` 现在会直接暴露 task schema 漂移与活跃状态异常
 - 后续 ship / create-pr 需要先准备合法的 changelog draft
 - issue 本地缓存文件名、frontmatter `id`、`githubRef` 会与真实 GitHub issue number 对齐
+- 顶层 `README.md` 与 `PROJECT_CONTEXT.md` 不再重复维护里程碑状态，入口阅读会统一跳转到活跃 roadmap
 
 ## 破坏性变更/迁移说明
 
