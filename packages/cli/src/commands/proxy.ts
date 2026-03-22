@@ -4,7 +4,7 @@ import { createInterface } from "node:readline";
 import { RpcClient } from "../client/rpc-client";
 import { getCliPackageVersion } from "../package-version";
 import { presentError, type CliPrinter, defaultPrinter } from "../output/index";
-import { defaultSocketPath } from "../program";
+import { defaultSocketPath } from "../socket-path";
 
 /**
  * `actant proxy <name>` — acts as a transparent ACP bridge on stdin/stdout.

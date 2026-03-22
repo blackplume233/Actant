@@ -29,23 +29,23 @@ describe("createStandaloneContext", () => {
       "utf-8",
     );
     await writeFile(
-      join(projectDir, "skills", "bootstrap.json"),
+      join(projectDir, "skills", "context-reader.json"),
       JSON.stringify({
-        name: "bootstrap",
-        description: "Repo-local bootstrap skill",
-        content: "Bootstrap from the current repo.",
+        name: "context-reader",
+        description: "Repo-local context reader skill",
+        content: "Load context from the current repo.",
       }, null, 2),
       "utf-8",
     );
     await writeFile(
-      join(projectDir, "templates", "bootstrap-agent.json"),
+      join(projectDir, "templates", "context-agent.json"),
       JSON.stringify({
-        name: "bootstrap-agent",
+        name: "context-agent",
         version: "1.0.0",
         backend: { type: "claude-code" },
         provider: { type: "anthropic" },
         project: {
-          skills: ["bootstrap"],
+          skills: ["context-reader"],
         },
       }, null, 2),
       "utf-8",
@@ -59,8 +59,8 @@ describe("createStandaloneContext", () => {
       components: { skills: number; templates: number };
     };
 
-    expect(skills.map((entry) => entry.path)).toEqual(expect.arrayContaining(["repo-hub@bootstrap"]));
-    expect(templates.map((entry) => entry.path)).toEqual(expect.arrayContaining(["repo-hub@bootstrap-agent"]));
+    expect(skills.map((entry) => entry.path)).toEqual(expect.arrayContaining(["repo-hub@context-reader"]));
+    expect(templates.map((entry) => entry.path)).toEqual(expect.arrayContaining(["repo-hub@context-agent"]));
     expect(context.sources).toEqual([{ name: "repo-hub", type: "local" }]);
     expect(context.components).toMatchObject({ skills: 1, templates: 1 });
   });
@@ -269,10 +269,10 @@ describe("createStandaloneContext", () => {
       "utf-8",
     );
     await writeFile(
-      join(projectDir, "configs", "prompts", "bootstrap.json"),
+      join(projectDir, "configs", "prompts", "context.json"),
       JSON.stringify({
-        name: "bootstrap",
-        description: "Project bootstrap prompt",
+        name: "context",
+        description: "Project context prompt",
         content: "Use the project context entrypoints before making assumptions.",
       }, null, 2),
       "utf-8",
@@ -302,7 +302,7 @@ describe("createStandaloneContext", () => {
       knowledgePath,
     ]);
     expect(context.available.skills).toEqual(expect.arrayContaining(["reader"]));
-    expect(context.available.prompts).toEqual(expect.arrayContaining(["bootstrap"]));
+    expect(context.available.prompts).toEqual(expect.arrayContaining(["context"]));
   });
 
   it("mounts child projects under /projects with narrowed effective permissions", async () => {
@@ -422,8 +422,8 @@ describe("createStandaloneContext", () => {
     ]);
   });
 
-  it("loads the checked-in minimal bootstrap example", async () => {
-    const projectDir = resolve(repoRoot, "examples", "project-context-bootstrap");
+  it("loads the checked-in minimal project-context discovery example", async () => {
+    const projectDir = resolve(repoRoot, "examples", "project-context-discovery");
     const backend = await createStandaloneContext(projectDir);
     const context = JSON.parse((await backend.read("/project/context.json")).content) as {
       projectName: string;
@@ -431,12 +431,12 @@ describe("createStandaloneContext", () => {
       available: { skills: string[]; prompts: string[]; templates: string[] };
     };
 
-    expect(context.projectName).toBe("project-context-bootstrap");
+    expect(context.projectName).toBe("project-context-discovery");
     expect(context.entrypoints.knowledge).toEqual([
       join(projectDir, "PROJECT_CONTEXT.md"),
     ]);
     expect(context.available.skills).toEqual(expect.arrayContaining(["project-context-reader"]));
-    expect(context.available.prompts).toEqual(expect.arrayContaining(["project-context-bootstrap"]));
+    expect(context.available.prompts).toEqual(expect.arrayContaining(["project-context-discovery"]));
     expect(context.available.templates).toEqual(expect.arrayContaining(["project-context-agent"]));
   });
 

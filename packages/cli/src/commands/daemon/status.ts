@@ -2,7 +2,7 @@ import { Command } from "commander";
 import chalk from "chalk";
 import { RpcClient } from "../../client/rpc-client";
 import { type CliPrinter, defaultPrinter, type OutputFormat } from "../../output/index";
-import { defaultSocketPath } from "../../program";
+import { defaultSocketPath } from "../../socket-path";
 
 export function createDaemonStatusCommand(printer: CliPrinter = defaultPrinter): Command {
   return new Command("status")

@@ -14,7 +14,7 @@
     "lifecycle-policy",
     "code-generation",
     "pr-management",
-    "self-bootstrap",
+    "self-setup",
     "contribution-policy"
   ],
   "prompts": [

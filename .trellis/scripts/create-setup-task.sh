@@ -1,11 +1,11 @@
 #!/bin/bash
-# Create Bootstrap Task for First-Time Setup
+# Create Setup Task for First-Time Repository Guidance
 #
 # Creates a guided task to help users fill in project guidelines
 # after initializing Trellis for the first time.
 #
 # Usage:
-#   ./.trellis/scripts/create-bootstrap.sh [project-type]
+#   ./.trellis/scripts/create-setup-task.sh [project-type]
 #
 # Arguments:
 #   project-type: frontend | backend | fullstack (default: fullstack)
@@ -14,7 +14,7 @@
 #   - .trellis/.developer must exist (run init-developer.sh first)
 #
 # Creates:
-#   .trellis/tasks/00-bootstrap-guidelines/
+#   .trellis/tasks/00-setup-guidelines/
 #     ├── task.json    # Task metadata
 #     └── prd.md       # Task description and guidance
 
@@ -31,7 +31,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-TASK_NAME="00-bootstrap-guidelines"
+TASK_NAME="00-setup-guidelines"
 
 # Project type (default: fullstack)
 PROJECT_TYPE="${1:-fullstack}"
@@ -52,7 +52,7 @@ esac
 
 write_prd_header() {
   cat << 'EOF'
-# Bootstrap: Fill Project Development Guidelines
+# Setup: Fill Project Development Guidelines
 
 ## Purpose
 
@@ -150,7 +150,7 @@ When done:
 
 ```bash
 ./.trellis/scripts/task.sh finish
-./.trellis/scripts/task.sh archive 00-bootstrap-guidelines
+./.trellis/scripts/task.sh archive 00-setup-guidelines
 ```
 
 ---
@@ -198,7 +198,16 @@ write_task_json() {
   local dir="$1"
   local developer="$2"
   local project_type="$3"
+  local repo_root="$4"
   local today=$(date +%Y-%m-%d)
+  local base_branch
+  base_branch=$(git -C "$repo_root" symbolic-ref --quiet --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')
+  if [[ -z "$base_branch" ]]; then
+    base_branch=$(git -C "$repo_root" branch --show-current 2>/dev/null || true)
+  fi
+  if [[ -z "$base_branch" ]]; then
+    base_branch="master"
+  fi
 
   # Generate subtasks based on project type
   local subtasks
@@ -239,15 +248,19 @@ write_task_json() {
   cat > "$dir/task.json" << EOF
 {
   "id": "$TASK_NAME",
-  "name": "Bootstrap Guidelines",
+  "name": "$TASK_NAME",
+  "title": "Setup Project Development Guidelines",
   "description": "Fill in project development guidelines for AI agents",
-  "status": "in_progress",
+  "status": "planning",
   "dev_type": "docs",
   "priority": "P1",
   "creator": "$developer",
   "assignee": "$developer",
   "createdAt": "$today",
   "completedAt": null,
+  "branch": null,
+  "base_branch": "$base_branch",
+  "current_phase": 0,
   "commit": null,
   "subtasks": $subtasks,
   "relatedFiles": $related_files,
@@ -277,7 +290,7 @@ main() {
 
   # Check if already exists
   if [[ -d "$task_dir" ]]; then
-    echo -e "${YELLOW}Bootstrap task already exists: $relative_path${NC}"
+    echo -e "${YELLOW}Setup task already exists: $relative_path${NC}"
     exit 0
   fi
 
@@ -285,7 +298,7 @@ main() {
   mkdir -p "$task_dir"
 
   # Write files
-  write_task_json "$task_dir" "$developer" "$PROJECT_TYPE"
+  write_task_json "$task_dir" "$developer" "$PROJECT_TYPE" "$repo_root"
   write_prd "$task_dir" "$PROJECT_TYPE"
 
   # Set as current task

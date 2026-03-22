@@ -63,7 +63,7 @@ import { CanvasStore } from "./canvas-store";
 import type { HostCapability, HostProfile, HostRuntimeState, ModelApiProtocol } from "@actant/shared";
 import { AcpConnectionManager, AcpChannelManagerAdapter } from "@actant/acp";
 import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
-import { createLogger, getIpcPath, initLogDir, normalizeIpcPath } from "@actant/shared";
+import { createLogger, getIpcPath, initLogDir, normalizeHostProfile, normalizeIpcPath } from "@actant/shared";
 import { HubContextService } from "./hub-context";
 import { RuntimeToolRegistry } from "./runtime-tool-registry";
 
@@ -173,7 +173,7 @@ export interface AppConfig {
   configsDir?: string;
   /** "mock" for testing, "real" for production. Default: auto-detect from ACTANT_LAUNCHER_MODE env. */
   launcherMode?: LauncherMode;
-  /** Host bootstrap profile. */
+  /** Host context profile. */
   hostProfile?: HostProfile;
 }
 
@@ -245,7 +245,7 @@ export class AppContext {
       ? normalizeIpcPath(process.env.ACTANT_SOCKET, this.homeDir)
       : getIpcPath(this.homeDir);
     this.pidFilePath = join(this.homeDir, "daemon.pid");
-    this.hostProfile = config?.hostProfile ?? (process.env["ACTANT_HOST_PROFILE"] as HostProfile | undefined) ?? "runtime";
+    this.hostProfile = normalizeHostProfile(config?.hostProfile ?? process.env["ACTANT_HOST_PROFILE"]);
 
     this.instanceRegistry = new InstanceRegistry(this.registryPath, this.builtinInstancesDir);
     this.templateLoader = new TemplateLoader();
@@ -346,7 +346,7 @@ export class AppContext {
 
   async init(): Promise<void> {
     if (this.initialized) {
-      if (this.hostProfile !== "bootstrap") {
+      if (this.hostProfile !== "context") {
         await this.ensureRuntimeActivated({
           initializeSources: true,
           startPlugins: true,
@@ -388,7 +388,7 @@ export class AppContext {
     this.startTime = Date.now();
     logger.info("AppContext initialized");
 
-    if (this.hostProfile !== "bootstrap") {
+    if (this.hostProfile !== "context") {
       await this.ensureRuntimeActivated({
         initializeSources: true,
         startPlugins: true,

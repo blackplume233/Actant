@@ -39,7 +39,7 @@ describe("HubContextService", () => {
       "utf-8",
     );
 
-    ctx = new AppContext({ homeDir, launcherMode: "mock", hostProfile: "bootstrap" });
+    ctx = new AppContext({ homeDir, launcherMode: "mock", hostProfile: "context" });
     await ctx.init();
   });
 

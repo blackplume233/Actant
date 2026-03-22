@@ -13,9 +13,10 @@ Actant 当前以 `ContextFS` 为唯一有效产品基线：把上下文统一为
 
 当前阶段说明：
 
-- 文档、契约与 M2 VFS Kernel 重建已完成，当前以该基线作为唯一真相源。
-- 下一步进入 M3 ContextFS 编排层重建，再推进后续内置 Source 与执行模型。
-- V1 只围绕 `Project`、`Source`、`Capability` 和 4 个内置 Source 展开。
+- M0-M6 已完成，当前主线进入 M7 `Source` 配置面 + 自举就绪，并为 M8 V1 Freeze 做验证收口。
+- 运行时主线已具备 ContextFS 编排、Built-In Sources、执行模型与 facade 统一；当前重点是补齐用户入口、写路径和交付验证。
+- live progress 只在 `docs/planning/contextfs-roadmap.md` 原子维护；本文件只提供入口说明，不重复维护里程碑状态。
+- V1 只围绕 `Project`、`SourceType`、`Source`、`Trait`、`Capability` 和当前规范声明的内置 Source 展开。
 - V1 只包含当前规范中声明的对象、操作面与边界。
 
 除非正在处理迁移残留或历史清理，不要把历史说明文档当作默认入口。

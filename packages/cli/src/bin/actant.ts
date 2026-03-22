@@ -24,5 +24,6 @@ if (process.argv.includes("--__actant-daemon")) {
   }
 } else {
   const { run } = await import("../program");
-  run();
+  await run();
+  process.exit(process.exitCode ?? 0);
 }

@@ -1,7 +1,7 @@
 {
   "name": "project-context-agent",
   "version": "1.0.0",
-  "description": "Minimal agent template for project-context bootstrap validation.",
+  "description": "Minimal agent template for project-context discovery validation.",
   "backend": {
     "type": "claude-code"
   },
@@ -10,6 +10,6 @@
   },
   "project": {
     "skills": ["project-context-reader"],
-    "prompts": ["project-context-bootstrap"]
+    "prompts": ["project-context-discovery"]
   }
 }

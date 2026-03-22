@@ -180,7 +180,7 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
     getUptime: () => 0,
     getAgentCount: () => 0,
     getRpcMethods: () => [],
-    getHostProfile: () => "bootstrap",
+    getHostProfile: () => "context",
     getRuntimeState: () => "inactive",
     getCapabilities: () => ["hub", "vfs", "domain"],
     getHubProject: () => ({

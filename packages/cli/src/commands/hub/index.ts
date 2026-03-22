@@ -43,7 +43,7 @@ export function createHubCommand(
   printer: CliPrinter = defaultPrinter,
   dependencies?: HubCommandDependencies,
 ): Command {
-  const hub = new Command("hub").description("CLI-first project bootstrap hub");
+  const hub = new Command("hub").description("CLI-first project context hub");
   const ensureDaemonRunningImpl = dependencies?.ensureDaemonRunningImpl ?? ensureDaemonRunning;
   const createStandaloneBackend = dependencies?.createStandaloneBackend ?? createStandaloneHubBackend;
 
@@ -170,9 +170,9 @@ async function resolveHubBackend(
   }
 
   try {
-    const { started } = await ensureDaemonRunningImpl("bootstrap");
+    const { started } = await ensureDaemonRunningImpl("context");
     if (started) {
-      printer.dim("Started bootstrap host.");
+      printer.dim("Started context host.");
     }
     return createConnectedHubBackend(client, projectDir);
   } catch (err) {
@@ -227,7 +227,7 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
     getUptime: () => 0,
     getAgentCount: () => 0,
     getRpcMethods: () => [],
-    getHostProfile: () => "bootstrap",
+    getHostProfile: () => "context",
     getRuntimeState: () => "inactive",
     getCapabilities: () => ["hub", "vfs", "domain"],
     getHubProject: () => ({
@@ -241,7 +241,7 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
     mode: "standalone",
     status: {
       active: true,
-      hostProfile: "bootstrap",
+      hostProfile: "context",
       runtimeState: "inactive",
       projectRoot: context.projectRoot,
       projectName: context.summary.projectName,

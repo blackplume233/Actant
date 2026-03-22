@@ -41,6 +41,23 @@ interface ProjectManifest {
 }
 ```
 
+### 2.1 HostProfile Input
+
+守护进程与独立 backend 的 host profile 配置也属于当前配置契约的一部分。
+
+```ts
+type HostProfile = "context" | "runtime" | "autonomous";
+```
+
+规则：
+
+- `ACTANT_HOST_PROFILE` 和 CLI `daemon start --profile` 的规范值是 `context`、`runtime`、`autonomous`
+- `context` 表示只装载项目上下文与 hub / VFS / domain 能力，不主动激活 runtime 家族能力
+- `runtime` 表示正常运行态，可继续激活 agents / sessions / schedules 等 runtime 能力
+- `autonomous` 保留给更高权限的自动执行态
+- 历史输入 `bootstrap` 只作为兼容别名保留；实现层必须把它规范化为 `context`
+- 活跃文档、用户可见 CLI 文案、示例配置和新增 task / roadmap 不得再把旧 profile 名称当作当前 profile 名称
+
 ---
 
 ## 3. MountDeclaration

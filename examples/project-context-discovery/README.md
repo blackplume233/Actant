@@ -1,4 +1,4 @@
-# Project Context Bootstrap Example
+# Project Context Discovery Example
 
 This directory is the smallest repository fixture used to validate issue `#298`.
 

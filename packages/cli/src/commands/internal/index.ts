@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { RpcClient } from "../../client/rpc-client";
-import { defaultSocketPath } from "../../program";
 import { type CliPrinter, defaultPrinter } from "../../output/index";
+import { defaultSocketPath } from "../../socket-path";
 
 /**
  * `actant internal` — token-authenticated commands for managed agent processes.

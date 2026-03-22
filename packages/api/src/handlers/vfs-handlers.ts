@@ -51,14 +51,14 @@ export function registerVfsHandlers(registry: HandlerRegistry): void {
   registry.register("vfs.mountList", handleVfsMountList);
 }
 
-function assertBootstrapVfsMutationAllowed(ctx: AppContext, path?: string): void {
-  if (ctx.hostProfile !== "bootstrap") {
+function assertContextVfsMutationAllowed(ctx: AppContext, path?: string): void {
+  if (ctx.hostProfile !== "context") {
     return;
   }
 
   const target = path ? ` for path "${path}"` : "";
   throw Object.assign(
-    new Error(`VFS mutation is disabled in bootstrap profile${target}. Start a runtime host for write operations.`),
+    new Error(`VFS mutation is disabled in context profile${target}. Start a runtime host for write operations.`),
     { code: RPC_ERROR_CODES.GENERIC_BUSINESS },
   );
 }
@@ -142,7 +142,7 @@ async function handleVfsWrite(
   ctx: AppContext,
 ): Promise<VfsWriteRpcResult> {
   const { path, content, token } = params as unknown as VfsWriteParams;
-  assertBootstrapVfsMutationAllowed(ctx, path);
+  assertContextVfsMutationAllowed(ctx, path);
   const { kernel, requestContext } = selectVfsKernel(ctx, token);
   const resolved = kernel.resolve(path);
   if (!resolved) {
@@ -161,7 +161,7 @@ async function handleVfsEdit(
   ctx: AppContext,
 ): Promise<VfsEditRpcResult> {
   const { path, oldStr, newStr, replaceAll, token } = params as unknown as VfsEditParams;
-  assertBootstrapVfsMutationAllowed(ctx, path);
+  assertContextVfsMutationAllowed(ctx, path);
   const { kernel, requestContext } = selectVfsKernel(ctx, token);
   const resolved = kernel.resolve(path);
   if (!resolved) {
@@ -180,7 +180,7 @@ async function handleVfsDelete(
   ctx: AppContext,
 ): Promise<VfsDeleteResult> {
   const { path, token } = params as unknown as VfsDeleteParams;
-  assertBootstrapVfsMutationAllowed(ctx, path);
+  assertContextVfsMutationAllowed(ctx, path);
   const { kernel, requestContext } = selectVfsKernel(ctx, token);
   const resolved = kernel.resolve(path);
   if (!resolved) {
@@ -386,7 +386,7 @@ async function handleVfsMount(
   ctx: AppContext,
 ): Promise<VfsMountRpcResult> {
   const { name, mountPoint, spec, lifecycle } = params as unknown as VfsMountRpcParams;
-  assertBootstrapVfsMutationAllowed(ctx, mountPoint);
+  assertContextVfsMutationAllowed(ctx, mountPoint);
   const registry = requireVfsRegistry(ctx);
   const factoryRegistry = ctx.sourceTypeRegistry;
 
@@ -407,7 +407,7 @@ async function handleVfsUnmount(
   ctx: AppContext,
 ): Promise<VfsUnmountResult> {
   const { name } = params as unknown as VfsUnmountParams;
-  assertBootstrapVfsMutationAllowed(ctx, name);
+  assertContextVfsMutationAllowed(ctx, name);
   const registry = requireVfsRegistry(ctx);
   const ok = registry.unmount(name);
   return { ok };

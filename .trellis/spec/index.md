@@ -33,6 +33,7 @@ Actant 当前只承认一套新的顶层叙述：
 - 所有 ship / merge 级交付必须先产出 changelog draft，再汇总正式 release changelog
 - `docs/planning/` 下仍作为真相源的 roadmap 必须使用 checklist / todolist 主格式
 - 项目进度标注必须只在一个活跃文件里做原子维护；当前唯一真相源为 `docs/planning/contextfs-roadmap.md`
+- 废弃术语不得回流到活跃真相源；`bootstrap` 仅允许出现在历史引用或兼容说明中
 
 ---
 
@@ -107,6 +108,7 @@ Actant 当前只承认一套新的顶层叙述：
 - changelog draft 交付契约：`docs/agent/changelog-drafts/`
 - active roadmap 结构契约：`docs/planning/*.md` 使用 checklist/todolist
 - 项目进度唯一文件契约：`docs/planning/contextfs-roadmap.md` 是唯一 live progress truth file
+- 废弃术语契约：`bootstrap` 不能继续作为活跃概念名、profile 名或推荐交付术语
 
 入口：
 

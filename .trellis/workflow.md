@@ -37,6 +37,7 @@ Current repository policy:
 - every ship / merge delivery must preserve a changelog draft before release aggregation
 - active roadmap files under `docs/planning/` must use checklist / todolist structure
 - project progress status must be atomically maintained in one active file only: `docs/planning/contextfs-roadmap.md`
+- deprecated terms must not leak into active truth; `bootstrap` is banned from active docs and user-facing delivery language except for explicit historical or compatibility notes
 
 ## Session Start
 
