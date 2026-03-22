@@ -127,7 +127,7 @@ Owner: namespace and filesystem convergence
 Definition of done:
 
 - [x] M7.1 声明式 namespace 配置：`actant.namespace.json` 生效
-- [x] M7.2 `mount table` 配置闭环：`root` / `direct` mount 可声明、可解析、可持久化
+- [x] M7.2 `mount table` 语义闭环：用户配置面声明 `direct mount`，隐式 `root mount` 经 VFS 解析与描述稳定可见
 - [x] M7.3 `filesystem type` 闭环：`hostfs` / `runtimefs` / `memfs` 可注册、可实例化、可描述
 - [x] M7.4 `node type` 出口闭环：`stat` / `describe` / CLI / RPC 都稳定暴露 `directory` / `regular` / `control` / `stream`
 - [x] M7.5 `actant init` 与 `actant vfs mount add` 生成新 namespace 配置，而不是旧 Source 配置入口

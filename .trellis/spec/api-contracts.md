@@ -117,6 +117,11 @@ interface VfsMountListResult {
 }
 ```
 
+说明：
+
+- `mountList()` 返回的是 `actant.namespace.json` 中声明的用户挂载，因此它只列出 `direct mount`
+- 隐式 `root mount` 仍然存在，但它属于系统投影面，应通过 `describe("/")`、`describe("/_project.json")` 等路径语义观察
+
 ---
 
 ## 4. Execution Contract

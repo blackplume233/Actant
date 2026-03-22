@@ -19,6 +19,7 @@
 - 核心对象：`mount namespace`、`mount table`、`filesystem type`、`mount instance`、`node type`
 - V1 操作面：`read`、`write`、`list`、`stat`、`watch`、`stream`
 - V1 必要 `mount type`：`root`、`direct`
+- 用户配置面只声明 `direct`；`root` 由 namespace 根投影隐式承载
 - V1 必要 `filesystem type`：`hostfs`、`runtimefs`、`memfs`
 - V1 必要 `node type`：`directory`、`regular`、`control`、`stream`
 - V1 不包含 `workflow`、query/view mount、overlay/fallback 行为实现

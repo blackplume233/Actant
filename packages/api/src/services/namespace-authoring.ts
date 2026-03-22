@@ -107,6 +107,13 @@ export function validateNamespaceDocument(document: NamespaceConfigDocument): Na
     }
 
     const normalizedPath = normalizeVfsPath(mount.path);
+    if (normalizedPath === "/") {
+      mountDeclarationIssues.push({
+        path: `${mountPath}.path`,
+        message: 'The namespace root "/" is reserved for the implicit root mount projection. Declare only direct subpath mounts in actant.namespace.json.',
+      });
+    }
+
     if (seenPaths.has(normalizedPath)) {
       mountDeclarationIssues.push({
         path: `${mountPath}.path`,

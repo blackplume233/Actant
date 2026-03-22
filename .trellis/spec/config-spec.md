@@ -75,6 +75,8 @@ interface MountDeclaration {
 配置解释约束：
 
 - 不再把挂载声明当作内容类型声明
+- `actant.namespace.json` 里的用户声明挂载只允许 `direct mount`
+- `"/"` 保留给隐式 `root mount` 投影；不允许把用户声明挂载直接写到 namespace root
 - 运行时节点形态由 `filesystem type` 与 `node type` 决定
 - `hostfs` 必须声明 `options.hostPath`
 - `runtimefs` 在 V1 只允许 `/agents` 与 `/mcp/runtime`
