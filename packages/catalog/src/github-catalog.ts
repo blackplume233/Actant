@@ -2,25 +2,25 @@ import { join } from "node:path";
 import { mkdir, rm } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
-import type { GitHubSourceConfig } from "@actant/shared";
+import type { GitHubCatalogConfig } from "@actant/shared";
 import { createLogger } from "@actant/shared";
-import type { ComponentSource, FetchResult } from "./component-source";
-import { LocalSource } from "./local-source";
+import type { CatalogProvider, FetchResult } from "./component-catalog";
+import { LocalCatalog } from "./local-catalog";
 
 const execFileAsync = promisify(execFile);
-const logger = createLogger("github-source");
+const logger = createLogger("github-catalog");
 
 /**
  * Fetches component packages from GitHub repositories via shallow clone.
- * After cloning, delegates to LocalSource for actual file parsing.
+ * After cloning, delegates to LocalCatalog for actual file parsing.
  */
-export class GitHubSource implements ComponentSource {
+export class GitHubCatalog implements CatalogProvider {
   readonly type = "github";
   readonly packageName: string;
-  readonly config: GitHubSourceConfig;
+  readonly config: GitHubCatalogConfig;
   private readonly cacheDir: string;
 
-  constructor(packageName: string, config: GitHubSourceConfig, cacheDir: string) {
+  constructor(packageName: string, config: GitHubCatalogConfig, cacheDir: string) {
     this.packageName = packageName;
     this.config = config;
     this.cacheDir = join(cacheDir, packageName);
@@ -67,7 +67,7 @@ export class GitHubSource implements ComponentSource {
   }
 
   private async readCached(): Promise<FetchResult> {
-    const localSource = new LocalSource(this.packageName, { type: "local", path: this.cacheDir });
-    return localSource.fetch();
+    const localCatalog = new LocalCatalog(this.packageName, { type: "local", path: this.cacheDir });
+    return localCatalog.fetch();
   }
 }

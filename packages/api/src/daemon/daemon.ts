@@ -9,7 +9,7 @@ import {
   registerAgentHandlers,
   registerSessionHandlers,
   registerDomainHandlers,
-  registerSourceHandlers,
+  registerCatalogHandlers,
   registerPresetHandlers,
   registerDaemonHandlers,
   registerHubHandlers,
@@ -42,7 +42,7 @@ export class Daemon {
     registerAgentHandlers(this.handlers);
     registerSessionHandlers(this.handlers);
     registerDomainHandlers(this.handlers);
-    registerSourceHandlers(this.handlers);
+    registerCatalogHandlers(this.handlers);
     registerPresetHandlers(this.handlers);
     registerDaemonHandlers(this.handlers, () => this.stop());
     registerHubHandlers(this.handlers);

@@ -170,11 +170,11 @@ export const HOOK_CATEGORIES = {
     builtinEvents: ["created", "destroyed", "modified"],
     dynamic: false,
   },
-  source: {
-    name: "source",
-    prefix: "source",
+  catalog: {
+    name: "catalog",
+    prefix: "catalog",
     layer: "entity",
-    description: "Component source update events",
+    description: "Component catalog update events",
     builtinEvents: ["updated"],
     dynamic: false,
   },
@@ -285,7 +285,7 @@ type EntityEvents =
   | "agent:created"
   | "agent:destroyed"
   | "agent:modified"
-  | "source:updated"
+  | "catalog:updated"
   | "template:loaded"
   | "template:unloaded"
   | "template:validated";
@@ -615,12 +615,12 @@ export const BUILTIN_EVENT_META: readonly HookEventMeta[] = [
     subscriptionModels: { systemMandatory: false, userConfigurable: true, agentSubscribable: true },
   },
   {
-    event: "source:updated",
+    event: "catalog:updated",
     description: "A component source has been synced or updated",
     emitters: ["SourceManager.sync"],
     payloadSchema: [
-      { name: "source.name", type: "string", required: true, description: "Source name" },
-      { name: "source.type", type: "string", required: false, description: "Source type (github/local/community)" },
+      { name: "catalog.name", type: "string", required: true, description: "Catalog name" },
+      { name: "catalog.type", type: "string", required: false, description: "Catalog type (github/local/community)" },
     ],
     allowedEmitters: ["system"],
     allowedListeners: [],

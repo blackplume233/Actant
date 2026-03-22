@@ -1,6 +1,6 @@
 import type {
-  SourceTrait,
-  VfsSourceRegistration,
+  VfsFeature,
+  VfsMountRegistration,
   VfsLifecycle,
   VfsFileContent,
   VfsEntry,
@@ -8,7 +8,7 @@ import type {
 } from "@actant/shared";
 import type { ContextSource, ContextSourceType } from "../types";
 
-const AGENT_STATUS_TRAITS = new Set<SourceTrait>(["ephemeral", "virtual"]);
+const AGENT_STATUS_FEATURES = new Set<VfsFeature>(["ephemeral", "virtual"]);
 
 /**
  * Minimal agent info required for VFS projection.
@@ -58,7 +58,7 @@ export class AgentStatusSource implements ContextSource {
     private readonly lifecycle: VfsLifecycle = { type: "daemon" },
   ) {}
 
-  toVfsMounts(mountPrefix: string): VfsSourceRegistration[] {
+  toVfsMounts(mountPrefix: string): VfsMountRegistration[] {
     const prefix = mountPrefix || "";
     const mountPoint = `${prefix}/agents`;
 
@@ -67,7 +67,7 @@ export class AgentStatusSource implements ContextSource {
         name: "agent-status",
         mountPoint,
         label: "agent-status",
-        traits: new Set(AGENT_STATUS_TRAITS),
+        features: new Set(AGENT_STATUS_FEATURES),
         lifecycle: this.lifecycle,
         metadata: { description: "Internal Agent status and tool schemas", virtual: true },
         fileSchema: {},

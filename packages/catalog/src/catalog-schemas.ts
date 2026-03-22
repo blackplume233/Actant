@@ -1,6 +1,6 @@
 /**
- * Zod validation schemas for Source package components.
- * Used by SourceValidator to verify component data integrity.
+ * Zod validation schemas for Catalog package components.
+ * Used by CatalogValidator to verify component data integrity.
  */
 import { z } from "zod";
 

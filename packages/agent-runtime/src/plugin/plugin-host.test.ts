@@ -352,23 +352,23 @@ describe("PluginHost — plug 5: subsystems", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-//  PluginHost — Plug 6: sources
+//  PluginHost — Plug 6: catalogs
 // ─────────────────────────────────────────────────────────────
 
-describe("PluginHost — plug 6: sources", () => {
-  it("collects source configs from running plugins", async () => {
-    const src = { type: "local" as const, path: "/my/path" };
+describe("PluginHost — plug 6: catalogs", () => {
+  it("collects catalog configs from running plugins", async () => {
+    const catalog = { type: "local" as const, path: "/my/path" };
 
     const plugin = makePlugin({
       name: "src-plugin",
-      sources: () => [src],
+      catalogs: () => [catalog],
     });
     const host = new PluginHost();
     host.register(plugin);
     await host.start(baseCtx, makeBus());
 
-    expect(host.getSources()).toHaveLength(1);
-    expect(host.getSources()[0]).toEqual(src);
+    expect(host.getCatalogs()).toHaveLength(1);
+    expect(host.getCatalogs()[0]).toEqual(catalog);
   });
 });
 
@@ -424,7 +424,7 @@ describe("adaptLegacyPlugin", () => {
     expect(plugin.hooks).toBeUndefined();
     expect(plugin.contextProviders).toBeUndefined();
     expect(plugin.subsystems).toBeUndefined();
-    expect(plugin.sources).toBeUndefined();
+    expect(plugin.catalogs).toBeUndefined();
     expect(plugin.project).toBeDefined();
   });
 

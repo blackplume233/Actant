@@ -33,7 +33,7 @@ export function createPermissionMiddleware(
       identity,
       state.uri.path,
       permission,
-      state.resolved.source,
+      state.resolved.mount,
     );
 
     if (decision === "deny") {

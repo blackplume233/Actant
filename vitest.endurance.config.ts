@@ -5,7 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@actant/domain-context": resolve(__dirname, "packages/domain-context/src/index.ts"),
-      "@actant/source": resolve(__dirname, "packages/source/src/index.ts"),
+      "@actant/catalog": resolve(__dirname, "packages/catalog/src/index.ts"),
       "@actant/vfs": resolve(__dirname, "packages/vfs/src/index.ts"),
       "@actant/agent-runtime": resolve(__dirname, "packages/agent-runtime/src/index.ts"),
       "@actant/shared": resolve(__dirname, "packages/shared/src/index.ts"),

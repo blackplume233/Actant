@@ -1,10 +1,10 @@
-import { createLogger, type VfsSourceRegistration } from "@actant/shared";
+import { createLogger, type VfsMountRegistration } from "@actant/shared";
 import type { VfsRegistry } from "./vfs-registry";
 
 const logger = createLogger("vfs-lifecycle");
 
 interface TrackedProcess {
-  sourceName: string;
+  mountName: string;
   pid: number;
   retainSeconds: number;
   exitedAt?: number;
@@ -12,7 +12,7 @@ interface TrackedProcess {
 }
 
 interface TrackedTtl {
-  sourceName: string;
+  mountName: string;
   expiresAt: number;
   timer: ReturnType<typeof setTimeout>;
 }
@@ -38,15 +38,15 @@ export class VfsLifecycleManager {
   }
 
   /**
-   * Call after a source is mounted to set up lifecycle tracking.
+   * Call after a mount is registered to set up lifecycle tracking.
    */
-  track(source: VfsSourceRegistration): void {
-    const { lifecycle } = source;
+  track(mount: VfsMountRegistration): void {
+    const { lifecycle } = mount;
 
     switch (lifecycle.type) {
       case "process":
-        this.trackedProcesses.set(source.name, {
-          sourceName: source.name,
+        this.trackedProcesses.set(mount.name, {
+          mountName: mount.name,
           pid: lifecycle.pid,
           retainSeconds: lifecycle.retainSeconds ?? 0,
         });
@@ -55,16 +55,16 @@ export class VfsLifecycleManager {
       case "ttl": {
         const delay = lifecycle.expiresAt - Date.now();
         if (delay <= 0) {
-          this.registry.unmount(source.name);
+          this.registry.unmount(mount.name);
           return;
         }
         const timer = setTimeout(() => {
-          logger.info({ name: source.name }, "TTL expired, unmounting");
-          this.trackedTtls.delete(source.name);
-          this.registry.unmount(source.name);
+          logger.info({ name: mount.name }, "TTL expired, unmounting");
+          this.trackedTtls.delete(mount.name);
+          this.registry.unmount(mount.name);
         }, delay);
-        this.trackedTtls.set(source.name, {
-          sourceName: source.name,
+        this.trackedTtls.set(mount.name, {
+          mountName: mount.name,
           expiresAt: lifecycle.expiresAt,
           timer,
         });
@@ -80,17 +80,17 @@ export class VfsLifecycleManager {
   }
 
   /**
-   * Untrack a source (called before or after unmount).
+   * Untrack a mount (called before or after unmount).
    */
-  untrack(sourceName: string): void {
-    const proc = this.trackedProcesses.get(sourceName);
+  untrack(mountName: string): void {
+    const proc = this.trackedProcesses.get(mountName);
     if (proc?.timer) clearTimeout(proc.timer);
-    this.trackedProcesses.delete(sourceName);
+    this.trackedProcesses.delete(mountName);
 
-    const ttl = this.trackedTtls.get(sourceName);
+    const ttl = this.trackedTtls.get(mountName);
     if (ttl) {
       clearTimeout(ttl.timer);
-      this.trackedTtls.delete(sourceName);
+      this.trackedTtls.delete(mountName);
     }
   }
 
@@ -123,19 +123,19 @@ export class VfsLifecycleManager {
   }
 
   /**
-   * Cascade unmount all sources owned by a given agent.
+   * Cascade unmount all mounts owned by a given agent.
    * Called when an agent stops.
    */
   onAgentStop(agentName: string): number {
     let count = 0;
-    for (const source of this.getAllSources()) {
-      const lc = source.lifecycle;
+    for (const mount of this.getAllMounts()) {
+      const lc = mount.lifecycle;
       if (
         (lc.type === "agent" && lc.agentName === agentName) ||
         (lc.type === "session" && lc.agentName === agentName)
       ) {
-        this.untrack(source.name);
-        this.registry.unmount(source.name);
+        this.untrack(mount.name);
+        this.registry.unmount(mount.name);
         count++;
       }
     }
@@ -146,19 +146,19 @@ export class VfsLifecycleManager {
   }
 
   /**
-   * Unmount a specific session's sources.
+   * Unmount a specific session's mounts.
    */
   onSessionEnd(agentName: string, sessionId: string): number {
     let count = 0;
-    for (const source of this.getAllSources()) {
-      const lc = source.lifecycle;
+    for (const mount of this.getAllMounts()) {
+      const lc = mount.lifecycle;
       if (
         lc.type === "session" &&
         lc.agentName === agentName &&
         lc.sessionId === sessionId
       ) {
-        this.untrack(source.name);
-        this.registry.unmount(source.name);
+        this.untrack(mount.name);
+        this.registry.unmount(mount.name);
         count++;
       }
     }
@@ -166,13 +166,13 @@ export class VfsLifecycleManager {
   }
 
   /**
-   * Unmount all daemon-lifecycle sources. Called on daemon shutdown.
+   * Unmount all daemon-lifecycle mounts. Called on daemon shutdown.
    */
   onDaemonShutdown(): number {
     let count = 0;
-    for (const source of this.getAllSources()) {
-      this.untrack(source.name);
-      this.registry.unmount(source.name);
+    for (const mount of this.getAllMounts()) {
+      this.untrack(mount.name);
+      this.registry.unmount(mount.name);
       count++;
     }
     logger.info({ unmountedCount: count }, "Daemon shutdown — all VFS sources unmounted");
@@ -194,9 +194,9 @@ export class VfsLifecycleManager {
     this.trackedTtls.clear();
   }
 
-  private getAllSources(): VfsSourceRegistration[] {
+  private getAllMounts(): VfsMountRegistration[] {
     return this.registry.listMounts()
-      .map((m) => this.registry.getSource(m.name))
-      .filter((s): s is VfsSourceRegistration => s != null);
+      .map((m) => this.registry.getMount(m.name))
+      .filter((mount): mount is VfsMountRegistration => mount != null);
   }
 }

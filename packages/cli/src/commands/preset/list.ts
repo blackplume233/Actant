@@ -6,8 +6,8 @@ import type { PresetDefinition } from "@actant/shared";
 export function createPresetListCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("list")
     .alias("ls")
-    .description("List available presets from registered sources")
-    .argument("[package]", "Filter by source package name")
+    .description("List available presets from registered catalogs")
+    .argument("[package]", "Filter by catalog package name")
     .option("-f, --format <format>", "Output format: table, json, quiet", "table")
     .action(async (packageName: string | undefined, opts: { format: OutputFormat }) => {
       try {

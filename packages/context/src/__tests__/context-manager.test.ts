@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { SourceTrait, VfsSourceRegistration, VfsFileContent, VfsEntry } from "@actant/shared";
+import type { VfsFeature, VfsMountRegistration, VfsFileContent, VfsEntry } from "@actant/shared";
 import { ContextManager } from "../manager/context-manager";
 import type { ContextSource, ToolRegistration, ContextManagerEvents } from "../types";
 
-const CONFIG_TRAITS = new Set<SourceTrait>(["persistent", "writable"]);
+const CONFIG_FEATURES = new Set<VfsFeature>(["persistent", "writable"]);
 
 function createMockSource(
   name: string,
-  mounts: VfsSourceRegistration[],
+  mounts: VfsMountRegistration[],
 ): ContextSource {
   return {
     name,
@@ -20,12 +20,12 @@ function createMockMount(
   name: string,
   mountPoint: string,
   files: Record<string, string> = {},
-): VfsSourceRegistration {
+): VfsMountRegistration {
   return {
     name,
     mountPoint,
     label: "config",
-    traits: new Set(CONFIG_TRAITS),
+    features: new Set(CONFIG_FEATURES),
     lifecycle: { type: "daemon" },
     metadata: { description: `Mock mount ${name}`, virtual: true },
     fileSchema: {},
@@ -46,9 +46,9 @@ function createMockMount(
 }
 
 function createMockRegistry() {
-  const mounted = new Map<string, VfsSourceRegistration>();
+  const mounted = new Map<string, VfsMountRegistration>();
   return {
-    mount: vi.fn((reg: VfsSourceRegistration) => {
+    mount: vi.fn((reg: VfsMountRegistration) => {
       mounted.set(reg.name, reg);
     }),
     unmount: vi.fn((name: string) => {
@@ -78,7 +78,7 @@ describe("ContextManager", () => {
     it("should reject duplicate source names", () => {
       cm.registerSource(createMockSource("skills", []));
       expect(() => cm.registerSource(createMockSource("skills", []))).toThrow(
-        'ContextSource "skills" is already registered',
+        'Context source "skills" is already registered',
       );
     });
 

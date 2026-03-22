@@ -1,6 +1,6 @@
 import type {
-  SourceTrait,
-  VfsSourceRegistration,
+  VfsFeature,
+  VfsMountRegistration,
   VfsLifecycle,
   VfsHandlerMap,
   VfsFileContent,
@@ -9,7 +9,7 @@ import type {
   VfsStatResult,
 } from "@actant/shared";
 
-const DAEMON_INFO_TRAITS = new Set<SourceTrait>(["ephemeral", "virtual"]);
+const DAEMON_INFO_TRAITS = new Set<VfsFeature>(["ephemeral", "virtual"]);
 
 interface DaemonInfoProvider {
   getVersion(): string;
@@ -34,7 +34,7 @@ export function createDaemonInfoSource(
   provider: DaemonInfoProvider,
   mountPoint: string,
   lifecycle: VfsLifecycle,
-): VfsSourceRegistration {
+): VfsMountRegistration {
   const handlers: VfsHandlerMap = {};
 
   const VIRTUAL_FILES = ["health.json", "rpc-catalog.json"] as const;
@@ -90,7 +90,7 @@ export function createDaemonInfoSource(
     name: "daemon",
     mountPoint,
     label: "daemon-info",
-    traits: new Set(DAEMON_INFO_TRAITS),
+    features: new Set(DAEMON_INFO_TRAITS),
     lifecycle,
     metadata: { description: "Daemon health & RPC catalog (read-only, virtual)", virtual: true },
     fileSchema: {},

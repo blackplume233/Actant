@@ -31,7 +31,7 @@ function showOverview(): void {
     `    ${chalk.cyan("plugin")} list|add|remove|show     Manage plugins`,
     "",
     chalk.bold("  Ecosystem:"),
-    `    ${chalk.cyan("source")} list|add|remove|sync      Manage component sources`,
+    `    ${chalk.cyan("catalog")} list|add|remove|sync     Manage component catalogs`,
     `    ${chalk.cyan("preset")} list|apply                Manage preset packs`,
     "",
     chalk.bold("  Scheduling:"),

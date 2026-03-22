@@ -7,7 +7,7 @@ const logger = createLogger("vfs-path-index");
  */
 export interface PathIndexEntry {
   vfsPath: string;
-  sourceName: string;
+  mountName: string;
   mountPoint: string;
   type: "file" | "directory";
   size?: number;

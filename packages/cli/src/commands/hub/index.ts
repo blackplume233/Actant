@@ -70,8 +70,8 @@ export function createHubCommand(
         if (status.projectRoot) printer.log(`Root:         ${status.projectRoot}`);
         if (status.configPath) printer.log(`Config:       ${status.configPath}`);
         printer.log(`Workspace:    ${status.mounts.workspace}`);
-        if (status.sourceWarnings?.length) {
-          printer.dim(`Warnings:     ${status.sourceWarnings.length}`);
+        if (status.catalogWarnings?.length) {
+          printer.dim(`Warnings:     ${status.catalogWarnings.length}`);
         }
       } catch (err) {
         presentError(err, printer);
@@ -247,7 +247,7 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
       projectName: context.summary.projectName,
       configPath: context.configPath,
       configsDir: context.configsDir,
-      sourceWarnings: context.summary.sourceWarnings,
+      catalogWarnings: context.summary.catalogWarnings,
       components: context.summary.components,
       mounts: HUB_MOUNT_LAYOUT,
     },
@@ -258,12 +258,12 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
       }
 
       if (startLine != null) {
-        const handler = requireHandler(resolved.source.handlers.read_range, "read_range", path);
+        const handler = requireHandler(resolved.mount.handlers.read_range, "read_range", path);
         const result = await handler(resolved.relativePath, startLine, endLine);
         return { content: result.content, mimeType: result.mimeType };
       }
 
-      const handler = requireHandler(resolved.source.handlers.read, "read", path);
+      const handler = requireHandler(resolved.mount.handlers.read, "read", path);
       const result = await handler(resolved.relativePath);
       return { content: result.content, mimeType: result.mimeType };
     },
@@ -271,22 +271,22 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
       const resolved = registry.resolve(path);
       if (!resolved) {
         const childMounts = registry.listChildMounts(path);
-        return childMounts.map((source) => ({
-          name: source.mountPoint.split("/").pop() ?? source.name,
-          path: source.mountPoint,
+        return childMounts.map((mount) => ({
+          name: mount.mountPoint.split("/").pop() ?? mount.name,
+          path: mount.mountPoint,
           type: "directory" as const,
         }));
       }
-      const handler = requireHandler(resolved.source.handlers.list, "list", path);
+      const handler = requireHandler(resolved.mount.handlers.list, "list", path);
       const entries = await handler(resolved.relativePath, { recursive, long });
       if (resolved.relativePath !== "") {
         return entries;
       }
 
       const childMounts = registry.listChildMounts(path);
-      const projectedMounts = childMounts.map((source) => ({
-        name: source.mountPoint.split("/").pop() ?? source.name,
-        path: source.mountPoint,
+      const projectedMounts = childMounts.map((mount) => ({
+        name: mount.mountPoint.split("/").pop() ?? mount.name,
+        path: mount.mountPoint,
         type: "directory" as const,
       }));
       const deduped = new Map<string, (typeof entries)[number]>();
@@ -300,7 +300,7 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
       if (!resolved) {
         throw new Error(`VFS path not found: ${path}`);
       }
-      const handler = requireHandler(resolved.source.handlers.grep, "grep", path);
+      const handler = requireHandler(resolved.mount.handlers.grep, "grep", path);
       return handler(pattern, { caseInsensitive, maxResults });
     },
   };

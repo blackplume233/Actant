@@ -2,9 +2,9 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { existsSync } from "node:fs";
 import {
-  type SourceTrait,
-  type SourceTypeDefinition,
-  type VfsSourceRegistration,
+  type VfsFeature,
+  type FilesystemTypeDefinition,
+  type VfsMountRegistration,
   type VfsLifecycle,
   type VfsHandlerMap,
   type VfsFileContent,
@@ -27,7 +27,7 @@ export interface WorkspaceSourceConfig {
   watchEnabled?: boolean;
 }
 
-const WORKSPACE_TRAITS = new Set<SourceTrait>(["persistent", "writable", "watchable"]);
+const WORKSPACE_TRAITS = new Set<VfsFeature>(["persistent", "writable", "watchable"]);
 
 function resolveAbsolute(rootDir: string, relativePath: string): string {
   const resolved = path.resolve(rootDir, relativePath);
@@ -270,17 +270,17 @@ function matchGlobSimple(pattern: string, filePath: string): boolean {
   return new RegExp(`^${regexStr}$`).test(filePath);
 }
 
-export const workspaceSourceFactory: SourceTypeDefinition<WorkspaceSourceConfig> = {
+export const workspaceSourceFactory: FilesystemTypeDefinition<WorkspaceSourceConfig> = {
   type: "filesystem",
   label: "workspace",
-  defaultTraits: WORKSPACE_TRAITS,
+  defaultFeatures: WORKSPACE_TRAITS,
 
   validate(config: WorkspaceSourceConfig) {
     if (!config.path) return { valid: false, errors: ["path is required"] };
     return { valid: true };
   },
 
-  create(spec: WorkspaceSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
+  create(spec: WorkspaceSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsMountRegistration {
     const rootDir = path.resolve(spec.path);
     const readOnly = spec.readOnly ?? false;
     const handlers = createHandlers(rootDir, readOnly);
@@ -289,7 +289,7 @@ export const workspaceSourceFactory: SourceTypeDefinition<WorkspaceSourceConfig>
       name: "",
       mountPoint,
       label: "workspace",
-      traits: new Set(WORKSPACE_TRAITS),
+      features: new Set(WORKSPACE_TRAITS),
       lifecycle,
       metadata: {
         description: `Workspace: ${rootDir}`,

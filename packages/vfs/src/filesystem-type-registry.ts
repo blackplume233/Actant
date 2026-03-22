@@ -1,32 +1,32 @@
 import {
   createLogger,
-  type SourceTrait,
-  type SourceRequirement,
-  type SourceTypeDefinition,
+  type VfsFeature,
+  type FilesystemRequirement,
+  type FilesystemTypeDefinition,
   type VfsLifecycle,
-  type VfsMountParams,
-  type VfsSourceRegistration,
+  type VfsMountAddParams,
+  type VfsMountRegistration,
 } from "@actant/shared";
 
 const logger = createLogger("vfs-source-type");
 
-function validateTraitExclusions(traits: ReadonlySet<SourceTrait>, context: string): void {
-  if (traits.has("persistent") && traits.has("ephemeral")) {
-    throw new Error(`${context} cannot declare both "persistent" and "ephemeral" traits`);
+function validateTraitExclusions(features: ReadonlySet<VfsFeature>, context: string): void {
+  if (features.has("persistent") && features.has("ephemeral")) {
+    throw new Error(`${context} cannot declare both "persistent" and "ephemeral" features`);
   }
 }
 
-export class SourceTypeRegistry {
-  private definitions = new Map<string, SourceTypeDefinition<Record<string, unknown>>>();
+export class FilesystemTypeRegistry {
+  private definitions = new Map<string, FilesystemTypeDefinition<Record<string, unknown>>>();
 
-  register<TConfig>(definition: SourceTypeDefinition<TConfig>): void {
-    validateTraitExclusions(definition.defaultTraits, `Source type "${definition.type}"`);
+  register<TConfig>(definition: FilesystemTypeDefinition<TConfig>): void {
+    validateTraitExclusions(definition.defaultFeatures, `Source type "${definition.type}"`);
 
     if (this.definitions.has(definition.type)) {
       logger.warn({ type: definition.type }, "Overwriting existing source type definition");
     }
 
-    this.definitions.set(definition.type, definition as SourceTypeDefinition<Record<string, unknown>>);
+    this.definitions.set(definition.type, definition as FilesystemTypeDefinition<Record<string, unknown>>);
     logger.debug({ type: definition.type }, "Source type definition registered");
   }
 
@@ -38,7 +38,7 @@ export class SourceTypeRegistry {
     return this.definitions.has(type);
   }
 
-  get(type: string): SourceTypeDefinition<Record<string, unknown>> | undefined {
+  get(type: string): FilesystemTypeDefinition<Record<string, unknown>> | undefined {
     return this.definitions.get(type);
   }
 
@@ -47,7 +47,7 @@ export class SourceTypeRegistry {
     config: TConfig,
     mountPoint: string,
     lifecycle: VfsLifecycle,
-  ): VfsSourceRegistration {
+  ): VfsMountRegistration {
     const definition = this.definitions.get(type);
     if (!definition) {
       throw new Error(`No VFS source type registered for type "${type}"`);
@@ -61,17 +61,17 @@ export class SourceTypeRegistry {
     }
 
     const registration = definition.create(config as Record<string, unknown>, mountPoint, lifecycle);
-    const traits = registration.traits ?? new Set(definition.defaultTraits);
-    validateTraitExclusions(traits, `Source registration "${registration.name || mountPoint}"`);
+    const features = registration.features ?? new Set(definition.defaultFeatures);
+    validateTraitExclusions(features, `Source registration "${registration.name || mountPoint}"`);
 
     return {
       ...registration,
       label: registration.label || definition.label,
-      traits,
+      features,
     };
   }
 
-  createMount<TConfig>(params: VfsMountParams<TConfig>): VfsSourceRegistration {
+  createMount<TConfig>(params: VfsMountAddParams<TConfig>): VfsMountRegistration {
     const registration = this.create(params.type, params.config, params.mountPoint, params.lifecycle);
     registration.name = params.name;
     registration.metadata = {
@@ -100,7 +100,7 @@ export class SourceTypeRegistry {
     return Array.from(this.definitions.keys());
   }
 
-  static satisfies(source: Pick<VfsSourceRegistration, "traits">, requirement: SourceRequirement): boolean {
-    return requirement.required.every((trait) => source.traits.has(trait));
+  static satisfies(source: Pick<VfsMountRegistration, "features">, requirement: FilesystemRequirement): boolean {
+    return requirement.required.every((trait) => source.features.has(trait));
   }
 }

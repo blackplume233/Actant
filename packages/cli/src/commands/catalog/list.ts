@@ -1,16 +1,16 @@
 import { Command } from "commander";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
-import type { SourceEntry } from "@actant/shared";
+import type { CatalogEntry } from "@actant/shared";
 
-export function createSourceListCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
+export function createCatalogListCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("list")
     .alias("ls")
-    .description("List registered component sources")
+    .description("List registered component catalogs")
     .option("-f, --format <format>", "Output format: table, json, quiet", "table")
     .action(async (opts: { format: OutputFormat }) => {
       try {
-        const sources: SourceEntry[] = await client.call("source.list", {});
+        const sources: CatalogEntry[] = await client.call("catalog.list", {});
         if (opts.format === "json") {
           printer.log(JSON.stringify(sources, null, 2));
         } else if (opts.format === "quiet") {

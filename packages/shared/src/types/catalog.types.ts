@@ -1,29 +1,29 @@
 // ---------------------------------------------------------------------------
-// Component Source — extensible registry for remote/local component packages
+// Component Catalog — extensible registry for remote/local component packages
 // ---------------------------------------------------------------------------
 
-/** Discriminated union for source configurations. New source types extend this. */
-export type SourceConfig =
-  | GitHubSourceConfig
-  | LocalSourceConfig
-  | CommunitySourceConfig;
+/** Discriminated union for catalog configurations. New catalog types extend this. */
+export type CatalogConfig =
+  | GitHubCatalogConfig
+  | LocalCatalogConfig
+  | CommunityCatalogConfig;
 
-export interface GitHubSourceConfig {
+export interface GitHubCatalogConfig {
   type: "github";
   url: string;
   branch?: string;
 }
 
-export interface LocalSourceConfig {
+export interface LocalCatalogConfig {
   type: "local";
   path: string;
 }
 
 /**
- * Source type for community Agent Skills repositories (e.g. anthropics/skills).
+ * Catalog type for community Agent Skills repositories (e.g. anthropics/skills).
  * Auto-discovers SKILL.md files without requiring actant.json manifests.
  */
-export interface CommunitySourceConfig {
+export interface CommunityCatalogConfig {
   type: "community";
   url: string;
   branch?: string;
@@ -31,10 +31,10 @@ export interface CommunitySourceConfig {
   filter?: string;
 }
 
-/** Persisted source entry (stored in sources.json). */
-export interface SourceEntry {
+/** Persisted catalog entry (stored in catalogs.json). */
+export interface CatalogEntry {
   name: string;
-  config: SourceConfig;
+  config: CatalogConfig;
   syncedAt?: string;
 }
 

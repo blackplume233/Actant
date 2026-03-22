@@ -7,7 +7,7 @@ import type {
   PresetDefinition,
   PackageManifest,
   AgentTemplate,
-  SourceConfig,
+  CatalogConfig,
 } from "@actant/shared";
 
 export interface FetchResult {
@@ -22,15 +22,15 @@ export interface FetchResult {
 }
 
 /**
- * Extensible interface for component sources.
- * Implement this to add new source types (GitHub, local, HTTP, npm, etc.).
+ * Extensible interface for component catalogs.
+ * Implement this to add new catalog types (GitHub, local, HTTP, npm, etc.).
  */
-export interface ComponentSource {
+export interface CatalogProvider {
   readonly type: string;
   readonly packageName: string;
-  readonly config: SourceConfig;
+  readonly config: CatalogConfig;
 
-  /** Filesystem root directory for this source's content. */
+  /** Filesystem root directory for this catalog's content. */
   getRootDir(): string;
 
   fetch(): Promise<FetchResult>;

@@ -2,7 +2,7 @@ import type { AgentTemplate, PermissionsInput, PermissionsConfig, OpenSpawnOptio
 import type { AgentArchetype } from "./template.types";
 import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, DetachResult } from "./agent.types";
 import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "./domain-component.types";
-import type { SourceEntry, SourceConfig, PresetDefinition } from "./source.types";
+import type { CatalogEntry, CatalogConfig, PresetDefinition } from "./catalog.types";
 import type { HostCapability, HostProfile, HostRuntimeState } from "./host.types";
 import type { ActivityRecord, ActivitySessionSummary, ConversationTurn } from "./activity.types";
 import type { PluginRef } from "./plugin.types";
@@ -546,7 +546,7 @@ export interface HubActivateResult {
   projectName: string;
   configPath: string | null;
   configsDir: string;
-  sourceWarnings: string[];
+  catalogWarnings: string[];
   components: {
     skills: number;
     prompts: number;
@@ -567,7 +567,7 @@ export interface HubStatusResult {
   projectName?: string;
   configPath?: string | null;
   configsDir?: string;
-  sourceWarnings?: string[];
+  catalogWarnings?: string[];
   components?: HubActivateResult["components"];
   mounts: HubMountLayout;
 }
@@ -626,32 +626,32 @@ export interface ComponentExportResult {
   success: boolean;
 }
 
-export type SourceListParams = Record<string, never>;
-export type SourceListResult = SourceEntry[];
+export type CatalogListParams = Record<string, never>;
+export type CatalogListResult = CatalogEntry[];
 
-export interface SourceAddParams {
+export interface CatalogAddParams {
   name: string;
-  config: SourceConfig;
+  config: CatalogConfig;
 }
 
-export interface SourceAddResult {
+export interface CatalogAddResult {
   name: string;
   components: { skills: number; prompts: number; mcp: number; workflows: number; presets: number };
 }
 
-export interface SourceRemoveParams {
+export interface CatalogRemoveParams {
   name: string;
 }
 
-export interface SourceRemoveResult {
+export interface CatalogRemoveResult {
   success: boolean;
 }
 
-export interface SourceSyncParams {
+export interface CatalogSyncParams {
   name?: string;
 }
 
-export interface SourceSyncResult {
+export interface CatalogSyncResult {
   synced: string[];
   /** Sync report summary (aggregated when syncing multiple sources). */
   report?: {
@@ -662,8 +662,8 @@ export interface SourceSyncResult {
   };
 }
 
-export interface SourceValidateParams {
-  /** Validate a registered source by name. */
+export interface CatalogValidateParams {
+  /** Validate a registered catalog by name. */
   name?: string;
   /** Validate an arbitrary directory path directly. */
   path?: string;
@@ -671,11 +671,11 @@ export interface SourceValidateParams {
   strict?: boolean;
   /** Enable compatibility checks against an external standard (e.g. "agent-skills"). */
   compat?: string;
-  /** Treat the source as a community repo (skip manifest requirement, scan for SKILL.md). */
+  /** Treat the catalog as a community repo (skip manifest requirement, scan for SKILL.md). */
   community?: boolean;
 }
 
-export interface SourceValidationIssueDto {
+export interface CatalogValidationIssueDto {
   severity: "error" | "warning" | "info";
   path: string;
   component?: string;
@@ -683,12 +683,12 @@ export interface SourceValidationIssueDto {
   code?: string;
 }
 
-export interface SourceValidateResult {
+export interface CatalogValidateResult {
   valid: boolean;
-  sourceName: string;
+  catalogName: string;
   rootDir: string;
   summary: { pass: number; warn: number; error: number };
-  issues: SourceValidationIssueDto[];
+  issues: CatalogValidationIssueDto[];
 }
 
 export interface PresetListParams {
@@ -917,11 +917,11 @@ export interface RpcMethodMap {
   "plugin.export": { params: ComponentExportParams; result: ComponentExportResult };
   "plugin.runtimeList": { params: PluginRuntimeListParams; result: PluginRuntimeListResult };
   "plugin.runtimeStatus": { params: PluginRuntimeStatusParams; result: PluginRuntimeStatusResult };
-  "source.list": { params: SourceListParams; result: SourceListResult };
-  "source.add": { params: SourceAddParams; result: SourceAddResult };
-  "source.remove": { params: SourceRemoveParams; result: SourceRemoveResult };
-  "source.sync": { params: SourceSyncParams; result: SourceSyncResult };
-  "source.validate": { params: SourceValidateParams; result: SourceValidateResult };
+  "catalog.list": { params: CatalogListParams; result: CatalogListResult };
+  "catalog.add": { params: CatalogAddParams; result: CatalogAddResult };
+  "catalog.remove": { params: CatalogRemoveParams; result: CatalogRemoveResult };
+  "catalog.sync": { params: CatalogSyncParams; result: CatalogSyncResult };
+  "catalog.validate": { params: CatalogValidateParams; result: CatalogValidateResult };
   "preset.list": { params: PresetListParams; result: PresetListResult };
   "preset.show": { params: PresetShowParams; result: PresetShowResult };
   "preset.apply": { params: PresetApplyParams; result: PresetApplyResult };
@@ -955,8 +955,8 @@ export interface RpcMethodMap {
   "vfs.describe": { params: VfsDescribeParams; result: VfsDescribeRpcResult };
   "vfs.watch": { params: VfsWatchParams; result: VfsWatchRpcResult };
   "vfs.stream": { params: VfsStreamParams; result: VfsStreamRpcResult };
-  "vfs.mount": { params: VfsMountRpcParams; result: VfsMountRpcResult };
-  "vfs.unmount": { params: VfsUnmountParams; result: VfsUnmountResult };
+  "vfs.mountAdd": { params: VfsMountAddRpcParams; result: VfsMountAddRpcResult };
+  "vfs.mountRemove": { params: VfsMountRemoveParams; result: VfsMountRemoveResult };
   "vfs.mountList": { params: VfsMountListParams; result: VfsMountListResult };
 }
 
@@ -1088,9 +1088,9 @@ export interface VfsDescribeRpcResult {
   mountType: string;
   filesystemType: string;
   nodeType: string;
-  sourceName: string;
+  mountName: string;
   label: string;
-  traits: string[];
+  features: string[];
   capabilities: string[];
   metadata: Record<string, unknown>;
   tags: string[];
@@ -1122,7 +1122,7 @@ export interface VfsStreamRpcResult {
   timedOut: boolean;
 }
 
-export interface VfsMountRpcParams {
+export interface VfsMountAddRpcParams {
   name: string;
   mountPoint: string;
   spec: {
@@ -1136,16 +1136,16 @@ export interface VfsMountRpcParams {
   metadata?: Record<string, unknown>;
   token?: string;
 }
-export interface VfsMountRpcResult {
+export interface VfsMountAddRpcResult {
   name: string;
   mountPoint: string;
 }
 
-export interface VfsUnmountParams {
+export interface VfsMountRemoveParams {
   name: string;
   token?: string;
 }
-export interface VfsUnmountResult {
+export interface VfsMountRemoveResult {
   ok: boolean;
 }
 
@@ -1157,7 +1157,7 @@ export interface VfsMountListResult {
     mountType: string;
     filesystemType: string;
     label: string;
-    traits: string[];
+    features: string[];
     capabilities: string[];
     fileCount: number;
   }>;

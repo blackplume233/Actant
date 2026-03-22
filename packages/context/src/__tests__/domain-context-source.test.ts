@@ -4,6 +4,7 @@ import { VfsRegistry } from "@actant/vfs";
 import { ContextManager } from "../manager/context-manager";
 import { DomainContextSource } from "../sources/domain-context-source";
 import type { DomainComponentManager, MinimalDomainComponent } from "../sources/domain-context-source";
+import type { VfsResolveResult } from "@actant/shared";
 
 function createMockManager(
   items: MinimalDomainComponent[],
@@ -20,6 +21,17 @@ function createMockManager(
           false,
       ),
   };
+}
+
+function requireResolved(
+  resolved: VfsResolveResult | null,
+  path: string,
+): VfsResolveResult {
+  expect(resolved, `Expected VFS path to resolve: ${path}`).not.toBeNull();
+  if (!resolved) {
+    throw new Error(`Expected VFS path to resolve: ${path}`);
+  }
+  return resolved;
 }
 
 describe("DomainContextSource", () => {
@@ -108,11 +120,9 @@ describe("DomainContextSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/skills/");
-    expect(resolved).not.toBeNull();
-
-    const listHandler = resolved!.source.handlers.list!;
-    const entries: VfsEntry[] = await listHandler(resolved!.relativePath);
+    const resolved = requireResolved(registry.resolve("/skills/"), "/skills/");
+    const listHandler = resolved.mount.handlers.list!;
+    const entries: VfsEntry[] = await listHandler(resolved.relativePath);
 
     const names = entries.map((e) => e.name);
     expect(names).toContain("_catalog.json");
@@ -128,11 +138,9 @@ describe("DomainContextSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/skills/ue5-blueprint");
-    expect(resolved).not.toBeNull();
-
-    const readHandler = resolved!.source.handlers.read!;
-    const result: VfsFileContent = await readHandler(resolved!.relativePath);
+    const resolved = requireResolved(registry.resolve("/skills/ue5-blueprint"), "/skills/ue5-blueprint");
+    const readHandler = resolved.mount.handlers.read!;
+    const result: VfsFileContent = await readHandler(resolved.relativePath);
     expect(result.content).toBe("# UE5 Blueprint Skill\n\nFull blueprint documentation...");
   });
 
@@ -144,11 +152,9 @@ describe("DomainContextSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/skills/_catalog.json");
-    expect(resolved).not.toBeNull();
-
-    const readHandler = resolved!.source.handlers.read!;
-    const result: VfsFileContent = await readHandler(resolved!.relativePath);
+    const resolved = requireResolved(registry.resolve("/skills/_catalog.json"), "/skills/_catalog.json");
+    const readHandler = resolved.mount.handlers.read!;
+    const result: VfsFileContent = await readHandler(resolved.relativePath);
     const catalog = JSON.parse(result.content) as Array<{ name: string; description?: string; tags?: string[] }>;
 
     expect(catalog).toHaveLength(2);
@@ -165,11 +171,9 @@ describe("DomainContextSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/mcp/unreal-hub");
-    expect(resolved).not.toBeNull();
-
-    const readHandler = resolved!.source.handlers.read!;
-    const result: VfsFileContent = await readHandler(resolved!.relativePath);
+    const resolved = requireResolved(registry.resolve("/mcp/unreal-hub"), "/mcp/unreal-hub");
+    const readHandler = resolved.mount.handlers.read!;
+    const result: VfsFileContent = await readHandler(resolved.relativePath);
     expect(result.mimeType).toBe("application/json");
 
     const parsed = JSON.parse(result.content) as { name: string };
@@ -221,16 +225,16 @@ describe("DomainContextSource", () => {
     const allMounts = registry.listMounts();
     expect(allMounts).toHaveLength(4);
 
-    const skillEntry = registry.resolve("/skills/ue5-blueprint");
-    const skillContent = await skillEntry!.source.handlers.read!(skillEntry!.relativePath);
+    const skillEntry = requireResolved(registry.resolve("/skills/ue5-blueprint"), "/skills/ue5-blueprint");
+    const skillContent = await skillEntry.mount.handlers.read!(skillEntry.relativePath);
     expect(skillContent.content).toContain("UE5 Blueprint Skill");
 
-    const promptEntry = registry.resolve("/prompts/review-prompt");
-    const promptContent = await promptEntry!.source.handlers.read!(promptEntry!.relativePath);
+    const promptEntry = requireResolved(registry.resolve("/prompts/review-prompt"), "/prompts/review-prompt");
+    const promptContent = await promptEntry.mount.handlers.read!(promptEntry.relativePath);
     expect(promptContent.content).toContain("expert code reviewer");
 
-    const templateEntry = registry.resolve("/templates/code-reviewer");
-    const templateContent = await templateEntry!.source.handlers.read!(templateEntry!.relativePath);
+    const templateEntry = requireResolved(registry.resolve("/templates/code-reviewer"), "/templates/code-reviewer");
+    const templateContent = await templateEntry.mount.handlers.read!(templateEntry.relativePath);
     const parsed = JSON.parse(templateContent.content) as { name: string };
     expect(parsed.name).toBe("code-reviewer");
   });

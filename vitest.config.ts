@@ -8,7 +8,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@actant/domain-context": resolve(rootDir, "packages/domain-context/src/index.ts"),
-      "@actant/source": resolve(rootDir, "packages/source/src/index.ts"),
+      "@actant/catalog": resolve(rootDir, "packages/catalog/src/index.ts"),
       "@actant/agent-runtime": resolve(rootDir, "packages/agent-runtime/src/index.ts"),
       "@actant/shared": resolve(rootDir, "packages/shared/src/index.ts"),
       "@actant/api": resolve(rootDir, "packages/api/src/index.ts"),

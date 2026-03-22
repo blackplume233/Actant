@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { SourceTrait, VfsSourceRegistration } from "@actant/shared";
+import type { VfsFeature, VfsMountRegistration } from "@actant/shared";
 import { DEFAULT_PERMISSION_RULES, VfsKernel, VfsPermissionManager, createPermissionMiddleware } from "@actant/agent-runtime";
 import { VfsInterceptor } from "../vfs-interceptor";
 
-const MEMORY_TRAITS = new Set<SourceTrait>(["volatile", "writable"]);
+const MEMORY_FEATURES = new Set<VfsFeature>(["volatile", "writable"]);
 
 function createIdentity(agentName: string) {
   return {
@@ -14,26 +14,26 @@ function createIdentity(agentName: string) {
   };
 }
 
-function createMemoryMount(): VfsSourceRegistration {
+function createMemoryMount(): VfsMountRegistration {
   const files = new Map<string, string>();
 
   return {
     name: "mem-a",
     mountPoint: "/memory/agent-a",
     label: "memory",
-    traits: new Set(MEMORY_TRAITS),
+    features: new Set(MEMORY_FEATURES),
     lifecycle: { type: "manual" },
     metadata: { owner: "agent-a" },
     fileSchema: {},
     handlers: {
-      read: async (relativePath) => {
+      read: async (relativePath: string) => {
         const value = files.get(relativePath);
         if (value == null) {
           throw new Error(`File not found: ${relativePath}`);
         }
         return { path: relativePath, content: value };
       },
-      write: async (relativePath, content) => {
+      write: async (relativePath: string, content: string) => {
         files.set(relativePath, content);
         return { bytesWritten: content.length, created: true };
       },

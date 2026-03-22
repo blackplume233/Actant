@@ -6,11 +6,11 @@ export type {
 } from "./types";
 
 export {
-  createProjectManifestRegistrations,
+  createActantNamespaceConfigRegistrations,
   compileProjectPermissionRules,
   resolveProjectPermissionConfig,
   type ProjectScopeSnapshot,
-  type ProjectManifestProjection,
+  type ActantNamespaceConfigProjection,
 } from "./project/project-manifest";
 
 export {

@@ -3,27 +3,27 @@ import { mkdir, rm, readdir, stat, readFile } from "node:fs/promises";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import picomatch from "picomatch";
-import type { CommunitySourceConfig, PackageManifest, SkillDefinition } from "@actant/shared";
+import type { CommunityCatalogConfig, PackageManifest, SkillDefinition } from "@actant/shared";
 import { createLogger } from "@actant/shared";
-import type { ComponentSource, FetchResult } from "./component-source";
+import type { CatalogProvider, FetchResult } from "./component-catalog";
 import { parseSkillMdContent } from "./skill-md-parser";
 
 const execFileAsync = promisify(execFile);
-const logger = createLogger("community-source");
+const logger = createLogger("community-catalog");
 
 /**
  * Fetches skills from community Agent Skills repositories (e.g. anthropics/skills).
- * Unlike GitHubSource, this does NOT require actant.json — it recursively discovers
+ * Unlike GitHubCatalog, this does NOT require actant.json — it recursively discovers
  * SKILL.md files and wraps them into a virtual FetchResult.
  */
-export class CommunitySource implements ComponentSource {
+export class CommunityCatalog implements CatalogProvider {
   readonly type = "community";
   readonly packageName: string;
-  readonly config: CommunitySourceConfig;
+  readonly config: CommunityCatalogConfig;
   private readonly cacheDir: string;
   private readonly filter: picomatch.Matcher | null;
 
-  constructor(packageName: string, config: CommunitySourceConfig, cacheDir: string) {
+  constructor(packageName: string, config: CommunityCatalogConfig, cacheDir: string) {
     this.packageName = packageName;
     this.config = config;
     this.cacheDir = join(cacheDir, packageName);

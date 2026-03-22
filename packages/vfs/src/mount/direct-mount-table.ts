@@ -5,16 +5,16 @@ import type {
   VfsMountInfo,
   VfsMountType,
   VfsResolveResult,
-  VfsSourceRegistration,
+  VfsMountRegistration,
 } from "@actant/shared";
 import { normalizeVfsPath } from "../namespace/canonical-path";
 
 interface MountRecord {
   mountPoint: string;
-  source: VfsSourceRegistration;
+  mount: VfsMountRegistration;
 }
 
-function inferFilesystemType(source: VfsSourceRegistration): VfsFilesystemType {
+function inferFilesystemType(source: VfsMountRegistration): VfsFilesystemType {
   const configured = source.metadata.filesystemType;
   if (typeof configured === "string" && configured.length > 0) {
     if (configured === "memory") {
@@ -42,7 +42,7 @@ function inferFilesystemType(source: VfsSourceRegistration): VfsFilesystemType {
   return "hostfs";
 }
 
-function inferMountType(source: VfsSourceRegistration): VfsMountType {
+function inferMountType(source: VfsMountRegistration): VfsMountType {
   const configured = source.metadata.mountType;
   if (configured === "root" || configured === "direct") {
     return configured;
@@ -51,19 +51,19 @@ function inferMountType(source: VfsSourceRegistration): VfsMountType {
 }
 
 export class DirectMountTable {
-  private readonly sources = new Map<string, VfsSourceRegistration>();
+  private readonly sources = new Map<string, VfsMountRegistration>();
   private mounts: MountRecord[] = [];
 
-  mount(registration: VfsSourceRegistration): void {
+  mount(registration: VfsMountRegistration): void {
     if (this.sources.has(registration.name)) {
-      throw new Error(`VFS source "${registration.name}" is already mounted`);
+      throw new Error(`VFS mount "${registration.name}" is already mounted`);
     }
 
     const normalizedMount = normalizeVfsPath(registration.mountPoint);
     const claimedMount = this.mounts.find((entry) => entry.mountPoint === normalizedMount);
     if (claimedMount) {
       throw new Error(
-        `Mount point "${registration.mountPoint}" is already claimed by source "${claimedMount.source.name}"`,
+        `Mount point "${registration.mountPoint}" is already claimed by mount "${claimedMount.mount.name}"`,
       );
     }
 
@@ -71,7 +71,7 @@ export class DirectMountTable {
     this.rebuildMounts();
   }
 
-  replace(registrations: VfsSourceRegistration[]): void {
+  replace(registrations: VfsMountRegistration[]): void {
     this.sources.clear();
     for (const registration of registrations) {
       this.sources.set(registration.name, registration);
@@ -87,7 +87,7 @@ export class DirectMountTable {
     return removed;
   }
 
-  getSource(name: string): VfsSourceRegistration | undefined {
+  getMount(name: string): VfsMountRegistration | undefined {
     return this.sources.get(name);
   }
 
@@ -98,7 +98,7 @@ export class DirectMountTable {
       label: source.label,
       mountType: inferMountType(source),
       filesystemType: inferFilesystemType(source),
-      traits: source.traits,
+      features: source.features,
       lifecycle: source.lifecycle,
       metadata: source.metadata,
       capabilities: Object.keys(source.handlers) as VfsCapabilityId[],
@@ -106,12 +106,12 @@ export class DirectMountTable {
     }));
   }
 
-  listChildMounts(dirPath: string): VfsSourceRegistration[] {
+  listChildMounts(dirPath: string): VfsMountRegistration[] {
     const normalized = normalizeVfsPath(dirPath);
     const prefix = normalized === "/" ? "/" : `${normalized}/`;
     const children = new Map<string, MountRecord>();
 
-    for (const { mountPoint, source } of this.mounts) {
+    for (const { mountPoint, mount } of this.mounts) {
       if (normalized !== "/" && !mountPoint.startsWith(prefix)) {
         continue;
       }
@@ -129,17 +129,17 @@ export class DirectMountTable {
 
       const existing = children.get(firstSegment);
       if (!existing || mountPoint.length < existing.mountPoint.length) {
-        children.set(firstSegment, { mountPoint, source });
+        children.set(firstSegment, { mountPoint, mount });
       }
     }
 
-    return Array.from(children.values(), ({ source }) => source);
+    return Array.from(children.values(), ({ mount }) => mount);
   }
 
   resolve(path: string): VfsResolveResult | null {
     const normalized = normalizeVfsPath(path);
 
-    for (const { mountPoint, source } of this.mounts) {
+    for (const { mountPoint, mount } of this.mounts) {
       const matchesMount = mountPoint === "/"
         ? normalized.startsWith("/")
         : normalized === mountPoint || normalized.startsWith(`${mountPoint}/`);
@@ -150,8 +150,8 @@ export class DirectMountTable {
       const relativePath = mountPoint === "/"
         ? (normalized === "/" ? "" : normalized.slice(1))
         : (normalized === mountPoint ? "" : normalized.slice(mountPoint.length + 1));
-      const fileSchema = resolveFileSchema(relativePath, source.fileSchema);
-      return { source, relativePath, fileSchema };
+      const fileSchema = resolveFileSchema(relativePath, mount.fileSchema);
+      return { mount, relativePath, fileSchema };
     }
 
     return null;
@@ -163,9 +163,9 @@ export class DirectMountTable {
 
   private rebuildMounts(): void {
     this.mounts = Array.from(this.sources.values())
-      .map((source) => ({
-        mountPoint: normalizeVfsPath(source.mountPoint),
-        source,
+      .map((mount) => ({
+        mountPoint: normalizeVfsPath(mount.mountPoint),
+        mount,
       }))
       .sort((left, right) => right.mountPoint.length - left.mountPoint.length);
   }

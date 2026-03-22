@@ -1,13 +1,13 @@
 import type {
   AgentInstanceMeta,
-  SourceTrait,
+  VfsFeature,
   VfsFileContent,
   VfsEntry,
   VfsFileSchemaMap,
   VfsHandlerMap,
   VfsLifecycle,
   VfsListOptions,
-  VfsSourceRegistration,
+  VfsMountRegistration,
   VfsStatResult,
   VfsStreamChunk,
   VfsWatchEvent,
@@ -15,7 +15,7 @@ import type {
   VfsWriteResult,
 } from "@actant/shared";
 
-const AGENT_RUNTIME_TRAITS = new Set<SourceTrait>([
+const AGENT_RUNTIME_TRAITS = new Set<VfsFeature>([
   "executable",
   "streamable",
   "watchable",
@@ -227,7 +227,7 @@ export function createAgentRuntimeSource(
   provider: AgentRuntimeSourceProvider,
   mountPoint: string,
   lifecycle: VfsLifecycle,
-): VfsSourceRegistration {
+): VfsMountRegistration {
   const handlers: VfsHandlerMap = {};
 
   handlers.read = async (filePath: string): Promise<VfsFileContent> => {
@@ -407,7 +407,7 @@ export function createAgentRuntimeSource(
     name: "agents",
     mountPoint,
     label: "agent-runtime",
-    traits: new Set(AGENT_RUNTIME_TRAITS),
+    features: new Set(AGENT_RUNTIME_TRAITS),
     lifecycle,
     metadata: { description: "Built-in agent runtime source", virtual: true },
     fileSchema: AGENT_RUNTIME_FILE_SCHEMA,

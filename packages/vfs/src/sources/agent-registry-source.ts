@@ -1,6 +1,6 @@
 import type {
-  SourceTrait,
-  VfsSourceRegistration,
+  VfsFeature,
+  VfsMountRegistration,
   VfsLifecycle,
   VfsHandlerMap,
   VfsFileContent,
@@ -10,7 +10,7 @@ import type {
   AgentInstanceMeta,
 } from "@actant/shared";
 
-const AGENT_REGISTRY_TRAITS = new Set<SourceTrait>(["ephemeral", "watchable"]);
+const AGENT_REGISTRY_TRAITS = new Set<VfsFeature>(["ephemeral", "watchable"]);
 
 interface AgentManagerLike {
   listAgents(): AgentInstanceMeta[];
@@ -32,7 +32,7 @@ export function createAgentRegistrySource(
   agentManager: AgentManagerLike,
   mountPoint: string,
   lifecycle: VfsLifecycle,
-): VfsSourceRegistration {
+): VfsMountRegistration {
   const handlers: VfsHandlerMap = {};
 
   function parseAgentPath(filePath: string): { agentName: string; file: string } | null {
@@ -118,7 +118,7 @@ export function createAgentRegistrySource(
     name: "agents",
     mountPoint,
     label: "agent-registry",
-    traits: new Set(AGENT_REGISTRY_TRAITS),
+    features: new Set(AGENT_REGISTRY_TRAITS),
     lifecycle,
     metadata: { description: "Agent instances registry (read-only, virtual)", virtual: true },
     fileSchema: {},

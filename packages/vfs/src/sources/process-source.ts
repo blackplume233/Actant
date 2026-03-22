@@ -1,7 +1,7 @@
 import {
-  type SourceTrait,
-  type SourceTypeDefinition,
-  type VfsSourceRegistration,
+  type VfsFeature,
+  type FilesystemTypeDefinition,
+  type VfsMountRegistration,
   type VfsLifecycle,
   type VfsHandlerMap,
   type VfsFileContent,
@@ -20,7 +20,7 @@ export interface ProcessSourceConfig {
   bufferSize?: number;
 }
 
-const PROCESS_TRAITS = new Set<SourceTrait>(["executable", "streamable", "ephemeral"]);
+const PROCESS_TRAITS = new Set<VfsFeature>(["executable", "streamable", "ephemeral"]);
 
 /**
  * Ring buffer that stores process output lines with a configurable capacity.
@@ -201,7 +201,7 @@ function createHandlers(handle: ProcessHandle): VfsHandlerMap {
 }
 
 /**
- * Creates a VfsSourceRegistration for a managed process.
+ * Creates a VfsMountRegistration for a managed process.
  * The caller provides a ProcessHandle with output buffers and control callbacks.
  */
 export function createProcessSource(
@@ -209,12 +209,12 @@ export function createProcessSource(
   mountPoint: string,
   handle: ProcessHandle,
   lifecycle: VfsLifecycle,
-): VfsSourceRegistration {
+): VfsMountRegistration {
   return {
     name,
     mountPoint,
     label: "process",
-    traits: new Set(PROCESS_TRAITS),
+    features: new Set(PROCESS_TRAITS),
     lifecycle,
     metadata: {
       description: `Process: ${handle.command ?? "unknown"} (PID: ${handle.pid})`,
@@ -226,10 +226,10 @@ export function createProcessSource(
   };
 }
 
-export const processSourceFactory: SourceTypeDefinition<ProcessSourceConfig> = {
+export const processSourceFactory: FilesystemTypeDefinition<ProcessSourceConfig> = {
   type: "process",
   label: "process",
-  defaultTraits: PROCESS_TRAITS,
+  defaultFeatures: PROCESS_TRAITS,
 
   validate(spec: ProcessSourceConfig) {
     if (!spec.pid && !spec.command) {
@@ -238,7 +238,7 @@ export const processSourceFactory: SourceTypeDefinition<ProcessSourceConfig> = {
     return { valid: true };
   },
 
-  create(spec: ProcessSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
+  create(spec: ProcessSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsMountRegistration {
     const bufferSize = spec.bufferSize ?? 10000;
     const handle: ProcessHandle = {
       pid: spec.pid ?? 0,

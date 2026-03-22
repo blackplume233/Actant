@@ -52,7 +52,7 @@ Actant 官方组件仓库 — 提供平台级 Agent 模板、Skills、Prompts、
 
 ```bash
 # 同步 Hub
-actant source sync actant-hub
+actant catalog sync actant-hub
 
 # 安装模板
 actant template install actant-hub@actant-steward

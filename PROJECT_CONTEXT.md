@@ -28,7 +28,6 @@
 
 - M0-M6 已完成，主线能力已经覆盖文档基线、契约替换、Kernel、编排层、执行模型与 facade 统一
 - 当前进入 M7：补齐 `actant.namespace.json`、`mount table`、`filesystem type`、`node type` 与无常驻进程读取闭环
-- `actant.project.json` 仍允许作为兼容输入，但不再是默认配置入口
 - M8 关注 release hardening：遗留接口清理、全量回归、V1 边界冻结
 - live milestone progress 只在 `docs/planning/contextfs-roadmap.md` 维护，本文件不重复标注 checklist 状态
 

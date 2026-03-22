@@ -1,16 +1,16 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import { VfsLifecycleManager } from "../vfs-lifecycle-manager";
 import { VfsRegistry } from "../vfs-registry";
-import type { SourceTrait, VfsSourceRegistration } from "@actant/shared";
+import type { VfsFeature, VfsMountRegistration } from "@actant/shared";
 
-const MEMORY_TRAITS = new Set<SourceTrait>(["ephemeral", "writable"]);
+const MEMORY_TRAITS = new Set<VfsFeature>(["ephemeral", "writable"]);
 
-function createSource(name: string, mountPoint: string, lifecycle: VfsSourceRegistration["lifecycle"]): VfsSourceRegistration {
+function createSource(name: string, mountPoint: string, lifecycle: VfsMountRegistration["lifecycle"]): VfsMountRegistration {
   return {
     name,
     mountPoint,
     label: "memory",
-    traits: new Set(MEMORY_TRAITS),
+    features: new Set(MEMORY_TRAITS),
     lifecycle,
     metadata: {},
     fileSchema: {},
@@ -45,7 +45,7 @@ describe("VfsLifecycleManager", () => {
       const count = lm.onAgentStop("agent-a");
       expect(count).toBe(2);
       expect(registry.size).toBe(1);
-      expect(registry.getSource("mem-b")).toBeDefined();
+      expect(registry.getMount("mem-b")).toBeDefined();
     });
   });
 

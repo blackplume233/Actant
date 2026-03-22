@@ -203,12 +203,12 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
       }
 
       if (startLine != null) {
-        const handler = requireHandler(resolved.source.handlers.read_range, "read_range", path);
+        const handler = requireHandler(resolved.mount.handlers.read_range, "read_range", path);
         const result = await handler(resolved.relativePath, startLine, endLine);
         return { content: result.content, mimeType: result.mimeType };
       }
 
-      const handler = requireHandler(resolved.source.handlers.read, "read", path);
+      const handler = requireHandler(resolved.mount.handlers.read, "read", path);
       const result = await handler(resolved.relativePath);
       return { content: result.content, mimeType: result.mimeType };
     },
@@ -217,7 +217,7 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
       if (!resolved) {
         throw new Error(`VFS path not found: ${path}`);
       }
-      const handler = requireHandler(resolved.source.handlers.write, "write", path);
+      const handler = requireHandler(resolved.mount.handlers.write, "write", path);
       return handler(resolved.relativePath, content);
     },
     async list(path = "/", recursive, long) {
@@ -230,7 +230,7 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
           type: "directory" as const,
         }));
       }
-      const handler = requireHandler(resolved.source.handlers.list, "list", path);
+      const handler = requireHandler(resolved.mount.handlers.list, "list", path);
       const entries = await handler(resolved.relativePath, { recursive, long });
       if (resolved.relativePath !== "") {
         return entries;
@@ -259,9 +259,9 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
         mountType: desc.mountType,
         filesystemType: desc.filesystemType,
         nodeType: desc.nodeType,
-        sourceName: desc.sourceName,
+        mountName: desc.mountName,
         label: desc.label,
-        traits: Array.from(desc.traits),
+        features: Array.from(desc.features),
         capabilities: desc.capabilities,
         metadata: desc.metadata,
         tags: desc.tags,
@@ -299,7 +299,7 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
       if (!resolved) {
         throw new Error(`VFS path not found: ${path}`);
       }
-      const handler = requireHandler(resolved.source.handlers.grep, "grep", path);
+      const handler = requireHandler(resolved.mount.handlers.grep, "grep", path);
       return handler(pattern, { caseInsensitive, maxResults });
     },
     async callRpc(method) {

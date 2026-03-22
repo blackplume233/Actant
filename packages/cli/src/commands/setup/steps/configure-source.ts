@@ -3,37 +3,37 @@ import chalk from "chalk";
 import type { RpcClient } from "../../../client/rpc-client";
 import type { CliPrinter } from "../../../output/index";
 
-const DEFAULT_SOURCE_NAME = "actant-hub";
+const DEFAULT_CATALOG_NAME = "actant-hub";
 const DEFAULT_SOURCE_URL = "https://github.com/blackplume233/actant-hub.git";
 
-export async function configureSource(printer: CliPrinter, client: RpcClient): Promise<void> {
+export async function configureCatalog(printer: CliPrinter, client: RpcClient): Promise<void> {
   printer.log(`\n${chalk.cyan("[ Step 3/7 ]")} ${chalk.bold("配置组件源 (Source)")}\n`);
 
   const addDefault = await confirm({
-    message: `添加官方组件源 ${DEFAULT_SOURCE_NAME}?`,
+    message: `添加官方组件源 ${DEFAULT_CATALOG_NAME}?`,
     default: true,
   });
 
   if (addDefault) {
     try {
-      printer.log(chalk.dim(`  正在注册 ${DEFAULT_SOURCE_NAME}...`));
-      const result = await client.call("source.add", {
-        name: DEFAULT_SOURCE_NAME,
+      printer.log(chalk.dim(`  正在注册 ${DEFAULT_CATALOG_NAME}...`));
+      const result = await client.call("catalog.add", {
+        name: DEFAULT_CATALOG_NAME,
         config: { type: "github" as const, url: DEFAULT_SOURCE_URL, branch: "main" },
       });
       const c = result.components;
       printer.success(
-        `  ✓ ${DEFAULT_SOURCE_NAME} 已添加: ` +
+        `  ✓ ${DEFAULT_CATALOG_NAME} 已添加: ` +
         `${c.skills} skills, ${c.prompts} prompts, ${c.mcp} mcp, ` +
         `${c.workflows} workflows, ${c.presets} presets`,
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (message.includes("already exists") || message.includes("already registered")) {
-        printer.dim(`  ${DEFAULT_SOURCE_NAME} 已存在，跳过`);
+        printer.dim(`  ${DEFAULT_CATALOG_NAME} 已存在，跳过`);
       } else {
-        printer.warn(`  ⚠ 添加 ${DEFAULT_SOURCE_NAME} 失败: ${message}`);
-        printer.dim("  你可以稍后手动运行: actant source add --name actant-hub <url>");
+        printer.warn(`  ⚠ 添加 ${DEFAULT_CATALOG_NAME} 失败: ${message}`);
+        printer.dim("  你可以稍后手动运行: actant catalog add --name actant-hub <url>");
       }
     }
   }
@@ -45,7 +45,7 @@ export async function configureSource(printer: CliPrinter, client: RpcClient): P
 
   while (addMore) {
     const sourceType = await select({
-      message: "Source 类型:",
+      message: "Catalog 类型:",
       choices: [
         { name: "GitHub 仓库", value: "github" },
         { name: "本地目录", value: "local" },
@@ -54,7 +54,7 @@ export async function configureSource(printer: CliPrinter, client: RpcClient): P
     });
 
     const name = await input({
-      message: "Source 名称 (命名空间前缀):",
+      message: "Catalog 名称 (命名空间前缀):",
       validate: (val) => val.trim().length > 0 || "名称不能为空",
     });
 
@@ -69,7 +69,7 @@ export async function configureSource(printer: CliPrinter, client: RpcClient): P
       });
 
       try {
-        const result = await client.call("source.add", {
+        const result = await client.call("catalog.add", {
           name: name.trim(),
           config: { type: "github" as const, url: url.trim(), branch },
         });
@@ -95,7 +95,7 @@ export async function configureSource(printer: CliPrinter, client: RpcClient): P
       });
 
       try {
-        const result = await client.call("source.add", {
+        const result = await client.call("catalog.add", {
           name: name.trim(),
           config: {
             type: "community" as const,
@@ -118,7 +118,7 @@ export async function configureSource(printer: CliPrinter, client: RpcClient): P
       });
 
       try {
-        const result = await client.call("source.add", {
+        const result = await client.call("catalog.add", {
           name: name.trim(),
           config: { type: "local" as const, path: path.trim() },
         });

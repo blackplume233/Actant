@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { SkillManager, PromptManager, McpConfigManager, WorkflowManager, TemplateRegistry } from "@actant/domain-context";
-import { SourceManager } from "./source-manager";
+import { CatalogManager } from "./catalog-manager";
 
 function createManagers() {
   return {
@@ -63,17 +63,17 @@ async function createLocalPackage(dir: string) {
   );
 }
 
-describe("SourceManager", () => {
+describe("CatalogManager", () => {
   let homeDir: string;
   let pkgDir: string;
   let managers: ReturnType<typeof createManagers>;
-  let sourceMgr: SourceManager;
+  let sourceMgr: CatalogManager;
 
   beforeEach(async () => {
     homeDir = await mkdtemp(join(tmpdir(), "sm-home-"));
     pkgDir = await mkdtemp(join(tmpdir(), "sm-pkg-"));
     managers = createManagers();
-    sourceMgr = new SourceManager(homeDir, managers, { skipDefaultSource: true });
+    sourceMgr = new CatalogManager(homeDir, managers, { skipDefaultCatalog: true });
     await createLocalPackage(pkgDir);
   });
 
@@ -82,35 +82,35 @@ describe("SourceManager", () => {
     await rm(pkgDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
   });
 
-  it("addSource registers local source and injects namespaced components", async () => {
-    await sourceMgr.addSource("test", { type: "local", path: pkgDir });
+  it("addCatalog registers local catalog and injects namespaced components", async () => {
+    await sourceMgr.addCatalog("test", { type: "local", path: pkgDir });
 
     expect(managers.skillManager.has("test@test-skill")).toBe(true);
     expect(managers.promptManager.has("test@test-prompt")).toBe(true);
     expect(managers.templateRegistry.has("test@test-template")).toBe(true);
-    expect(sourceMgr.hasSource("test")).toBe(true);
+    expect(sourceMgr.hasCatalog("test")).toBe(true);
   });
 
-  it("listSources returns registered sources", async () => {
-    await sourceMgr.addSource("local-pkg", { type: "local", path: pkgDir });
-    const sources = sourceMgr.listSources();
+  it("listCatalogs returns registered sources", async () => {
+    await sourceMgr.addCatalog("local-pkg", { type: "local", path: pkgDir });
+    const sources = sourceMgr.listCatalogs();
     expect(sources).toHaveLength(1);
     expect(sources.map((s) => s.name)).toContain("local-pkg");
   });
 
-  it("removeSource cleans up namespaced components", async () => {
-    await sourceMgr.addSource("rm-test", { type: "local", path: pkgDir });
+  it("removeCatalog cleans up namespaced components", async () => {
+    await sourceMgr.addCatalog("rm-test", { type: "local", path: pkgDir });
     expect(managers.skillManager.has("rm-test@test-skill")).toBe(true);
     expect(managers.templateRegistry.has("rm-test@test-template")).toBe(true);
 
-    await sourceMgr.removeSource("rm-test");
+    await sourceMgr.removeCatalog("rm-test");
     expect(managers.skillManager.has("rm-test@test-skill")).toBe(false);
     expect(managers.templateRegistry.has("rm-test@test-template")).toBe(false);
-    expect(sourceMgr.hasSource("rm-test")).toBe(false);
+    expect(sourceMgr.hasCatalog("rm-test")).toBe(false);
   });
 
-  it("syncSource re-loads components", async () => {
-    await sourceMgr.addSource("sync-test", { type: "local", path: pkgDir });
+  it("syncCatalog re-loads components", async () => {
+    await sourceMgr.addCatalog("sync-test", { type: "local", path: pkgDir });
     expect(managers.skillManager.has("sync-test@test-skill")).toBe(true);
 
     await writeFile(
@@ -118,13 +118,13 @@ describe("SourceManager", () => {
       JSON.stringify({ name: "new-skill", content: "New!" }),
     );
 
-    await sourceMgr.syncSource("sync-test");
+    await sourceMgr.syncCatalog("sync-test");
     expect(managers.skillManager.has("sync-test@new-skill")).toBe(true);
     expect(managers.skillManager.has("sync-test@test-skill")).toBe(true);
   });
 
-  it("syncSourceWithReport returns report with added/updated/removed/unchanged", async () => {
-    await sourceMgr.addSource("report-test", { type: "local", path: pkgDir });
+  it("syncCatalogWithReport returns report with added/updated/removed/unchanged", async () => {
+    await sourceMgr.addCatalog("report-test", { type: "local", path: pkgDir });
 
     // Add new skill, update test-skill version, remove test-prompt
     await writeFile(
@@ -139,7 +139,7 @@ describe("SourceManager", () => {
     const { unlink } = await import("node:fs/promises");
     await unlink(join(pkgDir, "prompts", "test-prompt.json"));
 
-    const { fetchResult, report } = await sourceMgr.syncSourceWithReport("report-test");
+    const { fetchResult, report } = await sourceMgr.syncCatalogWithReport("report-test");
 
     expect(report.added).toHaveLength(1);
     expect(report.added[0]).toMatchObject({ type: "skill", name: "report-test@extra-skill", newVersion: "1.0.0" });
@@ -163,15 +163,15 @@ describe("SourceManager", () => {
     expect(fetchResult.skills).toHaveLength(2);
   });
 
-  it("syncSourceWithReport sets hasBreakingChanges when major version changes", async () => {
-    await sourceMgr.addSource("breaking-test", { type: "local", path: pkgDir });
+  it("syncCatalogWithReport sets hasBreakingChanges when major version changes", async () => {
+    await sourceMgr.addCatalog("breaking-test", { type: "local", path: pkgDir });
 
     await writeFile(
       join(pkgDir, "skills", "test-skill.json"),
       JSON.stringify({ name: "test-skill", version: "2.0.0", content: "Test skill rules" }),
     );
 
-    const { report } = await sourceMgr.syncSourceWithReport("breaking-test");
+    const { report } = await sourceMgr.syncCatalogWithReport("breaking-test");
 
     expect(report.updated).toHaveLength(1);
     expect(report.updated[0]).toMatchObject({
@@ -183,21 +183,21 @@ describe("SourceManager", () => {
     expect(report.hasBreakingChanges).toBe(true);
   });
 
-  it("addSource throws for duplicate source name", async () => {
-    await sourceMgr.addSource("dup", { type: "local", path: pkgDir });
-    await expect(sourceMgr.addSource("dup", { type: "local", path: pkgDir })).rejects.toThrow(
+  it("addCatalog throws for duplicate catalog name", async () => {
+    await sourceMgr.addCatalog("dup", { type: "local", path: pkgDir });
+    await expect(sourceMgr.addCatalog("dup", { type: "local", path: pkgDir })).rejects.toThrow(
       /already registered/,
     );
   });
 
-  it("removeSource returns false for unknown name", async () => {
-    const result = await sourceMgr.removeSource("ghost");
+  it("removeCatalog returns false for unknown name", async () => {
+    const result = await sourceMgr.removeCatalog("ghost");
     expect(result).toBe(false);
   });
 
   describe("presets", () => {
     it("listPresets returns presets from sources", async () => {
-      await sourceMgr.addSource("p", { type: "local", path: pkgDir });
+      await sourceMgr.addCatalog("p", { type: "local", path: pkgDir });
       const presets = sourceMgr.listPresets();
       expect(presets).toHaveLength(2);
       expect(presets.map((p) => p.name)).toContain("test-bundle");
@@ -205,14 +205,14 @@ describe("SourceManager", () => {
     });
 
     it("getPreset retrieves by qualified name", async () => {
-      await sourceMgr.addSource("p", { type: "local", path: pkgDir });
+      await sourceMgr.addCatalog("p", { type: "local", path: pkgDir });
       const preset = sourceMgr.getPreset("p@test-bundle");
       expect(preset).toBeDefined();
       expect(preset?.skills).toContain("test-skill");
     });
 
     it("applyPreset expands component refs onto template", async () => {
-      await sourceMgr.addSource("p", { type: "local", path: pkgDir });
+      await sourceMgr.addCatalog("p", { type: "local", path: pkgDir });
       const template = {
         name: "test-tmpl",
         version: "1.0.0",
@@ -239,7 +239,7 @@ describe("SourceManager", () => {
     });
 
     it("applyPreset with templates field works when templateRegistry is present", async () => {
-      await sourceMgr.addSource("p", { type: "local", path: pkgDir });
+      await sourceMgr.addCatalog("p", { type: "local", path: pkgDir });
       expect(managers.templateRegistry.has("p@test-template")).toBe(true);
 
       const template = {
@@ -280,7 +280,7 @@ You are an expert code reviewer.`,
     const { unlink } = await import("node:fs/promises");
     await unlink(join(pkgDir, "skills", "test-skill.json"));
 
-    await sourceMgr.addSource("skill-md", { type: "local", path: pkgDir });
+    await sourceMgr.addCatalog("skill-md", { type: "local", path: pkgDir });
 
     expect(managers.skillManager.has("skill-md@code-review")).toBe(true);
     const skill = managers.skillManager.get("skill-md@code-review");
@@ -290,14 +290,14 @@ You are an expert code reviewer.`,
   });
 
   describe("persistence", () => {
-    it("persists sources.json and restores on initialize", async () => {
-      await sourceMgr.addSource("persist-test", { type: "local", path: pkgDir });
+    it("persists catalogs.json and restores on initialize", async () => {
+      await sourceMgr.addCatalog("persist-test", { type: "local", path: pkgDir });
 
       const mgr2 = createManagers();
-      const sourceMgr2 = new SourceManager(homeDir, mgr2, { skipDefaultSource: true });
+      const sourceMgr2 = new CatalogManager(homeDir, mgr2, { skipDefaultCatalog: true });
       await sourceMgr2.initialize();
 
-      expect(sourceMgr2.hasSource("persist-test")).toBe(true);
+      expect(sourceMgr2.hasCatalog("persist-test")).toBe(true);
       expect(mgr2.skillManager.has("persist-test@test-skill")).toBe(true);
       expect(mgr2.templateRegistry.has("persist-test@test-template")).toBe(true);
     });

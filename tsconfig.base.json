@@ -5,7 +5,7 @@
       "@actant/shared": ["packages/shared/src/index.ts"],
       "@actant/context": ["packages/context/src/index.ts"],
       "@actant/domain-context": ["packages/domain-context/src/index.ts"],
-      "@actant/source": ["packages/source/src/index.ts"],
+      "@actant/catalog": ["packages/catalog/src/index.ts"],
       "@actant/vfs": ["packages/vfs/src/index.ts"],
       "@actant/agent-runtime": ["packages/agent-runtime/src/index.ts"],
       "@actant/api": ["packages/api/src/index.ts"],

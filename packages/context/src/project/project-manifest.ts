@@ -1,17 +1,17 @@
 import type {
   PermissionConfig,
   PermissionSet,
-  ProjectManifest,
-  SourceTrait,
+  ActantNamespaceConfig,
+  VfsFeature,
   VfsCapabilityId,
   VfsEntry,
   VfsLifecycle,
   VfsPermissionRule,
-  VfsSourceRegistration,
+  VfsMountRegistration,
   VfsStatResult,
 } from "@actant/shared";
 
-const PROJECT_MANIFEST_TRAITS = new Set<SourceTrait>(["persistent", "virtual"]);
+const PROJECT_MANIFEST_FEATURES = new Set<VfsFeature>(["persistent", "virtual"]);
 
 const FULL_PROJECT_ACCESS: PermissionConfig = {
   defaults: {
@@ -55,17 +55,17 @@ export interface ProjectScopeSnapshot {
   name: string;
   projectRoot: string;
   manifestPath: string | null;
-  manifest: ProjectManifest;
+  manifest: ActantNamespaceConfig;
   effectivePermissions: PermissionConfig;
   children: ProjectScopeSnapshot[];
 }
 
-export interface ProjectManifestProjection {
+export interface ActantNamespaceConfigProjection {
   name: string;
   projectRoot: string;
   manifestPath: string | null;
   mountPoint: string;
-  manifest: ProjectManifest;
+  manifest: ActantNamespaceConfig;
   effectivePermissions: PermissionConfig;
   children: Array<{
     name: string;
@@ -101,20 +101,20 @@ export function resolveProjectPermissionConfig(
   };
 }
 
-export function createProjectManifestRegistrations(
+export function createActantNamespaceConfigRegistrations(
   project: ProjectScopeSnapshot,
   lifecycle: VfsLifecycle,
   mountPoint = "/",
   namePrefix = "project-manifest",
-): VfsSourceRegistration[] {
+): VfsMountRegistration[] {
   const normalizedMountPoint = normalizeMountPoint(mountPoint);
-  const registrations: VfsSourceRegistration[] = [
-    createProjectManifestRegistration(project, lifecycle, normalizedMountPoint, namePrefix),
+  const registrations: VfsMountRegistration[] = [
+    createActantNamespaceConfigRegistration(project, lifecycle, normalizedMountPoint, namePrefix),
   ];
 
   for (const child of project.children) {
     registrations.push(
-      ...createProjectManifestRegistrations(
+      ...createActantNamespaceConfigRegistrations(
         child,
         lifecycle,
         joinMountedPath(normalizedMountPoint, "projects", child.name),
@@ -145,19 +145,19 @@ export function compileProjectPermissionRules(
   return rules;
 }
 
-function createProjectManifestRegistration(
+function createActantNamespaceConfigRegistration(
   project: ProjectScopeSnapshot,
   lifecycle: VfsLifecycle,
   mountPoint: string,
   namePrefix: string,
-): VfsSourceRegistration {
+): VfsMountRegistration {
   const projection = createProjection(project, mountPoint);
 
   return {
     name: toRegistrationName(namePrefix, mountPoint),
     mountPoint,
     label: "project-manifest",
-    traits: new Set(PROJECT_MANIFEST_TRAITS),
+        features: new Set(PROJECT_MANIFEST_FEATURES),
     lifecycle,
     metadata: {
       description: `Project manifest projection for ${project.name}`,
@@ -212,7 +212,7 @@ function createProjectManifestRegistration(
 function createProjection(
   project: ProjectScopeSnapshot,
   mountPoint: string,
-): ProjectManifestProjection {
+): ActantNamespaceConfigProjection {
   return {
     name: project.name,
     projectRoot: project.projectRoot,
@@ -230,7 +230,7 @@ function createProjection(
 }
 
 function listProjectionEntries(
-  projection: ProjectManifestProjection,
+  projection: ActantNamespaceConfigProjection,
 ): VfsEntry[] {
   const entries: VfsEntry[] = [{
     name: "_project.json",
@@ -262,7 +262,7 @@ function listProjectionEntries(
 }
 
 function projectionDirectoryNames(
-  projection: ProjectManifestProjection,
+  projection: ActantNamespaceConfigProjection,
 ): Set<string> {
   const names = new Set<string>();
   for (const mount of projection.manifest.mounts) {

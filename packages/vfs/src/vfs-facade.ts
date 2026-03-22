@@ -1,5 +1,5 @@
 import type {
-  SourceTypeDefinition,
+  FilesystemTypeDefinition,
   VfsDescribeResult,
   VfsEditResult,
   VfsEntry,
@@ -9,7 +9,7 @@ import type {
   VfsGrepOptions,
   VfsGrepResult,
   VfsMountInfo,
-  VfsSourceRegistration,
+  VfsMountRegistration,
   VfsStatResult,
   VfsTreeNode,
   VfsTreeOptions,
@@ -19,14 +19,14 @@ import type {
 } from "@actant/shared";
 import { VfsKernel } from "./core/vfs-kernel";
 import type { VfsRequestContext, VfsStreamChunk } from "./namespace/canonical-path";
-import { SourceTypeRegistry } from "./source-type-registry";
+import { FilesystemTypeRegistry } from "./filesystem-type-registry";
 import { VfsRegistry } from "./vfs-registry";
 
 export class VfsFacade {
   constructor(
     private readonly kernel: VfsKernel,
     private readonly registry: VfsRegistry,
-    private readonly sourceTypeRegistry: SourceTypeRegistry,
+    private readonly filesystemTypeRegistry: FilesystemTypeRegistry,
   ) {}
 
   read(path: string, context?: VfsRequestContext): Promise<VfsFileContent> {
@@ -118,7 +118,7 @@ export class VfsFacade {
     return this.registry.describe(path);
   }
 
-  mount(registration: VfsSourceRegistration): void {
+  mount(registration: VfsMountRegistration): void {
     this.kernel.mount(registration);
     this.registry.mount(registration);
   }
@@ -133,24 +133,24 @@ export class VfsFacade {
     return this.registry.listMounts();
   }
 
-  listChildMounts(path: string): VfsSourceRegistration[] {
+  listChildMounts(path: string): VfsMountRegistration[] {
     return this.registry.listChildMounts(path);
   }
 
-  registerSourceType<TConfig>(definition: SourceTypeDefinition<TConfig>): void {
-    this.sourceTypeRegistry.register(definition);
+  registerFilesystemType<TConfig>(definition: FilesystemTypeDefinition<TConfig>): void {
+    this.filesystemTypeRegistry.register(definition);
   }
 
-  unregisterSourceType(type: string): boolean {
-    return this.sourceTypeRegistry.unregister(type);
+  unregisterFilesystemType(type: string): boolean {
+    return this.filesystemTypeRegistry.unregister(type);
   }
 
-  hasSourceType(type: string): boolean {
-    return this.sourceTypeRegistry.has(type);
+  hasFilesystemType(type: string): boolean {
+    return this.filesystemTypeRegistry.has(type);
   }
 
-  listSourceTypes(): string[] {
-    return this.sourceTypeRegistry.listTypes();
+  listFilesystemTypes(): string[] {
+    return this.filesystemTypeRegistry.listTypes();
   }
 
   createMount<TConfig>(
@@ -162,8 +162,8 @@ export class VfsFacade {
       lifecycle: VfsLifecycle;
       metadata?: Record<string, unknown>;
     },
-  ): VfsSourceRegistration {
-    const registration = this.sourceTypeRegistry.createMount(params);
+  ): VfsMountRegistration {
+    const registration = this.filesystemTypeRegistry.createMount(params);
     this.mount(registration);
     return registration;
   }

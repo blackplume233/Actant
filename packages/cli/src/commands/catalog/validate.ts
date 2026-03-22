@@ -2,26 +2,26 @@ import chalk from "chalk";
 import { Command } from "commander";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
-import type { SourceValidateResult, SourceValidationIssueDto } from "@actant/shared";
+import type { CatalogValidateResult, CatalogValidationIssueDto } from "@actant/shared";
 
-export function createSourceValidateCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
+export function createCatalogValidateCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("validate")
-    .description("Validate all assets in a component source")
-    .argument("[name]", "Registered source name to validate")
+    .description("Validate all assets in a component catalog")
+    .argument("[name]", "Registered catalog name to validate")
     .option("--path <dir>", "Validate a local directory directly (no registration needed)")
     .option("-f, --format <format>", "Output format: table, json", "table")
     .option("--strict", "Treat warnings as errors", false)
     .option("--compat <standard>", "Enable compatibility checks (e.g. agent-skills)")
-    .option("--community", "Treat source as community repo (no actant.json required)", false)
+    .option("--community", "Treat catalog as community repo (no actant.json required)", false)
     .action(async (name?: string, opts?: { path?: string; format: OutputFormat; strict: boolean; compat?: string; community: boolean }) => {
       try {
         if (!name && !opts?.path) {
-          printer.error("Provide a source name or --path <dir>");
+          printer.error("Provide a catalog name or --path <dir>");
           process.exitCode = 1;
           return;
         }
 
-        const result: SourceValidateResult = await client.call("source.validate", {
+        const result: CatalogValidateResult = await client.call("catalog.validate", {
           name: name || undefined,
           path: opts?.path || undefined,
           strict: opts?.strict || false,
@@ -45,9 +45,9 @@ export function createSourceValidateCommand(client: RpcClient, printer: CliPrint
     });
 }
 
-function printTableReport(report: SourceValidateResult, printer: CliPrinter): void {
+function printTableReport(report: CatalogValidateResult, printer: CliPrinter): void {
   printer.log("");
-  printer.log(`Validating source: ${chalk.bold(report.sourceName)} (${report.rootDir})`);
+  printer.log(`Validating catalog: ${chalk.bold(report.catalogName)} (${report.rootDir})`);
   printer.log("");
 
   const grouped = groupByPath(report.issues);
@@ -90,8 +90,8 @@ function severityTag(severity: string): string {
   }
 }
 
-function groupByPath(issues: SourceValidationIssueDto[]): Map<string, SourceValidationIssueDto[]> {
-  const map = new Map<string, SourceValidationIssueDto[]>();
+function groupByPath(issues: CatalogValidationIssueDto[]): Map<string, CatalogValidationIssueDto[]> {
+  const map = new Map<string, CatalogValidationIssueDto[]>();
   for (const issue of issues) {
     let arr = map.get(issue.path);
     if (!arr) {

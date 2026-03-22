@@ -4,7 +4,7 @@ import {
   type VfsIdentity,
   type VfsPermissionRule,
   type VfsPrincipal,
-  type VfsSourceRegistration,
+  type VfsMountRegistration,
 } from "@actant/shared";
 import type { SessionToken, SessionTokenValidator } from "@actant/shared";
 
@@ -122,7 +122,7 @@ export class VfsPermissionManager {
     identity: VfsIdentity,
     path: string,
     action: VfsCapabilityId,
-    source?: VfsSourceRegistration,
+    source?: VfsMountRegistration,
   ): VfsPermissionDecision {
     let bestPriority = -1;
     let bestEffect: VfsPermissionDecision = "deny";
@@ -211,7 +211,7 @@ function segmentMatch(pattern: string, value: string): boolean {
 function matchesPrincipal(
   principal: VfsPrincipal,
   identity: VfsIdentity,
-  source?: VfsSourceRegistration,
+  source?: VfsMountRegistration,
 ): boolean {
   switch (principal.type) {
     case "public":

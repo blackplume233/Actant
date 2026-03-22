@@ -1,5 +1,5 @@
-import type { VfsSourceRegistration } from "@actant/shared";
-import type { SourceManager } from "@actant/source";
+import type { VfsMountRegistration } from "@actant/shared";
+import type { CatalogManager } from "@actant/catalog";
 import type { ContextSource, ToolRegistration, ContextManagerEvents } from "../types";
 
 /**
@@ -14,31 +14,31 @@ import type { ContextSource, ToolRegistration, ContextManagerEvents } from "../t
  * but nothing about AgentProfile, archetype, or process lifecycle.
  */
 export interface ContextManagerOptions {
-  sourceManager?: SourceManager;
+  catalogManager?: CatalogManager;
 }
 
 export class ContextManager {
   private readonly sources = new Map<string, ContextSource>();
   private readonly tools = new Map<string, ToolRegistration>();
   private readonly listeners: ContextManagerEvents[] = [];
-  private activeMounts = new Map<string, VfsSourceRegistration[]>();
-  private _sourceManager?: SourceManager;
+  private activeMounts = new Map<string, VfsMountRegistration[]>();
+  private _catalogManager?: CatalogManager;
 
   constructor(options?: ContextManagerOptions) {
-    this._sourceManager = options?.sourceManager;
+    this._catalogManager = options?.catalogManager;
   }
 
-  get sourceManager(): SourceManager | undefined {
-    return this._sourceManager;
+  get catalogManager(): CatalogManager | undefined {
+    return this._catalogManager;
   }
 
-  setSourceManager(sourceManager: SourceManager): void {
-    this._sourceManager = sourceManager;
+  setCatalogManager(catalogManager: CatalogManager): void {
+    this._catalogManager = catalogManager;
   }
 
   registerSource(source: ContextSource): void {
     if (this.sources.has(source.name)) {
-      throw new Error(`ContextSource "${source.name}" is already registered`);
+      throw new Error(`Context source "${source.name}" is already registered`);
     }
     this.sources.set(source.name, source);
     for (const listener of this.listeners) {
@@ -98,7 +98,7 @@ export class ContextManager {
    *
    * Each source's `toVfsMounts()` is called with the provided prefix.
    * Results are mounted on the registry. Previously mounted registrations
-   * from the same source are unmounted first (idempotent refresh).
+   * from the same catalog are unmounted first (idempotent refresh).
    *
    * @param registry - Any object with `mount(reg)` and `unmount(name)` methods.
    *                   Typically a VfsRegistry instance.
@@ -169,8 +169,8 @@ export class ContextManager {
   }
 
   /**
-   * Sync all component sources via the SourceManager, then refresh
-   * the domain context VFS projections. No-op if no SourceManager is set.
+   * Sync all component catalogs via the CatalogManager, then refresh
+   * the domain context VFS projections. No-op if no CatalogManager is set.
    *
    * @param registry - VFS registry to re-mount updated domain sources on.
    * @param mountPrefix - Base path prefix for all mounts (default: "").
@@ -180,9 +180,9 @@ export class ContextManager {
     registry?: VfsMountTarget,
     mountPrefix = "",
   ): Promise<void> {
-    if (!this._sourceManager) return;
+    if (!this._catalogManager) return;
 
-    await this._sourceManager.syncAll();
+    await this._catalogManager.syncAllCatalogsWithReport();
 
     if (registry) {
       this.mountSources(registry, mountPrefix);
@@ -212,6 +212,6 @@ export class ContextManager {
  * Allows ContextManager to depend on @actant/shared only (not @actant/vfs).
  */
 export interface VfsMountTarget {
-  mount(registration: VfsSourceRegistration): void;
+  mount(registration: VfsMountRegistration): void;
   unmount(name: string): boolean;
 }

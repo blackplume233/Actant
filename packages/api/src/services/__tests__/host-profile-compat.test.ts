@@ -49,7 +49,7 @@ describe("AppContext context profile", () => {
     const handlers = new HandlerRegistry();
     registerVfsHandlers(handlers);
     const writeHandler = handlers.get("vfs.write");
-    const mountHandler = handlers.get("vfs.mount");
+    const mountHandler = handlers.get("vfs.mountAdd");
 
     await expect(writeHandler?.({
       path: "/hub/workspace/scratch.txt",
@@ -62,6 +62,7 @@ describe("AppContext context profile", () => {
       name: "tmp",
       mountPoint: "/tmp",
       spec: { type: "filesystem", path: tmpDir, readOnly: false },
+      lifecycle: { type: "manual" },
     }, ctx)).rejects.toMatchObject({
       code: RPC_ERROR_CODES.GENERIC_BUSINESS,
     });

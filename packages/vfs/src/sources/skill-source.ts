@@ -1,6 +1,6 @@
 import type {
-  SourceTrait,
-  VfsSourceRegistration,
+  VfsFeature,
+  VfsMountRegistration,
   VfsFileSchemaMap,
   VfsLifecycle,
   VfsHandlerMap,
@@ -11,7 +11,7 @@ import type {
   VfsWriteResult,
 } from "@actant/shared";
 
-const SKILL_TRAITS = new Set<SourceTrait>(["persistent", "writable", "watchable"]);
+const SKILL_TRAITS = new Set<VfsFeature>(["persistent", "writable", "watchable"]);
 
 interface SkillRecord {
   name: string;
@@ -91,7 +91,7 @@ export function createSkillSource(
   manager: SkillManagerLike,
   mountPoint: string,
   lifecycle: VfsLifecycle,
-): VfsSourceRegistration {
+): VfsMountRegistration {
   const handlers: VfsHandlerMap = {};
 
   handlers.read = async (filePath: string): Promise<VfsFileContent> => {
@@ -185,7 +185,7 @@ export function createSkillSource(
     name: "skills",
     mountPoint,
     label: "skill",
-    traits: new Set(SKILL_TRAITS),
+    features: new Set(SKILL_TRAITS),
     lifecycle,
     metadata: { description: "Built-in skill source", virtual: true },
     fileSchema: SKILL_FILE_SCHEMA,

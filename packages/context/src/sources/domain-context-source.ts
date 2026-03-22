@@ -1,4 +1,4 @@
-import type { VfsSourceRegistration, VfsLifecycle } from "@actant/shared";
+import type { VfsMountRegistration, VfsLifecycle } from "@actant/shared";
 import { createDomainSource } from "@actant/vfs";
 import type { ContextSource, ContextSourceType } from "../types";
 
@@ -103,8 +103,8 @@ export class DomainContextSource implements ContextSource {
     this.layout = { ...DEFAULT_LAYOUT, ...options?.layout };
   }
 
-  toVfsMounts(mountPrefix: string): VfsSourceRegistration[] {
-    const registrations: VfsSourceRegistration[] = [];
+  toVfsMounts(mountPrefix: string): VfsMountRegistration[] {
+    const registrations: VfsMountRegistration[] = [];
     const prefix = mountPrefix || "";
 
     const entries: Array<{

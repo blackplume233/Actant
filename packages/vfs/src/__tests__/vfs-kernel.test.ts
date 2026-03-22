@@ -2,7 +2,7 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { SourceTrait, VfsSourceRegistration, VfsWatchCallback, VfsWatchEvent } from "@actant/shared";
+import type { VfsFeature, VfsMountRegistration, VfsWatchCallback, VfsWatchEvent } from "@actant/shared";
 import type { VfsKernelDispatchState } from "../middleware/types";
 import { VfsPermissionManager, DEFAULT_PERMISSION_RULES } from "../vfs-permission-manager";
 import { createPermissionMiddleware } from "../middleware/permission-middleware";
@@ -11,7 +11,7 @@ import { memorySourceFactory } from "../sources/memory-source";
 import { createProcessSource, OutputBuffer, type ProcessHandle } from "../sources/process-source";
 import { workspaceSourceFactory } from "../sources/workspace-source";
 
-const WORKSPACE_TRAITS = new Set<SourceTrait>(["persistent", "writable", "watchable"]);
+const WORKSPACE_TRAITS = new Set<VfsFeature>(["persistent", "writable", "watchable"]);
 const tempDirs: string[] = [];
 
 function createKernel() {
@@ -60,12 +60,12 @@ function createProcessMount() {
   );
 }
 
-function createWatchSource(events: VfsWatchEvent[]): VfsSourceRegistration {
+function createWatchSource(events: VfsWatchEvent[]): VfsMountRegistration {
   return {
     name: "watch-a",
     mountPoint: "/workspace",
     label: "workspace",
-    traits: new Set(WORKSPACE_TRAITS),
+    features: new Set(WORKSPACE_TRAITS),
     lifecycle: { type: "manual" },
     metadata: { owner: "agent-a" },
     fileSchema: {},

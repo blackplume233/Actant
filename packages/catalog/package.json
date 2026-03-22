@@ -1,14 +1,14 @@
 {
-  "name": "@actant/source",
+  "name": "@actant/catalog",
   "version": "0.5.0",
-  "description": "Source management for Actant's ContextFS content and component registries",
+  "description": "Catalog management for Actant's ContextFS content and component registries",
   "type": "module",
   "license": "MIT",
   "author": "blackplume <blackplume233@gmail.com>",
   "repository": {
     "type": "git",
     "url": "https://github.com/blackplume233/Actant.git",
-    "directory": "packages/source"
+    "directory": "packages/catalog"
   },
   "publishConfig": {
     "access": "public"

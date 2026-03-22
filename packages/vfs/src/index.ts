@@ -20,7 +20,7 @@ export {
   DEFAULT_PERMISSION_RULES,
   type VfsPermissionDecision,
 } from "./vfs-permission-manager";
-export { SourceTypeRegistry } from "./source-type-registry";
+export { FilesystemTypeRegistry } from "./filesystem-type-registry";
 export {
   workspaceSourceFactory,
   memorySourceFactory,

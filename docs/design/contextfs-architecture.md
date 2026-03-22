@@ -145,6 +145,6 @@ V1 当前必须固定的 `node type`：
 
 旧术语允许保留兼容输入，但不再作为当前真相：
 
-- `actant.project.json` 是兼容旧入口
+- 旧配置迁移只通过显式 migrate 流程处理，不进入默认运行时加载路径
 - 旧 `SourceType` / `Source` / `Trait` 只允许出现在映射说明里
 - `Prompt` 不再是一级核心对象

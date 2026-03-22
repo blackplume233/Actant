@@ -273,15 +273,15 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
         } else {
           const r = result as {
             path: string; mountPoint: string; mountType: string; filesystemType: string;
-            nodeType: string; sourceName: string; label: string; traits: string[]; capabilities: string[];
+            nodeType: string; mountName: string; label: string; features: string[]; capabilities: string[];
           };
           printer.log(`Path:         ${r.path}`);
           printer.log(`Mount Point:  ${r.mountPoint}`);
           printer.log(`Mount Type:   ${r.mountType}`);
           printer.log(`Filesystem:   ${r.filesystemType}`);
           printer.log(`Node Type:    ${r.nodeType}`);
-          printer.log(`Mount:        ${r.sourceName} (${r.label})`);
-          printer.log(`Traits:       ${r.traits.join(", ")}`);
+          printer.log(`Mount:        ${r.mountName} (${r.label})`);
+          printer.log(`Features:     ${r.features.join(", ")}`);
           printer.log(`Capabilities: ${r.capabilities.join(", ")}`);
         }
       } catch (err) {
@@ -300,7 +300,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
     .action(async (opts: { json?: boolean }) => {
       try {
         const result = await client.call("vfs.mountList", {});
-        const r = result as { mounts: Array<{ name: string; mountPoint: string; mountType: string; filesystemType: string; label: string; traits: string[]; capabilities: string[]; fileCount: number }> };
+        const r = result as { mounts: Array<{ name: string; mountPoint: string; mountType: string; filesystemType: string; label: string; features: string[]; capabilities: string[]; fileCount: number }> };
         if (opts.json) {
           printer.log(JSON.stringify(r.mounts, null, 2));
         } else {
@@ -324,10 +324,10 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
 
   vfs
     .command("unmount <name>")
-    .description("Unmount a VFS source by name")
+    .description("Unmount a VFS mount by name")
     .action(async (name: string) => {
       try {
-        const result = await client.call("vfs.unmount", withToken({ name }));
+        const result = await client.call("vfs.mountRemove", withToken({ name }));
         const r = result as { ok: boolean };
         printer.log(r.ok ? "Unmounted" : "Not found");
       } catch (err) {

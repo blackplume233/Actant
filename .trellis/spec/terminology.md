@@ -111,7 +111,7 @@ VFS 不负责：
 | `SourceType` | `filesystem type` |
 | `Source` | `mount instance` |
 | `Source 配置` | `mount table declaration` |
-| `actant.project.json` | `actant.namespace.json` 的兼容旧入口 |
+| `actant.project.json` | 迁移期遗留配置文件名；不属于当前运行时入口 |
 | `Prompt` | 普通文件的一种 consumer interpretation |
 | `SkillSource` / `McpConfigSource` / `McpRuntimeSource` / `AgentRuntime` | 某些内置 `filesystem type` / `mount instance` 家族的历史名称 |
 

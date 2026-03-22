@@ -22,7 +22,7 @@ export async function materializeAgent(printer: CliPrinter, client: RpcClient): 
   }
 
   if (templates.length === 0) {
-    printer.dim("  暂无可用模板。请先通过 actant source sync 同步组件，或使用 actant template load 加载模板。");
+    printer.dim("  暂无可用模板。请先通过 actant catalog sync 同步组件，或使用 actant template load 加载模板。");
     return [];
   }
 

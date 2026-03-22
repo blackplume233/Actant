@@ -1,12 +1,12 @@
 import type {
-  SourceTrait,
+  VfsFeature,
   VfsFileContent,
   VfsEntry,
   VfsFileSchemaMap,
   VfsHandlerMap,
   VfsLifecycle,
   VfsListOptions,
-  VfsSourceRegistration,
+  VfsMountRegistration,
   VfsStatResult,
   VfsStreamChunk,
   VfsWatchEvent,
@@ -14,7 +14,7 @@ import type {
   VfsWriteResult,
 } from "@actant/shared";
 
-const MCP_RUNTIME_TRAITS = new Set<SourceTrait>([
+const MCP_RUNTIME_TRAITS = new Set<VfsFeature>([
   "executable",
   "streamable",
   "watchable",
@@ -205,7 +205,7 @@ export function createMcpRuntimeSource(
   provider: McpRuntimeSourceProvider,
   mountPoint: string,
   lifecycle: VfsLifecycle,
-): VfsSourceRegistration {
+): VfsMountRegistration {
   const handlers: VfsHandlerMap = {};
 
   handlers.read = async (filePath: string): Promise<VfsFileContent> => {
@@ -387,7 +387,7 @@ export function createMcpRuntimeSource(
     name: "mcp-runtime",
     mountPoint,
     label: "mcp-runtime",
-    traits: new Set(MCP_RUNTIME_TRAITS),
+    features: new Set(MCP_RUNTIME_TRAITS),
     lifecycle,
     metadata: { description: "Built-in MCP runtime source", virtual: true },
     fileSchema: MCP_RUNTIME_FILE_SCHEMA,

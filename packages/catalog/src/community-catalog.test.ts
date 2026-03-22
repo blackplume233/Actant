@@ -3,7 +3,8 @@ import { join } from "node:path";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { SkillManager, PromptManager, McpConfigManager, WorkflowManager } from "@actant/domain-context";
-import { SourceManager } from "./source-manager";
+import { CatalogManager } from "./catalog-manager";
+import type { FetchResult } from "./component-catalog";
 
 function createManagers() {
   return {
@@ -68,17 +69,17 @@ async function createCommunityRepo(dir: string) {
   await writeFile(join(dir, "README.md"), "# Community Skills Repo");
 }
 
-describe("CommunitySource (via SourceManager with local override)", () => {
+describe("CommunityCatalog (via CatalogManager with local override)", () => {
   let homeDir: string;
   let repoDir: string;
   let managers: ReturnType<typeof createManagers>;
-  let sourceMgr: SourceManager;
+  let sourceMgr: CatalogManager;
 
   beforeEach(async () => {
     homeDir = await mkdtemp(join(tmpdir(), "cs-home-"));
     repoDir = await mkdtemp(join(tmpdir(), "cs-repo-"));
     managers = createManagers();
-    sourceMgr = new SourceManager(homeDir, managers, { skipDefaultSource: true });
+    sourceMgr = new CatalogManager(homeDir, managers, { skipDefaultCatalog: true });
     await createCommunityRepo(repoDir);
   });
 
@@ -87,15 +88,15 @@ describe("CommunitySource (via SourceManager with local override)", () => {
     await rm(repoDir, { recursive: true, force: true });
   });
 
-  it("discovers SKILL.md in skills/ subdirectories via local source", async () => {
-    await sourceMgr.addSource("community-test", {
+  it("discovers SKILL.md in skills/ subdirectories via local catalog", async () => {
+    await sourceMgr.addCatalog("community-test", {
       type: "local",
       path: repoDir,
     });
 
     expect(managers.skillManager.has("community-test@code-review")).toBe(true);
     expect(managers.skillManager.has("community-test@testing")).toBe(true);
-    // LocalSource only scans skills/, not advanced/ — that's expected
+    // LocalCatalog only scans skills/, not advanced/ — that's expected
     expect(managers.skillManager.has("community-test@deployment")).toBe(false);
 
     const codeReview = managers.skillManager.get("community-test@code-review");
@@ -105,7 +106,7 @@ describe("CommunitySource (via SourceManager with local override)", () => {
   });
 });
 
-describe("CommunitySource standalone", () => {
+describe("CommunityCatalog standalone", () => {
   let homeDir: string;
   let repoDir: string;
 
@@ -121,20 +122,20 @@ describe("CommunitySource standalone", () => {
   });
 
   it("discovers all SKILL.md files without actant.json", async () => {
-    const { CommunitySource } = await import("./community-source");
-    const source = new CommunitySource("test-community", {
+    const { CommunityCatalog } = await import("./community-catalog");
+    const catalog = new CommunityCatalog("test-community", {
       type: "community",
       url: repoDir,
     }, homeDir);
 
     // Simulate having the repo already cloned to cacheDir
-    const cacheDir = source.getRootDir();
+    const cacheDir = catalog.getRootDir();
     await mkdir(cacheDir, { recursive: true });
     // Copy the repo to cache dir
     const { cpSync } = await import("node:fs");
     cpSync(repoDir, cacheDir, { recursive: true });
 
-    const result = await (source as unknown as { discoverSkills(): Promise<import("./component-source").FetchResult> }).discoverSkills();
+    const result = await (catalog as unknown as { discoverSkills(): Promise<FetchResult> }).discoverSkills();
 
     expect(result.skills).toHaveLength(3);
     expect(result.skills.map((s) => s.name).sort()).toEqual(["code-review", "deployment", "testing"]);
@@ -144,38 +145,38 @@ describe("CommunitySource standalone", () => {
   });
 
   it("applies filter to limit discovered skills", async () => {
-    const { CommunitySource } = await import("./community-source");
-    const source = new CommunitySource("filtered", {
+    const { CommunityCatalog } = await import("./community-catalog");
+    const catalog = new CommunityCatalog("filtered", {
       type: "community",
       url: repoDir,
       filter: "code-*",
     }, homeDir);
 
-    const cacheDir = source.getRootDir();
+    const cacheDir = catalog.getRootDir();
     await mkdir(cacheDir, { recursive: true });
     const { cpSync } = await import("node:fs");
     cpSync(repoDir, cacheDir, { recursive: true });
 
-    const result = await (source as unknown as { discoverSkills(): Promise<import("./component-source").FetchResult> }).discoverSkills();
+    const result = await (catalog as unknown as { discoverSkills(): Promise<FetchResult> }).discoverSkills();
 
     expect(result.skills).toHaveLength(1);
     expect(result.skills[0]?.name).toBe("code-review");
   });
 
   it("filter matches on relative directory path too", async () => {
-    const { CommunitySource } = await import("./community-source");
-    const source = new CommunitySource("path-filter", {
+    const { CommunityCatalog } = await import("./community-catalog");
+    const catalog = new CommunityCatalog("path-filter", {
       type: "community",
       url: repoDir,
       filter: "advanced/*",
     }, homeDir);
 
-    const cacheDir = source.getRootDir();
+    const cacheDir = catalog.getRootDir();
     await mkdir(cacheDir, { recursive: true });
     const { cpSync } = await import("node:fs");
     cpSync(repoDir, cacheDir, { recursive: true });
 
-    const result = await (source as unknown as { discoverSkills(): Promise<import("./component-source").FetchResult> }).discoverSkills();
+    const result = await (catalog as unknown as { discoverSkills(): Promise<FetchResult> }).discoverSkills();
 
     expect(result.skills).toHaveLength(1);
     expect(result.skills[0]?.name).toBe("deployment");
@@ -186,52 +187,52 @@ describe("CommunitySource standalone", () => {
     await mkdir(join(emptyDir, "some-dir"), { recursive: true });
     await writeFile(join(emptyDir, "some-dir", "README.md"), "Not a skill");
 
-    const { CommunitySource } = await import("./community-source");
-    const source = new CommunitySource("empty", {
+    const { CommunityCatalog } = await import("./community-catalog");
+    const catalog = new CommunityCatalog("empty", {
       type: "community",
       url: emptyDir,
     }, homeDir);
 
-    const cacheDir = source.getRootDir();
+    const cacheDir = catalog.getRootDir();
     await mkdir(cacheDir, { recursive: true });
     const { cpSync } = await import("node:fs");
     cpSync(emptyDir, cacheDir, { recursive: true });
 
-    const result = await (source as unknown as { discoverSkills(): Promise<import("./component-source").FetchResult> }).discoverSkills();
+    const result = await (catalog as unknown as { discoverSkills(): Promise<FetchResult> }).discoverSkills();
 
     expect(result.skills).toHaveLength(0);
     await rm(emptyDir, { recursive: true, force: true });
   });
 
   it("dispose cleans up cache directory", async () => {
-    const { CommunitySource } = await import("./community-source");
-    const source = new CommunitySource("cleanup", {
+    const { CommunityCatalog } = await import("./community-catalog");
+    const catalog = new CommunityCatalog("cleanup", {
       type: "community",
       url: repoDir,
     }, homeDir);
 
-    const cacheDir = source.getRootDir();
+    const cacheDir = catalog.getRootDir();
     await mkdir(cacheDir, { recursive: true });
     await writeFile(join(cacheDir, "test.txt"), "test");
 
-    await source.dispose();
+    await catalog.dispose();
 
     const { stat } = await import("node:fs/promises");
     await expect(stat(cacheDir)).rejects.toThrow();
   });
 });
 
-describe("SourceManager with community type", () => {
+describe("CatalogManager with community type", () => {
   let homeDir: string;
   let repoDir: string;
   let managers: ReturnType<typeof createManagers>;
-  let sourceMgr: SourceManager;
+  let sourceMgr: CatalogManager;
 
   beforeEach(async () => {
     homeDir = await mkdtemp(join(tmpdir(), "sm-community-"));
     repoDir = await mkdtemp(join(tmpdir(), "sm-crepo-"));
     managers = createManagers();
-    sourceMgr = new SourceManager(homeDir, managers, { skipDefaultSource: true });
+    sourceMgr = new CatalogManager(homeDir, managers, { skipDefaultCatalog: true });
     await createCommunityRepo(repoDir);
   });
 
@@ -240,13 +241,13 @@ describe("SourceManager with community type", () => {
     await rm(repoDir, { recursive: true, force: true });
   });
 
-  it("createSource handles community type correctly", () => {
-    const sources = sourceMgr.listSources();
-    expect(sources).toHaveLength(0);
+  it("createCatalog handles community type correctly", () => {
+    const catalogs = sourceMgr.listCatalogs();
+    expect(catalogs).toHaveLength(0);
   });
 
-  it("SourceManager accepts community type without crashing on hasSource", () => {
-    expect(() => sourceMgr.hasSource("not-exist")).not.toThrow();
-    expect(sourceMgr.hasSource("not-exist")).toBe(false);
+  it("CatalogManager accepts community type without crashing on hasCatalog", () => {
+    expect(() => sourceMgr.hasCatalog("not-exist")).not.toThrow();
+    expect(sourceMgr.hasCatalog("not-exist")).toBe(false);
   });
 });

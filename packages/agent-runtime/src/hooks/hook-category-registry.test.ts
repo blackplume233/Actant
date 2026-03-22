@@ -159,7 +159,7 @@ describe("HookCategoryRegistry", () => {
     expect(registry.isValidEvent("actant:stop")).toBe(true);
     expect(registry.isValidEvent("agent:created")).toBe(true);
     expect(registry.isValidEvent("agent:destroyed")).toBe(true);
-    expect(registry.isValidEvent("source:updated")).toBe(true);
+    expect(registry.isValidEvent("catalog:updated")).toBe(true);
     expect(registry.isValidEvent("process:start")).toBe(true);
     expect(registry.isValidEvent("session:end")).toBe(true);
     expect(registry.isValidEvent("prompt:before")).toBe(true);

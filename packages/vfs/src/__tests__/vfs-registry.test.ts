@@ -1,15 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VfsRegistry } from "../vfs-registry";
-import type { SourceTrait, VfsSourceRegistration } from "@actant/shared";
+import type { VfsFeature, VfsMountRegistration } from "@actant/shared";
 
-const MEMORY_TRAITS = new Set<SourceTrait>(["ephemeral", "writable"]);
+const MEMORY_TRAITS = new Set<VfsFeature>(["ephemeral", "writable"]);
 
-function createSource(name: string, mountPoint: string, overrides?: Partial<VfsSourceRegistration>): VfsSourceRegistration {
+function createSource(name: string, mountPoint: string, overrides?: Partial<VfsMountRegistration>): VfsMountRegistration {
   return {
     name,
     mountPoint,
     label: "memory",
-    traits: new Set(MEMORY_TRAITS),
+    features: new Set(MEMORY_TRAITS),
     lifecycle: { type: "manual" },
     metadata: { description: `test: ${name}` },
     fileSchema: {
@@ -68,7 +68,7 @@ describe("VfsRegistry", () => {
       if (!result) {
         throw new Error("Expected mount resolution for /memory/agent-a");
       }
-      expect(result.source.name).toBe("mem-a");
+      expect(result.mount.name).toBe("mem-a");
       expect(result.relativePath).toBe("");
     });
 
@@ -76,8 +76,11 @@ describe("VfsRegistry", () => {
       registry.mount(createSource("mem-a", "/memory/agent-a"));
       const result = registry.resolve("/memory/agent-a/notes.md");
       expect(result).not.toBeNull();
-      expect(result!.relativePath).toBe("notes.md");
-      expect(result!.fileSchema?.type).toBe("text");
+      if (!result) {
+        throw new Error("Expected mount resolution for /memory/agent-a/notes.md");
+      }
+      expect(result.relativePath).toBe("notes.md");
+      expect(result.fileSchema?.type).toBe("text");
     });
 
     it("returns null for unmatched paths", () => {
@@ -88,7 +91,11 @@ describe("VfsRegistry", () => {
       registry.mount(createSource("proc-all", "/proc"));
       registry.mount(createSource("proc-a", "/proc/agent-a"));
       const result = registry.resolve("/proc/agent-a/stdout");
-      expect(result!.source.name).toBe("proc-a");
+      expect(result).not.toBeNull();
+      if (!result) {
+        throw new Error("Expected mount resolution for /proc/agent-a/stdout");
+      }
+      expect(result.mount.name).toBe("proc-a");
     });
 
     it("resolves files beneath a root mount", () => {
@@ -98,7 +105,7 @@ describe("VfsRegistry", () => {
       if (!result) {
         throw new Error("Expected root mount resolution for /_project.json");
       }
-      expect(result.source.name).toBe("root");
+      expect(result.mount.name).toBe("root");
       expect(result.relativePath).toBe("_project.json");
     });
   });
@@ -145,10 +152,13 @@ describe("VfsRegistry", () => {
       registry.mount(createSource("mem-a", "/memory/agent-a"));
       const desc = registry.describe("/memory/agent-a/config.json");
       expect(desc).not.toBeNull();
-      expect(desc!.sourceName).toBe("mem-a");
-      expect(desc!.label).toBe("memory");
-      expect(desc!.capabilities).toContain("read");
-      expect(desc!.capabilities).toContain("edit");
+      if (!desc) {
+        throw new Error("Expected registry description for /memory/agent-a/config.json");
+      }
+      expect(desc.mountName).toBe("mem-a");
+      expect(desc.label).toBe("memory");
+      expect(desc.capabilities).toContain("read");
+      expect(desc.capabilities).toContain("edit");
     });
 
     it("returns null for non-existent path", () => {

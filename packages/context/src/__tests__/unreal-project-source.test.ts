@@ -2,10 +2,21 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { VfsEntry, VfsFileContent } from "@actant/shared";
+import type { VfsEntry, VfsFileContent, VfsResolveResult } from "@actant/shared";
 import { VfsRegistry } from "@actant/vfs";
 import { ContextManager } from "../manager/context-manager";
 import { UnrealProjectSource } from "../sources/unreal-project-source";
+
+function requireResolved(
+  resolved: VfsResolveResult | null,
+  path: string,
+): VfsResolveResult {
+  expect(resolved, `Expected VFS path to resolve: ${path}`).not.toBeNull();
+  if (!resolved) {
+    throw new Error(`Expected VFS path to resolve: ${path}`);
+  }
+  return resolved;
+}
 
 describe("UnrealProjectSource", () => {
   let projectDir: string;
@@ -85,10 +96,8 @@ describe("UnrealProjectSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/project/overview.json");
-    expect(resolved).not.toBeNull();
-
-    const result: VfsFileContent = await resolved!.source.handlers.read!(resolved!.relativePath);
+    const resolved = requireResolved(registry.resolve("/project/overview.json"), "/project/overview.json");
+    const result: VfsFileContent = await resolved.mount.handlers.read!(resolved.relativePath);
     const overview = JSON.parse(result.content) as {
       name: string;
       engineVersion: string;
@@ -111,8 +120,8 @@ describe("UnrealProjectSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/project/modules");
-    const entries: VfsEntry[] = await resolved!.source.handlers.list!(resolved!.relativePath);
+    const resolved = requireResolved(registry.resolve("/project/modules"), "/project/modules");
+    const entries: VfsEntry[] = await resolved.mount.handlers.list!(resolved.relativePath);
 
     const names = entries.map((e) => e.name).sort();
     expect(names).toEqual(["Characters", "Gameplay"]);
@@ -126,8 +135,11 @@ describe("UnrealProjectSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/project/modules/Characters/_summary.json");
-    const result: VfsFileContent = await resolved!.source.handlers.read!(resolved!.relativePath);
+    const resolved = requireResolved(
+      registry.resolve("/project/modules/Characters/_summary.json"),
+      "/project/modules/Characters/_summary.json",
+    );
+    const result: VfsFileContent = await resolved.mount.handlers.read!(resolved.relativePath);
     const mod = JSON.parse(result.content) as { name: string; classCount: number };
 
     expect(mod.name).toBe("Characters");
@@ -142,8 +154,8 @@ describe("UnrealProjectSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/project/config");
-    const entries: VfsEntry[] = await resolved!.source.handlers.list!(resolved!.relativePath);
+    const resolved = requireResolved(registry.resolve("/project/config"), "/project/config");
+    const entries: VfsEntry[] = await resolved.mount.handlers.list!(resolved.relativePath);
 
     const names = entries.map((e) => e.name).sort();
     expect(names).toContain("DefaultEngine.ini");
@@ -158,8 +170,11 @@ describe("UnrealProjectSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/project/config/DefaultEngine.ini");
-    const result: VfsFileContent = await resolved!.source.handlers.read!(resolved!.relativePath);
+    const resolved = requireResolved(
+      registry.resolve("/project/config/DefaultEngine.ini"),
+      "/project/config/DefaultEngine.ini",
+    );
+    const result: VfsFileContent = await resolved.mount.handlers.read!(resolved.relativePath);
 
     expect(result.content).toContain("[/Script/Engine.Engine]");
   });
@@ -172,8 +187,8 @@ describe("UnrealProjectSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/project/");
-    const entries: VfsEntry[] = await resolved!.source.handlers.list!(resolved!.relativePath);
+    const resolved = requireResolved(registry.resolve("/project/"), "/project/");
+    const entries: VfsEntry[] = await resolved.mount.handlers.list!(resolved.relativePath);
 
     const names = entries.map((e) => e.name);
     expect(names).toContain("overview.json");
@@ -189,9 +204,12 @@ describe("UnrealProjectSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/project/modules/NonExistent/_summary.json");
+    const resolved = requireResolved(
+      registry.resolve("/project/modules/NonExistent/_summary.json"),
+      "/project/modules/NonExistent/_summary.json",
+    );
     await expect(
-      resolved!.source.handlers.read!(resolved!.relativePath),
+      resolved.mount.handlers.read!(resolved.relativePath),
     ).rejects.toThrow("Module not found: NonExistent");
   });
 });

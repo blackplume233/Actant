@@ -44,7 +44,7 @@ describe("vfs handlers", () => {
 
   it("uses secured kernel permissions when a session token is provided", async () => {
     const token = ctx.sessionTokenStore.generate("agent-a", "session-a");
-    ctx.vfsRegistry.mount(ctx.sourceTypeRegistry.createMount({
+    ctx.vfsRegistry.mount(ctx.filesystemTypeRegistry.createMount({
       name: "memory-agent-a",
       mountPoint: "/memory/agent-a",
       type: "memory",
@@ -111,7 +111,7 @@ describe("vfs handlers", () => {
   });
 
   it("preserves direct child mount listing for unresolved parent paths", async () => {
-    ctx.vfsRegistry.mount(ctx.sourceTypeRegistry.createMount({
+    ctx.vfsRegistry.mount(ctx.filesystemTypeRegistry.createMount({
       name: "workspace-agent-a",
       mountPoint: "/workspace/agent-a",
       type: "memory",
@@ -155,7 +155,7 @@ describe("vfs handlers", () => {
     await writeFile(join(workspaceDir, "nested", "keep.ts"), "const needle = true;\n", "utf-8");
     await writeFile(join(workspaceDir, "nested", "remove.ts"), "const removeMe = true;\n", "utf-8");
 
-    ctx.vfsRegistry.mount(ctx.sourceTypeRegistry.createMount({
+    ctx.vfsRegistry.mount(ctx.filesystemTypeRegistry.createMount({
       name: mountName,
       mountPoint,
       type: "filesystem",
@@ -320,7 +320,7 @@ describe("vfs handlers", () => {
     await writeFile(join(workspaceDir, "nested", "notes.txt"), "alpha\nbeta\nneedle", "utf-8");
     await writeFile(join(workspaceDir, "nested", "keep.ts"), "const needle = true;\n", "utf-8");
 
-    ctx.vfsRegistry.mount(ctx.sourceTypeRegistry.createMount({
+    ctx.vfsRegistry.mount(ctx.filesystemTypeRegistry.createMount({
       name: mountName,
       mountPoint,
       type: "filesystem",

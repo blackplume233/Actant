@@ -173,8 +173,8 @@ V1 最少需要以下错误类别：
 
 ## 7. Compatibility Rules
 
-- `actant.project.json` 允许作为兼容输入保留
-- 旧 `type=sourceType` 等表述允许在兼容字段中短期存在
+- 旧 `actant.project.json` 只允许出现在显式迁移命令或迁移文档中
+- 旧 `type=sourceType` 等表述只允许出现在历史说明或迁移说明中
 - 活跃文档、新接口说明、新 CLI 帮助文本必须使用：
   - `mount point`
   - `mount type`

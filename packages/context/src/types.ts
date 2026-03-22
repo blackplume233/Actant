@@ -1,4 +1,4 @@
-import type { VfsSourceRegistration } from "@actant/shared";
+import type { VfsMountRegistration } from "@actant/shared";
 
 /**
  * Category labels for context sources.
@@ -33,7 +33,7 @@ export interface ContextSource {
    *
    * @param mountPrefix - Base path prefix for all mounts (e.g. "" for root)
    */
-  toVfsMounts(mountPrefix: string): VfsSourceRegistration[];
+  toVfsMounts(mountPrefix: string): VfsMountRegistration[];
 
   /**
    * Whether the source has changed since the given timestamp.

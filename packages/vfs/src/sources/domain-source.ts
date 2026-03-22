@@ -1,6 +1,6 @@
 import type {
-  SourceTrait,
-  VfsSourceRegistration,
+  VfsFeature,
+  VfsMountRegistration,
   VfsLifecycle,
   VfsHandlerMap,
   VfsFileContent,
@@ -9,7 +9,7 @@ import type {
   VfsStatResult,
 } from "@actant/shared";
 
-const DOMAIN_TRAITS = new Set<SourceTrait>(["persistent", "watchable"]);
+const DOMAIN_TRAITS = new Set<VfsFeature>(["persistent", "watchable"]);
 
 interface MinimalComponent {
   name: string;
@@ -37,7 +37,7 @@ export function createDomainSource(
   domain: string,
   mountPoint: string,
   lifecycle: VfsLifecycle,
-): VfsSourceRegistration {
+): VfsMountRegistration {
   const handlers: VfsHandlerMap = {};
 
   handlers.read = async (filePath: string): Promise<VfsFileContent> => {
@@ -89,7 +89,7 @@ export function createDomainSource(
     name: domain,
     mountPoint,
     label: "domain",
-    traits: new Set(DOMAIN_TRAITS),
+    features: new Set(DOMAIN_TRAITS),
     lifecycle,
     metadata: { description: `${domain} components (read-only, virtual)`, virtual: true },
     fileSchema: {},

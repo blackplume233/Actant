@@ -14,7 +14,7 @@ import {
   McpConfigManager,
   WorkflowManager,
   PluginManager,
-  SourceManager,
+  CatalogManager,
   createLauncher,
   EmployeeScheduler,
   InstanceRegistry,
@@ -37,7 +37,7 @@ import {
   createPermissionMiddleware,
   VfsPermissionManager,
   DEFAULT_PERMISSION_RULES,
-  SourceTypeRegistry,
+  FilesystemTypeRegistry,
   VfsLifecycleManager,
   workspaceSourceFactory,
   memorySourceFactory,
@@ -201,7 +201,7 @@ export class AppContext {
   readonly claudeChannelManager: ActantChannelManager;
   readonly agentManager: AgentManager;
   readonly sessionRegistry: SessionRegistry;
-  readonly sourceManager: SourceManager;
+  readonly catalogManager: CatalogManager;
   readonly templateWatcher: TemplateFileWatcher;
   readonly schedulers: Map<string, EmployeeScheduler>;
   readonly eventBus: HookEventBus;
@@ -216,7 +216,7 @@ export class AppContext {
   readonly vfsKernel: VfsKernel;
   readonly vfsSecuredKernel: VfsKernel;
   readonly vfsPermissionManager: VfsPermissionManager;
-  readonly sourceTypeRegistry: SourceTypeRegistry;
+  readonly filesystemTypeRegistry: FilesystemTypeRegistry;
   readonly hostProfile: HostProfile;
   readonly hubContext: HubContextService;
   readonly toolRegistry: RuntimeToolRegistry;
@@ -225,8 +225,8 @@ export class AppContext {
   private initialized = false;
   private workflowHooksRegistered = false;
   private instanceHooksRegistered = false;
-  private sourceManagerInitialized = false;
-  private sourceManagerInitPromise?: Promise<void>;
+  private catalogManagerInitialized = false;
+  private catalogManagerInitPromise?: Promise<void>;
   private runtimeActivationState: HostRuntimeState = "inactive";
   private runtimeActivationPromise?: Promise<void>;
   private pluginsStarted = false;
@@ -259,14 +259,14 @@ export class AppContext {
 
     const resolvedLauncherMode = config?.launcherMode
       ?? (process.env["ACTANT_LAUNCHER_MODE"] as LauncherMode | undefined);
-    this.sourceManager = new SourceManager(this.homeDir, {
+    this.catalogManager = new CatalogManager(this.homeDir, {
       skillManager: this.skillManager,
       promptManager: this.promptManager,
       mcpConfigManager: this.mcpConfigManager,
       workflowManager: this.workflowManager,
       backendManager: getBackendManager(),
       templateRegistry: this.templateRegistry,
-    }, { skipDefaultSource: resolvedLauncherMode === "mock" });
+    }, { skipDefaultCatalog: resolvedLauncherMode === "mock" });
 
     this.agentInitializer = new AgentInitializer(
       this.templateRegistry,
@@ -324,22 +324,22 @@ export class AppContext {
       middleware: [createPermissionMiddleware(this.vfsPermissionManager)],
     });
     this.vfsRegistry.addListener({
-      onMount: (source) => {
-        this.vfsKernel.mount(source);
-        this.vfsSecuredKernel.mount(source);
+      onMount: (mount) => {
+        this.vfsKernel.mount(mount);
+        this.vfsSecuredKernel.mount(mount);
       },
       onUnmount: (name) => {
         this.vfsKernel.unmount(name);
         this.vfsSecuredKernel.unmount(name);
       },
     });
-    this.sourceTypeRegistry = new SourceTypeRegistry();
-    this.sourceTypeRegistry.register(workspaceSourceFactory);
-    this.sourceTypeRegistry.register(memorySourceFactory);
-    this.sourceTypeRegistry.register(configSourceFactory);
-    this.sourceTypeRegistry.register(canvasSourceFactory);
-    this.sourceTypeRegistry.register(vcsSourceFactory);
-    this.sourceTypeRegistry.register(processSourceFactory);
+    this.filesystemTypeRegistry = new FilesystemTypeRegistry();
+    this.filesystemTypeRegistry.register(workspaceSourceFactory);
+    this.filesystemTypeRegistry.register(memorySourceFactory);
+    this.filesystemTypeRegistry.register(configSourceFactory);
+    this.filesystemTypeRegistry.register(canvasSourceFactory);
+    this.filesystemTypeRegistry.register(vcsSourceFactory);
+    this.filesystemTypeRegistry.register(processSourceFactory);
     this.hubContext = new HubContextService(this);
     this.toolRegistry = new RuntimeToolRegistry();
   }
@@ -420,7 +420,7 @@ export class AppContext {
 
   getHostCapabilities(): HostCapability[] {
     const capabilities: HostCapability[] = ["hub", "vfs", "domain"];
-    if (this.sourceManagerInitialized) {
+    if (this.catalogManagerInitialized) {
       capabilities.push("sources");
     }
     if (this.runtimeActivationState === "active") {
@@ -434,8 +434,8 @@ export class AppContext {
       return;
     }
 
-    if (method.startsWith("source.") || method.startsWith("preset.")) {
-      await this.ensureSourceManagerInitialized();
+    if (method.startsWith("catalog.") || method.startsWith("preset.")) {
+      await this.ensureCatalogManagerInitialized();
       return;
     }
 
@@ -466,22 +466,22 @@ export class AppContext {
     }
   }
 
-  async ensureSourceManagerInitialized(): Promise<void> {
-    if (this.sourceManagerInitialized) return;
-    if (this.sourceManagerInitPromise) {
-      await this.sourceManagerInitPromise;
+  async ensureCatalogManagerInitialized(): Promise<void> {
+    if (this.catalogManagerInitialized) return;
+    if (this.catalogManagerInitPromise) {
+      await this.catalogManagerInitPromise;
       return;
     }
 
-    this.sourceManagerInitPromise = (async () => {
-      await this.sourceManager.initialize();
-      this.sourceManagerInitialized = true;
+    this.catalogManagerInitPromise = (async () => {
+      await this.catalogManager.initialize();
+      this.catalogManagerInitialized = true;
     })();
 
     try {
-      await this.sourceManagerInitPromise;
+      await this.catalogManagerInitPromise;
     } finally {
-      this.sourceManagerInitPromise = undefined;
+      this.catalogManagerInitPromise = undefined;
     }
   }
 
@@ -508,7 +508,7 @@ export class AppContext {
     this.runtimeActivationState = "activating";
     this.runtimeActivationPromise = (async () => {
       if (options?.initializeSources) {
-        await this.ensureSourceManagerInitialized();
+        await this.ensureCatalogManagerInitialized();
       }
 
       this.registerWorkflowHooks();
@@ -753,7 +753,7 @@ export class AppContext {
 
   private initializeVfs(): void {
     const reg = this.vfsRegistry;
-    const factory = this.sourceTypeRegistry;
+    const factory = this.filesystemTypeRegistry;
 
     reg.mount(factory.createMount({
       name: "config",
@@ -812,7 +812,7 @@ export class AppContext {
     logger.info({ mounts: reg.size }, "VFS initialized with default mounts");
   }
 
-  /** Refresh the default resource mounts after domain content changes. */
+  /** Refresh the default recatalog mounts after domain content changes. */
   refreshContextMounts(): void {
     this.mountCoreResourceSources(this.vfsRegistry);
   }
@@ -842,9 +842,9 @@ export class AppContext {
       },
     ];
 
-    for (const source of coreSources) {
-      registry.unmount(source.name);
-      registry.mount(source);
+    for (const mount of coreSources) {
+      registry.unmount(mount.name);
+      registry.mount(mount);
     }
   }
 

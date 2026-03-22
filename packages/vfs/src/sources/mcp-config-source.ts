@@ -1,6 +1,6 @@
 import type {
-  SourceTrait,
-  VfsSourceRegistration,
+  VfsFeature,
+  VfsMountRegistration,
   VfsFileSchemaMap,
   VfsLifecycle,
   VfsHandlerMap,
@@ -11,7 +11,7 @@ import type {
   VfsWriteResult,
 } from "@actant/shared";
 
-const MCP_CONFIG_TRAITS = new Set<SourceTrait>(["persistent", "writable"]);
+const MCP_CONFIG_TRAITS = new Set<VfsFeature>(["persistent", "writable"]);
 
 interface McpConfigRecord {
   name: string;
@@ -89,7 +89,7 @@ export function createMcpConfigSource(
   manager: McpConfigManagerLike,
   mountPoint: string,
   lifecycle: VfsLifecycle,
-): VfsSourceRegistration {
+): VfsMountRegistration {
   const handlers: VfsHandlerMap = {};
 
   handlers.read = async (filePath: string): Promise<VfsFileContent> => {
@@ -182,7 +182,7 @@ export function createMcpConfigSource(
     name: "mcp-configs",
     mountPoint,
     label: "mcp-config",
-    traits: new Set(MCP_CONFIG_TRAITS),
+    features: new Set(MCP_CONFIG_TRAITS),
     lifecycle,
     metadata: { description: "Built-in MCP config source", virtual: true },
     fileSchema: MCP_CONFIG_FILE_SCHEMA,

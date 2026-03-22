@@ -268,10 +268,10 @@ export interface VfsFileSchema {
 export type VfsFileSchemaMap = Record<string, VfsFileSchema>;
 
 // ---------------------------------------------------------------------------
-// Source Type — mount-point level registration
+// Mount / filesystem metadata
 // ---------------------------------------------------------------------------
 
-export type SourceTrait =
+export type VfsFeature =
   | "persistent"
   | "ephemeral"
   | "watchable"
@@ -294,10 +294,10 @@ export type VfsLifecycle =
   | { type: "manual" };
 
 // ---------------------------------------------------------------------------
-// Source Metadata
+// Mount metadata
 // ---------------------------------------------------------------------------
 
-export interface VfsSourceMeta {
+export interface VfsMountMetadata {
   description?: string;
   virtual?: boolean;
   owner?: string;
@@ -306,50 +306,50 @@ export interface VfsSourceMeta {
 }
 
 // ---------------------------------------------------------------------------
-// Source Registration — complete registration including handlers
+// Mount registration — complete registration including handlers
 // ---------------------------------------------------------------------------
 
-export interface VfsSourceRegistration {
+export interface VfsMountRegistration {
   name: string;
   mountPoint: string;
   label: string;
-  traits: ReadonlySet<SourceTrait>;
+  features: ReadonlySet<VfsFeature>;
   lifecycle: VfsLifecycle;
-  metadata: VfsSourceMeta;
+  metadata: VfsMountMetadata;
   fileSchema: VfsFileSchemaMap;
   handlers: VfsHandlerMap;
 }
 
 // ---------------------------------------------------------------------------
-// Source Type Definitions — declarative factory registration
+// Filesystem type definitions — declarative factory registration
 // ---------------------------------------------------------------------------
 
-export interface SourceTypeDefinition<TConfig = Record<string, unknown>> {
+export interface FilesystemTypeDefinition<TConfig = Record<string, unknown>> {
   readonly type: string;
   readonly label: string;
-  readonly defaultTraits: ReadonlySet<SourceTrait>;
+  readonly defaultFeatures: ReadonlySet<VfsFeature>;
   readonly configSchema?: Record<string, unknown>;
-  create(config: TConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration;
+  create(config: TConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsMountRegistration;
   validate?(config: TConfig): { valid: boolean; errors?: string[] };
 }
 
-export interface SourceRequirement {
-  required: SourceTrait[];
-  optional?: SourceTrait[];
+export interface FilesystemRequirement {
+  required: VfsFeature[];
+  optional?: VfsFeature[];
 }
 
 // ---------------------------------------------------------------------------
 // Mount parameters (for RPC / CLI callers that don't provide handlers)
 // ---------------------------------------------------------------------------
 
-export interface VfsMountParams<TConfig = Record<string, unknown>> {
+export interface VfsMountAddParams<TConfig = Record<string, unknown>> {
   name: string;
   mountPoint: string;
   type: string;
   mountType?: VfsMountType;
   config: TConfig;
   lifecycle: VfsLifecycle;
-  metadata?: VfsSourceMeta;
+  metadata?: VfsMountMetadata;
 }
 
 // ---------------------------------------------------------------------------
@@ -390,15 +390,15 @@ export interface VfsPermissionRule {
 export interface VfsDescribeResult {
   path: string;
   mountPoint: string;
-  sourceName: string;
+  mountName: string;
   label: string;
   mountType: VfsMountType;
   filesystemType: VfsFilesystemType;
   nodeType: VfsNodeType;
-  traits: ReadonlySet<SourceTrait>;
+  features: ReadonlySet<VfsFeature>;
   fileSchema?: VfsFileSchema;
   capabilities: VfsCapabilityId[];
-  metadata: VfsSourceMeta;
+  metadata: VfsMountMetadata;
   tags: string[];
   lifecycle: VfsLifecycle;
 }
@@ -413,9 +413,9 @@ export interface VfsMountInfo {
   label: string;
   mountType: VfsMountType;
   filesystemType: VfsFilesystemType;
-  traits: ReadonlySet<SourceTrait>;
+  features: ReadonlySet<VfsFeature>;
   lifecycle: VfsLifecycle;
-  metadata: VfsSourceMeta;
+  metadata: VfsMountMetadata;
   capabilities: VfsCapabilityId[];
   fileCount: number;
 }
@@ -425,7 +425,7 @@ export interface VfsMountInfo {
 // ---------------------------------------------------------------------------
 
 export interface VfsResolveResult {
-  source: VfsSourceRegistration;
+  mount: VfsMountRegistration;
   /** Path relative to the mount point (e.g. "stdout" for /proc/agent-a/123/stdout). */
   relativePath: string;
   /** The matched file schema entry, if the relative path matches a declared file. */

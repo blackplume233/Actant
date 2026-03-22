@@ -18,7 +18,7 @@ export {
   VfsPermissionManager,
   DEFAULT_PERMISSION_RULES,
   type VfsPermissionDecision,
-  SourceTypeRegistry,
+  FilesystemTypeRegistry,
   workspaceSourceFactory,
   memorySourceFactory,
   configSourceFactory,

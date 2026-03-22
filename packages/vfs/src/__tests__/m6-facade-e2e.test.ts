@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { VfsKernelDispatchState } from "../middleware/types";
 import { VfsKernel } from "../core/vfs-kernel";
 import { createPermissionMiddleware } from "../middleware/permission-middleware";
-import { SourceTypeRegistry } from "../source-type-registry";
+import { FilesystemTypeRegistry } from "../filesystem-type-registry";
 import { workspaceSourceFactory } from "../sources/workspace-source";
 import { DEFAULT_PERMISSION_RULES, VfsPermissionManager } from "../vfs-permission-manager";
 import { VfsFacade } from "../vfs-facade";
@@ -45,7 +45,7 @@ function createFacade(recorded: string[] = []): VfsFacade {
     ],
   });
 
-  return new VfsFacade(kernel, new VfsRegistry(), new SourceTypeRegistry());
+  return new VfsFacade(kernel, new VfsRegistry(), new FilesystemTypeRegistry());
 }
 
 afterEach(async () => {
@@ -111,7 +111,7 @@ describe("M6: VfsFacade + kernel extension", () => {
     registration.name = "workspace";
     facade.mount(registration);
 
-    expect(facade.describe("/workspace/src/a.txt")?.sourceName).toBe("workspace");
+    expect(facade.describe("/workspace/src/a.txt")?.mountName).toBe("workspace");
     expect(facade.listMounts()).toHaveLength(1);
     expect(facade.listChildMounts("/")).toHaveLength(1);
 

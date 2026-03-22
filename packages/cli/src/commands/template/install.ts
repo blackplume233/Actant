@@ -3,31 +3,31 @@ import chalk from "chalk";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 
-const DEFAULT_SOURCE = "actant-hub";
+const DEFAULT_CATALOG = "actant-hub";
 
 export function createTemplateInstallCommand(
   client: RpcClient,
   printer: CliPrinter = defaultPrinter,
 ): Command {
   return new Command("install")
-    .description("Install a template from a source (source@name or just name for default source)")
-    .argument("<spec>", 'Template spec: "source@name" or just "name" (uses actant-hub)')
+    .description("Install a template from a catalog (catalog@name or just name for default catalog)")
+    .argument("<spec>", 'Template spec: "catalog@name" or just "name" (uses actant-hub)')
     .action(async (spec: string) => {
       try {
         const at = spec.indexOf("@");
-        const sourceName = at >= 0 ? spec.slice(0, at) : DEFAULT_SOURCE;
+        const catalogName = at >= 0 ? spec.slice(0, at) : DEFAULT_CATALOG;
         const templateName = at >= 0 ? spec.slice(at + 1) : spec;
-        const qualifiedName = `${sourceName}@${templateName}`;
+        const qualifiedName = `${catalogName}@${templateName}`;
 
-        printer.log(chalk.dim(`  Syncing source "${sourceName}"...`));
+        printer.log(chalk.dim(`  Syncing catalog "${catalogName}"...`));
         try {
-          await client.call("source.sync", { name: sourceName });
+          await client.call("catalog.sync", { name: catalogName });
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           if (!msg.includes("not found")) {
             printer.warn(`  Warning: sync failed (${msg}), checking local cache...`);
           } else {
-            printer.error(`Source "${sourceName}" not found. Add it first: actant source add <url> --name ${sourceName}`);
+            printer.error(`Catalog "${catalogName}" not found. Add it first: actant catalog add <url> --name ${catalogName}`);
             process.exitCode = 1;
             return;
           }
@@ -46,16 +46,16 @@ export function createTemplateInstallCommand(
           printer.log("");
           printer.log(`  Create an agent: ${chalk.cyan(`actant agent create <agent-name> --template ${qualifiedName}`)}`);
         } catch {
-          printer.error(`Template "${qualifiedName}" not found in source "${sourceName}".`);
+          printer.error(`Template "${qualifiedName}" not found in catalog "${catalogName}".`);
           printer.log(chalk.dim("  Available templates:"));
           try {
             const templates = await client.call("template.list", {});
-            const fromSource = templates.filter((t: { name: string }) => t.name.startsWith(`${sourceName}@`));
-            for (const t of fromSource) {
+            const fromCatalog = templates.filter((t: { name: string }) => t.name.startsWith(`${catalogName}@`));
+            for (const t of fromCatalog) {
               printer.log(chalk.dim(`    - ${t.name}`));
             }
-            if (fromSource.length === 0) {
-              printer.log(chalk.dim("    (none from this source)"));
+            if (fromCatalog.length === 0) {
+              printer.log(chalk.dim("    (none from this catalog)"));
             }
           } catch { /* ignore */ }
           process.exitCode = 1;

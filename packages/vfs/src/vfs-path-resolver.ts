@@ -1,4 +1,4 @@
-import type { VfsSourceRegistration, VfsResolveResult } from "@actant/shared";
+import type { VfsMountRegistration, VfsResolveResult } from "@actant/shared";
 import { DirectMountTable } from "./mount/direct-mount-table";
 
 /**
@@ -10,7 +10,7 @@ import { DirectMountTable } from "./mount/direct-mount-table";
 export class VfsPathResolver {
   private readonly mountTable = new DirectMountTable();
 
-  rebuild(sources: VfsSourceRegistration[]): void {
+  rebuild(sources: VfsMountRegistration[]): void {
     this.mountTable.replace(sources);
   }
 
@@ -22,7 +22,7 @@ export class VfsPathResolver {
    * List all mount points that are direct children of the given directory path.
    * Used for `list /` or `list /proc/` to show sub-mounts.
    */
-  listChildMounts(dirPath: string): VfsSourceRegistration[] {
+  listChildMounts(dirPath: string): VfsMountRegistration[] {
     return this.mountTable.listChildMounts(dirPath);
   }
 }

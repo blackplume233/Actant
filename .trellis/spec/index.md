@@ -33,7 +33,7 @@ Actant 当前只承认一套新的顶层叙述：
 - 历史迁移说明必须留在默认入口之外
 - 所有 ship / merge 级交付必须先产出 changelog draft，再汇总正式 release changelog
 - `docs/planning/contextfs-roadmap.md` 是唯一 live milestone truth file
-- `actant.namespace.json` 是默认 namespace 配置入口；`actant.project.json` 仅作为兼容输入保留
+- `actant.namespace.json` 是默认且唯一运行时 namespace 配置入口
 
 ---
 

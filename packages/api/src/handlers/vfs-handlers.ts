@@ -24,11 +24,11 @@ import {
   type VfsWatchRpcResult,
   type VfsStreamParams,
   type VfsStreamRpcResult,
-  type VfsMountRpcParams,
-  type VfsMountRpcResult,
+  type VfsMountAddRpcParams,
+  type VfsMountAddRpcResult,
   type VfsMountListResult,
-  type VfsUnmountParams,
-  type VfsUnmountResult,
+  type VfsMountRemoveParams,
+  type VfsMountRemoveResult,
 } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
@@ -63,8 +63,8 @@ function inferNodeTypeFromResolved(
   }
 }
 
-function inferFilesystemTypeFromSource(
-  source: import("@actant/shared").VfsSourceRegistration,
+function inferFilesystemTypeFromMount(
+  source: import("@actant/shared").VfsMountRegistration,
 ): string {
   const configured = source.metadata.filesystemType;
   if (typeof configured === "string" && configured.length > 0) {
@@ -106,8 +106,8 @@ export function registerVfsHandlers(registry: HandlerRegistry): void {
   registry.register("vfs.describe", handleVfsDescribe);
   registry.register("vfs.watch", handleVfsWatch);
   registry.register("vfs.stream", handleVfsStream);
-  registry.register("vfs.mount", handleVfsMount);
-  registry.register("vfs.unmount", handleVfsUnmount);
+  registry.register("vfs.mountAdd", handleVfsMount);
+  registry.register("vfs.mountRemove", handleVfsUnmount);
   registry.register("vfs.mountList", handleVfsMountList);
 }
 
@@ -301,18 +301,18 @@ async function handleVfsStat(
     }
     return {
       canonicalPath: path,
-      mountPoint: resolved.source.mountPoint,
-      filesystemType: inferFilesystemTypeFromSource(resolved.source),
+      mountPoint: resolved.mount.mountPoint,
+      filesystemType: inferFilesystemTypeFromMount(resolved.mount),
       nodeType: result.nodeType ?? inferNodeTypeFromResolved(resolved, result.type),
       size: result.size,
       mtime: result.mtime,
       type: result.type,
       permissions: result.permissions,
       mimeType: result.mimeType,
-      capabilities: resolved.fileSchema?.capabilities ?? Object.keys(resolved.source.handlers),
-      metadata: resolved.source.metadata,
-      tags: Array.isArray(resolved.source.metadata.tags)
-        ? resolved.source.metadata.tags.filter((tag): tag is string => typeof tag === "string")
+      capabilities: resolved.fileSchema?.capabilities ?? Object.keys(resolved.mount.handlers),
+      metadata: resolved.mount.metadata,
+      tags: Array.isArray(resolved.mount.metadata.tags)
+        ? resolved.mount.metadata.tags.filter((tag): tag is string => typeof tag === "string")
         : [],
     };
   } catch (error) {
@@ -397,9 +397,9 @@ async function handleVfsDescribe(
     mountType: desc.mountType,
     filesystemType: desc.filesystemType,
     nodeType: desc.nodeType,
-    sourceName: desc.sourceName,
+    mountName: desc.mountName,
     label: desc.label,
-    traits: Array.from(desc.traits),
+    features: Array.from(desc.features),
     capabilities: desc.capabilities,
     metadata: desc.metadata,
     tags: desc.tags,
@@ -463,11 +463,11 @@ async function handleVfsStream(
 async function handleVfsMount(
   params: Record<string, unknown>,
   ctx: AppContext,
-): Promise<VfsMountRpcResult> {
-  const { name, mountPoint, spec, lifecycle } = params as unknown as VfsMountRpcParams;
+): Promise<VfsMountAddRpcResult> {
+  const { name, mountPoint, spec, lifecycle } = params as unknown as VfsMountAddRpcParams;
   assertContextVfsMutationAllowed(ctx, mountPoint);
   const registry = requireVfsRegistry(ctx);
-  const factoryRegistry = ctx.sourceTypeRegistry;
+  const factoryRegistry = ctx.filesystemTypeRegistry;
 
   const registration = factoryRegistry.createMount({
     name,
@@ -484,8 +484,8 @@ async function handleVfsMount(
 async function handleVfsUnmount(
   params: Record<string, unknown>,
   ctx: AppContext,
-): Promise<VfsUnmountResult> {
-  const { name } = params as unknown as VfsUnmountParams;
+): Promise<VfsMountRemoveResult> {
+  const { name } = params as unknown as VfsMountRemoveParams;
   assertContextVfsMutationAllowed(ctx, name);
   const registry = requireVfsRegistry(ctx);
   const ok = registry.unmount(name);
@@ -505,7 +505,7 @@ async function handleVfsMountList(
       mountType: m.mountType,
       filesystemType: m.filesystemType,
       label: m.label,
-      traits: Array.from(m.traits),
+      features: Array.from(m.features),
       capabilities: m.capabilities,
       fileCount: m.fileCount,
     })),

@@ -78,7 +78,7 @@ export async function startServer(): Promise<void> {
 
   server.tool(
     "vfs_describe",
-    "Describe a VFS path: its source type, capabilities, and metadata.",
+    "Describe a VFS path: its filesystem type, node type, capabilities, and metadata.",
     {
       path: z.string().describe("VFS path to describe"),
     },

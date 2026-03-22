@@ -73,7 +73,7 @@ export class VfsInterceptor {
     }
 
     const result = await this.kernel.read(params.path, this.buildContext(identity));
-    logger.debug({ path: params.path, source: resolved.source.name }, "VFS readTextFile");
+    logger.debug({ path: params.path, mount: resolved.mount.name }, "VFS readTextFile");
 
     return { content: result.content };
   }
@@ -94,7 +94,7 @@ export class VfsInterceptor {
     }
 
     await this.kernel.write(params.path, params.content, this.buildContext(identity));
-    logger.debug({ path: params.path, source: resolved.source.name }, "VFS writeTextFile");
+    logger.debug({ path: params.path, mount: resolved.mount.name }, "VFS writeTextFile");
 
     return {};
   }

@@ -1,5 +1,5 @@
 /**
- * Source Validator — recursively validates all assets in a component source.
+ * Catalog Validator — recursively validates all assets in a component source.
  * Checks: manifest integrity, component schema conformance, file reference
  * existence, cross-component reference consistency, and template semantics.
  */
@@ -14,7 +14,7 @@ import {
   WorkflowDefinitionSchema,
   PresetDefinitionSchema,
   type ComponentType,
-} from "./source-schemas";
+} from "./catalog-schemas";
 import { AgentTemplateSchema, validateTemplate, type StepRegistryLike } from "@actant/domain-context";
 import { parseSkillMdContent } from "./skill-md-parser";
 
@@ -22,7 +22,7 @@ import { parseSkillMdContent } from "./skill-md-parser";
 // Types
 // ---------------------------------------------------------------------------
 
-export interface SourceValidationIssue {
+export interface CatalogValidationIssue {
   severity: "error" | "warning" | "info";
   path: string;
   component?: string;
@@ -30,12 +30,12 @@ export interface SourceValidationIssue {
   code?: string;
 }
 
-export interface SourceValidationReport {
+export interface CatalogValidationReport {
   valid: boolean;
-  sourceName: string;
+  catalogName: string;
   rootDir: string;
   summary: { pass: number; warn: number; error: number };
-  issues: SourceValidationIssue[];
+  issues: CatalogValidationIssue[];
 }
 
 export type CompatMode = "agent-skills";
@@ -44,7 +44,7 @@ export interface ValidateOptions {
   strict?: boolean;
   /** Enable compatibility checks against an external standard. */
   compat?: CompatMode;
-  /** Treat the source as a community repo — skip manifest requirement, scan for SKILL.md recursively. */
+  /** Treat the catalog as a community repo — skip manifest requirement, scan for SKILL.md recursively. */
   community?: boolean;
 }
 
@@ -63,27 +63,27 @@ const COMPONENT_DIR_SCHEMAS: Record<string, ZodSchema> = {
 const COMPONENT_DIRS: ComponentType[] = ["skills", "prompts", "mcp", "workflows", "templates", "presets"];
 
 // ---------------------------------------------------------------------------
-// SourceValidator
+// CatalogValidator
 // ---------------------------------------------------------------------------
 
-export class SourceValidator {
+export class CatalogValidator {
   private stepRegistryFactory?: () => StepRegistryLike;
 
   constructor(opts?: { stepRegistryFactory?: () => StepRegistryLike }) {
     this.stepRegistryFactory = opts?.stepRegistryFactory;
   }
   /**
-   * Validate all assets in a source directory.
+   * Validate all assets in a catalog directory.
    * Returns a report with pass/warn/error counts and detailed issues.
    */
-  async validate(rootDir: string, options?: ValidateOptions): Promise<SourceValidationReport> {
-    const issues: SourceValidationIssue[] = [];
+  async validate(rootDir: string, options?: ValidateOptions): Promise<CatalogValidationReport> {
+    const issues: CatalogValidationIssue[] = [];
     let passCount = 0;
     const validatedFiles = new Set<string>();
     const compat = options?.compat;
 
     if (options?.community) {
-      passCount += await this.validateCommunitySource(rootDir, issues, compat);
+      passCount += await this.validateCommunityCatalog(rootDir, issues, compat);
       const errorCount = issues.filter((i) => i.severity === "error").length;
       const warnCount = issues.filter((i) => i.severity === "warning").length;
       const valid = options?.strict
@@ -91,7 +91,7 @@ export class SourceValidator {
         : errorCount === 0;
       return {
         valid,
-        sourceName: rootDir.split(/[\\/]/).pop() ?? "community",
+        catalogName: rootDir.split(/[\\/]/).pop() ?? "community",
         rootDir,
         summary: { pass: passCount, warn: warnCount, error: errorCount },
         issues,
@@ -123,7 +123,7 @@ export class SourceValidator {
 
     return {
       valid,
-      sourceName: (manifest?.name as string) ?? "unknown",
+      catalogName: (manifest?.name as string) ?? "unknown",
       rootDir,
       summary: { pass: passCount, warn: warnCount, error: errorCount },
       issues,
@@ -136,7 +136,7 @@ export class SourceValidator {
 
   private async validateManifest(
     rootDir: string,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
   ): Promise<Record<string, unknown> | null> {
     const manifestPath = join(rootDir, "actant.json");
     let raw: string;
@@ -147,7 +147,7 @@ export class SourceValidator {
       issues.push({
         severity: "error",
         path: "actant.json",
-        message: "actant.json not found in source root",
+        message: "actant.json not found in catalog root",
         code: "MANIFEST_MISSING",
       });
       return null;
@@ -189,7 +189,7 @@ export class SourceValidator {
   private async verifyManifestFileRefs(
     rootDir: string,
     manifest: { components?: Record<string, string[]>; presets?: string[] },
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
   ): Promise<void> {
     const allRefs: Array<{ ref: string; section: string }> = [];
 
@@ -231,7 +231,7 @@ export class SourceValidator {
   private async validateExplicitFiles(
     rootDir: string,
     manifest: Record<string, unknown>,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
     componentNames: Map<string, Set<string>>,
     validatedFiles: Set<string>,
     compat?: CompatMode,
@@ -271,7 +271,7 @@ export class SourceValidator {
 
   private async validateComponentDirs(
     rootDir: string,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
     componentNames: Map<string, Set<string>>,
     validatedFiles: Set<string>,
     compat?: CompatMode,
@@ -297,7 +297,7 @@ export class SourceValidator {
     rootDir: string,
     dirPath: string,
     componentType: ComponentType,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
     componentNames: Map<string, Set<string>>,
     validatedFiles: Set<string>,
     compat?: CompatMode,
@@ -359,7 +359,7 @@ export class SourceValidator {
     rootDir: string,
     relPath: string,
     componentType: ComponentType,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
     componentNames: Map<string, Set<string>>,
   ): Promise<boolean> {
     const fullPath = join(rootDir, relPath);
@@ -431,7 +431,7 @@ export class SourceValidator {
   private validateTemplateComponent(
     relPath: string,
     data: unknown,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
     componentNames: Map<string, Set<string>>,
   ): boolean {
     const schemaResult = AgentTemplateSchema.safeParse(data);
@@ -470,7 +470,7 @@ export class SourceValidator {
   private async validateSkillMd(
     rootDir: string,
     relPath: string,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
     componentNames: Map<string, Set<string>>,
     parentDirName?: string,
     compat?: CompatMode,
@@ -537,7 +537,7 @@ export class SourceValidator {
   private validateAgentSkillsCompat(
     skill: { name: string; description?: string; compatibility?: string; content: string },
     relPath: string,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
     parentDirName?: string,
     raw?: string,
   ): void {
@@ -650,7 +650,7 @@ export class SourceValidator {
     rootDir: string,
     skillDir: string,
     skillName: string,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
   ): Promise<void> {
     const KNOWN_DIRS = new Set(["scripts", "references", "assets"]);
     const KNOWN_FILES = new Set(["SKILL.md", "LICENSE", "LICENSE.txt", "LICENSE.md"]);
@@ -692,7 +692,7 @@ export class SourceValidator {
     rootDir: string,
     manifest: Record<string, unknown> | null,
     componentNames: Map<string, Set<string>>,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
   ): Promise<void> {
     const presetsDir = join(rootDir, "presets");
     const presetFiles: string[] = [];
@@ -754,12 +754,12 @@ export class SourceValidator {
   }
 
   // -------------------------------------------------------------------------
-  // Community source validation (no actant.json required)
+  // Community catalog validation (no actant.json required)
   // -------------------------------------------------------------------------
 
-  private async validateCommunitySource(
+  private async validateCommunityCatalog(
     rootDir: string,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
     compat?: CompatMode,
   ): Promise<number> {
     let passCount = 0;
@@ -779,7 +779,7 @@ export class SourceValidator {
   private async scanCommunityDir(
     rootDir: string,
     dirPath: string,
-    issues: SourceValidationIssue[],
+    issues: CatalogValidationIssue[],
     componentNames: Map<string, Set<string>>,
     compat?: CompatMode,
   ): Promise<number> {

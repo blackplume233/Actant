@@ -2,7 +2,7 @@ import type {
   PluginContext,
   PluginRef,
   PluginRuntimeState,
-  SourceConfig,
+  CatalogConfig,
   SubsystemDefinition,
 } from "@actant/shared";
 import type { ContextProvider } from "../context-injector/session-context-types";
@@ -53,7 +53,7 @@ export class PluginHost {
   /** Collected registrations from plugs 4/5/6. */
   private collectedContextProviders: ContextProvider[] = [];
   private collectedSubsystems: SubsystemDefinition[] = [];
-  private collectedSources: SourceConfig[] = [];
+  private collectedCatalogs: CatalogConfig[] = [];
 
   // ── Registration ────────────────────────────────────────────
 
@@ -84,7 +84,7 @@ export class PluginHost {
    *   3. runtime.start()        — with exception isolation
    *   4. contextProviders()     — collect plug-4 registrations
    *   5. subsystems()           — collect plug-5 registrations
-   *   6. sources()              — collect plug-6 registrations
+   *   6. catalogs()             — collect plug-6 registrations
    *
    * A plugin that throws in init() or start() transitions to "error" state.
    * Remaining plugins are unaffected.
@@ -152,11 +152,11 @@ export class PluginHost {
         }
       }
 
-      // collect plug-6 sources
-      if (plugin.sources) {
+      // collect plug-6 catalogs
+      if (plugin.catalogs) {
         try {
-          const sources = plugin.sources(ctx);
-          this.collectedSources.push(...sources);
+          const catalogs = plugin.catalogs(ctx);
+          this.collectedCatalogs.push(...catalogs);
         } catch {
           // collection errors are non-fatal
         }
@@ -270,9 +270,9 @@ export class PluginHost {
     return [...this.collectedSubsystems];
   }
 
-  /** Returns all SourceConfigs collected from plug-6 registrations. */
-  getSources(): SourceConfig[] {
-    return [...this.collectedSources];
+  /** Returns all CatalogConfigs collected from plug-6 registrations. */
+  getCatalogs(): CatalogConfig[] {
+    return [...this.collectedCatalogs];
   }
 
   // ── Private ──────────────────────────────────────────────────

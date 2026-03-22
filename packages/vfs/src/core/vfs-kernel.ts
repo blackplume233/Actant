@@ -6,7 +6,7 @@ import type {
   VfsGrepOptions,
   VfsGrepResult,
   VfsResolveResult,
-  VfsSourceRegistration,
+  VfsMountRegistration,
   VfsStatResult,
   VfsTreeNode,
   VfsTreeOptions,
@@ -47,7 +47,7 @@ export class VfsKernel {
     this.middleware.push(middleware);
   }
 
-  mount(registration: VfsSourceRegistration): void {
+  mount(registration: VfsMountRegistration): void {
     this.mountTable.mount(registration);
   }
 

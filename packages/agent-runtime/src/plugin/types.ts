@@ -10,12 +10,12 @@
  *   3. hooks           — register HookEventBus listeners
  *   4. contextProviders — register ContextProvider instances
  *   5. subsystems      — register SubsystemDefinitions (wired in Step 5)
- *   6. sources         — register SourceConfigs (wired in Step 5)
+ *   6. catalogs        — register CatalogConfigs (wired in Step 5)
  */
 
 import type {
   ProjectContextConfig,
-  SourceConfig,
+  CatalogConfig,
   PluginContext,
   PluginScope,
   PluginRuntimeHooks,
@@ -85,12 +85,12 @@ export interface ActantPlugin {
    */
   subsystems?: (ctx: PluginContext) => SubsystemDefinition[];
 
-  // ── Plug 6: sources ───────────────────────────────────────
+  // ── Plug 6: catalogs ──────────────────────────────────────
   /**
-   * Return SourceConfig entries to register with SourceManager.
+   * Return CatalogConfig entries to register with CatalogManager.
    * Called once during PluginHost.start().
-   * Results are collected via PluginHost.getSources() and wired
-   * into SourceManager by AppContext in Step 5.
+   * Results are collected via PluginHost.getCatalogs() and wired
+   * into CatalogManager by AppContext in Step 5.
    */
-  sources?: (ctx: PluginContext) => SourceConfig[];
+  catalogs?: (ctx: PluginContext) => CatalogConfig[];
 }

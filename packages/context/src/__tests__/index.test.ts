@@ -3,7 +3,7 @@ import * as context from "../index";
 
 describe("@actant/context root exports", () => {
   it("keeps project-manifest APIs available", () => {
-    expect(context.createProjectManifestRegistrations).toBeTypeOf("function");
+    expect(context.createActantNamespaceConfigRegistrations).toBeTypeOf("function");
     expect(context.compileProjectPermissionRules).toBeTypeOf("function");
     expect(context.resolveProjectPermissionConfig).toBeTypeOf("function");
   });

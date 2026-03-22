@@ -3,7 +3,7 @@ import type {
   HostRuntimeState,
   HubActivateResult,
   HubStatusResult,
-  VfsSourceRegistration,
+  VfsMountRegistration,
 } from "@actant/shared";
 import { HUB_MOUNT_LAYOUT } from "@actant/shared";
 import {
@@ -21,14 +21,14 @@ export interface ActiveHubContext {
   projectName: string;
   configPath: string | null;
   configsDir: string;
-  sourceWarnings: string[];
+  catalogWarnings: string[];
   components: HubActivateResult["components"];
   mounts: HubActivateResult["mounts"];
-  sourceNames: string[];
+  mountNames: string[];
 }
 
 export class HubContextService {
-  private readonly sourceTypeRegistry = createProjectContextSourceTypeRegistry();
+  private readonly filesystemTypeRegistry = createProjectContextSourceTypeRegistry();
   private active?: ActiveHubContext;
   private activationPromise?: Promise<HubActivateResult>;
   private activationTargetRoot?: string;
@@ -79,7 +79,7 @@ export class HubContextService {
       projectName: this.active.projectName,
       configPath: this.active.configPath,
       configsDir: this.active.configsDir,
-      sourceWarnings: this.active.sourceWarnings,
+        catalogWarnings: this.active.catalogWarnings,
       components: this.active.components,
       mounts: this.active.mounts,
     };
@@ -91,7 +91,7 @@ export class HubContextService {
 
   private async doActivate(projectDir?: string): Promise<HubActivateResult> {
     const context = await loadProjectContext(projectDir);
-    const registrations = buildHubRegistrations(context, this.sourceTypeRegistry);
+    const registrations = buildHubRegistrations(context, this.filesystemTypeRegistry);
     this.appContext.vfsPermissionManager.setRules([
       ...DEFAULT_PERMISSION_RULES,
       ...createProjectContextPermissionRules(context, { project: HUB_MOUNT_LAYOUT.project }),
@@ -103,17 +103,17 @@ export class HubContextService {
       projectName: context.summary.projectName,
       configPath: context.configPath,
       configsDir: context.configsDir,
-      sourceWarnings: context.summary.sourceWarnings,
+      catalogWarnings: context.summary.catalogWarnings,
       components: context.summary.components,
       mounts: HUB_MOUNT_LAYOUT,
-      sourceNames: registrations.map((registration) => registration.name),
+      mountNames: registrations.map((registration) => registration.name),
     };
     this.active = next;
     return this.toActivateResult(next);
   }
 
-  private async replaceActiveContext(registrations: VfsSourceRegistration[]): Promise<void> {
-    for (const name of this.active?.sourceNames ?? []) {
+  private async replaceActiveContext(registrations: VfsMountRegistration[]): Promise<void> {
+    for (const name of this.active?.mountNames ?? []) {
       this.appContext.vfsRegistry.unmount(name);
     }
     for (const registration of registrations) {
@@ -127,7 +127,7 @@ export class HubContextService {
       projectName: active.projectName,
       configPath: active.configPath,
       configsDir: active.configsDir,
-      sourceWarnings: active.sourceWarnings,
+      catalogWarnings: active.catalogWarnings,
       components: active.components,
       mounts: active.mounts,
     };
@@ -137,7 +137,7 @@ export class HubContextService {
 function buildHubRegistrations(
   context: LoadedProjectContext,
   factoryRegistry: ReturnType<typeof createProjectContextSourceTypeRegistry>,
-): VfsSourceRegistration[] {
+): VfsMountRegistration[] {
   return createProjectContextRegistrations(
     context,
     factoryRegistry,

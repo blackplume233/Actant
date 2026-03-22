@@ -1,6 +1,6 @@
 import type {
-  SourceTrait,
-  VfsSourceRegistration,
+  VfsFeature,
+  VfsMountRegistration,
   VfsLifecycle,
   VfsFileContent,
   VfsEntry,
@@ -9,7 +9,7 @@ import type {
 } from "@actant/shared";
 import type { ContextSource, ContextSourceType } from "../types";
 
-const PROJECT_SOURCE_TRAITS = new Set<SourceTrait>(["persistent", "virtual"]);
+const PROJECT_SOURCE_FEATURES = new Set<VfsFeature>(["persistent", "virtual"]);
 
 /**
  * Structured project overview produced by ProjectSource implementations.
@@ -85,7 +85,7 @@ export abstract class ProjectSource implements ContextSource {
     return this.lastScanTime > since;
   }
 
-  toVfsMounts(mountPrefix: string): VfsSourceRegistration[] {
+  toVfsMounts(mountPrefix: string): VfsMountRegistration[] {
     const prefix = mountPrefix || "";
     const mountPoint = `${prefix}/project`;
 
@@ -94,7 +94,7 @@ export abstract class ProjectSource implements ContextSource {
         name: `project-${this.name}`,
         mountPoint,
         label: "project",
-        traits: new Set(PROJECT_SOURCE_TRAITS),
+        features: new Set(PROJECT_SOURCE_FEATURES),
         lifecycle: this.lifecycle,
         metadata: {
           description: `Project context: ${this.overview?.name ?? this.name}`,

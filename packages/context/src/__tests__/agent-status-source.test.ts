@@ -4,6 +4,7 @@ import { VfsRegistry } from "@actant/vfs";
 import { ContextManager } from "../manager/context-manager";
 import { AgentStatusSource } from "../sources/agent-status-source";
 import type { AgentStatusInfo, AgentStatusProvider } from "../sources/agent-status-source";
+import type { VfsResolveResult } from "@actant/shared";
 
 function createMockProvider(agents: AgentStatusInfo[]): AgentStatusProvider {
   const map = new Map(agents.map((a) => [a.name, a]));
@@ -11,6 +12,17 @@ function createMockProvider(agents: AgentStatusInfo[]): AgentStatusProvider {
     listAgents: () => agents,
     getAgent: (name) => map.get(name),
   };
+}
+
+function requireResolved(
+  resolved: VfsResolveResult | null,
+  path: string,
+): VfsResolveResult {
+  expect(resolved, `Expected VFS path to resolve: ${path}`).not.toBeNull();
+  if (!resolved) {
+    throw new Error(`Expected VFS path to resolve: ${path}`);
+  }
+  return resolved;
 }
 
 describe("AgentStatusSource", () => {
@@ -61,8 +73,8 @@ describe("AgentStatusSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/agents/");
-    const entries: VfsEntry[] = await resolved!.source.handlers.list!(resolved!.relativePath);
+    const resolved = requireResolved(registry.resolve("/agents/"), "/agents/");
+    const entries: VfsEntry[] = await resolved.mount.handlers.list!(resolved.relativePath);
 
     const names = entries.map((e) => e.name);
     expect(names).toContain("_catalog.json");
@@ -75,8 +87,8 @@ describe("AgentStatusSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/agents/_catalog.json");
-    const result: VfsFileContent = await resolved!.source.handlers.read!(resolved!.relativePath);
+    const resolved = requireResolved(registry.resolve("/agents/_catalog.json"), "/agents/_catalog.json");
+    const result: VfsFileContent = await resolved.mount.handlers.read!(resolved.relativePath);
     const catalog = JSON.parse(result.content) as Array<{ name: string; status: string }>;
 
     expect(catalog).toHaveLength(2);
@@ -91,8 +103,8 @@ describe("AgentStatusSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/agents/code-reviewer/status.json");
-    const result: VfsFileContent = await resolved!.source.handlers.read!(resolved!.relativePath);
+    const resolved = requireResolved(registry.resolve("/agents/code-reviewer/status.json"), "/agents/code-reviewer/status.json");
+    const result: VfsFileContent = await resolved.mount.handlers.read!(resolved.relativePath);
     const status = JSON.parse(result.content) as { name: string; status: string; startedAt: string };
 
     expect(status.name).toBe("code-reviewer");
@@ -105,8 +117,11 @@ describe("AgentStatusSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/agents/code-reviewer/tool-schema.json");
-    const result: VfsFileContent = await resolved!.source.handlers.read!(resolved!.relativePath);
+    const resolved = requireResolved(
+      registry.resolve("/agents/code-reviewer/tool-schema.json"),
+      "/agents/code-reviewer/tool-schema.json",
+    );
+    const result: VfsFileContent = await resolved.mount.handlers.read!(resolved.relativePath);
     const schema = JSON.parse(result.content) as {
       name: string;
       inputSchema: { properties: Record<string, unknown> };
@@ -121,15 +136,15 @@ describe("AgentStatusSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolvedWithTool = registry.resolve("/agents/code-reviewer");
-    const entriesWithTool: VfsEntry[] = await resolvedWithTool!.source.handlers.list!(
-      resolvedWithTool!.relativePath,
+    const resolvedWithTool = requireResolved(registry.resolve("/agents/code-reviewer"), "/agents/code-reviewer");
+    const entriesWithTool: VfsEntry[] = await resolvedWithTool.mount.handlers.list!(
+      resolvedWithTool.relativePath,
     );
     expect(entriesWithTool.map((e) => e.name)).toContain("tool-schema.json");
 
-    const resolvedNoTool = registry.resolve("/agents/asset-query");
-    const entriesNoTool: VfsEntry[] = await resolvedNoTool!.source.handlers.list!(
-      resolvedNoTool!.relativePath,
+    const resolvedNoTool = requireResolved(registry.resolve("/agents/asset-query"), "/agents/asset-query");
+    const entriesNoTool: VfsEntry[] = await resolvedNoTool.mount.handlers.list!(
+      resolvedNoTool.relativePath,
     );
     expect(entriesNoTool.map((e) => e.name)).not.toContain("tool-schema.json");
     expect(entriesNoTool.map((e) => e.name)).toContain("status.json");
@@ -140,9 +155,9 @@ describe("AgentStatusSource", () => {
     cm.registerSource(source);
     cm.mountSources(registry);
 
-    const resolved = registry.resolve("/agents/nonexistent/status.json");
+    const resolved = requireResolved(registry.resolve("/agents/nonexistent/status.json"), "/agents/nonexistent/status.json");
     await expect(
-      resolved!.source.handlers.read!(resolved!.relativePath),
+      resolved.mount.handlers.read!(resolved.relativePath),
     ).rejects.toThrow("Agent not found: nonexistent");
   });
 

@@ -101,9 +101,9 @@ export class SourceNodeAdapter {
   constructor(private readonly resolved: VfsResolveResult) {}
 
   async readFile(_context: VfsRequestContext): Promise<VfsFileContent> {
-    const handler = this.resolved.source.handlers.read;
+    const handler = this.resolved.mount.handlers.read;
     if (!handler) {
-      throw new Error(`Mount "${this.resolved.source.name}" does not support read`);
+      throw new Error(`Mount "${this.resolved.mount.name}" does not support read`);
     }
 
     return handler(this.resolved.relativePath);
@@ -113,9 +113,9 @@ export class SourceNodeAdapter {
     content: string | Uint8Array,
     _context: VfsRequestContext,
   ): Promise<VfsWriteResult> {
-    const handler = this.resolved.source.handlers.write;
+    const handler = this.resolved.mount.handlers.write;
     if (!handler) {
-      throw new Error(`Mount "${this.resolved.source.name}" does not support write`);
+      throw new Error(`Mount "${this.resolved.mount.name}" does not support write`);
     }
 
     const normalizedContent = typeof content === "string"
@@ -130,9 +130,9 @@ export class SourceNodeAdapter {
     endLine?: number,
     _context?: VfsRequestContext,
   ): Promise<VfsFileContent> {
-    const handler = this.resolved.source.handlers.read_range;
+    const handler = this.resolved.mount.handlers.read_range;
     if (!handler) {
-      throw new Error(`Mount "${this.resolved.source.name}" does not support read_range`);
+      throw new Error(`Mount "${this.resolved.mount.name}" does not support read_range`);
     }
 
     return handler(this.resolved.relativePath, startLine, endLine);
@@ -144,18 +144,18 @@ export class SourceNodeAdapter {
     replaceAll?: boolean,
     _context?: VfsRequestContext,
   ): Promise<VfsEditResult> {
-    const handler = this.resolved.source.handlers.edit;
+    const handler = this.resolved.mount.handlers.edit;
     if (!handler) {
-      throw new Error(`Mount "${this.resolved.source.name}" does not support edit`);
+      throw new Error(`Mount "${this.resolved.mount.name}" does not support edit`);
     }
 
     return handler(this.resolved.relativePath, oldStr, newStr, replaceAll);
   }
 
   async deleteFile(_context?: VfsRequestContext): Promise<void> {
-    const handler = this.resolved.source.handlers.delete;
+    const handler = this.resolved.mount.handlers.delete;
     if (!handler) {
-      throw new Error(`Mount "${this.resolved.source.name}" does not support delete`);
+      throw new Error(`Mount "${this.resolved.mount.name}" does not support delete`);
     }
 
     await handler(this.resolved.relativePath);
@@ -165,9 +165,9 @@ export class SourceNodeAdapter {
     _context: VfsRequestContext,
     options?: VfsListOptions,
   ): Promise<VfsEntry[]> {
-    const handler = this.resolved.source.handlers.list;
+    const handler = this.resolved.mount.handlers.list;
     if (!handler) {
-      throw new Error(`Mount "${this.resolved.source.name}" does not support list`);
+      throw new Error(`Mount "${this.resolved.mount.name}" does not support list`);
     }
 
     return handler(this.resolved.relativePath, options);
@@ -183,7 +183,7 @@ export class SourceNodeAdapter {
       };
     }
 
-    const handler = this.resolved.source.handlers.stat;
+    const handler = this.resolved.mount.handlers.stat;
     if (handler) {
       return handler(this.resolved.relativePath);
     }
@@ -212,9 +212,9 @@ export class SourceNodeAdapter {
     options?: VfsTreeOptions,
     _context?: VfsRequestContext,
   ): Promise<VfsTreeNode> {
-    const handler = this.resolved.source.handlers.tree;
+    const handler = this.resolved.mount.handlers.tree;
     if (!handler) {
-      throw new Error(`Mount "${this.resolved.source.name}" does not support tree`);
+      throw new Error(`Mount "${this.resolved.mount.name}" does not support tree`);
     }
 
     return handler(this.resolved.relativePath, options);
@@ -225,9 +225,9 @@ export class SourceNodeAdapter {
     options?: VfsGlobOptions,
     _context?: VfsRequestContext,
   ): Promise<string[]> {
-    const handler = this.resolved.source.handlers.glob;
+    const handler = this.resolved.mount.handlers.glob;
     if (!handler) {
-      throw new Error(`Mount "${this.resolved.source.name}" does not support glob`);
+      throw new Error(`Mount "${this.resolved.mount.name}" does not support glob`);
     }
 
     const scopedOptions = this.resolved.relativePath
@@ -242,9 +242,9 @@ export class SourceNodeAdapter {
     options?: VfsGrepOptions,
     _context?: VfsRequestContext,
   ): Promise<VfsGrepResult> {
-    const handler = this.resolved.source.handlers.grep;
+    const handler = this.resolved.mount.handlers.grep;
     if (!handler) {
-      throw new Error(`Mount "${this.resolved.source.name}" does not support grep`);
+      throw new Error(`Mount "${this.resolved.mount.name}" does not support grep`);
     }
 
     const scopedOptions = this.resolved.relativePath
@@ -272,9 +272,9 @@ export class SourceNodeAdapter {
     _context: VfsRequestContext,
     options?: VfsWatchOptions,
   ): Promise<AsyncIterable<VfsWatchEvent>> {
-    const handler = this.resolved.source.handlers.watch;
+    const handler = this.resolved.mount.handlers.watch;
     if (!handler) {
-      throw new Error(`Mount "${this.resolved.source.name}" does not support watch`);
+      throw new Error(`Mount "${this.resolved.mount.name}" does not support watch`);
     }
 
     const iterator = new AsyncPushIterator<VfsWatchEvent>();
@@ -300,16 +300,16 @@ export class SourceNodeAdapter {
   }
 
   async stream(_context: VfsRequestContext): Promise<AsyncIterable<VfsStreamChunk>> {
-    const streamHandler = this.resolved.source.handlers.stream;
+    const streamHandler = this.resolved.mount.handlers.stream;
     if (streamHandler) {
       return streamHandler(this.resolved.relativePath);
     }
 
-    const readable = this.resolved.source.handlers.read;
+    const readable = this.resolved.mount.handlers.read;
     const supportsSyntheticStream = this.resolved.fileSchema?.type === "stream" && readable != null;
 
     if (!supportsSyntheticStream) {
-      throw new Error(`Mount "${this.resolved.source.name}" does not support stream`);
+      throw new Error(`Mount "${this.resolved.mount.name}" does not support stream`);
     }
 
     const path = this.resolved.relativePath;

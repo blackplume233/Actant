@@ -2,7 +2,7 @@
  * M5 E2E Acceptance Tests — SourceType Registry + Trait System
  *
  * Verifies the M5 acceptance criteria for the SourceType/Trait body of work:
- *   1. VfsSourceRegistration uses traits: ReadonlySet<SourceTrait> (not sourceType)
+ *   1. VfsMountRegistration uses features: ReadonlySet<VfsFeature> (not sourceType)
  *   2. New SourceType can be added without modifying central type definitions
  *   3. All 4 built-in Sources declare their Trait sets
  *   4. Upper-layer orchestration can match Sources via trait constraints
@@ -12,13 +12,13 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import type {
   AgentInstanceMeta,
-  VfsSourceRegistration,
-  SourceTrait,
-  SourceTypeDefinition,
-  SourceRequirement,
+  VfsMountRegistration,
+  VfsFeature,
+  FilesystemTypeDefinition,
+  FilesystemRequirement,
 } from "@actant/shared";
 import { VfsKernel } from "../core/vfs-kernel";
-import { SourceTypeRegistry } from "../source-type-registry";
+import { FilesystemTypeRegistry } from "../filesystem-type-registry";
 import {
   createAgentRuntimeSource,
   createMcpRuntimeSource,
@@ -112,53 +112,53 @@ function createMinimalMcpConfigManager(): MinimalMcpConfigManager {
 }
 
 // ===========================================================================
-// 1. VfsSourceRegistration shape — traits + label replaces sourceType
+// 1. VfsMountRegistration shape — features + label replaces sourceType
 // ===========================================================================
 
-describe("M5: VfsSourceRegistration uses traits + label", () => {
-  it("AgentRuntimeSource registration has traits (Set) and label (string), no sourceType", () => {
+describe("M5: VfsMountRegistration uses features + label", () => {
+  it("AgentRuntimeSource registration has features (Set) and label (string), no sourceType", () => {
     const provider = createMinimalAgentProvider();
     const source = createAgentRuntimeSource(provider, "/agents", { type: "daemon" });
     const sourceRecord = source as unknown as Record<string, unknown>;
 
-    expect(source.traits).toBeInstanceOf(Set);
-    expect(source.traits.size).toBeGreaterThan(0);
+    expect(source.features).toBeInstanceOf(Set);
+    expect(source.features.size).toBeGreaterThan(0);
     expect(typeof source.label).toBe("string");
     expect(source.label.length).toBeGreaterThan(0);
     expect(sourceRecord["sourceType"]).toBeUndefined();
   });
 
-  it("McpRuntimeSource registration has traits + label, no sourceType", () => {
+  it("McpRuntimeSource registration has features + label, no sourceType", () => {
     const provider = createMinimalMcpRuntimeProvider();
     const source = createMcpRuntimeSource(provider, "/mcp/runtime", { type: "daemon" });
     const sourceRecord = source as unknown as Record<string, unknown>;
 
-    expect(source.traits).toBeInstanceOf(Set);
-    expect(source.traits.size).toBeGreaterThan(0);
+    expect(source.features).toBeInstanceOf(Set);
+    expect(source.features.size).toBeGreaterThan(0);
     expect(typeof source.label).toBe("string");
     expect(sourceRecord["sourceType"]).toBeUndefined();
   });
 
-  it("SkillSource registration has traits + label, no sourceType", () => {
+  it("SkillSource registration has features + label, no sourceType", () => {
     const manager = createMinimalSkillManager();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager matches internal interface structurally
     const source = createSkillSource(manager as any, "/skills", { type: "daemon" });
     const sourceRecord = source as unknown as Record<string, unknown>;
 
-    expect(source.traits).toBeInstanceOf(Set);
-    expect(source.traits.size).toBeGreaterThan(0);
+    expect(source.features).toBeInstanceOf(Set);
+    expect(source.features.size).toBeGreaterThan(0);
     expect(typeof source.label).toBe("string");
     expect(sourceRecord["sourceType"]).toBeUndefined();
   });
 
-  it("McpConfigSource registration has traits + label, no sourceType", () => {
+  it("McpConfigSource registration has features + label, no sourceType", () => {
     const manager = createMinimalMcpConfigManager();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager matches internal interface structurally
     const source = createMcpConfigSource(manager as any, "/mcp/configs", { type: "daemon" });
     const sourceRecord = source as unknown as Record<string, unknown>;
 
-    expect(source.traits).toBeInstanceOf(Set);
-    expect(source.traits.size).toBeGreaterThan(0);
+    expect(source.features).toBeInstanceOf(Set);
+    expect(source.features.size).toBeGreaterThan(0);
     expect(typeof source.label).toBe("string");
     expect(sourceRecord["sourceType"]).toBeUndefined();
   });
@@ -169,76 +169,76 @@ describe("M5: VfsSourceRegistration uses traits + label", () => {
 // ===========================================================================
 
 describe("M5: Built-in Sources declare correct Trait sets", () => {
-  it("AgentRuntimeSource has executable + streamable + ephemeral traits", () => {
+  it("AgentRuntimeSource has executable + streamable + ephemeral features", () => {
     const provider = createMinimalAgentProvider();
     const source = createAgentRuntimeSource(provider, "/agents", { type: "daemon" });
 
-    expect(source.traits.has("executable")).toBe(true);
-    expect(source.traits.has("streamable")).toBe(true);
-    expect(source.traits.has("ephemeral")).toBe(true);
+    expect(source.features.has("executable")).toBe(true);
+    expect(source.features.has("streamable")).toBe(true);
+    expect(source.features.has("ephemeral")).toBe(true);
     // must NOT have persistent (mutual exclusion with ephemeral)
-    expect(source.traits.has("persistent")).toBe(false);
+    expect(source.features.has("persistent")).toBe(false);
   });
 
-  it("McpRuntimeSource has executable + streamable + ephemeral traits", () => {
+  it("McpRuntimeSource has executable + streamable + ephemeral features", () => {
     const provider = createMinimalMcpRuntimeProvider();
     const source = createMcpRuntimeSource(provider, "/mcp/runtime", { type: "daemon" });
 
-    expect(source.traits.has("executable")).toBe(true);
-    expect(source.traits.has("streamable")).toBe(true);
-    expect(source.traits.has("ephemeral")).toBe(true);
-    expect(source.traits.has("persistent")).toBe(false);
+    expect(source.features.has("executable")).toBe(true);
+    expect(source.features.has("streamable")).toBe(true);
+    expect(source.features.has("ephemeral")).toBe(true);
+    expect(source.features.has("persistent")).toBe(false);
   });
 
-  it("SkillSource has persistent + writable traits", () => {
+  it("SkillSource has persistent + writable features", () => {
     const manager = createMinimalSkillManager();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager
     const source = createSkillSource(manager as any, "/skills", { type: "daemon" });
 
-    expect(source.traits.has("persistent")).toBe(true);
-    expect(source.traits.has("writable")).toBe(true);
+    expect(source.features.has("persistent")).toBe(true);
+    expect(source.features.has("writable")).toBe(true);
     // must NOT have ephemeral (mutual exclusion with persistent)
-    expect(source.traits.has("ephemeral")).toBe(false);
+    expect(source.features.has("ephemeral")).toBe(false);
   });
 
-  it("McpConfigSource has persistent + writable traits", () => {
+  it("McpConfigSource has persistent + writable features", () => {
     const manager = createMinimalMcpConfigManager();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager
     const source = createMcpConfigSource(manager as any, "/mcp/configs", { type: "daemon" });
 
-    expect(source.traits.has("persistent")).toBe(true);
-    expect(source.traits.has("writable")).toBe(true);
-    expect(source.traits.has("ephemeral")).toBe(false);
+    expect(source.features.has("persistent")).toBe(true);
+    expect(source.features.has("writable")).toBe(true);
+    expect(source.features.has("ephemeral")).toBe(false);
   });
 });
 
 // ===========================================================================
-// 3. SourceTypeRegistry — open registration, no central type modification
+// 3. FilesystemTypeRegistry — open registration, no central type modification
 // ===========================================================================
 
-describe("M5: SourceTypeRegistry — open registration", () => {
-  let registry: SourceTypeRegistry;
+describe("M5: FilesystemTypeRegistry — open registration", () => {
+  let registry: FilesystemTypeRegistry;
 
   beforeEach(() => {
-    registry = new SourceTypeRegistry();
+    registry = new FilesystemTypeRegistry();
   });
 
   it("registers a new SourceType and creates a Source instance", () => {
-    const mockDefinition: SourceTypeDefinition = {
+    const mockDefinition: FilesystemTypeDefinition = {
       type: "test-source",
       label: "Test Source",
-      defaultTraits: new Set(["ephemeral", "writable"] as SourceTrait[]),
+      defaultFeatures: new Set(["ephemeral", "writable"] as VfsFeature[]),
       create(_config, mountPoint, lifecycle) {
         return {
           name: "test",
           mountPoint,
-          traits: new Set(["ephemeral", "writable"] as SourceTrait[]),
+          features: new Set(["ephemeral", "writable"] as VfsFeature[]),
           label: "test-source",
           lifecycle,
           metadata: {},
           fileSchema: {},
           handlers: {},
-        } as VfsSourceRegistration;
+        } as VfsMountRegistration;
       },
     };
 
@@ -247,31 +247,31 @@ describe("M5: SourceTypeRegistry — open registration", () => {
     expect(registry.listTypes()).toContain("test-source");
   });
 
-  it("create() produces a registration with correct traits", () => {
-    const mockDefinition: SourceTypeDefinition = {
+  it("create() produces a registration with correct features", () => {
+    const mockDefinition: FilesystemTypeDefinition = {
       type: "custom-type",
       label: "Custom",
-      defaultTraits: new Set(["persistent", "watchable"] as SourceTrait[]),
+      defaultFeatures: new Set(["persistent", "watchable"] as VfsFeature[]),
       create(_config, mountPoint, lifecycle) {
         return {
           name: "custom-instance",
           mountPoint,
-          traits: new Set(["persistent", "watchable"] as SourceTrait[]),
+          features: new Set(["persistent", "watchable"] as VfsFeature[]),
           label: "custom-type",
           lifecycle,
           metadata: {},
           fileSchema: {},
           handlers: {},
-        } as VfsSourceRegistration;
+        } as VfsMountRegistration;
       },
     };
 
     registry.register(mockDefinition);
     const source = registry.create("custom-type", {}, "/custom", { type: "daemon" });
 
-    expect(source.traits).toBeInstanceOf(Set);
-    expect(source.traits.has("persistent")).toBe(true);
-    expect(source.traits.has("watchable")).toBe(true);
+    expect(source.features).toBeInstanceOf(Set);
+    expect(source.features.has("persistent")).toBe(true);
+    expect(source.features.has("watchable")).toBe(true);
     expect(source.label).toBe("custom-type");
   });
 
@@ -280,10 +280,10 @@ describe("M5: SourceTypeRegistry — open registration", () => {
   });
 
   it("validate() delegates to the SourceType's validator", () => {
-    const mockDefinition: SourceTypeDefinition = {
+    const mockDefinition: FilesystemTypeDefinition = {
       type: "validated-type",
       label: "Validated",
-      defaultTraits: new Set(["ephemeral"] as SourceTrait[]),
+      defaultFeatures: new Set(["ephemeral"] as VfsFeature[]),
       validate(config: Record<string, unknown>) {
         if (!config.required) return { valid: false, errors: ["missing required field"] };
         return { valid: true };
@@ -292,13 +292,13 @@ describe("M5: SourceTypeRegistry — open registration", () => {
         return {
           name: "validated",
           mountPoint,
-          traits: new Set(["ephemeral"] as SourceTrait[]),
+          features: new Set(["ephemeral"] as VfsFeature[]),
           label: "validated-type",
           lifecycle,
           metadata: {},
           fileSchema: {},
           handlers: {},
-        } as VfsSourceRegistration;
+        } as VfsMountRegistration;
       },
     };
 
@@ -314,54 +314,54 @@ describe("M5: SourceTypeRegistry — open registration", () => {
 });
 
 // ===========================================================================
-// 4. SourceRequirement — trait constraint matching
+// 4. FilesystemRequirement — trait constraint matching
 // ===========================================================================
 
-describe("M5: SourceRequirement trait constraint matching", () => {
-  it("satisfies() returns true when all required traits are present", () => {
+describe("M5: FilesystemRequirement trait constraint matching", () => {
+  it("satisfies() returns true when all required features are present", () => {
     const source = {
-      traits: new Set(["executable", "streamable", "ephemeral", "virtual"] as SourceTrait[]),
+      features: new Set(["executable", "streamable", "ephemeral", "virtual"] as VfsFeature[]),
     };
 
-    const requirement: SourceRequirement = {
+    const requirement: FilesystemRequirement = {
       required: ["executable", "streamable"],
     };
 
-    expect(SourceTypeRegistry.satisfies(source, requirement)).toBe(true);
+    expect(FilesystemTypeRegistry.satisfies(source, requirement)).toBe(true);
   });
 
   it("satisfies() returns false when a required trait is missing", () => {
     const source = {
-      traits: new Set(["ephemeral", "writable"] as SourceTrait[]),
+      features: new Set(["ephemeral", "writable"] as VfsFeature[]),
     };
 
-    const requirement: SourceRequirement = {
+    const requirement: FilesystemRequirement = {
       required: ["persistent", "writable"],
     };
 
-    expect(SourceTypeRegistry.satisfies(source, requirement)).toBe(false);
+    expect(FilesystemTypeRegistry.satisfies(source, requirement)).toBe(false);
   });
 
   it("satisfies() with empty required always returns true", () => {
     const source = {
-      traits: new Set([] as SourceTrait[]),
+      features: new Set([] as VfsFeature[]),
     };
 
-    const requirement: SourceRequirement = { required: [] };
-    expect(SourceTypeRegistry.satisfies(source, requirement)).toBe(true);
+    const requirement: FilesystemRequirement = { required: [] };
+    expect(FilesystemTypeRegistry.satisfies(source, requirement)).toBe(true);
   });
 
-  it("optional traits do not affect matching", () => {
+  it("optional features do not affect matching", () => {
     const source = {
-      traits: new Set(["persistent", "writable"] as SourceTrait[]),
+      features: new Set(["persistent", "writable"] as VfsFeature[]),
     };
 
-    const requirement: SourceRequirement = {
+    const requirement: FilesystemRequirement = {
       required: ["persistent"],
       optional: ["watchable"],
     };
 
-    expect(SourceTypeRegistry.satisfies(source, requirement)).toBe(true);
+    expect(FilesystemTypeRegistry.satisfies(source, requirement)).toBe(true);
   });
 });
 
@@ -370,23 +370,23 @@ describe("M5: SourceRequirement trait constraint matching", () => {
 // ===========================================================================
 
 describe("M5: Trait mutual exclusion validation", () => {
-  it("SourceTypeRegistry rejects registration with both persistent and ephemeral", () => {
-    const registry = new SourceTypeRegistry();
-    const conflicting: SourceTypeDefinition = {
+  it("FilesystemTypeRegistry rejects registration with both persistent and ephemeral", () => {
+    const registry = new FilesystemTypeRegistry();
+    const conflicting: FilesystemTypeDefinition = {
       type: "conflicting",
       label: "Conflicting",
-      defaultTraits: new Set(["persistent", "ephemeral"] as SourceTrait[]),
+      defaultFeatures: new Set(["persistent", "ephemeral"] as VfsFeature[]),
       create(_config, mountPoint, lifecycle) {
         return {
           name: "conflict",
           mountPoint,
-          traits: new Set(["persistent", "ephemeral"] as SourceTrait[]),
+          features: new Set(["persistent", "ephemeral"] as VfsFeature[]),
           label: "conflicting",
           lifecycle,
           metadata: {},
           fileSchema: {},
           handlers: {},
-        } as VfsSourceRegistration;
+        } as VfsMountRegistration;
       },
     };
 
@@ -399,13 +399,13 @@ describe("M5: Trait mutual exclusion validation", () => {
 // ===========================================================================
 
 describe("M5: Old VfsSourceType removed from shared types", () => {
-  it("VfsSourceRegistration interface does not have sourceType field", () => {
+  it("VfsMountRegistration interface does not have sourceType field", () => {
     const provider = createMinimalAgentProvider();
     const source = createAgentRuntimeSource(provider, "/agents", { type: "daemon" });
 
     const keys = Object.keys(source);
     expect(keys).not.toContain("sourceType");
-    expect(keys).toContain("traits");
+    expect(keys).toContain("features");
     expect(keys).toContain("label");
   });
 });

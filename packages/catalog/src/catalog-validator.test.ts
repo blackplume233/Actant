@@ -2,16 +2,16 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { join } from "node:path";
 import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { SourceValidator } from "./source-validator";
+import { CatalogValidator } from "./catalog-validator";
 import { parseSkillMdContent } from "./skill-md-parser";
 
-describe("SourceValidator", () => {
+describe("CatalogValidator", () => {
   let tmpDir: string;
-  let validator: SourceValidator;
+  let validator: CatalogValidator;
 
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "source-validate-"));
-    validator = new SourceValidator();
+    validator = new CatalogValidator();
   });
 
   afterEach(async () => {
@@ -94,7 +94,7 @@ describe("SourceValidator", () => {
       const report = await validator.validate(tmpDir);
 
       expect(report.valid).toBe(true);
-      expect(report.sourceName).toBe("test-hub");
+      expect(report.catalogName).toBe("test-hub");
       expect(report.summary.error).toBe(0);
       expect(report.issues.filter((i) => i.severity === "error")).toHaveLength(0);
     });
@@ -104,7 +104,7 @@ describe("SourceValidator", () => {
       const report = await validator.validate(examplesDir);
 
       expect(report.valid).toBe(true);
-      expect(report.sourceName).toBe("actant-hub");
+      expect(report.catalogName).toBe("actant-hub");
       expect(report.summary.error).toBe(0);
     });
   });

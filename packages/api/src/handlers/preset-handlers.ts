@@ -20,7 +20,7 @@ async function handlePresetList(
   ctx: AppContext,
 ): Promise<PresetDefinition[]> {
   const { packageName } = params as unknown as PresetListParams;
-  return ctx.sourceManager.listPresets(packageName);
+  return ctx.catalogManager.listPresets(packageName);
 }
 
 async function handlePresetShow(
@@ -28,7 +28,7 @@ async function handlePresetShow(
   ctx: AppContext,
 ): Promise<PresetDefinition> {
   const { qualifiedName } = params as unknown as PresetShowParams;
-  const preset = ctx.sourceManager.getPreset(qualifiedName);
+  const preset = ctx.catalogManager.getPreset(qualifiedName);
   if (!preset) {
     throw new ConfigNotFoundError(`Preset "${qualifiedName}" not found`);
   }
@@ -44,5 +44,5 @@ async function handlePresetApply(
   if (!template) {
     throw new ConfigNotFoundError(`Template "${templateName}" not found`);
   }
-  return ctx.sourceManager.applyPreset(qualifiedName, template);
+  return ctx.catalogManager.applyPreset(qualifiedName, template);
 }

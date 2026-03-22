@@ -2,18 +2,18 @@ import { Command } from "commander";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 
-export function createSourceRemoveCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
+export function createCatalogRemoveCommand(client: RpcClient, printer: CliPrinter = defaultPrinter): Command {
   return new Command("remove")
     .alias("rm")
-    .description("Remove a registered source")
-    .argument("<name>", "Source name")
+    .description("Remove a registered catalog")
+    .argument("<name>", "Catalog name")
     .action(async (name: string) => {
       try {
-        const result = await client.call("source.remove", { name });
+        const result = await client.call("catalog.remove", { name });
         if (result.success) {
-          printer.success(`Source "${name}" removed.`);
+          printer.success(`Catalog "${name}" removed.`);
         } else {
-          printer.warn(`Source "${name}" not found.`);
+          printer.warn(`Catalog "${name}" not found.`);
         }
       } catch (err) {
         presentError(err, printer);

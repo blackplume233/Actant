@@ -2,7 +2,12 @@
   "version": 1,
   "name": "project-context-discovery",
   "description": "Minimal fixture for validating project-context discovery.",
-  "configsDir": "configs",
+  "mounts": [
+    { "type": "hostfs", "path": "/workspace" },
+    { "type": "hostfs", "path": "/config" },
+    { "type": "runtimefs", "path": "/agents" },
+    { "type": "runtimefs", "path": "/mcp/runtime" }
+  ],
   "entrypoints": {
     "knowledge": [
       "PROJECT_CONTEXT.md"

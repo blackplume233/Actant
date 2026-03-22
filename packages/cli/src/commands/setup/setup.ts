@@ -9,7 +9,7 @@ import {
   chooseHome,
   ensureDirectoryStructure,
   configureProvider,
-  configureSource,
+  configureCatalog,
   materializeAgent,
   configureAutostart,
   helloWorld,
@@ -21,7 +21,7 @@ export function createSetupCommand(printer: CliPrinter = defaultPrinter): Comman
     .description("Interactive setup wizard — configure Actant step by step")
     .option("--skip-home", "Skip work directory selection")
     .option("--skip-provider", "Skip model provider configuration")
-    .option("--skip-source", "Skip component source configuration")
+    .option("--skip-catalog", "Skip component catalog configuration")
     .option("--skip-agent", "Skip agent creation")
     .option("--skip-autostart", "Skip auto-start configuration")
     .option("--skip-hello", "Skip hello world verification")
@@ -29,7 +29,7 @@ export function createSetupCommand(printer: CliPrinter = defaultPrinter): Comman
     .action(async (opts: {
       skipHome?: boolean;
       skipProvider?: boolean;
-      skipSource?: boolean;
+      skipCatalog?: boolean;
       skipAgent?: boolean;
       skipAutostart?: boolean;
       skipHello?: boolean;
@@ -64,7 +64,7 @@ export function createSetupCommand(printer: CliPrinter = defaultPrinter): Comman
         }
 
         // Steps 3-6 need the daemon running
-        const daemonNeeded = !opts.skipSource || !opts.skipAgent || !opts.skipHello;
+        const daemonNeeded = !opts.skipCatalog || !opts.skipAgent || !opts.skipHello;
         let client: RpcClient | undefined;
         let daemonStartedBySetup = false;
 
@@ -90,8 +90,8 @@ export function createSetupCommand(printer: CliPrinter = defaultPrinter): Comman
         }
 
         // Step 3: Configure Source
-        if (!opts.skipSource && client) {
-          await configureSource(printer, client);
+        if (!opts.skipCatalog && client) {
+          await configureCatalog(printer, client);
         }
 
         // Step 4: Materialize Agent

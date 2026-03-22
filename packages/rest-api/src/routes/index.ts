@@ -5,7 +5,7 @@ import { registerEventRoutes } from "./events";
 import { registerCanvasRoutes } from "./canvas";
 import { registerStatusRoutes } from "./status";
 import { registerDomainRoutes } from "./domain";
-import { registerSourceRoutes } from "./sources";
+import { registerCatalogRoutes } from "./catalogs";
 import { registerSessionRoutes } from "./sessions";
 import { registerWebhookRoutes } from "./webhooks";
 
@@ -16,7 +16,7 @@ export function registerAllRoutes(router: Router): void {
   registerEventRoutes(router);
   registerCanvasRoutes(router);
   registerDomainRoutes(router);
-  registerSourceRoutes(router);
+  registerCatalogRoutes(router);
   registerSessionRoutes(router);
   registerWebhookRoutes(router);
 }

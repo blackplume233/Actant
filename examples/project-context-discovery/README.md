@@ -4,7 +4,7 @@ This directory is the smallest repository fixture used to validate issue `#298`.
 
 It intentionally contains only:
 
-- `actant.project.json`
+- `actant.namespace.json`
 - one knowledge entry file
 - one skill
 - one prompt

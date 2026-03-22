@@ -1,7 +1,7 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, extname } from "node:path";
 import type {
-  LocalSourceConfig,
+  LocalCatalogConfig,
   PackageManifest,
   PresetDefinition,
   SkillDefinition,
@@ -12,16 +12,16 @@ import type {
   AgentTemplate,
 } from "@actant/shared";
 import { createLogger } from "@actant/shared";
-import type { ComponentSource, FetchResult } from "./component-source";
+import type { CatalogProvider, FetchResult } from "./component-catalog";
 
-const logger = createLogger("local-source");
+const logger = createLogger("local-catalog");
 
-export class LocalSource implements ComponentSource {
+export class LocalCatalog implements CatalogProvider {
   readonly type = "local";
   readonly packageName: string;
-  readonly config: LocalSourceConfig;
+  readonly config: LocalCatalogConfig;
 
-  constructor(packageName: string, config: LocalSourceConfig) {
+  constructor(packageName: string, config: LocalCatalogConfig) {
     this.packageName = packageName;
     this.config = config;
   }
@@ -39,7 +39,7 @@ export class LocalSource implements ComponentSource {
   }
 
   async dispose(): Promise<void> {
-    // local source has no cache to clean up
+    // local catalog has no cache to clean up
   }
 
   private async loadPackage(): Promise<FetchResult> {

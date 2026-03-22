@@ -15,7 +15,7 @@ Actant 当前以 `ContextFS` 为唯一有效产品基线：把上下文统一为
 当前范围说明：
 
 - M0-M6 已完成，当前主线进入 M7 `Mount Namespace` 配置面与 `filesystem type` 闭环，并为 M8 V1 Freeze 做验证准备。
-- 当前默认配置入口是 `actant.namespace.json`；`actant.project.json` 仅保留兼容输入。
+- 当前默认且唯一运行时配置入口是 `actant.namespace.json`。
 - 当前活跃模型只围绕 `mount namespace`、`mount table`、`filesystem type`、`mount instance`、`node type` 和 V1 规定的操作面展开。
 - V1 操作面固定为 `read`、`write`、`list`、`stat`、`watch`、`stream`。
 - 里程碑进度与状态只在 `docs/planning/contextfs-roadmap.md` 中原子维护。

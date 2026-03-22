@@ -2,9 +2,9 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { existsSync } from "node:fs";
 import {
-  type SourceTrait,
-  type SourceTypeDefinition,
-  type VfsSourceRegistration,
+  type VfsFeature,
+  type FilesystemTypeDefinition,
+  type VfsMountRegistration,
   type VfsLifecycle,
   type VfsHandlerMap,
   type VfsFileContent,
@@ -19,7 +19,7 @@ export interface ConfigSourceConfig {
   namespace?: string;
 }
 
-const CONFIG_TRAITS = new Set<SourceTrait>(["persistent", "writable"]);
+const CONFIG_TRAITS = new Set<VfsFeature>(["persistent", "writable"]);
 
 function createHandlers(configDir: string): VfsHandlerMap {
   const handlers: VfsHandlerMap = {};
@@ -89,12 +89,12 @@ function createHandlers(configDir: string): VfsHandlerMap {
   return handlers;
 }
 
-export const configSourceFactory: SourceTypeDefinition<ConfigSourceConfig> = {
+export const configSourceFactory: FilesystemTypeDefinition<ConfigSourceConfig> = {
   type: "config",
   label: "config",
-  defaultTraits: CONFIG_TRAITS,
+  defaultFeatures: CONFIG_TRAITS,
 
-  create(spec: ConfigSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsSourceRegistration {
+  create(spec: ConfigSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsMountRegistration {
     const configDir = spec.namespace
       ? path.resolve(process.env["ACTANT_HOME"] ?? path.join(process.env["HOME"] ?? "~", ".actant"), "config", spec.namespace)
       : path.resolve(process.env["ACTANT_HOME"] ?? path.join(process.env["HOME"] ?? "~", ".actant"), "config");
@@ -105,7 +105,7 @@ export const configSourceFactory: SourceTypeDefinition<ConfigSourceConfig> = {
       name: "",
       mountPoint,
       label: "config",
-      traits: new Set(CONFIG_TRAITS),
+      features: new Set(CONFIG_TRAITS),
       lifecycle,
       metadata: {
         description: `Config namespace: ${spec.namespace ?? "root"}`,
