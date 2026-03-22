@@ -32,6 +32,7 @@ Actant 当前只承认一套新的顶层叙述：
 - 不允许把历史迁移说明和当前规范并列为默认入口
 - 所有 ship / merge 级交付必须先产出 changelog draft，再汇总正式 release changelog
 - `docs/planning/` 下仍作为真相源的 roadmap 必须使用 checklist / todolist 主格式
+- 项目进度标注必须只在一个活跃文件里做原子维护；当前唯一真相源为 `docs/planning/contextfs-roadmap.md`
 
 ---
 
@@ -105,6 +106,7 @@ Actant 当前只承认一套新的顶层叙述：
 - `task.json` 最小字段契约：`id`、`name`、`title`、`status`、`dev_type`、`branch`、`base_branch`、`current_phase`、`createdAt`、`completedAt`
 - changelog draft 交付契约：`docs/agent/changelog-drafts/`
 - active roadmap 结构契约：`docs/planning/*.md` 使用 checklist/todolist
+- 项目进度唯一文件契约：`docs/planning/contextfs-roadmap.md` 是唯一 live progress truth file
 
 入口：
 
@@ -135,3 +137,4 @@ Actant 当前只承认一套新的顶层叙述：
 - 是否在 spec、design、roadmap 三层同步修改
 - 是否保留了对应 changelog draft，并确保 release changelog 仍由 stage 汇总生成
 - 是否把活跃 roadmap 保持为 checklist/todolist，而不是叙事式状态说明
+- 是否把 live progress 只维护在 `docs/planning/contextfs-roadmap.md`，而没有在其他入口文件重复标注同一里程碑状态

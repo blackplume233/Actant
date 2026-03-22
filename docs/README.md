@@ -47,8 +47,9 @@
 
 规则：
 
-- 这两个活跃 roadmap 必须保持 checklist / todolist 结构
-- 里程碑完成态、进行中、待开始、取消都要用显式 todo 标记表达
+- `docs/planning/contextfs-roadmap.md` 是唯一 live progress truth file，后续项目进度标注只在这里做原子维护
+- `docs/planning/roadmap.md` 只保留入口、范围和规则说明，不再重复里程碑进度状态
+- 唯一进度文件中的里程碑完成态、进行中、待开始、取消都要用显式 todo 标记表达
 - 历史分析或回顾不要写回活跃 roadmap，转移到 `docs/history/` 或 `docs/agent/`
 
 ### `site/`

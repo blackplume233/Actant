@@ -15,7 +15,7 @@ When you learn something valuable (from debugging, implementing, or discussion),
 | **Hit a gotcha** | Learned that X must be done before Y | Relevant spec + "Common Mistakes" section |
 | **Established a convention** | Team agreed on naming pattern | `quality-guidelines.md` |
 | **Cross-layer insight** | Understood how data flows between layers | `guides/cross-layer-thinking-guide.md` |
-| **Workflow / delivery rule** | Added changelog draft gate or roadmap format rule | `.trellis/workflow.md` + `.trellis/spec/index.md` + affected docs entry |
+| **Workflow / delivery rule** | Added changelog draft gate, roadmap format rule, or single-file progress rule | `.trellis/workflow.md` + `.trellis/spec/index.md` + affected docs entry |
 
 ---
 
@@ -93,6 +93,8 @@ Current hard rules:
 - ship / merge 级交付必须先保留 `docs/agent/changelog-drafts/` draft
 - draft 文件名必须为 `YYYY-MM-DD-<agent>-<topic>.md`
 - active roadmap must use checklist / todolist format
+- live project progress must be atomically maintained in `docs/planning/contextfs-roadmap.md` only
+- `docs/planning/roadmap.md` and similar entry docs may summarize scope, but must not duplicate milestone status checkboxes
 
 ---
 

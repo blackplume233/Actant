@@ -36,6 +36,7 @@ Current repository policy:
 - a ship is only complete when the local repository context is back on `master`/`main`
 - every ship / merge delivery must preserve a changelog draft before release aggregation
 - active roadmap files under `docs/planning/` must use checklist / todolist structure
+- project progress status must be atomically maintained in one active file only: `docs/planning/contextfs-roadmap.md`
 
 ## Session Start
 
@@ -124,6 +125,8 @@ Required draft contract:
 - Milestones and phases must express status with todo markers, not long narrative status paragraphs
 - Historical reviews and analysis belong in `docs/history/` or `docs/agent/`, not in active roadmap files
 - If roadmap state says a milestone is done, corresponding active tasks must be completed or archived
+- Progress annotations must have a single atomic truth file. For this repo, only `docs/planning/contextfs-roadmap.md` may carry live milestone progress status.
+- Other planning entry docs may link, explain scope, or define rules, but must not duplicate live progress checkboxes for the same milestones.
 
 ## Working Rule
 

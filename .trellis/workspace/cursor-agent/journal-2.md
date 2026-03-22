@@ -496,7 +496,7 @@ CODEX_LOOP_CHECK_PASS```
   - 修复 `.trellis/issues/0278-faq.md` 中两处损坏字符，保留原问题语义不变。
 - 检查结果：
   - `python3 /Users/muyuli/.codex/skills/governance-context-sync/scripts/scan_governance_context.py --root /Users/muyuli/Workspace/AgentCraft`：0 findings。
-  - `rg -n "鈥|寮€|韬唤|銆|�" ...`：未再命中。
+  - `rg -n "<known-mojibake-tokens>|<replacement-character>" ...`：未再命中。
   - `rg -n "trellis-create-changelog-draft|changelog draft|ship / create-pr" .cursor/commands/trellis-onboard.md`：已命中新增门禁说明。
 - 巡回筛查结论：
   - 本轮治理目标已收口，没有新增高风险治理缺口。
