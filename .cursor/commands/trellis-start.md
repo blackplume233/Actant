@@ -111,10 +111,14 @@ bash ./.trellis/scripts/task.sh create "<title>" --slug <name>
 #### Step 3: Complete
 
 1. Verify typecheck and lint pass `[AI]`
-2. Remind user to test
-3. Remind user to commit
-4. Remind user to run `/trellis-record-session` `[USER]`
-5. Archive task `[AI]`:
+2. If the work is heading to ship / merge delivery, create the changelog draft before handoff `[AI]`
+   ```bash
+   ./.trellis/scripts/create-changelog-draft.sh --topic <topic> --title "<Title>"
+   ```
+3. Remind user to test
+4. Remind user to commit
+5. Remind user to run `/trellis-record-session` and include verification results plus draft path `[USER]`
+6. Archive task `[AI]`:
    ```bash
    bash ./.trellis/scripts/task.sh archive <task-name>
    ```
@@ -134,6 +138,7 @@ The following slash commands are for users (not AI):
 | `/trellis-check-backend` | Check backend code |
 | `/trellis-check-cross-layer` | Cross-layer verification |
 | `/trellis-finish-work` | Pre-commit checklist |
+| `/trellis-create-changelog-draft` | Create the required delivery draft |
 | `/trellis-record-session` | Record session progress |
 
 ---
@@ -153,4 +158,4 @@ The following slash commands are for users (not AI):
 
 **IMPORTANT**: When a task or session is completed, remind the user:
 
-> Before ending this session, please run `/trellis-record-session` to record what we accomplished.
+> Before ending this session, create the required changelog draft for ship / merge work and run `/trellis-record-session` to record what we accomplished.

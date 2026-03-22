@@ -106,9 +106,9 @@ git diff --name-only
 
 ```
 Development Flow:
-  Write code -> Test -> /trellis-finish-work -> git commit -> /trellis-record-session
-                          |                              |
-                   Ensure completeness              Record progress
+  Write code -> Test -> /trellis-finish-work -> /trellis-create-changelog-draft -> git commit -> /trellis-record-session
+                          |                              |                                  |
+                   Ensure completeness           Prepare delivery draft                Record progress
                    
 Debug Flow:
   Hit bug -> Fix -> /trellis-break-loop -> Knowledge capture
@@ -117,6 +117,7 @@ Debug Flow:
 ```
 
 - `/trellis-finish-work` - Check work completeness (this command)
+- `/trellis-create-changelog-draft` - Create the required delivery draft before ship / create-pr
 - `/trellis-record-session` - Record session and commits
 - `/trellis-break-loop` - Deep analysis after debugging
 

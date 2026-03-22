@@ -252,19 +252,20 @@ gh pr create --base <base-branch> --head <current-branch> --title "<title>" --bo
 
 ```
 开发流程:
-  /trellis-plan-start → 编写代码 → 测试 → /trellis-create-pr → PR Review
-                                              |
-                                    ┌─────────┼──────────┬──────────────┐
-                                    ↓         ↓          ↓              ↓
-                              Phase 0:   Phase 1:   Phase 2:       Phase 3:
-                              Context    Rebase     Validate       Push & Create PR
-                                                    (简化版 Ship)
+  /trellis-plan-start → 编写代码 → 测试 → /trellis-create-changelog-draft → /trellis-create-pr → PR Review
+                                                               |                                  |
+                                                    先准备交付 draft                     ┌────────┼──────────┬──────────────┐
+                                                                                         ↓        ↓          ↓              ↓
+                                                                                   Phase 0:   Phase 1:   Phase 2:       Phase 3:
+                                                                                   Context    Rebase     Validate       Push & Create PR
+                                                                                                         (简化版 Ship)
 ```
 
 | 命令 | 关系 |
 |------|------|
 | `/trellis-ship` | 本命令复用其 Phase 1 (Review) 的核心检查项 |
 | `/trellis-finish-work` | 本命令的 Phase 2 是其简化版 |
+| `/trellis-create-changelog-draft` | 上游：先生成 changelog draft，缺失时本命令必须失败 |
 | `/trellis-handle-pr` | 下游：PR 创建后由此命令处理合并 |
 | `/trellis-plan-start` | 上游：规划并实现功能后执行本命令创建 PR |
 

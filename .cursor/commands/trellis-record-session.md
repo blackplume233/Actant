@@ -49,6 +49,12 @@ Session summary should preserve the same delivery facts used by changelog drafts
 - 关联 PR / commit / issue
 - 如本轮是 ship / merge 级交付，补充对应 `docs/agent/changelog-drafts/*.md` 路径
 
+If this round is preparing a ship / merge delivery and the draft does not exist yet, create it first:
+
+```bash
+./.trellis/scripts/create-changelog-draft.sh --topic <topic> --title "<Title>"
+```
+
 ---
 
 ## Archive Completed Task (if any)

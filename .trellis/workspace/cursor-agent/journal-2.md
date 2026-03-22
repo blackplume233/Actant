@@ -435,3 +435,46 @@ CODEX_LOOP_CHECK_PASS```
 ### 下一步
 
 - 参考本轮检查结果继续推进
+
+## 会话 12: Trellis 治理巡检第 3 轮
+
+**日期**: 2026-03-22
+**任务**: Trellis 治理巡检第 3 轮
+
+### 摘要
+
+补齐 changelog draft 入口闭环，修正治理测试的分支回退取样，并完成三轮命令文档一致性筛查。
+
+### 详细记录
+
+- 变更摘要：
+  - 新增 `./.trellis/scripts/create-changelog-draft.sh` 的流程入口文档，覆盖 `/trellis-start`、`/trellis-plan-start`、`/trellis-finish-work`、`/trellis-create-pr`、`/trellis-ship`、`/trellis-record-session`。
+  - 修正 `packages/shared/src/__tests__/trellis-governance.test.ts`，把默认分支回退测试改为使用独立临时仓库，并避免 `bash -lc` 带来的登录 shell 干扰。
+  - 保持 `docs/agent/README.md` 与命令文档口径一致，明确 changelog draft 是强制中间件。
+- 检查结果：
+  - `pnpm exec vitest run packages/shared/src/__tests__/trellis-governance.test.ts --configLoader runner`：4/4 通过。
+  - `bash -n .trellis/scripts/create-changelog-draft.sh`：通过。
+  - `bash -n .trellis/scripts/common/changelog-draft.sh`：通过。
+  - `node --check .agents/skills/issue-manager/scripts/issue-cli.mjs`：通过。
+  - `bash ./.trellis/scripts/task.sh list`：active tasks 为 0。
+  - `bash ./.trellis/scripts/get-context.sh`：无 active task，当前仍在 `master`。
+- 巡回筛查结论：
+  - 高风险治理缺口已基本清空。
+  - 本轮新增发现并修复的中等缺口，是 `finish-work / create-pr / ship` 关系图里未显式挂出 `trellis-create-changelog-draft`。
+  - 当前剩余扫描命中主要为历史 issue 文案、业务设计文档中的 `optional` 正常语义、以及 QA cache，不属于本次治理残留。
+
+### Git 提交
+
+（无提交，本次为过程记录）
+
+### 检查与测试
+
+- [OK] 自动记录，详见上方检查结果
+
+### 状态
+
+[OK] **已记录**
+
+### 下一步
+
+- 参考本轮检查结果继续推进

@@ -26,6 +26,12 @@ Use `YYYY-MM-DD-agent-topic.md` format. Include the agent identifier (e.g., `cur
   - `## 验证结果`
   - `## 关联 PR / Commit / Issue`
 
+推荐入口：
+
+```bash
+./.trellis/scripts/create-changelog-draft.sh --topic <topic> --title "<Title>"
+```
+
 ## Important
 
 Content in this directory is **not authoritative**. It reflects the AI agent's understanding at a point in time and may contain errors or outdated assumptions. Always cross-reference with `docs/human/` and `docs/decisions/` for ground truth.

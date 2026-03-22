@@ -29,6 +29,7 @@ ship / merge 级交付必须先保留 changelog draft，采用“先草稿后汇
 
 - 目录：`docs/agent/changelog-drafts/`
 - 文件名：`YYYY-MM-DD-<agent>-<topic>.md`
+- 推荐先执行：`./.trellis/scripts/create-changelog-draft.sh --topic <topic> --title "<Title>"`
 
 最小结构：
 
@@ -231,21 +232,22 @@ gh issue view <N> --json state,closedAt
 
 ```
 开发流程:
-  编写代码 → 测试 → /trellis-ship → /trellis-record-session
-                      |
-          ┌───────────┼──────────────┬────────────┐
-          ↓           ↓              ↓            ↓
-   Phase 1: Review    Phase 2:     Phase 3:    Phase 4:
-   ├─ 代码质量        Commit       Push        Issue Sync
-   ├─ 模式扫描
-   └─ Spec 同步 (❌ 阻断)
-       ├─ config-spec.md
-       └─ api-contracts.md
+  编写代码 → 测试 → /trellis-create-changelog-draft → /trellis-ship → /trellis-record-session
+                                             |                     |
+                                   先准备交付 draft        ┌────────┼──────────────┬────────────┐
+                                                           ↓        ↓              ↓            ↓
+                                                    Phase 1: Review  Phase 2:     Phase 3:    Phase 4:
+                                                    ├─ 代码质量      Commit       Push        Issue Sync
+                                                    ├─ 模式扫描
+                                                    └─ Spec 同步 (❌ 阻断)
+                                                        ├─ config-spec.md
+                                                        └─ api-contracts.md
 ```
 
 | 命令 | 职责 |
 |------|------|
 | `/trellis-finish-work` | 审查清单（被本命令调用） |
+| `/trellis-create-changelog-draft` | 生成 ship / create-pr 必需的交付草稿 |
 | `/trellis-ship` | 审查 + Spec 同步 + 提交 + 推送 + Issue 同步（本命令） |
 | `/trellis-record-session` | 记录会话和进度 |
 | `/trellis-update-spec` | 更新规范文档 |

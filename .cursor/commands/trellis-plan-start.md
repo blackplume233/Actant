@@ -312,6 +312,7 @@ After all todos are completed:
 ```
 
 3. Remind user to:
+   - Create `/trellis-create-changelog-draft` output before ship / merge handoff
    - Test the changes
    - Commit when ready
    - Run `/trellis-record-session`
@@ -338,6 +339,7 @@ If user returns and mentions an existing plan:
 | `/trellis-plan-start` | Plan-first session (this command) |
 | `/trellis-start` | Quick start without planning |
 | `/trellis-finish-work` | Pre-commit checklist |
+| `/trellis-create-changelog-draft` | Create the required delivery draft |
 | `/trellis-record-session` | Record session progress |
 
 ### AI Scripts `[AI]`
