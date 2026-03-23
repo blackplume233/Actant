@@ -1,6 +1,0 @@
-{
-  "name": "project-context-discovery",
-  "description": "Constrain a backend to discover context from project files only.",
-  "content": "Summarize the project using declared project-context assets only. Do not rely on oral context or prior memory.",
-  "variables": []
-}
