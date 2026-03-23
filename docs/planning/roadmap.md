@@ -4,14 +4,16 @@
 
 ## Current Scope
 
-- ContextFS 文档与实现基线
-- M7 Mount Namespace 配置面 + Filesystem Type 闭环
-- M8 V1 Freeze
+- ContextFS V1 frozen baseline maintenance
+- hosted 边界与实现链守护：`bridge -> RPC -> daemon`、`daemon -> plugin -> provider -> VFS`
+- 下一阶段 roadmap 规划入口
 
 ## Progress Source
 
 - Live progress truth file: [ContextFS Roadmap](./contextfs-roadmap.md)
+- Active cleanup TODO file: [Workspace Normalization To-Do](./workspace-normalization-todo.md)
 - 所有里程碑状态、阶段推进、完成勾选、取消标记只在该文件原子维护
+- cleanup / normalization backlog 只在 TODO 文件维护，不在本页复制状态清单
 - 其他文档引用进度时，使用链接或文字总结，不重复维护同一组状态标记
 
 ## Planning Rules

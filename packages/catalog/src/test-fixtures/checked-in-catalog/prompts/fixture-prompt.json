@@ -1,0 +1,6 @@
+{
+  "name": "fixture-prompt",
+  "version": "1.0.0",
+  "description": "A checked-in catalog fixture prompt.",
+  "content": "Respond using the checked-in catalog fixture."
+}

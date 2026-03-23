@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "name": "project-context-discovery",
+  "description": "Minimal checked-in namespace example used by standalone context tests.",
+  "mounts": [
+    {
+      "type": "hostfs",
+      "path": "/workspace",
+      "options": {
+        "hostPath": "."
+      }
+    },
+    {
+      "type": "hostfs",
+      "path": "/config",
+      "options": {
+        "hostPath": "configs"
+      }
+    }
+  ],
+  "entrypoints": {
+    "readFirst": ["PROJECT_CONTEXT.md"],
+    "knowledge": ["PROJECT_CONTEXT.md"]
+  }
+}

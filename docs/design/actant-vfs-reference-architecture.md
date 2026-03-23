@@ -1,7 +1,7 @@
 # Actant VFS Reference Architecture
 
 > Status: Draft
-> Date: 2026-03-22
+> Date: 2026-03-23
 > Scope: 实现层内核架构（Linux 语义）
 > Related: [ContextFS V1 Linux Terminology](./contextfs-v1-linux-terminology.md), [ContextFS Architecture](./contextfs-architecture.md), [ContextFS Roadmap](../planning/contextfs-roadmap.md)
 
@@ -128,6 +128,27 @@ V1 当前必须在实现里稳定表达：
 - `capabilities`
 - `metadata`
 - `tags`
+
+## 4.1 Hosted Boundary Rules
+
+当请求经过宿主运行时时，边界固定为：
+
+- `bridge -> RPC -> daemon`
+- `daemon -> plugin -> provider -> VFS`
+
+解释如下：
+
+- `bridge` 负责把 ACP / channel / MCP / CLI / API 等入口翻译到稳定 `RPC`
+- `daemon` 是 hosted lifecycle 与 dispatch 所在边界
+- `plugin` 是 daemon 内部装载的能力单元
+- `provider` 是 plugin / backend 使用的内部连接或上游配置对象
+- `VFS` 是最终执行路径解析、挂载匹配、节点操作与 capability 判定的唯一内核
+
+限制：
+
+- bridge 不直接触碰 plugin / provider / VFS 内部状态
+- plugin / provider 不得绕过 `mount namespace`、`mount table` 与 middleware 暴露第二套访问面
+- standalone / local kernel path 可以不经过 daemon，但不能因此引入第二套 runtime contract
 
 ---
 

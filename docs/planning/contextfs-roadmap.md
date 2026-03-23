@@ -154,9 +154,14 @@ Definition of done:
 - [x] M8.4 standalone / proxy / host-profile legacy path 切断
 - [x] M8.5 active docs / help / gates 冻结
 - [x] M8.6 端到端回归与 release 汇总
+- [x] M8.7 hosted runtime 边界固定为 `bridge -> RPC -> daemon`
+- [x] M8.8 hosted implementation 链固定为 `daemon -> plugin -> provider -> VFS`
+- [x] M8.9 `domain-context` / `manager` 最终职责在 active docs 中锁定
+- [x] M8.10 active roadmap / TODO truth sources 已与 freeze 基线同步
 
 ## Next Actions
 
 - [ ] 准备下一阶段 roadmap 规划
 - [ ] 基于已冻结的 V1 公共边界审视后续增量能力范围
 - [ ] 按 release 流程整理 changelog 汇总与后续里程碑入口
+- [ ] 为 CLI / guides / workspace 文档增加 freeze 边界守护，防止 `plugin` / `provider` / `manager` 回流成顶层对象

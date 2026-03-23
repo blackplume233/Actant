@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
@@ -9,6 +9,12 @@ const taskScript = join(repoRoot, ".trellis/scripts/task.sh");
 const createDraftScript = join(repoRoot, ".trellis/scripts/create-changelog-draft.sh");
 const draftsDir = join(repoRoot, "docs/agent/changelog-drafts");
 const cleanupPaths = new Set<string>();
+const gitBin = process.platform === "darwin" && existsSync("/opt/homebrew/bin/git")
+  ? "/opt/homebrew/bin/git"
+  : "git";
+const gitEnv = process.platform === "darwin" && existsSync("/opt/homebrew/bin/git")
+  ? { ...process.env, PATH: `/opt/homebrew/bin:${process.env.PATH ?? ""}` }
+  : process.env;
 
 afterEach(() => {
   for (const target of cleanupPaths) {
@@ -21,39 +27,46 @@ function createGitRepo(initialBranch: string) {
   const tempDir = mkdtempSync(join(tmpdir(), "actant-git-"));
   cleanupPaths.add(tempDir);
 
-  execFileSync("git", ["init"], {
+  execFileSync(gitBin, ["init", "--initial-branch", initialBranch], {
     cwd: tempDir,
     encoding: "utf8",
+    env: gitEnv,
   });
-  execFileSync("git", ["config", "user.name", "Trellis Governance Test"], {
+  execFileSync(gitBin, ["config", "user.name", "Trellis Governance Test"], {
     cwd: tempDir,
     encoding: "utf8",
+    env: gitEnv,
   });
-  execFileSync("git", ["config", "user.email", "trellis-governance@example.com"], {
+  execFileSync(gitBin, ["config", "user.email", "trellis-governance@example.com"], {
     cwd: tempDir,
     encoding: "utf8",
+    env: gitEnv,
   });
 
-  const currentBranch = execFileSync("git", ["branch", "--show-current"], {
+  const currentBranch = execFileSync(gitBin, ["branch", "--show-current"], {
     cwd: tempDir,
     encoding: "utf8",
+    env: gitEnv,
   }).trim();
 
   if (currentBranch !== initialBranch) {
-    execFileSync("git", ["checkout", "-b", initialBranch], {
+    execFileSync(gitBin, ["checkout", "-b", initialBranch], {
       cwd: tempDir,
       encoding: "utf8",
+      env: gitEnv,
     });
   }
 
   writeFileSync(join(tempDir, "README.md"), "# temp repo\n");
-  execFileSync("git", ["add", "README.md"], {
+  execFileSync(gitBin, ["add", "README.md"], {
     cwd: tempDir,
     encoding: "utf8",
+    env: gitEnv,
   });
-  execFileSync("git", ["commit", "-m", "init"], {
+  execFileSync(gitBin, ["commit", "-m", "init"], {
     cwd: tempDir,
     encoding: "utf8",
+    env: gitEnv,
   });
 
   return tempDir;
@@ -137,6 +150,7 @@ describe("trellis governance scripts", () => {
       {
         cwd: tempDir,
         encoding: "utf8",
+        env: gitEnv,
       },
     ).trim();
 

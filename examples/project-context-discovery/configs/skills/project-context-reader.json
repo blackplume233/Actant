@@ -1,0 +1,6 @@
+{
+  "name": "project-context-reader",
+  "description": "Reusable guidance for reading project context from repository files alone.",
+  "content": "Start with /project/context.json. Then read the manifest and the declared entrypoints before inspecting individual components. Use the available asset lists to discover which skills, prompts, workflows, and templates exist without guessing.",
+  "tags": ["context", "project-context", "discovery"]
+}

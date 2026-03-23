@@ -1,0 +1,6 @@
+{
+  "name": "project-context-discovery",
+  "description": "Prompt that constrains a backend to discover context from declared project files only.",
+  "content": "Build your understanding from declared project context only. Read /project/context.json first, follow its entrypoints in order, and base your summary on the listed project knowledge plus the available skills, prompts, workflows, and templates.",
+  "variables": []
+}

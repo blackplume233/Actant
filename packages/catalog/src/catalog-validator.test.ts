@@ -99,12 +99,12 @@ describe("CatalogValidator", () => {
       expect(report.issues.filter((i) => i.severity === "error")).toHaveLength(0);
     });
 
-    it("passes validation against examples/actant-hub", async () => {
-      const examplesDir = join(__dirname, "../../../examples/actant-hub");
-      const report = await validator.validate(examplesDir);
+    it("passes validation against the checked-in catalog fixture", async () => {
+      const fixtureDir = join(__dirname, "test-fixtures/checked-in-catalog");
+      const report = await validator.validate(fixtureDir);
 
       expect(report.valid).toBe(true);
-      expect(report.catalogName).toBe("actant-hub");
+      expect(report.catalogName).toBe("checked-in-catalog");
       expect(report.summary.error).toBe(0);
     });
   });

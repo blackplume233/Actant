@@ -1,0 +1,12 @@
+{
+  "name": "project-context-agent",
+  "version": "1.0.0",
+  "description": "Minimal template for namespace discovery fixture coverage.",
+  "backend": {
+    "type": "claude-code"
+  },
+  "project": {
+    "skills": ["project-context-reader"],
+    "prompts": ["project-context-discovery"]
+  }
+}
