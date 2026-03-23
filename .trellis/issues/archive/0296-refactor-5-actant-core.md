@@ -1,7 +1,7 @@
 ---
 id: 296
 title: "[refactor] 按 5 层架构拆分 @actant/core 为独立包"
-status: open
+status: closed
 labels:
   - enhancement
   - core
@@ -14,10 +14,10 @@ relatedIssues: []
 relatedFiles: []
 taskRef: null
 githubRef: "blackplume233/Actant#296"
-closedAs: null
+closedAs: not-planned
 createdAt: "2026-03-16T14:30:18Z"
-updatedAt: "2026-03-18T06:39:40"
-closedAt: null
+updatedAt: "2026-03-23T06:11:00"
+closedAt: "2026-03-23T06:11:00"
 ---
 
 ## 目标
@@ -30,7 +30,6 @@ closedAt: null
 - 当前 `@actant/mcp-server` 依赖 `@actant/core`，而 core 全量 `export *` 导致拉入完整运行时（scheduler、agent-manager、session、hooks……）
 - 实际上 MCP server 只需要 VFS + Domain + Source，占 core 的 3/21 模块
 
----
 
 ## 5 层架构设计
 
@@ -55,7 +54,6 @@ Layer 5: 持续性运行时         ← 保留在 @actant/core
 @actant/core    (Layer 4+5)   → 依赖 shared + domain + source + vfs
 ```
 
----
 
 ## Layer 1: `@actant/domain` — Domain Context 管理、维护、构建
 
@@ -82,7 +80,6 @@ Layer 5: 持续性运行时         ← 保留在 @actant/core
 
 **依赖**：仅 `@actant/shared` + `zod`
 
----
 
 ## Layer 2: `@actant/source` — Domain Source
 
@@ -104,7 +101,6 @@ Layer 5: 持续性运行时         ← 保留在 @actant/core
 
 **依赖**：`@actant/shared` + `@actant/domain`
 
----
 
 ## Layer 3: `@actant/vfs` — Virtual Filesystem
 
@@ -131,7 +127,6 @@ Layer 5: 持续性运行时         ← 保留在 @actant/core
 
 **依赖**：仅 `@actant/shared`
 
----
 
 ## Layer 4+5: `@actant/core`（瘦身）— Instance 管理 + 持续性运行时
 
@@ -147,7 +142,6 @@ Layer 4 和 5 内部耦合紧密，本阶段不分离：
 
 **远期**：当 Layer 4/5 内部解耦成熟后（消除 initializer ↔ manager 循环、hooks 下沉），可进一步拆为 `@actant/instance` + `@actant/runtime`。
 
----
 
 ## 需提升到 `@actant/shared` 的接口
 
@@ -158,7 +152,6 @@ Layer 4 和 5 内部耦合紧密，本阶段不分离：
 | context-injector/ | `AcpMcpServerStdio`, `ActantToolDefinition`, `ToolScope` | vfs, plugin, acp |
 | scheduler/ | `ScheduleConfigSchema`（纯 Zod schema, 零 deps）| template |
 
----
 
 ## 消费者影响
 
@@ -169,7 +162,6 @@ Layer 4 和 5 内部耦合紧密，本阶段不分离：
 | 新 context MCP | N/A | domain + source + vfs + shared | 无需 core |
 | codex monitor | N/A | domain + source + vfs + shared | 无需 core |
 
----
 
 ## 双模运行架构（Context MCP Server）
 
@@ -181,7 +173,6 @@ Layer 4 和 5 内部耦合紧密，本阶段不分离：
 
 启动时先 probe daemon socket，有则走 proxy（最丰富），没有则 fallback 到 standalone。
 
----
 
 ## 迁移策略
 
@@ -196,7 +187,6 @@ export * from "./manager/index";
 export * from "./scheduler/index";
 ```
 
----
 
 ## 实施步骤（按依赖顺序）
 
@@ -224,3 +214,15 @@ builder       → domain, manager(backend-registry), permissions
 initializer   → builder, template, permissions, state, provider, manager
 manager       → initializer, channel, state, communicator, provider, hooks, activity, context-injector, budget, domain（10 个依赖，最重模块）
 ```
+
+---
+
+## Comments
+
+### ### cursor-agent — 2026-03-23T06:10:58
+
+--body-file
+
+### cursor-agent — 2026-03-23T06:11:00
+
+Closed as not-planned: Superseded by the current ContextFS package baseline and terminology
