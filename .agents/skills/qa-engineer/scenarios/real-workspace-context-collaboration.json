@@ -1,0 +1,148 @@
+{
+  "name": "real-workspace-context-collaboration",
+  "description": "构建一个更接近真实用户使用的工作目录：初始化 namespace 项目、准备 Git 仓库与用户自写 AGENTS.md、通过本地 shared catalog 提供共享 skill/prompt/template、把仓库接入 Actant 管理，并用外部 Codex CLI 消费该上下文。",
+  "tags": ["real-workspace", "self-host", "catalog", "git", "codex", "contextfs", "continuous"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock",
+    "templates": []
+  },
+  "steps": [
+    {
+      "id": "prep-project-root",
+      "description": "[Setup] 创建隔离项目目录、共享 catalog 目录和用户代码仓库目录",
+      "command": "_setup:create_dir $TEST_DIR/user-project && _setup:create_dir $TEST_DIR/shared-catalog && _setup:create_dir $TEST_DIR/user-project/repo",
+      "expect": "三个目录创建成功，后续命令都在这些隔离目录中执行"
+    },
+    {
+      "id": "prep-user-guidance",
+      "description": "[Setup] 写入用户自定义 AGENTS.md，模拟团队手写指导上下文",
+      "command": "_setup:create_dir_with_file $TEST_DIR/user-project/repo/AGENTS.md # Team Context\\n\\n- Read this repository guidance before changing code.\\n- Keep changes small and reviewable.\\n- Treat origin remote as the collaboration source of truth.\\n- Prefer shared skills materialized by Actant over ad-hoc prompts.\\n",
+      "expect": "repo/AGENTS.md 创建成功，内容表达用户自定义协作规范"
+    },
+    {
+      "id": "prep-repo-seed",
+      "description": "[Setup] 初始化本地 Git 仓库并关联一个 GitHub origin，模拟真实协作仓库",
+      "command": "cd $TEST_DIR/user-project/repo && git init && git config user.name qa-bot && git config user.email qa@example.com && git remote add origin https://github.com/example/acme-context-demo.git && printf '# Demo Repo\\n' > README.md && git add README.md AGENTS.md && git commit -m 'chore: seed repo'",
+      "expect": "repo 成为合法 Git 仓库，origin 指向 GitHub URL，README.md 和 AGENTS.md 已提交"
+    },
+    {
+      "id": "prep-catalog-manifest",
+      "description": "[Setup] 创建本地 shared catalog 的 actant.json 清单",
+      "command": "_setup:create_dir_with_file $TEST_DIR/shared-catalog/actant.json {\"name\":\"qa-shared\",\"version\":\"1.0.0\",\"description\":\"QA shared catalog for real workspace collaboration\",\"components\":{\"skills\":[\"skills/repo-context-reader.json\"],\"prompts\":[\"prompts/system-repo-maintainer.json\"],\"mcp\":[],\"templates\":[\"templates/context-worker.json\"]}}",
+      "expect": "catalog manifest 创建成功，可被 Actant 识别为本地 catalog 根"
+    },
+    {
+      "id": "prep-catalog-skill",
+      "description": "[Setup] 创建共享 skill，要求外部 agent 先读 AGENTS.md 和 Git remote",
+      "command": "_setup:create_dir_with_file $TEST_DIR/shared-catalog/skills/repo-context-reader.json {\"name\":\"repo-context-reader\",\"version\":\"1.0.0\",\"description\":\"Read AGENTS.md and repository metadata before acting\",\"content\":\"# Repo Context Reader\\n\\n- Read AGENTS.md before editing.\\n- Check the git remote and current branch.\\n- Preserve repository-local guidance and workflow files.\\n- Treat shared context from Actant as the default collaboration layer.\\n\",\"tags\":[\"repo\",\"context\",\"governance\"]}",
+      "expect": "共享 skill JSON 创建成功"
+    },
+    {
+      "id": "prep-catalog-prompt",
+      "description": "[Setup] 创建共享 prompt，模拟团队统一系统提示",
+      "command": "_setup:create_dir_with_file $TEST_DIR/shared-catalog/prompts/system-repo-maintainer.json {\"name\":\"system-repo-maintainer\",\"description\":\"System prompt for repository maintenance agents\",\"content\":\"You are a repository maintenance agent. Read AGENTS.md first, inspect git status and remote configuration, then make minimal changes aligned with the local workflow.\",\"variables\":[]}",
+      "expect": "共享 prompt JSON 创建成功"
+    },
+    {
+      "id": "prep-catalog-template",
+      "description": "[Setup] 创建共享 template，使 Agent 依赖共享 skill 与 prompt",
+      "command": "_setup:create_dir_with_file $TEST_DIR/shared-catalog/templates/context-worker.json {\"name\":\"context-worker\",\"version\":\"1.0.0\",\"description\":\"Repository-aware worker backed by shared context assets\",\"backend\":{\"type\":\"cursor\"},\"provider\":{\"type\":\"anthropic\"},\"domainContext\":{\"skills\":[\"repo-context-reader\"],\"prompts\":[\"system-repo-maintainer\"]}}",
+      "expect": "共享 template JSON 创建成功"
+    },
+    {
+      "id": "project-init",
+      "description": "在用户项目根初始化标准 namespace 工作目录",
+      "command": "cd $TEST_DIR/user-project && init --scaffold standard",
+      "expect": "生成 actant.namespace.json 和 configs/ 基础目录；项目根成为可识别的 Actant namespace 项目"
+    },
+    {
+      "id": "project-hub-status",
+      "description": "激活并检查该工作目录的 namespace 状态",
+      "command": "cd $TEST_DIR/user-project && hub status -f json",
+      "expect": "返回 active=true，projectRoot 指向 $TEST_DIR/user-project，configPath 指向 actant.namespace.json"
+    },
+    {
+      "id": "project-validate",
+      "description": "验证 fresh namespace 配置可通过校验",
+      "command": "cd $TEST_DIR/user-project && namespace validate",
+      "expect": "顺序执行时通过校验，Schema/Mounts/Derived/Warnings 均为 ok"
+    },
+    {
+      "id": "catalog-add-local",
+      "description": "注册本地 shared catalog，模拟团队共享 skill 仓库",
+      "command": "cd $TEST_DIR/user-project && catalog add $TEST_DIR/shared-catalog --name qa-shared --type local",
+      "expect": "catalog 注册成功，输出包含 qa-shared 和组件计数"
+    },
+    {
+      "id": "catalog-sync-local",
+      "description": "同步本地 shared catalog，使 skill/prompt/template 进入当前环境",
+      "command": "cd $TEST_DIR/user-project && catalog sync qa-shared",
+      "expect": "同步成功，输出 Synced: qa-shared，且 report 显示至少有组件被 added"
+    },
+    {
+      "id": "catalog-list",
+      "description": "确认 catalog 已在环境中可见",
+      "command": "cd $TEST_DIR/user-project && catalog list -f json",
+      "expect": "返回数组包含 qa-shared，config.type=local，config.path 指向 $TEST_DIR/shared-catalog"
+    },
+    {
+      "id": "template-install-from-catalog",
+      "description": "从共享 catalog 安装 template，验证共享上下文分发链路",
+      "command": "cd $TEST_DIR/user-project && template install qa-shared@context-worker",
+      "expect": "安装成功并提示可用命令 `actant agent create <agent-name> --template qa-shared@context-worker`"
+    },
+    {
+      "id": "skill-list-shared",
+      "description": "确认共享 skill 已在当前环境可见",
+      "command": "cd $TEST_DIR/user-project && skill list -f json",
+      "expect": "返回数组包含 repo-context-reader"
+    },
+    {
+      "id": "agent-create-on-repo",
+      "description": "将现有 Git 仓库目录作为 Agent workspace 接入 Actant 管理",
+      "command": "cd $TEST_DIR/user-project && agent create qa-context-worker -t qa-shared@context-worker --workspace $TEST_DIR/user-project/repo --append -f json",
+      "expect": "Agent 创建成功，workspace 指向现有 repo 目录，status=created"
+    },
+    {
+      "id": "agent-resolve",
+      "description": "解析 Agent，确认实例注册和工作目录已绑定到该仓库",
+      "command": "cd $TEST_DIR/user-project && agent resolve qa-context-worker -f json",
+      "expect": "返回 JSON，包含 workspaceDir=$TEST_DIR/user-project/repo 和可启动信息"
+    },
+    {
+      "id": "whitebox-repo-agents",
+      "description": "[白盒] 验证仓库根仍有 AGENTS.md，并包含用户指导或共享 skill 内容",
+      "command": "_whitebox_read:$TEST_DIR/user-project/repo/AGENTS.md",
+      "expect": "文件存在，且内容至少保留用户指导；理想情况下同时包含 repo-context-reader 的 skill 内容"
+    },
+    {
+      "id": "whitebox-repo-remote",
+      "description": "[白盒] 验证 GitHub origin 关联仍然存在",
+      "command": "_whitebox_read:$TEST_DIR/user-project/repo/.git/config",
+      "expect": "文件包含 origin remote，URL 为 https://github.com/example/acme-context-demo.git"
+    },
+    {
+      "id": "whitebox-agent-meta",
+      "description": "[白盒] 验证仓库已被 Actant 接管为 Agent workspace",
+      "command": "_whitebox_read:$TEST_DIR/user-project/repo/.actant.json",
+      "expect": "文件存在且为合法 JSON，包含 name=qa-context-worker、template=qa-shared@context-worker 或 context-worker、backendType=cursor"
+    },
+    {
+      "id": "external-codex-context-consumption",
+      "description": "[扩展] 用外部 Codex CLI 在该仓库中消费上下文，验证外部 agent 能读懂 Actant 管理后的工作目录",
+      "command": "cd $TEST_DIR/user-project/repo && codex exec --skip-git-repo-check --dangerously-bypass-approvals-and-sandbox -o $TEST_DIR/codex-context-summary.txt 'Read AGENTS.md and the current git remote, then summarize the available collaboration context and shared skills in 3 bullets.'",
+      "expect": "若环境中已配置 codex CLI，则命令退出码 0，并产出 $TEST_DIR/codex-context-summary.txt；内容应提到 AGENTS.md 指导、GitHub remote 或 repo-context-reader。若 codex 不可用或未登录，记录为 WARN 而非场景设计失败"
+    }
+  ],
+  "cleanup": [
+    "cd $TEST_DIR/user-project && agent destroy qa-context-worker --force",
+    "daemon stop"
+  ],
+  "notes": [
+    "该场景刻意使用本地 catalog，而不是把主链绑死在 GitHub 网络可用性上；GitHub 关联通过本地 git remote add origin 模拟真实协作仓库。",
+    "该场景适合作为持续测试的高价值用户旅程，用于验证：namespace 工作目录、catalog 分发、template 安装、Agent 接管现有仓库、AGENTS.md 上下文消费、外部 Codex CLI 协作。",
+    "若未来需要将 GitHub catalog sync 纳入主链，可在本场景之外增加一个网络扩展版本，避免把 deterministic smoke 依赖于公网。",
+    "当前已知相关风险：fresh project 的 namespace 写路径与 runtime host 关系见 issue #320；本地安装分发链路见 issue #319。"
+  ]
+}

@@ -157,3 +157,4 @@ const client = net.createConnection(sock, () => client.write(request));
 | daemon-connectivity | `scenarios/daemon-connectivity.json` | mock | Daemon 连接 |
 | error-handling | `scenarios/error-handling.json` | mock | 通用错误处理 |
 | bilibili-video-analysis | `scenarios/bilibili-video-analysis.json` | real | 端到端任务 |
+| real-workspace-context-collaboration | `scenarios/real-workspace-context-collaboration.json` | mock + external | 真实工作目录、Git 仓库、共享 catalog、Agent 接管与 Codex 上下文消费 |
