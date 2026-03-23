@@ -8,6 +8,9 @@
 
 后端开发当前必须以前述 Linux 语义对象模型为前提：
 
+- `daemon`
+- `bridge`
+- `daemon plugin`
 - `mount namespace`
 - `mount table`
 - `filesystem type`
@@ -21,19 +24,54 @@
 - 旧平台中心化 orchestration object 作为平台核心
 - `DomainContext` 作为聚合中心
 - 旧 prompt/resource 分类继续扩展
+- bridge 层自行装载系统
+- 把 provider 当成高于 plugin 的总模型
 
 ---
 
 ## 2. Responsibilities By Layer
 
-### ContextFS Layer
+### Runtime Host Layer
 
 负责：
 
-- namespace 配置输入
-- 挂载组合
-- 权限边界输入
-- 文件系统语义对齐
+- `daemon` 作为唯一运行时宿主
+- 装载 `VFS`
+- 装载 `daemon plugins`
+- 组合内部运行机制模块
+- 提供统一 RPC 能力面
+
+不负责：
+
+- 直接承担 bridge 层表现逻辑
+
+### Bridge Layer
+
+负责：
+
+- 通过 RPC 与 `daemon` 交互
+- 请求转发
+- 协议转换
+- 响应格式化
+- 交互适配
+
+不负责：
+
+- 自行装载插件
+- 自行组合系统
+- 持有系统真相源
+
+### Daemon Plugin Layer
+
+负责：
+
+- 作为真实扩展单元被 `daemon` 装载
+- 可贡献 provider、RPC 能力、hooks、services 等
+
+不负责：
+
+- 替代 `daemon` 成为组合根
+- 直接成为中心注册结构
 
 ### VFS Layer
 
@@ -47,7 +85,7 @@
 - `lifecycle`
 - `events`
 
-### Backend Layer
+### Provider Contribution Layer
 
 负责：
 
@@ -55,11 +93,12 @@
 - 节点内容读写
 - 可选 watch/stream 能力
 
-Backend 不负责：
+Provider 不负责：
 
 - 权限判定
 - 挂载路由
 - consumer interpretation
+- 内容注册中心
 
 ---
 
@@ -91,6 +130,13 @@ V1 后端实现必须围绕以下固定类型工作：
 
 不得继续旁路 VFS 引入第二套执行模型。
 
+运行时结构同时必须满足：
+
+- `daemon` 是唯一组合根
+- bridge 层所有运行时能力都经 RPC 向 `daemon` 请求
+- `agent-runtime` 等机制模块如需扩展系统，应作为 `daemon plugin` 接入
+- plugin 如需暴露文件系统能力，应通过 provider contribution 注入 `VFS`
+
 ---
 
 ## 5. V1 Non-Goals
@@ -102,6 +148,8 @@ V1 后端实现必须围绕以下固定类型工作：
 - overlay/fallback 行为实现
 - 兼容旧中心化 orchestration model
 - 兼容旧资源分类中心模型
+- bridge 层自带组合根
+- provider 重新升级为中心注册结构
 
 ---
 
@@ -113,5 +161,6 @@ V1 后端实现必须围绕以下固定类型工作：
 2. 是否遵守 [ContextFS Architecture](../../../docs/design/contextfs-architecture.md) 的对象模型
 3. 是否遵守 [Actant VFS Reference Architecture](../../../docs/design/actant-vfs-reference-architecture.md) 的实现分层
 4. 是否明确了 `filesystem type`、`node type` 与 capability 边界
-5. 是否避免把 consumer interpretation 写回内核对象模型
-6. 是否同步更新 spec/design/roadmap
+5. 是否仍遵守 `daemon -> daemon plugin -> provider contribution -> VFS` 的装载方向
+6. 是否避免把 consumer interpretation 写回内核对象模型
+7. 是否同步更新 spec/design/roadmap

@@ -18,6 +18,39 @@
 
 > **Actant VFS 应被设计为 filesystem kernel，而不是资源分类路由器。**
 
+同时，VFS 的运行时宿主口径固定为：
+
+- `daemon` 是唯一运行时宿主与唯一组合根
+- `bridge` 只负责通过 RPC 与 `daemon` 交互
+- `daemon plugin` 是系统真实扩展单元
+- `provider` 只是 `daemon plugin` 可贡献的一类能力
+
+简化模块图：
+
+```mermaid
+flowchart TB
+    ACTANT["actant
+打包层 / 分发层"]
+
+    BRIDGE["Bridge
+cli / rest-api / tui / dashboard / mcp-server / channel-*"]
+
+    DAEMON["Actant Daemon
+唯一运行时宿主 / 唯一组合根"]
+
+    VFS["@actant/vfs
+唯一核心 / 唯一真相源"]
+
+    PLUGINS["Daemon Plugins
+agent-runtime / 其它运行插件"]
+
+    ACTANT --> BRIDGE
+    BRIDGE -. RPC .-> DAEMON
+    DAEMON --> PLUGINS
+    DAEMON --> VFS
+    PLUGINS --> VFS
+```
+
 ---
 
 ## 2. Fixed Layers
@@ -148,6 +181,17 @@ V1 当前必须在实现里稳定表达：
 ---
 
 ## 6. Extension Rule
+
+扩展面固定分两类：
+
+- `daemon plugin`：由 `daemon` 装载的真实扩展单元
+- `provider contribution`：plugin 注入到 `VFS` 的挂载/数据来源能力
+
+约束：
+
+- 不允许把 provider 本身当作系统组合根
+- 不允许 bridge 层直接装载 provider 或 plugin
+- 不允许内容先进入中心注册表，再投影回 VFS
 
 何时扩展 `filesystem type`：
 
