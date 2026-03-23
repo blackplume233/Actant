@@ -32,6 +32,7 @@ export {
   type ProcessHandle,
   vcsSourceFactory,
   createDomainSource,
+  createSnapshotDomainSource,
   createAgentRegistrySource,
   createDaemonInfoSource,
   createSkillSource,
@@ -44,6 +45,7 @@ export {
   type AgentRuntimeSourceProvider,
   type AgentRuntimeWatchEvent,
   type AgentControlRequest,
+  type DomainComponentSnapshot,
 } from "./sources/index";
 export {
   VfsDataStore,

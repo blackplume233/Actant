@@ -15,13 +15,14 @@ import {
   FilesystemTypeRegistry,
   workspaceSourceFactory,
   memorySourceFactory,
-  createDomainSource,
+  createSnapshotDomainSource,
   createMcpRuntimeSource,
   createAgentRuntimeSource,
   LocalCatalog,
   GitHubCatalog,
   CommunityCatalog,
   type FetchResult,
+  type DomainComponentSnapshot,
 } from "@actant/agent-runtime";
 import type {
   ActantNamespaceConfig,
@@ -89,6 +90,13 @@ export interface LoadedProjectContext {
   effectivePermissions: PermissionConfig;
   children: LoadedProjectContext[];
   summary: ProjectContextSummary;
+  componentSnapshots: {
+    skills: DomainComponentSnapshot[];
+    prompts: DomainComponentSnapshot[];
+    mcpServers: DomainComponentSnapshot[];
+    workflows: DomainComponentSnapshot[];
+    templates: DomainComponentSnapshot[];
+  };
   managers: {
     skillManager: SkillManager;
     promptManager: PromptManager;
@@ -178,24 +186,44 @@ export function createProjectContextRegistrations(
 
   registrations.push(
     {
-      ...createDomainSource(context.managers.skillManager, "skills", normalizeMountPoint(layout.skills), lifecycle),
+      ...createSnapshotDomainSource(
+        context.componentSnapshots.skills,
+        "skills",
+        normalizeMountPoint(layout.skills),
+        lifecycle,
+      ),
       name: `${prefix}-skills`,
     },
     {
-      ...createDomainSource(context.managers.promptManager, "prompts", normalizeMountPoint(layout.prompts), lifecycle),
+      ...createSnapshotDomainSource(
+        context.componentSnapshots.prompts,
+        "prompts",
+        normalizeMountPoint(layout.prompts),
+        lifecycle,
+      ),
       name: `${prefix}-prompts`,
     },
     {
-      ...createDomainSource(context.managers.mcpConfigManager, "mcp", normalizeMountPoint(layout.mcpLegacy), lifecycle),
+      ...createSnapshotDomainSource(
+        context.componentSnapshots.mcpServers,
+        "mcp",
+        normalizeMountPoint(layout.mcpLegacy),
+        lifecycle,
+      ),
       name: `${prefix}-mcp-legacy`,
     },
     {
-      ...createDomainSource(context.managers.mcpConfigManager, "mcp", normalizeMountPoint(layout.mcpConfigs), lifecycle),
+      ...createSnapshotDomainSource(
+        context.componentSnapshots.mcpServers,
+        "mcp",
+        normalizeMountPoint(layout.mcpConfigs),
+        lifecycle,
+      ),
       name: `${prefix}-mcp-configs`,
     },
     {
-      ...createDomainSource(
-        context.managers.workflowManager,
+      ...createSnapshotDomainSource(
+        context.componentSnapshots.workflows,
         "workflows",
         normalizeMountPoint(layout.workflows),
         lifecycle,
@@ -203,8 +231,8 @@ export function createProjectContextRegistrations(
       name: `${prefix}-workflows`,
     },
     {
-      ...createDomainSource(
-        context.managers.templateRegistry,
+      ...createSnapshotDomainSource(
+        context.componentSnapshots.templates,
         "templates",
         normalizeMountPoint(layout.templates),
         lifecycle,
@@ -408,6 +436,13 @@ async function loadProjectContextInternal(
     workflows: sortNames(workflowManager.list().map((workflow: { name: string }) => workflow.name)),
     templates: sortNames(templateRegistry.list().map((template: { name: string }) => template.name)),
   };
+  const componentSnapshots = {
+    skills: cloneComponentSnapshots(skillManager.list()),
+    prompts: cloneComponentSnapshots(promptManager.list()),
+    mcpServers: cloneComponentSnapshots(mcpConfigManager.list()),
+    workflows: cloneComponentSnapshots(workflowManager.list()),
+    templates: cloneComponentSnapshots(templateRegistry.list()),
+  };
 
   return {
     mountName,
@@ -437,6 +472,7 @@ async function loadProjectContextInternal(
         templates: available.templates.length,
       },
     },
+    componentSnapshots,
     managers: {
       skillManager,
       promptManager,
@@ -445,6 +481,17 @@ async function loadProjectContextInternal(
       templateRegistry,
     },
   };
+}
+
+function cloneComponentSnapshots(
+  components: Array<{ name: string; description?: string; content?: string; tags?: string[] }>,
+): DomainComponentSnapshot[] {
+  return components.map((component) => ({
+    name: component.name,
+    description: component.description,
+    content: component.content,
+    tags: component.tags ? [...component.tags] : undefined,
+  }));
 }
 
 async function fetchCatalog(entry: CatalogDeclaration, projectRoot: string): Promise<FetchResult> {
