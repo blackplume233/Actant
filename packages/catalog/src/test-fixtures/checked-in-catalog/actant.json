@@ -1,0 +1,9 @@
+{
+  "name": "checked-in-catalog",
+  "version": "1.0.0",
+  "components": {
+    "skills": ["skills/fixture-skill.json"],
+    "prompts": ["prompts/fixture-prompt.json"],
+    "templates": ["templates/fixture-template.json"]
+  }
+}

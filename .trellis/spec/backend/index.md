@@ -61,6 +61,23 @@ Backend 不负责：
 - 挂载路由
 - consumer interpretation
 
+## 2.1 Frozen Runtime And Support Roles
+
+当前 M8 freeze 基线额外固定以下角色：
+
+- `daemon`: 运行时宿主与生命周期边界，负责持有 namespace / runtime state，并承接 `RPC` 调用
+- `plugin`: daemon 内部的运行时扩展 / 适配单元，可以提供 backend 或 runtime capability，但不是 V1 对外对象模型
+- `provider`: 为 plugin、backend 或 mount instance 提供连接、句柄、上游配置的内部对象，不是默认对外术语
+- `domain-context`: 模板、组件定义、provider 描述与校验解析所在层；不是聚合中心，不持有 `mount namespace` 或 `VFS` 生命周期
+- `manager`: session / process / backend lifecycle orchestration；消费 `domain-context` 产物并驱动 daemon / backend，但不定义 `filesystem type`、`mount rule` 或 `node semantics`
+
+边界要求：
+
+- hosted runtime 路径固定经 `bridge -> RPC -> daemon`
+- daemon 内部实现链固定为 `daemon -> plugin -> provider -> VFS`
+- `plugin` / `provider` 不得旁路 `mount namespace`、`mount table` 或 permission chain 暴露第二套访问内核
+- 无 daemon 的本地读取可以直接进入 `VFS`，但不能因此引入第二套 public contract
+
 ---
 
 ## 3. V1 Required Types

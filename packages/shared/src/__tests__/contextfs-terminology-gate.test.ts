@@ -24,7 +24,7 @@ const activeTruthFiles = [
   "packages/rest-api/src/routes/catalogs.ts",
   "scripts/install.sh",
   "scripts/install.ps1",
-  "examples/actant-hub/README.md",
+  "examples/project-context-discovery/PROJECT_CONTEXT.md",
 ] as const;
 
 const removedLegacyProfile = ["boot", "strap"].join("");

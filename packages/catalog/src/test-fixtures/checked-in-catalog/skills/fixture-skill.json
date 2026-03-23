@@ -1,0 +1,6 @@
+{
+  "name": "fixture-skill",
+  "version": "1.0.0",
+  "description": "A checked-in catalog fixture skill.",
+  "content": "Use the checked-in catalog fixture for validator coverage."
+}

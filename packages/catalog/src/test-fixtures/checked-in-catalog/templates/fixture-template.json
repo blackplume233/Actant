@@ -1,0 +1,12 @@
+{
+  "name": "fixture-template",
+  "version": "1.0.0",
+  "description": "A checked-in catalog fixture template.",
+  "backend": {
+    "type": "claude-code"
+  },
+  "project": {
+    "skills": ["fixture-skill"],
+    "prompts": ["fixture-prompt"]
+  }
+}
