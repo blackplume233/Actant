@@ -1,7 +1,7 @@
 ---
 id: 321
 title: Local catalog template sync crashes on legacy domainContext schema
-status: open
+status: closed
 labels:
   - bug
   - "priority:P1"
@@ -16,10 +16,10 @@ relatedFiles:
   - .agents/skills/qa-engineer/scenarios/real-workspace-context-collaboration.json
 taskRef: null
 githubRef: "blackplume233/Actant#321"
-closedAs: null
+closedAs: completed
 createdAt: "2026-03-23T05:26:49"
-updatedAt: "2026-03-23T05:41:04"
-closedAt: null
+updatedAt: "2026-03-23T06:03:57"
+closedAt: "2026-03-23T06:03:57"
 ---
 
 **Related Files**: `packages/catalog/src/catalog-manager.ts`, `packages/catalog/src/local-catalog.ts`, `.agents/skills/qa-engineer/scenarios/real-workspace-context-collaboration.json`
@@ -111,7 +111,7 @@ ACTANT_HOME="$ACTANT_HOME" ACTANT_SOCKET="$ACTANT_SOCKET" ACTANT_LAUNCHER_MODE=m
 
 ## Comments
 
-### ### cursor-agent — 2026-03-23T05:41:01
+### ### ### ### cursor-agent — 2026-03-23T05:41:01
 
 --body-file
 
@@ -127,3 +127,11 @@ ACTANT_HOME="$ACTANT_HOME" ACTANT_SOCKET="$ACTANT_SOCKET" ACTANT_LAUNCHER_MODE=m
 - 或者其他内容
 
 请告诉我你的需求。 fails with \n\nRound artifacts:\n- \n- \n\nNo fix was attempted in this round. Next step is a repair round that either supports legacy  templates or converts this crash into a structured validation error before template registration.
+
+### cursor-agent — 2026-03-23T06:03:55
+
+--body-file
+
+### cursor-agent — 2026-03-23T06:03:57
+
+Closed as completed

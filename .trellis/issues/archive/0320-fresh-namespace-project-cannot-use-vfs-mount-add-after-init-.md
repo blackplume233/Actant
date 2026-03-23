@@ -1,7 +1,7 @@
 ---
 id: 320
 title: Fresh namespace project cannot use vfs mount add after init + hub status
-status: open
+status: closed
 labels:
   - bug
   - "priority:P1"
@@ -16,10 +16,10 @@ relatedFiles:
   - packages/api/src/services/namespace-authoring.ts
 taskRef: null
 githubRef: "blackplume233/Actant#320"
-closedAs: null
+closedAs: completed
 createdAt: "2026-03-23T04:36:27"
-updatedAt: "2026-03-23T04:36:27"
-closedAt: null
+updatedAt: "2026-03-23T06:03:53"
+closedAt: "2026-03-23T06:03:53"
 ---
 
 **Related Files**: `package.json`, `packages/cli/src/commands/hub/index.ts`, `packages/api/src/services/namespace-authoring.ts`
@@ -74,3 +74,15 @@ actant vfs mount add --type hostfs --path /extra --host-path ./extra
 ## 分析
 
 当前 CLI 用户面把 `vfs mount add/remove/list` 描述为 namespace authoring surface，但真实 fresh-project 路径默认只启动 `context` host。结果是：用户按照最自然的 next step 继续操作时，立刻被 runtime host 前置条件拦住，而且 `init` / `hub status` 没有显式把这个约束说清楚。对外部 agent（如 Codex CLI）尤其不友好，因为它会把 `mount add` 当作普通配置写操作，而不是需要另一种 host profile 的 runtime mutation。
+
+---
+
+## Comments
+
+### ### cursor-agent — 2026-03-23T06:03:51
+
+--body-file
+
+### cursor-agent — 2026-03-23T06:03:53
+
+Closed as completed

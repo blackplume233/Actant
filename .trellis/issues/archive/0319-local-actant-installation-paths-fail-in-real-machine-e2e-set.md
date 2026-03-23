@@ -1,7 +1,7 @@
 ---
 id: 319
 title: Local Actant installation paths fail in real-machine E2E setup
-status: open
+status: closed
 labels:
   - bug
   - "priority:P1"
@@ -16,10 +16,10 @@ relatedFiles:
   - packages/actant/package.json
 taskRef: null
 githubRef: "blackplume233/Actant#319"
-closedAs: null
+closedAs: completed
 createdAt: "2026-03-23T04:36:27"
-updatedAt: "2026-03-23T04:36:27"
-closedAt: null
+updatedAt: "2026-03-23T06:03:48"
+closedAt: "2026-03-23T06:03:48"
 ---
 
 **Related Files**: `scripts/install-local.mjs`, `scripts/build-standalone.mjs`, `packages/actant/package.json`
@@ -86,3 +86,15 @@ npx postject /Users/muyuli/Workspace/AgentCraft/dist-standalone/actant NODE_SEA_
 - standalone mode 在当前 macOS 环境下无法完成 SEA 注入，无法提供“脱离仓库”的可执行入口。
 
 结果是：即便仓库内部 `pnpm test:self-host` 和 `pnpm test:e2e` 通过，用户仍然可能拿不到一个真正可执行的外部 `actant` 命令。
+
+---
+
+## Comments
+
+### ### cursor-agent — 2026-03-23T06:03:45
+
+--body-file
+
+### cursor-agent — 2026-03-23T06:03:48
+
+Closed as completed
