@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { spawn, type ChildProcess } from "node:child_process";
-import { mkdtemp, writeFile, rm, access, realpath, mkdir } from "node:fs/promises";
+import { mkdtemp, writeFile, rm, access, realpath, mkdir, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -133,9 +133,11 @@ describe("CLI E2E (stdio)", { timeout: 40_000 }, () => {
     const { stdout, exitCode } = await runCli(["--help"], socketPath);
     expect(exitCode).toBe(0);
     expect(stdout).toContain("Actant");
-    expect(stdout).toContain("template");
-    expect(stdout).toContain("agent");
-    expect(stdout).toContain("daemon");
+    expect(stdout).toContain("init [options]");
+    expect(stdout).toContain("namespace");
+    expect(stdout).toContain("vfs");
+    expect(stdout).not.toContain(" setup ");
+    expect(stdout).not.toContain("project-context mode");
   });
 
   it("--version shows version", async () => {
@@ -352,6 +354,129 @@ describe("CLI E2E (stdio)", { timeout: 40_000 }, () => {
     if (!daemonAvailable) {
       expect(result.daemonStarted).toBe(false);
       expect(result.runtimeState).toBe("inactive");
+    }
+  });
+
+  it("supports namespace authoring through init, validate, and vfs mount commands", async () => {
+    if (!daemonAvailable) return;
+
+    const projectDir = await mkdtemp(join(tmpdir(), "ac-cli-namespace-"));
+    try {
+      const initResult = await runCli(
+        ["init", "--scaffold", "minimal"],
+        socketPath,
+        { ACTANT_HOME: tmpDir, ACTANT_LAUNCHER_MODE: "mock" },
+        CLI_BIN,
+        projectDir,
+      );
+      expect(initResult.exitCode).toBe(0);
+      expect(initResult.stdout).toContain("Created actant.namespace.json (minimal)");
+
+      const initConfig = JSON.parse(
+        await readFile(await realpath(join(projectDir, "actant.namespace.json")), "utf-8"),
+      ) as {
+        mounts: Array<{ path: string; type: string }>;
+      };
+      expect(initConfig.mounts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ path: "/workspace", type: "hostfs" }),
+          expect.objectContaining({ path: "/config", type: "hostfs" }),
+        ]),
+      );
+
+      const hubStatus = await runCli(
+        ["hub", "status", "-f", "json"],
+        socketPath,
+        { ACTANT_HOME: tmpDir, ACTANT_LAUNCHER_MODE: "mock" },
+        CLI_BIN,
+        projectDir,
+      );
+      expect(hubStatus.exitCode).toBe(0);
+      expect(hubStatus.stdout).not.toContain("project-context mode");
+
+      const validate = await runCli(
+        ["namespace", "validate", "--json"],
+        socketPath,
+        { ACTANT_HOME: tmpDir, ACTANT_LAUNCHER_MODE: "mock" },
+        CLI_BIN,
+        projectDir,
+      );
+      expect(validate.exitCode).toBe(0);
+      const validateResult = parseCliJsonOutput<{
+        valid: boolean;
+        schemaValid: boolean;
+        mountDeclarationIssues: unknown[];
+      }>(validate.stdout);
+      expect(validateResult.valid).toBe(true);
+      expect(validateResult.schemaValid).toBe(true);
+      expect(validateResult.mountDeclarationIssues).toEqual([]);
+
+      await mkdir(join(projectDir, "extra"), { recursive: true });
+      const addMount = await runCli(
+        ["vfs", "mount", "add", "--type", "hostfs", "--path", "/extra", "--host-path", "./extra", "--json"],
+        socketPath,
+        { ACTANT_HOME: tmpDir, ACTANT_LAUNCHER_MODE: "mock" },
+        CLI_BIN,
+        projectDir,
+      );
+      expect(addMount.exitCode).toBe(0);
+      const addedMount = parseCliJsonOutput<{
+        path: string;
+        filesystemType: string;
+        mounted: boolean;
+      }>(addMount.stdout);
+      expect(addedMount).toMatchObject({
+        path: "/extra",
+        filesystemType: "hostfs",
+        mounted: true,
+      });
+
+      const listMounts = await runCli(
+        ["vfs", "mount", "list", "--json"],
+        socketPath,
+        { ACTANT_HOME: tmpDir, ACTANT_LAUNCHER_MODE: "mock" },
+        CLI_BIN,
+        projectDir,
+      );
+      expect(listMounts.exitCode).toBe(0);
+      const mounts = JSON.parse(listMounts.stdout) as Array<{
+        path: string;
+        filesystemType: string;
+        mounted: boolean;
+      }>;
+      expect(mounts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ path: "/workspace", filesystemType: "hostfs", mounted: true }),
+          expect.objectContaining({ path: "/config", filesystemType: "hostfs", mounted: true }),
+          expect.objectContaining({ path: "/extra", filesystemType: "hostfs", mounted: true }),
+        ]),
+      );
+
+      const removeMount = await runCli(
+        ["vfs", "mount", "remove", "/extra", "--json"],
+        socketPath,
+        { ACTANT_HOME: tmpDir, ACTANT_LAUNCHER_MODE: "mock" },
+        CLI_BIN,
+        projectDir,
+      );
+      expect(removeMount.exitCode).toBe(0);
+      expect(parseCliJsonOutput<{ ok: boolean; path: string }>(removeMount.stdout)).toEqual({
+        ok: true,
+        path: "/extra",
+      });
+
+      const afterRemove = await runCli(
+        ["vfs", "mount", "list", "--json"],
+        socketPath,
+        { ACTANT_HOME: tmpDir, ACTANT_LAUNCHER_MODE: "mock" },
+        CLI_BIN,
+        projectDir,
+      );
+      expect(afterRemove.exitCode).toBe(0);
+      const remainingMounts = JSON.parse(afterRemove.stdout) as Array<{ path: string }>;
+      expect(remainingMounts.some((mount) => mount.path === "/extra")).toBe(false);
+    } finally {
+      await rm(projectDir, { recursive: true, force: true });
     }
   });
 

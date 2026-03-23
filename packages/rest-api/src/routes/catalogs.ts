@@ -2,27 +2,27 @@ import type { Router } from "../router";
 import { json } from "../router";
 
 export function registerCatalogRoutes(router: Router): void {
-  router.get("/v1/sources", async (ctx, _req, res) => {
+  router.get("/v1/catalogs", async (ctx, _req, res) => {
     const result = await ctx.bridge.call("catalog.list");
     json(res, result);
   });
 
-  router.post("/v1/sources", async (ctx, _req, res) => {
+  router.post("/v1/catalogs", async (ctx, _req, res) => {
     const result = await ctx.bridge.call("catalog.add", ctx.body);
     json(res, result, 201);
   });
 
-  router.delete("/v1/sources/:name", async (ctx, _req, res) => {
+  router.delete("/v1/catalogs/:name", async (ctx, _req, res) => {
     const result = await ctx.bridge.call("catalog.remove", { name: ctx.params.name });
     json(res, result);
   });
 
-  router.post("/v1/sources/:name/sync", async (ctx, _req, res) => {
+  router.post("/v1/catalogs/:name/sync", async (ctx, _req, res) => {
     const result = await ctx.bridge.call("catalog.sync", { name: ctx.params.name });
     json(res, result);
   });
 
-  router.post("/v1/sources/:name/validate", async (ctx, _req, res) => {
+  router.post("/v1/catalogs/:name/validate", async (ctx, _req, res) => {
     const result = await ctx.bridge.call("catalog.validate", { name: ctx.params.name });
     json(res, result);
   });

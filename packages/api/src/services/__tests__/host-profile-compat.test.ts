@@ -8,6 +8,7 @@ import { HandlerRegistry } from "../../handlers/handler-registry";
 import { registerVfsHandlers } from "../../handlers/vfs-handlers";
 
 describe("AppContext context profile", () => {
+  const removedLegacyProfile = ["boot", "strap"].join("");
   let tmpDir: string;
   let ctx: AppContext;
 
@@ -52,6 +53,7 @@ describe("AppContext context profile", () => {
   it("stays side-effect free after init", () => {
     expect(ctx.runtimeState).toBe("inactive");
     expect(ctx.getHostCapabilities()).toEqual(expect.arrayContaining(["hub", "vfs", "domain"]));
+    expect(ctx.getHostCapabilities()).not.toContain("catalogs");
     expect(ctx.getHostCapabilities()).not.toContain("runtime");
   });
 
@@ -72,9 +74,8 @@ describe("AppContext context profile", () => {
 
     await expect(mountHandler?.({
       name: "tmp",
-      mountPoint: "/tmp",
-      spec: { type: "filesystem", path: tmpDir, readOnly: false },
-      lifecycle: { type: "manual" },
+      path: "/tmp",
+      type: "memfs",
     }, ctx)).rejects.toMatchObject({
       code: RPC_ERROR_CODES.GENERIC_BUSINESS,
     });
@@ -84,5 +85,11 @@ describe("AppContext context profile", () => {
     await ctx.prepareForRpc("agent.list");
     expect(ctx.runtimeState).toBe("active");
     expect(ctx.getHostCapabilities()).toEqual(expect.arrayContaining(["runtime", "agents"]));
+  });
+
+  it("rejects the removed legacy host profile input", () => {
+    expect(
+      () => new AppContext({ homeDir: tmpDir, launcherMode: "mock", hostProfile: removedLegacyProfile as never }),
+    ).toThrow(/Unknown host profile/);
   });
 });

@@ -124,7 +124,7 @@ type HostProfile = "context" | "runtime" | "autonomous";
 - `context` 表示可读上下文优先，不主动激活 runtime 家族能力
 - `runtime` 表示正常运行态，可继续激活 agents / sessions / schedules 等 runtime 能力
 - `autonomous` 保留给更高权限的自动执行态
-- 历史输入 `bootstrap` 只作为兼容别名保留；实现层必须把它规范化为 `context`
+- 非法 profile 输入必须直接报错；历史旧 profile 名称不再做兼容规范化
 
 ---
 

@@ -18,7 +18,7 @@
 旧模型不再作为新增实现依据：
 
 - 旧 `Source` / `SourceType` / `Trait` 作为主对象模型
-- `ContextManager` 作为平台核心
+- 旧平台中心化 orchestration object 作为平台核心
 - `DomainContext` 作为聚合中心
 - 旧 prompt/resource 分类继续扩展
 
@@ -100,7 +100,7 @@ V1 后端实现必须围绕以下固定类型工作：
 - `workflow`
 - query/view mount
 - overlay/fallback 行为实现
-- 兼容旧 `ContextManager`
+- 兼容旧中心化 orchestration model
 - 兼容旧资源分类中心模型
 
 ---

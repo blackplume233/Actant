@@ -4,7 +4,7 @@ export {
   loadProjectContext,
   buildProjectScopeSnapshot,
   createProjectContextPermissionRules,
-  createProjectContextSourceTypeRegistry,
+  createProjectContextFilesystemTypeRegistry,
   createProjectContextRegistrations,
   type LoadedProjectContext,
   type ProjectContextSummary,

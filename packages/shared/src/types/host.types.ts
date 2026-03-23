@@ -1,5 +1,4 @@
 export type HostProfile = "context" | "runtime" | "autonomous";
-export type HostProfileInput = HostProfile | "bootstrap";
 
 export function normalizeHostProfile(profile: string | undefined): HostProfile {
   switch (profile) {
@@ -11,8 +10,6 @@ export function normalizeHostProfile(profile: string | undefined): HostProfile {
       return "context";
     case "autonomous":
       return "autonomous";
-    case "bootstrap":
-      return "context";
     default:
       throw new Error(`Unknown host profile: ${profile}`);
   }
@@ -24,7 +21,7 @@ export type HostCapability =
   | "hub"
   | "vfs"
   | "domain"
-  | "sources"
+  | "catalogs"
   | "runtime"
   | "agents"
   | "sessions"

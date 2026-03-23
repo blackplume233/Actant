@@ -407,30 +407,6 @@ export interface SessionListParams {
 
 export type SessionListResult = SessionLeaseInfo[];
 
-// proxy.* (legacy)
-
-export interface ProxyConnectParams {
-  agentName: string;
-  envPassthrough?: boolean;
-}
-
-export interface ProxySession {
-  sessionId: string;
-  agentName: string;
-  envPassthrough: boolean;
-  connectedAt: string;
-}
-
-export type ProxyConnectResult = ProxySession;
-
-export interface ProxyDisconnectParams {
-  sessionId: string;
-}
-
-export interface ProxyDisconnectResult {
-  ok: boolean;
-}
-
 export interface ProxyForwardParams {
   sessionId: string;
   acpMessage: Record<string, unknown>;
@@ -673,7 +649,7 @@ export interface CatalogSyncParams {
 
 export interface CatalogSyncResult {
   synced: string[];
-  /** Sync report summary (aggregated when syncing multiple sources). */
+  /** Sync report summary (aggregated when syncing multiple catalogs). */
   report?: {
     addedCount: number;
     updatedCount: number;
@@ -897,8 +873,6 @@ export interface RpcMethodMap {
   "session.cancel": { params: SessionCancelParams; result: SessionCancelResult };
   "session.close": { params: SessionCloseParams; result: SessionCloseResult };
   "session.list": { params: SessionListParams; result: SessionListResult };
-  "proxy.connect": { params: ProxyConnectParams; result: ProxyConnectResult };
-  "proxy.disconnect": { params: ProxyDisconnectParams; result: ProxyDisconnectResult };
   "proxy.forward": { params: ProxyForwardParams; result: ProxyForwardResult };
   "skill.list": { params: SkillListParams; result: SkillListResult };
   "skill.get": { params: SkillGetParams; result: SkillGetResult };

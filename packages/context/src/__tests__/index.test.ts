@@ -2,14 +2,16 @@ import { describe, expect, it } from "vitest";
 import * as context from "../index";
 
 describe("@actant/context root exports", () => {
-  it("keeps project-manifest APIs available", () => {
-    expect(context.createActantNamespaceConfigRegistrations).toBeTypeOf("function");
-    expect(context.compileProjectPermissionRules).toBeTypeOf("function");
-    expect(context.resolveProjectPermissionConfig).toBeTypeOf("function");
-  });
+  const expectedExports = [
+    "compileProjectPermissionRules",
+    "createActantNamespaceConfigRegistrations",
+    "resolveProjectPermissionConfig",
+  ] as const;
 
-  it("does not expose legacy ContextManager or DomainContextSource exports", () => {
-    expect("ContextManager" in context).toBe(false);
-    expect("DomainContextSource" in context).toBe(false);
+  it("keeps project-manifest APIs available", () => {
+    expect(Object.keys(context).sort()).toEqual([...expectedExports].sort());
+    for (const exportName of expectedExports) {
+      expect(context[exportName]).toBeTypeOf("function");
+    }
   });
 });

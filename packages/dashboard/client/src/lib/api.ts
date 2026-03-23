@@ -49,7 +49,7 @@ export interface SkillListItem {
   description?: string;
   content?: string;
   tags?: string[];
-  origin?: { type: string; sourceName?: string };
+  origin?: { type: string; catalogName?: string };
 }
 
 export interface PromptListItem {

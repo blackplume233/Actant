@@ -115,8 +115,8 @@ export const PermissionsInputSchema = z.union([
 // ---------------------------------------------------------------------------
 
 export const ComponentOriginSchema = z.object({
-  type: z.enum(["builtin", "source", "local"]),
-  sourceName: z.string().optional(),
+  type: z.enum(["builtin", "catalog", "local"]),
+  catalogName: z.string().optional(),
   syncHash: z.string().optional(),
   syncedAt: z.string().optional(),
   modified: z.boolean().optional(),

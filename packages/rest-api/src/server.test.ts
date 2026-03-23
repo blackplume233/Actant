@@ -228,4 +228,44 @@ describe("createApiHandler", () => {
     const payload = JSON.parse(body as string) as { info: { version: string } };
     expect(payload.info.version).toBe(getRestApiPackageVersion());
   });
+
+  it("advertises catalogs instead of sources in discovery", async () => {
+    const handler = createApiHandler({
+      bridge: createMockBridge() as never,
+    });
+
+    const req = {
+      url: "/v1",
+      method: "GET",
+      headers: { host: "localhost" },
+    } as never;
+
+    const res = createMockResponse();
+    await handler(req, res as never);
+
+    const [body] = res.end.mock.calls[0] ?? [];
+    const payload = JSON.parse(body as string) as { endpoints: Record<string, string> };
+    expect(payload.endpoints.catalogs).toBe("/v1/catalogs");
+    expect(payload.endpoints).not.toHaveProperty("sources");
+  });
+
+  it("publishes catalog paths in OpenAPI summary", async () => {
+    const handler = createApiHandler({
+      bridge: createMockBridge() as never,
+    });
+
+    const req = {
+      url: "/v1/openapi",
+      method: "GET",
+      headers: { host: "localhost" },
+    } as never;
+
+    const res = createMockResponse();
+    await handler(req, res as never);
+
+    const [body] = res.end.mock.calls[0] ?? [];
+    const payload = JSON.parse(body as string) as { paths: Record<string, unknown> };
+    expect(payload.paths).toHaveProperty("/catalogs");
+    expect(payload.paths).not.toHaveProperty("/sources");
+  });
 });

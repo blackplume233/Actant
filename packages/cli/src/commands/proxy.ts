@@ -1,8 +1,6 @@
 import { Command } from "commander";
 import { spawn, type ChildProcess } from "node:child_process";
-import { createInterface } from "node:readline";
 import { RpcClient } from "../client/rpc-client";
-import { getCliPackageVersion } from "../package-version";
 import { presentError, type CliPrinter, defaultPrinter } from "../output/index";
 import { defaultSocketPath } from "../socket-path";
 
@@ -13,14 +11,14 @@ import { defaultSocketPath } from "../socket-path";
  * pipes IDE stdio ↔ Agent stdio, registers lifecycle with Daemon via
  * resolve/attach/detach. No ACP message parsing — pure byte stream.
  *
- * **Session Lease (`--lease`):** Proxy connects to a Daemon-managed Agent,
- * translates ACP protocol messages from IDE into session.* RPC calls.
+ * **Gateway Lease (`--lease`):** Proxy connects to a Daemon-managed Agent
+ * through `gateway.lease` and bridges ACP bytes over the leased socket.
  */
 export function createProxyCommand(printer: CliPrinter = defaultPrinter): Command {
   return new Command("proxy")
     .description("Run an ACP proxy for an agent (stdin/stdout ACP protocol)")
     .argument("<name>", "Agent name to proxy")
-    .option("--lease", "Use Session Lease mode (requires running agent)", false)
+    .option("--lease", "Use gateway lease mode (requires running agent)", false)
     .option("-t, --template <template>", "Template name (auto-creates instance if not found)")
     .action(async (name: string, opts: { lease: boolean; template?: string }) => {
       if (opts.lease) {
@@ -262,17 +260,16 @@ async function resolveAvailableInstance(
 }
 
 // ---------------------------------------------------------------------------
-// Session Lease mode — ACP pipe via Gateway (with legacy fallback)
+// Gateway lease mode — ACP pipe via Gateway
 // ---------------------------------------------------------------------------
 
 /**
- * Session Lease Proxy: thin ACP pipe between IDE (stdio) and Daemon (socket).
+ * Gateway Lease Proxy: thin ACP pipe between IDE (stdio) and Daemon (socket).
  *
  * The proxy does NOT parse ACP messages. It connects a Unix socket to the
  * Daemon's ACP Gateway and bridges IDE stdio <-> socket byte-for-byte.
  * All ACP intelligence (forwarding, impersonation) lives in the Daemon's Gateway.
  *
- * Falls back to legacy RPC translation when Daemon doesn't support gateway.lease.
  */
 async function runSessionLease(
   agentName: string,
@@ -311,20 +308,12 @@ async function runSessionLease(
     return;
   }
 
-  // Try Gateway pipe first, fall back to legacy RPC translation
-  let gatewaySocketPath: string | null = null;
   try {
     const result = await rpcClient.call("gateway.lease", { agentName });
-    gatewaySocketPath = (result as { socketPath: string }).socketPath;
-  } catch {
-    // gateway.lease not implemented yet — use legacy mode
-  }
-
-  if (gatewaySocketPath) {
-    await runGatewayPipe(gatewaySocketPath, printer);
-  } else {
-    printer.dim("Gateway lease not available, using legacy session lease mode");
-    await runLegacySessionLease(agentName, rpcClient, printer);
+    await runGatewayPipe((result as { socketPath: string }).socketPath, printer);
+  } catch (err) {
+    presentError(err, printer);
+    process.exitCode = 1;
   }
 }
 
@@ -359,123 +348,4 @@ async function runGatewayPipe(
   socket.on("close", () => { cleanup(); process.exit(0); });
 
   await new Promise<void>(() => {});
-}
-
-/**
- * Legacy Session Lease: RPC-based protocol translation.
- * Kept for backward compat until gateway.lease is fully rolled out.
- */
-async function runLegacySessionLease(
-  agentName: string,
-  client: RpcClient,
-  _printer: CliPrinter,
-): Promise<void> {
-  const clientId = `proxy-${Date.now()}`;
-  let sessionId: string | null = null;
-  let closed = false;
-
-  const cleanup = async () => {
-    if (closed) return;
-    closed = true;
-    if (sessionId) {
-      try { await client.call("session.close", { sessionId }); } catch { /* ignore */ }
-    }
-  };
-
-  process.on("SIGINT", () => { void cleanup().then(() => process.exit(0)); });
-  process.on("SIGTERM", () => { void cleanup().then(() => process.exit(0)); });
-
-  const rl = createInterface({ input: process.stdin });
-
-  rl.on("line", (line) => {
-    if (closed) return;
-    void handleLegacyMessage(line, agentName, clientId, client, {
-      getSessionId: () => sessionId,
-      setSessionId: (id) => { sessionId = id; },
-    }).catch((err) => {
-      writeAcpError(null, -32603, err instanceof Error ? err.message : String(err));
-    });
-  });
-
-  rl.on("close", () => {
-    void cleanup().then(() => process.exit(0));
-  });
-}
-
-interface SessionContext {
-  getSessionId(): string | null;
-  setSessionId(id: string): void;
-}
-
-interface AcpMessage {
-  jsonrpc: string;
-  id?: unknown;
-  method?: string;
-  params?: Record<string, unknown>;
-}
-
-async function handleLegacyMessage(
-  line: string,
-  agentName: string,
-  clientId: string,
-  client: RpcClient,
-  ctx: SessionContext,
-): Promise<void> {
-  let msg: AcpMessage;
-  try { msg = JSON.parse(line); } catch { return; }
-  if (!msg.method) return;
-
-  const params = msg.params ?? {};
-
-  switch (msg.method) {
-    case "initialize":
-      writeAcpResponse(msg.id, {
-        protocolVersion: 1,
-        agentInfo: { name: "actant-proxy", title: `Actant Proxy: ${agentName} (lease)`, version: getCliPackageVersion() },
-        agentCapabilities: {},
-      });
-      break;
-
-    case "session/new":
-      try {
-        const result = await client.call("session.create", { agentName, clientId });
-        ctx.setSessionId(result.sessionId);
-        writeAcpResponse(msg.id, { sessionId: result.sessionId, modes: {} });
-      } catch (err) {
-        writeAcpError(msg.id, -32603, err instanceof Error ? err.message : String(err));
-      }
-      break;
-
-    case "session/prompt": {
-      const sid = (params["sessionId"] as string) ?? ctx.getSessionId();
-      if (!sid) { writeAcpError(msg.id, -32602, "No session. Call session/new first."); break; }
-      try {
-        const prompt = params["prompt"] as Array<{ type: string; text?: string }> | undefined;
-        const text = prompt?.find((p) => p.type === "text")?.text ?? "";
-        const result = await client.call("session.prompt", { sessionId: sid, text }, { timeoutMs: 305_000 });
-        writeAcpResponse(msg.id, { stopReason: result.stopReason });
-      } catch (err) {
-        writeAcpError(msg.id, -32603, err instanceof Error ? err.message : String(err));
-      }
-      break;
-    }
-
-    case "session/cancel": {
-      const sid = (params["sessionId"] as string) ?? ctx.getSessionId();
-      if (sid) { try { await client.call("session.cancel", { sessionId: sid }); } catch { /* best-effort */ } }
-      if (msg.id != null) writeAcpResponse(msg.id, { ok: true });
-      break;
-    }
-
-    default:
-      if (msg.id != null) writeAcpError(msg.id, -32601, `Unsupported method: ${msg.method}`);
-  }
-}
-
-function writeAcpResponse(id: unknown, result: unknown): void {
-  process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id: id ?? null, result }) + "\n");
-}
-
-function writeAcpError(id: unknown, code: number, message: string): void {
-  process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id: id ?? null, error: { code, message } }) + "\n");
 }

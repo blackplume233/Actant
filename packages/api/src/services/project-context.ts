@@ -322,7 +322,7 @@ function createDeclaredMountRegistrations(
   return registrations;
 }
 
-export function createProjectContextSourceTypeRegistry(): FilesystemTypeRegistry {
+export function createProjectContextFilesystemTypeRegistry(): FilesystemTypeRegistry {
   const registry = new FilesystemTypeRegistry();
   registry.register(workspaceSourceFactory);
   registry.register(memorySourceFactory);

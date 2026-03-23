@@ -180,7 +180,7 @@ export interface AppConfig {
 export class AppContext {
   readonly homeDir: string;
   readonly configsDir: string;
-  readonly sourcesDir: string;
+  readonly catalogsDir: string;
   readonly templatesDir: string;
   readonly instancesDir: string;
   readonly registryPath: string;
@@ -236,7 +236,7 @@ export class AppContext {
   constructor(config?: AppConfig) {
     this.homeDir = config?.homeDir ?? process.env.ACTANT_HOME ?? DEFAULT_HOME;
     this.configsDir = config?.configsDir ?? join(this.homeDir, "configs");
-    this.sourcesDir = join(this.homeDir, "sources");
+    this.catalogsDir = join(this.homeDir, "catalogs");
     this.templatesDir = join(this.configsDir, "templates");
     this.instancesDir = join(this.homeDir, "instances");
     this.registryPath = join(this.homeDir, "instances", "registry.json");
@@ -421,7 +421,7 @@ export class AppContext {
   getHostCapabilities(): HostCapability[] {
     const capabilities: HostCapability[] = ["hub", "vfs", "domain"];
     if (this.catalogManagerInitialized) {
-      capabilities.push("sources");
+      capabilities.push("catalogs");
     }
     if (this.runtimeActivationState === "active") {
       capabilities.push("runtime", "agents", "sessions", "schedules", "plugins");

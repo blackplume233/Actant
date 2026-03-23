@@ -20,7 +20,7 @@
 
 任何设计、实现、评审都不得重新引入以下旧模型作为当前真相：
 
-- `ContextManager`
+- 旧中心化 orchestration object
 - `DomainContext`
 - `workflow` 作为 V1 顶层对象
 - 旧 tool registry 平台中心模型

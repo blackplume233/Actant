@@ -458,7 +458,7 @@ describe("createHubCommand", () => {
     expect(mock.call).not.toHaveBeenCalled();
     expect(output.logs.some((line) => line.includes("Host Profile: context"))).toBe(true);
     expect(output.logs.some((line) => line.includes("Project:      repo"))).toBe(true);
-    expect(output.logs.some((line) => line.includes("standalone project-context mode"))).toBe(true);
+    expect(output.logs.some((line) => line.includes("standalone namespace mode"))).toBe(true);
   });
 
   it("hub read routes the root project manifest through the daemon hub mount", async () => {

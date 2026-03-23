@@ -21,7 +21,7 @@
 - [x] M5 控制节点执行模型 + 开放类型注册
 - [x] M6 Facade 统一（内部收敛）
 - [x] M7 Mount Namespace 配置面 + Filesystem Type 闭环
-- [ ] M8 V1 Freeze
+- [x] M8 V1 Freeze
 
 ## Milestones
 
@@ -110,7 +110,7 @@ Definition of done:
 - [x] middleware 对全部数据操作生效
 - [x] Hub 路径映射收敛到 `@actant/shared/hub-paths`
 - [x] ACP `VfsInterceptor` 收敛到 `VfsKernel`
-- [x] `@actant/context` 不再导出 legacy `ContextManager` / `DomainContextSource`
+- [x] `@actant/context` 不再导出 legacy source-centric orchestration exports
 - [x] 主线已包含 `d8ecf2b` 与 `8bbd75c`
 - [x] 已取消的 standalone 收敛项不会继续进入活跃任务池
 
@@ -141,20 +141,22 @@ Canceled scope:
 - [x] 已取消: 旧 `Source` 配置面作为 V1 默认用户入口
 - [x] 已取消: CLI VFS standalone fallback 作为独立里程碑项
 
-### [ ] M8 V1 Freeze
+### [x] M8 V1 Freeze
 
-Status: todo
+Status: completed
 Owner: release hardening
 
 Definition of done:
 
-- [ ] 清理剩余遗留接口
-- [ ] 完成全量回归
-- [ ] 冻结 V1 边界
-- [ ] 全仓 lint / type-check / test 通过
+- [x] M8.1 共享类型与公共契约 freeze
+- [x] M8.2 `@actant/context` source-centric 残留清理
+- [x] M8.3 `source -> catalog` 全仓强清
+- [x] M8.4 standalone / proxy / host-profile legacy path 切断
+- [x] M8.5 active docs / help / gates 冻结
+- [x] M8.6 端到端回归与 release 汇总
 
 ## Next Actions
 
-- [ ] 开始 M8：清理剩余遗留接口与历史旁路
-- [ ] 冻结 V1 公共边界，避免在活跃实现里回流旧术语或旧入口
-- [ ] 持续执行 release hardening，并把 changelog draft 汇总进 `docs/stage/<version>/changelog.md`
+- [ ] 准备下一阶段 roadmap 规划
+- [ ] 基于已冻结的 V1 公共边界审视后续增量能力范围
+- [ ] 按 release 流程整理 changelog 汇总与后续里程碑入口

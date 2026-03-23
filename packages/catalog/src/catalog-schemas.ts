@@ -15,8 +15,8 @@ const VersionedComponentFields = {
   $type: z.string().optional(),
   $version: z.number().optional(),
   origin: z.object({
-    type: z.enum(["builtin", "source", "local"]),
-    sourceName: z.string().optional(),
+    type: z.enum(["builtin", "catalog", "local"]),
+    catalogName: z.string().optional(),
     syncHash: z.string().optional(),
     syncedAt: z.string().optional(),
     modified: z.boolean().optional(),

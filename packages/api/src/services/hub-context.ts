@@ -8,7 +8,7 @@ import type {
 import { HUB_MOUNT_LAYOUT } from "@actant/shared";
 import {
   createProjectContextPermissionRules,
-  createProjectContextSourceTypeRegistry,
+  createProjectContextFilesystemTypeRegistry,
   createProjectContextRegistrations,
   loadProjectContext,
   type LoadedProjectContext,
@@ -28,7 +28,7 @@ export interface ActiveHubContext {
 }
 
 export class HubContextService {
-  private readonly filesystemTypeRegistry = createProjectContextSourceTypeRegistry();
+  private readonly filesystemTypeRegistry = createProjectContextFilesystemTypeRegistry();
   private active?: ActiveHubContext;
   private activationPromise?: Promise<HubActivateResult>;
   private activationTargetRoot?: string;
@@ -136,7 +136,7 @@ export class HubContextService {
 
 function buildHubRegistrations(
   context: LoadedProjectContext,
-  factoryRegistry: ReturnType<typeof createProjectContextSourceTypeRegistry>,
+  factoryRegistry: ReturnType<typeof createProjectContextFilesystemTypeRegistry>,
 ): VfsMountRegistration[] {
   return createProjectContextRegistrations(
     context,

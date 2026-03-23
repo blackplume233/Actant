@@ -4,7 +4,7 @@ import {
   createDaemonInfoSource,
 } from "@actant/agent-runtime";
 import {
-  createProjectContextSourceTypeRegistry,
+  createProjectContextFilesystemTypeRegistry,
   createProjectContextRegistrations,
   loadProjectContext,
 } from "@actant/api";
@@ -179,7 +179,7 @@ async function resolveHubBackend(
     if (!canUseStandaloneFallback(err)) {
       throw err;
     }
-    printer.dim("Daemon unavailable, using standalone project-context mode.");
+    printer.dim("Daemon unavailable, using standalone namespace mode.");
     return createStandaloneBackend(projectDir);
   }
 }
@@ -206,7 +206,7 @@ async function createConnectedHubBackend(client: RpcClient, projectDir: string):
 async function createStandaloneHubBackend(projectDir: string): Promise<HubBackend> {
   const context = await loadProjectContext(projectDir);
   const registry = new VfsRegistry();
-  const factoryRegistry = createProjectContextSourceTypeRegistry();
+  const factoryRegistry = createProjectContextFilesystemTypeRegistry();
 
   for (const registration of createProjectContextRegistrations(
     context,

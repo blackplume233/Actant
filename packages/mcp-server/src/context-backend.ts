@@ -1,6 +1,6 @@
 import { createDaemonInfoSource, VfsKernel, VfsRegistry } from "@actant/vfs";
 import {
-  createProjectContextSourceTypeRegistry,
+  createProjectContextFilesystemTypeRegistry,
   createProjectContextRegistrations,
   loadProjectContext,
 } from "@actant/api";
@@ -65,7 +65,7 @@ export async function createContextBackend(options?: ContextBackendOptions): Pro
   }
 
   const standalone = await createStandaloneContext(options?.projectDir);
-  logBridgeInfo(`Actant MCP running in standalone project-context mode for ${standalone.projectRoot}`);
+  logBridgeInfo(`Actant MCP running in standalone namespace mode for ${standalone.projectRoot}`);
   return standalone;
 }
 
@@ -146,7 +146,7 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
   const context = await loadProjectContext(projectDir);
   const registry = new VfsRegistry();
   const kernel = new VfsKernel();
-  const factoryRegistry = createProjectContextSourceTypeRegistry();
+  const factoryRegistry = createProjectContextFilesystemTypeRegistry();
 
   for (const registration of createProjectContextRegistrations(
     context,
