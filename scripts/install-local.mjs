@@ -2,24 +2,26 @@
  * Build and install `actant` CLI locally.
  *
  * Two modes:
- *   --link       (default) npm link — symlink to workspace, `pnpm build` auto-updates
+ *   --link       (default) workspace wrapper — points to this repo's built CLI entrypoints
  *   --standalone           Node.js SEA — self-contained binary, no Node.js dependency at runtime
  *
  * Usage:
  *   node scripts/install-local.mjs                       # link mode (default)
  *   node scripts/install-local.mjs --standalone           # build standalone binary + install
  *   node scripts/install-local.mjs --standalone --force   # skip overwrite prompt
- *   node scripts/install-local.mjs --skip-build           # skip build, re-link/re-install only
- *   node scripts/install-local.mjs --install-dir /path    # custom install directory (standalone)
+ *   node scripts/install-local.mjs --skip-build           # skip build, re-install only
+ *   node scripts/install-local.mjs --install-dir /path    # custom install directory
  */
 
-import { execSync, execFileSync } from "node:child_process";
+import { execSync } from "node:child_process";
 import { createInterface } from "node:readline";
-import { resolve, join, basename } from "node:path";
-import { existsSync, copyFileSync, mkdirSync, unlinkSync, readFileSync, statSync } from "node:fs";
+import { resolve, join } from "node:path";
+import { existsSync, copyFileSync, mkdirSync, unlinkSync, readFileSync, writeFileSync, chmodSync } from "node:fs";
 
 const ROOT = resolve(import.meta.dirname, "..");
-const ACTANT_PKG = join(ROOT, "packages", "actant");
+const SOURCE_RUNNER = join(ROOT, "scripts", "run-workspace-entry.mjs");
+const CLI_SOURCE_ENTRY = "packages/cli/src/bin/actant.ts";
+const ACTHUB_SOURCE_ENTRY = "packages/cli/src/bin/acthub.ts";
 
 const argv = process.argv.slice(2);
 const args = new Set(argv);
@@ -35,9 +37,10 @@ function getArg(name) {
 const customInstallDir = getArg("--install-dir");
 
 const isWindows = process.platform === "win32";
-const isMac = process.platform === "darwin";
-const binaryName = isWindows ? "actant.exe" : "actant";
-const aliasBinaryName = isWindows ? "acthub.exe" : "acthub";
+const linkCommandName = isWindows ? "actant.cmd" : "actant";
+const aliasLinkCommandName = isWindows ? "acthub.cmd" : "acthub";
+const standaloneBinaryName = isWindows ? "actant.exe" : "actant";
+const aliasStandaloneBinaryName = isWindows ? "acthub.exe" : "acthub";
 
 function run(cmd, opts = {}) {
   execSync(cmd, { stdio: "inherit", cwd: ROOT, ...opts });
@@ -70,27 +73,52 @@ async function confirmOverwrite(target) {
   return !answer || answer === "y" || answer === "yes";
 }
 
-function resolveInstallDir() {
+function canWriteDir(dir) {
+  try {
+    mkdirSync(dir, { recursive: true });
+    const probePath = join(dir, `.actant-write-test-${process.pid}`);
+    writeFileSync(probePath, "");
+    unlinkSync(probePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function unique(items) {
+  return [...new Set(items.filter((item) => typeof item === "string" && item.length > 0))];
+}
+
+function resolveInstallDir({ preferNpmGlobalBin = false } = {}) {
   if (customInstallDir) {
     mkdirSync(customInstallDir, { recursive: true });
     return resolve(customInstallDir);
   }
 
   if (isWindows) {
-    return quiet("npm prefix -g");
+    const npmPrefix = quiet("npm prefix -g");
+    const appDataBin = process.env.APPDATA ? join(process.env.APPDATA, "npm") : "";
+    const candidates = unique([npmPrefix, appDataBin]);
+    for (const candidate of candidates) {
+      if (canWriteDir(candidate)) {
+        return resolve(candidate);
+      }
+    }
+    return resolve(npmPrefix || appDataBin || process.cwd());
   }
 
   const localBin = join(process.env.HOME || "", ".local", "bin");
   const usrLocalBin = "/usr/local/bin";
+  const npmPrefix = quiet("npm prefix -g");
+  const npmGlobalBin = npmPrefix ? join(npmPrefix, "bin") : "";
 
-  if (existsSync(usrLocalBin)) {
-    try {
-      const testFile = join(usrLocalBin, ".actant-write-test");
-      require("fs").writeFileSync(testFile, "");
-      require("fs").unlinkSync(testFile);
-      return usrLocalBin;
-    } catch {
-      // no write permission
+  const candidates = preferNpmGlobalBin
+    ? unique([npmGlobalBin, usrLocalBin, localBin])
+    : unique([usrLocalBin, localBin, npmGlobalBin]);
+
+  for (const candidate of candidates) {
+    if (canWriteDir(candidate)) {
+      return resolve(candidate);
     }
   }
 
@@ -98,60 +126,114 @@ function resolveInstallDir() {
   return localBin;
 }
 
+function ensureWorkspaceRunnerExists() {
+  const missing = [SOURCE_RUNNER, join(ROOT, CLI_SOURCE_ENTRY), join(ROOT, ACTHUB_SOURCE_ENTRY)]
+    .filter((path) => !existsSync(path));
+  if (missing.length > 0) {
+    console.error("Workspace CLI entrypoints are missing:");
+    for (const path of missing) {
+      console.error(`  - ${path}`);
+    }
+    console.error("Restore the local workspace files before running install-local.");
+    process.exit(1);
+  }
+}
+
+function renderWorkspaceWrapper(entryPath) {
+  if (isWindows) {
+    return `@ECHO OFF\r\nnode "${SOURCE_RUNNER}" "${entryPath}" %*\r\n`;
+  }
+
+  return `#!/bin/sh\nexec node "${SOURCE_RUNNER}" "${entryPath}" "$@"\n`;
+}
+
+function writeWorkspaceWrapper(targetPath, entryPath) {
+  if (existsSync(targetPath)) {
+    unlinkSync(targetPath);
+  }
+  writeFileSync(targetPath, renderWorkspaceWrapper(entryPath), "utf-8");
+  if (!isWindows) {
+    chmodSync(targetPath, 0o755);
+  }
+}
+
+function printPathHint(installDir) {
+  const pathDirs = (process.env.PATH || "").split(isWindows ? ";" : ":");
+  const inPath = pathDirs.some((dir) => {
+    try {
+      return resolve(dir) === resolve(installDir);
+    } catch {
+      return false;
+    }
+  });
+
+  if (inPath) {
+    return;
+  }
+
+  console.log();
+  console.log(`  [!] ${installDir} is NOT in your PATH.`);
+  if (isWindows) {
+    console.log(`      Add it: [System.Environment]::SetEnvironmentVariable("Path", $env:Path + ";${installDir}", "User")`);
+  } else {
+    console.log(`      Add it: echo 'export PATH="${installDir}:$PATH"' >> ~/.bashrc && source ~/.bashrc`);
+  }
+}
+
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// Link mode: npm link (default)
+// Link mode: workspace wrappers (default)
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function installLink() {
-  const npmGlobalPrefix = quiet("npm prefix -g");
-  console.log(`[info] npm global prefix: ${npmGlobalPrefix}\n`);
+  const installDir = resolveInstallDir({ preferNpmGlobalBin: true });
+  const targetPath = join(installDir, linkCommandName);
+  const aliasTargetPath = join(installDir, aliasLinkCommandName);
 
-  // Check existing
-  const alreadyInstalled = quiet("npm list -g --depth=0").includes("actant");
-  if (alreadyInstalled) {
-    console.log("[!] actant is already installed globally (npm link).");
-    if (!(await confirmOverwrite("npm global link"))) {
+  console.log(`[info] Install target : ${targetPath}\n`);
+
+  if (existsSync(targetPath) || existsSync(aliasTargetPath)) {
+    console.log(`[!] ${targetPath} already exists.`);
+    if (!(await confirmOverwrite(targetPath))) {
       console.log("\nAborted.");
       process.exit(0);
     }
-    console.log("    Unlinking previous installation...");
-    quiet("npm unlink -g actant");
     console.log();
   }
 
-  // Build
   if (!skipBuild) {
-    console.log("[1/2] Building all packages...\n");
-    try { run("pnpm build"); } catch {
-      console.error("\nBuild failed. Fix the errors above and retry.");
-      process.exit(1);
-    }
-    console.log();
+    console.log("[info] Workspace wrapper mode runs directly from source entrypoints.\n");
   } else {
-    console.log("[skip] --skip-build: skipping build step.\n");
+    console.log("[skip] --skip-build: wrapper install does not require a build step.\n");
   }
 
-  // Link
-  console.log(`[${skipBuild ? "1/1" : "2/2"}] Linking actant globally...\n`);
-  try { run("npm link", { cwd: ACTANT_PKG }); } catch {
-    console.error("\nnpm link failed. Check permissions and retry.");
+  ensureWorkspaceRunnerExists();
+
+  console.log("[1/1] Installing workspace wrappers...\n");
+  try {
+    quiet("npm unlink -g actant");
+    writeWorkspaceWrapper(targetPath, CLI_SOURCE_ENTRY);
+    writeWorkspaceWrapper(aliasTargetPath, ACTHUB_SOURCE_ENTRY);
+  } catch {
+    console.error("\nWorkspace wrapper install failed. Check permissions and retry.");
     process.exit(1);
   }
 
   // Verify
   console.log();
-  const version = quiet("actant --version");
-  const aliasVersion = quiet("acthub --version");
+  const version = quiet(`"${targetPath}" --version`);
+  const aliasVersion = quiet(`"${aliasTargetPath}" --version`);
   if (version) {
-    console.log(`Done! actant ${version} is now available globally. (link mode)`);
-    console.log(`  Location : ${npmGlobalPrefix}`);
+    console.log(`Done! actant ${version} is now available. (workspace wrapper mode)`);
+    console.log(`  Location : ${targetPath}`);
     if (aliasVersion) {
-      console.log(`  Alias    : acthub ${aliasVersion}`);
+      console.log(`  Alias    : ${aliasTargetPath} (${aliasVersion})`);
     }
-    console.log(`  Tip      : Run \`pnpm build\` to update — no re-link needed.`);
+    console.log(`  Runtime  : Uses this repo's workspace source entrypoints`);
+    console.log(`  Tip      : Source changes are picked up automatically — no re-install needed.`);
   } else {
-    console.log("Done! Link created. Restart your terminal to use `actant` / `acthub`.");
+    console.log("Done! Workspace wrappers installed.");
   }
+  printPathHint(installDir);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -160,9 +242,9 @@ async function installLink() {
 
 async function installStandalone() {
   const installDir = resolveInstallDir();
-  const targetPath = join(installDir, binaryName);
-  const aliasTargetPath = join(installDir, aliasBinaryName);
-  const buildOutputPath = join(ROOT, "dist-standalone", binaryName);
+  const targetPath = join(installDir, standaloneBinaryName);
+  const aliasTargetPath = join(installDir, aliasStandaloneBinaryName);
+  const buildOutputPath = join(ROOT, "dist-standalone", standaloneBinaryName);
 
   console.log(`[info] Platform       : ${process.platform} ${process.arch}`);
   console.log(`[info] Install target : ${targetPath}\n`);
@@ -234,28 +316,14 @@ async function installStandalone() {
   console.log(`  Alias    : ${aliasTargetPath}`);
   console.log(`  Size     : ${(binarySize / 1024 / 1024).toFixed(1)} MB`);
   console.log(`  Runtime  : Self-contained (no Node.js required)`);
-
-  // PATH hint
-  const pathDirs = (process.env.PATH || "").split(isWindows ? ";" : ":");
-  const inPath = pathDirs.some((d) => {
-    try { return resolve(d) === resolve(installDir); } catch { return false; }
-  });
-  if (!inPath) {
-    console.log();
-    console.log(`  [!] ${installDir} is NOT in your PATH.`);
-    if (isWindows) {
-      console.log(`      Add it: [System.Environment]::SetEnvironmentVariable("Path", $env:Path + ";${installDir}", "User")`);
-    } else {
-      console.log(`      Add it: echo 'export PATH="${installDir}:$PATH"' >> ~/.bashrc && source ~/.bashrc`);
-    }
-  }
+  printPathHint(installDir);
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 async function main() {
   console.log("=== Actant Local Install ===\n");
-  console.log(`Mode: ${standalone ? "standalone (SEA binary)" : "link (npm link)"}\n`);
+  console.log(`Mode: ${standalone ? "standalone (SEA binary)" : "workspace wrapper"}\n`);
 
   if (standalone) {
     await installStandalone();

@@ -1,4 +1,4 @@
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdtemp, mkdir, writeFile, rm, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -57,7 +57,7 @@ describe("AppContext context profile", () => {
     expect(ctx.getHostCapabilities()).not.toContain("runtime");
   });
 
-  it("rejects VFS mutations in context profile", async () => {
+  it("keeps content mutation disabled while allowing namespace mount authoring in context profile", async () => {
     await ctx.hubContext.activate(tmpDir);
 
     const handlers = new HandlerRegistry();
@@ -76,9 +76,21 @@ describe("AppContext context profile", () => {
       name: "tmp",
       path: "/tmp",
       type: "memfs",
-    }, ctx)).rejects.toMatchObject({
-      code: RPC_ERROR_CODES.GENERIC_BUSINESS,
+    }, ctx)).resolves.toMatchObject({
+      mount: {
+        path: "/tmp",
+        filesystemType: "memfs",
+        mounted: true,
+      },
     });
+
+    const persisted = JSON.parse(await readFile(join(tmpDir, "actant.namespace.json"), "utf-8")) as {
+      mounts: Array<{ path: string; type: string }>;
+    };
+    expect(persisted.mounts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ path: "/tmp", type: "memfs" }),
+    ]));
+    expect(ctx.runtimeState).toBe("inactive");
   });
 
   it("activates runtime lazily for runtime RPC families", async () => {

@@ -16,7 +16,16 @@
  */
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, copyFileSync, existsSync, writeFileSync, readFileSync, readdirSync, statSync } from "node:fs";
+import {
+  mkdirSync,
+  copyFileSync,
+  existsSync,
+  writeFileSync,
+  readFileSync,
+  readdirSync,
+  statSync,
+  chmodSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import esbuild from "esbuild";
 
@@ -33,6 +42,7 @@ const BINARY_PATH = join(OUT_DIR, binaryName);
 const bundleOnly = process.argv.includes("--bundle-only");
 const rootPackage = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf-8"));
 const cliPackage = JSON.parse(readFileSync(join(ROOT, "packages", "cli", "package.json"), "utf-8"));
+const SEA_SENTINEL = Buffer.from("NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2");
 
 function createWorkspaceSourceAliasPlugin() {
   const packagesDir = join(ROOT, "packages");
@@ -62,6 +72,83 @@ function createWorkspaceSourceAliasPlugin() {
       });
     },
   };
+}
+
+function binarySupportsSeaInjection(binaryPath) {
+  if (!existsSync(binaryPath)) {
+    return false;
+  }
+  return readFileSync(binaryPath).includes(SEA_SENTINEL);
+}
+
+function resolveOfficialNodeArtifact() {
+  const version = process.version.replace(/^v/, "");
+
+  if (process.platform === "darwin") {
+    if (process.arch === "arm64") {
+      return {
+        archiveName: `node-v${version}-darwin-arm64.tar.gz`,
+        extractedBinary: join(OUT_DIR, `node-v${version}-darwin-arm64`, "bin", "node"),
+      };
+    }
+    if (process.arch === "x64") {
+      return {
+        archiveName: `node-v${version}-darwin-x64.tar.gz`,
+        extractedBinary: join(OUT_DIR, `node-v${version}-darwin-x64`, "bin", "node"),
+      };
+    }
+  }
+
+  if (process.platform === "linux") {
+    if (process.arch === "arm64") {
+      return {
+        archiveName: `node-v${version}-linux-arm64.tar.gz`,
+        extractedBinary: join(OUT_DIR, `node-v${version}-linux-arm64`, "bin", "node"),
+      };
+    }
+    if (process.arch === "x64") {
+      return {
+        archiveName: `node-v${version}-linux-x64.tar.gz`,
+        extractedBinary: join(OUT_DIR, `node-v${version}-linux-x64`, "bin", "node"),
+      };
+    }
+  }
+
+  return null;
+}
+
+function resolveSeaTemplateBinary() {
+  if (binarySupportsSeaInjection(process.execPath)) {
+    return process.execPath;
+  }
+
+  const artifact = resolveOfficialNodeArtifact();
+  if (!artifact) {
+    throw new Error(
+      `The current Node executable at ${process.execPath} does not expose the SEA fuse, and no official fallback binary mapping exists for ${process.platform} ${process.arch}.`,
+    );
+  }
+
+  const archivePath = join(OUT_DIR, artifact.archiveName);
+  const downloadUrl = `https://nodejs.org/dist/${process.version}/${artifact.archiveName}`;
+
+  if (!binarySupportsSeaInjection(artifact.extractedBinary)) {
+    console.log(`   Local Node binary lacks SEA fuse; downloading official Node template from ${downloadUrl}`);
+    execFileSync("curl", ["-fsSL", "-o", archivePath, downloadUrl], {
+      cwd: ROOT,
+      stdio: "inherit",
+    });
+    execFileSync("tar", ["-xzf", archivePath, "-C", OUT_DIR], {
+      cwd: ROOT,
+      stdio: "inherit",
+    });
+  }
+
+  if (!binarySupportsSeaInjection(artifact.extractedBinary)) {
+    throw new Error(`Downloaded Node template still does not expose the SEA fuse: ${artifact.extractedBinary}`);
+  }
+
+  return artifact.extractedBinary;
 }
 
 console.log("=== Actant Standalone Build ===\n");
@@ -137,12 +224,17 @@ execFileSync(process.execPath, ["--experimental-sea-config", SEA_CONFIG], {
 
 // Step 3: copy node binary
 console.log("[3/4] Copying Node.js binary...");
+const templateBinaryPath = resolveSeaTemplateBinary();
+console.log(`   Template: ${templateBinaryPath}`);
 
 if (existsSync(BINARY_PATH)) {
   const { unlinkSync } = await import("node:fs");
   unlinkSync(BINARY_PATH);
 }
-copyFileSync(process.execPath, BINARY_PATH);
+copyFileSync(templateBinaryPath, BINARY_PATH);
+if (!isWindows) {
+  chmodSync(BINARY_PATH, 0o755);
+}
 
 // Remove code signature on macOS before injection
 if (process.platform === "darwin") {
@@ -227,7 +319,6 @@ if (isWindows) {
 
 // Make executable on Unix
 if (!isWindows) {
-  const { chmodSync } = await import("node:fs");
   chmodSync(BINARY_PATH, 0o755);
 }
 

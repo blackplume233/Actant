@@ -485,7 +485,6 @@ async function handleVfsMount(
   ctx: AppContext,
 ): Promise<VfsMountAddRpcResult> {
   const { name, path, type, options } = params as unknown as VfsMountAddRpcParams;
-  assertContextVfsMutationAllowed(ctx, path);
   const active = requireActiveProject(ctx);
   const document = await addNamespaceMount(active.projectRoot, { name, path, type, options });
   const validation = validateNamespaceDocument(document);
@@ -519,7 +518,6 @@ async function handleVfsUnmount(
   ctx: AppContext,
 ): Promise<VfsMountRemoveResult> {
   const { path } = params as unknown as VfsMountRemoveParams;
-  assertContextVfsMutationAllowed(ctx, path);
   const active = requireActiveProject(ctx);
   const { document, removed } = await removeNamespaceMount(active.projectRoot, path);
   if (removed) {
