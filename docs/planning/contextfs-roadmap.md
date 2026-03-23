@@ -191,6 +191,8 @@ Progress notes:
 - [x] Merged to `master`: `d4ff12a`
 - [x] Phase 1 audit and package-boundary baseline 已完成
 - [x] Detailed audit note: `docs/agent/2026-03-23-cursor-322-phase1-audit.md`
+- [x] Phase 2 standalone/project-context derived mounts 已切到 snapshot-backed VFS source
+- [ ] Workstream A remaining scope: daemon app-context 仍有 manager-backed mounts，`CatalogManager` / `BaseComponentManager` 中心职责尚未删除
 
 Authority rule:
 
@@ -203,6 +205,12 @@ Phase 1 audit baseline:
 - [x] `manager -> VFS` 反向投影路径已盘点
 - [x] `register / unregister / inject` 真相源式调用点已盘点
 - [x] `keep / converge / delete` 包边界决策基线已形成
+
+Phase 2 implementation cut:
+
+- [x] standalone/project-context 的 `/skills` `/prompts` `/mcp` `/workflows` `/templates` 不再直接以 manager 作为挂载真相源
+- [x] snapshot-backed domain source 已加入 `@actant/vfs`
+- [x] focused verification passed: `pnpm --filter @actant/vfs type-check`, `pnpm --filter @actant/api type-check`, `pnpm --filter @actant/mcp-server type-check`, `pnpm exec vitest run packages/vfs/src/__tests__/domain-source.test.ts packages/mcp-server/src/context-backend.test.ts`
 
 #### 1. 宿主与运行时口径治理
 

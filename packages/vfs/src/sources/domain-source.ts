@@ -11,7 +11,7 @@ import type {
 
 const DOMAIN_TRAITS = new Set<VfsFeature>(["persistent", "watchable"]);
 
-interface MinimalComponent {
+export interface DomainComponentSnapshot {
   name: string;
   description?: string;
   content?: string;
@@ -19,9 +19,14 @@ interface MinimalComponent {
 }
 
 interface ComponentManager {
-  list(): MinimalComponent[];
-  get(name: string): MinimalComponent | undefined;
-  search(query: string): MinimalComponent[];
+  list(): DomainComponentSnapshot[];
+  get(name: string): DomainComponentSnapshot | undefined;
+  search(query: string): DomainComponentSnapshot[];
+}
+
+interface ComponentView {
+  list(): DomainComponentSnapshot[];
+  get(name: string): DomainComponentSnapshot | undefined;
 }
 
 /**
@@ -38,13 +43,60 @@ export function createDomainSource(
   mountPoint: string,
   lifecycle: VfsLifecycle,
 ): VfsMountRegistration {
+  return createDomainRegistration(manager, domain, mountPoint, lifecycle, {
+    description: `${domain} components (read-only, virtual)`,
+    virtual: true,
+  });
+}
+
+/**
+ * Creates a read-only VFS source backed by a frozen component snapshot.
+ *
+ * The returned registration is intentionally detached from later manager mutations so
+ * standalone/project-context mounts no longer treat manager state as the live source of truth.
+ */
+export function createSnapshotDomainSource(
+  components: DomainComponentSnapshot[],
+  domain: string,
+  mountPoint: string,
+  lifecycle: VfsLifecycle,
+): VfsMountRegistration {
+  const snapshot = components.map((component) => ({
+    ...component,
+    tags: component.tags ? [...component.tags] : undefined,
+  }));
+  const index = new Map(snapshot.map((component) => [component.name, component]));
+
+  return createDomainRegistration(
+    {
+      list: () => snapshot,
+      get: (name) => index.get(name),
+    },
+    domain,
+    mountPoint,
+    lifecycle,
+    {
+      description: `${domain} components (read-only, snapshot-backed)`,
+      virtual: true,
+      snapshot: true,
+    },
+  );
+}
+
+function createDomainRegistration(
+  source: ComponentView,
+  domain: string,
+  mountPoint: string,
+  lifecycle: VfsLifecycle,
+  metadata: Record<string, unknown>,
+): VfsMountRegistration {
   const handlers: VfsHandlerMap = {};
 
   handlers.read = async (filePath: string): Promise<VfsFileContent> => {
     const normalized = filePath.replace(/^\/+/, "");
 
     if (normalized === "_catalog.json") {
-      const catalog = manager.list().map((c) => ({
+      const catalog = source.list().map((c) => ({
         name: c.name,
         description: c.description,
         tags: c.tags,
@@ -53,7 +105,7 @@ export function createDomainSource(
     }
 
     const name = normalized.replace(/\.(md|json|ya?ml)$/, "");
-    const component = manager.get(name);
+    const component = source.get(name);
     if (!component) throw new Error(`${domain} not found: ${name}`);
 
     if (component.content) {
@@ -63,7 +115,7 @@ export function createDomainSource(
   };
 
   handlers.list = async (_dirPath: string, _opts?: VfsListOptions): Promise<VfsEntry[]> => {
-    const components = manager.list();
+    const components = source.list();
     const entries: VfsEntry[] = components.map((c) => ({
       name: c.name,
       path: c.name,
@@ -79,7 +131,7 @@ export function createDomainSource(
       return { size: 0, type: "file", mtime: new Date().toISOString() };
     }
     const name = normalized.replace(/\.(md|json|ya?ml)$/, "");
-    const component = manager.get(name);
+    const component = source.get(name);
     if (!component) throw new Error(`${domain} not found: ${name}`);
     const content = component.content ?? JSON.stringify(component);
     return { size: Buffer.byteLength(content), type: "file", mtime: new Date().toISOString() };
@@ -91,7 +143,7 @@ export function createDomainSource(
     label: "domain",
     features: new Set(DOMAIN_TRAITS),
     lifecycle,
-    metadata: { description: `${domain} components (read-only, virtual)`, virtual: true },
+    metadata,
     fileSchema: {},
     handlers,
   };
