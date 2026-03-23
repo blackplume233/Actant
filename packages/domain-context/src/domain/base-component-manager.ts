@@ -7,11 +7,37 @@ export interface NamedComponent {
   name: string;
 }
 
+export interface ComponentReader<T extends NamedComponent> {
+  get(name: string): T | undefined;
+  has(name: string): boolean;
+  list(): T[];
+  search(query: string): T[];
+  filter(predicate: (c: T) => boolean): T[];
+}
+
+export interface ComponentResolver<T extends NamedComponent> {
+  resolve(names: string[]): T[];
+}
+
+export interface ComponentAuthoring<T extends NamedComponent> {
+  setPersistDir(dir: string): void;
+  add(component: T, persist?: boolean): Promise<void>;
+  update(name: string, patch: Partial<T>, persist?: boolean): Promise<T>;
+  remove(name: string, persist?: boolean): Promise<boolean>;
+  importFromFile(filePath: string): Promise<T>;
+  exportToFile(name: string, filePath: string): Promise<void>;
+}
+
+export interface ComponentCollection<T extends NamedComponent> extends ComponentReader<T>, ComponentResolver<T> {}
+
+export interface MutableComponentCollection<T extends NamedComponent>
+  extends ComponentCollection<T>, ComponentAuthoring<T> {}
+
 /**
  * Generic base class for Domain Context component managers.
  * Provides CRUD, persist, import/export, search/filter, and load-from-directory.
  */
-export abstract class BaseComponentManager<T extends NamedComponent> {
+export abstract class BaseComponentManager<T extends NamedComponent> implements MutableComponentCollection<T> {
   protected readonly components = new Map<string, T>();
   protected readonly logger: Logger;
   protected abstract readonly componentType: string;
