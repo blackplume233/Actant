@@ -46,6 +46,7 @@ docs/wiki/node_modules/
 .trellis/tmp/
 .trellis/tmp-codex-scripts-*/
 .gitnexus
+.understand-anything/
 
 # QA Alpha persistent environment
 .trellis/qa-alpha/

@@ -1,0 +1,41 @@
+{
+  "id": "m7-namespace-governance",
+  "name": "m7-namespace-governance",
+  "title": "完成 M7 的工作目录治理与 Linux 术语切换：统一活跃真相源、默认配置入口、公共接口字段与 CLI 输出，确保 M7 后续实现围绕 mount namespace、mount table、filesystem type、mount instance、node type 展开。",
+  "description": "",
+  "status": "archived",
+  "dev_type": "architecture",
+  "scope": null,
+  "priority": "P1",
+  "creator": "codex",
+  "assignee": "codex",
+  "createdAt": "2026-03-22",
+  "completedAt": "2026-03-23",
+  "branch": "master",
+  "base_branch": "master",
+  "worktree_path": null,
+  "current_phase": 1,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "normalize-truth-sources"
+    },
+    {
+      "phase": 2,
+      "action": "normalize-public-interfaces"
+    },
+    {
+      "phase": 3,
+      "action": "verify-and-freeze"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [
+    "docs/design/contextfs-v1-linux-terminology.md",
+    "docs/planning/contextfs-roadmap.md",
+    "docs/planning/workspace-normalization-todo.md"
+  ],
+  "notes": "旧 actant.project.json 与旧术语允许作为兼容输入短期保留，但不得继续作为活跃默认入口。"
+}
