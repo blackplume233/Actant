@@ -99,6 +99,7 @@ flowchart TB
 | `filesystem type` | 一类文件系统实现的定义，决定实例化方式、能力上界、生命周期语义 |
 | `mount instance` | 某个文件系统类型的具体实例，向命名空间暴露一棵子树 |
 | `mount point` | 挂载实例接入命名空间的路径前缀 |
+| `object URI` | 面向系统边界的统一对象标识，例如未来的 `ac://...`；用于稳定引用，不直接替代路径解析 |
 | `node` | VFS 中可被寻址和操作的统一对象 |
 | `node type` | 节点的语义种类，例如目录、普通文件、控制节点、流节点 |
 | `backend` | 节点背后的真实实现 |
@@ -203,6 +204,21 @@ flowchart LR
 输出：
 
 - 统一 canonical path，例如 `/skills/a.md`
+
+#### 与对象 URI 的关系
+
+`mount namespace` 解决的是**路径解析**，不是**全局对象标识**。
+
+如果未来引入 `ac://` 一类统一协议，其定位应是：
+
+- 作为跨 API / RPC / MCP / session / 审计链路的稳定引用
+- 解析后映射到某个 `mount namespace` 下的 `canonical path` 或稳定节点身份
+- 不替代 VFS 当前基于路径的解析与操作模型
+
+因此，V1 当前是 path-first：
+
+- 内核入口以 `canonical path` 为主
+- `object URI` 是未来可选扩展，而不是当前必需对象
 
 #### 挂载点匹配
 
