@@ -33,7 +33,14 @@
   - `pnpm type-check`
   - `pnpm lint`
   - `pnpm test`
-- [ ] Remaining Workstream A scope: `BaseComponentManager` 等本地 authoring 抽象仍需继续降级，剩余 manager-first 路径仍需继续清理
+- [x] Phase 5 manager contract cut 已完成
+- [x] builder / API handler 合同已从 `BaseComponentManager` 收窄到 `ComponentResolver` / `MutableComponentCollection`
+- [x] overlay 读取层已改为只读 `OverlayComponentView`，不再伪装成 manager
+- [x] verification passed:
+  - `pnpm type-check`
+  - `pnpm lint`
+  - `pnpm test`
+- [ ] Remaining Workstream A scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；后续仍需继续删除 manager-first 实现与中心抽象
 
 ## Current Cut
 
@@ -43,6 +50,8 @@
 - [x] 新增回归测试：
   - `packages/api/src/services/__tests__/catalog-overlay-integration.test.ts`
   - `packages/api/src/services/__tests__/project-context-catalog-projection.test.ts`
+- [x] `BaseComponentManager` 不再作为 builder / API / overlay 的跨包合同类型
+- [x] 读取侧 overlay 已收敛到 `ComponentCollection` 只读视图
 
 ## Sync Rule
 

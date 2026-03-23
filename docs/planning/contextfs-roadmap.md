@@ -196,7 +196,9 @@ Progress notes:
 - [x] Phase 3 verification passed: `pnpm lint`, `pnpm type-check`, `pnpm test`
 - [x] Phase 4 catalog snapshot / overlay cut 已完成：`CatalogManager` 改为持有 namespaced snapshot state，daemon 与 project-context 通过 aggregate view / resolved snapshots 读取 catalog 组件，不再依赖 catalog 注入 domain managers
 - [x] Phase 4 verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
-- [ ] Workstream A remaining scope: `BaseComponentManager` 等本地 authoring 抽象仍需继续降级，剩余 manager-first 路径仍需继续清理
+- [x] Phase 5 manager contract cut 已完成：builder / API handler / overlay 读取层已切到 `ComponentResolver` / `MutableComponentCollection` / `ComponentCollection`
+- [x] Phase 5 verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
+- [ ] Workstream A remaining scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；剩余 manager-first 实现与中心抽象仍需继续删除
 
 Authority rule:
 
@@ -228,6 +230,13 @@ Phase 4 catalog snapshot / overlay cut:
 - [x] daemon `AppContext` 已通过 overlay resolver + aggregate reads 支持 catalog-backed `skill/prompt/mcp/workflow/template` 读取与 `agent create`
 - [x] standalone `project-context` 已改为 local manager + catalog resolved snapshot 双层聚合，catalog 组件不再写入 local managers
 - [x] focused regression added: `catalog-overlay-integration` / `project-context-catalog-projection`
+- [x] full verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
+
+Phase 5 manager contract cut:
+
+- [x] `BaseComponentManager` 不再作为 `agent-runtime` builder / `api` handler 的跨包合同类型
+- [x] overlay 读取层已由 `OverlayComponentManager` 收口为只读 `OverlayComponentView`
+- [x] `BaseComponentManager` 已降级为 `domain-context` 内部 mutable collection 基类
 - [x] full verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
 
 #### 1. 宿主与运行时口径治理

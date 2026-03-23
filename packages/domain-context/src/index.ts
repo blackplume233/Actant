@@ -2,7 +2,15 @@
 export * from "./schemas/index";
 
 // Domain component managers
-export { BaseComponentManager, type NamedComponent } from "./domain/base-component-manager";
+export {
+  BaseComponentManager,
+  type NamedComponent,
+  type ComponentAuthoring,
+  type ComponentCollection,
+  type ComponentReader,
+  type ComponentResolver,
+  type MutableComponentCollection,
+} from "./domain/base-component-manager";
 export { SkillManager } from "./domain/skill/skill-manager";
 export { PromptManager } from "./domain/prompt/prompt-manager";
 export { McpConfigManager } from "./domain/mcp/mcp-config-manager";

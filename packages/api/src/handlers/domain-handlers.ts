@@ -19,7 +19,7 @@ import type {
   WorkflowDefinition,
 } from "@actant/shared";
 import type { HeartbeatPlugin } from "@actant/agent-runtime";
-import type { BaseComponentManager, NamedComponent } from "@actant/agent-runtime";
+import type { MutableComponentCollection, NamedComponent } from "@actant/agent-runtime";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry, RpcHandler } from "./handler-registry";
 
@@ -36,7 +36,7 @@ interface CrudHandlers {
 }
 
 function createCrudHandlers<T extends NamedComponent>(
-  getManager: (ctx: AppContext) => BaseComponentManager<T>,
+  getManager: (ctx: AppContext) => MutableComponentCollection<T>,
 ): CrudHandlers {
   return {
     add: async (params: Record<string, unknown>, ctx: AppContext) => {

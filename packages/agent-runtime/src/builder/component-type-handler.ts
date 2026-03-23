@@ -1,5 +1,5 @@
 import type { AgentBackendType } from "@actant/shared";
-import type { BaseComponentManager, NamedComponent } from "@actant/domain-context";
+import type { ComponentResolver, NamedComponent } from "@actant/domain-context";
 
 /**
  * Encapsulates the handling of a single project component type.
@@ -9,7 +9,7 @@ export interface ComponentTypeHandler<TDef = unknown> {
   /** The key in ProjectContextConfig (e.g. "skills", "prompts") */
   readonly contextKey: string;
   /** Resolve name references to full definitions */
-  resolve(refs: unknown, manager?: BaseComponentManager<NamedComponent>): TDef[];
+  resolve(refs: unknown, resolver?: ComponentResolver<NamedComponent>): TDef[];
   /** Materialize resolved definitions into the workspace */
   materialize(
     workspaceDir: string,

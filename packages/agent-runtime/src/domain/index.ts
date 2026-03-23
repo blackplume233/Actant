@@ -3,7 +3,15 @@
  * This module re-exports everything for backward compatibility.
  * BackendManager and BackendInstaller remain in agent-runtime.
  */
-export { BaseComponentManager, type NamedComponent } from "@actant/domain-context";
+export {
+  BaseComponentManager,
+  type NamedComponent,
+  type ComponentAuthoring,
+  type ComponentCollection,
+  type ComponentReader,
+  type ComponentResolver,
+  type MutableComponentCollection,
+} from "@actant/domain-context";
 export { SkillManager } from "@actant/domain-context";
 export { PromptManager } from "@actant/domain-context";
 export { McpConfigManager } from "@actant/domain-context";

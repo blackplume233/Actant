@@ -75,7 +75,7 @@ import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@
 import { createLogger, getIpcPath, initLogDir, normalizeHostProfile, normalizeIpcPath } from "@actant/shared";
 import { HubContextService } from "./hub-context";
 import { RuntimeToolRegistry } from "./runtime-tool-registry";
-import { OverlayComponentManager } from "./overlay-component-manager";
+import { OverlayComponentView } from "./overlay-component-view";
 
 const logger = createLogger("app-context");
 
@@ -230,10 +230,10 @@ export class AppContext {
   readonly hostProfile: HostProfile;
   readonly hubContext: HubContextService;
   readonly toolRegistry: RuntimeToolRegistry;
-  private readonly skillResolver: OverlayComponentManager<SkillDefinition>;
-  private readonly promptResolver: OverlayComponentManager<PromptDefinition>;
-  private readonly mcpResolver: OverlayComponentManager<McpServerDefinition>;
-  private readonly workflowResolver: OverlayComponentManager<WorkflowDefinition>;
+  private readonly skillResolver: OverlayComponentView<SkillDefinition>;
+  private readonly promptResolver: OverlayComponentView<PromptDefinition>;
+  private readonly mcpResolver: OverlayComponentView<McpServerDefinition>;
+  private readonly workflowResolver: OverlayComponentView<WorkflowDefinition>;
   private vfsLifecycleManager?: VfsLifecycleManager;
 
   private initialized = false;
@@ -277,22 +277,22 @@ export class AppContext {
       backendManager: getBackendManager(),
     }, { skipDefaultCatalog: resolvedLauncherMode === "mock" });
 
-    this.skillResolver = new OverlayComponentManager(
+    this.skillResolver = new OverlayComponentView(
       "skill",
       this.skillManager,
       () => this.catalogManager.listSkills(),
     );
-    this.promptResolver = new OverlayComponentManager(
+    this.promptResolver = new OverlayComponentView(
       "prompt",
       this.promptManager,
       () => this.catalogManager.listPrompts(),
     );
-    this.mcpResolver = new OverlayComponentManager(
+    this.mcpResolver = new OverlayComponentView(
       "mcp",
       this.mcpConfigManager,
       () => this.catalogManager.listMcpServers(),
     );
-    this.workflowResolver = new OverlayComponentManager(
+    this.workflowResolver = new OverlayComponentView(
       "workflow",
       this.workflowManager,
       () => this.catalogManager.listWorkflows(),
