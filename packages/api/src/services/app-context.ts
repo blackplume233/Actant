@@ -45,9 +45,7 @@ import {
   canvasSourceFactory,
   vcsSourceFactory,
   processSourceFactory,
-  createDomainSource,
-  createSkillSource,
-  createMcpConfigSource,
+  createSnapshotDomainSource,
   createMcpRuntimeSource,
   createAgentRuntimeSource,
   RoutingChannelManager,
@@ -57,6 +55,7 @@ import {
   type ChannelCapabilities,
   type ChannelConnectOptions,
   type ChannelHostServices,
+  type DomainComponentSnapshot,
   type LauncherMode,
 } from "@actant/agent-runtime";
 import { CanvasStore } from "./canvas-store";
@@ -819,23 +818,36 @@ export class AppContext {
 
   private mountCoreResourceSources(registry: VfsRegistry): void {
     const lifecycle = { type: "daemon" } as const;
+    const snapshots = this.buildDerivedDomainSnapshots();
     const coreSources = [
       {
-        ...createSkillSource(this.skillManager, "/skills", lifecycle),
+        ...createSnapshotDomainSource(snapshots.skills, "skills", "/skills", lifecycle),
         name: "skills",
       },
-      createDomainSource(this.promptManager, "prompts", "/prompts", lifecycle),
       {
-        ...createMcpConfigSource(this.mcpConfigManager, "/mcp/configs", lifecycle),
+        ...createSnapshotDomainSource(snapshots.prompts, "prompts", "/prompts", lifecycle),
+        name: "prompts",
+      },
+      {
+        ...createSnapshotDomainSource(snapshots.mcpServers, "mcp", "/mcp/configs", lifecycle),
         name: "mcp-configs",
       },
       {
         ...createMcpRuntimeSource(this.createMcpRuntimeProvider(), "/mcp/runtime", lifecycle),
         name: "mcp-runtime",
       },
-      createDomainSource(this.mcpConfigManager, "mcp", "/mcp", lifecycle),
-      createDomainSource(this.workflowManager, "workflows", "/workflows", lifecycle),
-      createDomainSource(this.templateRegistry, "templates", "/templates", lifecycle),
+      {
+        ...createSnapshotDomainSource(snapshots.mcpServers, "mcp", "/mcp", lifecycle),
+        name: "mcp",
+      },
+      {
+        ...createSnapshotDomainSource(snapshots.workflows, "workflows", "/workflows", lifecycle),
+        name: "workflows",
+      },
+      {
+        ...createSnapshotDomainSource(snapshots.templates, "templates", "/templates", lifecycle),
+        name: "templates",
+      },
       {
         ...createAgentRuntimeSource(this.createAgentRuntimeProvider(), "/agents", lifecycle),
         name: "agents",
@@ -846,6 +858,22 @@ export class AppContext {
       registry.unmount(mount.name);
       registry.mount(mount);
     }
+  }
+
+  private buildDerivedDomainSnapshots(): {
+    skills: DomainComponentSnapshot[];
+    prompts: DomainComponentSnapshot[];
+    mcpServers: DomainComponentSnapshot[];
+    workflows: DomainComponentSnapshot[];
+    templates: DomainComponentSnapshot[];
+  } {
+    return {
+      skills: cloneDomainComponents(this.skillManager.list()),
+      prompts: cloneDomainComponents(this.promptManager.list()),
+      mcpServers: cloneDomainComponents(this.mcpConfigManager.list()),
+      workflows: cloneDomainComponents(this.workflowManager.list()),
+      templates: cloneDomainComponents(this.templateRegistry.list()),
+    };
   }
 
   private createMcpRuntimeProvider(): Parameters<typeof createMcpRuntimeSource>[0] {
@@ -999,4 +1027,15 @@ export class AppContext {
       }
     }
   }
+}
+
+function cloneDomainComponents(
+  components: Array<{ name: string; description?: string; content?: string; tags?: string[] }>,
+): DomainComponentSnapshot[] {
+  return components.map((component) => ({
+    name: component.name,
+    description: component.description,
+    content: component.content,
+    tags: component.tags ? [...component.tags] : undefined,
+  }));
 }

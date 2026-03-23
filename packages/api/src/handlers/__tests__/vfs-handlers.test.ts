@@ -6,6 +6,7 @@ import { RPC_ERROR_CODES } from "@actant/shared";
 import { AppContext } from "../../services/app-context";
 import { HandlerRegistry } from "../handler-registry";
 import { registerAgentHandlers } from "../agent-handlers";
+import { registerDomainHandlers } from "../domain-handlers";
 import { registerTemplateHandlers } from "../template-handlers";
 import { registerVfsHandlers } from "../vfs-handlers";
 
@@ -21,6 +22,7 @@ describe("vfs handlers", () => {
 
     registry = new HandlerRegistry();
     registerTemplateHandlers(registry);
+    registerDomainHandlers(registry);
     registerAgentHandlers(registry);
     registerVfsHandlers(registry);
 
@@ -108,6 +110,47 @@ describe("vfs handlers", () => {
     expect(result.filesystemType).toBe("runtimefs");
     expect(result.nodeType).toBe("directory");
     expect(result.tags).toEqual([]);
+  });
+
+  it("refreshes snapshot-backed derived mounts after template and skill mutations", async () => {
+    const listHandler = registry.get("vfs.list")!;
+    const readHandler = registry.get("vfs.read")!;
+    const templateLoad = registry.get("template.load")!;
+    const templateUnload = registry.get("template.unload")!;
+    const skillAdd = registry.get("skill.add")!;
+
+    const templateBefore = await listHandler({ path: "/templates" }, ctx) as Array<{ path: string }>;
+    expect(templateBefore.map((entry) => entry.path)).toEqual(expect.arrayContaining(["test-tpl"]));
+
+    const secondTemplatePath = join(tmpDir, "test-template-2.json");
+    await writeFile(secondTemplatePath, JSON.stringify({
+      name: "test-tpl-2",
+      version: "1.0.0",
+      backend: { type: "claude-code" },
+      provider: { type: "anthropic" },
+      project: {},
+    }));
+    await templateLoad({ filePath: secondTemplatePath }, ctx);
+
+    const templateAfterLoad = await listHandler({ path: "/templates" }, ctx) as Array<{ path: string }>;
+    expect(templateAfterLoad.map((entry) => entry.path)).toEqual(expect.arrayContaining(["test-tpl", "test-tpl-2"]));
+
+    await templateUnload({ name: "test-tpl-2" }, ctx);
+    const templateAfterUnload = await listHandler({ path: "/templates" }, ctx) as Array<{ path: string }>;
+    expect(templateAfterUnload.map((entry) => entry.path)).not.toContain("test-tpl-2");
+
+    await skillAdd({
+      component: {
+        name: "fresh-skill",
+        content: "Fresh skill body",
+      },
+    }, ctx);
+
+    const skills = await listHandler({ path: "/skills" }, ctx) as Array<{ path: string }>;
+    expect(skills.map((entry) => entry.path)).toEqual(expect.arrayContaining(["fresh-skill"]));
+
+    const freshSkill = await readHandler({ path: "/skills/fresh-skill" }, ctx) as { content: string };
+    expect(freshSkill.content).toBe("Fresh skill body");
   });
 
   it("preserves direct child mount listing for unresolved parent paths", async () => {
