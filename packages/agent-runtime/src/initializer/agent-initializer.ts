@@ -1,7 +1,16 @@
 import { mkdir, rm, access, symlink, lstat, unlink, readlink } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { AgentInstanceMeta, AgentArchetype, LaunchMode, WorkspacePolicy, WorkDirConflict, PermissionsInput, ModelProviderConfig } from "@actant/shared";
+import type {
+  AgentInstanceMeta,
+  AgentArchetype,
+  LaunchMode,
+  WorkspacePolicy,
+  WorkDirConflict,
+  PermissionsInput,
+  ModelProviderConfig,
+  AgentTemplate,
+} from "@actant/shared";
 import {
   ActantError,
   ConfigValidationError,
@@ -9,7 +18,6 @@ import {
   WorkspaceInitError,
   createLogger,
 } from "@actant/shared";
-import type { TemplateRegistry } from "@actant/domain-context";
 import { WorkspaceBuilder, type ProjectComponentManagers } from "../builder/workspace-builder";
 import { resolvePermissions } from "@actant/domain-context";
 import { readInstanceMeta, writeInstanceMeta } from "../state/index";
@@ -46,12 +54,16 @@ export interface InstanceOverrides {
   metadata: Record<string, string>;
 }
 
+export interface TemplateLookup {
+  getOrThrow(name: string): AgentTemplate;
+}
+
 export class AgentInitializer {
   private readonly builder: WorkspaceBuilder;
   private readonly pipeline?: InitializationPipeline;
 
   constructor(
-    private readonly templateRegistry: TemplateRegistry,
+    private readonly templateLookup: TemplateLookup,
     private readonly instancesBaseDir: string,
     private readonly options?: InitializerOptions,
   ) {
@@ -81,7 +93,7 @@ export class AgentInitializer {
     templateName: string,
     overrides?: Partial<InstanceOverrides>,
   ): Promise<AgentInstanceMeta> {
-    const template = this.templateRegistry.getOrThrow(templateName);
+    const template = this.templateLookup.getOrThrow(templateName);
     const customWorkDir = overrides?.workDir;
     const workspaceDir = customWorkDir ?? join(this.instancesBaseDir, name);
     const conflictPolicy = overrides?.workDirConflict ?? "error";

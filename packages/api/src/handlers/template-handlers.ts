@@ -31,7 +31,7 @@ async function handleTemplateList(
   _params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<TemplateListResult> {
-  return ctx.templateRegistry.list();
+  return ctx.listTemplateDefinitions();
 }
 
 async function handleTemplateGet(
@@ -39,7 +39,7 @@ async function handleTemplateGet(
   ctx: AppContext,
 ): Promise<TemplateGetResult> {
   const { name } = params as unknown as TemplateGetParams;
-  return ctx.templateRegistry.getOrThrow(name);
+  return ctx.getTemplateDefinitionOrThrow(name);
 }
 
 async function handleTemplateLoad(
