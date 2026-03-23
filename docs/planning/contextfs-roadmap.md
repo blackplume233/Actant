@@ -192,7 +192,9 @@ Progress notes:
 - [x] Phase 1 audit and package-boundary baseline 已完成
 - [x] Detailed audit note: `docs/agent/2026-03-23-cursor-322-phase1-audit.md`
 - [x] Phase 2 standalone/project-context derived mounts 已切到 snapshot-backed VFS source
-- [ ] Workstream A remaining scope: daemon app-context 仍有 manager-backed mounts，`CatalogManager` / `BaseComponentManager` 中心职责尚未删除
+- [x] Phase 3 daemon app-context derived mounts 已切到 snapshot-backed VFS source，并在 template / domain / catalog 变更后刷新挂载
+- [x] Phase 3 verification passed: `pnpm lint`, `pnpm type-check`, `pnpm test`
+- [ ] Workstream A remaining scope: `CatalogManager` / `BaseComponentManager` 中心职责尚未删除，manager 仍需继续降级为索引 / 缓存 / 派生视图
 
 Authority rule:
 
@@ -211,6 +213,12 @@ Phase 2 implementation cut:
 - [x] standalone/project-context 的 `/skills` `/prompts` `/mcp` `/workflows` `/templates` 不再直接以 manager 作为挂载真相源
 - [x] snapshot-backed domain source 已加入 `@actant/vfs`
 - [x] focused verification passed: `pnpm --filter @actant/vfs type-check`, `pnpm --filter @actant/api type-check`, `pnpm --filter @actant/mcp-server type-check`, `pnpm exec vitest run packages/vfs/src/__tests__/domain-source.test.ts packages/mcp-server/src/context-backend.test.ts`
+
+Phase 3 daemon projection cut:
+
+- [x] daemon app-context 的 `/skills` `/prompts` `/mcp` `/workflows` `/templates` 已不再直接以 manager 作为挂载真相源
+- [x] template / domain / catalog 变更会触发 daemon derived mounts 刷新，保持 VFS 投影视图与最新快照一致
+- [x] full verification passed: `pnpm lint`, `pnpm type-check`, `pnpm test`
 
 #### 1. 宿主与运行时口径治理
 

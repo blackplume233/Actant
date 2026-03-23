@@ -31,6 +31,7 @@ async function handleCatalogAdd(
 ): Promise<{ name: string; components: Record<string, number> }> {
   const { name, config } = params as unknown as CatalogAddParams;
   const result = await ctx.catalogManager.addCatalog(name, config);
+  ctx.refreshContextMounts();
 
   ctx.eventBus.emit("catalog:updated", { callerType: "system", callerId: "CatalogManager" }, undefined, {
     "catalog.name": name,
@@ -55,6 +56,12 @@ async function handleCatalogRemove(
 ): Promise<{ success: boolean }> {
   const { name } = params as unknown as CatalogRemoveParams;
   const success = await ctx.catalogManager.removeCatalog(name);
+  if (success) {
+    ctx.refreshContextMounts();
+    ctx.eventBus.emit("catalog:updated", { callerType: "system", callerId: "CatalogManager" }, undefined, {
+      "catalog.name": name,
+    });
+  }
   return { success };
 }
 
@@ -65,6 +72,7 @@ async function handleCatalogSync(
   const { name } = params as unknown as CatalogSyncParams;
   if (name) {
     const { report } = await ctx.catalogManager.syncCatalogWithReport(name);
+    ctx.refreshContextMounts();
 
     ctx.eventBus.emit("catalog:updated", { callerType: "system", callerId: "CatalogManager" }, undefined, {
       "catalog.name": name,
@@ -82,6 +90,7 @@ async function handleCatalogSync(
   }
   const { report } = await ctx.catalogManager.syncAllCatalogsWithReport();
   const synced = ctx.catalogManager.listCatalogs().map((catalog) => catalog.name);
+  ctx.refreshContextMounts();
 
   for (const catalogName of synced) {
     ctx.eventBus.emit("catalog:updated", { callerType: "system", callerId: "CatalogManager" }, undefined, {

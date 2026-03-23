@@ -50,6 +50,7 @@ async function handleTemplateLoad(
   const template = await ctx.templateLoader.loadFromFile(resolve(filePath));
   ctx.templateRegistry.register(template);
   await ctx.templateRegistry.persist(template);
+  ctx.refreshContextMounts();
 
   ctx.eventBus?.emit("template:loaded", { callerType: "user", callerId: "api" }, {
     "template.name": template.name,
@@ -70,6 +71,7 @@ async function handleTemplateUnload(
   const removed = ctx.templateRegistry.unregister(name);
 
   if (removed) {
+    ctx.refreshContextMounts();
     ctx.eventBus?.emit("template:unloaded", { callerType: "user", callerId: "api" }, {
       "template.name": name,
     });
@@ -140,6 +142,7 @@ async function handleTemplateCreate(
 
   ctx.templateRegistry.register(template);
   await ctx.templateRegistry.persist(template);
+  ctx.refreshContextMounts();
 
   ctx.eventBus?.emit("template:loaded", { callerType: "user", callerId: "api" }, {
     "template.name": template.name,
