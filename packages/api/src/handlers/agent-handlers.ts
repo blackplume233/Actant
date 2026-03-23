@@ -227,7 +227,7 @@ async function handleAgentUpdatePermissions(
   const workspaceDir = join(ctx.instancesDir, name);
 
   // Resolve MCP server names from the existing config
-  const mcpServers = ctx.mcpConfigManager.list().map((s) => s.name);
+  const mcpServers = ctx.listMcpServerDefinitions().map((s) => s.name);
   const resolved = resolvePermissionsWithMcp(permissions, mcpServers);
 
   // Update .actant.json
@@ -271,7 +271,7 @@ function initSchedulerIfNeeded(name: string, ctx: AppContext): void {
 
   if (meta.archetype !== "employee") return;
 
-  const template = ctx.templateRegistry.get(meta.templateName);
+  const template = ctx.getTemplateDefinition(meta.templateName);
   if (!template?.schedule) return;
 
   const hasConfig = template.schedule.heartbeat

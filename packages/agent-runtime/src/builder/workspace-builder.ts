@@ -4,8 +4,12 @@ import type {
   ProjectContextConfig,
   McpServerDefinition,
   PermissionsInput,
+  PluginDefinition,
+  PromptDefinition,
+  SkillDefinition,
+  WorkflowDefinition,
 } from "@actant/shared";
-import type { SkillManager, PromptManager, McpConfigManager, WorkflowManager, PluginManager, BaseComponentManager, NamedComponent } from "@actant/domain-context";
+import type { BaseComponentManager, NamedComponent } from "@actant/domain-context";
 import type { BackendBuilder, VerifyResult } from "./backend-builder";
 import type { ComponentTypeHandler } from "./component-type-handler";
 import { CursorBuilder } from "./cursor-builder";
@@ -23,11 +27,11 @@ import {
 const logger = createLogger("workspace-builder");
 
 export interface ProjectComponentManagers {
-  skills?: SkillManager;
-  prompts?: PromptManager;
-  mcp?: McpConfigManager;
-  workflows?: WorkflowManager;
-  plugins?: PluginManager;
+  skills?: BaseComponentManager<SkillDefinition>;
+  prompts?: BaseComponentManager<PromptDefinition>;
+  mcp?: BaseComponentManager<McpServerDefinition>;
+  workflows?: BaseComponentManager<WorkflowDefinition>;
+  plugins?: BaseComponentManager<PluginDefinition>;
 }
 
 export interface WorkspaceBuildResult {

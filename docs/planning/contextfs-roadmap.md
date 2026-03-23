@@ -194,7 +194,9 @@ Progress notes:
 - [x] Phase 2 standalone/project-context derived mounts 已切到 snapshot-backed VFS source
 - [x] Phase 3 daemon app-context derived mounts 已切到 snapshot-backed VFS source，并在 template / domain / catalog 变更后刷新挂载
 - [x] Phase 3 verification passed: `pnpm lint`, `pnpm type-check`, `pnpm test`
-- [ ] Workstream A remaining scope: `CatalogManager` / `BaseComponentManager` 中心职责尚未删除，manager 仍需继续降级为索引 / 缓存 / 派生视图
+- [x] Phase 4 catalog snapshot / overlay cut 已完成：`CatalogManager` 改为持有 namespaced snapshot state，daemon 与 project-context 通过 aggregate view / resolved snapshots 读取 catalog 组件，不再依赖 catalog 注入 domain managers
+- [x] Phase 4 verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
+- [ ] Workstream A remaining scope: `BaseComponentManager` 等本地 authoring 抽象仍需继续降级，剩余 manager-first 路径仍需继续清理
 
 Authority rule:
 
@@ -219,6 +221,14 @@ Phase 3 daemon projection cut:
 - [x] daemon app-context 的 `/skills` `/prompts` `/mcp` `/workflows` `/templates` 已不再直接以 manager 作为挂载真相源
 - [x] template / domain / catalog 变更会触发 daemon derived mounts 刷新，保持 VFS 投影视图与最新快照一致
 - [x] full verification passed: `pnpm lint`, `pnpm type-check`, `pnpm test`
+
+Phase 4 catalog snapshot / overlay cut:
+
+- [x] `CatalogManager` 不再把 catalog 组件注入 `SkillManager` / `PromptManager` / `McpConfigManager` / `WorkflowManager` / `TemplateRegistry`
+- [x] daemon `AppContext` 已通过 overlay resolver + aggregate reads 支持 catalog-backed `skill/prompt/mcp/workflow/template` 读取与 `agent create`
+- [x] standalone `project-context` 已改为 local manager + catalog resolved snapshot 双层聚合，catalog 组件不再写入 local managers
+- [x] focused regression added: `catalog-overlay-integration` / `project-context-catalog-projection`
+- [x] full verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
 
 #### 1. 宿主与运行时口径治理
 

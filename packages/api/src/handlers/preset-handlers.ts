@@ -40,7 +40,7 @@ async function handlePresetApply(
   ctx: AppContext,
 ): Promise<AgentTemplate> {
   const { qualifiedName, templateName } = params as unknown as PresetApplyParams;
-  const template = ctx.templateRegistry.get(templateName);
+  const template = ctx.getTemplateDefinition(templateName);
   if (!template) {
     throw new ConfigNotFoundError(`Template "${templateName}" not found`);
   }

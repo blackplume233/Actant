@@ -2,18 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { join } from "node:path";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { SkillManager, PromptManager, McpConfigManager, WorkflowManager } from "@actant/domain-context";
 import { CatalogManager } from "./catalog-manager";
 import type { FetchResult } from "./component-catalog";
-
-function createManagers() {
-  return {
-    skillManager: new SkillManager(),
-    promptManager: new PromptManager(),
-    mcpConfigManager: new McpConfigManager(),
-    workflowManager: new WorkflowManager(),
-  };
-}
 
 const SKILL_MD_CODE_REVIEW = `---
 name: code-review
@@ -72,14 +62,12 @@ async function createCommunityRepo(dir: string) {
 describe("CommunityCatalog (via CatalogManager with local override)", () => {
   let homeDir: string;
   let repoDir: string;
-  let managers: ReturnType<typeof createManagers>;
   let sourceMgr: CatalogManager;
 
   beforeEach(async () => {
     homeDir = await mkdtemp(join(tmpdir(), "cs-home-"));
     repoDir = await mkdtemp(join(tmpdir(), "cs-repo-"));
-    managers = createManagers();
-    sourceMgr = new CatalogManager(homeDir, managers, { skipDefaultCatalog: true });
+    sourceMgr = new CatalogManager(homeDir, {}, { skipDefaultCatalog: true });
     await createCommunityRepo(repoDir);
   });
 
@@ -94,12 +82,12 @@ describe("CommunityCatalog (via CatalogManager with local override)", () => {
       path: repoDir,
     });
 
-    expect(managers.skillManager.has("community-test@code-review")).toBe(true);
-    expect(managers.skillManager.has("community-test@testing")).toBe(true);
+    expect(sourceMgr.getSkill("community-test@code-review")).toBeDefined();
+    expect(sourceMgr.getSkill("community-test@testing")).toBeDefined();
     // LocalCatalog only scans skills/, not advanced/ — that's expected
-    expect(managers.skillManager.has("community-test@deployment")).toBe(false);
+    expect(sourceMgr.getSkill("community-test@deployment")).toBeUndefined();
 
-    const codeReview = managers.skillManager.get("community-test@code-review");
+    const codeReview = sourceMgr.getSkill("community-test@code-review");
     expect(codeReview?.description).toBe("Expert code review skill");
     expect(codeReview?.content).toContain("You are an expert code reviewer.");
     expect(codeReview?.tags).toEqual(["review", "quality"]);
@@ -225,14 +213,12 @@ describe("CommunityCatalog standalone", () => {
 describe("CatalogManager with community type", () => {
   let homeDir: string;
   let repoDir: string;
-  let managers: ReturnType<typeof createManagers>;
   let sourceMgr: CatalogManager;
 
   beforeEach(async () => {
     homeDir = await mkdtemp(join(tmpdir(), "sm-community-"));
     repoDir = await mkdtemp(join(tmpdir(), "sm-crepo-"));
-    managers = createManagers();
-    sourceMgr = new CatalogManager(homeDir, managers, { skipDefaultCatalog: true });
+    sourceMgr = new CatalogManager(homeDir, {}, { skipDefaultCatalog: true });
     await createCommunityRepo(repoDir);
   });
 

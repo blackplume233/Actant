@@ -2,19 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { join } from "node:path";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { SkillManager, PromptManager, McpConfigManager, WorkflowManager, TemplateRegistry } from "@actant/domain-context";
 import { ConfigValidationError } from "@actant/shared";
 import { CatalogManager } from "./catalog-manager";
-
-function createManagers() {
-  return {
-    skillManager: new SkillManager(),
-    promptManager: new PromptManager(),
-    mcpConfigManager: new McpConfigManager(),
-    workflowManager: new WorkflowManager(),
-    templateRegistry: new TemplateRegistry({ allowOverwrite: true }),
-  };
-}
 
 async function createLocalPackage(dir: string) {
   await mkdir(join(dir, "skills"), { recursive: true });
@@ -67,14 +56,12 @@ async function createLocalPackage(dir: string) {
 describe("CatalogManager", () => {
   let homeDir: string;
   let pkgDir: string;
-  let managers: ReturnType<typeof createManagers>;
   let sourceMgr: CatalogManager;
 
   beforeEach(async () => {
     homeDir = await mkdtemp(join(tmpdir(), "sm-home-"));
     pkgDir = await mkdtemp(join(tmpdir(), "sm-pkg-"));
-    managers = createManagers();
-    sourceMgr = new CatalogManager(homeDir, managers, { skipDefaultCatalog: true });
+    sourceMgr = new CatalogManager(homeDir, {}, { skipDefaultCatalog: true });
     await createLocalPackage(pkgDir);
   });
 
@@ -83,36 +70,37 @@ describe("CatalogManager", () => {
     await rm(pkgDir, { recursive: true, force: true, maxRetries: 3, retryDelay: 200 });
   });
 
-  it("addCatalog registers local catalog and injects namespaced components", async () => {
+  it("addCatalog registers local catalog and exposes namespaced components", async () => {
     await sourceMgr.addCatalog("test", { type: "local", path: pkgDir });
 
-    expect(managers.skillManager.has("test@test-skill")).toBe(true);
-    expect(managers.promptManager.has("test@test-prompt")).toBe(true);
-    expect(managers.templateRegistry.has("test@test-template")).toBe(true);
+    expect(sourceMgr.getSkill("test@test-skill")).toBeDefined();
+    expect(sourceMgr.getPrompt("test@test-prompt")).toBeDefined();
+    expect(sourceMgr.getTemplate("test@test-template")).toBeDefined();
     expect(sourceMgr.hasCatalog("test")).toBe(true);
   });
 
-  it("listCatalogs returns registered sources", async () => {
+  it("listCatalogs returns registered catalogs", async () => {
     await sourceMgr.addCatalog("local-pkg", { type: "local", path: pkgDir });
-    const sources = sourceMgr.listCatalogs();
-    expect(sources).toHaveLength(1);
-    expect(sources.map((s) => s.name)).toContain("local-pkg");
+    const catalogs = sourceMgr.listCatalogs();
+    expect(catalogs).toHaveLength(1);
+    expect(catalogs.map((catalog) => catalog.name)).toContain("local-pkg");
   });
 
-  it("removeCatalog cleans up namespaced components", async () => {
+  it("removeCatalog clears namespaced component state", async () => {
     await sourceMgr.addCatalog("rm-test", { type: "local", path: pkgDir });
-    expect(managers.skillManager.has("rm-test@test-skill")).toBe(true);
-    expect(managers.templateRegistry.has("rm-test@test-template")).toBe(true);
+    expect(sourceMgr.getSkill("rm-test@test-skill")).toBeDefined();
+    expect(sourceMgr.getTemplate("rm-test@test-template")).toBeDefined();
 
     await sourceMgr.removeCatalog("rm-test");
-    expect(managers.skillManager.has("rm-test@test-skill")).toBe(false);
-    expect(managers.templateRegistry.has("rm-test@test-template")).toBe(false);
+
+    expect(sourceMgr.getSkill("rm-test@test-skill")).toBeUndefined();
+    expect(sourceMgr.getTemplate("rm-test@test-template")).toBeUndefined();
     expect(sourceMgr.hasCatalog("rm-test")).toBe(false);
   });
 
   it("syncCatalog re-loads components", async () => {
     await sourceMgr.addCatalog("sync-test", { type: "local", path: pkgDir });
-    expect(managers.skillManager.has("sync-test@test-skill")).toBe(true);
+    expect(sourceMgr.getSkill("sync-test@test-skill")).toBeDefined();
 
     await writeFile(
       join(pkgDir, "skills", "new-skill.json"),
@@ -120,14 +108,13 @@ describe("CatalogManager", () => {
     );
 
     await sourceMgr.syncCatalog("sync-test");
-    expect(managers.skillManager.has("sync-test@new-skill")).toBe(true);
-    expect(managers.skillManager.has("sync-test@test-skill")).toBe(true);
+    expect(sourceMgr.getSkill("sync-test@new-skill")).toBeDefined();
+    expect(sourceMgr.getSkill("sync-test@test-skill")).toBeDefined();
   });
 
   it("syncCatalogWithReport returns report with added/updated/removed/unchanged", async () => {
     await sourceMgr.addCatalog("report-test", { type: "local", path: pkgDir });
 
-    // Add new skill, update test-skill version, remove test-prompt
     await writeFile(
       join(pkgDir, "skills", "test-skill.json"),
       JSON.stringify({ name: "test-skill", version: "1.1.0", content: "Test skill rules" }),
@@ -136,7 +123,6 @@ describe("CatalogManager", () => {
       join(pkgDir, "skills", "extra-skill.json"),
       JSON.stringify({ name: "extra-skill", version: "1.0.0", content: "Extra" }),
     );
-    // Remove test-prompt by deleting the file
     const { unlink } = await import("node:fs/promises");
     await unlink(join(pkgDir, "prompts", "test-prompt.json"));
 
@@ -155,11 +141,7 @@ describe("CatalogManager", () => {
 
     expect(report.removed).toHaveLength(1);
     expect(report.removed[0]).toMatchObject({ type: "prompt", name: "report-test@test-prompt", oldVersion: "1.0.0" });
-
-    // template and presets unchanged
-    expect(report.unchanged.length).toBeGreaterThanOrEqual(1);
     expect(report.unchanged).toContain("report-test@test-template");
-
     expect(report.hasBreakingChanges).toBe(false);
     expect(fetchResult.skills).toHaveLength(2);
   });
@@ -186,9 +168,7 @@ describe("CatalogManager", () => {
 
   it("addCatalog throws for duplicate catalog name", async () => {
     await sourceMgr.addCatalog("dup", { type: "local", path: pkgDir });
-    await expect(sourceMgr.addCatalog("dup", { type: "local", path: pkgDir })).rejects.toThrow(
-      /already registered/,
-    );
+    await expect(sourceMgr.addCatalog("dup", { type: "local", path: pkgDir })).rejects.toThrow(/already registered/);
   });
 
   it("addCatalog fails with structured validation error for legacy domainContext templates", async () => {
@@ -218,9 +198,9 @@ describe("CatalogManager", () => {
       ]),
     );
     expect(sourceMgr.hasCatalog("legacy")).toBe(false);
-    expect(managers.skillManager.has("legacy@test-skill")).toBe(false);
-    expect(managers.promptManager.has("legacy@test-prompt")).toBe(false);
-    expect(managers.templateRegistry.has("legacy@test-template")).toBe(false);
+    expect(sourceMgr.getSkill("legacy@test-skill")).toBeUndefined();
+    expect(sourceMgr.getPrompt("legacy@test-prompt")).toBeUndefined();
+    expect(sourceMgr.getTemplate("legacy@test-template")).toBeUndefined();
   });
 
   it("removeCatalog returns false for unknown name", async () => {
@@ -230,7 +210,7 @@ describe("CatalogManager", () => {
 
   it("syncCatalog preserves existing state when refreshed templates are invalid", async () => {
     await sourceMgr.addCatalog("sync-invalid", { type: "local", path: pkgDir });
-    const originalTemplate = managers.templateRegistry.get("sync-invalid@test-template");
+    const originalTemplate = sourceMgr.getTemplate("sync-invalid@test-template");
 
     await writeFile(
       join(pkgDir, "templates", "test-template.json"),
@@ -249,19 +229,18 @@ describe("CatalogManager", () => {
     const error = await sourceMgr.syncCatalog("sync-invalid").catch((err: unknown) => err);
 
     expect(error).toBeInstanceOf(ConfigValidationError);
-    expect(managers.skillManager.has("sync-invalid@test-skill")).toBe(true);
-    expect(managers.promptManager.has("sync-invalid@test-prompt")).toBe(true);
-    expect(managers.templateRegistry.has("sync-invalid@test-template")).toBe(true);
-    expect(managers.templateRegistry.get("sync-invalid@test-template")).toEqual(originalTemplate);
+    expect(sourceMgr.getSkill("sync-invalid@test-skill")).toBeDefined();
+    expect(sourceMgr.getPrompt("sync-invalid@test-prompt")).toBeDefined();
+    expect(sourceMgr.getTemplate("sync-invalid@test-template")).toEqual(originalTemplate);
   });
 
   describe("presets", () => {
-    it("listPresets returns presets from sources", async () => {
+    it("listPresets returns presets from catalogs", async () => {
       await sourceMgr.addCatalog("p", { type: "local", path: pkgDir });
       const presets = sourceMgr.listPresets();
       expect(presets).toHaveLength(2);
-      expect(presets.map((p) => p.name)).toContain("test-bundle");
-      expect(presets.map((p) => p.name)).toContain("template-preset");
+      expect(presets.map((preset) => preset.name)).toContain("test-bundle");
+      expect(presets.map((preset) => preset.name)).toContain("template-preset");
     });
 
     it("getPreset retrieves by qualified name", async () => {
@@ -298,10 +277,8 @@ describe("CatalogManager", () => {
       expect(() => sourceMgr.applyPreset("nope@missing", template)).toThrow(/not found/);
     });
 
-    it("applyPreset with templates field works when templateRegistry is present", async () => {
+    it("applyPreset validates referenced templates without mutating local registry state", async () => {
       await sourceMgr.addCatalog("p", { type: "local", path: pkgDir });
-      expect(managers.templateRegistry.has("p@test-template")).toBe(true);
-
       const template = {
         name: "base-tmpl",
         version: "1.0.0",
@@ -309,14 +286,14 @@ describe("CatalogManager", () => {
         provider: { type: "anthropic" as const },
         project: {},
       };
+
       const result = sourceMgr.applyPreset("p@template-preset", template);
       expect(result.project.skills).toContain("p@test-skill");
-      expect(managers.templateRegistry.get("p@test-template")).toBeDefined();
+      expect(sourceMgr.getTemplate("p@test-template")).toBeDefined();
     });
   });
 
   it("loads SKILL.md from skills subdirectories when scanning", async () => {
-    // Package without explicit components - triggers directory scan
     await writeFile(
       join(pkgDir, "actant.json"),
       JSON.stringify({ name: "skill-md-pkg", version: "1.0.0" }),
@@ -336,14 +313,12 @@ metadata:
 
 You are an expert code reviewer.`,
     );
-    // Remove the JSON skill so we only get SKILL.md
     const { unlink } = await import("node:fs/promises");
     await unlink(join(pkgDir, "skills", "test-skill.json"));
 
     await sourceMgr.addCatalog("skill-md", { type: "local", path: pkgDir });
 
-    expect(managers.skillManager.has("skill-md@code-review")).toBe(true);
-    const skill = managers.skillManager.get("skill-md@code-review");
+    const skill = sourceMgr.getSkill("skill-md@code-review");
     expect(skill?.description).toBe("Expert code review skill");
     expect(skill?.tags).toEqual(["review", "quality"]);
     expect(skill?.content).toContain("You are an expert code reviewer.");
@@ -353,13 +328,12 @@ You are an expert code reviewer.`,
     it("persists catalogs.json and restores on initialize", async () => {
       await sourceMgr.addCatalog("persist-test", { type: "local", path: pkgDir });
 
-      const mgr2 = createManagers();
-      const sourceMgr2 = new CatalogManager(homeDir, mgr2, { skipDefaultCatalog: true });
+      const sourceMgr2 = new CatalogManager(homeDir, {}, { skipDefaultCatalog: true });
       await sourceMgr2.initialize();
 
       expect(sourceMgr2.hasCatalog("persist-test")).toBe(true);
-      expect(mgr2.skillManager.has("persist-test@test-skill")).toBe(true);
-      expect(mgr2.templateRegistry.has("persist-test@test-template")).toBe(true);
+      expect(sourceMgr2.getSkill("persist-test@test-skill")).toBeDefined();
+      expect(sourceMgr2.getTemplate("persist-test@test-template")).toBeDefined();
     });
   });
 });

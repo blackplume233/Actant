@@ -122,7 +122,7 @@ async function handleSkillList(
   _params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<SkillDefinition[]> {
-  return ctx.skillManager.list();
+  return ctx.listSkillDefinitions();
 }
 
 async function handleSkillGet(
@@ -130,7 +130,7 @@ async function handleSkillGet(
   ctx: AppContext,
 ): Promise<SkillDefinition> {
   const { name } = params as unknown as SkillGetParams;
-  const skill = ctx.skillManager.get(name);
+  const skill = ctx.getSkillDefinition(name);
   if (!skill) {
     throw new ConfigNotFoundError(`Skill "${name}" not found`);
   }
@@ -141,7 +141,7 @@ async function handlePromptList(
   _params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<PromptDefinition[]> {
-  return ctx.promptManager.list();
+  return ctx.listPromptDefinitions();
 }
 
 async function handlePromptGet(
@@ -149,7 +149,7 @@ async function handlePromptGet(
   ctx: AppContext,
 ): Promise<PromptDefinition> {
   const { name } = params as unknown as PromptGetParams;
-  const prompt = ctx.promptManager.get(name);
+  const prompt = ctx.getPromptDefinition(name);
   if (!prompt) {
     throw new ConfigNotFoundError(`Prompt "${name}" not found`);
   }
@@ -160,7 +160,7 @@ async function handleMcpList(
   _params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<McpServerDefinition[]> {
-  return ctx.mcpConfigManager.list();
+  return ctx.listMcpServerDefinitions();
 }
 
 async function handleMcpGet(
@@ -168,7 +168,7 @@ async function handleMcpGet(
   ctx: AppContext,
 ): Promise<McpServerDefinition> {
   const { name } = params as unknown as McpGetParams;
-  const mcp = ctx.mcpConfigManager.get(name);
+  const mcp = ctx.getMcpServerDefinition(name);
   if (!mcp) {
     throw new ConfigNotFoundError(`MCP server "${name}" not found`);
   }
@@ -179,7 +179,7 @@ async function handleWorkflowList(
   _params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<WorkflowDefinition[]> {
-  return ctx.workflowManager.list();
+  return ctx.listWorkflowDefinitions();
 }
 
 async function handleWorkflowGet(
@@ -187,7 +187,7 @@ async function handleWorkflowGet(
   ctx: AppContext,
 ): Promise<WorkflowDefinition> {
   const { name } = params as unknown as WorkflowGetParams;
-  const workflow = ctx.workflowManager.get(name);
+  const workflow = ctx.getWorkflowDefinition(name);
   if (!workflow) {
     throw new ConfigNotFoundError(`Workflow "${name}" not found`);
   }
@@ -247,7 +247,7 @@ async function handleSkillSearch(
   ctx: AppContext,
 ): Promise<Array<{ name: string; description?: string; tags?: string[]; origin?: unknown }>> {
   const { query } = params as { query: string };
-  return ctx.skillManager.search(query ?? "").map((s) => ({
+  return ctx.searchSkillDefinitions(query ?? "").map((s) => ({
     name: s.name,
     description: s.description,
     tags: s.tags,

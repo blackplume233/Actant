@@ -59,12 +59,23 @@ import {
   type LauncherMode,
 } from "@actant/agent-runtime";
 import { CanvasStore } from "./canvas-store";
-import type { HostCapability, HostProfile, HostRuntimeState, ModelApiProtocol } from "@actant/shared";
+import type {
+  AgentTemplate,
+  HostCapability,
+  HostProfile,
+  HostRuntimeState,
+  McpServerDefinition,
+  ModelApiProtocol,
+  PromptDefinition,
+  SkillDefinition,
+  WorkflowDefinition,
+} from "@actant/shared";
 import { AcpConnectionManager, AcpChannelManagerAdapter } from "@actant/acp";
 import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
 import { createLogger, getIpcPath, initLogDir, normalizeHostProfile, normalizeIpcPath } from "@actant/shared";
 import { HubContextService } from "./hub-context";
 import { RuntimeToolRegistry } from "./runtime-tool-registry";
+import { OverlayComponentManager } from "./overlay-component-manager";
 
 const logger = createLogger("app-context");
 
@@ -219,6 +230,10 @@ export class AppContext {
   readonly hostProfile: HostProfile;
   readonly hubContext: HubContextService;
   readonly toolRegistry: RuntimeToolRegistry;
+  private readonly skillResolver: OverlayComponentManager<SkillDefinition>;
+  private readonly promptResolver: OverlayComponentManager<PromptDefinition>;
+  private readonly mcpResolver: OverlayComponentManager<McpServerDefinition>;
+  private readonly workflowResolver: OverlayComponentManager<WorkflowDefinition>;
   private vfsLifecycleManager?: VfsLifecycleManager;
 
   private initialized = false;
@@ -259,23 +274,41 @@ export class AppContext {
     const resolvedLauncherMode = config?.launcherMode
       ?? (process.env["ACTANT_LAUNCHER_MODE"] as LauncherMode | undefined);
     this.catalogManager = new CatalogManager(this.homeDir, {
-      skillManager: this.skillManager,
-      promptManager: this.promptManager,
-      mcpConfigManager: this.mcpConfigManager,
-      workflowManager: this.workflowManager,
       backendManager: getBackendManager(),
-      templateRegistry: this.templateRegistry,
     }, { skipDefaultCatalog: resolvedLauncherMode === "mock" });
 
+    this.skillResolver = new OverlayComponentManager(
+      "skill",
+      this.skillManager,
+      () => this.catalogManager.listSkills(),
+    );
+    this.promptResolver = new OverlayComponentManager(
+      "prompt",
+      this.promptManager,
+      () => this.catalogManager.listPrompts(),
+    );
+    this.mcpResolver = new OverlayComponentManager(
+      "mcp",
+      this.mcpConfigManager,
+      () => this.catalogManager.listMcpServers(),
+    );
+    this.workflowResolver = new OverlayComponentManager(
+      "workflow",
+      this.workflowManager,
+      () => this.catalogManager.listWorkflows(),
+    );
+
     this.agentInitializer = new AgentInitializer(
-      this.templateRegistry,
+      {
+        getOrThrow: (name) => this.getTemplateDefinitionOrThrow(name),
+      },
       this.instancesDir,
       {
         projectManagers: {
-          skills: this.skillManager,
-          prompts: this.promptManager,
-          mcp: this.mcpConfigManager,
-          workflows: this.workflowManager,
+          skills: this.skillResolver,
+          prompts: this.promptResolver,
+          mcp: this.mcpResolver,
+          workflows: this.workflowResolver,
           plugins: this.pluginManager,
         },
         stepRegistry: createDefaultStepRegistry(),
@@ -398,6 +431,57 @@ export class AppContext {
 
   get uptime(): number {
     return Math.floor((Date.now() - this.startTime) / 1000);
+  }
+
+  listSkillDefinitions(): SkillDefinition[] {
+    return this.skillResolver.list();
+  }
+
+  getSkillDefinition(name: string): SkillDefinition | undefined {
+    return this.skillResolver.get(name);
+  }
+
+  searchSkillDefinitions(query: string): SkillDefinition[] {
+    return this.skillResolver.search(query);
+  }
+
+  listPromptDefinitions(): PromptDefinition[] {
+    return this.promptResolver.list();
+  }
+
+  getPromptDefinition(name: string): PromptDefinition | undefined {
+    return this.promptResolver.get(name);
+  }
+
+  listMcpServerDefinitions(): McpServerDefinition[] {
+    return this.mcpResolver.list();
+  }
+
+  getMcpServerDefinition(name: string): McpServerDefinition | undefined {
+    return this.mcpResolver.get(name);
+  }
+
+  listWorkflowDefinitions(): WorkflowDefinition[] {
+    return this.workflowResolver.list();
+  }
+
+  getWorkflowDefinition(name: string): WorkflowDefinition | undefined {
+    return this.workflowResolver.get(name);
+  }
+
+  listTemplateDefinitions(): AgentTemplate[] {
+    return mergeNamedComponents(
+      this.catalogManager.listTemplates(),
+      this.templateRegistry.list(),
+    );
+  }
+
+  getTemplateDefinition(name: string): AgentTemplate | undefined {
+    return this.templateRegistry.get(name) ?? this.catalogManager.getTemplate(name);
+  }
+
+  getTemplateDefinitionOrThrow(name: string): AgentTemplate {
+    return this.getTemplateDefinition(name) ?? this.templateRegistry.getOrThrow(name);
   }
 
   /** Stop the PluginHost, clear the tick interval, and dispose VFS. Called by Daemon.stop(). */
@@ -666,7 +750,7 @@ export class AppContext {
    */
   private registerWorkflowHooks(): void {
     if (this.workflowHooksRegistered) return;
-    const workflows = this.workflowManager.list();
+    const workflows = this.listWorkflowDefinitions();
     let registered = 0;
     for (const wf of workflows) {
       if (!wf.hooks?.length) continue;
@@ -694,7 +778,7 @@ export class AppContext {
       const agentName = payload.agentName;
       if (!agentName) return;
 
-      const workflows = this.workflowManager.list();
+      const workflows = this.listWorkflowDefinitions();
       for (const wf of workflows) {
         if (!wf.hooks?.length) continue;
         if (wf.level === "instance") {
@@ -868,11 +952,11 @@ export class AppContext {
     templates: DomainComponentSnapshot[];
   } {
     return {
-      skills: cloneDomainComponents(this.skillManager.list()),
-      prompts: cloneDomainComponents(this.promptManager.list()),
-      mcpServers: cloneDomainComponents(this.mcpConfigManager.list()),
-      workflows: cloneDomainComponents(this.workflowManager.list()),
-      templates: cloneDomainComponents(this.templateRegistry.list()),
+      skills: cloneDomainComponents(this.listSkillDefinitions()),
+      prompts: cloneDomainComponents(this.listPromptDefinitions()),
+      mcpServers: cloneDomainComponents(this.listMcpServerDefinitions()),
+      workflows: cloneDomainComponents(this.listWorkflowDefinitions()),
+      templates: cloneDomainComponents(this.listTemplateDefinitions()),
     };
   }
 
@@ -880,7 +964,7 @@ export class AppContext {
     type McpConfigLike = { name: string; command?: string; args?: string[] };
 
     return {
-      listRuntimes: () => this.mcpConfigManager.list().map((server: McpConfigLike) => ({
+      listRuntimes: () => this.listMcpServerDefinitions().map((server: McpConfigLike) => ({
         name: server.name,
         status: "inactive",
         command: "command" in server && typeof server.command === "string" ? server.command : undefined,
@@ -889,7 +973,7 @@ export class AppContext {
         updatedAt: new Date().toISOString(),
       })),
       getRuntime: (name: string) => {
-        const server = this.mcpConfigManager.get(name);
+        const server = this.getMcpServerDefinition(name);
         if (!server) {
           return undefined;
         }
@@ -1038,4 +1122,15 @@ function cloneDomainComponents(
     content: component.content,
     tags: component.tags ? [...component.tags] : undefined,
   }));
+}
+
+function mergeNamedComponents<T extends { name: string }>(overlay: T[], primary: T[]): T[] {
+  const merged = new Map<string, T>();
+  for (const component of overlay) {
+    merged.set(component.name, component);
+  }
+  for (const component of primary) {
+    merged.set(component.name, component);
+  }
+  return Array.from(merged.values());
 }

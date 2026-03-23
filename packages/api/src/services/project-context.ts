@@ -26,11 +26,15 @@ import {
 } from "@actant/agent-runtime";
 import type {
   ActantNamespaceConfig,
+  AgentTemplate,
   ActantNamespaceEntrypoints,
   CatalogConfig,
   CatalogDeclaration,
   ChildNamespaceRef,
+  McpServerDefinition,
   PermissionConfig,
+  PromptDefinition,
+  SkillDefinition,
   VfsEntry,
   VfsFeature,
   VfsFileContent,
@@ -40,6 +44,7 @@ import type {
   VfsMountRegistration,
   VfsPermissionRule,
   VfsStatResult,
+  WorkflowDefinition,
 } from "@actant/shared";
 import { ensureWithinWorkspace } from "@actant/shared";
 import {
@@ -96,6 +101,13 @@ export interface LoadedProjectContext {
     mcpServers: DomainComponentSnapshot[];
     workflows: DomainComponentSnapshot[];
     templates: DomainComponentSnapshot[];
+  };
+  resolvedComponents: {
+    skills: SkillDefinition[];
+    prompts: PromptDefinition[];
+    mcpServers: McpServerDefinition[];
+    workflows: WorkflowDefinition[];
+    templates: AgentTemplate[];
   };
   managers: {
     skillManager: SkillManager;
@@ -334,8 +346,8 @@ function createDeclaredMountRegistrations(
         if (declaration.path === "/mcp/runtime") {
           registrations.push(createRuntimeRegistration(
             {
-              ...createMcpRuntimeSource(
-                createProjectMcpRuntimeProvider(context.managers.mcpConfigManager),
+                ...createMcpRuntimeSource(
+                createProjectMcpRuntimeProvider(context.resolvedComponents.mcpServers),
                 mountPoint,
                 lifecycle,
               ),
@@ -392,6 +404,13 @@ async function loadProjectContextInternal(
   const mcpConfigManager = new McpConfigManager();
   const workflowManager = new WorkflowManager();
   const templateRegistry = new TemplateRegistry({ allowOverwrite: true });
+  const catalogComponents = {
+    skills: [] as SkillDefinition[],
+    prompts: [] as PromptDefinition[],
+    mcpServers: [] as McpServerDefinition[],
+    workflows: [] as WorkflowDefinition[],
+    templates: [] as AgentTemplate[],
+  };
 
   const catalogWarnings: string[] = [...validation.warnings.map((warning) => warning.message)];
   if (resolvedConfigsDir != null && configExists) {
@@ -407,13 +426,12 @@ async function loadProjectContextInternal(
   for (const catalog of projectConfig.catalogs ?? []) {
     try {
       const result = await fetchCatalog(catalog, projectRoot);
-      injectCatalogComponents(catalog.name, result, {
-        skillManager,
-        promptManager,
-        mcpConfigManager,
-        workflowManager,
-        templateRegistry,
-      });
+      const qualified = namespaceCatalogComponents(catalog.name, result);
+      catalogComponents.skills.push(...qualified.skills);
+      catalogComponents.prompts.push(...qualified.prompts);
+      catalogComponents.mcpServers.push(...qualified.mcpServers);
+      catalogComponents.workflows.push(...qualified.workflows);
+      catalogComponents.templates.push(...qualified.templates);
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error);
       catalogWarnings.push(`Catalog "${catalog.name}" failed: ${detail}`);
@@ -429,19 +447,26 @@ async function loadProjectContextInternal(
   );
   catalogWarnings.push(...children.warnings);
 
+  const resolvedComponents = {
+    skills: mergeNamedComponents(skillManager.list(), catalogComponents.skills),
+    prompts: mergeNamedComponents(promptManager.list(), catalogComponents.prompts),
+    mcpServers: mergeNamedComponents(mcpConfigManager.list(), catalogComponents.mcpServers),
+    workflows: mergeNamedComponents(workflowManager.list(), catalogComponents.workflows),
+    templates: mergeNamedComponents(templateRegistry.list(), catalogComponents.templates),
+  };
   const available = {
-    skills: sortNames(skillManager.list().map((skill: { name: string }) => skill.name)),
-    prompts: sortNames(promptManager.list().map((prompt: { name: string }) => prompt.name)),
-    mcpServers: sortNames(mcpConfigManager.list().map((server: { name: string }) => server.name)),
-    workflows: sortNames(workflowManager.list().map((workflow: { name: string }) => workflow.name)),
-    templates: sortNames(templateRegistry.list().map((template: { name: string }) => template.name)),
+    skills: sortNames(resolvedComponents.skills.map((skill: { name: string }) => skill.name)),
+    prompts: sortNames(resolvedComponents.prompts.map((prompt: { name: string }) => prompt.name)),
+    mcpServers: sortNames(resolvedComponents.mcpServers.map((server: { name: string }) => server.name)),
+    workflows: sortNames(resolvedComponents.workflows.map((workflow: { name: string }) => workflow.name)),
+    templates: sortNames(resolvedComponents.templates.map((template: { name: string }) => template.name)),
   };
   const componentSnapshots = {
-    skills: cloneComponentSnapshots(skillManager.list()),
-    prompts: cloneComponentSnapshots(promptManager.list()),
-    mcpServers: cloneComponentSnapshots(mcpConfigManager.list()),
-    workflows: cloneComponentSnapshots(workflowManager.list()),
-    templates: cloneComponentSnapshots(templateRegistry.list()),
+    skills: cloneComponentSnapshots(resolvedComponents.skills),
+    prompts: cloneComponentSnapshots(resolvedComponents.prompts),
+    mcpServers: cloneComponentSnapshots(resolvedComponents.mcpServers),
+    workflows: cloneComponentSnapshots(resolvedComponents.workflows),
+    templates: cloneComponentSnapshots(resolvedComponents.templates),
   };
 
   return {
@@ -473,6 +498,7 @@ async function loadProjectContextInternal(
       },
     },
     componentSnapshots,
+    resolvedComponents,
     managers: {
       skillManager,
       promptManager,
@@ -492,6 +518,17 @@ function cloneComponentSnapshots(
     content: component.content,
     tags: component.tags ? [...component.tags] : undefined,
   }));
+}
+
+function mergeNamedComponents<T extends { name: string }>(primary: T[], overlay: T[]): T[] {
+  const merged = new Map<string, T>();
+  for (const component of overlay) {
+    merged.set(component.name, component);
+  }
+  for (const component of primary) {
+    merged.set(component.name, component);
+  }
+  return Array.from(merged.values());
 }
 
 async function fetchCatalog(entry: CatalogDeclaration, projectRoot: string): Promise<FetchResult> {
@@ -528,28 +565,32 @@ function toCatalogConfig(entry: CatalogDeclaration, projectRoot: string): Catalo
   }
 }
 
-function injectCatalogComponents(
-  catalogName: string,
-  result: FetchResult,
-  managers: LoadedProjectContext["managers"],
-): void {
-  const qualify = (name: string) => `${catalogName}@${name}`;
+function namespaceCatalogComponents(catalogName: string, result: FetchResult): LoadedProjectContext["resolvedComponents"] {
+  const qualify = <T extends { name: string }>(component: T): T => ({ ...component, name: `${catalogName}@${component.name}` });
+  const qualifyRef = (name: string) => name.includes("@") ? name : `${catalogName}@${name}`;
 
-  for (const skill of result.skills) {
-    managers.skillManager.register({ ...skill, name: qualify(skill.name) });
-  }
-  for (const prompt of result.prompts) {
-    managers.promptManager.register({ ...prompt, name: qualify(prompt.name) });
-  }
-  for (const mcp of result.mcpServers) {
-    managers.mcpConfigManager.register({ ...mcp, name: qualify(mcp.name) });
-  }
-  for (const workflow of result.workflows) {
-    managers.workflowManager.register({ ...workflow, name: qualify(workflow.name) });
-  }
-  for (const template of result.templates) {
-    managers.templateRegistry.register({ ...template, name: qualify(template.name) });
-  }
+  return {
+    skills: result.skills.map((skill) => qualify(skill)),
+    prompts: result.prompts.map((prompt) => qualify(prompt)),
+    mcpServers: result.mcpServers.map((mcp) => qualify(mcp)),
+    workflows: result.workflows.map((workflow) => qualify(workflow)),
+    templates: result.templates.map((template) => ({
+      ...template,
+      name: `${catalogName}@${template.name}`,
+      project: {
+        ...template.project,
+        skills: template.project.skills?.map(qualifyRef),
+        prompts: template.project.prompts?.map(qualifyRef),
+        mcpServers: template.project.mcpServers?.map((server) => ({
+          ...server,
+          name: qualifyRef(server.name),
+        })),
+        workflow: template.project.workflow ? qualifyRef(template.project.workflow) : template.project.workflow,
+        subAgents: template.project.subAgents?.map(qualifyRef),
+        plugins: template.project.plugins?.map(qualifyRef),
+      },
+    })),
+  };
 }
 
 async function loadLocalConfigComponents(
@@ -712,13 +753,14 @@ function listProjectContextEntries(mountPoint: string, hasNamespaceConfig: boole
 }
 
 function createProjectMcpRuntimeProvider(
-  manager: LoadedProjectContext["managers"]["mcpConfigManager"],
+  mcpServers: McpServerDefinition[],
 ): Parameters<typeof createMcpRuntimeSource>[0] {
   type McpConfigLike = { name: string; command?: string; args?: string[] };
+  const index = new Map(mcpServers.map((server) => [server.name, server]));
 
   return {
     listRuntimes: () =>
-      manager.list().map((server: McpConfigLike) => ({
+      mcpServers.map((server: McpConfigLike) => ({
         name: server.name,
         status: "inactive",
         command: typeof server.command === "string" ? server.command : undefined,
@@ -727,7 +769,7 @@ function createProjectMcpRuntimeProvider(
         updatedAt: new Date().toISOString(),
       })),
     getRuntime: (name: string) => {
-      const server = manager.get(name) as McpConfigLike | undefined;
+      const server = index.get(name) as McpConfigLike | undefined;
       if (!server) {
         return undefined;
       }
