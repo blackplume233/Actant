@@ -47,7 +47,7 @@
     {
       "id": "prep-catalog-template",
       "description": "[Setup] 创建共享 template，使 Agent 依赖共享 skill 与 prompt",
-      "command": "_setup:create_dir_with_file $TEST_DIR/shared-catalog/templates/context-worker.json {\"name\":\"context-worker\",\"version\":\"1.0.0\",\"description\":\"Repository-aware worker backed by shared context assets\",\"backend\":{\"type\":\"cursor\"},\"provider\":{\"type\":\"anthropic\"},\"domainContext\":{\"skills\":[\"repo-context-reader\"],\"prompts\":[\"system-repo-maintainer\"]}}",
+      "command": "_setup:create_dir_with_file $TEST_DIR/shared-catalog/templates/context-worker.json {\"name\":\"context-worker\",\"version\":\"1.0.0\",\"description\":\"Repository-aware worker backed by shared context assets\",\"backend\":{\"type\":\"cursor\"},\"provider\":{\"type\":\"anthropic\"},\"project\":{\"skills\":[\"repo-context-reader\"],\"prompts\":[\"system-repo-maintainer\"]}}",
       "expect": "共享 template JSON 创建成功"
     },
     {

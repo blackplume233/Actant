@@ -86,6 +86,12 @@ export class TemplateLoader {
         path: issue.path.map(String).join("."),
         message: issue.message,
       }));
+      if (hasLegacyDomainContext(parsed)) {
+        errors.push({
+          path: "domainContext",
+          message: 'Legacy field "domainContext" is not supported; rename it to "project".',
+        });
+      }
       throw new ConfigValidationError(
         `Template validation failed for ${source}`,
         errors,
@@ -138,4 +144,11 @@ export function toAgentTemplate(output: AgentTemplateOutput): AgentTemplate {
 
 function isNodeError(err: unknown): err is NodeJS.ErrnoException {
   return err instanceof Error && "code" in err;
+}
+
+function hasLegacyDomainContext(value: unknown): value is { domainContext: unknown } {
+  return typeof value === "object"
+    && value !== null
+    && Object.hasOwn(value, "domainContext")
+    && !Object.hasOwn(value, "project");
 }

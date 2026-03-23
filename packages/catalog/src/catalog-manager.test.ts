@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { mkdtemp, rm, mkdir, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { SkillManager, PromptManager, McpConfigManager, WorkflowManager, TemplateRegistry } from "@actant/domain-context";
+import { ConfigValidationError } from "@actant/shared";
 import { CatalogManager } from "./catalog-manager";
 
 function createManagers() {
@@ -190,9 +191,68 @@ describe("CatalogManager", () => {
     );
   });
 
+  it("addCatalog fails with structured validation error for legacy domainContext templates", async () => {
+    await writeFile(
+      join(pkgDir, "templates", "test-template.json"),
+      JSON.stringify({
+        name: "test-template",
+        version: "1.0.0",
+        backend: { type: "cursor" },
+        provider: { type: "anthropic" },
+        domainContext: {
+          skills: ["test-skill"],
+          prompts: ["test-prompt"],
+        },
+      }),
+    );
+
+    const error = await sourceMgr.addCatalog("legacy", { type: "local", path: pkgDir }).catch((err: unknown) => err);
+
+    expect(error).toBeInstanceOf(ConfigValidationError);
+    const validationError = error as ConfigValidationError;
+    expect(validationError.message).toContain("templates/test-template.json");
+    expect(validationError.validationErrors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ path: "project" }),
+        expect.objectContaining({ path: "domainContext" }),
+      ]),
+    );
+    expect(sourceMgr.hasCatalog("legacy")).toBe(false);
+    expect(managers.skillManager.has("legacy@test-skill")).toBe(false);
+    expect(managers.promptManager.has("legacy@test-prompt")).toBe(false);
+    expect(managers.templateRegistry.has("legacy@test-template")).toBe(false);
+  });
+
   it("removeCatalog returns false for unknown name", async () => {
     const result = await sourceMgr.removeCatalog("ghost");
     expect(result).toBe(false);
+  });
+
+  it("syncCatalog preserves existing state when refreshed templates are invalid", async () => {
+    await sourceMgr.addCatalog("sync-invalid", { type: "local", path: pkgDir });
+    const originalTemplate = managers.templateRegistry.get("sync-invalid@test-template");
+
+    await writeFile(
+      join(pkgDir, "templates", "test-template.json"),
+      JSON.stringify({
+        name: "test-template",
+        version: "1.0.0",
+        backend: { type: "cursor" },
+        provider: { type: "anthropic" },
+        domainContext: {
+          skills: ["test-skill"],
+          prompts: ["test-prompt"],
+        },
+      }),
+    );
+
+    const error = await sourceMgr.syncCatalog("sync-invalid").catch((err: unknown) => err);
+
+    expect(error).toBeInstanceOf(ConfigValidationError);
+    expect(managers.skillManager.has("sync-invalid@test-skill")).toBe(true);
+    expect(managers.promptManager.has("sync-invalid@test-prompt")).toBe(true);
+    expect(managers.templateRegistry.has("sync-invalid@test-template")).toBe(true);
+    expect(managers.templateRegistry.get("sync-invalid@test-template")).toEqual(originalTemplate);
   });
 
   describe("presets", () => {

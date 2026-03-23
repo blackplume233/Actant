@@ -53,6 +53,16 @@ export interface CatalogManagerOptions {
   skipDefaultCatalog?: boolean;
 }
 
+interface CatalogStateSnapshot {
+  skills: SkillDefinition[];
+  prompts: PromptDefinition[];
+  mcpServers: McpServerDefinition[];
+  workflows: WorkflowDefinition[];
+  backends: BackendDefinition[];
+  templates: AgentTemplate[];
+  presets: PresetDefinition[];
+}
+
 export class CatalogManager {
   private readonly catalogs = new Map<string, CatalogProvider>();
   private readonly presets = new Map<string, PresetDefinition>();
@@ -76,9 +86,15 @@ export class CatalogManager {
     }
     const catalog = this.createCatalog(name, config);
     const result = await catalog.fetch();
+    this.installCatalogState(name, result);
     this.catalogs.set(name, catalog);
-    this.injectComponents(name, result);
-    await this.persistCatalogs();
+    try {
+      await this.persistCatalogs();
+    } catch (error) {
+      this.catalogs.delete(name);
+      this.clearCatalogState(name);
+      throw error;
+    }
     logger.info({ name, type: config.type }, "Catalog added");
     return result;
   }
@@ -90,12 +106,19 @@ export class CatalogManager {
 
   async syncCatalogWithReport(name: string): Promise<{ fetchResult: FetchResult; report: SyncReport }> {
     const catalog = this.getCatalogOrThrow(name);
-    const oldSnapshot = this.snapshotComponents(name);
-    this.removeNamespacedComponents(name);
     const result = await catalog.sync();
-    this.injectComponents(name, result);
+    const previousState = this.snapshotCatalogState(name);
+    const oldSnapshot = this.snapshotComponents(name);
+    this.clearCatalogState(name);
+    try {
+      this.installCatalogState(name, result);
+      await this.persistCatalogs();
+    } catch (error) {
+      this.clearCatalogState(name);
+      this.restoreCatalogState(previousState);
+      throw error;
+    }
     const newSnapshot = this.snapshotComponents(name);
-    await this.persistCatalogs();
     const report = this.buildSyncReport(oldSnapshot, newSnapshot);
     logger.info({ name, report }, "Catalog synced");
     return { fetchResult: result, report };
@@ -219,10 +242,12 @@ export class CatalogManager {
       try {
         const catalog = this.createCatalog(entry.name, entry.config);
         const result = await catalog.fetch();
+        this.installCatalogState(entry.name, result);
         this.catalogs.set(entry.name, catalog);
-        this.injectComponents(entry.name, result);
         logger.info({ name: entry.name }, "Catalog restored from config");
       } catch (error) {
+        this.catalogs.delete(entry.name);
+        this.clearCatalogState(entry.name);
         logger.warn({ name: entry.name, error }, "Failed to restore catalog, skipping");
       }
     }
@@ -292,6 +317,64 @@ export class CatalogManager {
           },
         });
       }
+    }
+  }
+
+  private installCatalogState(packageName: string, result: FetchResult): void {
+    try {
+      this.injectComponents(packageName, result);
+    } catch (error) {
+      this.clearCatalogState(packageName);
+      throw error;
+    }
+  }
+
+  private clearCatalogState(packageName: string): void {
+    this.removeNamespacedComponents(packageName);
+    this.removeNamespacedPresets(packageName);
+  }
+
+  private snapshotCatalogState(packageName: string): CatalogStateSnapshot {
+    const prefix = `${packageName}@`;
+    const filterByPrefix = <T extends NamedComponent>(registry: ComponentRegistry<T>): T[] =>
+      registry.list().filter((component) => component.name.startsWith(prefix));
+
+    return {
+      skills: filterByPrefix(this.managers.skillManager),
+      prompts: filterByPrefix(this.managers.promptManager),
+      mcpServers: filterByPrefix(this.managers.mcpConfigManager),
+      workflows: filterByPrefix(this.managers.workflowManager),
+      backends: this.managers.backendManager ? filterByPrefix(this.managers.backendManager) : [],
+      templates: this.managers.templateRegistry ? filterByPrefix(this.managers.templateRegistry) : [],
+      presets: Array.from(this.presets.values()).filter((preset) => preset.name.startsWith(prefix)),
+    };
+  }
+
+  private restoreCatalogState(snapshot: CatalogStateSnapshot): void {
+    for (const skill of snapshot.skills) {
+      this.managers.skillManager.register(skill);
+    }
+    for (const prompt of snapshot.prompts) {
+      this.managers.promptManager.register(prompt);
+    }
+    for (const mcpServer of snapshot.mcpServers) {
+      this.managers.mcpConfigManager.register(mcpServer);
+    }
+    for (const workflow of snapshot.workflows) {
+      this.managers.workflowManager.register(workflow);
+    }
+    if (this.managers.backendManager) {
+      for (const backend of snapshot.backends) {
+        this.managers.backendManager.register(backend);
+      }
+    }
+    if (this.managers.templateRegistry) {
+      for (const template of snapshot.templates) {
+        this.managers.templateRegistry.register(template);
+      }
+    }
+    for (const preset of snapshot.presets) {
+      this.presets.set(preset.name, preset);
     }
   }
 

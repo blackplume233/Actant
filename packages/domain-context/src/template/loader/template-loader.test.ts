@@ -196,6 +196,29 @@ describe("TemplateLoader", () => {
         ConfigValidationError,
       );
     });
+
+    it("should reject legacy domainContext templates with an explicit hint", async () => {
+      const err = await loader.loadFromString(JSON.stringify({
+        name: "legacy-agent",
+        version: "1.0.0",
+        backend: { type: "cursor" },
+        provider: { type: "openai" },
+        domainContext: { skills: ["repo-context-reader"] },
+      }), "legacy-template.json").catch((error: unknown) => error);
+
+      expect(err).toBeInstanceOf(ConfigValidationError);
+      const validationError = err as ConfigValidationError;
+      expect(validationError.message).toContain("legacy-template.json");
+      expect(validationError.validationErrors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ path: "project" }),
+          expect.objectContaining({
+            path: "domainContext",
+            message: expect.stringContaining('rename it to "project"'),
+          }),
+        ]),
+      );
+    });
   });
 
   describe("loadFromDirectory", () => {

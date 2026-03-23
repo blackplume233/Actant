@@ -12,6 +12,7 @@ import type {
   AgentTemplate,
 } from "@actant/shared";
 import { createLogger } from "@actant/shared";
+import { TemplateLoader } from "@actant/domain-context";
 import type { CatalogProvider, FetchResult } from "./component-catalog";
 
 const logger = createLogger("local-catalog");
@@ -20,6 +21,7 @@ export class LocalCatalog implements CatalogProvider {
   readonly type = "local";
   readonly packageName: string;
   readonly config: LocalCatalogConfig;
+  private readonly templateLoader = new TemplateLoader();
 
   constructor(packageName: string, config: LocalCatalogConfig) {
     this.packageName = packageName;
@@ -53,7 +55,7 @@ export class LocalCatalog implements CatalogProvider {
       this.loadJsonDir<WorkflowDefinition>(rootDir, manifest.components?.workflows, "workflows"),
       this.loadJsonDir<BackendDefinition>(rootDir, manifest.components?.backends, "backends"),
       this.loadPresets(rootDir, manifest.presets),
-      this.loadJsonDir<AgentTemplate>(rootDir, manifest.components?.templates, "templates"),
+      this.loadTemplates(rootDir, manifest.components?.templates),
     ]);
 
     logger.info({ packageName: this.packageName, rootDir }, "Local package loaded");
@@ -166,5 +168,39 @@ export class LocalCatalog implements CatalogProvider {
     explicitFiles: string[] | undefined,
   ): Promise<PresetDefinition[]> {
     return this.loadJsonDir<PresetDefinition>(rootDir, explicitFiles, "presets");
+  }
+
+  private async loadTemplates(
+    rootDir: string,
+    explicitFiles: string[] | undefined,
+  ): Promise<AgentTemplate[]> {
+    if (explicitFiles) {
+      const templates: AgentTemplate[] = [];
+      for (const relPath of explicitFiles) {
+        templates.push(await this.templateLoader.loadFromFile(join(rootDir, relPath)));
+      }
+      return templates;
+    }
+
+    const dirPath = join(rootDir, "templates");
+    try {
+      const dirStat = await stat(dirPath);
+      if (!dirStat.isDirectory()) return [];
+    } catch {
+      return [];
+    }
+
+    const entries = await readdir(dirPath);
+    const templates: AgentTemplate[] = [];
+
+    for (const file of entries) {
+      if (extname(file) !== ".json") continue;
+      const fullPath = join(dirPath, file);
+      const fileStat = await stat(fullPath);
+      if (!fileStat.isFile()) continue;
+      templates.push(await this.templateLoader.loadFromFile(fullPath));
+    }
+
+    return templates;
   }
 }

@@ -1,0 +1,73 @@
+{
+  "name": "local-catalog-legacy-template-validation",
+  "description": "验证本地 catalog 中仍使用 legacy domainContext 的 template 会被结构化校验错误拦截，而不是在 catalog add/sync 时触发不透明的 TypeError。",
+  "tags": ["catalog", "template", "validation", "legacy", "qa"],
+  "setup": {
+    "daemon": true,
+    "launcherMode": "mock",
+    "templates": []
+  },
+  "steps": [
+    {
+      "id": "prep-project-root",
+      "description": "[Setup] 创建隔离项目目录和 legacy catalog 目录",
+      "command": "_setup:create_dir $TEST_DIR/user-project && _setup:create_dir $TEST_DIR/shared-catalog",
+      "expect": "隔离目录创建成功"
+    },
+    {
+      "id": "prep-catalog-manifest",
+      "description": "[Setup] 创建本地 shared catalog 清单",
+      "command": "_setup:create_dir_with_file $TEST_DIR/shared-catalog/actant.json {\"name\":\"qa-shared\",\"version\":\"1.0.0\",\"components\":{\"skills\":[\"skills/repo-context-reader.json\"],\"prompts\":[\"prompts/system-repo-maintainer.json\"],\"templates\":[\"templates/context-worker.json\"]}}",
+      "expect": "catalog manifest 创建成功"
+    },
+    {
+      "id": "prep-catalog-skill",
+      "description": "[Setup] 创建共享 skill",
+      "command": "_setup:create_dir_with_file $TEST_DIR/shared-catalog/skills/repo-context-reader.json {\"name\":\"repo-context-reader\",\"version\":\"1.0.0\",\"content\":\"skill\"}",
+      "expect": "共享 skill JSON 创建成功"
+    },
+    {
+      "id": "prep-catalog-prompt",
+      "description": "[Setup] 创建共享 prompt",
+      "command": "_setup:create_dir_with_file $TEST_DIR/shared-catalog/prompts/system-repo-maintainer.json {\"name\":\"system-repo-maintainer\",\"content\":\"prompt\"}",
+      "expect": "共享 prompt JSON 创建成功"
+    },
+    {
+      "id": "prep-legacy-template",
+      "description": "[Setup] 创建 legacy domainContext template",
+      "command": "_setup:create_dir_with_file $TEST_DIR/shared-catalog/templates/context-worker.json {\"name\":\"context-worker\",\"version\":\"1.0.0\",\"backend\":{\"type\":\"cursor\"},\"provider\":{\"type\":\"anthropic\"},\"domainContext\":{\"skills\":[\"repo-context-reader\"],\"prompts\":[\"system-repo-maintainer\"]}}",
+      "expect": "legacy template JSON 创建成功"
+    },
+    {
+      "id": "project-init",
+      "description": "初始化标准 namespace 项目",
+      "command": "cd $TEST_DIR/user-project && init --scaffold standard",
+      "expect": "生成 actant.namespace.json 和标准工作目录"
+    },
+    {
+      "id": "project-hub-status",
+      "description": "确认 active project 已建立",
+      "command": "cd $TEST_DIR/user-project && hub status -f json",
+      "expect": "返回 active=true，projectRoot 指向 $TEST_DIR/user-project"
+    },
+    {
+      "id": "catalog-add-local-fails-cleanly",
+      "description": "注册 legacy catalog，应得到结构化模板校验失败",
+      "command": "cd $TEST_DIR/user-project && catalog add $TEST_DIR/shared-catalog --name qa-shared --type local",
+      "expect": "退出码 1；输出包含 templates/context-worker.json、project 缺失或 legacy domainContext 提示；不得出现 Cannot read properties of undefined"
+    },
+    {
+      "id": "catalog-list-remains-clean",
+      "description": "失败后 catalog 不应处于半注册状态",
+      "command": "cd $TEST_DIR/user-project && catalog list -f json",
+      "expect": "返回结果不包含 qa-shared"
+    }
+  ],
+  "cleanup": [
+    "daemon stop"
+  ],
+  "notes": [
+    "该场景是 #321 的定向回归，用于确认 legacy template 失败可诊断且不会留下半成功状态。",
+    "happy path 共享 catalog/template/agent 协作链路继续由 real-workspace-context-collaboration 负责验证。"
+  ]
+}
