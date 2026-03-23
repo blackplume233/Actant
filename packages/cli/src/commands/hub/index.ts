@@ -43,7 +43,7 @@ export function createHubCommand(
   printer: CliPrinter = defaultPrinter,
   dependencies?: HubCommandDependencies,
 ): Command {
-  const hub = new Command("hub").description("CLI-first project context hub");
+  const hub = new Command("hub").description("CLI-first namespace hub");
   const ensureDaemonRunningImpl = dependencies?.ensureDaemonRunningImpl ?? ensureDaemonRunning;
   const createStandaloneBackend = dependencies?.createStandaloneBackend ?? createStandaloneHubBackend;
 
@@ -81,7 +81,7 @@ export function createHubCommand(
 
   hub
     .command("read <path>")
-    .description("Read a project-context path from the hub")
+    .description("Read a namespace path from the hub")
     .option("--start <n>", "Start line", parseInt)
     .option("--end <n>", "End line", parseInt)
     .option("--json", "Output as JSON")
@@ -128,7 +128,7 @@ export function createHubCommand(
 
   hub
     .command("grep <pattern> [path]")
-    .description("Search the current project context through hub VFS")
+    .description("Search the active namespace through hub VFS")
     .option("-i, --ignore-case", "Case insensitive")
     .option("--max <n>", "Max results", parseInt)
     .option("--json", "Output as JSON")

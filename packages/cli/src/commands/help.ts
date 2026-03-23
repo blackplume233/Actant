@@ -39,7 +39,7 @@ function showOverview(): void {
     "",
     chalk.bold("  System:"),
     `    ${chalk.cyan("daemon")} start|stop|status         Daemon management`,
-    `    ${chalk.cyan("hub")} status|read|list|grep        Project context hub`,
+    `    ${chalk.cyan("hub")} status|read|list|grep        Namespace hub`,
     `    ${chalk.cyan("namespace")} validate               Namespace validation`,
     `    ${chalk.cyan("vfs mount")} add|remove|list        Namespace mount authoring`,
     `    ${chalk.cyan("help")} [command]                   Show help`,

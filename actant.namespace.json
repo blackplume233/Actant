@@ -2,7 +2,30 @@
   "version": 1,
   "name": "Actant",
   "description": "Actant ContextFS baseline",
-  "configsDir": "configs",
+  "mounts": [
+    {
+      "type": "hostfs",
+      "path": "/workspace",
+      "options": {
+        "hostPath": "."
+      }
+    },
+    {
+      "type": "hostfs",
+      "path": "/config",
+      "options": {
+        "hostPath": "configs"
+      }
+    },
+    {
+      "type": "runtimefs",
+      "path": "/agents"
+    },
+    {
+      "type": "runtimefs",
+      "path": "/mcp/runtime"
+    }
+  ],
   "entrypoints": {
     "knowledge": [
       "PROJECT_CONTEXT.md"

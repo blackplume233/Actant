@@ -24,7 +24,7 @@ printf '%s' "$status_json" | grep '"projectRoot": "'"$ROOT_DIR"'"' >/dev/null
 echo "[2/6] Hub read project context"
 context_json="$(run packages/cli/src/bin/actant.ts hub read /project/context.json)"
 echo "$context_json"
-printf '%s' "$context_json" | grep '"mode": "project-context"' >/dev/null
+printf '%s' "$context_json" | grep '"mode": "namespace-context"' >/dev/null
 
 echo "[3/6] Hub list skills"
 skills_out="$(run packages/cli/src/bin/actant.ts hub list /skills)"
@@ -44,6 +44,6 @@ printf '%s' "$connected_out" | grep 'connected to daemon' >/dev/null
 echo "[6/6] MCP standalone fallback with invalid socket"
 standalone_out="$(ACTANT_SOCKET=/tmp/actant-context-smoke-missing.sock run packages/mcp-server/src/index.ts </dev/null 2>&1 || true)"
 echo "$standalone_out"
-printf '%s' "$standalone_out" | grep 'standalone project-context mode' >/dev/null
+printf '%s' "$standalone_out" | grep 'standalone namespace mode' >/dev/null
 
 echo "Context smoke passed."

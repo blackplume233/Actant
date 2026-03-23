@@ -27,7 +27,7 @@ async function main() {
     await step("Hub read project context", async () => {
       const contextJson = await runEntry("packages/cli/src/bin/actant.ts", ["hub", "read", "/project/context.json"]);
       console.log(contextJson);
-      assertIncludes(contextJson, '"mode": "project-context"');
+      assertIncludes(contextJson, '"mode": "namespace-context"');
     });
 
     await step("Hub list skills", async () => {
@@ -62,7 +62,7 @@ async function main() {
         },
       });
       console.log(standaloneOut);
-      assertIncludes(standaloneOut, "standalone project-context mode");
+      assertIncludes(standaloneOut, "standalone namespace mode");
     });
 
     console.log("Context smoke passed.");

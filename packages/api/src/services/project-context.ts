@@ -631,11 +631,11 @@ function createProjectContextProjection(
   return {
     name,
     mountPoint,
-    label: "project-context",
+    label: "namespace-context",
     features: new Set(PROJECT_CONTEXT_FEATURES),
     lifecycle,
     metadata: {
-      description: `Project context projection for ${context.summary.projectName}`,
+      description: `Namespace projection for ${context.summary.projectName}`,
       virtual: true,
       readOnly: true,
     },

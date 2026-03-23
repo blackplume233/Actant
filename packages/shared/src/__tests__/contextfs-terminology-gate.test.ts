@@ -22,6 +22,8 @@ const activeTruthFiles = [
   "packages/mcp-server/src/context-backend.ts",
   "packages/rest-api/src/server.ts",
   "packages/rest-api/src/routes/catalogs.ts",
+  "scripts/install.sh",
+  "scripts/install.ps1",
   "examples/actant-hub/README.md",
 ] as const;
 

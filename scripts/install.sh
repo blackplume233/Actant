@@ -10,14 +10,12 @@ NC='\033[0m'
 
 GITHUB_RELEASE_URL="https://github.com/blackplume233/Actant/releases/latest/download/actant-cli.tgz"
 
-SKIP_SETUP=false
 UNINSTALL=false
 FROM_GITHUB=false
 YES_MODE=false
 
 for arg in "$@"; do
   case "$arg" in
-    --skip-setup)    SKIP_SETUP=true ;;
     --uninstall)     UNINSTALL=true ;;
     --from-github)   FROM_GITHUB=true ;;
     --yes|-y)        YES_MODE=true ;;
@@ -27,14 +25,13 @@ for arg in "$@"; do
       echo "Options:"
       echo "  --yes, -y        Non-interactive mode (defaults: npm install, skip reconfig prompts)"
       echo "  --from-github    Install from GitHub Release instead of npm registry"
-      echo "  --skip-setup     Skip the setup wizard after installation"
       echo "  --uninstall      Uninstall Actant (non-interactive)"
       echo "  --help, -h       Show this help message"
       echo ""
       echo "Examples:"
       echo "  curl -fsSL https://raw.githubusercontent.com/blackplume233/Actant/master/scripts/install.sh | bash"
       echo "  curl -fsSL ... | bash -s -- --from-github"
-      echo "  curl -fsSL ... | bash -s -- --yes --skip-setup"
+      echo "  curl -fsSL ... | bash -s -- --yes"
       echo "  bash install.sh --uninstall"
       exit 0
       ;;
@@ -93,6 +90,18 @@ detect_os() {
   esac
 }
 
+show_next_steps() {
+  echo ""
+  echo -e "${GREEN}=== Installation Complete ===${NC}"
+  echo ""
+  echo "Next steps:"
+  echo "  mkdir my-agent && cd my-agent # Or cd into an existing workspace"
+  echo "  actant init                  # Create actant.namespace.json"
+  echo "  actant hub status            # Activate the current project"
+  echo "  actant namespace validate    # Validate the namespace"
+  echo ""
+}
+
 cleanup_daemon_services() {
   local os
   os="$(detect_os)"
@@ -149,12 +158,11 @@ if command -v actant &>/dev/null; then
   echo ""
   echo "  [U] 更新 (npm registry)"
   echo "  [G] 从 GitHub Release 更新"
-  echo "  [R] 重新运行配置向导 (actant setup)"
   echo "  [X] 完全卸载"
   echo "  [C] 取消"
   echo ""
 
-  prompt_read "请选择 [U/G/R/X/C]: " choice
+  prompt_read "请选择 [U/G/X/C]: " choice
   choice="$(to_lower "${choice:-c}")"
 
   case "$choice" in
@@ -165,12 +173,7 @@ if command -v actant &>/dev/null; then
       echo ""
       NEW_VERSION=$(actant --version 2>/dev/null || echo "unknown")
       echo -e "${GREEN}✓ Actant updated to ${NEW_VERSION}${NC}"
-      echo ""
-      prompt_read "是否重新运行配置向导? [y/N]: " reconfig
-      reconfig="$(to_lower "${reconfig:-n}")"
-      if [[ "$reconfig" == "y" ]]; then
-        actant setup
-      fi
+      show_next_steps
       ;;
     g)
       echo ""
@@ -178,15 +181,7 @@ if command -v actant &>/dev/null; then
       echo ""
       NEW_VERSION=$(actant --version 2>/dev/null || echo "unknown")
       echo -e "${GREEN}✓ Actant updated to ${NEW_VERSION} (from GitHub Release)${NC}"
-      echo ""
-      prompt_read "是否重新运行配置向导? [y/N]: " reconfig
-      reconfig="$(to_lower "${reconfig:-n}")"
-      if [[ "$reconfig" == "y" ]]; then
-        actant setup
-      fi
-      ;;
-    r)
-      actant setup
+      show_next_steps
       ;;
     x)
       echo ""
@@ -251,17 +246,4 @@ else
   exit 1
 fi
 
-# ── Run setup wizard ──────────────────────────────────────────────
-if $SKIP_SETUP; then
-  echo ""
-  echo -e "${GREEN}=== Installation Complete ===${NC}"
-  echo ""
-  echo "Quick start:"
-  echo "  actant setup                 # Run setup wizard"
-  echo "  actant daemon start          # Start the daemon"
-  echo "  actant template list         # Browse templates"
-  echo ""
-else
-  echo ""
-  actant setup
-fi
+show_next_steps

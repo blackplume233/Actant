@@ -1,6 +1,5 @@
 #Requires -Version 5.1
 param(
-  [switch]$SkipSetup,
   [switch]$Uninstall,
   [switch]$FromGitHub,
   [switch]$NpmRegistry,
@@ -17,6 +16,18 @@ $OK = if ($OutputEncoding.EncodingName -match "Unicode|UTF" -or $PSVersionTable.
 
 Write-Host "=== Actant Installer ===" -ForegroundColor Cyan
 Write-Host ""
+
+function Show-NextSteps {
+  Write-Host ""
+  Write-Host "=== Installation Complete ===" -ForegroundColor Green
+  Write-Host ""
+  Write-Host "Next steps:"
+  Write-Host "  mkdir my-agent; cd my-agent   # Or cd into an existing workspace"
+  Write-Host "  actant init                   # Create actant.namespace.json"
+  Write-Host "  actant hub status             # Activate the current project"
+  Write-Host "  actant namespace validate     # Validate the namespace"
+  Write-Host ""
+}
 
 # ── Node.js check ──────────────────────────────────────────────────
 try {
@@ -106,11 +117,10 @@ if ($existingActant) {
   } else {
     Write-Host "  [U] 更新 (npm registry)"
     Write-Host "  [G] 从 GitHub Release 更新"
-    Write-Host "  [R] 重新运行配置向导 (actant setup)"
     Write-Host "  [X] 完全卸载"
     Write-Host "  [C] 取消"
     Write-Host ""
-    $choice = Read-Host "请选择 [U/G/R/X/C]"
+    $choice = Read-Host "请选择 [U/G/X/C]"
   }
 
   switch ($choice.ToUpper()) {
@@ -126,13 +136,7 @@ if ($existingActant) {
       $newVersion = "unknown"
       try { $newVersion = actant --version 2>$null } catch {}
       Write-Host "$OK Actant updated to $newVersion" -ForegroundColor Green
-      if ($IsInteractive) {
-        Write-Host ""
-        $reconfig = Read-Host "Reconfigure? [y/N]"
-        if ($reconfig -eq "y" -or $reconfig -eq "Y") {
-          actant setup
-        }
-      }
+      Show-NextSteps
     }
     "G" {
       Write-Host ""
@@ -141,16 +145,7 @@ if ($existingActant) {
       $newVersion = "unknown"
       try { $newVersion = actant --version 2>$null } catch {}
       Write-Host "$OK Actant updated to $newVersion (from GitHub Release)" -ForegroundColor Green
-      if ($IsInteractive) {
-        Write-Host ""
-        $reconfig = Read-Host "Reconfigure? [y/N]"
-        if ($reconfig -eq "y" -or $reconfig -eq "Y") {
-          actant setup
-        }
-      }
-    }
-    "R" {
-      actant setup
+      Show-NextSteps
     }
     "X" {
       Write-Host ""
@@ -239,17 +234,4 @@ try {
   exit 1
 }
 
-# ── Run setup wizard ──────────────────────────────────────────────
-if ($SkipSetup) {
-  Write-Host ""
-  Write-Host "=== Installation Complete ===" -ForegroundColor Green
-  Write-Host ""
-  Write-Host "Quick start:"
-  Write-Host "  actant setup                 # Run setup wizard"
-  Write-Host "  actant daemon start          # Start the daemon"
-  Write-Host "  actant template list         # Browse templates"
-  Write-Host ""
-} else {
-  Write-Host ""
-  actant setup
-}
+Show-NextSteps
