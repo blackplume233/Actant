@@ -83,7 +83,7 @@
 1. **功能交付时**: 新 Issue 实现完成后，执行该功能相关的 QA 场景
 2. **回归测试时**: PR 合并前，执行 `pnpm test` + 相关 QA 场景
 3. **手动触发**: 用户执行 `/qa run <scenario>` 或 `/qa explore`
-4. **斜杠命令**: 用户执行 `/qa-loop [scope] [options]` 自动编排完整循环（参见 `.cursor/rules/qa-loop.mdc`）
+4. **循环编排技能**: 用户要求运行 `qa-loop` 或“循环回归直到通过”时，使用 [.agents/skills/qa-loop/SKILL.md](/Users/muyuli/Workspace/AgentCraft/.agents/skills/qa-loop/SKILL.md) 作为编排入口；旧的 `.cursor/rules/qa-loop.mdc` 仅保留兼容 stub
 
 ## 实践经验（Issue #35 验证记录）
 

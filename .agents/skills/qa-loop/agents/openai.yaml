@@ -1,0 +1,4 @@
+interface:
+  display_name: "QA Loop"
+  short_description: "Run fix-and-regress QA loops to full pass"
+  default_prompt: "Use $qa-loop to run a full QA regression loop for the current scope until it converges."
