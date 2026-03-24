@@ -198,7 +198,7 @@ export interface VfsGitDiffOptions {
 
 /**
  * Map of capability IDs to their handler function signatures.
- * A Source implements a subset of these handlers based on what it supports.
+ * A mount backend implements a subset of these handlers based on what it supports.
  */
 export interface VfsCapabilityHandlers {
   read(path: string): Promise<VfsFileContent>;
@@ -232,7 +232,7 @@ export interface VfsCapabilityHandlers {
 }
 
 /**
- * Partial handler map — each source only implements the capabilities it declares.
+ * Partial handler map — each mount backend only implements the capabilities it declares.
  */
 export type VfsHandlerMap = {
   [K in VfsCapabilityId]?: VfsCapabilityHandlers[K];
@@ -462,7 +462,7 @@ export interface VfsMountInfo {
 }
 
 // ---------------------------------------------------------------------------
-// Resolve result — internal, returned when resolving a VFS path to a source
+// Resolve result — internal, returned when resolving a VFS path to a mounted backend
 // ---------------------------------------------------------------------------
 
 export interface VfsResolveResult {

@@ -122,7 +122,7 @@ export class VfsPermissionManager {
     identity: VfsIdentity,
     path: string,
     action: VfsCapabilityId,
-    source?: VfsMountRegistration,
+    mount?: VfsMountRegistration,
   ): VfsPermissionDecision {
     let bestPriority = -1;
     let bestEffect: VfsPermissionDecision = "deny";
@@ -133,7 +133,7 @@ export class VfsPermissionManager {
       const expandedPattern = expandPattern(rule.pathPattern, identity);
       if (!matchesPath(path, expandedPattern)) continue;
 
-      if (!matchesPrincipal(rule.principal, identity, source)) continue;
+      if (!matchesPrincipal(rule.principal, identity, mount)) continue;
 
       const priority = rule.priority ?? 0;
       if (priority > bestPriority) {
@@ -211,7 +211,7 @@ function segmentMatch(pattern: string, value: string): boolean {
 function matchesPrincipal(
   principal: VfsPrincipal,
   identity: VfsIdentity,
-  source?: VfsMountRegistration,
+  mount?: VfsMountRegistration,
 ): boolean {
   switch (principal.type) {
     case "public":
@@ -221,18 +221,18 @@ function matchesPrincipal(
     case "self":
       return (
         identity.type === "agent" &&
-        source?.metadata?.owner === identity.agentName
+        mount?.metadata?.owner === identity.agentName
       );
     case "owner":
       return (
         identity.type === "agent" &&
-        source?.metadata?.owner === identity.agentName
+        mount?.metadata?.owner === identity.agentName
       );
     case "parent":
       return (
         identity.type === "agent" &&
         identity.parentAgent != null &&
-        source?.metadata?.owner === identity.parentAgent
+        mount?.metadata?.owner === identity.parentAgent
       );
     case "agent":
       return identity.type === "agent" && identity.agentName === principal.name;

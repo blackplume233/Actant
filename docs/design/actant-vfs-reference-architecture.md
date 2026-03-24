@@ -118,6 +118,27 @@ V1 的 `node type` 固定为：
 - watch 所需最小事件传播
 - runtime invalidate 基础语义
 
+### 2.7 Current File Mapping
+
+当前 `packages/vfs` 的 V1 内部文件布局应按下面理解：
+
+- `facade`: `packages/vfs/src/vfs-facade.ts`
+- `kernel`: `packages/vfs/src/core/vfs-kernel.ts`
+- `mount`: `packages/vfs/src/mount/direct-mount-table.ts`
+- `path / namespace`: `packages/vfs/src/vfs-path-resolver.ts`、`packages/vfs/src/namespace/canonical-path.ts`
+- `node`: `packages/vfs/src/node/resolved-node-adapter.ts`
+- `permission`: `packages/vfs/src/vfs-permission-manager.ts`、`packages/vfs/src/middleware/permission-middleware.ts`
+- `lifecycle`: `packages/vfs/src/vfs-lifecycle-manager.ts`
+- `storage`: `packages/vfs/src/storage/*`
+- `index`: `packages/vfs/src/index/path-index.ts`
+- `filesystem type / SPI`: `packages/vfs/src/filesystem-type-registry.ts`
+
+约束：
+
+- 上述目录和文件是当前 V1 的核心骨架
+- `sources/*` 仍是过渡期 helper/factory 集合，不得反向定义 `VFS core`
+- `domain` / `catalog` / `manager` 语义不得继续渗入 `kernel`、`mount`、`path`、`node`、`permission` 主骨架
+
 ---
 
 ## 3. Request Flow

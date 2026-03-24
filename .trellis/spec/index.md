@@ -69,6 +69,7 @@ agent-runtime / 其它运行插件"]
 - 历史迁移说明必须留在默认入口之外
 - `daemon` 是唯一运行时组合根，bridge 层不得二次装配系统
 - `provider contribution` 不得再被当作中心注册结构或顶层插件模型
+- `packages/vfs` 的 core 骨架必须保持在 `facade / kernel / mount / path / node / permission / lifecycle / storage / index / filesystem type SPI`
 - 所有 ship / merge 级交付必须先产出 changelog draft，再汇总正式 release changelog
 - `docs/planning/contextfs-roadmap.md` 是唯一 live milestone truth file
 - `actant.namespace.json` 是默认且唯一运行时 namespace 配置入口

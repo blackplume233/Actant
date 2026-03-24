@@ -27,7 +27,7 @@ import {
   type VfsRequestContext,
   type VfsStreamChunk,
 } from "../namespace/canonical-path";
-import { SourceNodeAdapter } from "../node/source-node-adapter";
+import { ResolvedNodeAdapter } from "../node/resolved-node-adapter";
 
 export interface VfsKernelOptions {
   mountTable?: DirectMountTable;
@@ -184,7 +184,7 @@ export class VfsKernel {
     operation: VfsKernelOperation,
     path: string,
     context: VfsRequestContext,
-    invoke: (adapter: SourceNodeAdapter) => Promise<T>,
+    invoke: (adapter: ResolvedNodeAdapter) => Promise<T>,
   ): Promise<T> {
     const normalizedPath = normalizeVfsPath(path);
     const resolved = this.mountTable.resolve(normalizedPath);
@@ -192,7 +192,7 @@ export class VfsKernel {
       throw new Error(`No VFS mount matched path: ${normalizedPath}`);
     }
 
-    const adapter = new SourceNodeAdapter(resolved);
+    const adapter = new ResolvedNodeAdapter(resolved);
     const state = {
       operation,
       path: normalizedPath,
