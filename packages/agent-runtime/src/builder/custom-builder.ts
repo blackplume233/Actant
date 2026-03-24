@@ -1,4 +1,4 @@
-import type { AgentBackendType } from "@actant/shared";
+import type { AgentBackendType } from "@actant/shared/core";
 import { CursorBuilder } from "./cursor-builder";
 
 export interface CustomBuilderConfig {

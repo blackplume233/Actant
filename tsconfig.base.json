@@ -3,7 +3,9 @@
     "baseUrl": ".",
     "paths": {
       "@actant/shared": ["packages/shared/src/index.ts"],
-      "@actant/context": ["packages/context/src/index.ts"],
+      "@actant/shared/core": ["packages/shared/src/core.ts"],
+      "@actant/shared/vfs-contracts": ["packages/shared/src/vfs-contracts.ts"],
+      "@actant/shared/runtime-contracts": ["packages/shared/src/runtime-contracts.ts"],
       "@actant/domain-context": ["packages/domain-context/src/index.ts"],
       "@actant/vfs": ["packages/vfs/src/index.ts"],
       "@actant/agent-runtime": ["packages/agent-runtime/src/index.ts"],

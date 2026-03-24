@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { VfsEntry } from "@actant/shared";
+import type { VfsEntry } from "@actant/shared/core";
 import { memorySourceFactory } from "../sources/memory-source";
 
 describe("MemorySource", () => {

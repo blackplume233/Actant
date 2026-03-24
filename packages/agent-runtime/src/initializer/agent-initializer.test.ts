@@ -2,12 +2,12 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, readFile, access, mkdir, writeFile, lstat, readlink } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentTemplate } from "@actant/shared";
+import type { AgentTemplate } from "@actant/shared/core";
 import {
   TemplateNotFoundError,
   ConfigValidationError,
   InstanceCorruptedError,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import { TemplateRegistry } from "@actant/domain-context";
 import { AgentInitializer } from "./agent-initializer";
 import { createDefaultStepRegistry } from "./steps";

@@ -1,4 +1,4 @@
-import { ConfigNotFoundError } from "@actant/shared";
+import { ConfigNotFoundError } from "@actant/shared/core";
 import type {
   SkillGetParams,
   PromptGetParams,
@@ -17,7 +17,7 @@ import type {
   PromptDefinition,
   McpServerDefinition,
   WorkflowDefinition,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import type { HeartbeatPlugin } from "@actant/agent-runtime";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry, RpcHandler } from "./handler-registry";

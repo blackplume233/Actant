@@ -2,7 +2,7 @@ import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { VfsFeature, VfsMountRegistration, VfsWatchCallback, VfsWatchEvent } from "@actant/shared";
+import type { VfsFeature, VfsMountRegistration, VfsWatchCallback, VfsWatchEvent } from "@actant/shared/core";
 import type { VfsKernelDispatchState } from "../middleware/types";
 import { VfsPermissionManager, DEFAULT_PERMISSION_RULES } from "../vfs-permission-manager";
 import { createPermissionMiddleware } from "../middleware/permission-middleware";

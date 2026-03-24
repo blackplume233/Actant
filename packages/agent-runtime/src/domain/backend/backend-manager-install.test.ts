@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { BackendManager } from "./backend-manager";
-import type { BackendDefinition } from "@actant/shared";
+import type { BackendDefinition } from "@actant/shared/core";
 
 vi.mock("./backend-installer", () => ({
   tryInstallMethods: vi.fn(),

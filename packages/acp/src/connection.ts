@@ -34,10 +34,10 @@ import {
   AcpProcessExitedError,
   AcpFsReadError,
   AcpFsWriteError,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import { resolveAcpBinary } from "./binary-resolver";
 import { getAcpPackageVersion } from "./package-version";
-import type { PermissionsConfig } from "@actant/shared";
+import type { PermissionsConfig } from "@actant/shared/core";
 import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/agent-runtime";
 import { LocalTerminalManager } from "./terminal-manager";
 

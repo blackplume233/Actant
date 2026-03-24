@@ -115,7 +115,7 @@ ActantChannelManager
 
 - 完整 Extended Profile 支持
 - 直接 SDK 访问，消除 ACP binary 开销
-- 原生支持 hooks、agents、plugins
+- 原生支持 hooks、agents、runtime integrations
 
 ---
 

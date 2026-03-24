@@ -3,7 +3,7 @@ import { mkdtemp, rm, access, writeFile, mkdir, readFile } from "node:fs/promise
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import type { StepContext } from "../pipeline/types";
-import type { AgentTemplate } from "@actant/shared";
+import type { AgentTemplate } from "@actant/shared/core";
 import { MkdirStep } from "./mkdir-step";
 import { ExecStep } from "./exec-step";
 import { FileCopyStep } from "./file-copy-step";

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VfsRegistry } from "../vfs-registry";
-import type { VfsFeature, VfsMountRegistration } from "@actant/shared";
+import type { VfsFeature, VfsMountRegistration } from "@actant/shared/core";
 
 const MEMORY_TRAITS = new Set<VfsFeature>(["ephemeral", "writable"]);
 

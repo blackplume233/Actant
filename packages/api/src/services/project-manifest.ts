@@ -9,7 +9,7 @@ import type {
   VfsPermissionRule,
   VfsMountRegistration,
   VfsStatResult,
-} from "@actant/shared";
+} from "@actant/shared/core";
 
 const PROJECT_MANIFEST_FEATURES = new Set<VfsFeature>(["persistent", "virtual"]);
 
@@ -157,7 +157,7 @@ function createActantNamespaceConfigRegistration(
     name: toRegistrationName(namePrefix, mountPoint),
     mountPoint,
     label: "project-manifest",
-        features: new Set(PROJECT_MANIFEST_FEATURES),
+    features: new Set(PROJECT_MANIFEST_FEATURES),
     lifecycle,
     metadata: {
       description: `Project manifest projection for ${project.name}`,

@@ -4,8 +4,8 @@ import type {
   HubActivateResult,
   HubStatusResult,
   VfsMountRegistration,
-} from "@actant/shared";
-import { HUB_MOUNT_LAYOUT } from "@actant/shared";
+} from "@actant/shared/core";
+import { HUB_MOUNT_LAYOUT } from "@actant/shared/core";
 import {
   createProjectContextPermissionRules,
   createProjectContextFilesystemTypeRegistry,

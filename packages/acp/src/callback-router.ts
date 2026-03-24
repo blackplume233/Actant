@@ -18,7 +18,7 @@ import type {
   ReleaseTerminalResponse,
   ClientCapabilities,
 } from "@agentclientprotocol/sdk";
-import { createLogger } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
 import type { PermissionPolicyEnforcer } from "@actant/agent-runtime";
 import type { ClientCallbackHandler } from "./connection";
 import type { ToolCallInterceptor } from "./tool-call-interceptor";

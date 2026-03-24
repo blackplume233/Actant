@@ -1,5 +1,5 @@
-import { createLogger } from "@actant/shared";
-import type { PluginContext } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
+import type { PluginContext } from "@actant/shared/core";
 import type { HookEventBus } from "../../hooks/hook-event-bus";
 import type { ActantPlugin } from "../types";
 

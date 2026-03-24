@@ -5,7 +5,7 @@ import {
   RPC_ERROR_CODES,
   type RpcRequest,
   type RpcResponse,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import type { HandlerRegistry } from "../handlers/index";
 import type { AppContext } from "../services/app-context";
 

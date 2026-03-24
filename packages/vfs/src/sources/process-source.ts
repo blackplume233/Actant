@@ -11,7 +11,7 @@ import {
   type VfsGrepResult,
   type VfsGrepMatch,
   type VfsListOptions,
-} from "@actant/shared";
+} from "@actant/shared/core";
 
 export interface ProcessSourceConfig {
   command?: string;

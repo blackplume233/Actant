@@ -9,7 +9,7 @@ import type {
   McpServerDefinition,
   WorkflowDefinition,
   PluginDefinition,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import { DeclarativeBuilder } from "./declarative-builder";
 
 const CURSOR_SPEC: MaterializationSpec = {

@@ -10,14 +10,14 @@ import type {
   PermissionsInput,
   ModelProviderConfig,
   AgentTemplate,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import {
   ActantError,
   ConfigValidationError,
   InstanceCorruptedError,
   WorkspaceInitError,
   createLogger,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import { WorkspaceBuilder, type ProjectComponentManagers } from "../builder/workspace-builder";
 import type { BackendManager } from "../domain/backend/backend-manager";
 import { resolvePermissions } from "@actant/domain-context";

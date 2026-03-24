@@ -24,13 +24,16 @@
 |------|-------|------------|----------|
 | `ContextFS` | Product | Actant 的对外模型名，表示面向 agent 的上下文文件系统 | 某个 daemon、某个包名 |
 | `VFS` | Implementation | `ContextFS` 的实现内核，负责路径解析、挂载解析、节点分发、权限挂接 | 产品名、旧 source router |
-| `daemon` | Runtime Host | 唯一运行时宿主与唯一组合根；负责装载 VFS、daemon plugins 和内部运行机制 | UI 壳、bridge、产品打包层 |
+| `daemon` | Runtime Host | 唯一运行时宿主与唯一组合根；负责装载 VFS 与内部运行机制 | UI 壳、bridge、产品打包层 |
 | `bridge` | Runtime Edge | 通过 RPC 与 `daemon` 交互的入口层，例如 CLI、HTTP、TUI | 组合根、状态中心 |
-| `daemon plugin` | Runtime Extension | 被 `daemon` 装载的真实扩展单元；可贡献 provider contribution、RPC 能力、hooks、services | 单纯 provider、中心注册表 |
-| `agent-runtime` | Runtime Module | 被 `daemon` 装载的运行机制模块；可以实现 daemon plugin、调度 agent 生命周期、并通过 VFS/provider surface 读写状态 | 组合根、中心层 |
-| `domain-context` | Interpretation Helper | 负责 parser / schema / validator / loader / permission compilation 等文件解释能力，也可提供本地 authoring collection/watchers | VFS 真相源、系统状态中心 |
+| `Contracts Layer` | Monorepo Boundary | 单仓中的共享合同层，只承载 DTO / types / errors / 最小公共基础设施 | 业务真相源、组合根 |
+| `VFS Stack` | Monorepo Boundary | 单仓中拥有文件系统真相的边界，当前主包是 `@actant/vfs` | 执行运行时、产品壳 |
+| `AgentRuntime Stack` | Monorepo Boundary | 单仓中拥有执行真相与解释能力的边界，包含 `agent-runtime` 与 `domain-context` | VFS 真相源、产品壳 |
+| `Surface Stack` | Monorepo Boundary | 单仓中对外暴露的薄包装/入口层，是唯一允许同时依赖 VFS 与 Runtime 的 stack | 新的真相源 |
+| `agent-runtime` | Runtime Module | 被 `daemon` 装载的运行机制模块；负责 agent 生命周期、执行状态与 runtime integration | 组合根、VFS 真相源 |
+| `domain-context` | Agent Domain Layer | 归属 `AgentRuntime Stack` 的领域包，负责 parser / schema / validator / loader / permission compilation 与本地 authoring helper | VFS 真相源、系统状态中心 |
 | `acp` | Protocol Adapter | agent-runtime / daemon 使用的协议与 transport 模块，用于 ACP 会话、gateway、callback、VFS interception | 独立宿主、组合根 |
-| `pi` | Backend Package | 被 `agent-runtime` backend 体系消费的后端包，提供 builder / communicator / bridge 适配 | daemon plugin、系统中心层 |
+| `pi` | Backend Package | 被 `agent-runtime` backend 体系消费的后端包，提供 builder / communicator / bridge 适配 | 系统中心层 |
 | `mount namespace` | Implementation | 当前调用上下文可见的完整路径视图 | 权限系统、业务解释器 |
 | `mount table` | Config / Impl | 挂载点到挂载实例的映射表 | 下层 backend、本体资源树 |
 | `filesystem type` | Config / Impl | 一类文件系统实现的定义，决定实例化方式、能力上界、生命周期语义 | 业务资源分类 |
@@ -48,7 +51,6 @@
 | `tag` | Cross-cutting | 面向 consumer 的轻量用途标记 | 内核对象类型 |
 | `consumer` | Outside VFS | 读取并解释节点用途的外部程序或组件 | VFS 内核自身 |
 | `backend` | Implementation | 节点背后的真实实现，负责读写、观察和流输出 | 顶层产品对象 |
-| `provider contribution` | Plugin Contribution | `daemon plugin` 向 VFS 注入的一类能力，用于提供 mount/backend/数据来源 | 顶层插件模型、内容注册中心 |
 | `manager` | Local Collection | 局部 mutable collection 或 authoring helper，用于目录加载、校验、缓存与本地写路径 | 系统中心注册表 |
 | `index` | Support Layer | 为查询或匹配提供辅助结构的数据索引 | 运行时真相源 |
 | `cache` | Support Layer | 可重建的性能优化副本 | 权威状态 |
@@ -116,7 +118,7 @@ VFS 不负责：
 - `daemon` 负责装载系统
 - `bridge` 只负责 RPC 交互
 - `agent-runtime` 只是被 `daemon` 装载的机制模块
-- `domain-context` 只负责文件解释与本地 authoring helper
+- `domain-context` 属于 `AgentRuntime Stack`
 - `acp` 是协议/transport 模块，不能越级成为宿主层
 - `pi` 是 backend package，必须通过 `agent-runtime` / `daemon` 进入系统
 - `consumer` 可以依赖 `VFS`，但不能替代 `daemon` 成为组合根

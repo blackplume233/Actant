@@ -2,21 +2,21 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentTemplate } from "@actant/shared";
+import type { AgentTemplate } from "@actant/shared/core";
 import {
   AgentNotFoundError,
   AgentAlreadyRunningError,
   AgentAlreadyAttachedError,
   AgentNotAttachedError,
   AgentLaunchError,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import { TemplateRegistry } from "@actant/domain-context";
 import { AgentInitializer } from "../initializer/agent-initializer";
 import { AgentManager } from "./agent-manager";
 import { MockLauncher } from "./launcher/mock-launcher";
 import { createBackendManager, getBackendManager } from "./launcher/backend-registry";
 import { writeInstanceMeta, readInstanceMeta } from "../state/instance-meta-io";
-import type { AgentInstanceMeta } from "@actant/shared";
+import type { AgentInstanceMeta } from "@actant/shared/core";
 
 function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
   return {

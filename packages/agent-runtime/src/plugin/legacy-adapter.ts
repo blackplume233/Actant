@@ -1,4 +1,4 @@
-import type { ProjectContextConfig, PluginDefinition } from "@actant/shared";
+import type { ProjectContextConfig, PluginDefinition } from "@actant/shared/core";
 import type { ActantPlugin } from "./types";
 
 /**

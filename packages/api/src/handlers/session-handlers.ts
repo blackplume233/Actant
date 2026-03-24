@@ -10,7 +10,7 @@ import type {
   SessionListParams,
   SessionListResult,
   SessionLeaseInfo,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import {
   createLogger,
   SessionValidationError,
@@ -20,7 +20,7 @@ import {
   AgentNotRunningError,
   AgentNotFoundError,
   CancelFailedError,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import type { SessionLease } from "@actant/agent-runtime";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";

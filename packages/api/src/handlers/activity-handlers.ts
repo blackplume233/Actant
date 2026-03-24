@@ -10,7 +10,7 @@ import type {
   ConversationTurn,
   ConversationToolCall,
   ConversationFileOp,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

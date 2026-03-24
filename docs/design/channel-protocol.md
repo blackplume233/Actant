@@ -394,7 +394,7 @@ interface ChannelCapabilities {
   contentTypes: string[];  // ["text", "image", "audio", "resource"]
 
   /** 后端特有的扩展能力标识。 */
-  extensions: string[];  // e.g. ["hooks", "agents", "plugins", "effort"]
+  extensions: string[];  // e.g. ["hooks", "agents", "runtime-integrations", "effort"]
 }
 ```
 

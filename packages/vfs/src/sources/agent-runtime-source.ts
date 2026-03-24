@@ -8,13 +8,13 @@ import type {
   VfsLifecycle,
   VfsListOptions,
   VfsMountRegistration,
-  RuntimefsProviderContribution,
   VfsStatResult,
   VfsStreamChunk,
   VfsWatchEvent,
   VfsWatchOptions,
   VfsWriteResult,
-} from "@actant/shared";
+} from "@actant/shared/core";
+import type { RuntimefsProviderContribution } from "@actant/shared/vfs-contracts";
 
 const AGENT_RUNTIME_TRAITS = new Set<VfsFeature>([
   "executable",
@@ -35,11 +35,11 @@ export interface AgentRuntimeWatchEvent {
   timestamp?: number;
 }
 
-export interface AgentRuntimeProviderContribution extends RuntimefsProviderContribution<
+export type AgentRuntimeProviderContribution = RuntimefsProviderContribution<
   AgentInstanceMeta,
   "stdout" | "stderr",
   AgentRuntimeWatchEvent
-> {}
+>;
 
 /** @deprecated Use AgentRuntimeProviderContribution. */
 export type AgentRuntimeSourceProvider = AgentRuntimeProviderContribution;

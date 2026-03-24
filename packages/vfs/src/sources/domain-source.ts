@@ -7,7 +7,7 @@ import type {
   VfsEntry,
   VfsListOptions,
   VfsStatResult,
-} from "@actant/shared";
+} from "@actant/shared/core";
 
 const DOMAIN_TRAITS = new Set<VfsFeature>(["persistent", "watchable"]);
 

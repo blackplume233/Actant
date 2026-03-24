@@ -2,7 +2,7 @@ import type {
   HubActivateParams,
   HubActivateResult,
   HubStatusResult,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

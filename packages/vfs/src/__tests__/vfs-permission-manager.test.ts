@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VfsPermissionManager, DEFAULT_PERMISSION_RULES } from "../vfs-permission-manager";
-import type { VfsFeature, VfsIdentity, VfsMountRegistration } from "@actant/shared";
+import type { VfsFeature, VfsIdentity, VfsMountRegistration } from "@actant/shared/core";
 
 const MEMORY_TRAITS = new Set<VfsFeature>(["ephemeral", "writable"]);
 

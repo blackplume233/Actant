@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { HookCategoryRegistry } from "./hook-category-registry";
-import { HOOK_CATEGORIES, BUILTIN_EVENT_META } from "@actant/shared";
-import type { HookCategoryDefinition, HookEventMeta } from "@actant/shared";
+import { HOOK_CATEGORIES, BUILTIN_EVENT_META } from "@actant/shared/core";
+import type { HookCategoryDefinition, HookEventMeta } from "@actant/shared/core";
 
 describe("HookCategoryRegistry", () => {
   let registry: HookCategoryRegistry;
@@ -159,7 +159,6 @@ describe("HookCategoryRegistry", () => {
     expect(registry.isValidEvent("actant:stop")).toBe(true);
     expect(registry.isValidEvent("agent:created")).toBe(true);
     expect(registry.isValidEvent("agent:destroyed")).toBe(true);
-    expect(registry.isValidEvent("catalog:updated")).toBe(true);
     expect(registry.isValidEvent("process:start")).toBe(true);
     expect(registry.isValidEvent("session:end")).toBe(true);
     expect(registry.isValidEvent("prompt:before")).toBe(true);

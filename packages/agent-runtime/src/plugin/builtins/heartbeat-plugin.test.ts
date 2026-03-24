@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { PluginContext } from "@actant/shared";
+import type { PluginContext } from "@actant/shared/core";
 import { HeartbeatPlugin } from "./heartbeat-plugin";
 import { PluginHost } from "../plugin-host";
 import type { HookEventBus } from "../../hooks/hook-event-bus";

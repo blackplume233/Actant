@@ -1,4 +1,4 @@
-import type { AgentInstanceMeta, AgentTemplate } from "@actant/shared";
+import type { AgentInstanceMeta, AgentTemplate } from "@actant/shared/core";
 
 export interface StepContext {
   workspaceDir: string;

@@ -1,4 +1,4 @@
-import { RpcTransportClient, RpcTransportError } from "@actant/shared";
+import { RpcTransportClient, RpcTransportError } from "@actant/shared/core";
 
 export class RpcBridge {
   constructor(private readonly socketPath: string) {}

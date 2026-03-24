@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { createLogger } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
 import { TaskQueue } from "./task-queue";
 import { TaskDispatcher, type PromptAgentFn } from "./task-dispatcher";
 import { ExecutionLog } from "./execution-log";

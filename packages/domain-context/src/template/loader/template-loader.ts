@@ -1,10 +1,10 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, extname } from "node:path";
-import type { AgentTemplate } from "@actant/shared";
+import type { AgentTemplate } from "@actant/shared/core";
 import {
   ConfigNotFoundError,
   ConfigValidationError,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import { AgentTemplateSchema, type AgentTemplateOutput } from "../schema/template-schema";
 
 export class TemplateLoader {

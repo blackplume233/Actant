@@ -14,7 +14,7 @@ import {
   type VfsFileSchemaMap,
   type VfsGitDiffOptions,
   type VfsListOptions,
-} from "@actant/shared";
+} from "@actant/shared/core";
 
 const execFileAsync = promisify(execFile);
 

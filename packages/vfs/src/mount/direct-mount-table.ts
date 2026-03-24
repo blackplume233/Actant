@@ -6,7 +6,7 @@ import type {
   VfsMountType,
   VfsResolveResult,
   VfsMountRegistration,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import { normalizeVfsPath } from "../namespace/canonical-path";
 
 interface MountRecord {

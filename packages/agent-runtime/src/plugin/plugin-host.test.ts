@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { PluginContext, PluginDefinition, VfsProviderContribution } from "@actant/shared";
+import type { PluginContext, PluginDefinition, VfsProviderContribution } from "@actant/shared/core";
 import { PluginHost } from "./plugin-host";
 import { adaptLegacyPlugin } from "./legacy-adapter";
 import type { ActantPlugin } from "./types";

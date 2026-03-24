@@ -3,8 +3,8 @@ import { join } from "node:path";
 import { mkdtemp, rm, readFile, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { SkillManager } from "./skill/skill-manager";
-import { ComponentReferenceError, ConfigNotFoundError } from "@actant/shared";
-import type { SkillDefinition } from "@actant/shared";
+import { ComponentReferenceError, ConfigNotFoundError } from "@actant/shared/core";
+import type { SkillDefinition } from "@actant/shared/core";
 
 function makeSkill(name: string, desc?: string): SkillDefinition {
   return { name, content: `Rules for ${name}`, description: desc };

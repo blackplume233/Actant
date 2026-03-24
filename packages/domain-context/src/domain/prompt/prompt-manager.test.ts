@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { join } from "node:path";
 import { PromptManager } from "./prompt-manager";
-import { ComponentReferenceError } from "@actant/shared";
-import type { PromptDefinition } from "@actant/shared";
+import { ComponentReferenceError } from "@actant/shared/core";
+import type { PromptDefinition } from "@actant/shared/core";
 
 const FIXTURES = join(import.meta.dirname, "__fixtures__");
 

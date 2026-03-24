@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AgentInstanceMeta } from "@actant/shared";
+import type { AgentInstanceMeta } from "@actant/shared/core";
 import {
   createAgentRuntimeSource,
   createMcpRuntimeSource,

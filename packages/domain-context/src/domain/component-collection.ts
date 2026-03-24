@@ -1,7 +1,7 @@
 import { readFile, writeFile, readdir, stat, unlink, mkdir } from "node:fs/promises";
 import { join, extname, resolve } from "node:path";
-import { ComponentReferenceError, ConfigNotFoundError, ConfigValidationError, createLogger } from "@actant/shared";
-import type { Logger, ConfigValidationResult } from "@actant/shared";
+import { ComponentReferenceError, ConfigNotFoundError, ConfigValidationError, createLogger } from "@actant/shared/core";
+import type { Logger, ConfigValidationResult } from "@actant/shared/core";
 
 export interface NamedComponent {
   name: string;

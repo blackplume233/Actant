@@ -8,8 +8,8 @@ import type {
   ConfigValidationResult,
   ModelProviderConfig,
   PlatformCommand,
-} from "@actant/shared";
-import { ComponentReferenceError, ConfigNotFoundError, ConfigValidationError, createLogger, type Logger } from "@actant/shared";
+} from "@actant/shared/core";
+import { ComponentReferenceError, ConfigNotFoundError, ConfigValidationError, createLogger, type Logger } from "@actant/shared/core";
 import { BackendDefinitionSchema } from "./backend-schema";
 import { tryInstallMethods, ensureResolvePackage, type EnsureInstallResult, type InstallResult } from "./backend-installer";
 

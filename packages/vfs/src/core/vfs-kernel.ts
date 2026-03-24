@@ -13,7 +13,7 @@ import type {
   VfsWatchEvent,
   VfsWatchOptions,
   VfsWriteResult,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import { DirectMountTable } from "../mount/direct-mount-table";
 import type {
   VfsKernelDispatchState,

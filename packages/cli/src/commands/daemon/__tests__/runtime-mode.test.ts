@@ -16,7 +16,7 @@ describe("shouldSpawnEmbeddedDaemon", () => {
   });
 
   it("falls back to shared SEA detection when env is absent", async () => {
-    vi.doMock("@actant/shared", () => ({
+    vi.doMock("@actant/shared/core", () => ({
       isSingleExecutable: () => true,
     }));
 

@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { once } from "node:events";
 import { Daemon } from "@actant/api";
-import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared";
+import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared/core";
 
 const REPO_ROOT = join(import.meta.dirname, "..", "..", "..", "..");
 const SOURCE_RUNNER = join(REPO_ROOT, "scripts", "run-workspace-entry.mjs");

@@ -11,7 +11,7 @@ import {
 } from "@agentclientprotocol/sdk";
 import { Agent as PiAgent } from "@mariozechner/pi-agent-core";
 // @mariozechner/pi-ai imports removed — SDK API drift (#121)
-import { getBridgeSocketPath, getBridgeSessionToken, bridgeLogger } from "@actant/shared";
+import { getBridgeSocketPath, getBridgeSessionToken, bridgeLogger } from "@actant/shared/core";
 import { createPiAgent, buildInternalTools, type PiAgentOptions } from "./pi-tool-bridge";
 import { getPiPackageVersion } from "./package-version";
 

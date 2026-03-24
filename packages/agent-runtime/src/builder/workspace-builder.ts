@@ -1,10 +1,10 @@
-import { createLogger } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
 import type {
   AgentBackendType,
   ProjectContextConfig,
   McpServerDefinition,
   PermissionsInput,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import type { SkillManager, PromptManager, McpConfigManager, WorkflowManager, PluginManager } from "@actant/domain-context";
 import type { BackendManager } from "../domain/backend/backend-manager";
 import type { BackendBuilder, VerifyResult } from "./backend-builder";

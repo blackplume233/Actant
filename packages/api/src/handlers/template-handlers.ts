@@ -13,8 +13,8 @@ import type {
   TemplateValidateResult,
   TemplateCreateParams,
   TemplateCreateResult,
-} from "@actant/shared";
-import { createLogger, ConfigValidationError } from "@actant/shared";
+} from "@actant/shared/core";
+import { createLogger, ConfigValidationError } from "@actant/shared/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

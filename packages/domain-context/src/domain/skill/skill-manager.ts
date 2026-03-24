@@ -1,5 +1,5 @@
 import { z } from "zod/v4";
-import type { ConfigValidationResult, SkillDefinition } from "@actant/shared";
+import type { ConfigValidationResult, SkillDefinition } from "@actant/shared/core";
 import { FileBackedComponentCollection } from "../component-collection";
 
 const SkillDefinitionSchema = z

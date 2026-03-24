@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { createLogger, type SessionToken, type SessionTokenValidator } from "@actant/shared";
+import { createLogger, type SessionToken, type SessionTokenValidator } from "@actant/shared/core";
 
 export type { SessionToken };
 

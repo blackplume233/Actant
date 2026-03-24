@@ -1,7 +1,7 @@
 import {
   RPC_ERROR_CODES,
   type NamespaceValidateResult,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import type { AppContext } from "../services/app-context";
 import {
   readNamespaceConfigDocument,

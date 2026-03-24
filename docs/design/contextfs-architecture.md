@@ -145,17 +145,16 @@ VFS 不负责：
 
 约束：
 
-- bridge 不直接操作 plugin、provider 或 VFS 内部状态
+- bridge 不直接操作 runtime 内部装配或 VFS 内部状态
 - hosted 调用先过 `RPC` 再进入 daemon，而不是为不同入口复制第二套 runtime contract
 - 无 daemon 的本地路径可以直接进入 `VFS`，但这属于本地 kernel 使用，不改变 hosted 边界定义
 
-### 3.6 Hosted Implementation Freeze: `daemon -> plugin -> provider -> VFS`
+### 3.6 Hosted Implementation Freeze: `daemon -> runtime integration -> VFS`
 
 当 daemon 承接运行时路径时，内部实现链固定为：
 
 - `daemon`: 运行时宿主、生命周期持有者、命令分派者
-- `plugin`: daemon 加载的运行时扩展 / 适配单元，负责把某类能力接入宿主
-- `provider`: 为 plugin、backend 或挂载实例提供上游连接、句柄、配置解析的内部对象
+- `runtime integration`: daemon 内部的执行与集成能力层，例如 `agent-runtime`、`acp`、`pi`
 - `VFS`: 唯一文件系统内核，负责路径、挂载、节点与 capability 语义
 
 这条链的含义是“实现依赖方向”，不是第二套产品对象模型。对用户暴露的稳定对象仍然只有 `ContextFS` / `VFS` 与 Linux 语义对象。
@@ -164,7 +163,7 @@ VFS 不负责：
 
 当前基线里，这两个角色不再允许与 `ContextFS` / `VFS` 竞争顶层叙述：
 
-- `domain-context`: 模板、组件定义、provider 描述、校验与解析所在层；它服务于 runtime / catalog / builder，但不是 ContextFS 聚合中心，也不定义 mount/node 语义
+- `domain-context`: agent 侧模板、组件定义、校验与解析所在层；它服务于 runtime / builder，但不是 ContextFS 聚合中心，也不定义 mount/node 语义
 - `manager`: session / process / backend lifecycle orchestration 所在层；它消费 `domain-context` 产物，驱动 daemon / backend / channel，但不定义 `filesystem type`、`mount table` 或 `node type`
 
 任何后续设计如果让 `domain-context` 或 `manager` 回到“核心对象模型中心”，都应视为对当前 freeze 基线的偏离。

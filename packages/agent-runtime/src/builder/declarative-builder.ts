@@ -9,8 +9,8 @@ import type {
   WorkflowDefinition,
   PluginDefinition,
   PermissionsInput,
-} from "@actant/shared";
-import { createLogger } from "@actant/shared";
+} from "@actant/shared/core";
+import { createLogger } from "@actant/shared/core";
 import type { BackendBuilder, VerifyResult } from "./backend-builder";
 import { resolvePermissionsWithMcp } from "@actant/domain-context";
 

@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { getBridgeAgentName, bridgeLogger } from "@actant/shared";
+import { getBridgeAgentName, bridgeLogger } from "@actant/shared/core";
 import { createContextBackend } from "./context-backend.js";
 import { getMcpServerPackageVersion } from "./package-version.js";
 

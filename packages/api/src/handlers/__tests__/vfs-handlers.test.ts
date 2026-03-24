@@ -2,7 +2,7 @@ import { appendFile, mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/pro
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RPC_ERROR_CODES } from "@actant/shared";
+import { RPC_ERROR_CODES } from "@actant/shared/core";
 import { AppContext } from "../../services/app-context";
 import { HandlerRegistry } from "../handler-registry";
 import { registerAgentHandlers } from "../agent-handlers";

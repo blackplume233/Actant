@@ -22,10 +22,9 @@
 
 - `daemon` 是唯一运行时宿主与唯一组合根
 - `bridge` 只负责通过 RPC 与 `daemon` 交互
-- `daemon plugin` 是系统真实扩展单元
-- `provider contribution` 只是 `daemon plugin` 可贡献的一类能力
+- 单仓当前按 `Contracts Layer`、`VFS Stack`、`AgentRuntime Stack`、`Surface Stack` 理解
 - `agent-runtime` 是被 `daemon` 装载的机制模块，不是组合根
-- `domain-context` 只是解释/authoring helper，不是运行时真相源
+- `domain-context` 归属 `AgentRuntime Stack`，不是运行时真相源
 - `acp` 是协议/transport 模块
 - `pi` 是 backend package，而不是宿主层
 
@@ -45,18 +44,25 @@ cli / rest-api / tui / dashboard / mcp-server / channel-*"]
     VFS["@actant/vfs
 唯一核心 / 唯一真相源"]
 
-    PLUGINS["Daemon Plugins
-agent-runtime / 其它运行插件"]
+    CONTRACTS["Contracts Layer
+@actant/shared"]
 
-    SUPPORT["Support Modules
-domain-context / acp / pi"]
+    RUNTIME["AgentRuntime Stack
+agent-runtime / domain-context / acp / pi / tui / channel-*"]
+
+    SURFACE["Surface Stack
+api / cli / rest-api / dashboard / mcp-server / actant"]
 
     ACTANT --> BRIDGE
     BRIDGE -. RPC .-> DAEMON
-    DAEMON --> PLUGINS
+    DAEMON --> RUNTIME
     DAEMON --> VFS
-    PLUGINS --> VFS
-    PLUGINS --> SUPPORT
+    VFS --> CONTRACTS
+    RUNTIME --> CONTRACTS
+    RUNTIME --> VFS
+    SURFACE --> CONTRACTS
+    SURFACE --> RUNTIME
+    SURFACE --> VFS
 ```
 
 ### 1.1 Frozen Package Structure
@@ -67,11 +73,11 @@ domain-context / acp / pi"]
 | --- | --- | --- |
 | `product shell` | `@actant/actant` | 打包层 / 分发层 |
 | `bridge` | `@actant/cli`, `@actant/rest-api`, `@actant/dashboard`, `@actant/mcp-server` | 对外入口；默认经 RPC 进入 daemon |
-| `daemon-hosted modules` | `@actant/api`, `@actant/agent-runtime` | 运行时装配、plugin 生命周期、namespace/hub/runtime service |
-| `VFS core` | `@actant/vfs` | 唯一内核 |
-| `support modules` | `@actant/domain-context`, `@actant/acp`, `@actant/pi`, `@actant/shared` | 文件解释、协议/transport、backend package、共享契约 |
-| `adapter / UI` | `@actant/tui`, `@actant/channel-*` | UI/SDK 适配；不是 bridge host，不是 daemon |
-| `transitional keep` | `@actant/context` | 仅剩 project/namespace projection helper，继续并入 `@actant/api` |
+| `Contracts Layer` | `@actant/shared` | 共享合同、错误、最小公共基础设施 |
+| `VFS Stack` | `@actant/vfs` | 唯一内核 |
+| `AgentRuntime Stack` | `@actant/agent-runtime`, `@actant/domain-context`, `@actant/acp`, `@actant/pi`, `@actant/tui`, `@actant/channel-*` | 运行时执行、解释、协议与集成能力 |
+| `Surface Stack` | `@actant/api`, `@actant/cli`, `@actant/rest-api`, `@actant/dashboard`, `@actant/mcp-server`, `actant` | 对外入口、daemon 组合、产品壳 |
+| `cleanup-target` | `@actant/context` | 本轮并入 `@actant/api` 并删除 |
 
 已删除包：
 
@@ -88,7 +94,7 @@ bridge / edge 层的冻结结论如下：
 | `@actant/rest-api` | pure bridge | 只做 HTTP/SSE -> RPC 转发 |
 | `@actant/dashboard` | UI shell | 只包裹 `rest-api` 与前端静态资源 |
 | `@actant/cli` | bridge shell with local exceptions | 允许 `init`、daemon 启动、hub standalone namespace fallback |
-| `@actant/mcp-server` | bridge shell with local exceptions | 允许 standalone namespace fallback，但不能装载 plugin |
+| `@actant/mcp-server` | bridge shell with local exceptions | 允许 standalone namespace fallback，但不能自带 runtime 组合根 |
 | `@actant/tui` | not bridge | 纯 UI toolkit |
 | `@actant/channel-*` | not bridge | channel adapter / SDK adapter |
 
@@ -180,27 +186,27 @@ V1 的 `node type` 固定为：
 
 - `agent-runtime`
   - daemon-hosted runtime module
-  - plugin lifecycle / agent orchestration / builder integration
-  - may contribute runtimefs providers through daemon plugin/provider surfaces
+  - agent orchestration / builder integration
+  - may expose runtimefs-facing integrations through `Surface Stack`
 - `domain-context`
   - parser / schema / validator / loader / permission compilation
-  - local mutable collection / watcher only
+  - agent-side local mutable collection / watcher only
   - must not define VFS core or runtime truth
 - `acp`
   - protocol / transport implementation used by daemon-hosted runtime flows
   - must not bypass daemon / agent-runtime host boundaries
 - `pi`
   - backend package consumed by `agent-runtime`
-  - must not be described as daemon plugin host or standalone system layer
+  - must not be described as daemon-side runtime integration host or standalone system layer
 
 约束：
 
 - 上述目录和文件是当前 V1 的核心骨架
 - `sources/*` 仍是过渡期 helper/factory 集合，不得反向定义 `VFS core`
 - `domain` / `catalog` / `manager` 语义不得继续渗入 `kernel`、`mount`、`path`、`node`、`permission` 主骨架
-- `agent-runtime` 只能通过 `daemon plugin -> provider contribution -> VFS` 接入文件系统能力
+- `agent-runtime` 只能通过稳定公开边界消费 `VFS`
 - `domain-context` 不得反向定义 `mount`、`node` 或 `filesystem type`
-- `acp` 与 `pi` 的接入必须遵守 `bridge -> RPC -> daemon` 与 `daemon -> plugin -> provider -> VFS` 既有边界
+- `acp` 与 `pi` 的接入必须遵守 `bridge -> RPC -> daemon` 与 `daemon -> runtime integration -> VFS` 既有边界
 
 ---
 
@@ -251,20 +257,19 @@ V1 当前必须在实现里稳定表达：
 当请求经过宿主运行时时，边界固定为：
 
 - `bridge -> RPC -> daemon`
-- `daemon -> plugin -> provider -> VFS`
+- `daemon -> runtime integration -> VFS`
 
 解释如下：
 
 - `bridge` 负责把 ACP / channel / MCP / CLI / API 等入口翻译到稳定 `RPC`
 - `daemon` 是 hosted lifecycle 与 dispatch 所在边界
-- `plugin` 是 daemon 内部装载的能力单元
-- `provider` 是 plugin / backend 使用的内部连接或上游配置对象
+- `runtime integration` 是 daemon 内部装配的执行与协议能力层
 - `VFS` 是最终执行路径解析、挂载匹配、节点操作与 capability 判定的唯一内核
 
 限制：
 
-- bridge 不直接触碰 plugin / provider / VFS 内部状态
-- plugin / provider 不得绕过 `mount namespace`、`mount table` 与 middleware 暴露第二套访问面
+- bridge 不直接触碰 runtime integration / VFS 内部状态
+- runtime integration 不得绕过 `mount namespace`、`mount table` 与 middleware 暴露第二套访问面
 - standalone / local kernel path 可以不经过 daemon，但不能因此引入第二套 runtime contract
 
 ---
@@ -314,38 +319,21 @@ V1 的核心生命周期契约固定如下：
 
 ---
 
-## 6. Extension Rule
+## 6. Stack Boundary Rule
 
-扩展面固定分两类：
+单仓边界固定分四层：
 
-- `daemon plugin`：由 `daemon` 装载的真实扩展单元
-- `provider contribution`：plugin 注入到 `VFS` 的挂载/数据来源能力
+- `Contracts Layer`
+- `VFS Stack`
+- `AgentRuntime Stack`
+- `Surface Stack`
 
 约束：
 
-- 不允许把 provider 本身当作系统组合根
-- 不允许 bridge 层直接装载 provider 或 plugin
+- 不允许 `Surface Stack` 之外的包同时依赖 `VFS Stack` 与 `AgentRuntime Stack`
+- 不允许 `VFS Stack` 依赖 `AgentRuntime Stack`
+- 不允许 `AgentRuntime Stack` 依赖 `Surface Stack`
 - 不允许内容先进入中心注册表，再投影回 VFS
-
-最小 SPI：
-
-- 公共基线字段：`kind`、`filesystemType`、`mountPoint`
-- `runtimefs` data-source contribution：
-  - `listRecords()`
-  - `getRecord(name)`
-  - 可选 `readStream()`
-  - 可选 `stream()`
-  - 可选 `writeControl()`
-  - 可选 `subscribe()`
-
-当前收敛映射：
-
-| Path / Family | Provider Contribution | Rule |
-|------|--------------------------|------|
-| `/agents` | `AgentRuntimeProviderContribution` | `runtimefs` data-source，负责 agent status/control/streams |
-| `/mcp/runtime` | `McpRuntimeProviderContribution` | `runtimefs` data-source，负责 runtime status/control/streams |
-| `hostfs` / `memfs` | 不适用 | 由 filesystem type factory 直接实例化，不经过 provider contribution |
-| `/skills` `/prompts` `/workflows` `/templates` | 不适用 | 派生内容或 manager-backed 视图，不属于 provider contribution |
 
 何时扩展 `filesystem type`：
 

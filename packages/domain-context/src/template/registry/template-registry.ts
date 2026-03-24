@@ -1,9 +1,8 @@
-import type { AgentTemplate, ConfigValidationResult } from "@actant/shared";
+import type { AgentTemplate, ConfigValidationResult } from "@actant/shared/core";
 import {
-  ComponentReferenceError,
   ConfigValidationError,
   TemplateNotFoundError,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import { TemplateLoader, toAgentTemplate } from "../loader/template-loader";
 import { AgentTemplateSchema } from "../schema/template-schema";
 import { FileBackedComponentCollection } from "../../domain/component-collection";

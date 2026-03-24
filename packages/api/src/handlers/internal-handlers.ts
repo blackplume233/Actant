@@ -1,4 +1,4 @@
-import { RPC_ERROR_CODES, createLogger } from "@actant/shared";
+import { RPC_ERROR_CODES, createLogger } from "@actant/shared/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

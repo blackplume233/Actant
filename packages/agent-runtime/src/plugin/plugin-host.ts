@@ -4,7 +4,7 @@ import type {
   PluginRuntimeState,
   SubsystemDefinition,
   VfsProviderContribution,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import type { ContextProvider } from "../context-injector/session-context-types";
 import type { HookEventBus } from "../hooks/hook-event-bus";
 import type { ActantPlugin } from "./types";

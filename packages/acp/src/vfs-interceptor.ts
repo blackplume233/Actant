@@ -7,7 +7,7 @@ import type {
 import {
   createLogger,
   type VfsIdentity,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import type { VfsKernel, VfsRequestContext } from "@actant/agent-runtime";
 
 const logger = createLogger("vfs-interceptor");

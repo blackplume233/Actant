@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { Cron } from "croner";
-import { createLogger } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
 import type { InputSource, TaskCallback } from "./input-source";
 import type { HookEventBus } from "../../hooks/hook-event-bus";
 

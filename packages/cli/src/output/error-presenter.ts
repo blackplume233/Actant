@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { ActantError } from "@actant/shared";
+import { ActantError } from "@actant/shared/core";
 import { RpcCallError, ConnectionError } from "../client/rpc-client";
 import { type CliPrinter, defaultPrinter } from "./printer";
 

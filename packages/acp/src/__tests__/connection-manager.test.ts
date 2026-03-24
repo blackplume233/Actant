@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { AcpConnectionManager } from "../connection-manager";
 import { AcpConnection } from "../connection";
-import type { PermissionsConfig } from "@actant/shared";
+import type { PermissionsConfig } from "@actant/shared/core";
 
 function getManagerInternals(manager: AcpConnectionManager): {
   getGateway: (name: string) => unknown;

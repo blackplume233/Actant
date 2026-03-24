@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { TemplateRegistry } from "./template-registry";
-import type { AgentTemplate } from "@actant/shared";
+import type { AgentTemplate } from "@actant/shared/core";
 import {
   TemplateNotFoundError,
   ConfigValidationError,
-} from "@actant/shared";
+} from "@actant/shared/core";
 
 function makeTemplate(overrides?: Partial<AgentTemplate>): AgentTemplate {
   return {

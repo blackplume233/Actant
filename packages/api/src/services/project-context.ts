@@ -5,7 +5,7 @@ import {
   compileProjectPermissionRules,
   resolveProjectPermissionConfig,
   type ProjectScopeSnapshot,
-} from "@actant/context";
+} from "./project-manifest";
 import {
   SkillManager,
   PromptManager,
@@ -38,8 +38,8 @@ import type {
   VfsMountRegistration,
   VfsPermissionRule,
   VfsStatResult,
-} from "@actant/shared";
-import { ensureWithinWorkspace } from "@actant/shared";
+} from "@actant/shared/core";
+import { ensureWithinWorkspace } from "@actant/shared/core";
 import {
   joinNamespaceMountPoint,
   readNamespaceConfigDocument,

@@ -11,7 +11,7 @@ import {
   type VfsGrepMatch,
   type VfsListOptions,
   type VfsStatResult,
-} from "@actant/shared";
+} from "@actant/shared/core";
 
 export interface MemorySourceConfig {
   maxSize?: string;

@@ -1,6 +1,6 @@
 import { exec } from "node:child_process";
-import { createLogger } from "@actant/shared";
-import type { HookAction, ShellAction, BuiltinAction, AgentAction } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
+import type { HookAction, ShellAction, BuiltinAction, AgentAction } from "@actant/shared/core";
 import type { HookEventPayload } from "./hook-event-bus";
 
 const logger = createLogger("action-runner");

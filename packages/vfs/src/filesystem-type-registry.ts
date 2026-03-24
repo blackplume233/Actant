@@ -6,7 +6,7 @@ import {
   type VfsLifecycle,
   type VfsMountAddParams,
   type VfsMountRegistration,
-} from "@actant/shared";
+} from "@actant/shared/core";
 
 const logger = createLogger("vfs-filesystem-type");
 

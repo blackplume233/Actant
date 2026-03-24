@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { AgentInstanceMeta } from "@actant/shared";
+import type { AgentInstanceMeta } from "@actant/shared/core";
 import { RulesContextProvider } from "./rules-context-provider";
 
 function createMeta(overrides: Partial<AgentInstanceMeta> = {}): AgentInstanceMeta {

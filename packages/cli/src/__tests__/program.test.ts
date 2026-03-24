@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared";
+import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared/core";
 
 describe("defaultSocketPath behavior", () => {
   it("resolves ACTANT_SOCKET overrides the same way as the CLI entrypoint logic", () => {

@@ -1,5 +1,5 @@
-import type { VfsIdentity } from "@actant/shared";
-export type { VfsStreamChunk } from "@actant/shared";
+import type { VfsIdentity } from "@actant/shared/core";
+export type { VfsStreamChunk } from "@actant/shared/core";
 
 export interface CanonicalUri {
   path: string;

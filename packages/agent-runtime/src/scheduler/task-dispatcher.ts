@@ -1,4 +1,4 @@
-import { createLogger } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
 import type { AgentTask, ExecutionRecord } from "./types";
 import type { TaskQueue } from "./task-queue";
 import type { ExecutionLog } from "./execution-log";

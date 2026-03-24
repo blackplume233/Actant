@@ -1,4 +1,4 @@
-import type { BackendDefinition, MaterializationSpec, ModelProviderConfig } from "@actant/shared";
+import type { BackendDefinition, MaterializationSpec, ModelProviderConfig } from "@actant/shared/core";
 import type { BackendManager } from "../../domain/backend/backend-manager";
 import { getBackendManager } from "./backend-registry";
 import { modelProviderRegistry, resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "@actant/domain-context";

@@ -1,6 +1,7 @@
 # ContextFS Roadmap
 
-> Active planning truth source. Use checklist status only.
+> Historical planning archive for the pre-stack-freeze architecture phase.
+> It is no longer an active terminology or boundary truth source.
 > Owner: Actant core architecture
 
 ## Baseline Constraints

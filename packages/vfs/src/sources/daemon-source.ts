@@ -7,7 +7,7 @@ import type {
   VfsEntry,
   VfsListOptions,
   VfsStatResult,
-} from "@actant/shared";
+} from "@actant/shared/core";
 
 const DAEMON_INFO_TRAITS = new Set<VfsFeature>(["ephemeral", "virtual"]);
 

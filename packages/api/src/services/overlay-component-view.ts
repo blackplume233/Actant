@@ -1,4 +1,4 @@
-import { ComponentReferenceError } from "@actant/shared";
+import { ComponentReferenceError } from "@actant/shared/core";
 import type { ComponentCollection, NamedComponent } from "@actant/domain-context";
 
 interface ComponentReader<T extends NamedComponent> {

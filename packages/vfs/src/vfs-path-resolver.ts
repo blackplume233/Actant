@@ -1,4 +1,4 @@
-import type { VfsMountRegistration, VfsResolveResult } from "@actant/shared";
+import type { VfsMountRegistration, VfsResolveResult } from "@actant/shared/core";
 import { DirectMountTable } from "./mount/direct-mount-table";
 
 /**

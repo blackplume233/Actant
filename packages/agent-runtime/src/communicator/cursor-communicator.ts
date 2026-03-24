@@ -1,4 +1,4 @@
-import { createLogger } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
 import type {
   AgentCommunicator,
   PromptResult,

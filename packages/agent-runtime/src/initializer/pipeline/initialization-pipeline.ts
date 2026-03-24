@@ -1,5 +1,5 @@
-import { createLogger } from "@actant/shared";
-import type { InitializerStep } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
+import type { InitializerStep } from "@actant/shared/core";
 import type { InitializerStepExecutor } from "./step-executor";
 import type { StepRegistry } from "./step-registry";
 import type {

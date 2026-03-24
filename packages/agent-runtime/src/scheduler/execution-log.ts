@@ -1,6 +1,6 @@
 import { writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
-import { createLogger } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
 import type { ExecutionRecord } from "./types";
 
 const logger = createLogger("execution-log");

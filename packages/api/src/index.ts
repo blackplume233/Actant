@@ -14,6 +14,13 @@ export {
   type StandaloneProjectContextRuntimeOptions,
 } from "./services/project-context";
 export {
+  createActantNamespaceConfigRegistrations,
+  compileProjectPermissionRules,
+  resolveProjectPermissionConfig,
+  type ProjectScopeSnapshot,
+  type ActantNamespaceConfigProjection,
+} from "./services/project-manifest";
+export {
   HandlerRegistry,
   registerTemplateHandlers,
   registerAgentHandlers,

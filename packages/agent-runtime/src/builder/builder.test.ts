@@ -8,7 +8,7 @@ import type {
   McpServerDefinition,
   WorkflowDefinition,
   PluginDefinition,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import { CursorBuilder, ClaudeCodeBuilder } from "./index";
 import {
   resolvePermissions,

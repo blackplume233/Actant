@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { createLogger } from "@actant/shared";
-import type { HookEventName } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
+import type { HookEventName } from "@actant/shared/core";
 import type { InputSource, TaskCallback } from "./input-source";
 import type { HookEventBus, HookEventPayload } from "../../hooks/hook-event-bus";
 

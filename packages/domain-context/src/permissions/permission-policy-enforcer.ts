@@ -1,5 +1,5 @@
-import type { PermissionsConfig } from "@actant/shared";
-import { createLogger } from "@actant/shared";
+import type { PermissionsConfig } from "@actant/shared/core";
+import { createLogger } from "@actant/shared/core";
 
 const logger = createLogger("permission-policy-enforcer");
 

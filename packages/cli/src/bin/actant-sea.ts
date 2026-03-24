@@ -4,7 +4,7 @@
  * (Node.js SEA runs embedded code as CommonJS).
  */
 
-import { bridgeLogger } from "@actant/shared";
+import { bridgeLogger } from "@actant/shared/core";
 
 async function main(): Promise<void> {
   if (!process.env["LOG_LEVEL"]) {
@@ -14,7 +14,7 @@ async function main(): Promise<void> {
 
   if (process.argv.includes("--__actant-daemon")) {
     const { Daemon } = await import("@actant/api");
-    const { onShutdownSignal } = await import("@actant/shared");
+    const { onShutdownSignal } = await import("@actant/shared/core");
     const daemon = new Daemon();
     onShutdownSignal(async () => {
       await daemon.stop();

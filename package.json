@@ -23,7 +23,8 @@
     "test:changed": "vitest run --changed",
     "test:endurance": "vitest run --config vitest.endurance.config.ts",
     "test:watch": "vitest",
-    "check": "pnpm run type-check && vitest run",
+    "check": "pnpm run type-check && pnpm run check:boundaries && vitest run",
+    "check:boundaries": "eslint . && depcruise --config dependency-cruiser.config.mjs packages && vitest run packages/shared/src/__tests__/stack-boundary-gate.test.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "type-check": "pnpm -r run type-check",
@@ -56,6 +57,7 @@
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.56.0",
+    "dependency-cruiser": "^17.3.9",
     "vitest": "^4.0.18"
   }
 }

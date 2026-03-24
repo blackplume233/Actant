@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { ModelProviderConfig } from "@actant/shared";
+import type { ModelProviderConfig } from "@actant/shared/core";
 import { getBackendManager } from "./backend-registry";
 import { modelProviderRegistry } from "@actant/domain-context";
 

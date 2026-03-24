@@ -1,1 +1,1 @@
-export * from "@actant/shared";
+export * from "@actant/shared/core";

@@ -1,5 +1,5 @@
 import { unlink } from "node:fs/promises";
-import { createLogger, ipcRequiresFileCleanup } from "@actant/shared";
+import { createLogger, ipcRequiresFileCleanup } from "@actant/shared/core";
 import { createDaemonInfoSource } from "@actant/agent-runtime";
 import { AppContext, type AppConfig } from "../services/app-context";
 import { SocketServer } from "./socket-server";

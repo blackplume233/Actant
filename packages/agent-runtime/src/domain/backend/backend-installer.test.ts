@@ -8,7 +8,7 @@ import {
   ensureResolvePackage,
   _resetDetectionCache,
 } from "./backend-installer";
-import type { BackendInstallMethod } from "@actant/shared";
+import type { BackendInstallMethod } from "@actant/shared/core";
 
 vi.mock("node:child_process", () => ({
   execFile: vi.fn(),

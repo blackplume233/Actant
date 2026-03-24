@@ -22,7 +22,7 @@ import type {
   ReleaseTerminalRequest,
   ReleaseTerminalResponse,
 } from "./types";
-import type { RecordCategory } from "@actant/shared";
+import type { RecordCategory } from "@actant/shared/core";
 
 function textContent(text: string): ChannelContent {
   return { type: "text", text };

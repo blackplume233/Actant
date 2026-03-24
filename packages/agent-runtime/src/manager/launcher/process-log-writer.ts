@@ -2,7 +2,7 @@ import { createWriteStream, type WriteStream } from "node:fs";
 import { mkdir, rename, stat, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { Readable } from "node:stream";
-import { createLogger } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
 
 const logger = createLogger("process-log-writer");
 

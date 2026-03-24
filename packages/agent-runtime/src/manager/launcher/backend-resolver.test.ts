@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { BackendDefinition } from "@actant/shared";
+import type { BackendDefinition } from "@actant/shared/core";
 import { createBackendManager, getBackendManager } from "./backend-registry";
 import * as backendRegistry from "./backend-registry";
 import {

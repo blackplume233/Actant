@@ -5,8 +5,8 @@ import {
   type VfsPermissionRule,
   type VfsPrincipal,
   type VfsMountRegistration,
-} from "@actant/shared";
-import type { SessionToken, SessionTokenValidator } from "@actant/shared";
+} from "@actant/shared/core";
+import type { SessionToken, SessionTokenValidator } from "@actant/shared/core";
 
 const logger = createLogger("vfs-permissions");
 

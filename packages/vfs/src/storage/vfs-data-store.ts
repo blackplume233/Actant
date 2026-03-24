@@ -1,7 +1,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { existsSync } from "node:fs";
-import { createLogger } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
 
 const logger = createLogger("vfs-data-store");
 

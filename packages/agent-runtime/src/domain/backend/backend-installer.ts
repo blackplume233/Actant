@@ -1,6 +1,6 @@
 import { execFile } from "node:child_process";
-import { createLogger } from "@actant/shared";
-import type { BackendInstallMethod } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
+import type { BackendInstallMethod } from "@actant/shared/core";
 
 const logger = createLogger("backend-installer");
 

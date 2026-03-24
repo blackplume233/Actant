@@ -5,7 +5,7 @@ import {
   formatAgentList,
   formatAgentDetail,
 } from "../formatter";
-import type { AgentTemplate, AgentInstanceMeta } from "@actant/shared";
+import type { AgentTemplate, AgentInstanceMeta } from "@actant/shared/core";
 
 function stripAnsi(s: string): string {
   // eslint-disable-next-line no-control-regex

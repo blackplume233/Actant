@@ -43,7 +43,6 @@
     "@actant/acp": "workspace:0.5.0",
     "@actant/channel-claude": "workspace:0.5.0",
     "@actant/agent-runtime": "workspace:0.5.0",
-    "@actant/context": "workspace:0.5.0",
     "@actant/domain-context": "workspace:0.5.0",
     "@actant/pi": "workspace:0.5.0",
     "@actant/shared": "workspace:0.5.0",

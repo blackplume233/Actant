@@ -1,4 +1,4 @@
-import type { PermissionsConfig, PermissionsInput } from "@actant/shared";
+import type { PermissionsConfig, PermissionsInput } from "@actant/shared/core";
 
 const PRESETS: Record<string, PermissionsConfig> = {
   permissive: {

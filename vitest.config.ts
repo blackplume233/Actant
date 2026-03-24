@@ -6,19 +6,21 @@ const rootDir = fileURLToPath(new URL(".", import.meta.url));
 
 export default defineConfig({
   resolve: {
-    alias: {
-      "@actant/domain-context": resolve(rootDir, "packages/domain-context/src/index.ts"),
-      "@actant/agent-runtime": resolve(rootDir, "packages/agent-runtime/src/index.ts"),
-      "@actant/shared": resolve(rootDir, "packages/shared/src/index.ts"),
-      "@actant/api": resolve(rootDir, "packages/api/src/index.ts"),
-      "@actant/acp": resolve(rootDir, "packages/acp/src/index.ts"),
-      "@actant/channel-claude": resolve(rootDir, "packages/channel-claude/src/index.ts"),
-      "@actant/pi": resolve(rootDir, "packages/pi/src/index.ts"),
-      "@actant/context": resolve(rootDir, "packages/context/src/index.ts"),
-      "@actant/vfs": resolve(rootDir, "packages/vfs/src/index.ts"),
-      "@actant/tui": resolve(rootDir, "packages/tui/src/index.ts"),
-      "@actant/tui/testing": resolve(rootDir, "packages/tui/src/testing.ts"),
-    },
+    alias: [
+      { find: "@actant/shared/core", replacement: resolve(rootDir, "packages/shared/src/core.ts") },
+      { find: "@actant/shared/vfs-contracts", replacement: resolve(rootDir, "packages/shared/src/vfs-contracts.ts") },
+      { find: "@actant/shared/runtime-contracts", replacement: resolve(rootDir, "packages/shared/src/runtime-contracts.ts") },
+      { find: "@actant/tui/testing", replacement: resolve(rootDir, "packages/tui/src/testing.ts") },
+      { find: "@actant/domain-context", replacement: resolve(rootDir, "packages/domain-context/src/index.ts") },
+      { find: "@actant/agent-runtime", replacement: resolve(rootDir, "packages/agent-runtime/src/index.ts") },
+      { find: "@actant/shared", replacement: resolve(rootDir, "packages/shared/src/index.ts") },
+      { find: "@actant/api", replacement: resolve(rootDir, "packages/api/src/index.ts") },
+      { find: "@actant/acp", replacement: resolve(rootDir, "packages/acp/src/index.ts") },
+      { find: "@actant/channel-claude", replacement: resolve(rootDir, "packages/channel-claude/src/index.ts") },
+      { find: "@actant/pi", replacement: resolve(rootDir, "packages/pi/src/index.ts") },
+      { find: "@actant/vfs", replacement: resolve(rootDir, "packages/vfs/src/index.ts") },
+      { find: "@actant/tui", replacement: resolve(rootDir, "packages/tui/src/index.ts") },
+    ],
   },
   test: {
     globals: true,

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
-import { createLogger } from "@actant/shared";
-import type { SessionLifecycleData, RecordEntry } from "@actant/shared";
+import { createLogger } from "@actant/shared/core";
+import type { SessionLifecycleData, RecordEntry } from "@actant/shared/core";
 import type { RecordSystem } from "../record/record-system";
 
 const logger = createLogger("session-registry");

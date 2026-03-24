@@ -7,13 +7,13 @@ import type {
   VfsLifecycle,
   VfsListOptions,
   VfsMountRegistration,
-  RuntimefsProviderContribution,
   VfsStatResult,
   VfsStreamChunk,
   VfsWatchEvent,
   VfsWatchOptions,
   VfsWriteResult,
-} from "@actant/shared";
+} from "@actant/shared/core";
+import type { RuntimefsProviderContribution } from "@actant/shared/vfs-contracts";
 
 const MCP_RUNTIME_TRAITS = new Set<VfsFeature>([
   "executable",
@@ -39,11 +39,11 @@ export interface McpRuntimeWatchEvent {
   timestamp?: number;
 }
 
-export interface McpRuntimeProviderContribution extends RuntimefsProviderContribution<
+export type McpRuntimeProviderContribution = RuntimefsProviderContribution<
   McpRuntimeRecord,
   "events",
   McpRuntimeWatchEvent
-> {}
+>;
 
 /** @deprecated Use McpRuntimeProviderContribution. */
 export type McpRuntimeSourceProvider = McpRuntimeProviderContribution;

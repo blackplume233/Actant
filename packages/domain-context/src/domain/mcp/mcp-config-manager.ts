@@ -1,5 +1,5 @@
 import { z } from "zod/v4";
-import type { ConfigValidationResult, McpServerDefinition } from "@actant/shared";
+import type { ConfigValidationResult, McpServerDefinition } from "@actant/shared/core";
 import { FileBackedComponentCollection } from "../component-collection";
 
 const McpServerDefinitionSchema = z

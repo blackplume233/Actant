@@ -6,7 +6,7 @@ import {
   RpcTransportError,
   safeResolvePath,
   type RpcRequest,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import { Agent, type AgentTool } from "@mariozechner/pi-agent-core";
 import { getModel, Type } from "@mariozechner/pi-ai";
 

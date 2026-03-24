@@ -1,4 +1,4 @@
-import type { SkillDefinition } from "@actant/shared";
+import type { SkillDefinition } from "@actant/shared/core";
 import type { ComponentTypeHandler } from "../component-type-handler";
 import type { BackendBuilder } from "../backend-builder";
 

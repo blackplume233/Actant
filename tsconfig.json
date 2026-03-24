@@ -2,7 +2,6 @@
   "files": [],
   "references": [
     { "path": "packages/shared" },
-    { "path": "packages/context" },
     { "path": "packages/domain-context" },
     { "path": "packages/agent-runtime" },
     { "path": "packages/acp" },

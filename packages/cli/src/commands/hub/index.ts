@@ -8,8 +8,8 @@ import type {
   VfsGrepRpcResult,
   VfsListRpcResult,
   VfsReadResult,
-} from "@actant/shared";
-import { getBridgeSessionToken, HUB_MOUNT_LAYOUT, mapHubPath } from "@actant/shared";
+} from "@actant/shared/core";
+import { getBridgeSessionToken, HUB_MOUNT_LAYOUT, mapHubPath } from "@actant/shared/core";
 import type { RpcClient } from "../../client/rpc-client";
 import { ensureDaemonRunning } from "../daemon/start";
 import { presentError, type CliPrinter, defaultPrinter, type OutputFormat } from "../../output/index";

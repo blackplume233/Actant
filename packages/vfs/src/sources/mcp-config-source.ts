@@ -9,7 +9,7 @@ import type {
   VfsListOptions,
   VfsStatResult,
   VfsWriteResult,
-} from "@actant/shared";
+} from "@actant/shared/core";
 
 const MCP_CONFIG_TRAITS = new Set<VfsFeature>(["persistent", "writable"]);
 

@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { unlink } from "node:fs/promises";
-import type { GatewayLeaseParams, GatewayLeaseResult } from "@actant/shared";
+import type { GatewayLeaseParams, GatewayLeaseResult } from "@actant/shared/core";
 import {
   createLogger,
   ipcRequiresFileCleanup,
@@ -12,7 +12,7 @@ import {
   AgentNotRunningError,
   AcpConnectionMissingError,
   GatewayUnavailableError,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

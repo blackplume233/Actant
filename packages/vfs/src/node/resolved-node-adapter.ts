@@ -13,7 +13,7 @@ import type {
   VfsWatchEvent,
   VfsWatchOptions,
   VfsWriteResult,
-} from "@actant/shared";
+} from "@actant/shared/core";
 import type { VfsRequestContext, VfsStreamChunk } from "../namespace/canonical-path";
 
 class AsyncPushIterator<T> implements AsyncIterable<T>, AsyncIterator<T> {
