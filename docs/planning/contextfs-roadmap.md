@@ -188,6 +188,9 @@ Progress notes:
 - [x] VFS core terminology / explicit filesystem metadata / lifecycle contract 已收口，`@actant/vfs` 不再依赖 `name/label` 猜测 `filesystemType`
 - [x] A4 keep / migrate / delete baseline 已形成：`docs/agent/2026-03-24-cursor-322-a4-domain-context-boundary.md`
 - [x] `@actant/agent-runtime` 根导出已切断 `domain-context` manager/template 兼容出口；`domain-handlers` 与 `workspace-builder` 已切到最小 collection 合同
+- [x] Full Todo 主题 6 已完成一次 ship：`codex/03-24-322-agent-runtime-positioning` @ `ce84a19`
+- [x] `agent-runtime` 活跃定位已冻结为 daemon-hosted runtime module / daemon plugin boundary，死掉的 `domain/template` 兼容入口已删除
+- [x] `TemplateRegistry` / `TemplateFileWatcher` 已明确降级为本地 authoring collection / watcher，并纳入 terminology gate
 
 Authority rule:
 
@@ -250,13 +253,13 @@ Authority rule:
 
 #### 6. `agent-runtime` 定位治理
 
-- [ ] 固化 `agent-runtime` 是 daemon plugin
-- [ ] 明确 `agent-runtime` 不是中心层
-- [ ] 明确 `agent-runtime` 不是组合根
-- [ ] 明确 `domain-context` / `acp` / `pi` 是 `agent-runtime` 依赖
-- [ ] 评估是否拆出 `agent-runtime plugin adapter`
-- [ ] 明确 `agent-runtime` 可向 VFS 注入哪些 provider contribution
-- [ ] 明确 `agent-runtime` 只通过 VFS 读写系统状态
+- [x] 固化 `agent-runtime` 是 daemon plugin
+- [x] 明确 `agent-runtime` 不是中心层
+- [x] 明确 `agent-runtime` 不是组合根
+- [x] 明确 `domain-context` / `acp` / `pi` 是 `agent-runtime` 依赖
+- [x] 评估是否拆出 `agent-runtime plugin adapter`
+- [x] 明确 `agent-runtime` 可向 VFS 注入哪些 provider contribution
+- [x] 明确 `agent-runtime` 只通过 VFS 读写系统状态
 
 #### 7. `domain-context` 治理
 
@@ -307,14 +310,14 @@ Authority rule:
 
 #### 12. 文档与术语治理
 
-- [ ] 更新 `.trellis/spec/index.md`
-- [ ] 更新 `.trellis/spec/terminology.md`
-- [ ] 更新 `.trellis/spec/backend/index.md`
-- [ ] 更新 `docs/design/actant-vfs-reference-architecture.md`
-- [ ] 统一 `daemon / bridge / daemon plugin / provider contribution` 术语
-- [ ] 统一 `domain-context` 的最终定义
-- [ ] 统一 `manager/index/cache/view` 的边界定义
-- [ ] 增补“禁止中心注册结构”的明确设计约束
+- [x] 更新 `.trellis/spec/index.md`
+- [x] 更新 `.trellis/spec/terminology.md`
+- [x] 更新 `.trellis/spec/backend/index.md`
+- [x] 更新 `docs/design/actant-vfs-reference-architecture.md`
+- [x] 统一 `daemon / bridge / daemon plugin / provider contribution` 术语
+- [x] 统一 `domain-context` 的最终定义
+- [x] 统一 `manager/index/cache/view` 的边界定义
+- [x] 增补“禁止中心注册结构”的明确设计约束
 
 #### 13. Bridge 层治理
 
