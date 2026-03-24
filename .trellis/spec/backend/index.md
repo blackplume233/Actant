@@ -59,6 +59,7 @@
 
 - 自行装载插件
 - 自行组合系统
+- 读取本地 namespace 配置并在 bridge 包内直接装配 `VFS`
 - 持有系统真相源
 
 ### Daemon Plugin Layer
@@ -134,6 +135,7 @@ V1 后端实现必须围绕以下固定类型工作：
 
 - `daemon` 是唯一组合根
 - bridge 层所有运行时能力都经 RPC 向 `daemon` 请求
+- `cli hub`、`rest-api`、`mcp-server` 等 bridge 入口在 daemon 不可用时必须 fail fast，不得 fallback 为本地 standalone 装配
 - `agent-runtime` 等机制模块如需扩展系统，应作为 `daemon plugin` 接入
 - plugin 如需暴露文件系统能力，应通过 provider contribution 注入 `VFS`
 

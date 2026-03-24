@@ -192,13 +192,19 @@ Authority rule:
 
 #### 1. 宿主与运行时口径治理
 
-- [ ] 固化 `daemon` 是唯一运行时宿主
-- [ ] 固化 `daemon` 是唯一组合根
-- [ ] 固化 `bridge` 只负责通过 RPC 与 `daemon` 交互
-- [ ] 固化 `actant` 只是打包层 / 分发层 / 产品壳
-- [ ] 删除 `actant app` 作为组合根的旧叙述
-- [ ] 删除 bridge 层“自带装配能力”的旧叙述
-- [ ] 清理活文档中所有与上述口径冲突的表述
+- [x] 固化 `daemon` 是唯一运行时宿主
+- [x] 固化 `daemon` 是唯一组合根
+- [x] 固化 `bridge` 只负责通过 RPC 与 `daemon` 交互
+- [x] 固化 `actant` 只是打包层 / 分发层 / 产品壳
+- [x] 删除 `actant app` 作为组合根的旧叙述
+- [x] 删除 bridge 层“自带装配能力”的旧叙述
+- [x] 清理活文档中所有与上述口径冲突的表述
+
+Progress:
+
+- [x] 2026-03-24: `cli hub` 删除 standalone fallback，daemon 不可用时直接报 host requirement
+- [x] 2026-03-24: `@actant/mcp-server` 删除 `createStandaloneContext` 与 bridge 内 `VFS` 自装配路径，只保留 daemon RPC backend
+- [x] 2026-03-24: `actant api` help 文案改为 daemon-hosted bridge，活跃 spec/design 文档同步回写
 
 #### 2. 模块结构治理
 

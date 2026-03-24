@@ -68,6 +68,7 @@ agent-runtime / 其它运行插件"]
 - 活跃文档必须使用 Linux 术语
 - 历史迁移说明必须留在默认入口之外
 - `daemon` 是唯一运行时组合根，bridge 层不得二次装配系统
+- `@actant/cli`、`@actant/rest-api`、`@actant/mcp-server` 等 bridge 包不得在本地调用 `loadProjectContext`、`VfsKernel`、`VfsRegistry` 重新装配 namespace；无 daemon 时应直接报错
 - `provider` 不得再被当作中心注册结构或顶层插件模型
 - 所有 ship / merge 级交付必须先产出 changelog draft，再汇总正式 release changelog
 - `docs/planning/contextfs-roadmap.md` 是唯一 live milestone truth file

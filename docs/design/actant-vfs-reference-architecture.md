@@ -25,6 +25,12 @@
 - `daemon plugin` 是系统真实扩展单元
 - `provider` 只是 `daemon plugin` 可贡献的一类能力
 
+执行约束：
+
+- `cli`、`rest-api`、`mcp-server` 等 bridge 包都是 daemon-only adapter
+- bridge 包只做 RPC path mapping、协议转换与响应格式化
+- daemon socket / host 不可用时必须 fail fast，不得 fallback 为本地 standalone namespace 装配
+
 简化模块图：
 
 ```mermaid

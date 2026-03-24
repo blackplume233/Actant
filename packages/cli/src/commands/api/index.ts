@@ -5,7 +5,7 @@ import { defaultSocketPath } from "../../socket-path";
 
 export function createApiCommand(printer: CliPrinter = defaultPrinter): Command {
   return new Command("api")
-    .description("Start the standalone REST API server for external integrations (n8n, IM, etc.)")
+    .description("Start the daemon-hosted REST API bridge for external integrations (n8n, IM, etc.)")
     .option("-p, --port <port>", "Port to listen on", "3100")
     .option("-H, --host <host>", "Host to bind to", "0.0.0.0")
     .option("-k, --api-key <key>", "Require API key for authentication (also reads ACTANT_API_KEY env)")

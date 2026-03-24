@@ -36,7 +36,7 @@ export async function startServer(): Promise<void> {
 
   server.tool(
     "vfs_write",
-    "Write content to a VFS path when the current mount supports writes. In standalone namespace mode, most mounts are read-only by design.",
+    "Write content to a VFS path when the daemon host exposes a writable mount.",
     {
       path: z.string().describe("VFS path to write"),
       content: z.string().describe("Content to write"),
