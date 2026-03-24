@@ -1,9 +1,9 @@
 /**
- * Plugin System — Base Type Definitions
+ * Daemon plugin system — base data types
  *
  * These are the pure data types shared across packages.
  * The full ActantPlugin interface (which references HookEventBus and ContextProvider)
- * lives in @actant/agent-runtime/plugin.
+ * lives in `@actant/agent-runtime/plugin`.
  */
 
 // ─────────────────────────────────────────────────────────────
@@ -31,10 +31,10 @@ export type PluginRuntimeState = "idle" | "running" | "error" | "stopped";
 // ─────────────────────────────────────────────────────────────
 
 /**
- * Runtime context passed to every plugin lifecycle method and registration plug.
+ * Runtime context passed to every plugin lifecycle method and contribution slot.
  *
  *   agentName — present for instance-scoped plugins; absent for actant-scoped ones
- *   config    — plugin-specific configuration from the template / actant.json
+ *   config    — plugin-specific configuration supplied by daemon-managed config
  */
 export interface PluginContext {
   agentName?: string;
@@ -46,7 +46,7 @@ export interface PluginContext {
 // ─────────────────────────────────────────────────────────────
 
 /**
- * Lifecycle hooks for the runtime plug (plug 2).
+ * Lifecycle hooks for the runtime contribution slot.
  * All methods are optional; implement only the phases you need.
  *
  * Execution order: init → start → tick* → stop → dispose
@@ -72,7 +72,7 @@ export interface PluginRuntimeHooks {
 //  § 4  PluginRef — runtime snapshot for RPC / CLI
 // ─────────────────────────────────────────────────────────────
 
-/** Read-only snapshot of a plugin's runtime state, returned by PluginHost.list(). */
+/** Read-only snapshot of a plugin's runtime state, returned by `PluginHost.list()`. */
 export interface PluginRef {
   name: string;
   scope: PluginScope;

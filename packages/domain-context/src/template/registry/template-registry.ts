@@ -12,9 +12,11 @@ export interface RegistryOptions {
 }
 
 /**
- * Template registry that extends BaseComponentManager (#119).
- * Inherits CRUD, search/filter, import/export from the base class.
- * Adds template-specific overrides: duplicate checking, TemplateLoader-based directory loading.
+ * Local mutable template collection for workspace/template authoring flows.
+ *
+ * It is intentionally a package-local collection primitive, not a system-wide
+ * registration center. VFS/runtime projections should consume snapshots derived
+ * from this registry instead of treating it as a runtime truth source.
  */
 export class TemplateRegistry extends BaseComponentManager<AgentTemplate> {
   protected readonly componentType = "template";

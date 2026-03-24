@@ -68,6 +68,7 @@ agent-runtime / 其它运行插件"]
 - 活跃文档必须使用 Linux 术语
 - 历史迁移说明必须留在默认入口之外
 - `daemon` 是唯一运行时组合根，bridge 层不得二次装配系统
+- `agent-runtime` 只是由 `daemon` 装载的机制模块，不是中心层或组合根
 - `provider contribution` 不得再被当作中心注册结构或顶层插件模型
 - `packages/vfs` 的 core 骨架必须保持在 `facade / kernel / mount / path / node / permission / lifecycle / storage / index / filesystem type SPI`
 - 所有 ship / merge 级交付必须先产出 changelog draft，再汇总正式 release changelog
@@ -97,6 +98,7 @@ agent-runtime / 其它运行插件"]
 - 是否仍遵守 `daemon host -> RPC bridge -> VFS core` 的运行时分工
 - 是否把 consumer interpretation 重新写回 VFS 核心模型
 - 是否把 `provider contribution` 误提升成了独立组合根或中心注册结构
+- 是否把 `agent-runtime` 或 `domain-context` 重新写成系统中心层
 - 是否把旧 `Source` / `Prompt` 术语重新写成当前真相
 - 是否在 spec、design、roadmap 三层同步修改
 - 是否把 live progress 只维护在 `docs/planning/contextfs-roadmap.md`

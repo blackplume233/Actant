@@ -14,8 +14,11 @@ export interface TemplateFileWatcherOptions {
 }
 
 /**
- * Watches the templates directory for file changes and auto-reloads
- * the TemplateRegistry. Handles create, modify, and delete events.
+ * Watches a local templates directory and refreshes a local TemplateRegistry.
+ *
+ * This watcher exists for workspace authoring convenience. It does not define
+ * runtime truth; daemon/runtime projections must continue to flow through VFS
+ * snapshots instead of relying on this watcher as a system boundary.
  *
  * Tracks file→templateName mapping so deletions can correctly unregister
  * templates whose name differs from the filename.

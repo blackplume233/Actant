@@ -11,6 +11,8 @@
 - `daemon`
 - `bridge`
 - `daemon plugin`
+- `agent-runtime`
+- `domain-context`
 - `mount namespace`
 - `mount table`
 - `filesystem type`
@@ -67,6 +69,7 @@
 
 - 作为真实扩展单元被 `daemon` 装载
 - 可贡献 provider、RPC 能力、hooks、services 等
+- 作为运行机制模块的承载层，例如 `agent-runtime`
 
 不负责：
 
@@ -124,6 +127,38 @@ Provider 不负责：
 - `hostfs` / `memfs` 继续由 filesystem type factory 负责，不归入 provider contribution
 - `skill` / `prompt` / `workflow` / `template` 这类派生内容不属于 provider contribution
 
+### Agent Runtime Layer
+
+`agent-runtime` 在 V1 中是由 `daemon` 装载的运行机制模块。
+
+负责：
+
+- 承载 daemon plugin 生命周期与 agent orchestration
+- 基于 VFS/provider surfaces 读写运行时状态
+- 依赖 `domain-context`、`acp`、`pi` 等下游能力模块完成解释、协议或集成
+- 通过 `adaptLegacyPlugin()` 承接遗留 workspace materialization 适配
+
+不负责：
+
+- 成为系统组合根
+- 绕过 `daemon` 直接向 bridge 暴露宿主能力
+- 绕过 VFS 建立第二套系统状态真相源
+- 把 legacy workspace materialization adapter 升级成独立顶层插件模型
+
+### Domain-Context Layer
+
+`domain-context` 在 V1 中只负责文件解释与本地 authoring helper：
+
+- parser / schema / validator / loader / renderer-adjacent helper
+- permission compilation
+- 本地 mutable collection / watcher
+
+它不负责：
+
+- 反向生成 VFS
+- 成为系统状态中心
+- 通过 manager-first registry 定义平台边界
+
 ---
 
 ## 3. V1 Required Types
@@ -159,6 +194,7 @@ V1 后端实现必须围绕以下固定类型工作：
 - `daemon` 是唯一组合根
 - bridge 层所有运行时能力都经 RPC 向 `daemon` 请求
 - `agent-runtime` 等机制模块如需扩展系统，应作为 `daemon plugin` 接入
+- `agent-runtime` 对 `domain-context` / `acp` / `pi` 的使用属于下游依赖，不改变宿主层级
 - plugin 如需暴露文件系统能力，应通过 provider contribution 注入 `VFS`
 
 ---

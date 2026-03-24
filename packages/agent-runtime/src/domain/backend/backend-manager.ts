@@ -26,11 +26,11 @@ export type BuildProviderEnvFn = (
 ) => Record<string, string>;
 
 /**
- * Manages backend definitions as VersionedComponents.
+ * Local backend definition collection for runtime builder/launcher flows.
  *
- * Pure-data definitions are stored in the component registry (JSON-serializable,
+ * Pure-data definitions are stored in the collection (JSON-serializable,
  * loadable from `~/.actant/configs/backends/`). Non-serializable behavioral
- * extensions (acpResolver) are stored in a separate Map keyed by backend name.
+ * extensions stay in side maps keyed by backend name.
  */
 export class BackendManager extends BaseComponentManager<BackendDefinition> {
   protected readonly componentType = "Backend";

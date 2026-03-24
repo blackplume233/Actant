@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const repoRoot = process.cwd();
@@ -12,8 +12,15 @@ const activeTruthFiles = [
   ".trellis/spec/api-contracts.md",
   ".trellis/spec/backend/index.md",
   ".trellis/spec/backend/quality-guidelines.md",
+  ".trellis/spec/terminology.md",
   "docs/design/contextfs-architecture.md",
+  "docs/design/actant-vfs-reference-architecture.md",
   "docs/planning/contextfs-roadmap.md",
+  "packages/domain-context/src/index.ts",
+  "packages/agent-runtime/src/index.ts",
+  "packages/agent-runtime/src/plugin/types.ts",
+  "packages/agent-runtime/src/plugin/plugin-host.ts",
+  "packages/agent-runtime/src/plugin/legacy-adapter.ts",
   "packages/cli/src/commands/help.ts",
   "packages/cli/src/commands/catalog/list.ts",
   "packages/cli/src/commands/hub/index.ts",
@@ -42,12 +49,19 @@ const bannedPhrases = [
   "No sources registered.",
   "sourceName",
   "traits",
+  "full six-plug extension interface",
+  "./domain/index",
+  "./template/index",
 ] as const;
 
 describe("ContextFS terminology gate", () => {
   it("keeps legacy default-entry phrases out of active truth and help surfaces", () => {
     for (const file of activeTruthFiles) {
-      const content = readFileSync(join(repoRoot, file), "utf8");
+      const fullPath = join(repoRoot, file);
+      if (!existsSync(fullPath)) {
+        continue;
+      }
+      const content = readFileSync(fullPath, "utf8");
       for (const phrase of bannedPhrases) {
         expect(content, `${file} should not contain "${phrase}"`).not.toContain(phrase);
       }

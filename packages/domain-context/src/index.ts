@@ -1,7 +1,9 @@
 // Schemas (previously extracted Zod schemas)
 export * from "./schemas/index";
 
-// Domain component managers
+// Local mutable collection primitives used by api / authoring flows.
+// These exports remain available for internal package wiring, but they are not
+// the public platform contract and must not define runtime truth.
 export { BaseComponentManager, type NamedComponent } from "./domain/base-component-manager";
 export { SkillManager } from "./domain/skill/skill-manager";
 export { PromptManager } from "./domain/prompt/prompt-manager";

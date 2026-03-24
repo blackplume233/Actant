@@ -24,6 +24,8 @@
 - `bridge` 只负责通过 RPC 与 `daemon` 交互
 - `daemon plugin` 是系统真实扩展单元
 - `provider contribution` 只是 `daemon plugin` 可贡献的一类能力
+- `agent-runtime` 是被 `daemon` 装载的机制模块，不是组合根
+- `domain-context` 只是解释/authoring helper，不是运行时真相源
 
 简化模块图：
 
@@ -44,11 +46,15 @@ cli / rest-api / tui / dashboard / mcp-server / channel-*"]
     PLUGINS["Daemon Plugins
 agent-runtime / 其它运行插件"]
 
+    SUPPORT["Support Modules
+domain-context / acp / pi"]
+
     ACTANT --> BRIDGE
     BRIDGE -. RPC .-> DAEMON
     DAEMON --> PLUGINS
     DAEMON --> VFS
     PLUGINS --> VFS
+    PLUGINS --> SUPPORT
 ```
 
 ---
@@ -133,11 +139,24 @@ V1 的 `node type` 固定为：
 - `index`: `packages/vfs/src/index/path-index.ts`
 - `filesystem type / SPI`: `packages/vfs/src/filesystem-type-registry.ts`
 
+相关上层边界：
+
+- `agent-runtime`
+  - daemon-hosted runtime module
+  - plugin lifecycle / agent orchestration / builder integration
+  - may contribute runtimefs providers through daemon plugin/provider surfaces
+- `domain-context`
+  - parser / schema / validator / loader / permission compilation
+  - local mutable collection / watcher only
+  - must not define VFS core or runtime truth
+
 约束：
 
 - 上述目录和文件是当前 V1 的核心骨架
 - `sources/*` 仍是过渡期 helper/factory 集合，不得反向定义 `VFS core`
 - `domain` / `catalog` / `manager` 语义不得继续渗入 `kernel`、`mount`、`path`、`node`、`permission` 主骨架
+- `agent-runtime` 只能通过 `daemon plugin -> provider contribution -> VFS` 接入文件系统能力
+- `domain-context` 不得反向定义 `mount`、`node` 或 `filesystem type`
 
 ---
 

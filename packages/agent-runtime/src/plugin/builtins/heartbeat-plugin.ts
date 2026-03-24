@@ -13,16 +13,15 @@ export interface HeartbeatPluginConfig {
 }
 
 /**
- * HeartbeatPlugin — the first built-in actant-scoped Plugin.
+ * Built-in daemon-scoped health plugin.
  *
  * Responsibilities:
- *   - Emits `plugin:heartbeat:healthy` on each successful tick.
- *   - Listens for `process:crash` events; when fired, increments
- *     `consecutiveFailures` and emits `plugin:heartbeat:unhealthy`.
- *   - Resets `consecutiveFailures` to 0 on a clean tick.
+ *   - Emits `plugin:heartbeat:healthy` on each successful tick
+ *   - Listens for `process:crash` and emits `plugin:heartbeat:unhealthy`
+ *   - Exposes lightweight runtime health state for daemon status surfaces
  *
- * This plugin validates the full PluginHost lifecycle (init → start →
- * tick* → stop) and provides a runtime health signal for the daemon.
+ * This validates the PluginHost lifecycle without turning `agent-runtime` into
+ * a second composition root.
  */
 export class HeartbeatPlugin implements ActantPlugin {
   readonly name = "heartbeat";
