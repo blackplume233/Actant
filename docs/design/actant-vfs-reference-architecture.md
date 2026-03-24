@@ -77,7 +77,7 @@ api / cli / rest-api / dashboard / mcp-server / actant"]
 | `VFS Stack` | `@actant/vfs` | 唯一内核 |
 | `AgentRuntime Stack` | `@actant/agent-runtime`, `@actant/domain-context`, `@actant/acp`, `@actant/pi`, `@actant/tui`, `@actant/channel-*` | 运行时执行、解释、协议与集成能力 |
 | `Surface Stack` | `@actant/api`, `@actant/cli`, `@actant/rest-api`, `@actant/dashboard`, `@actant/mcp-server`, `actant` | 对外入口、daemon 组合、产品壳 |
-| `cleanup-target` | `@actant/context` | 本轮并入 `@actant/api` 并删除 |
+| `cleanup-target` | `@actant/context` | 已并入 `@actant/api`；物理包与残留引用都应删除 |
 
 已删除包：
 

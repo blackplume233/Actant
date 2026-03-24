@@ -14,9 +14,9 @@
 
 ## 破坏性变更/迁移说明
 
-- 依赖 `createStandaloneProjectContextRuntime` 语义的 bridge fallback 流程需要迁移到显式启动 daemon 后再通过 RPC 访问。
+- 依赖本地 standalone runtime 语义的 bridge fallback 流程需要迁移到显式启动 daemon 后再通过 RPC 访问。
 - 依赖 `plugin.runtimeList` / `plugin.runtimeStatus` 或 `actant plugin status` 的调用方需要移除这些入口。
-- 本次变更尚未处理主工作区 `packages/context` 的物理残留与 `createStandaloneProjectContextRuntime` 本体删除，后续需要继续收口。
+- `@actant/context` 相关残留必须继续清理到物理目录级别，避免工作区继续保留空转包。
 
 ## 验证结果
 
