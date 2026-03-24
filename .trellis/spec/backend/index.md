@@ -159,6 +159,34 @@ Provider 不负责：
 - 成为系统状态中心
 - 通过 manager-first registry 定义平台边界
 
+### ACP Layer
+
+`acp` 是协议与 transport 模块。
+
+负责：
+
+- ACP 连接、gateway、callback、channel adapter、VFS interception
+- 为 `daemon` / `agent-runtime` 提供协议实现与 transport helper
+
+不负责：
+
+- 成为独立宿主
+- 绕过 `daemon` / `agent-runtime` 自行定义系统状态边界
+
+### PI Layer
+
+`pi` 是被 `agent-runtime` backend 体系消费的后端包。
+
+负责：
+
+- 提供 backend builder / communicator / ACP bridge 适配
+- 作为具体 backend implementation 被 `agent-runtime` 调用
+
+不负责：
+
+- 成为独立 plugin host
+- 绕过 `agent-runtime` / `daemon` 直接进入系统主线
+
 ---
 
 ## 3. V1 Required Types
@@ -195,6 +223,7 @@ V1 后端实现必须围绕以下固定类型工作：
 - bridge 层所有运行时能力都经 RPC 向 `daemon` 请求
 - `agent-runtime` 等机制模块如需扩展系统，应作为 `daemon plugin` 接入
 - `agent-runtime` 对 `domain-context` / `acp` / `pi` 的使用属于下游依赖，不改变宿主层级
+- `acp` / `pi` 进入系统主线时，必须经 `agent-runtime` 或 `daemon` 已定义的边界接入
 - plugin 如需暴露文件系统能力，应通过 provider contribution 注入 `VFS`
 
 ---

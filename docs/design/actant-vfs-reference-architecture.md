@@ -26,6 +26,8 @@
 - `provider contribution` 只是 `daemon plugin` 可贡献的一类能力
 - `agent-runtime` 是被 `daemon` 装载的机制模块，不是组合根
 - `domain-context` 只是解释/authoring helper，不是运行时真相源
+- `acp` 是协议/transport 模块
+- `pi` 是 backend package，而不是宿主层
 
 简化模块图：
 
@@ -149,6 +151,12 @@ V1 的 `node type` 固定为：
   - parser / schema / validator / loader / permission compilation
   - local mutable collection / watcher only
   - must not define VFS core or runtime truth
+- `acp`
+  - protocol / transport implementation used by daemon-hosted runtime flows
+  - must not bypass daemon / agent-runtime host boundaries
+- `pi`
+  - backend package consumed by `agent-runtime`
+  - must not be described as daemon plugin host or standalone system layer
 
 约束：
 
@@ -157,6 +165,7 @@ V1 的 `node type` 固定为：
 - `domain` / `catalog` / `manager` 语义不得继续渗入 `kernel`、`mount`、`path`、`node`、`permission` 主骨架
 - `agent-runtime` 只能通过 `daemon plugin -> provider contribution -> VFS` 接入文件系统能力
 - `domain-context` 不得反向定义 `mount`、`node` 或 `filesystem type`
+- `acp` 与 `pi` 的接入必须遵守 `bridge -> RPC -> daemon` 与 `daemon -> plugin -> provider -> VFS` 既有边界
 
 ---
 

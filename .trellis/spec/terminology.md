@@ -29,6 +29,8 @@
 | `daemon plugin` | Runtime Extension | 被 `daemon` 装载的真实扩展单元；可贡献 provider contribution、RPC 能力、hooks、services | 单纯 provider、中心注册表 |
 | `agent-runtime` | Runtime Module | 被 `daemon` 装载的运行机制模块；可以实现 daemon plugin、调度 agent 生命周期、并通过 VFS/provider surface 读写状态 | 组合根、中心层 |
 | `domain-context` | Interpretation Helper | 负责 parser / schema / validator / loader / permission compilation 等文件解释能力，也可提供本地 authoring collection/watchers | VFS 真相源、系统状态中心 |
+| `acp` | Protocol Adapter | agent-runtime / daemon 使用的协议与 transport 模块，用于 ACP 会话、gateway、callback、VFS interception | 独立宿主、组合根 |
+| `pi` | Backend Package | 被 `agent-runtime` backend 体系消费的后端包，提供 builder / communicator / bridge 适配 | daemon plugin、系统中心层 |
 | `mount namespace` | Implementation | 当前调用上下文可见的完整路径视图 | 权限系统、业务解释器 |
 | `mount table` | Config / Impl | 挂载点到挂载实例的映射表 | 下层 backend、本体资源树 |
 | `filesystem type` | Config / Impl | 一类文件系统实现的定义，决定实例化方式、能力上界、生命周期语义 | 业务资源分类 |
@@ -115,6 +117,8 @@ VFS 不负责：
 - `bridge` 只负责 RPC 交互
 - `agent-runtime` 只是被 `daemon` 装载的机制模块
 - `domain-context` 只负责文件解释与本地 authoring helper
+- `acp` 是协议/transport 模块，不能越级成为宿主层
+- `pi` 是 backend package，必须通过 `agent-runtime` / `daemon` 进入系统
 - `consumer` 可以依赖 `VFS`，但不能替代 `daemon` 成为组合根
 
 ---

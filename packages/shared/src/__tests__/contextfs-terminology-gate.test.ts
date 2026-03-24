@@ -17,6 +17,8 @@ const activeTruthFiles = [
   "docs/design/actant-vfs-reference-architecture.md",
   "docs/planning/contextfs-roadmap.md",
   "packages/domain-context/src/index.ts",
+  "packages/acp/src/index.ts",
+  "packages/pi/src/index.ts",
   "packages/agent-runtime/src/index.ts",
   "packages/agent-runtime/src/plugin/types.ts",
   "packages/agent-runtime/src/plugin/plugin-host.ts",

@@ -1,3 +1,9 @@
+/**
+ * ACP protocol/transport package.
+ *
+ * This package provides protocol adapters and transport helpers for daemon/
+ * agent-runtime flows. It is not a runtime host or system composition root.
+ */
 export { AcpConnection, type AcpConnectionOptions, type AcpSessionInfo, type ClientCallbackHandler } from "./connection";
 export { AcpConnectionManager, type ConnectOptions } from "./connection-manager";
 export { AcpCommunicator } from "./communicator";

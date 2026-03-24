@@ -191,6 +191,7 @@ Progress notes:
 - [x] Full Todo 主题 6 已完成一次 ship：`codex/03-24-322-agent-runtime-positioning` @ `ce84a19`
 - [x] `agent-runtime` 活跃定位已冻结为 daemon-hosted runtime module / daemon plugin boundary，死掉的 `domain/template` 兼容入口已删除
 - [x] `TemplateRegistry` / `TemplateFileWatcher` 已明确降级为本地 authoring collection / watcher，并纳入 terminology gate
+- [x] `acp` / `pi` 的活跃定位已锁定为协议/transport 模块与 backend package，不能越级成为新的宿主层
 
 Authority rule:
 
@@ -273,10 +274,10 @@ Authority rule:
 
 #### 8. `acp` / `pi` 治理
 
-- [ ] 明确 `acp` 是 `agent-runtime` 依赖还是 daemon plugin contribution
-- [ ] 明确 `pi` 是 `agent-runtime` 依赖还是独立 plugin
-- [ ] 清理 `acp` / `pi` 在文档中的层级漂移描述
-- [ ] 明确它们与 VFS 的依赖关系不能绕过 `agent-runtime` / `daemon`
+- [x] 明确 `acp` 是 `agent-runtime` 依赖还是 daemon plugin contribution
+- [x] 明确 `pi` 是 `agent-runtime` 依赖还是独立 plugin
+- [x] 清理 `acp` / `pi` 在文档中的层级漂移描述
+- [x] 明确它们与 VFS 的依赖关系不能绕过 `agent-runtime` / `daemon`
 
 #### 9. 去中心注册结构治理
 
