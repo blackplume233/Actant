@@ -1,4 +1,6 @@
 import { execFile } from "node:child_process";
+import { mkdir, readFile, readdir, stat, unlink, writeFile } from "node:fs/promises";
+import { extname, join, resolve } from "node:path";
 import type {
   AgentOpenMode,
   BackendDefinition,
@@ -7,7 +9,7 @@ import type {
   ModelProviderConfig,
   PlatformCommand,
 } from "@actant/shared";
-import { BaseComponentManager } from "@actant/domain-context";
+import { ComponentReferenceError, ConfigNotFoundError, ConfigValidationError, createLogger, type Logger } from "@actant/shared";
 import { BackendDefinitionSchema } from "./backend-schema";
 import { tryInstallMethods, ensureResolvePackage, type EnsureInstallResult, type InstallResult } from "./backend-installer";
 
@@ -32,15 +34,100 @@ export type BuildProviderEnvFn = (
  * loadable from `~/.actant/configs/backends/`). Non-serializable behavioral
  * extensions stay in side maps keyed by backend name.
  */
-export class BackendManager extends BaseComponentManager<BackendDefinition> {
-  protected readonly componentType = "Backend";
+export class BackendManager {
+  private readonly components = new Map<string, BackendDefinition>();
+  private readonly logger: Logger;
+  private readonly componentType = "Backend";
+  private persistDir?: string;
 
   private readonly acpResolvers = new Map<string, AcpResolverFn>();
   private readonly providerEnvBuilders = new Map<string, BuildProviderEnvFn>();
   private readonly builders = new Map<string, unknown>();
 
   constructor() {
-    super("backend-manager");
+    this.logger = createLogger("backend-manager");
+  }
+
+  setPersistDir(dir: string): void {
+    this.persistDir = dir;
+  }
+
+  register(component: BackendDefinition): void {
+    this.components.set(component.name, component);
+    this.logger.debug({ name: component.name }, `${this.componentType} registered`);
+  }
+
+  unregister(name: string): boolean {
+    return this.components.delete(name);
+  }
+
+  get(name: string): BackendDefinition | undefined {
+    return this.components.get(name);
+  }
+
+  has(name: string): boolean {
+    return this.components.has(name);
+  }
+
+  resolve(names: string[]): BackendDefinition[] {
+    return names.map((name) => {
+      const component = this.components.get(name);
+      if (!component) {
+        throw new ComponentReferenceError(this.componentType, name);
+      }
+      return component;
+    });
+  }
+
+  list(): BackendDefinition[] {
+    return Array.from(this.components.values());
+  }
+
+  get size(): number {
+    return this.components.size;
+  }
+
+  clear(): void {
+    this.components.clear();
+    this.acpResolvers.clear();
+    this.providerEnvBuilders.clear();
+    this.builders.clear();
+  }
+
+  async loadFromDirectory(dirPath: string): Promise<number> {
+    let entries: string[];
+    try {
+      entries = await readdir(dirPath);
+    } catch (err) {
+      if (isNodeError(err) && err.code === "ENOENT") {
+        throw new ConfigNotFoundError(dirPath);
+      }
+      throw err;
+    }
+
+    let count = 0;
+
+    for (const entry of entries) {
+      const fullPath = join(dirPath, entry);
+      const entryStat = await stat(fullPath);
+
+      if (entryStat.isFile() && extname(entry) === ".json") {
+        try {
+          const raw = await readFile(fullPath, "utf-8");
+          const parsed = JSON.parse(raw) as unknown;
+          const component = this.validateOrThrow(parsed, fullPath);
+          this.register(component);
+          count++;
+        } catch (err) {
+          this.logger.warn({ file: entry, error: err }, `Failed to load ${this.componentType}, skipping`);
+        }
+      } else if (entryStat.isDirectory() && entry.startsWith("@")) {
+        count += await this.loadFromDirectory(fullPath);
+      }
+    }
+
+    this.logger.info({ count, dirPath }, `${this.componentType}s loaded from directory`);
+    return count;
   }
 
   // ---------------------------------------------------------------------------
@@ -274,6 +361,101 @@ export class BackendManager extends BaseComponentManager<BackendDefinition> {
     }
     return { valid: true, data: result.data as BackendDefinition, errors: [], warnings: [] };
   }
+
+  private validateOrThrow(data: unknown, source: string): BackendDefinition {
+    const result = this.validate(data, source);
+    if (!result.valid || !result.data) {
+      throw new ConfigValidationError(
+        `Validation failed for ${this.componentType} in ${source}`,
+        result.errors.map((e) => ({ path: e.path, message: e.message })),
+        result.errors,
+      );
+    }
+    return result.data;
+  }
+
+  async add(component: BackendDefinition, persist = false): Promise<void> {
+    const validated = this.validateOrThrow(component, "add");
+    this.register(validated);
+    if (persist && this.persistDir) {
+      await this.writeComponent(validated);
+    }
+  }
+
+  async update(name: string, patch: Partial<BackendDefinition>, persist = false): Promise<BackendDefinition> {
+    const existing = this.get(name);
+    if (!existing) {
+      throw new ComponentReferenceError(this.componentType, name);
+    }
+    const merged = { ...existing, ...patch, name } as BackendDefinition;
+    const validated = this.validateOrThrow(merged, "update");
+    this.register(validated);
+    if (persist && this.persistDir) {
+      await this.writeComponent(validated);
+    }
+    return validated;
+  }
+
+  async remove(name: string, persist = false): Promise<boolean> {
+    const existed = this.unregister(name);
+    if (existed && persist && this.persistDir) {
+      await this.deleteComponent(name);
+    }
+    return existed;
+  }
+
+  async importFromFile(filePath: string): Promise<BackendDefinition> {
+    const absPath = resolve(filePath);
+    const raw = await readFile(absPath, "utf-8");
+    const parsed = JSON.parse(raw) as unknown;
+    const component = this.validateOrThrow(parsed, absPath);
+    this.register(component);
+    this.logger.info({ name: component.name, filePath: absPath }, `${this.componentType} imported`);
+    return component;
+  }
+
+  async exportToFile(name: string, filePath: string): Promise<void> {
+    const component = this.get(name);
+    if (!component) {
+      throw new ComponentReferenceError(this.componentType, name);
+    }
+    const absPath = resolve(filePath);
+    await writeFile(absPath, JSON.stringify(component, null, 2) + "\n", "utf-8");
+    this.logger.info({ name, filePath: absPath }, `${this.componentType} exported`);
+  }
+
+  search(query: string): BackendDefinition[] {
+    const lower = query.toLowerCase();
+    return this.list().filter((component) => {
+      if (component.name.toLowerCase().includes(lower)) return true;
+      const description = (component as unknown as { description?: unknown }).description;
+      return typeof description === "string" && description.toLowerCase().includes(lower);
+    });
+  }
+
+  filter(predicate: (component: BackendDefinition) => boolean): BackendDefinition[] {
+    return this.list().filter(predicate);
+  }
+
+  private async writeComponent(component: BackendDefinition): Promise<void> {
+    if (!this.persistDir) return;
+    await mkdir(this.persistDir, { recursive: true });
+    const filePath = join(this.persistDir, `${component.name}.json`);
+    await writeFile(filePath, JSON.stringify(component, null, 2) + "\n", "utf-8");
+    this.logger.debug({ name: component.name, filePath }, `${this.componentType} persisted`);
+  }
+
+  private async deleteComponent(name: string): Promise<void> {
+    if (!this.persistDir) return;
+    const filePath = join(this.persistDir, `${name}.json`);
+    try {
+      await unlink(filePath);
+      this.logger.debug({ name, filePath }, `${this.componentType} file deleted`);
+    } catch (err) {
+      if (isNodeError(err) && err.code === "ENOENT") return;
+      throw err;
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -306,4 +488,8 @@ function execCommand(command: string, args: string[]): Promise<{ stdout: string;
       resolve({ stdout: stdout ?? "", exitCode });
     });
   });
+}
+
+function isNodeError(err: unknown): err is NodeJS.ErrnoException {
+  return err instanceof Error && "code" in err;
 }
