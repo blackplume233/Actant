@@ -154,11 +154,16 @@ Definition of done:
 - [x] M8.4 standalone / proxy / host-profile legacy path 切断
 - [x] M8.5 active docs / help / gates 冻结
 - [x] M8.6 端到端回归与 release 汇总
+- [x] M8.7 hosted runtime 边界固定为 `bridge -> RPC -> daemon`
+- [x] M8.8 hosted implementation 链固定为 `daemon -> plugin -> provider -> VFS`
+- [x] M8.9 `domain-context` / `manager` 最终职责在 active docs 中锁定
+- [x] M8.10 active roadmap / TODO truth sources 已与 freeze 基线同步
 
 ## Next Actions
 
-- [ ] 激活 `#322` 作为当前主线：收敛 `domain-context / catalog / manager` 边界，固定 `VFS` 为唯一真相源、`daemon` 为唯一组合根
-- [ ] 以本文件中的 `#322` 全量 todo 作为当前活跃任务的权威清单，并在后续任务推进中持续维护
+- [ ] 在 `#322` 审计基线之上优先推进 Workstream A：去中心注册结构
+- [x] 在 `#322` 审计基线之上完成 Workstream B：收口 `daemon / plugin / provider / VFS` 契约
+- [x] 在 `#322` 审计基线之上完成 Workstream C：同步活文档与门禁
 - [ ] 在 `#322` 收口后推进 `#323`：删除 `packages/core` 与 `packages/domain` 等历史残留
 - [ ] 按 release 流程整理 changelog 汇总与下一阶段里程碑入口
 
@@ -172,11 +177,11 @@ Owner: architecture convergence
 Execution order:
 
 - [x] 先串行冻结 `#322` 基线
-- [ ] 再串行完成违规路径盘点与包边界决策
+- [x] 再串行完成违规路径盘点与包边界决策
 - [ ] 在基线冻结后并行推进三条工作流：
   - [ ] Workstream A: 去中心注册结构
-  - [ ] Workstream B: 收口 `daemon / plugin / provider / VFS` 契约
-  - [ ] Workstream C: 同步活文档与门禁
+  - [x] Workstream B: 收口 `daemon / plugin / provider / VFS` 契约
+  - [x] Workstream C: 同步活文档与门禁
 - [ ] 最后与 `#323` 联动完成历史残留清理与最终验收
 
 Progress notes:
@@ -184,15 +189,30 @@ Progress notes:
 - [x] Phase 0 baseline freeze 已完成并通过 `ship-sub`
 - [x] Draft PR: `#324`
 - [x] Merged to `master`: `d4ff12a`
-- [x] Full Todo 主题 5 已完成一次 ship：`codex/03-24-322-vfs-core-governance` @ `3120503`
-- [x] VFS core terminology / explicit filesystem metadata / lifecycle contract 已收口，`@actant/vfs` 不再依赖 `name/label` 猜测 `filesystemType`
+- [x] Phase 1 audit and package-boundary baseline 已完成
+- [x] Detailed audit note: `docs/agent/2026-03-23-cursor-322-phase1-audit.md`
+- [x] Phase 2 standalone/project-context derived mounts 已切到 snapshot-backed VFS source
+- [x] Phase 3 daemon app-context derived mounts 已切到 snapshot-backed VFS source，并在 template / domain / catalog 变更后刷新挂载
+- [x] Phase 3 verification passed: `pnpm lint`, `pnpm type-check`, `pnpm test`
+- [x] Phase 4 catalog snapshot / overlay cut 已完成：`CatalogManager` 改为持有 namespaced snapshot state，daemon 与 project-context 通过 aggregate view / resolved snapshots 读取 catalog 组件，不再依赖 catalog 注入 domain managers
+- [x] Phase 4 verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
+- [x] Phase 5 manager contract cut 已完成：builder / API handler / overlay 读取层已切到 `ComponentResolver` / `MutableComponentCollection` / `ComponentCollection`
+- [x] Phase 5 verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
+- [x] Full Todo 主题 1 已完成一次 ship：`codex/03-24-322-host-runtime-governance` @ `a5a2caf`
+- [x] Full Todo 主题 2 已完成一次 ship：`codex/03-24-322-module-structure-governance` @ `10cb9f7`
+- [x] Full Todo 主题 3 已完成一次 ship：`codex/03-24-322-daemon-plugin-model` @ `107f5e8`
+- [x] Full Todo 主题 4 已完成一次 ship：`codex/03-24-322-provider-contribution-governance` @ `e8adbff`
+- [x] Full Todo 主题 5 已完成一次 ship：`codex/03-24-322-vfs-core-governance` @ `e68fb7f`
+- [x] 当前已完成一轮 VFS core boundary freeze：core terminology、显式 filesystem metadata、lifecycle contract 与 `agent-runtime` 根导出收口已落地
 - [x] A4 keep / migrate / delete baseline 已形成：`docs/agent/2026-03-24-cursor-322-a4-domain-context-boundary.md`
-- [x] `@actant/agent-runtime` 根导出已切断 `domain-context` manager/template 兼容出口；`domain-handlers` 与 `workspace-builder` 已切到最小 collection 合同
 - [x] Full Todo 主题 6 已完成一次 ship：`codex/03-24-322-agent-runtime-positioning` @ `ce84a19`
 - [x] `agent-runtime` 活跃定位已冻结为 daemon-hosted runtime module / daemon plugin boundary，死掉的 `domain/template` 兼容入口已删除
 - [x] `TemplateRegistry` / `TemplateFileWatcher` 已明确降级为本地 authoring collection / watcher，并纳入 terminology gate
 - [x] `acp` / `pi` 的活跃定位已锁定为协议/transport 模块与 backend package，不能越级成为新的宿主层
 - [x] `packages/api` 已改为直接依赖 `@actant/domain-context` / `@actant/catalog` / `@actant/vfs`；本地 template watcher 已迁到 `packages/api`
+- [x] B3 provider SPI / runtimefs contract freeze 已完成：`runtimefs` provider contribution 现在强制为 `data-source`，且必须显式声明 `filesystemType=runtimefs` 与精确 `mountPoint`
+- [x] B3 verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/vfs type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/vfs/src/__tests__/b3-runtimefs-provider-contract.test.ts packages/vfs/src/__tests__/m5-control-stream-e2e.test.ts`
+- [ ] Workstream A remaining scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；`TemplateRegistry` / `TemplateFileWatcher` 与 `BackendManager` 的最终 keep / migrate / delete 仍需继续收口
 
 Authority rule:
 
@@ -201,34 +221,34 @@ Authority rule:
 
 #### 1. 宿主与运行时口径治理
 
-- [ ] 固化 `daemon` 是唯一运行时宿主
-- [ ] 固化 `daemon` 是唯一组合根
-- [ ] 固化 `bridge` 只负责通过 RPC 与 `daemon` 交互
-- [ ] 固化 `actant` 只是打包层 / 分发层 / 产品壳
-- [ ] 删除 `actant app` 作为组合根的旧叙述
-- [ ] 删除 bridge 层“自带装配能力”的旧叙述
-- [ ] 清理活文档中所有与上述口径冲突的表述
+- [x] 固化 `daemon` 是唯一运行时宿主
+- [x] 固化 `daemon` 是唯一组合根
+- [x] 固化 `bridge` 只负责通过 RPC 与 `daemon` 交互
+- [x] 固化 `actant` 只是打包层 / 分发层 / 产品壳
+- [x] 删除 `actant app` 作为组合根的旧叙述
+- [x] 删除 bridge 层“自带装配能力”的旧叙述
+- [x] 清理活文档中所有与上述口径冲突的表述
 
 #### 2. 模块结构治理
 
-- [ ] 固化简化模块结构图
-- [ ] 固化 VFS 内部结构图
-- [ ] 明确 `daemon -> daemon plugin -> provider contribution -> VFS` 的装载方向
-- [ ] 明确 `bridge -> RPC -> daemon` 的调用方向
-- [ ] 明确哪些模块属于 daemon 内部模块
-- [ ] 明确哪些模块属于 bridge 层
-- [ ] 明确哪些模块属于打包层
+- [x] 固化简化模块结构图
+- [x] 固化 VFS 内部结构图
+- [x] 明确 `daemon -> daemon plugin -> provider contribution -> VFS` 的装载方向
+- [x] 明确 `bridge -> RPC -> daemon` 的调用方向
+- [x] 明确哪些模块属于 daemon 内部模块
+- [x] 明确哪些模块属于 bridge 层
+- [x] 明确哪些模块属于打包层
 
 #### 3. 插件模型治理
 
-- [ ] 定义 `daemon plugin` 是系统唯一有效扩展单元
-- [ ] 定义 `daemon plugin` 的最小契约
-- [ ] 定义 plugin 生命周期：`activate / deactivate / dispose`
-- [ ] 定义 plugin 可贡献能力集合：`provider / rpc / hooks / services`
-- [ ] 定义 plugin 元信息模型
-- [ ] 定义 plugin 装载位置只能在 `daemon`
-- [ ] 禁止 bridge 层直接装载 plugin
-- [ ] 禁止 `provider` 继续被当作系统顶层插件模型
+- [x] 定义 `daemon plugin` 是系统唯一有效扩展单元
+- [x] 定义 `daemon plugin` 的最小契约
+- [x] 定义 plugin 生命周期：`activate / deactivate / dispose`
+- [x] 定义 plugin 可贡献能力集合：`provider / rpc / hooks / services`
+- [x] 定义 plugin 元信息模型
+- [x] 定义 plugin 装载位置只能在 `daemon`
+- [x] 禁止 bridge 层直接装载 plugin
+- [x] 禁止 `provider` 继续被当作系统顶层插件模型
 
 #### 4. Provider contribution 治理
 
