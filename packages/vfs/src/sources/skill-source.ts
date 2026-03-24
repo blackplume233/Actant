@@ -187,7 +187,12 @@ export function createSkillSource(
     label: "skill",
     features: new Set(SKILL_TRAITS),
     lifecycle,
-    metadata: { description: "Built-in skill source", virtual: true },
+    metadata: {
+      description: "Built-in skill source",
+      virtual: true,
+      filesystemType: "hostfs",
+      mountType: mountPoint === "/" ? "root" : "direct",
+    },
     fileSchema: SKILL_FILE_SCHEMA,
     handlers,
   };

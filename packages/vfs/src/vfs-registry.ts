@@ -18,28 +18,8 @@ const logger = createLogger("vfs-registry");
 function inferFilesystemType(mount: VfsMountRegistration): VfsFilesystemType {
   const configured = mount.metadata.filesystemType;
   if (typeof configured === "string" && configured.length > 0) {
-    if (configured === "memory") {
-      return "memfs";
-    }
-    if (configured === "filesystem") {
-      return "hostfs";
-    }
     return configured as VfsFilesystemType;
   }
-
-  if (mount.label === "memory" || mount.name.includes("memory")) {
-    return "memfs";
-  }
-
-  if (
-    mount.name.includes("runtime")
-    || mount.name.includes("agents")
-    || mount.label.includes("runtime")
-    || mount.label.includes("agent")
-  ) {
-    return "runtimefs";
-  }
-
   return "hostfs";
 }
 

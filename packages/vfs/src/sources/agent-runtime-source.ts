@@ -401,7 +401,12 @@ export function createAgentRuntimeSource(
     label: "agent-runtime",
     features: new Set(AGENT_RUNTIME_TRAITS),
     lifecycle,
-    metadata: { description: "Built-in agent runtime source", virtual: true },
+    metadata: {
+      description: "Built-in agent runtime source",
+      virtual: true,
+      filesystemType: "runtimefs",
+      mountType: mountPoint === "/" ? "root" : "direct",
+    },
     fileSchema: AGENT_RUNTIME_FILE_SCHEMA,
     handlers,
   };

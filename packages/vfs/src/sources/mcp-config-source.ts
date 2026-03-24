@@ -184,7 +184,12 @@ export function createMcpConfigSource(
     label: "mcp-config",
     features: new Set(MCP_CONFIG_TRAITS),
     lifecycle,
-    metadata: { description: "Built-in MCP config source", virtual: true },
+    metadata: {
+      description: "Built-in MCP config source",
+      virtual: true,
+      filesystemType: "hostfs",
+      mountType: mountPoint === "/" ? "root" : "direct",
+    },
     fileSchema: MCP_CONFIG_FILE_SCHEMA,
     handlers,
   };

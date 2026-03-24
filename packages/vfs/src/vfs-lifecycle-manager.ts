@@ -18,7 +18,7 @@ interface TrackedTtl {
 }
 
 /**
- * Manages lifecycle-driven unmounting of VFS sources.
+ * Manages lifecycle-driven unmounting of VFS mounts.
  *
  * Lifecycle types:
  *  - daemon: unmounted on shutdown

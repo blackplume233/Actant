@@ -391,7 +391,12 @@ export function createMcpRuntimeSource(
     label: "mcp-runtime",
     features: new Set(MCP_RUNTIME_TRAITS),
     lifecycle,
-    metadata: { description: "Built-in MCP runtime source", virtual: true },
+    metadata: {
+      description: "Built-in MCP runtime source",
+      virtual: true,
+      filesystemType: "runtimefs",
+      mountType: mountPoint === "/" ? "root" : "direct",
+    },
     fileSchema: MCP_RUNTIME_FILE_SCHEMA,
     handlers,
   };

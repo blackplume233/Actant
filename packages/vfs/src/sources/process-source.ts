@@ -220,6 +220,8 @@ export function createProcessSource(
       description: `Process: ${handle.command ?? "unknown"} (PID: ${handle.pid})`,
       virtual: true,
       owner: mountPoint.split("/")[2],
+      filesystemType: "runtimefs",
+      mountType: mountPoint === "/" ? "root" : "direct",
     },
     fileSchema: PROC_FILE_SCHEMA,
     handlers: createHandlers(handle),

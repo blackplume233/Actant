@@ -91,7 +91,12 @@ export function createDomainSource(
     label: "domain",
     features: new Set(DOMAIN_TRAITS),
     lifecycle,
-    metadata: { description: `${domain} components (read-only, virtual)`, virtual: true },
+    metadata: {
+      description: `${domain} components (read-only, virtual)`,
+      virtual: true,
+      filesystemType: "hostfs",
+      mountType: mountPoint === "/" ? "root" : "direct",
+    },
     fileSchema: {},
     handlers,
   };

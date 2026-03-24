@@ -201,6 +201,35 @@ V1 当前必须在实现里稳定表达：
 
 ---
 
+## 5.1 Mount / Watch / Stream / Dispose Contract
+
+V1 的核心生命周期契约固定如下：
+
+- `mount`
+  - 输入是完整 `mount registration`
+  - `mount table` 负责登记、最长前缀匹配与 duplicate mount-point 拒绝
+  - `lifecycle manager` 在挂载成功后开始追踪 `daemon / agent / session / process / ttl / manual`
+- `watch`
+  - 由节点 capability 暴露
+  - 返回 `AsyncIterable<VfsWatchEvent>`
+  - 提前结束迭代时必须调用底层 watcher disposer，不能泄漏订阅
+- `stream`
+  - 由节点 capability 暴露
+  - 返回 ordered `AsyncIterable<VfsStreamChunk>`
+  - `stream node` 可由真实 stream handler 提供，也可在受控场景下由 read fallback 生成一次性流
+- `dispose`
+  - mount 生命周期结束时，系统至少要完成 untrack + unmount
+  - `watch` 订阅在 iterator `return()` 时释放
+  - `VfsLifecycleManager.dispose()` 只负责清理 lifecycle timers，不额外保留挂载真相
+
+实现落点：
+
+- `mount`: `packages/vfs/src/mount/direct-mount-table.ts`
+- `watch` / `stream`: `packages/vfs/src/node/resolved-node-adapter.ts`
+- `dispose` / lifecycle cleanup: `packages/vfs/src/vfs-lifecycle-manager.ts`
+
+---
+
 ## 6. Extension Rule
 
 扩展面固定分两类：

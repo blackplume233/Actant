@@ -109,6 +109,8 @@ export const configSourceFactory: FilesystemTypeDefinition<ConfigSourceConfig> =
       lifecycle,
       metadata: {
         description: `Config namespace: ${spec.namespace ?? "root"}`,
+        filesystemType: "hostfs",
+        mountType: mountPoint === "/" ? "root" : "direct",
       },
       fileSchema: {},
       handlers,

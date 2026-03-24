@@ -5,9 +5,9 @@ import type {
   McpServerDefinition,
   PermissionsInput,
 } from "@actant/shared";
-import type { SkillManager, PromptManager, McpConfigManager, WorkflowManager, PluginManager, BaseComponentManager, NamedComponent } from "@actant/domain-context";
+import type { SkillManager, PromptManager, McpConfigManager, WorkflowManager, PluginManager } from "@actant/domain-context";
 import type { BackendBuilder, VerifyResult } from "./backend-builder";
-import type { ComponentTypeHandler } from "./component-type-handler";
+import type { ComponentTypeHandler, NamedComponent, ResolvableComponentCollection } from "./component-type-handler";
 import { CursorBuilder } from "./cursor-builder";
 import { ClaudeCodeBuilder } from "./claude-code-builder";
 import { DeclarativeBuilder } from "./declarative-builder";
@@ -57,8 +57,8 @@ export class WorkspaceBuilder {
     this.handlers.push(handler);
   }
 
-  private getManager(contextKey: string): BaseComponentManager<NamedComponent> | undefined {
-    const managerMap: Record<string, BaseComponentManager<NamedComponent> | undefined> = {
+  private getManager(contextKey: string): ResolvableComponentCollection<NamedComponent> | undefined {
+    const managerMap: Record<string, ResolvableComponentCollection<NamedComponent> | undefined> = {
       skills: this.managers?.skills,
       prompts: this.managers?.prompts,
       mcpServers: this.managers?.mcp,

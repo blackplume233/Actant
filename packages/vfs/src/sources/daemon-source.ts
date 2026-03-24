@@ -92,7 +92,12 @@ export function createDaemonInfoSource(
     label: "daemon-info",
     features: new Set(DAEMON_INFO_TRAITS),
     lifecycle,
-    metadata: { description: "Daemon health & RPC catalog (read-only, virtual)", virtual: true },
+    metadata: {
+      description: "Daemon health & RPC catalog (read-only, virtual)",
+      virtual: true,
+      filesystemType: "runtimefs",
+      mountType: mountPoint === "/" ? "root" : "direct",
+    },
     fileSchema: {},
     handlers,
   };

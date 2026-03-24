@@ -149,6 +149,8 @@ export const vcsSourceFactory: FilesystemTypeDefinition<VcsSourceConfig> = {
       metadata: {
         description: `VCS: ${repoPath}`,
         readOnly: true,
+        filesystemType: "hostfs",
+        mountType: mountPoint === "/" ? "root" : "direct",
       },
       fileSchema: VCS_FILE_SCHEMA,
       handlers,
