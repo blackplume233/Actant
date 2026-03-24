@@ -54,7 +54,7 @@ async function main() {
       });
     }
 
-    await step("MCP standalone fallback with invalid socket", async () => {
+    await step("MCP rejects invalid socket instead of falling back locally", async () => {
       const standaloneOut = await runEntry("packages/mcp-server/src/index.ts", [], {
         allowFailure: true,
         env: {
@@ -62,7 +62,7 @@ async function main() {
         },
       });
       console.log(standaloneOut);
-      assertIncludes(standaloneOut, "standalone namespace mode");
+      assertIncludes(standaloneOut, "could not reach the daemon");
     });
 
     console.log("Context smoke passed.");

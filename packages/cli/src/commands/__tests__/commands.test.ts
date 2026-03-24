@@ -412,7 +412,7 @@ describe("createHubCommand", () => {
     expect(output.logs.some((line) => line.includes("Project:      repo"))).toBe(true);
   });
 
-  it("hub status falls back to standalone project context when daemon bind is not permitted", async () => {
+  it("hub status reports a daemon startup failure instead of falling back locally", async () => {
     const mock = createMockClient();
     mock.ping.mockResolvedValue(false);
 
@@ -422,40 +422,13 @@ describe("createHubCommand", () => {
     parent.exitOverride();
     parent.addCommand(createHubCommand(client, printer, {
       ensureDaemonRunningImpl: vi.fn().mockRejectedValue(new Error("listen EPERM: operation not permitted /tmp/actant.sock")),
-      createStandaloneBackend: vi.fn().mockResolvedValue({
-        mode: "standalone",
-        status: {
-          active: true,
-          hostProfile: "context",
-          runtimeState: "inactive",
-          projectRoot: "/repo",
-          projectName: "repo",
-          configPath: null,
-          configsDir: "/repo/configs",
-          components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
-          mounts: {
-            project: "/hub/project",
-            workspace: "/hub/workspace",
-            config: "/hub/config",
-            skills: "/hub/skills",
-            prompts: "/hub/prompts",
-            mcp: "/hub/mcp",
-            workflows: "/hub/workflows",
-            templates: "/hub/templates",
-          },
-        },
-        read: vi.fn(),
-        list: vi.fn(),
-        grep: vi.fn(),
-      }),
     }));
 
     await parent.parseAsync(["node", "test", "hub", "status"]);
 
     expect(mock.call).not.toHaveBeenCalled();
-    expect(output.logs.some((line) => line.includes("Host Profile: context"))).toBe(true);
-    expect(output.logs.some((line) => line.includes("Project:      repo"))).toBe(true);
-    expect(output.logs.some((line) => line.includes("standalone namespace mode"))).toBe(true);
+    expect(output.errors.some((line) => line.includes("operation not permitted"))).toBe(true);
+    expect(process.exitCode).toBe(1);
   });
 
   it("hub read routes the root project manifest through the daemon hub mount", async () => {

@@ -20,8 +20,6 @@ import {
   RecordingChannelManager,
   SessionTokenStore,
   SystemBudgetManager,
-  PluginHost,
-  HeartbeatPlugin,
   VfsRegistry,
   VfsKernel,
   createPermissionMiddleware,
@@ -220,7 +218,6 @@ export class AppContext {
   readonly sessionTokenStore: SessionTokenStore;
   readonly budgetManager: SystemBudgetManager;
   readonly canvasStore: CanvasStore;
-  readonly pluginHost: PluginHost;
   readonly backendManager: BackendManager;
   readonly vfsRegistry: VfsRegistry;
   readonly vfsKernel: VfsKernel;
@@ -237,9 +234,7 @@ export class AppContext {
   private instanceHooksRegistered = false;
   private runtimeActivationState: HostRuntimeState = "inactive";
   private runtimeActivationPromise?: Promise<void>;
-  private pluginsStarted = false;
   private startTime = Date.now();
-  private pluginTickInterval?: ReturnType<typeof setInterval>;
 
   constructor(config?: AppConfig) {
     this.homeDir = config?.homeDir ?? process.env.ACTANT_HOME ?? DEFAULT_HOME;
@@ -320,8 +315,6 @@ export class AppContext {
     );
     this.templateWatcher = new TemplateDirectoryWatcher(this.templatesDir, this.templateRegistry);
     this.schedulers = new Map();
-    this.pluginHost = new PluginHost();
-    this.pluginHost.register(new HeartbeatPlugin());
 
     this.vfsRegistry = new VfsRegistry();
     this.vfsPermissionManager = new VfsPermissionManager([...DEFAULT_PERMISSION_RULES]);
@@ -364,7 +357,6 @@ export class AppContext {
       if (this.hostProfile !== "context") {
         await this.ensureRuntimeActivated({
           initializeSources: true,
-          startPlugins: true,
           autoStartAgents: true,
         });
       }
@@ -406,7 +398,6 @@ export class AppContext {
     if (this.hostProfile !== "context") {
       await this.ensureRuntimeActivated({
         initializeSources: true,
-        startPlugins: true,
         autoStartAgents: true,
       });
     }
@@ -416,17 +407,9 @@ export class AppContext {
     return Math.floor((Date.now() - this.startTime) / 1000);
   }
 
-  /** Stop the PluginHost, clear the tick interval, and dispose VFS. Called by Daemon.stop(). */
+  /** Dispose runtime VFS lifecycle state. Called by Daemon.stop(). */
   async stopPlugins(): Promise<void> {
-    if (this.pluginTickInterval) {
-      clearInterval(this.pluginTickInterval);
-      this.pluginTickInterval = undefined;
-    }
     this.vfsLifecycleManager?.dispose();
-    if (this.pluginsStarted) {
-      await this.pluginHost.stop({ config: {} });
-      this.pluginsStarted = false;
-    }
   }
 
   get runtimeState(): HostRuntimeState {
@@ -436,22 +419,13 @@ export class AppContext {
   getHostCapabilities(): HostCapability[] {
     const capabilities: HostCapability[] = ["hub", "vfs", "domain"];
     if (this.runtimeActivationState === "active") {
-      capabilities.push("runtime", "agents", "sessions", "schedules", "plugins");
+      capabilities.push("runtime", "agents", "sessions", "schedules");
     }
     return capabilities;
   }
 
   async prepareForRpc(method: string): Promise<void> {
     if (method === "daemon.ping" || method === "daemon.shutdown" || method.startsWith("hub.") || method.startsWith("vfs.") || method.startsWith("events.")) {
-      return;
-    }
-
-    if (method.startsWith("plugin.runtime")) {
-      await this.ensureRuntimeActivated({
-        initializeSources: true,
-        startPlugins: true,
-        autoStartAgents: false,
-      });
       return;
     }
 
@@ -467,7 +441,6 @@ export class AppContext {
     ) {
       await this.ensureRuntimeActivated({
         initializeSources: true,
-        startPlugins: true,
         autoStartAgents: false,
       });
     }
@@ -475,21 +448,14 @@ export class AppContext {
 
   async ensureRuntimeActivated(options?: {
     initializeSources?: boolean;
-    startPlugins?: boolean;
     autoStartAgents?: boolean;
   }): Promise<void> {
     if (this.runtimeActivationState === "active") {
-      if (options?.startPlugins) {
-        await this.ensurePluginsStarted();
-      }
       return;
     }
 
     if (this.runtimeActivationPromise) {
       await this.runtimeActivationPromise;
-      if (options?.startPlugins) {
-        await this.ensurePluginsStarted();
-      }
       return;
     }
 
@@ -501,9 +467,6 @@ export class AppContext {
       this.templateWatcher.start();
       this.runtimeActivationState = "active";
 
-      if (options?.startPlugins) {
-        await this.ensurePluginsStarted();
-      }
       if (options?.autoStartAgents) {
         await this.autoStartAgents();
       }
@@ -517,15 +480,6 @@ export class AppContext {
     } finally {
       this.runtimeActivationPromise = undefined;
     }
-  }
-
-  private async ensurePluginsStarted(): Promise<void> {
-    if (this.pluginsStarted) return;
-    await this.pluginHost.start({ config: {} }, this.eventBus);
-    this.pluginTickInterval = setInterval(() => {
-      void this.pluginHost.tick({ config: {} });
-    }, 30_000);
-    this.pluginsStarted = true;
   }
 
   /**
