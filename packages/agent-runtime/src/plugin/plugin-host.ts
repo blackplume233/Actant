@@ -4,20 +4,24 @@ import type {
   PluginRuntimeState,
   CatalogConfig,
   SubsystemDefinition,
+  PluginContributionRef,
 } from "@actant/shared";
 import type { ContextProvider } from "../context-injector/session-context-types";
 import type { HookEventBus } from "../hooks/hook-event-bus";
-import type { ActantPlugin } from "./types";
+import type { DaemonPlugin } from "./types";
 
 // ─────────────────────────────────────────────────────────────
 //  Internal per-plugin tracking record
 // ─────────────────────────────────────────────────────────────
 
 interface PluginRecord {
-  plugin: ActantPlugin;
+  plugin: DaemonPlugin;
   state: PluginRuntimeState;
   errorMessage?: string;
   lastTickAt?: string;
+  activatedAt?: string;
+  deactivatedAt?: string;
+  disposedAt?: string;
   /** Prevents concurrent tick() calls for the same plugin. */
   ticking: boolean;
 }
@@ -27,7 +31,7 @@ interface PluginRecord {
 // ─────────────────────────────────────────────────────────────
 
 /**
- * PluginHost manages the full lifecycle of ActantPlugin instances.
+ * PluginHost manages the full lifecycle of daemon plugin instances.
  *
  * Responsibilities:
  *   - Dependency-ordered initialisation (Kahn's topological sort)
@@ -62,7 +66,7 @@ export class PluginHost {
    * Must be called before start(). Throws if a plugin with the same name
    * has already been registered.
    */
-  register(plugin: ActantPlugin): void {
+  register(plugin: DaemonPlugin): void {
     if (this.records.has(plugin.name)) {
       throw new Error(`PluginHost: duplicate plugin name "${plugin.name}"`);
     }
@@ -131,6 +135,9 @@ export class PluginHost {
       }
 
       rec.state = "running";
+      rec.activatedAt = new Date().toISOString();
+      rec.deactivatedAt = undefined;
+      rec.disposedAt = undefined;
 
       // collect plug-4 contextProviders
       if (plugin.contextProviders) {
@@ -219,6 +226,8 @@ export class PluginHost {
         }
       }
 
+      rec.deactivatedAt = new Date().toISOString();
+
       if (rec.plugin.runtime?.dispose) {
         try {
           await rec.plugin.runtime.dispose(ctx);
@@ -227,6 +236,7 @@ export class PluginHost {
         }
       }
 
+      rec.disposedAt = new Date().toISOString();
       rec.state = "stopped";
     }
   }
@@ -239,6 +249,13 @@ export class PluginHost {
       name: rec.plugin.name,
       scope: rec.plugin.scope,
       state: rec.state,
+      metadata: rec.plugin.metadata,
+      lifecycle: {
+        activatedAt: rec.activatedAt,
+        deactivatedAt: rec.deactivatedAt,
+        disposedAt: rec.disposedAt,
+      },
+      contributions: resolvePluginContributions(rec.plugin),
       lastTickAt: rec.lastTickAt,
       errorMessage: rec.errorMessage,
     }));
@@ -254,7 +271,7 @@ export class PluginHost {
    * Useful for handlers that need to read plugin-specific runtime data
    * (e.g. HeartbeatPlugin.consecutiveFailures).
    */
-  getPlugin(name: string): ActantPlugin | undefined {
+  getPlugin(name: string): DaemonPlugin | undefined {
     return this.records.get(name)?.plugin;
   }
 
@@ -325,4 +342,41 @@ export class PluginHost {
 
     return sorted;
   }
+}
+
+function resolvePluginContributions(plugin: DaemonPlugin): PluginContributionRef[] {
+  const declared = plugin.contributions ?? [];
+  const inferred: PluginContributionRef[] = [];
+
+  if (plugin.contextProviders) {
+    inferred.push({
+      kind: "provider",
+      name: "contextProviders",
+      description: "Registers runtime context providers",
+      source: "inferred",
+    });
+  }
+  if (plugin.hooks) {
+    inferred.push({
+      kind: "hook",
+      name: "hooks",
+      description: "Registers daemon event hooks",
+      source: "inferred",
+    });
+  }
+  if (plugin.runtime || plugin.project || plugin.subsystems || plugin.catalogs) {
+    inferred.push({
+      kind: "service",
+      name: "runtime",
+      description: "Provides daemon-scoped runtime services",
+      source: "inferred",
+    });
+  }
+
+  const merged = [...declared, ...inferred];
+  const deduped = new Map<string, PluginContributionRef>();
+  for (const contribution of merged) {
+    deduped.set(`${contribution.kind}:${contribution.name}`, contribution);
+  }
+  return Array.from(deduped.values());
 }

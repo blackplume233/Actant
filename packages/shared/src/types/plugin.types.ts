@@ -2,7 +2,7 @@
  * Plugin System — Base Type Definitions
  *
  * These are the pure data types shared across packages.
- * The full ActantPlugin interface (which references HookEventBus and ContextProvider)
+ * The full daemon plugin interface (which references HookEventBus and ContextProvider)
  * lives in @actant/agent-runtime/plugin.
  */
 
@@ -42,7 +42,51 @@ export interface PluginContext {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  § 3  PluginRuntimeHooks — lifecycle interface
+//  § 3  Daemon plugin governance surface
+// ─────────────────────────────────────────────────────────────
+
+/**
+ * Human-facing metadata for a daemon plugin.
+ *
+ * `name` remains the stable machine ID; metadata is for governance, inspection,
+ * and CLI/RPC presentation.
+ */
+export interface PluginMetadata {
+  displayName?: string;
+  description?: string;
+  version?: string;
+}
+
+/**
+ * The only supported contribution categories for daemon plugins.
+ *
+ * Provider is the only VFS-facing extension category. RPC / hook / service
+ * remain daemon-scoped contributions and must not bypass the daemon host.
+ */
+export type PluginContributionKind = "provider" | "rpc" | "hook" | "service";
+
+export interface PluginContributionRef {
+  kind: PluginContributionKind;
+  name: string;
+  description?: string;
+  target?: string;
+  source?: "declared" | "inferred";
+}
+
+/**
+ * Lifecycle timestamps for a daemon plugin.
+ *
+ * `activate` maps to the host finishing init/start. `deactivate` maps to stop.
+ * `dispose` is the final cleanup step after deactivation.
+ */
+export interface PluginLifecycleRef {
+  activatedAt?: string;
+  deactivatedAt?: string;
+  disposedAt?: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+//  § 4  PluginRuntimeHooks — lifecycle interface
 // ─────────────────────────────────────────────────────────────
 
 /**
@@ -69,7 +113,7 @@ export interface PluginRuntimeHooks {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  § 4  PluginRef — runtime snapshot for RPC / CLI
+//  § 5  PluginRef — runtime snapshot for RPC / CLI
 // ─────────────────────────────────────────────────────────────
 
 /** Read-only snapshot of a plugin's runtime state, returned by PluginHost.list(). */
@@ -77,6 +121,9 @@ export interface PluginRef {
   name: string;
   scope: PluginScope;
   state: PluginRuntimeState;
+  metadata?: PluginMetadata;
+  lifecycle?: PluginLifecycleRef;
+  contributions?: PluginContributionRef[];
   /** ISO timestamp of the last successful tick() completion. */
   lastTickAt?: string;
   /** Error message if state === "error". */
@@ -90,7 +137,7 @@ export interface PluginRef {
 }
 
 // ─────────────────────────────────────────────────────────────
-//  § 5  SubsystemDefinition — forward declaration
+//  § 6  SubsystemDefinition — forward declaration
 // ─────────────────────────────────────────────────────────────
 
 /**
@@ -105,7 +152,7 @@ export type SubsystemScope = "actant" | "instance" | "process" | "session";
 /**
  * Where a Subsystem originated from.
  *   - "builtin"     — shipped with Actant core
- *   - "plugin"      — registered by an ActantPlugin
+ *   - "plugin"      — registered by a daemon plugin
  *   - "user-config" — declared in actant.json / template
  *   - "agent-self"  — registered by the agent process at runtime
  */

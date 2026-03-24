@@ -67,11 +67,21 @@
 
 - 作为真实扩展单元被 `daemon` 装载
 - 可贡献 provider、RPC 能力、hooks、services 等
+- 暴露稳定插件标识与元信息
+- 遵守 `activate -> tick* -> deactivate -> dispose` 生命周期
 
 不负责：
 
 - 替代 `daemon` 成为组合根
 - 直接成为中心注册结构
+- 让 `provider` 反向成为顶层插件模型
+
+最小契约至少包括：
+
+- `name` / `scope`
+- `metadata`
+- 生命周期 hooks
+- 显式声明的 contribution 集合：`provider / rpc / hook / service`
 
 ### VFS Layer
 

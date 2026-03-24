@@ -212,14 +212,14 @@ Authority rule:
 
 #### 3. 插件模型治理
 
-- [ ] 定义 `daemon plugin` 是系统唯一有效扩展单元
-- [ ] 定义 `daemon plugin` 的最小契约
-- [ ] 定义 plugin 生命周期：`activate / deactivate / dispose`
-- [ ] 定义 plugin 可贡献能力集合：`provider / rpc / hooks / services`
-- [ ] 定义 plugin 元信息模型
-- [ ] 定义 plugin 装载位置只能在 `daemon`
-- [ ] 禁止 bridge 层直接装载 plugin
-- [ ] 禁止 `provider` 继续被当作系统顶层插件模型
+- [x] 定义 `daemon plugin` 是系统唯一有效扩展单元
+- [x] 定义 `daemon plugin` 的最小契约
+- [x] 定义 plugin 生命周期：`activate / deactivate / dispose`
+- [x] 定义 plugin 可贡献能力集合：`provider / rpc / hooks / services`
+- [x] 定义 plugin 元信息模型
+- [x] 定义 plugin 装载位置只能在 `daemon`
+- [x] 禁止 bridge 层直接装载 plugin
+- [x] 禁止 `provider` 继续被当作系统顶层插件模型
 
 #### 4. Provider contribution 治理
 

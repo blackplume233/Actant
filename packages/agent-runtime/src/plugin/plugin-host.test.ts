@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import type { PluginContext, PluginDefinition } from "@actant/shared";
 import { PluginHost } from "./plugin-host";
 import { adaptLegacyPlugin } from "./legacy-adapter";
-import type { ActantPlugin } from "./types";
+import type { DaemonPlugin } from "./types";
 import type { HookEventBus } from "../hooks/hook-event-bus";
 
 // ─────────────────────────────────────────────────────────────
@@ -19,7 +19,7 @@ function makeBus(): HookEventBus {
   } as unknown as HookEventBus;
 }
 
-function makePlugin(overrides: Partial<ActantPlugin> = {}): ActantPlugin {
+function makePlugin(overrides: Partial<DaemonPlugin> = {}): DaemonPlugin {
   return {
     name: "test-plugin",
     scope: "actant",
@@ -381,7 +381,20 @@ describe("PluginHost — list()", () => {
     const host = new PluginHost();
     host.register(makePlugin({ name: "p" }));
     expect(host.list()).toEqual([
-      { name: "p", scope: "actant", state: "idle", lastTickAt: undefined, errorMessage: undefined },
+      {
+        name: "p",
+        scope: "actant",
+        state: "idle",
+        metadata: undefined,
+        lifecycle: {
+          activatedAt: undefined,
+          deactivatedAt: undefined,
+          disposedAt: undefined,
+        },
+        contributions: [],
+        lastTickAt: undefined,
+        errorMessage: undefined,
+      },
     ]);
   });
 
@@ -392,6 +405,7 @@ describe("PluginHost — list()", () => {
 
     const ref = host.list()[0]!;
     expect(ref.state).toBe("running");
+    expect(ref.lifecycle?.activatedAt).toBeTruthy();
   });
 
   it("returns empty array when no plugins are registered", () => {
@@ -412,10 +426,13 @@ describe("adaptLegacyPlugin", () => {
     enabled: true,
   };
 
-  it("wraps PluginDefinition into an ActantPlugin", () => {
+  it("wraps PluginDefinition into a DaemonPlugin", () => {
     const plugin = adaptLegacyPlugin(legacyDef);
     expect(plugin.name).toBe("my-ext");
     expect(plugin.scope).toBe("actant");
+    expect(plugin.contributions).toEqual([
+      expect.objectContaining({ kind: "service", name: "workspace-config" }),
+    ]);
   });
 
   it("only has project plug — no runtime, hooks, contextProviders, etc.", () => {

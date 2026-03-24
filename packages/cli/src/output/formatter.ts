@@ -407,6 +407,15 @@ function runtimeStateColor(state: PluginRef["state"]): string {
   }
 }
 
+function formatContributionSummary(plugin: PluginRef): string {
+  if (!plugin.contributions || plugin.contributions.length === 0) {
+    return chalk.dim("—");
+  }
+
+  const kinds = Array.from(new Set(plugin.contributions.map((item) => item.kind)));
+  return kinds.join(", ");
+}
+
 export function formatPluginRuntimeList(plugins: PluginRef[], format: OutputFormat): string {
   if (format === "json") return JSON.stringify(plugins, null, 2);
   if (format === "quiet") return plugins.map((p) => p.name).join("\n");
@@ -419,6 +428,7 @@ export function formatPluginRuntimeList(plugins: PluginRef[], format: OutputForm
       chalk.cyan("State"),
       chalk.cyan("Last Tick"),
       chalk.cyan("Failures"),
+      chalk.cyan("Contrib"),
     ],
   });
 
@@ -429,6 +439,7 @@ export function formatPluginRuntimeList(plugins: PluginRef[], format: OutputForm
       runtimeStateColor(p.state),
       p.lastTickAt ? new Date(p.lastTickAt).toLocaleTimeString() : chalk.dim("—"),
       p.consecutiveFailures != null ? String(p.consecutiveFailures) : chalk.dim("—"),
+      formatContributionSummary(p),
     ]);
   }
 
@@ -441,14 +452,28 @@ export function formatPluginRuntimeDetail(plugin: PluginRef, format: OutputForma
 
   const lines = [
     `${chalk.bold("Plugin:")}             ${plugin.name}`,
+    `${chalk.bold("Display Name:")}       ${plugin.metadata?.displayName ?? chalk.dim("—")}`,
     `${chalk.bold("Scope:")}              ${plugin.scope}`,
     `${chalk.bold("State:")}              ${runtimeStateColor(plugin.state)}`,
+    `${chalk.bold("Activated:")}          ${plugin.lifecycle?.activatedAt ? new Date(plugin.lifecycle.activatedAt).toLocaleString() : chalk.dim("—")}`,
+    `${chalk.bold("Deactivated:")}        ${plugin.lifecycle?.deactivatedAt ? new Date(plugin.lifecycle.deactivatedAt).toLocaleString() : chalk.dim("—")}`,
+    `${chalk.bold("Disposed:")}           ${plugin.lifecycle?.disposedAt ? new Date(plugin.lifecycle.disposedAt).toLocaleString() : chalk.dim("—")}`,
     `${chalk.bold("Last Tick:")}          ${plugin.lastTickAt ? new Date(plugin.lastTickAt).toLocaleString() : chalk.dim("—")}`,
     `${chalk.bold("Consec. Failures:")}   ${plugin.consecutiveFailures ?? 0}`,
   ];
 
+  if (plugin.metadata?.description) {
+    lines.push(`${chalk.bold("Description:")}        ${plugin.metadata.description}`);
+  }
+
   if (plugin.errorMessage) {
     lines.push(`${chalk.bold("Error:")}              ${chalk.red(plugin.errorMessage)}`);
+  }
+
+  if (plugin.contributions && plugin.contributions.length > 0) {
+    lines.push(
+      `${chalk.bold("Contributions:")}     ${plugin.contributions.map((item) => `${item.kind}:${item.name}`).join(", ")}`,
+    );
   }
 
   return lines.join("\n");

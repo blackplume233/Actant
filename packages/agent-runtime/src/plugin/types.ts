@@ -1,18 +1,3 @@
-/**
- * ActantPlugin — the full six-plug extension interface.
- *
- * Lives in @actant/agent-runtime (not shared) because plugs 3 and 4 reference
- * HookEventBus and ContextProvider which are core-only types.
- *
- * Plug summary:
- *   1. project         — inject ProjectContextConfig into Agent workspace (BackendBuilder)
- *   2. runtime         — lifecycle: init → start → tick → stop → dispose
- *   3. hooks           — register HookEventBus listeners
- *   4. contextProviders — register ContextProvider instances
- *   5. subsystems      — register SubsystemDefinitions (wired in Step 5)
- *   6. catalogs        — register CatalogConfigs (wired in Step 5)
- */
-
 import type {
   ProjectContextConfig,
   CatalogConfig,
@@ -20,11 +5,27 @@ import type {
   PluginScope,
   PluginRuntimeHooks,
   SubsystemDefinition,
+  PluginContributionRef,
+  PluginMetadata,
 } from "@actant/shared";
 import type { ContextProvider } from "../context-injector/session-context-types";
 import type { HookEventBus } from "../hooks/hook-event-bus";
 
-export interface ActantPlugin {
+/**
+ * DaemonPlugin — the runtime host extension contract.
+ *
+ * Lives in @actant/agent-runtime (not shared) because hook and provider plugs
+ * depend on runtime-only types.
+ *
+ * Governance rules:
+ *   1. daemon plugin is the only valid runtime extension unit
+ *   2. lifecycle is activate(init/hooks/start) → tick* → deactivate(stop) → dispose
+ *   3. declared contributions must stay within provider / rpc / hook / service
+ *
+ * Legacy plugs such as project/contextProviders/subsystems/catalogs are kept for
+ * compatibility while the runtime surface converges to the daemon-plugin model.
+ */
+export interface DaemonPlugin {
   /** Unique plugin name. Must be stable across restarts. */
   readonly name: string;
 
@@ -39,6 +40,12 @@ export interface ActantPlugin {
    * PluginHost performs a topological sort; circular deps cause an error.
    */
   readonly dependencies?: readonly string[];
+
+  /** Human-facing governance metadata surfaced in RPC / CLI. */
+  readonly metadata?: PluginMetadata;
+
+  /** Declared daemon-level contributions exposed by this plugin. */
+  readonly contributions?: readonly PluginContributionRef[];
 
   // ── Plug 1: project ────────────────────────────────────────
   /**
@@ -94,3 +101,6 @@ export interface ActantPlugin {
    */
   catalogs?: (ctx: PluginContext) => CatalogConfig[];
 }
+
+/** @deprecated Use DaemonPlugin. */
+export type ActantPlugin = DaemonPlugin;

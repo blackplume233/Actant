@@ -193,6 +193,19 @@ V1 当前必须在实现里稳定表达：
 - 不允许 bridge 层直接装载 provider 或 plugin
 - 不允许内容先进入中心注册表，再投影回 VFS
 
+`daemon plugin` 最小契约：
+
+- 稳定标识：`name` + `scope`
+- 元信息：`displayName` / `description` / `version`
+- 生命周期：`activate(init/hooks/start)` -> `tick*` -> `deactivate(stop)` -> `dispose`
+- 可声明贡献能力只允许落在 `provider / rpc / hook / service`
+
+治理边界：
+
+- plugin 只能由 `daemon` 注册、启动、停止、销毁
+- `provider contribution` 仍然只是 plugin 的子能力，不得反向提升为顶层模型
+- bridge 层只能观察 plugin 运行状态，不能自行持有 plugin 生命周期
+
 何时扩展 `filesystem type`：
 
 - 只有在“底层提供方式”变化时扩展

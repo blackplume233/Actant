@@ -23,10 +23,17 @@ function makeBus(): HookEventBus {
 // ─────────────────────────────────────────────────────────────
 
 describe("HeartbeatPlugin — metadata", () => {
-  it("has name 'heartbeat' and scope 'actant'", () => {
+  it("has governance metadata and daemon-level contributions", () => {
     const plugin = new HeartbeatPlugin();
     expect(plugin.name).toBe("heartbeat");
     expect(plugin.scope).toBe("actant");
+    expect(plugin.metadata?.displayName).toBe("Heartbeat");
+    expect(plugin.contributions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ kind: "hook", name: "process:crash" }),
+        expect.objectContaining({ kind: "service", name: "daemon-health" }),
+      ]),
+    );
   });
 });
 
@@ -169,6 +176,10 @@ describe("HeartbeatPlugin — full lifecycle via PluginHost", () => {
     await host.stop(baseCtx);
 
     expect(host.getState("heartbeat")).toBe("stopped");
+    const ref = host.list().find((plugin) => plugin.name === "heartbeat");
+    expect(ref?.lifecycle?.activatedAt).toBeTruthy();
+    expect(ref?.lifecycle?.deactivatedAt).toBeTruthy();
+    expect(ref?.lifecycle?.disposedAt).toBeTruthy();
   });
 
   it("tick() via PluginHost emits healthy event", async () => {

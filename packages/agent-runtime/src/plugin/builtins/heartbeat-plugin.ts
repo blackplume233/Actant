@@ -1,7 +1,7 @@
 import { createLogger } from "@actant/shared";
 import type { PluginContext } from "@actant/shared";
 import type { HookEventBus } from "../../hooks/hook-event-bus";
-import type { ActantPlugin } from "../types";
+import type { DaemonPlugin } from "../types";
 
 const logger = createLogger("heartbeat-plugin");
 
@@ -24,9 +24,29 @@ export interface HeartbeatPluginConfig {
  * This plugin validates the full PluginHost lifecycle (init → start →
  * tick* → stop) and provides a runtime health signal for the daemon.
  */
-export class HeartbeatPlugin implements ActantPlugin {
+export class HeartbeatPlugin implements DaemonPlugin {
   readonly name = "heartbeat";
   readonly scope = "actant" as const;
+  readonly metadata = {
+    displayName: "Heartbeat",
+    description: "Builtin daemon health plugin that emits runtime heartbeat signals",
+  };
+  readonly contributions = [
+    {
+      kind: "hook" as const,
+      name: "process:crash",
+      target: "HookEventBus",
+      description: "Listens for daemon process crash signals",
+      source: "declared" as const,
+    },
+    {
+      kind: "service" as const,
+      name: "daemon-health",
+      target: "plugin.runtimeStatus",
+      description: "Publishes daemon heartbeat and health state",
+      source: "declared" as const,
+    },
+  ];
 
   private _consecutiveFailures = 0;
   private _totalTicks = 0;
