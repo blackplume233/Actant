@@ -159,7 +159,7 @@ flowchart LR
 - `packages/vfs` 的 core 骨架必须保持在 `facade / kernel / mount / path / node / permission / lifecycle / storage / index / filesystem type SPI`
 - `@actant/context` 是清退目标，不得新增任何导入
 - 所有 ship / merge 级交付必须先产出 changelog draft，再汇总正式 release changelog
-- `docs/planning/contextfs-roadmap.md` 是唯一 live milestone truth file
+- 活跃 planning 真相只允许留在 `docs/planning/roadmap.md` 与 `docs/planning/workspace-normalization-todo.md` 这组 owner 文件中
 - `actant.namespace.json` 是默认且唯一运行时 namespace 配置入口
 
 ---
@@ -173,7 +173,8 @@ flowchart LR
 5. [配置规范](./config-spec.md)
 6. [接口契约](./api-contracts.md)
 7. [后端指南](./backend/index.md)
-8. [ContextFS Roadmap](../../docs/planning/contextfs-roadmap.md)
+8. [Product Roadmap](../../docs/planning/roadmap.md)
+9. [Workspace Normalization To-Do](../../docs/planning/workspace-normalization-todo.md)
 
 ---
 
@@ -187,4 +188,4 @@ flowchart LR
 - 是否把 `agent-runtime` 或 `domain-context` 重新写成系统中心层
 - 是否把旧 `Source` / `Prompt` 术语重新写成当前真相
 - 是否在 spec、design、roadmap 三层同步修改
-- 是否把 live progress 只维护在 `docs/planning/contextfs-roadmap.md`
+- 是否把 planning 状态只维护在当前 owner 文件中，而没有把旧 `contextfs-roadmap.md` 重新当作活跃真相

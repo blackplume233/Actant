@@ -5,7 +5,7 @@ This directory contains AI-agent-generated content. All content here should be t
 > Historical / delivery-memory notice:
 > `docs/agent/` is not an active truth source.
 > Use it as audit evidence, delivery memory, and release drafting context only.
-> Active execution state remains in `docs/planning/contextfs-roadmap.md`; active architecture truth remains in spec/design entry docs.
+> Current planning entry is `docs/planning/roadmap.md`; current cleanup backlog is `docs/planning/workspace-normalization-todo.md`; active architecture truth remains in spec/design entry docs.
 
 ## Subdirectories
 

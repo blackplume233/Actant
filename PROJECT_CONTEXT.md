@@ -10,7 +10,8 @@
 4. `.trellis/spec/terminology.md`
 5. `docs/design/contextfs-architecture.md`
 6. `docs/design/actant-vfs-reference-architecture.md`
-7. `docs/planning/contextfs-roadmap.md`
+7. `docs/planning/roadmap.md`
+8. `docs/planning/workspace-normalization-todo.md`
 
 当前有效约束：
 
@@ -23,13 +24,14 @@
 - V1 必要 `filesystem type`：`hostfs`、`runtimefs`、`memfs`
 - V1 必要 `node type`：`directory`、`regular`、`control`、`stream`
 - V1 不包含 `workflow`、query/view mount、overlay/fallback 行为实现
-- 里程碑进度与状态只在 `docs/planning/contextfs-roadmap.md` 中原子维护
+- 当前 planning 入口只在 `docs/planning/roadmap.md` 维护
+- 当前 cleanup backlog 只在 `docs/planning/workspace-normalization-todo.md` 维护
 
 当前阶段：
 
-- M0-M7 已完成，主线能力已经覆盖文档基线、契约替换、Kernel、编排层、执行模型、facade 统一与 namespace 写路径闭环
+- M0-M8 已完成，主线已进入 post-freeze boundary maintenance 与文档/工作区清理阶段
 - 当前默认用户入口固定为 `actant init`、`actant hub status`、`actant namespace validate`、`actant vfs mount add/remove/list`
-- M8 关注 release hardening：遗留接口清理、全量回归、V1 边界冻结
-- live milestone progress 只在 `docs/planning/contextfs-roadmap.md` 维护，本文件不重复标注 checklist 状态
+- 当前关注点是活跃文档收口、入口去歧义和后续 planning intake
+- 预冻结里程碑执行记录已归档到 `docs/history/contextfs-roadmap-pre-stack-freeze.md`
 
 默认以当前 spec/design/roadmap 为准。只有在处理迁移残留或历史清理时，才读取历史说明文档。

@@ -5,7 +5,7 @@ This directory is a local issue/discussion cache.
 > Historical / discussion notice:
 > Files in `.trellis/issues/` are evidence and conversation memory.
 > They may capture open GitHub issues, local analysis, or historical discussion state, but they are not the active execution truth source.
-> For current execution state, use `docs/planning/contextfs-roadmap.md`.
+> For current planning state, use `docs/planning/roadmap.md` and `docs/planning/workspace-normalization-todo.md`.
 > For current architecture and contract truth, use the active spec/design entry docs.
 
 Working rules:

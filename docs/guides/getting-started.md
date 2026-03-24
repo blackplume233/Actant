@@ -13,7 +13,8 @@
 4. `.trellis/spec/index.md`
 5. `docs/design/contextfs-architecture.md`
 6. `docs/design/actant-vfs-reference-architecture.md`
-7. `docs/planning/contextfs-roadmap.md`
+7. `docs/planning/roadmap.md`
+8. `docs/planning/workspace-normalization-todo.md`
 
 ## What Is Current
 

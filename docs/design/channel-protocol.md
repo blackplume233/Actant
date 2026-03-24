@@ -764,7 +764,7 @@ interface ChannelPromptResult {
 |------|--------|--------|------------|
 | **Backend Built-in Tools** | Backend | Backend | 观察（tool_call event）+ 审批（requestPermission） |
 | **MCP Tools** | External MCP Server | Backend 连接并使用 | 配置透传（mcpServers）+ 动态管理（setMcpServers） |
-| **Host-Provided Tools** | Host（ContextFS Source） | Host（via executeTool） | 定义透传（hostTools）+ 执行路由（executeTool） |
+| **Host-Provided Tools** | Host（ContextFS surface） | Host（via executeTool） | 定义透传（hostTools）+ 执行路由（executeTool） |
 | **In-Process SDK Tools** | Backend 内部 | Backend 内部 | 不可见（backendOptions 透传） |
 
 ### 9.2 MCP 服务器配置

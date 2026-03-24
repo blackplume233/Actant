@@ -30,7 +30,8 @@ pnpm build
 1. `.trellis/spec/index.md`
 2. `docs/design/contextfs-architecture.md`
 3. `docs/design/actant-vfs-reference-architecture.md`
-4. `docs/planning/contextfs-roadmap.md`
+4. `docs/planning/roadmap.md`
+5. `docs/planning/workspace-normalization-todo.md`
 
 ## Current Warning
 

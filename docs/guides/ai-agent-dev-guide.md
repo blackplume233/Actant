@@ -13,7 +13,8 @@
 5. `.trellis/spec/config-spec.md`
 6. `.trellis/spec/api-contracts.md`
 7. `.trellis/spec/backend/index.md`
-8. `docs/planning/contextfs-roadmap.md`
+8. `docs/planning/roadmap.md`
+9. `docs/planning/workspace-normalization-todo.md`
 
 ---
 

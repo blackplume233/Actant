@@ -3,7 +3,7 @@
 > Status: Draft
 > Date: 2026-03-22
 > Scope: Linux 语义统一版对象模型、挂载模型与节点模型
-> Related: [ContextFS Architecture](./contextfs-architecture.md), [Actant VFS Reference Architecture](./actant-vfs-reference-architecture.md), [ContextFS Roadmap](../planning/contextfs-roadmap.md)
+> Related: [ContextFS Architecture](./contextfs-architecture.md), [Actant VFS Reference Architecture](./actant-vfs-reference-architecture.md), [Product Roadmap](../planning/roadmap.md), [Workspace Normalization To-Do](../planning/workspace-normalization-todo.md)
 
 ---
 

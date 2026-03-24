@@ -1,25 +1,25 @@
 # Product Roadmap
 
-> Planning entry only. Live milestone progress is atomically maintained in `contextfs-roadmap.md`.
+> Active planning entry and current repo-level planning truth.
 
 ## Current Scope
 
-- ContextFS V1 frozen baseline maintenance
-- hosted 边界与实现链守护：`bridge -> RPC -> daemon`、`daemon -> plugin -> provider -> VFS`
-- 下一阶段 roadmap 规划入口
+- [x] ContextFS V1 freeze baseline 已完成
+- [x] 单仓 stack boundary freeze 已完成
+- [x] 活跃文档、帮助入口与 workspace 叙事收口完成
+- [ ] 在文档收口完成后整理下一阶段 planning intake
 
-## Progress Source
+## Current Truth Sources
 
-- Live progress truth file: [ContextFS Roadmap](./contextfs-roadmap.md)
-- Active cleanup TODO file: [Workspace Normalization To-Do](./workspace-normalization-todo.md)
-- 所有里程碑状态、阶段推进、完成勾选、取消标记只在该文件原子维护
-- cleanup / normalization backlog 只在 TODO 文件维护，不在本页复制状态清单
-- 其他文档引用进度时，使用链接或文字总结，不重复维护同一组状态标记
+- [x] Repo-level planning entry: [roadmap.md](./roadmap.md)
+- [x] Active cleanup backlog: [workspace-normalization-todo.md](./workspace-normalization-todo.md)
+- [x] Historical pre-freeze milestone log: [docs/history/contextfs-roadmap-pre-stack-freeze.md](../history/contextfs-roadmap-pre-stack-freeze.md)
+- [x] 其他文档只能链接或总结，不重复维护同一组活跃 checklist 状态
 
 ## Planning Rules
 
-- [x] 活跃 roadmap 只能使用 checklist / todolist 结构
-- [x] roadmap 是可执行任务清单，不再使用叙事型状态段落作为主格式
-- [x] 历史回顾与分析迁移到 `docs/history/` 或 `docs/agent/`
-- [x] 详细里程碑与验收标准统一维护在 [ContextFS Roadmap](./contextfs-roadmap.md)
-- [x] 项目进度标注只在 [ContextFS Roadmap](./contextfs-roadmap.md) 做原子维护
+- [x] repo-level planning summary 由本页维护
+- [x] scoped cleanup backlog 由 [workspace-normalization-todo.md](./workspace-normalization-todo.md) 维护
+- [x] 历史里程碑执行记录迁移到 `docs/history/`
+- [x] 活跃入口文档不得再把 `contextfs-roadmap.md` 当作当前 milestone truth
+- [x] 活跃 planning 文档可以分工，但每一项状态必须有明确 owner 文件

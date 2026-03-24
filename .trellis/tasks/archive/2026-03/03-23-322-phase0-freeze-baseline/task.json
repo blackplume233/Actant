@@ -1,0 +1,41 @@
+{
+  "id": "322-phase0-freeze-baseline",
+  "name": "322-phase0-freeze-baseline",
+  "title": "Freeze #322 baseline: codify daemon->plugin->provider->VFS and bridge->RPC->daemon boundaries, lock final roles for domain-context and manager, and update active roadmap/TODO truth sources.",
+  "description": "",
+  "status": "archived",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-23",
+  "completedAt": "2026-03-24",
+  "branch": "codex/03-23-322-phase0-freeze-baseline",
+  "base_branch": "master",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline",
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}

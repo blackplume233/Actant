@@ -1,0 +1,41 @@
+{
+  "id": "322-phase3-daemon-projection-cutover",
+  "name": "322-phase3-daemon-projection-cutover",
+  "title": "Cut daemon app-context off from manager-backed derived mounts: replace manager -> VFS projection in the daemon path with VFS-first derived mounts, leaving managers as cache/index helpers instead of the live mount source.",
+  "description": "Workstream A continuation of #322: remove daemon app-context manager-backed derived mounts and converge the live mount surface on VFS-first projections.",
+  "status": "archived",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-23",
+  "completedAt": "2026-03-24",
+  "branch": "codex/03-23-322-phase3-daemon-projection-cutover",
+  "base_branch": "codex/pr-325-merge",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase3-daemon-projection-cutover",
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}

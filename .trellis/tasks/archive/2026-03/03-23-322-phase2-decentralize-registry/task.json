@@ -1,0 +1,41 @@
+{
+  "id": "322-phase2-decentralize-registry",
+  "name": "322-phase2-decentralize-registry",
+  "title": "Remove catalog/manager central registration paths so content no longer flows catalog -> manager -> VFS; downgrade managers to index/cache/view roles and establish a VFS-first loading path.",
+  "description": "Workstream A of #322: remove central registry behavior from catalog/domain managers and cut manager->VFS projection paths.",
+  "status": "archived",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-23",
+  "completedAt": "2026-03-24",
+  "branch": "codex/03-23-322-phase2-decentralize-registry",
+  "base_branch": "codex/pr-325-merge",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase2-decentralize-registry",
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}

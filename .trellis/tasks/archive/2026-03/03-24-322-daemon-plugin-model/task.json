@@ -1,0 +1,41 @@
+{
+  "id": "322-daemon-plugin-model",
+  "name": "322-daemon-plugin-model",
+  "title": "完成 Full Todo 主题 3“插件模型治理”，定义 daemon plugin 是唯一有效扩展单元、生命周期与可贡献能力，并完成该主题的一次 ship。",
+  "description": "",
+  "status": "archived",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-24",
+  "completedAt": "2026-03-24",
+  "branch": "codex/03-24-322-daemon-plugin-model",
+  "base_branch": "master",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-24-322-daemon-plugin-model",
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}

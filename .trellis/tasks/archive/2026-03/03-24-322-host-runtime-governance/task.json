@@ -1,0 +1,41 @@
+{
+  "id": "322-host-runtime-governance",
+  "name": "322-host-runtime-governance",
+  "title": "完成 Full Todo 主题 1“宿主与运行时口径治理”，固化 daemon 是唯一运行时宿主与组合根，bridge 只通过 RPC 与 daemon 交互，并完成该主题的一次 ship。",
+  "description": "",
+  "status": "archived",
+  "dev_type": "backend",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-24",
+  "completedAt": "2026-03-24",
+  "branch": "codex/03-24-322-host-runtime-governance",
+  "base_branch": "master",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-24-322-host-runtime-governance",
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [],
+  "notes": ""
+}

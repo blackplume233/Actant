@@ -1,0 +1,35 @@
+{
+  "id": "322-vfs-first-manager-boundary",
+  "name": "322-vfs-first-manager-boundary",
+  "title": "#322 file-first 下 domain-context 最终定位与 VFS 中心边界收口",
+  "description": "以 #322 为主线冻结 file-first 下的最终边界：VFS 是唯一真相源，daemon 是唯一组合根，catalog/manager 不得绕过 VFS 形成中心注册结构。",
+  "status": "archived",
+  "dev_type": "architecture",
+  "scope": null,
+  "priority": "P1",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-23",
+  "completedAt": "2026-03-24",
+  "branch": null,
+  "base_branch": "master",
+  "worktree_path": null,
+  "current_phase": 0,
+  "next_action": [
+    {"phase": 1, "action": "implement"},
+    {"phase": 2, "action": "check"},
+    {"phase": 3, "action": "finish"},
+    {"phase": 4, "action": "create-pr"}
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [
+    "docs/planning/contextfs-roadmap.md",
+    "packages/domain-context/src/domain/base-component-manager.ts",
+    "packages/catalog/src/catalog-manager.ts",
+    "packages/api/src/services/app-context.ts",
+    "packages/api/src/services/project-context.ts"
+  ],
+  "notes": "先串行冻结 #322 基线，再并行推进去中心注册结构、daemon/plugin/provider/VFS 契约、文档与门禁三条工作流。"
+}

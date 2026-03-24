@@ -12,11 +12,12 @@ Before making architecture or implementation changes, read:
 3. `.trellis/spec/index.md`
 4. `docs/design/contextfs-architecture.md`
 5. `docs/design/actant-vfs-reference-architecture.md`
-6. `docs/planning/contextfs-roadmap.md`
+6. `docs/planning/roadmap.md`
+7. `docs/planning/workspace-normalization-todo.md`
 
 If you are changing backend implementation details, also read:
 
-7. `.trellis/spec/backend/index.md`
+8. `.trellis/spec/backend/index.md`
 
 If you are touching user-facing UI or site content, do not assume older frontend docs are current.  
 Treat UI work as secondary to the ContextFS baseline unless a newer UI spec exists.
@@ -36,7 +37,7 @@ Current repository policy:
 - a ship is only complete when the local repository context is back on `master`/`main`
 - every ship / merge delivery must preserve a changelog draft before release aggregation
 - active roadmap files under `docs/planning/` must use checklist / todolist structure
-- project progress status must be atomically maintained in one active file only: `docs/planning/contextfs-roadmap.md`
+- active planning state must be maintained only in explicitly owned files under `docs/planning/`
 - deprecated terms must not leak into active truth; `bootstrap` is banned from active docs and user-facing delivery language except for explicit historical or compatibility notes
 
 ## Session Start
@@ -94,7 +95,7 @@ Anti-pattern checklist for reviewers:
 ## Documentation Hygiene
 
 Main entry docs should describe only the current baseline.  
-If historical explanation is needed, keep it outside the default read path, such as under `docs/history/` or `trash/`.
+If historical explanation is needed, keep document history under `docs/history/` and non-document residue under `trash/`.
 
 ## Changelog Draft Rule
 
@@ -126,8 +127,10 @@ Required draft contract:
 - Milestones and phases must express status with todo markers, not long narrative status paragraphs
 - Historical reviews and analysis belong in `docs/history/` or `docs/agent/`, not in active roadmap files
 - If roadmap state says a milestone is done, corresponding active tasks must be completed or archived
-- Progress annotations must have a single atomic truth file. For this repo, only `docs/planning/contextfs-roadmap.md` may carry live milestone progress status.
-- Other planning entry docs may link, explain scope, or define rules, but must not duplicate live progress checkboxes for the same milestones.
+- Repo-level planning summary belongs in `docs/planning/roadmap.md`
+- Active cleanup backlog belongs in `docs/planning/workspace-normalization-todo.md`
+- `docs/planning/contextfs-roadmap.md` is an archived compatibility entry only and must not regain active milestone or boundary truth
+- Other planning docs may link, explain scope, or define rules, but must not duplicate the same live checklist state without explicit ownership
 
 ## Working Rule
 

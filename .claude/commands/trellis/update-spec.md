@@ -24,7 +24,7 @@ Update the active docs when you change any of the following:
 - milestone scope
 - repository review rules
 
-If the learning only belongs to history, move it to `trash/` instead of expanding active docs.
+If the learning only belongs to document history, move it to `docs/history/`; only deleted residue should go to `trash/`.
 
 ---
 
@@ -40,8 +40,9 @@ Current active truth lives here:
 6. `.trellis/spec/config-spec.md`
 7. `.trellis/spec/api-contracts.md`
 8. `.trellis/spec/backend/index.md`
-9. `docs/planning/contextfs-roadmap.md`
-10. `.trellis/workflow.md`
+9. `docs/planning/roadmap.md`
+10. `docs/planning/workspace-normalization-todo.md`
+11. `.trellis/workflow.md`
 
 Do not create a parallel source of truth outside this baseline.
 
@@ -59,7 +60,8 @@ Use this mapping to decide where to update:
 | namespace, mount, middleware, node, backend, metadata, lifecycle, events | `docs/design/actant-vfs-reference-architecture.md`, `.trellis/spec/backend/index.md` |
 | `actant.namespace.json`, mount table, compatibility entrypoints, permissions | `.trellis/spec/config-spec.md` |
 | paths, operations, control nodes, stream nodes | `.trellis/spec/api-contracts.md` |
-| scope, milestones, non-goals, acceptance | `docs/planning/contextfs-roadmap.md` |
+| repo-level scope, current phase, planning rules | `docs/planning/roadmap.md` |
+| cleanup backlog, post-freeze doc/workspace tasks | `docs/planning/workspace-normalization-todo.md` |
 | repository process and review gates | `.trellis/workflow.md` |
 
 ---
@@ -86,7 +88,7 @@ Preferred order:
 2. `terminology.md` if naming changed
 3. design docs if object or kernel boundaries changed
 4. contract docs if config or API changed
-5. roadmap if scope or milestone changed
+5. planning docs if scope, current phase, or cleanup backlog changed
 6. workflow if review or process changed
 
 ### Step 4: Remove Conflicting Material
@@ -95,7 +97,7 @@ If an active doc now conflicts with the new baseline:
 
 - rewrite it
 - remove it
-- or move it to `trash/`
+- or archive doc history to `docs/history/`
 
 Do not leave conflicting active docs in place for later cleanup.
 
@@ -159,7 +161,7 @@ Required checks:
 - [ ] The naming matches `terminology.md`
 - [ ] The change does not reintroduce old `ContextManager` or `DomainContext` truth
 - [ ] `workflow` is not reintroduced as a V1 top-level product object
-- [ ] There is no second architecture narrative outside `trash/`
+- [ ] There is no second architecture narrative outside the archive/evidence surfaces
 - [ ] The roadmap and contracts still match the design docs
 
 ---

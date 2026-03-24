@@ -14,7 +14,8 @@ spec / design / roadmap -> contract -> implementation -> verification
    - `.trellis/spec/index.md`
    - `docs/design/contextfs-architecture.md`
    - `docs/design/actant-vfs-reference-architecture.md`
-   - `docs/planning/contextfs-roadmap.md`
+   - `docs/planning/roadmap.md`
+   - `docs/planning/workspace-normalization-todo.md`
 2. 若要改核心模块，先做 impact 分析
 3. 若涉及对象模型、路径、权限、生命周期或操作面，先改文档，再改代码
 4. 如果发现旧模型文件仍在活跃区，先清理污染，再继续实现

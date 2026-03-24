@@ -1,0 +1,51 @@
+{
+  "id": "322-phase1-audit-violations",
+  "name": "322-phase1-audit-violations",
+  "title": "Audit #322 violating paths and package-boundary decisions",
+  "description": "Inventory all catalog->manager, manager->VFS, and register/unregister/inject truth-source paths; produce the active violation inventory and package-boundary decision baseline for later implementation phases.",
+  "status": "archived",
+  "dev_type": "docs",
+  "scope": null,
+  "priority": "P2",
+  "creator": "cursor-agent",
+  "assignee": "cursor-agent",
+  "createdAt": "2026-03-23",
+  "completedAt": "2026-03-24",
+  "branch": "codex/03-23-322-phase1-audit-violations",
+  "base_branch": "codex/03-23-322-phase0-freeze-baseline",
+  "worktree_path": "/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase1-audit-violations",
+  "current_phase": 0,
+  "next_action": [
+    {
+      "phase": 1,
+      "action": "implement"
+    },
+    {
+      "phase": 2,
+      "action": "check"
+    },
+    {
+      "phase": 3,
+      "action": "finish"
+    },
+    {
+      "phase": 4,
+      "action": "create-pr"
+    }
+  ],
+  "commit": null,
+  "pr_url": null,
+  "subtasks": [],
+  "relatedFiles": [
+    "packages/domain-context/src/domain/base-component-manager.ts",
+    "packages/catalog/src/catalog-manager.ts",
+    "packages/api/src/services/app-context.ts",
+    "packages/api/src/services/project-context.ts",
+    "packages/vfs",
+    "packages/agent-runtime/src/vfs",
+    "packages/agent-runtime/src/builder",
+    "docs/planning/contextfs-roadmap.md",
+    ".trellis/tasks/03-23-322-vfs-first-manager-boundary/TODO.md"
+  ],
+  "notes": "Phase 1 of #322. Base from the completed phase0 branch because the main workspace master is intentionally left dirty and behind the merged remote state."
+}

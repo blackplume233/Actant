@@ -20,7 +20,8 @@ If the change affects architecture or contracts, also read:
 
 6. `docs/design/contextfs-architecture.md`
 7. `docs/design/actant-vfs-reference-architecture.md`
-8. `docs/planning/contextfs-roadmap.md`
+8. `docs/planning/roadmap.md`
+9. `docs/planning/workspace-normalization-todo.md`
 
 ---
 
@@ -28,7 +29,7 @@ If the change affects architecture or contracts, also read:
 
 ### 1. Active-Truth Review
 
-- [ ] No active document outside `trash/` introduces stale architecture truth
+- [ ] No active document outside the archive/evidence surfaces introduces stale architecture truth
 - [ ] No changed file presents `ContextManager` as current architecture
 - [ ] No changed file presents `DomainContext` as current architecture
 - [ ] No changed file presents `workflow` as a V1 top-level product object
@@ -58,7 +59,8 @@ Use this rule:
 - [ ] `config-spec.md` updated if mounts, permissions, or children changed
 - [ ] `api-contracts.md` updated if paths or operations changed
 - [ ] `backend/index.md` updated if implementation baseline changed
-- [ ] `contextfs-roadmap.md` updated if milestone scope changed
+- [ ] `roadmap.md` updated if repo-level planning scope changed
+- [ ] `workspace-normalization-todo.md` updated if cleanup backlog ownership changed
 - [ ] `.trellis/workflow.md` updated if repository process changed
 
 ### 4. Verification
@@ -117,7 +119,7 @@ If any answer is uncertain, stop and fix it before ship.
 |-----------|-------------|--------------|
 | changed contracts without doc sync | implementation outruns spec | update the active baseline docs |
 | used legacy `Source` terms where product docs require Linux terminology | naming drift | fix the doc or code naming boundary |
-| left old architecture terms in active docs | new Agents learn wrong model | move or remove stale docs |
+| left old architecture terms in active docs | new Agents learn wrong model | archive doc history to `docs/history/` or remove stale residue |
 | changed path layout without updating contracts | broken assumptions | update `api-contracts.md` |
 | changed `actant.namespace.json` shape without updating config spec | config drift | update `config-spec.md` |
 

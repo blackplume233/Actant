@@ -3,7 +3,7 @@
 > Status: Draft
 > Date: 2026-03-23
 > Scope: 产品层对象模型（Linux 语义）
-> Related: [ContextFS V1 Linux Terminology](./contextfs-v1-linux-terminology.md), [Actant VFS Reference Architecture](./actant-vfs-reference-architecture.md), [ContextFS Roadmap](../planning/contextfs-roadmap.md)
+> Related: [ContextFS V1 Linux Terminology](./contextfs-v1-linux-terminology.md), [Actant VFS Reference Architecture](./actant-vfs-reference-architecture.md), [Product Roadmap](../planning/roadmap.md), [Workspace Normalization To-Do](../planning/workspace-normalization-todo.md)
 
 ---
 

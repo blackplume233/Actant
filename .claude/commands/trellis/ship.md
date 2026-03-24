@@ -44,7 +44,7 @@ The following are not current truth:
 - `workflow` as a V1 top-level product object
 - query or view mounts in V1
 - overlay or fallback behavior in V1
-- parallel architecture narratives outside `trash/`
+- parallel architecture narratives outside archive/evidence surfaces
 
 Important:
 
@@ -64,11 +64,12 @@ Before running this flow, read:
 5. `.trellis/spec/terminology.md`
 6. `docs/design/contextfs-architecture.md`
 7. `docs/design/actant-vfs-reference-architecture.md`
-8. `docs/planning/contextfs-roadmap.md`
+8. `docs/planning/roadmap.md`
+9. `docs/planning/workspace-normalization-todo.md`
 
 If the change touches backend behavior, also read:
 
-9. `.trellis/spec/backend/index.md`
+10. `.trellis/spec/backend/index.md`
 
 ---
 
@@ -76,7 +77,7 @@ If the change touches backend behavior, also read:
 
 ### 1.1 Active-Truth Gate
 
-Check whether the current diff introduces or preserves wrong architecture information outside `trash/`.
+Check whether the current diff introduces or preserves wrong architecture information outside the archive/evidence surfaces.
 
 Fail this gate if any changed or newly added active document:
 
@@ -94,7 +95,7 @@ Fail this gate if any changed or newly added active document:
 If this gate fails:
 
 - stop shipping immediately
-- remove or move stale material to `trash/`
+- archive stale docs to `docs/history/` or move deleted residue to `trash/`
 - re-run the review
 
 ### 1.2 Terminology Gate
@@ -127,7 +128,8 @@ Map the diff to the docs that must already be updated:
 | path layout, control nodes, stream nodes, output fields, operation surface | `.trellis/spec/api-contracts.md` |
 | `actant.namespace.json`, mount table, mount types, compatibility config entrypoints | `.trellis/spec/config-spec.md` |
 | kernel layering, namespace, mount, middleware, node, backend, events, lifecycle | `docs/design/actant-vfs-reference-architecture.md`, `.trellis/spec/backend/index.md` |
-| filesystem scope, node taxonomy, milestone scope, non-goals | `docs/planning/contextfs-roadmap.md` |
+| repo-level scope, current phase, planning rules | `docs/planning/roadmap.md` |
+| cleanup backlog, doc closure, workspace governance tasks | `docs/planning/workspace-normalization-todo.md` |
 | repository process or review rules | `.trellis/workflow.md` |
 
 Decision flow:
@@ -209,7 +211,7 @@ Confirm:
 - the branch and diff are correct
 - no sensitive files are staged
 - no unintended files are included
-- no stale architecture docs outside `trash/` are being reintroduced
+- no stale architecture docs outside archive/evidence surfaces are being reintroduced
 
 ---
 
@@ -328,7 +330,7 @@ If `gh` is unavailable, mark the step as skipped and note the manual follow-up.
 - never commit secrets
 - never bypass hooks with `--no-verify`
 - never treat unsynced docs as acceptable for later cleanup
-- never keep competing architecture truth outside `trash/`
+- never keep competing architecture truth outside archive/evidence surfaces
 - never leave the repository in a child-branch context and call ship "complete"
 
 ---

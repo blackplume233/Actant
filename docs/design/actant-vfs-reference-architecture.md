@@ -3,7 +3,7 @@
 > Status: Draft
 > Date: 2026-03-23
 > Scope: 实现层内核架构（Linux 语义）
-> Related: [ContextFS V1 Linux Terminology](./contextfs-v1-linux-terminology.md), [ContextFS Architecture](./contextfs-architecture.md), [ContextFS Roadmap](../planning/contextfs-roadmap.md)
+> Related: [ContextFS V1 Linux Terminology](./contextfs-v1-linux-terminology.md), [ContextFS Architecture](./contextfs-architecture.md), [Product Roadmap](../planning/roadmap.md), [Workspace Normalization To-Do](../planning/workspace-normalization-todo.md)
 
 ---
 
