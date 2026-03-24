@@ -18,6 +18,11 @@
 - [x] Phase 0 baseline freeze 已完成并通过 `ship-sub`
 - [x] Draft PR: `#324`
 - [x] Merged to `master`: `d4ff12a`
+- [x] Full Todo 主题 5 已完成一次 ship
+- [x] Branch: `codex/03-24-322-vfs-core-governance`
+- [x] Commit: `3120503`
+- [x] 当前已完成一轮 VFS core boundary freeze：core terminology、显式 filesystem metadata、lifecycle contract 与 `agent-runtime` 根导出收口已落地
+- [x] A4 keep / migrate / delete baseline 已形成：`docs/agent/2026-03-24-cursor-322-a4-domain-context-boundary.md`
 
 ## Sync Rule
 
@@ -70,16 +75,16 @@
 
 ### 5. VFS 核心治理
 
-- [ ] 固化 `@actant/vfs` 是唯一核心
-- [ ] 固化 `@actant/vfs` 是唯一真相源
-- [ ] 固化 `@actant/vfs` 内部结构：`facade / kernel / mount / path / node / permission / lifecycle / storage / index / schema / SPI`
-- [ ] 明确 `kernel` 只负责统一调度
-- [ ] 明确 `mount / path / node` 是 VFS 核心骨架
-- [ ] 明确 `permission / lifecycle / storage / index` 是支撑层
-- [ ] 明确 `provider SPI` 是插件接入面，不是业务注册面
-- [ ] 禁止 `domain/catalog/manager` 逻辑进入 VFS core
-- [ ] 定义 `mount / watch / stream / dispose` 生命周期契约
-- [ ] 定义 runtimefs 建模边界
+- [x] 固化 `@actant/vfs` 是唯一核心
+- [x] 固化 `@actant/vfs` 是唯一真相源
+- [x] 固化 `@actant/vfs` 内部结构：`facade / kernel / mount / path / node / permission / lifecycle / storage / index / schema / SPI`
+- [x] 明确 `kernel` 只负责统一调度
+- [x] 明确 `mount / path / node` 是 VFS 核心骨架
+- [x] 明确 `permission / lifecycle / storage / index` 是支撑层
+- [x] 明确 `provider SPI` 是插件接入面，不是业务注册面
+- [x] 禁止 `domain/catalog/manager` 逻辑进入 VFS core
+- [x] 定义 `mount / watch / stream / dispose` 生命周期契约
+- [x] 定义 runtimefs 建模边界
 
 ### 6. `agent-runtime` 定位治理
 
