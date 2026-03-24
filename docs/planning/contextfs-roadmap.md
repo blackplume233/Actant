@@ -212,7 +212,8 @@ Progress notes:
 - [x] `packages/api` 已改为直接依赖 `@actant/domain-context` / `@actant/catalog` / `@actant/vfs`；本地 template watcher 已迁到 `packages/api`
 - [x] B3 provider SPI / runtimefs contract freeze 已完成：`runtimefs` provider contribution 现在强制为 `data-source`，且必须显式声明 `filesystemType=runtimefs` 与精确 `mountPoint`
 - [x] B3 verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/vfs type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/vfs/src/__tests__/b3-runtimefs-provider-contract.test.ts packages/vfs/src/__tests__/m5-control-stream-e2e.test.ts`
-- [ ] Workstream A remaining scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；`TemplateRegistry` / `TemplateFileWatcher` 与 `BackendManager` 的最终 keep / migrate / delete 仍需继续收口
+- [x] dead `packages/domain-context/src/template/watcher/*` 已删除；活跃 template watcher 只保留 `packages/api/src/services/template-directory-watcher.ts`
+- [ ] Workstream A remaining scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；`TemplateRegistry` 与 `BackendManager` 的最终 keep / migrate / delete 仍需继续收口
 
 Authority rule:
 

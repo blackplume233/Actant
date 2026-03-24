@@ -73,7 +73,8 @@
 - [x] B3 verification passed:
   - `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/vfs type-check`
   - `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/vfs/src/__tests__/b3-runtimefs-provider-contract.test.ts packages/vfs/src/__tests__/m5-control-stream-e2e.test.ts`
-- [ ] Remaining Workstream A scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；`TemplateRegistry` / `TemplateFileWatcher` 与 `BackendManager` 的最终 keep / migrate / delete 仍需继续收口
+- [x] dead `packages/domain-context/src/template/watcher/*` 已删除；活跃 template watcher 只保留 `packages/api/src/services/template-directory-watcher.ts`
+- [ ] Remaining Workstream A scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；`TemplateRegistry` 与 `BackendManager` 的最终 keep / migrate / delete 仍需继续收口
 
 ## Phase 1 Audit Baseline
 
@@ -146,9 +147,9 @@
 - [x] `SkillManager` / `PromptManager` / `McpConfigManager` / `WorkflowManager` / `TemplateRegistry` 仍在 `packages/api/src/services/app-context.ts` 与 `packages/api/src/services/project-context.ts` 作为本地 mutable collection 使用
 - [x] `BackendManager` 仍在 `packages/agent-runtime/src/manager/launcher/backend-registry.ts` 作为单例 backend store 使用
 - [x] `PluginManager` 当前仍在 `AppContext` 本地使用，并在 `workspace-builder` 测试中作为 resolver 夹具出现
-- [x] `TemplateFileWatcher` 仍直接依赖 `TemplateRegistry.register/unregister`
+- [x] `TemplateFileWatcher` 已从 `@actant/domain-context` 活跃实现删除；模板目录监听只保留 `packages/api/src/services/template-directory-watcher.ts`
 - [x] keep / migrate / delete 清单已形成：`docs/agent/2026-03-24-cursor-322-a4-domain-context-boundary.md`
-- [ ] 下一步要继续从 `TemplateRegistry` / `TemplateFileWatcher` 与 `BackendManager` 单例切口下刀
+- [ ] 下一步要继续从 `TemplateRegistry` 与 `BackendManager` 单例切口下刀
 
 ## Sync Rule
 

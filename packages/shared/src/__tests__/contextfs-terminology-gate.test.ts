@@ -56,6 +56,11 @@ const bannedPhrases = [
   "./template/index",
 ] as const;
 
+const removedImplementationPaths = [
+  "packages/domain-context/src/template/watcher/index.ts",
+  "packages/domain-context/src/template/watcher/template-file-watcher.ts",
+] as const;
+
 describe("ContextFS terminology gate", () => {
   it("keeps legacy default-entry phrases out of active truth and help surfaces", () => {
     for (const file of activeTruthFiles) {
@@ -73,6 +78,13 @@ describe("ContextFS terminology gate", () => {
       expect(content, `${file} should not contain the removed legacy catalog route`).not.toContain(
         removedLegacyCatalogRoute,
       );
+    }
+  });
+
+  it("keeps removed implementation boundaries out of the active tree", () => {
+    for (const path of removedImplementationPaths) {
+      const fullPath = join(repoRoot, path);
+      expect(existsSync(fullPath), `${path} should stay removed from the active tree`).toBe(false);
     }
   });
 });
