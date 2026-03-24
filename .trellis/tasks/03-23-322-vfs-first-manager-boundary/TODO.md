@@ -79,7 +79,11 @@
   - `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/agent-runtime type-check`
   - `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/agent-runtime/src/domain/backend/backend-manager-install.test.ts packages/agent-runtime/src/manager/launcher/backend-resolver.test.ts packages/agent-runtime/src/manager/launcher/build-provider-env.test.ts`
   - `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/catalog/src/catalog-manager.test.ts packages/api/src/services/__tests__/hub-context.test.ts`
-- [ ] Remaining Workstream A scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；`TemplateRegistry` 与 `BackendManager` singleton 生命周期边界仍需继续收口
+- [x] `TemplateRegistry` 已脱离 `BaseComponentManager` 继承，保留 `template-handlers` / `agent-initializer` / `catalog-manager` 现有 API 兼容
+- [x] template-registry compatibility verification passed:
+  - `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/domain-context type-check`
+  - `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/domain-context/src/template/registry/template-registry.test.ts packages/api/src/handlers/__tests__/template-handlers.test.ts packages/catalog/src/catalog-manager.test.ts packages/agent-runtime/src/initializer/agent-initializer.test.ts`
+- [ ] Remaining Workstream A scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；剩余主要是 `CatalogManager` 的中心注册职责与 `BackendManager` singleton 生命周期边界
 
 ## Phase 1 Audit Baseline
 
@@ -152,9 +156,10 @@
 - [x] `SkillManager` / `PromptManager` / `McpConfigManager` / `WorkflowManager` / `TemplateRegistry` 仍在 `packages/api/src/services/app-context.ts` 与 `packages/api/src/services/project-context.ts` 作为本地 mutable collection 使用
 - [x] `BackendManager` 仍在 `packages/agent-runtime/src/manager/launcher/backend-registry.ts` 作为单例 backend store 使用，但已不再继承 `BaseComponentManager`
 - [x] `PluginManager` 当前仍在 `AppContext` 本地使用，并在 `workspace-builder` 测试中作为 resolver 夹具出现
+- [x] `TemplateRegistry` 已不再继承 `BaseComponentManager`；当前仍作为本地 mutable template collection 供 `api` / `agent-runtime` 使用
 - [x] `TemplateFileWatcher` 已从 `@actant/domain-context` 活跃实现删除；模板目录监听只保留 `packages/api/src/services/template-directory-watcher.ts`
 - [x] keep / migrate / delete 清单已形成：`docs/agent/2026-03-24-cursor-322-a4-domain-context-boundary.md`
-- [ ] 下一步要继续从 `TemplateRegistry` 与 `BackendManager` singleton 生命周期切口下刀
+- [ ] 下一步要继续从 `CatalogManager` 的中心注册职责与 `BackendManager` singleton 生命周期切口下刀
 
 ## Sync Rule
 

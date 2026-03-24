@@ -215,7 +215,9 @@ Progress notes:
 - [x] dead `packages/domain-context/src/template/watcher/*` 已删除；活跃 template watcher 只保留 `packages/api/src/services/template-directory-watcher.ts`
 - [x] `BackendManager` 已脱离 `BaseComponentManager` 继承，`agent-runtime` 保留 API 兼容的本地 backend store / persistence / validation 逻辑
 - [x] backend-manager compatibility verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/agent-runtime type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/agent-runtime/src/domain/backend/backend-manager-install.test.ts packages/agent-runtime/src/manager/launcher/backend-resolver.test.ts packages/agent-runtime/src/manager/launcher/build-provider-env.test.ts`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/catalog/src/catalog-manager.test.ts packages/api/src/services/__tests__/hub-context.test.ts`
-- [ ] Workstream A remaining scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；`TemplateRegistry` 与 `BackendManager` singleton 生命周期边界仍需继续收口
+- [x] `TemplateRegistry` 已脱离 `BaseComponentManager` 继承，保留 `template-handlers` / `agent-initializer` / `catalog-manager` 现有 API 兼容
+- [x] template-registry compatibility verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/domain-context type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/domain-context/src/template/registry/template-registry.test.ts packages/api/src/handlers/__tests__/template-handlers.test.ts packages/catalog/src/catalog-manager.test.ts packages/agent-runtime/src/initializer/agent-initializer.test.ts`
+- [ ] Workstream A remaining scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；剩余主要是 `CatalogManager` 的中心注册职责与 `BackendManager` singleton 生命周期边界
 
 Authority rule:
 
