@@ -43,7 +43,6 @@
   "dependencies": {
     "@actant/domain-context": "workspace:0.5.0",
     "@actant/shared": "workspace:0.5.0",
-    "@actant/catalog": "workspace:0.5.0",
     "@actant/vfs": "workspace:0.5.0",
     "croner": "^9.0.0",
     "picomatch": "^4.0.3",

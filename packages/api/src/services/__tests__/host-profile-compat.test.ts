@@ -53,7 +53,6 @@ describe("AppContext context profile", () => {
   it("stays side-effect free after init", () => {
     expect(ctx.runtimeState).toBe("inactive");
     expect(ctx.getHostCapabilities()).toEqual(expect.arrayContaining(["hub", "vfs", "domain"]));
-    expect(ctx.getHostCapabilities()).not.toContain("catalogs");
     expect(ctx.getHostCapabilities()).not.toContain("runtime");
   });
 

@@ -15,40 +15,20 @@ import { VfsPathResolver } from "./vfs-path-resolver";
 
 const logger = createLogger("vfs-registry");
 
-function inferFilesystemType(source: VfsMountRegistration): VfsFilesystemType {
-  const configured = source.metadata.filesystemType;
+function inferFilesystemType(mount: VfsMountRegistration): VfsFilesystemType {
+  const configured = mount.metadata.filesystemType;
   if (typeof configured === "string" && configured.length > 0) {
-    if (configured === "memory") {
-      return "memfs";
-    }
-    if (configured === "filesystem") {
-      return "hostfs";
-    }
     return configured as VfsFilesystemType;
   }
-
-  if (source.label === "memory" || source.name.includes("memory")) {
-    return "memfs";
-  }
-
-  if (
-    source.name.includes("runtime")
-    || source.name.includes("agents")
-    || source.label.includes("runtime")
-    || source.label.includes("agent")
-  ) {
-    return "runtimefs";
-  }
-
   return "hostfs";
 }
 
-function inferMountType(source: VfsMountRegistration): VfsMountType {
-  const configured = source.metadata.mountType;
+function inferMountType(mount: VfsMountRegistration): VfsMountType {
+  const configured = mount.metadata.mountType;
   if (configured === "root" || configured === "direct") {
     return configured;
   }
-  return source.mountPoint === "/" ? "root" : "direct";
+  return mount.mountPoint === "/" ? "root" : "direct";
 }
 
 function inferNodeType(resolved: VfsResolveResult): VfsNodeType {
@@ -77,8 +57,8 @@ function mapFileTypeToNodeType(type: VfsFileType): VfsNodeType {
   }
 }
 
-function extractTags(source: VfsMountRegistration): string[] {
-  const tags = source.metadata.tags;
+function extractTags(mount: VfsMountRegistration): string[] {
+  const tags = mount.metadata.tags;
   return Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : [];
 }
 
@@ -90,8 +70,8 @@ export interface VfsRegistryEvents {
 /**
  * Central registry for VFS mount points.
  *
- * Sources register themselves with a mount point and a set of handlers.
- * The registry resolves virtual paths to the appropriate source/handler pair.
+ * Mount registrations provide a mount point plus capability handlers.
+ * The registry resolves virtual paths to the matched mount and node schema.
  */
 export class VfsRegistry {
   private mounts = new Map<string, VfsMountRegistration>();

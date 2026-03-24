@@ -8,7 +8,7 @@ import {
   type VfsMountRegistration,
 } from "@actant/shared";
 
-const logger = createLogger("vfs-source-type");
+const logger = createLogger("vfs-filesystem-type");
 
 function validateTraitExclusions(features: ReadonlySet<VfsFeature>, context: string): void {
   if (features.has("persistent") && features.has("ephemeral")) {
@@ -20,14 +20,14 @@ export class FilesystemTypeRegistry {
   private definitions = new Map<string, FilesystemTypeDefinition<Record<string, unknown>>>();
 
   register<TConfig>(definition: FilesystemTypeDefinition<TConfig>): void {
-    validateTraitExclusions(definition.defaultFeatures, `Source type "${definition.type}"`);
+    validateTraitExclusions(definition.defaultFeatures, `Filesystem type "${definition.type}"`);
 
     if (this.definitions.has(definition.type)) {
-      logger.warn({ type: definition.type }, "Overwriting existing source type definition");
+      logger.warn({ type: definition.type }, "Overwriting existing filesystem type definition");
     }
 
     this.definitions.set(definition.type, definition as FilesystemTypeDefinition<Record<string, unknown>>);
-    logger.debug({ type: definition.type }, "Source type definition registered");
+    logger.debug({ type: definition.type }, "Filesystem type definition registered");
   }
 
   unregister(type: string): boolean {
@@ -50,19 +50,19 @@ export class FilesystemTypeRegistry {
   ): VfsMountRegistration {
     const definition = this.definitions.get(type);
     if (!definition) {
-      throw new Error(`No VFS source type registered for type "${type}"`);
+      throw new Error(`No VFS filesystem type registered for type "${type}"`);
     }
 
     const result = this.validate(type, config as Record<string, unknown>);
     if (!result.valid) {
       throw new Error(
-        `Invalid VFS source config for type "${type}": ${result.errors?.join(", ")}`,
+        `Invalid VFS filesystem config for type "${type}": ${result.errors?.join(", ")}`,
       );
     }
 
     const registration = definition.create(config as Record<string, unknown>, mountPoint, lifecycle);
     const features = registration.features ?? new Set(definition.defaultFeatures);
-    validateTraitExclusions(features, `Source registration "${registration.name || mountPoint}"`);
+    validateTraitExclusions(features, `Mount registration "${registration.name || mountPoint}"`);
 
     return {
       ...registration,
@@ -88,7 +88,7 @@ export class FilesystemTypeRegistry {
   validate(type: string, config: Record<string, unknown>): { valid: boolean; errors?: string[] } {
     const definition = this.definitions.get(type);
     if (!definition) {
-      return { valid: false, errors: [`No source type for "${type}"`] };
+      return { valid: false, errors: [`No filesystem type for "${type}"`] };
     }
     if (!definition.validate) {
       return { valid: true };
@@ -100,7 +100,7 @@ export class FilesystemTypeRegistry {
     return Array.from(this.definitions.keys());
   }
 
-  static satisfies(source: Pick<VfsMountRegistration, "features">, requirement: FilesystemRequirement): boolean {
-    return requirement.required.every((trait) => source.features.has(trait));
+  static satisfies(mount: Pick<VfsMountRegistration, "features">, requirement: FilesystemRequirement): boolean {
+    return requirement.required.every((trait) => mount.features.has(trait));
   }
 }

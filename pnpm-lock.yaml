@@ -101,9 +101,6 @@ importers:
       '@actant/shared':
         specifier: workspace:0.5.0
         version: link:../shared
-      '@actant/catalog':
-        specifier: workspace:0.5.0
-        version: link:../source
       '@actant/vfs':
         specifier: workspace:0.5.0
         version: link:../vfs
@@ -135,12 +132,18 @@ importers:
       '@actant/context':
         specifier: workspace:0.5.0
         version: link:../context
+      '@actant/domain-context':
+        specifier: workspace:0.5.0
+        version: link:../domain-context
       '@actant/pi':
         specifier: workspace:0.5.0
         version: link:../pi
       '@actant/shared':
         specifier: workspace:0.5.0
         version: link:../shared
+      '@actant/vfs':
+        specifier: workspace:0.5.0
+        version: link:../vfs
 
   packages/channel-claude:
     dependencies:
@@ -204,9 +207,6 @@ importers:
       '@actant/shared':
         specifier: workspace:0.5.0
         version: link:../shared
-      '@actant/catalog':
-        specifier: workspace:0.5.0
-        version: link:../source
       '@actant/vfs':
         specifier: workspace:0.5.0
         version: link:../vfs
@@ -355,28 +355,6 @@ importers:
       '@types/node':
         specifier: ^25.3.0
         version: 25.3.0
-
-  packages/catalog:
-    dependencies:
-      '@actant/domain-context':
-        specifier: workspace:0.5.0
-        version: link:../domain-context
-      '@actant/shared':
-        specifier: workspace:0.5.0
-        version: link:../shared
-      picomatch:
-        specifier: ^4.0.3
-        version: 4.0.3
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
-    devDependencies:
-      '@types/node':
-        specifier: ^25.5.0
-        version: 25.5.0
-      '@types/picomatch':
-        specifier: ^4.0.2
-        version: 4.0.2
 
   packages/tui:
     dependencies:

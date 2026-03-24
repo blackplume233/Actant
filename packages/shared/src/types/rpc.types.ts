@@ -2,7 +2,6 @@ import type { AgentTemplate, PermissionsInput, PermissionsConfig, OpenSpawnOptio
 import type { AgentArchetype } from "./template.types";
 import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, DetachResult } from "./agent.types";
 import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "./domain-component.types";
-import type { CatalogEntry, CatalogConfig, PresetDefinition } from "./catalog.types";
 import type { HostCapability, HostProfile, HostRuntimeState } from "./host.types";
 import type { ActivityRecord, ActivitySessionSummary, ConversationTurn } from "./activity.types";
 import type { PluginRef } from "./plugin.types";
@@ -523,7 +522,6 @@ export interface HubActivateResult {
   projectName: string;
   configPath: string | null;
   configsDir: string;
-  catalogWarnings: string[];
   components: {
     skills: number;
     prompts: number;
@@ -544,7 +542,6 @@ export interface HubStatusResult {
   projectName?: string;
   configPath?: string | null;
   configsDir?: string;
-  catalogWarnings?: string[];
   components?: HubActivateResult["components"];
   mounts: HubMountLayout;
 }
@@ -621,90 +618,6 @@ export interface ComponentExportParams {
 export interface ComponentExportResult {
   success: boolean;
 }
-
-export type CatalogListParams = Record<string, never>;
-export type CatalogListResult = CatalogEntry[];
-
-export interface CatalogAddParams {
-  name: string;
-  config: CatalogConfig;
-}
-
-export interface CatalogAddResult {
-  name: string;
-  components: { skills: number; prompts: number; mcp: number; workflows: number; presets: number };
-}
-
-export interface CatalogRemoveParams {
-  name: string;
-}
-
-export interface CatalogRemoveResult {
-  success: boolean;
-}
-
-export interface CatalogSyncParams {
-  name?: string;
-}
-
-export interface CatalogSyncResult {
-  synced: string[];
-  /** Sync report summary (aggregated when syncing multiple catalogs). */
-  report?: {
-    addedCount: number;
-    updatedCount: number;
-    removedCount: number;
-    hasBreakingChanges: boolean;
-  };
-}
-
-export interface CatalogValidateParams {
-  /** Validate a registered catalog by name. */
-  name?: string;
-  /** Validate an arbitrary directory path directly. */
-  path?: string;
-  /** Treat warnings as errors. */
-  strict?: boolean;
-  /** Enable compatibility checks against an external standard (e.g. "agent-skills"). */
-  compat?: string;
-  /** Treat the catalog as a community repo (skip manifest requirement, scan for SKILL.md). */
-  community?: boolean;
-}
-
-export interface CatalogValidationIssueDto {
-  severity: "error" | "warning" | "info";
-  path: string;
-  component?: string;
-  message: string;
-  code?: string;
-}
-
-export interface CatalogValidateResult {
-  valid: boolean;
-  catalogName: string;
-  rootDir: string;
-  summary: { pass: number; warn: number; error: number };
-  issues: CatalogValidationIssueDto[];
-}
-
-export interface PresetListParams {
-  packageName?: string;
-}
-
-export type PresetListResult = PresetDefinition[];
-
-export interface PresetShowParams {
-  qualifiedName: string;
-}
-
-export type PresetShowResult = PresetDefinition;
-
-export interface PresetApplyParams {
-  qualifiedName: string;
-  templateName: string;
-}
-
-export type PresetApplyResult = AgentTemplate;
 
 // activity.*
 
@@ -911,14 +824,6 @@ export interface RpcMethodMap {
   "plugin.export": { params: ComponentExportParams; result: ComponentExportResult };
   "plugin.runtimeList": { params: PluginRuntimeListParams; result: PluginRuntimeListResult };
   "plugin.runtimeStatus": { params: PluginRuntimeStatusParams; result: PluginRuntimeStatusResult };
-  "catalog.list": { params: CatalogListParams; result: CatalogListResult };
-  "catalog.add": { params: CatalogAddParams; result: CatalogAddResult };
-  "catalog.remove": { params: CatalogRemoveParams; result: CatalogRemoveResult };
-  "catalog.sync": { params: CatalogSyncParams; result: CatalogSyncResult };
-  "catalog.validate": { params: CatalogValidateParams; result: CatalogValidateResult };
-  "preset.list": { params: PresetListParams; result: PresetListResult };
-  "preset.show": { params: PresetShowParams; result: PresetShowResult };
-  "preset.apply": { params: PresetApplyParams; result: PresetApplyResult };
   "daemon.ping": { params: DaemonPingParams; result: DaemonPingResult };
   "daemon.shutdown": { params: DaemonShutdownParams; result: DaemonShutdownResult };
   "hub.activate": { params: HubActivateParams; result: HubActivateResult };

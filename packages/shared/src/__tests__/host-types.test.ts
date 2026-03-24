@@ -15,9 +15,9 @@ describe("host type freeze", () => {
     expect(() => normalizeHostProfile(removedLegacyProfile)).toThrow(/Unknown host profile/);
   });
 
-  it("uses catalogs in the host capability surface", () => {
-    const capabilities: HostCapability[] = ["hub", "catalogs", "runtime"];
-    expect(capabilities).toContain("catalogs");
+  it("uses the frozen host capability surface", () => {
+    const capabilities: HostCapability[] = ["hub", "runtime", "vfs"];
+    expect(capabilities).toContain("vfs");
     expect(capabilities).not.toContain("sources" as never);
   });
 });

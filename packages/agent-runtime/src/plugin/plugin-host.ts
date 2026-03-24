@@ -2,8 +2,8 @@ import type {
   PluginContext,
   PluginRef,
   PluginRuntimeState,
-  CatalogConfig,
   SubsystemDefinition,
+  VfsProviderContribution,
 } from "@actant/shared";
 import type { ContextProvider } from "../context-injector/session-context-types";
 import type { HookEventBus } from "../hooks/hook-event-bus";
@@ -27,22 +27,17 @@ interface PluginRecord {
 // ─────────────────────────────────────────────────────────────
 
 /**
- * PluginHost manages the full lifecycle of ActantPlugin instances.
+ * PluginHost manages the lifecycle of daemon/instance plugins.
  *
  * Responsibilities:
- *   - Dependency-ordered initialisation (Kahn's topological sort)
+ *   - Dependency-ordered initialization (Kahn's topological sort)
  *   - Per-plugin exception isolation (one failure does not cascade)
  *   - Tick re-entrancy guard (a slow tick cannot stack with itself)
- *   - Collection of plug 4/5/6 registrations for external wiring
+ *   - Collection of plugin-owned contributions for later daemon wiring
  *
- * Usage:
- *   const host = new PluginHost();
- *   host.register(myPlugin);
- *   await host.start(ctx, eventBus);
- *   // periodically:
- *   await host.tick(ctx);
- *   // on shutdown:
- *   await host.stop(ctx);
+ * PluginHost is not a second composition root. It only coordinates plugin
+ * lifecycle and gathers capabilities that the daemon wires into VFS, RPC, and
+ * other runtime surfaces.
  */
 export class PluginHost {
   private readonly records = new Map<string, PluginRecord>();
@@ -50,10 +45,10 @@ export class PluginHost {
   /** Topologically sorted plugin names; populated on first start(). */
   private sortedNames: string[] = [];
 
-  /** Collected registrations from plugs 4/5/6. */
+  /** Collected plugin contributions for daemon wiring. */
+  private collectedProviders: VfsProviderContribution[] = [];
   private collectedContextProviders: ContextProvider[] = [];
   private collectedSubsystems: SubsystemDefinition[] = [];
-  private collectedCatalogs: CatalogConfig[] = [];
 
   // ── Registration ────────────────────────────────────────────
 
@@ -82,10 +77,9 @@ export class PluginHost {
    *   1. runtime.init()         — with exception isolation
    *   2. hooks()                — register event listeners
    *   3. runtime.start()        — with exception isolation
-   *   4. contextProviders()     — collect plug-4 registrations
-   *   5. subsystems()           — collect plug-5 registrations
-   *   6. catalogs()             — collect plug-6 registrations
-   *
+   *   4. providers()            — collect VFS provider contributions
+   *   5. contextProviders()     — collect session context providers
+   *   6. subsystems()           — collect subsystem declarations
    * A plugin that throws in init() or start() transitions to "error" state.
    * Remaining plugins are unaffected.
    */
@@ -132,7 +126,16 @@ export class PluginHost {
 
       rec.state = "running";
 
-      // collect plug-4 contextProviders
+      if (plugin.providers) {
+        try {
+          const providers = plugin.providers(ctx);
+          this.collectedProviders.push(...providers);
+        } catch {
+          // collection errors are non-fatal; log silently
+        }
+      }
+
+      // collect session context providers
       if (plugin.contextProviders) {
         try {
           const providers = plugin.contextProviders(ctx);
@@ -142,7 +145,7 @@ export class PluginHost {
         }
       }
 
-      // collect plug-5 subsystems
+      // collect subsystem declarations
       if (plugin.subsystems) {
         try {
           const subsystems = plugin.subsystems(ctx);
@@ -152,15 +155,6 @@ export class PluginHost {
         }
       }
 
-      // collect plug-6 catalogs
-      if (plugin.catalogs) {
-        try {
-          const catalogs = plugin.catalogs(ctx);
-          this.collectedCatalogs.push(...catalogs);
-        } catch {
-          // collection errors are non-fatal
-        }
-      }
     }
   }
 
@@ -258,21 +252,20 @@ export class PluginHost {
     return this.records.get(name)?.plugin;
   }
 
-  // ── Plug 4/5/6 Collection Accessors ─────────────────────────
+  getProviders(): VfsProviderContribution[] {
+    return [...this.collectedProviders];
+  }
 
-  /** Returns all ContextProviders collected from plug-4 registrations. */
+  // ── Contribution Accessors ──────────────────────────────────
+
+  /** Returns all ContextProviders collected from plugin contributions. */
   getContextProviders(): ContextProvider[] {
     return [...this.collectedContextProviders];
   }
 
-  /** Returns all SubsystemDefinitions collected from plug-5 registrations. */
+  /** Returns all SubsystemDefinitions collected from plugin contributions. */
   getSubsystems(): SubsystemDefinition[] {
     return [...this.collectedSubsystems];
-  }
-
-  /** Returns all CatalogConfigs collected from plug-6 registrations. */
-  getCatalogs(): CatalogConfig[] {
-    return [...this.collectedCatalogs];
   }
 
   // ── Private ──────────────────────────────────────────────────

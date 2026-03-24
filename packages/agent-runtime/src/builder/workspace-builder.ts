@@ -4,14 +4,10 @@ import type {
   ProjectContextConfig,
   McpServerDefinition,
   PermissionsInput,
-  PluginDefinition,
-  PromptDefinition,
-  SkillDefinition,
-  WorkflowDefinition,
 } from "@actant/shared";
-import type { ComponentResolver, NamedComponent } from "@actant/domain-context";
+import type { SkillManager, PromptManager, McpConfigManager, WorkflowManager, PluginManager } from "@actant/domain-context";
 import type { BackendBuilder, VerifyResult } from "./backend-builder";
-import type { ComponentTypeHandler } from "./component-type-handler";
+import type { ComponentTypeHandler, NamedComponent, ResolvableComponentCollection } from "./component-type-handler";
 import { CursorBuilder } from "./cursor-builder";
 import { ClaudeCodeBuilder } from "./claude-code-builder";
 import { DeclarativeBuilder } from "./declarative-builder";
@@ -27,11 +23,11 @@ import {
 const logger = createLogger("workspace-builder");
 
 export interface ProjectComponentManagers {
-  skills?: ComponentResolver<SkillDefinition>;
-  prompts?: ComponentResolver<PromptDefinition>;
-  mcp?: ComponentResolver<McpServerDefinition>;
-  workflows?: ComponentResolver<WorkflowDefinition>;
-  plugins?: ComponentResolver<PluginDefinition>;
+  skills?: SkillManager;
+  prompts?: PromptManager;
+  mcp?: McpConfigManager;
+  workflows?: WorkflowManager;
+  plugins?: PluginManager;
 }
 
 export interface WorkspaceBuildResult {
@@ -61,8 +57,8 @@ export class WorkspaceBuilder {
     this.handlers.push(handler);
   }
 
-  private getResolver(contextKey: string): ComponentResolver<NamedComponent> | undefined {
-    const managerMap: Record<string, ComponentResolver<NamedComponent> | undefined> = {
+  private getManager(contextKey: string): ResolvableComponentCollection<NamedComponent> | undefined {
+    const managerMap: Record<string, ResolvableComponentCollection<NamedComponent> | undefined> = {
       skills: this.managers?.skills,
       prompts: this.managers?.prompts,
       mcpServers: this.managers?.mcp,
@@ -126,8 +122,8 @@ export class WorkspaceBuilder {
       if (refs === undefined || refs === null) continue;
       if (Array.isArray(refs) && refs.length === 0) continue;
 
-      const resolver = this.getResolver(handler.contextKey);
-      const definitions = handler.resolve(refs, resolver);
+      const manager = this.getManager(handler.contextKey);
+      const definitions = handler.resolve(refs, manager);
       if (definitions.length > 0) {
         await handler.materialize(workspaceDir, definitions, backendType, activeBuilder);
         if (handler.contextKey === "mcpServers") {
@@ -140,7 +136,7 @@ export class WorkspaceBuilder {
       for (const [key, refs] of Object.entries(project.extensions)) {
         const handler = this.handlers.find((h) => h.contextKey === key);
         if (handler && Array.isArray(refs) && refs.length > 0) {
-          const defs = handler.resolve(refs, this.getResolver(key));
+          const defs = handler.resolve(refs, this.getManager(key));
           if (defs.length > 0) {
             await handler.materialize(workspaceDir, defs, backendType, activeBuilder);
             if (handler.contextKey === "mcpServers") {

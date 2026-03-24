@@ -1,16 +1,10 @@
 // Schemas (previously extracted Zod schemas)
 export * from "./schemas/index";
 
-// Domain component managers
-export {
-  BaseComponentManager,
-  type NamedComponent,
-  type ComponentAuthoring,
-  type ComponentCollection,
-  type ComponentReader,
-  type ComponentResolver,
-  type MutableComponentCollection,
-} from "./domain/base-component-manager";
+// Local mutable collection primitives used by api / authoring flows.
+// These exports remain available for internal package wiring, but they are not
+// the public platform contract and must not define runtime truth.
+export { BaseComponentManager, type NamedComponent } from "./domain/base-component-manager";
 export { SkillManager } from "./domain/skill/skill-manager";
 export { PromptManager } from "./domain/prompt/prompt-manager";
 export { McpConfigManager } from "./domain/mcp/mcp-config-manager";
@@ -44,7 +38,6 @@ export {
 } from "./template/schema/config-validators";
 export { TemplateLoader, toAgentTemplate } from "./template/loader/template-loader";
 export { TemplateRegistry, type RegistryOptions } from "./template/registry/template-registry";
-export { TemplateFileWatcher, type TemplateFileWatcherOptions } from "./template/watcher/index";
 
 // Provider
 export { ModelProviderRegistry, modelProviderRegistry } from "./provider/model-provider-registry";

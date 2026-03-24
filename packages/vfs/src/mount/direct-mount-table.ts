@@ -14,48 +14,28 @@ interface MountRecord {
   mount: VfsMountRegistration;
 }
 
-function inferFilesystemType(source: VfsMountRegistration): VfsFilesystemType {
-  const configured = source.metadata.filesystemType;
+function inferFilesystemType(mount: VfsMountRegistration): VfsFilesystemType {
+  const configured = mount.metadata.filesystemType;
   if (typeof configured === "string" && configured.length > 0) {
-    if (configured === "memory") {
-      return "memfs";
-    }
-    if (configured === "filesystem") {
-      return "hostfs";
-    }
     return configured as VfsFilesystemType;
   }
-
-  if (source.label === "memory" || source.name.includes("memory")) {
-    return "memfs";
-  }
-
-  if (
-    source.name.includes("runtime")
-    || source.name.includes("agents")
-    || source.label.includes("runtime")
-    || source.label.includes("agent")
-  ) {
-    return "runtimefs";
-  }
-
   return "hostfs";
 }
 
-function inferMountType(source: VfsMountRegistration): VfsMountType {
-  const configured = source.metadata.mountType;
+function inferMountType(mount: VfsMountRegistration): VfsMountType {
+  const configured = mount.metadata.mountType;
   if (configured === "root" || configured === "direct") {
     return configured;
   }
-  return source.mountPoint === "/" ? "root" : "direct";
+  return mount.mountPoint === "/" ? "root" : "direct";
 }
 
 export class DirectMountTable {
-  private readonly sources = new Map<string, VfsMountRegistration>();
+  private readonly mountsByName = new Map<string, VfsMountRegistration>();
   private mounts: MountRecord[] = [];
 
   mount(registration: VfsMountRegistration): void {
-    if (this.sources.has(registration.name)) {
+    if (this.mountsByName.has(registration.name)) {
       throw new Error(`VFS mount "${registration.name}" is already mounted`);
     }
 
@@ -67,20 +47,20 @@ export class DirectMountTable {
       );
     }
 
-    this.sources.set(registration.name, registration);
+    this.mountsByName.set(registration.name, registration);
     this.rebuildMounts();
   }
 
   replace(registrations: VfsMountRegistration[]): void {
-    this.sources.clear();
+    this.mountsByName.clear();
     for (const registration of registrations) {
-      this.sources.set(registration.name, registration);
+      this.mountsByName.set(registration.name, registration);
     }
     this.rebuildMounts();
   }
 
   unmount(name: string): boolean {
-    const removed = this.sources.delete(name);
+    const removed = this.mountsByName.delete(name);
     if (removed) {
       this.rebuildMounts();
     }
@@ -88,21 +68,21 @@ export class DirectMountTable {
   }
 
   getMount(name: string): VfsMountRegistration | undefined {
-    return this.sources.get(name);
+    return this.mountsByName.get(name);
   }
 
   listMounts(): VfsMountInfo[] {
-    return Array.from(this.sources.values()).map((source) => ({
-      name: source.name,
-      mountPoint: source.mountPoint,
-      label: source.label,
-      mountType: inferMountType(source),
-      filesystemType: inferFilesystemType(source),
-      features: source.features,
-      lifecycle: source.lifecycle,
-      metadata: source.metadata,
-      capabilities: Object.keys(source.handlers) as VfsCapabilityId[],
-      fileCount: Object.keys(source.fileSchema).length,
+    return Array.from(this.mountsByName.values()).map((mount) => ({
+      name: mount.name,
+      mountPoint: mount.mountPoint,
+      label: mount.label,
+      mountType: inferMountType(mount),
+      filesystemType: inferFilesystemType(mount),
+      features: mount.features,
+      lifecycle: mount.lifecycle,
+      metadata: mount.metadata,
+      capabilities: Object.keys(mount.handlers) as VfsCapabilityId[],
+      fileCount: Object.keys(mount.fileSchema).length,
     }));
   }
 
@@ -158,11 +138,11 @@ export class DirectMountTable {
   }
 
   get size(): number {
-    return this.sources.size;
+    return this.mountsByName.size;
   }
 
   private rebuildMounts(): void {
-    this.mounts = Array.from(this.sources.values())
+    this.mounts = Array.from(this.mountsByName.values())
       .map((mount) => ({
         mountPoint: normalizeVfsPath(mount.mountPoint),
         mount,

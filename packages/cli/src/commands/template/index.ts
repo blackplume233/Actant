@@ -5,7 +5,6 @@ import { createTemplateListCommand } from "./list";
 import { createTemplateShowCommand } from "./show";
 import { createTemplateValidateCommand } from "./validate";
 import { createTemplateLoadCommand } from "./load";
-import { createTemplateInstallCommand } from "./install";
 
 export function createTemplateCommand(client: RpcClient, printer?: CliPrinter): Command {
   const cmd = new Command("template")
@@ -16,7 +15,6 @@ export function createTemplateCommand(client: RpcClient, printer?: CliPrinter): 
   cmd.addCommand(createTemplateShowCommand(client, printer));
   cmd.addCommand(createTemplateValidateCommand(client, printer));
   cmd.addCommand(createTemplateLoadCommand(client, printer));
-  cmd.addCommand(createTemplateInstallCommand(client, printer));
 
   return cmd;
 }

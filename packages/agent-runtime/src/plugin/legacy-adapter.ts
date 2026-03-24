@@ -2,12 +2,13 @@ import type { ProjectContextConfig, PluginDefinition } from "@actant/shared";
 import type { ActantPlugin } from "./types";
 
 /**
- * Adapts a legacy PluginDefinition (workspace-materialisation config) into
- * an ActantPlugin that only uses the project plug.
+ * Adapts a legacy PluginDefinition (workspace-materialization config) into
+ * an ActantPlugin that only contributes a workspace fragment.
  *
- * Legacy PluginDefinitions represent external tool configurations (npm packages,
- * Cursor extensions, etc.) managed by BackendBuilder.  They have no system-level
- * lifecycle, event hooks, or context providers — only a workspace config contribution.
+ * Legacy PluginDefinitions represent external tool configurations managed by
+ * BackendBuilder. They do not own daemon lifecycle, VFS, or event-bus wiring.
+ * This adapter keeps the legacy shape at the edge instead of letting it define
+ * the main plugin model.
  *
  * @example
  * ```ts

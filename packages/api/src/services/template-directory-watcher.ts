@@ -1,37 +1,41 @@
 import { watch, type FSWatcher } from "node:fs";
-import { join } from "node:path";
 import { access } from "node:fs/promises";
-import { createLogger } from "@actant/shared";
-import type { TemplateRegistry } from "../registry/template-registry";
-import { TemplateLoader } from "../loader/template-loader";
+import { join } from "node:path";
+import { createLogger, type AgentTemplate } from "@actant/shared";
+import { TemplateLoader } from "@actant/domain-context";
 
-const logger = createLogger("template-file-watcher");
-
+const logger = createLogger("template-directory-watcher");
 const DEFAULT_DEBOUNCE_MS = 300;
 
-export interface TemplateFileWatcherOptions {
+interface TemplateRegistryLike {
+  list(): AgentTemplate[];
+  has(name: string): boolean;
+  register(template: AgentTemplate): void;
+  unregister(name: string): void;
+}
+
+export interface TemplateDirectoryWatcherOptions {
   debounceMs?: number;
 }
 
 /**
- * Watches the templates directory for file changes and auto-reloads
- * the TemplateRegistry. Handles create, modify, and delete events.
+ * Local API-layer watcher for workspace template authoring.
  *
- * Tracks file→templateName mapping so deletions can correctly unregister
- * templates whose name differs from the filename.
+ * This stays close to `AppContext` because it only serves local config/template
+ * write paths. It is not part of the runtime truth surface and should not live
+ * on the `domain-context` package boundary.
  */
-export class TemplateFileWatcher {
+export class TemplateDirectoryWatcher {
   private watcher: FSWatcher | null = null;
   private readonly debounceMs: number;
   private readonly loader = new TemplateLoader();
   private debounceTimers = new Map<string, ReturnType<typeof setTimeout>>();
-  /** Maps relative filename → template name loaded from that file. */
   private fileToName = new Map<string, string>();
 
   constructor(
     private readonly templatesDir: string,
-    private readonly registry: TemplateRegistry,
-    options?: TemplateFileWatcherOptions,
+    private readonly registry: TemplateRegistryLike,
+    options?: TemplateDirectoryWatcherOptions,
   ) {
     this.debounceMs = options?.debounceMs ?? DEFAULT_DEBOUNCE_MS;
   }
@@ -46,13 +50,13 @@ export class TemplateFileWatcher {
       });
 
       this.watcher.on("error", (err) => {
-        logger.error({ error: err }, "File watcher error");
+        logger.error({ error: err }, "Template directory watcher error");
       });
 
       this.buildFileMap();
-      logger.info({ dir: this.templatesDir }, "Template file watcher started");
+      logger.info({ dir: this.templatesDir }, "Template directory watcher started");
     } catch (err) {
-      logger.error({ error: err, dir: this.templatesDir }, "Failed to start file watcher");
+      logger.error({ error: err, dir: this.templatesDir }, "Failed to start template directory watcher");
     }
   }
 
@@ -64,7 +68,7 @@ export class TemplateFileWatcher {
       clearTimeout(timer);
     }
     this.debounceTimers.clear();
-    logger.info("Template file watcher stopped");
+    logger.info("Template directory watcher stopped");
   }
 
   get isWatching(): boolean {
@@ -73,8 +77,7 @@ export class TemplateFileWatcher {
 
   private buildFileMap(): void {
     for (const template of this.registry.list()) {
-      const guessedFile = `${template.name}.json`;
-      this.fileToName.set(guessedFile, template.name);
+      this.fileToName.set(`${template.name}.json`, template.name);
     }
   }
 
@@ -115,18 +118,15 @@ export class TemplateFileWatcher {
 
     try {
       const template = await this.loader.loadFromFile(filePath);
-
       const previousName = this.fileToName.get(filename);
       if (previousName && previousName !== template.name && this.registry.has(previousName)) {
         this.registry.unregister(previousName);
       }
-
       if (this.registry.has(template.name)) {
         this.registry.unregister(template.name);
       }
       this.registry.register(template);
       this.fileToName.set(filename, template.name);
-
       logger.info({ templateName: template.name, filename }, previousName ? "Template reloaded" : "New template registered");
     } catch (err) {
       logger.warn({ filePath, error: err }, "Failed to reload template");

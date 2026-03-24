@@ -15,12 +15,16 @@ ContextFS V1 对外只承诺统一文件式接口：
 - `stat`
 - `watch`
 - `stream`
+- `namespace validate`
+- `vfs mount add/remove/list`
 
 说明：
 
 - 这是 V1 的唯一主操作面
+- namespace authoring 只承诺围绕 `actant.namespace.json` 的最小写路径
 - V1 不单独承诺 workflow API
 - V1 不把旧资源分类系统继续作为独立顶层系统
+- V1 不再暴露 `catalog.*` / `preset.*` 公共命令族或 RPC 命名空间
 
 ---
 
@@ -122,6 +126,33 @@ interface VfsMountListResult {
 - `mountList()` 返回的是 `actant.namespace.json` 中声明的用户挂载，因此它只列出 `direct mount`
 - 隐式 `root mount` 仍然存在，但它属于系统投影面，应通过 `describe("/")`、`describe("/_project.json")` 等路径语义观察
 
+### 3.4 `namespace validate`
+
+最低行为约束：
+
+- 默认针对当前 active project 的 `actant.namespace.json`
+- 输出必须区分：
+  - schema validity
+  - mount declaration issues
+  - derived-view preconditions
+  - warnings
+- exit code:
+  - valid = `0`
+  - invalid = `1`
+
+### 3.5 `vfs mount add/remove/list`
+
+最低行为约束：
+
+- `vfs mount add` / `remove` / `list` 是 namespace authoring surface，不是临时 registry 操作
+- `vfs mount add` 输入使用声明语义：
+  - `name?`
+  - `path`
+  - `type`
+  - `options?`
+- `vfs mount remove` 以 `path` 为稳定主键
+- `vfs mount list` 返回声明态 mount table，并显式标记 `mounted`
+
 ---
 
 ## 4. Execution Contract
@@ -177,6 +208,7 @@ V1 最少需要以下错误类别：
 
 - 旧 `actant.project.json` 不再是运行时入口；活跃实现只读取 `actant.namespace.json`
 - 旧 `type=sourceType` 等表述只允许出现在历史说明或迁移说明中
+- `catalog` / `preset` 已从活跃公共边界删除；相关 CLI、RPC、REST 入口不再作为默认接口存在
 - 活跃文档、新接口说明、新 CLI 帮助文本必须使用：
   - `mount point`
   - `mount type`

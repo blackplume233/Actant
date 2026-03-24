@@ -229,7 +229,7 @@ describe("createApiHandler", () => {
     expect(payload.info.version).toBe(getRestApiPackageVersion());
   });
 
-  it("advertises catalogs instead of sources in discovery", async () => {
+  it("does not expose removed catalog endpoints in discovery", async () => {
     const handler = createApiHandler({
       bridge: createMockBridge() as never,
     });
@@ -245,11 +245,11 @@ describe("createApiHandler", () => {
 
     const [body] = res.end.mock.calls[0] ?? [];
     const payload = JSON.parse(body as string) as { endpoints: Record<string, string> };
-    expect(payload.endpoints.catalogs).toBe("/v1/catalogs");
+    expect(payload.endpoints).not.toHaveProperty("catalogs");
     expect(payload.endpoints).not.toHaveProperty("sources");
   });
 
-  it("publishes catalog paths in OpenAPI summary", async () => {
+  it("does not publish removed catalog paths in OpenAPI summary", async () => {
     const handler = createApiHandler({
       bridge: createMockBridge() as never,
     });
@@ -265,7 +265,7 @@ describe("createApiHandler", () => {
 
     const [body] = res.end.mock.calls[0] ?? [];
     const payload = JSON.parse(body as string) as { paths: Record<string, unknown> };
-    expect(payload.paths).toHaveProperty("/catalogs");
+    expect(payload.paths).not.toHaveProperty("/catalogs");
     expect(payload.paths).not.toHaveProperty("/sources");
   });
 });

@@ -1,25 +1,28 @@
 /**
- * ActantPlugin — the full six-plug extension interface.
+ * ActantPlugin is the daemon/instance plugin contract managed by PluginHost.
  *
- * Lives in @actant/agent-runtime (not shared) because plugs 3 and 4 reference
- * HookEventBus and ContextProvider which are core-only types.
+ * It lives in `@actant/agent-runtime` because some contribution slots depend on
+ * runtime-only types such as `HookEventBus` and `ContextProvider`.
  *
- * Plug summary:
- *   1. project         — inject ProjectContextConfig into Agent workspace (BackendBuilder)
- *   2. runtime         — lifecycle: init → start → tick → stop → dispose
- *   3. hooks           — register HookEventBus listeners
- *   4. contextProviders — register ContextProvider instances
- *   5. subsystems      — register SubsystemDefinitions (wired in Step 5)
- *   6. catalogs        — register CatalogConfigs (wired in Step 5)
+ * Contribution summary:
+ *   - `project`: legacy workspace materialization fragment for builders
+ *   - `runtime`: plugin lifecycle hooks (`init/start/tick/stop/dispose`)
+ *   - `hooks`: daemon event-bus listeners
+ *   - `providers`: VFS provider contributions
+ *   - `contextProviders`: session context injectors
+ *   - `subsystems`: subsystem declarations
+ *
+ * This interface is not a system composition root. Plugins are loaded by the
+ * daemon and may contribute capabilities into already-defined runtime surfaces.
  */
 
 import type {
   ProjectContextConfig,
-  CatalogConfig,
   PluginContext,
   PluginScope,
   PluginRuntimeHooks,
   SubsystemDefinition,
+  VfsProviderContribution,
 } from "@actant/shared";
 import type { ContextProvider } from "../context-injector/session-context-types";
 import type { HookEventBus } from "../hooks/hook-event-bus";
@@ -40,57 +43,59 @@ export interface ActantPlugin {
    */
   readonly dependencies?: readonly string[];
 
-  // ── Plug 1: project ────────────────────────────────────────
+  // ── Workspace materialization contribution ────────────────
   /**
    * Returns a ProjectContextConfig fragment to be merged into the agent's
-   * workspace during BackendBuilder materialisation.
+   * workspace during BackendBuilder materialization.
    *
-   * Called once per agent workspace build (not at daemon start).
-   * Return undefined to inject nothing.
+   * This is a legacy adapter slot for workspace authoring. It does not turn the
+   * plugin into a composition root and it is not used for daemon state wiring.
+   *
+   * Called once per agent workspace build, not at daemon startup. Return
+   * undefined to contribute nothing.
    */
   project?: (ctx: PluginContext) => ProjectContextConfig | undefined;
 
-  // ── Plug 2: runtime ───────────────────────────────────────
+  // ── Runtime lifecycle contribution ────────────────────────
   /**
    * Lifecycle hooks managed by PluginHost.
    * Execution order: init → start → tick* → stop → dispose
    *
    * Exceptions in init() isolate the plugin to "error" state without
    * affecting other plugins.
-   */
+  */
   runtime?: PluginRuntimeHooks;
 
-  // ── Plug 3: hooks ─────────────────────────────────────────
+  // ── Event-bus hook contribution ───────────────────────────
   /**
    * Register HookEventBus event listeners.
    * Called during PluginHost.start() immediately after runtime.init().
    * Use bus.on() / bus.off() to subscribe to system events.
-   */
+  */
   hooks?: (bus: HookEventBus, ctx: PluginContext) => void;
 
-  // ── Plug 4: contextProviders ──────────────────────────────
+  /**
+   * Return VFS provider contributions owned by this plugin.
+   * Providers are a plugin sub-capability, not a separate top-level extension
+   * model.
+   */
+  providers?: (ctx: PluginContext) => VfsProviderContribution[];
+
+  // ── Session context contribution ──────────────────────────
   /**
    * Return ContextProvider instances for session context injection.
    * Called once during PluginHost.start().
    * Results are collected via PluginHost.getContextProviders().
-   */
+  */
   contextProviders?: (ctx: PluginContext) => ContextProvider[];
 
-  // ── Plug 5: subsystems ────────────────────────────────────
+  // ── Subsystem contribution ────────────────────────────────
   /**
    * Return SubsystemDefinition instances to register with SubsystemRegistry.
    * Called once during PluginHost.start().
    * Results are collected via PluginHost.getSubsystems() and wired
    * into SubsystemRegistry by AppContext in Step 5.
-   */
+  */
   subsystems?: (ctx: PluginContext) => SubsystemDefinition[];
 
-  // ── Plug 6: catalogs ──────────────────────────────────────
-  /**
-   * Return CatalogConfig entries to register with CatalogManager.
-   * Called once during PluginHost.start().
-   * Results are collected via PluginHost.getCatalogs() and wired
-   * into CatalogManager by AppContext in Step 5.
-   */
-  catalogs?: (ctx: PluginContext) => CatalogConfig[];
 }

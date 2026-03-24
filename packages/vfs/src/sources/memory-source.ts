@@ -171,6 +171,8 @@ export const memorySourceFactory: FilesystemTypeDefinition<MemorySourceConfig> =
       metadata: {
         description: "In-memory context store",
         virtual: true,
+        filesystemType: "memfs",
+        mountType: mountPoint === "/" ? "root" : "direct",
       },
       fileSchema: {},
       handlers,

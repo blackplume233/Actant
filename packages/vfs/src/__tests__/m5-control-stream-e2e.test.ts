@@ -40,8 +40,11 @@ describe("M5 control + stream execution model", () => {
   it("writes to control/request.json to trigger agent execution and consumes stable stdout", async () => {
     const calls: AgentControlRequest[] = [];
     const provider: AgentRuntimeSourceProvider = {
-      listAgents: () => [createAgentMeta("worker")],
-      getAgent: (name) => (name === "worker" ? createAgentMeta(name) : undefined),
+      kind: "data-source",
+      filesystemType: "runtimefs",
+      mountPoint: "/agents",
+      listRecords: () => [createAgentMeta("worker")],
+      getRecord: (name) => (name === "worker" ? createAgentMeta(name) : undefined),
       writeControl: async (_name, _controlPath, content): Promise<VfsWriteResult> => {
         calls.push(JSON.parse(content) as AgentControlRequest);
         return { bytesWritten: Buffer.byteLength(content), created: false };
@@ -73,7 +76,10 @@ describe("M5 control + stream execution model", () => {
 
   it("provides a stable synthetic MCP runtime events stream without a separate execution system", async () => {
     const provider: McpRuntimeSourceProvider = {
-      listRuntimes: () => [
+      kind: "data-source",
+      filesystemType: "runtimefs",
+      mountPoint: "/mcp/runtime",
+      listRecords: () => [
         {
           name: "local-runtime",
           status: "inactive",
@@ -82,7 +88,7 @@ describe("M5 control + stream execution model", () => {
           transport: "stdio",
         },
       ],
-      getRuntime: (name) => (
+      getRecord: (name) => (
         name === "local-runtime"
           ? {
             name,
@@ -106,8 +112,11 @@ describe("M5 control + stream execution model", () => {
 
   it("uses explicit error semantics for invalid control requests and missing streams", async () => {
     const provider: AgentRuntimeSourceProvider = {
-      listAgents: () => [createAgentMeta("worker")],
-      getAgent: (name) => (name === "worker" ? createAgentMeta(name) : undefined),
+      kind: "data-source",
+      filesystemType: "runtimefs",
+      mountPoint: "/agents",
+      listRecords: () => [createAgentMeta("worker")],
+      getRecord: (name) => (name === "worker" ? createAgentMeta(name) : undefined),
       writeControl: async () => ({ bytesWritten: 0, created: false }),
     };
 

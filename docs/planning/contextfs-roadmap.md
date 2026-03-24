@@ -161,9 +161,9 @@ Definition of done:
 
 ## Next Actions
 
-- [ ] 在 `#322` 审计基线之上推进 Workstream A：去中心注册结构
-- [ ] 在 `#322` 审计基线之上推进 Workstream B：收口 `daemon / plugin / provider / VFS` 契约
-- [ ] 在 `#322` 审计基线之上推进 Workstream C：同步活文档与门禁
+- [ ] 在 `#322` 审计基线之上优先推进 Workstream A：去中心注册结构
+- [x] 在 `#322` 审计基线之上完成 Workstream B：收口 `daemon / plugin / provider / VFS` 契约
+- [x] 在 `#322` 审计基线之上完成 Workstream C：同步活文档与门禁
 - [ ] 在 `#322` 收口后推进 `#323`：删除 `packages/core` 与 `packages/domain` 等历史残留
 - [ ] 按 release 流程整理 changelog 汇总与下一阶段里程碑入口
 
@@ -180,8 +180,8 @@ Execution order:
 - [x] 再串行完成违规路径盘点与包边界决策
 - [ ] 在基线冻结后并行推进三条工作流：
   - [ ] Workstream A: 去中心注册结构
-  - [ ] Workstream B: 收口 `daemon / plugin / provider / VFS` 契约
-  - [ ] Workstream C: 同步活文档与门禁
+  - [x] Workstream B: 收口 `daemon / plugin / provider / VFS` 契约
+  - [x] Workstream C: 同步活文档与门禁
 - [ ] 最后与 `#323` 联动完成历史残留清理与最终验收
 
 Progress notes:
@@ -192,137 +192,124 @@ Progress notes:
 - [x] Phase 1 audit and package-boundary baseline 已完成
 - [x] Detailed audit note: `docs/agent/2026-03-23-cursor-322-phase1-audit.md`
 - [x] Phase 2 standalone/project-context derived mounts 已切到 snapshot-backed VFS source
-- [x] Phase 3 daemon app-context derived mounts 已切到 snapshot-backed VFS source，并在 template / domain / catalog 变更后刷新挂载
+- [x] Phase 3 daemon app-context derived mounts 已切到 snapshot-backed VFS source，并在 template / domain 变更后刷新挂载
 - [x] Phase 3 verification passed: `pnpm lint`, `pnpm type-check`, `pnpm test`
-- [x] Phase 4 catalog snapshot / overlay cut 已完成：`CatalogManager` 改为持有 namespaced snapshot state，daemon 与 project-context 通过 aggregate view / resolved snapshots 读取 catalog 组件，不再依赖 catalog 注入 domain managers
+- [x] Phase 4 overlay cut 已完成并已继续收口：早期 catalog snapshot 实验已退场，当前主线不再保留 `CatalogManager`、catalog overlay 或 namespace `catalogs` 声明
 - [x] Phase 4 verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
 - [x] Phase 5 manager contract cut 已完成：builder / API handler / overlay 读取层已切到 `ComponentResolver` / `MutableComponentCollection` / `ComponentCollection`
 - [x] Phase 5 verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
-- [ ] Workstream A remaining scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；剩余 manager-first 实现与中心抽象仍需继续删除
+- [x] Full Todo 主题 1 已完成一次 ship：`codex/03-24-322-host-runtime-governance` @ `a5a2caf`
+- [x] Full Todo 主题 2 已完成一次 ship：`codex/03-24-322-module-structure-governance` @ `10cb9f7`
+- [x] Full Todo 主题 3 已完成一次 ship：`codex/03-24-322-daemon-plugin-model` @ `107f5e8`
+- [x] Full Todo 主题 4 已完成一次 ship：`codex/03-24-322-provider-contribution-governance` @ `e8adbff`
+- [x] Full Todo 主题 5 已完成一次 ship：`codex/03-24-322-vfs-core-governance` @ `e68fb7f`
+- [x] 当前已完成一轮 VFS core boundary freeze：core terminology、显式 filesystem metadata、lifecycle contract 与 `agent-runtime` 根导出收口已落地
+- [x] A4 keep / migrate / delete baseline 已形成：`docs/agent/2026-03-24-cursor-322-a4-domain-context-boundary.md`
+- [x] Full Todo 主题 6 已完成一次 ship：`codex/03-24-322-agent-runtime-positioning` @ `ce84a19`
+- [x] `agent-runtime` 活跃定位已冻结为 daemon-hosted runtime module / daemon plugin boundary，死掉的 `domain/template` 兼容入口已删除
+- [x] `TemplateRegistry` / `TemplateFileWatcher` 已明确降级为本地 authoring collection / watcher，并纳入 terminology gate
+- [x] `acp` / `pi` 的活跃定位已锁定为协议/transport 模块与 backend package，不能越级成为新的宿主层
+- [x] `packages/api` 已改为直接依赖 `@actant/domain-context` / `@actant/vfs`；本地 template watcher 已迁到 `packages/api`
+- [x] B3 provider SPI / runtimefs contract freeze 已完成：`runtimefs` provider contribution 现在强制为 `data-source`，且必须显式声明 `filesystemType=runtimefs` 与精确 `mountPoint`
+- [x] B3 verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/vfs type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/vfs/src/__tests__/b3-runtimefs-provider-contract.test.ts packages/vfs/src/__tests__/m5-control-stream-e2e.test.ts`
+- [x] dead `packages/domain-context/src/template/watcher/*` 已删除；活跃 template watcher 只保留 `packages/api/src/services/template-directory-watcher.ts`
+- [x] `BackendManager` 已脱离 `BaseComponentManager` 继承，`agent-runtime` 保留 API 兼容的本地 backend store / persistence / validation 逻辑
+- [x] backend-manager compatibility verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/agent-runtime type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/agent-runtime/src/domain/backend/backend-manager-install.test.ts packages/agent-runtime/src/manager/launcher/backend-resolver.test.ts packages/agent-runtime/src/manager/launcher/build-provider-env.test.ts packages/api/src/services/__tests__/hub-context.test.ts`
+- [x] `TemplateRegistry` 已脱离 `BaseComponentManager` 继承，并收口为本地 authoring collection；活跃接口不再为 `catalog-manager` 保留兼容
+- [x] template-registry compatibility verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/domain-context type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/domain-context/src/template/registry/template-registry.test.ts packages/api/src/handlers/__tests__/template-handlers.test.ts packages/agent-runtime/src/initializer/agent-initializer.test.ts`
+- [x] `catalog` 已从活跃模块边界删除：`packages/catalog` 物理目录、`catalog/preset` CLI/RPC/REST、plugin `catalogs` contribution、namespace `catalogs` 声明与 overlay 试验实现均已移除
+- [x] focused deletion verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/shared/src/__tests__/host-types.test.ts packages/agent-runtime/src/plugin/plugin-host.test.ts packages/rest-api/src/server.test.ts packages/mcp-server/src/context-backend.test.ts packages/api/src/services/__tests__/host-profile-compat.test.ts`
+- [ ] Workstream A remaining scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；剩余主要是 `BackendManager` singleton 生命周期边界、`domain-context` manager-first 路径与 `manager -> VFS` 投影残留
 
 Authority rule:
 
 - [ ] 本节是 `#322` 的全量执行清单真相源
 - [ ] 后续围绕 `#322` 的任务推进、拆分、状态变更都必须持续回写本节
 
-Phase 1 audit baseline:
-
-- [x] `catalog -> manager` 直接注入路径已盘点
-- [x] `manager -> VFS` 反向投影路径已盘点
-- [x] `register / unregister / inject` 真相源式调用点已盘点
-- [x] `keep / converge / delete` 包边界决策基线已形成
-
-Phase 2 implementation cut:
-
-- [x] standalone/project-context 的 `/skills` `/prompts` `/mcp` `/workflows` `/templates` 不再直接以 manager 作为挂载真相源
-- [x] snapshot-backed domain source 已加入 `@actant/vfs`
-- [x] focused verification passed: `pnpm --filter @actant/vfs type-check`, `pnpm --filter @actant/api type-check`, `pnpm --filter @actant/mcp-server type-check`, `pnpm exec vitest run packages/vfs/src/__tests__/domain-source.test.ts packages/mcp-server/src/context-backend.test.ts`
-
-Phase 3 daemon projection cut:
-
-- [x] daemon app-context 的 `/skills` `/prompts` `/mcp` `/workflows` `/templates` 已不再直接以 manager 作为挂载真相源
-- [x] template / domain / catalog 变更会触发 daemon derived mounts 刷新，保持 VFS 投影视图与最新快照一致
-- [x] full verification passed: `pnpm lint`, `pnpm type-check`, `pnpm test`
-
-Phase 4 catalog snapshot / overlay cut:
-
-- [x] `CatalogManager` 不再把 catalog 组件注入 `SkillManager` / `PromptManager` / `McpConfigManager` / `WorkflowManager` / `TemplateRegistry`
-- [x] daemon `AppContext` 已通过 overlay resolver + aggregate reads 支持 catalog-backed `skill/prompt/mcp/workflow/template` 读取与 `agent create`
-- [x] standalone `project-context` 已改为 local manager + catalog resolved snapshot 双层聚合，catalog 组件不再写入 local managers
-- [x] focused regression added: `catalog-overlay-integration` / `project-context-catalog-projection`
-- [x] full verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
-
-Phase 5 manager contract cut:
-
-- [x] `BaseComponentManager` 不再作为 `agent-runtime` builder / `api` handler 的跨包合同类型
-- [x] overlay 读取层已由 `OverlayComponentManager` 收口为只读 `OverlayComponentView`
-- [x] `BaseComponentManager` 已降级为 `domain-context` 内部 mutable collection 基类
-- [x] full verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
-
 #### 1. 宿主与运行时口径治理
 
-- [ ] 固化 `daemon` 是唯一运行时宿主
-- [ ] 固化 `daemon` 是唯一组合根
-- [ ] 固化 `bridge` 只负责通过 RPC 与 `daemon` 交互
-- [ ] 固化 `actant` 只是打包层 / 分发层 / 产品壳
-- [ ] 删除 `actant app` 作为组合根的旧叙述
-- [ ] 删除 bridge 层“自带装配能力”的旧叙述
-- [ ] 清理活文档中所有与上述口径冲突的表述
+- [x] 固化 `daemon` 是唯一运行时宿主
+- [x] 固化 `daemon` 是唯一组合根
+- [x] 固化 `bridge` 只负责通过 RPC 与 `daemon` 交互
+- [x] 固化 `actant` 只是打包层 / 分发层 / 产品壳
+- [x] 删除 `actant app` 作为组合根的旧叙述
+- [x] 删除 bridge 层“自带装配能力”的旧叙述
+- [x] 清理活文档中所有与上述口径冲突的表述
 
 #### 2. 模块结构治理
 
-- [ ] 固化简化模块结构图
-- [ ] 固化 VFS 内部结构图
-- [ ] 明确 `daemon -> daemon plugin -> provider contribution -> VFS` 的装载方向
-- [ ] 明确 `bridge -> RPC -> daemon` 的调用方向
-- [ ] 明确哪些模块属于 daemon 内部模块
-- [ ] 明确哪些模块属于 bridge 层
-- [ ] 明确哪些模块属于打包层
+- [x] 固化简化模块结构图
+- [x] 固化 VFS 内部结构图
+- [x] 明确 `daemon -> daemon plugin -> provider contribution -> VFS` 的装载方向
+- [x] 明确 `bridge -> RPC -> daemon` 的调用方向
+- [x] 明确哪些模块属于 daemon 内部模块
+- [x] 明确哪些模块属于 bridge 层
+- [x] 明确哪些模块属于打包层
 
 #### 3. 插件模型治理
 
-- [ ] 定义 `daemon plugin` 是系统唯一有效扩展单元
-- [ ] 定义 `daemon plugin` 的最小契约
-- [ ] 定义 plugin 生命周期：`activate / deactivate / dispose`
-- [ ] 定义 plugin 可贡献能力集合：`provider / rpc / hooks / services`
-- [ ] 定义 plugin 元信息模型
-- [ ] 定义 plugin 装载位置只能在 `daemon`
-- [ ] 禁止 bridge 层直接装载 plugin
-- [ ] 禁止 `provider` 继续被当作系统顶层插件模型
+- [x] 定义 `daemon plugin` 是系统唯一有效扩展单元
+- [x] 定义 `daemon plugin` 的最小契约
+- [x] 定义 plugin 生命周期：`activate / deactivate / dispose`
+- [x] 定义 plugin 可贡献能力集合：`provider / rpc / hooks / services`
+- [x] 定义 plugin 元信息模型
+- [x] 定义 plugin 装载位置只能在 `daemon`
+- [x] 禁止 bridge 层直接装载 plugin
+- [x] 禁止 `provider` 继续被当作系统顶层插件模型
 
 #### 4. Provider contribution 治理
 
-- [ ] 定义 `provider contribution` 的最小 SPI
-- [ ] 明确 `provider` 只是 `daemon plugin` 的子能力
-- [ ] 明确 `provider` 只负责向 VFS 注入 mount/backend/数据来源
-- [ ] 禁止 `provider` 直接注册领域内容
-- [ ] 禁止 `provider` 成为中心注册结构
-- [ ] 禁止 `provider` 替代 `daemon plugin`
-- [ ] 明确现有来源能力如何迁移为 provider contribution
+- [x] 定义 `provider contribution` 的最小 SPI
+- [x] 明确 `provider` 只是 `daemon plugin` 的子能力
+- [x] 明确 `provider` 只负责向 VFS 注入 mount/backend/数据来源
+- [x] 禁止 `provider` 直接注册领域内容
+- [x] 禁止 `provider` 成为中心注册结构
+- [x] 禁止 `provider` 替代 `daemon plugin`
+- [x] 明确现有来源能力如何迁移为 provider contribution
 
 #### 5. VFS 核心治理
 
-- [ ] 固化 `@actant/vfs` 是唯一核心
-- [ ] 固化 `@actant/vfs` 是唯一真相源
-- [ ] 固化 `@actant/vfs` 内部结构：`facade / kernel / mount / path / node / permission / lifecycle / storage / index / schema / SPI`
-- [ ] 明确 `kernel` 只负责统一调度
-- [ ] 明确 `mount / path / node` 是 VFS 核心骨架
-- [ ] 明确 `permission / lifecycle / storage / index` 是支撑层
-- [ ] 明确 `provider SPI` 是插件接入面，不是业务注册面
-- [ ] 禁止 `domain/catalog/manager` 逻辑进入 VFS core
-- [ ] 定义 `mount / watch / stream / dispose` 生命周期契约
-- [ ] 定义 runtimefs 建模边界
+- [x] 固化 `@actant/vfs` 是唯一核心
+- [x] 固化 `@actant/vfs` 是唯一真相源
+- [x] 固化 `@actant/vfs` 内部结构：`facade / kernel / mount / path / node / permission / lifecycle / storage / index / schema / SPI`
+- [x] 明确 `kernel` 只负责统一调度
+- [x] 明确 `mount / path / node` 是 VFS 核心骨架
+- [x] 明确 `permission / lifecycle / storage / index` 是支撑层
+- [x] 明确 `provider SPI` 是插件接入面，不是业务注册面
+- [x] 禁止 `domain/catalog/manager` 逻辑进入 VFS core
+- [x] 定义 `mount / watch / stream / dispose` 生命周期契约
+- [x] 定义 runtimefs 建模边界
 
 #### 6. `agent-runtime` 定位治理
 
-- [ ] 固化 `agent-runtime` 是 daemon plugin
-- [ ] 明确 `agent-runtime` 不是中心层
-- [ ] 明确 `agent-runtime` 不是组合根
-- [ ] 明确 `domain-context` / `acp` / `pi` 是 `agent-runtime` 依赖
-- [ ] 评估是否拆出 `agent-runtime plugin adapter`
-- [ ] 明确 `agent-runtime` 可向 VFS 注入哪些 provider contribution
-- [ ] 明确 `agent-runtime` 只通过 VFS 读写系统状态
+- [x] 固化 `agent-runtime` 是 daemon plugin
+- [x] 明确 `agent-runtime` 不是中心层
+- [x] 明确 `agent-runtime` 不是组合根
+- [x] 明确 `domain-context` / `acp` / `pi` 是 `agent-runtime` 依赖
+- [x] 评估是否拆出 `agent-runtime plugin adapter`
+- [x] 明确 `agent-runtime` 可向 VFS 注入哪些 provider contribution
+- [x] 明确 `agent-runtime` 只通过 VFS 读写系统状态
 
 #### 7. `domain-context` 治理
 
 - [ ] 列出 `domain-context` keep / migrate / delete 全清单
 - [ ] 保留 parser / schema / validator / renderer / resolver
 - [ ] 删除 manager-first / registry-first 结构
-- [ ] 删除或迁出 watcher 中非 VFS 驱动部分
+- [x] 删除或迁出 watcher 中非 VFS 驱动部分
 - [ ] 禁止 `domain-context` 反向生成 VFS
 - [ ] 禁止 `domain-context` 成为系统状态中心
 - [ ] 明确哪些能力继续作为 `agent-runtime` 依赖保留
 
 #### 8. `acp` / `pi` 治理
 
-- [ ] 明确 `acp` 是 `agent-runtime` 依赖还是 daemon plugin contribution
-- [ ] 明确 `pi` 是 `agent-runtime` 依赖还是独立 plugin
-- [ ] 清理 `acp` / `pi` 在文档中的层级漂移描述
-- [ ] 明确它们与 VFS 的依赖关系不能绕过 `agent-runtime` / `daemon`
+- [x] 明确 `acp` 是 `agent-runtime` 依赖还是 daemon plugin contribution
+- [x] 明确 `pi` 是 `agent-runtime` 依赖还是独立 plugin
+- [x] 清理 `acp` / `pi` 在文档中的层级漂移描述
+- [x] 明确它们与 VFS 的依赖关系不能绕过 `agent-runtime` / `daemon`
 
 #### 9. 去中心注册结构治理
 
-- [ ] 删除 `CatalogManager` 的中心注册职责
+- [x] 删除活跃 `catalog` 模块与其中心注册职责
 - [ ] 删除 `BaseComponentManager` 中心抽象
 - [ ] 删除 `domain-source` 这类 `manager -> VFS` 投影结构
 - [ ] 清点所有 `register/unregister` 真相源式调用点
@@ -336,7 +323,7 @@ Phase 5 manager contract cut:
 - [ ] 定义最终合并包清单
 - [ ] 定义最终删除包清单
 - [ ] 明确 `@actant/context -> @actant/api` 合并口径
-- [ ] 明确 `@actant/catalog` 是拆散为 plugin contribution 还是彻底删除
+- [x] 明确 `@actant/catalog` 彻底删除
 - [ ] 明确 bridge 包的最终保留清单
 - [ ] 明确 daemon-hosted modules 的最终保留清单
 - [ ] 明确打包层 `actant` 的最小职责边界
@@ -352,14 +339,14 @@ Phase 5 manager contract cut:
 
 #### 12. 文档与术语治理
 
-- [ ] 更新 `.trellis/spec/index.md`
-- [ ] 更新 `.trellis/spec/terminology.md`
-- [ ] 更新 `.trellis/spec/backend/index.md`
-- [ ] 更新 `docs/design/actant-vfs-reference-architecture.md`
-- [ ] 统一 `daemon / bridge / daemon plugin / provider contribution` 术语
-- [ ] 统一 `domain-context` 的最终定义
-- [ ] 统一 `manager/index/cache/view` 的边界定义
-- [ ] 增补“禁止中心注册结构”的明确设计约束
+- [x] 更新 `.trellis/spec/index.md`
+- [x] 更新 `.trellis/spec/terminology.md`
+- [x] 更新 `.trellis/spec/backend/index.md`
+- [x] 更新 `docs/design/actant-vfs-reference-architecture.md`
+- [x] 统一 `daemon / bridge / daemon plugin / provider contribution` 术语
+- [x] 统一 `domain-context` 的最终定义
+- [x] 统一 `manager/index/cache/view` 的边界定义
+- [x] 增补“禁止中心注册结构”的明确设计约束
 
 #### 13. Bridge 层治理
 

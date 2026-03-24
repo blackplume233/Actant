@@ -73,32 +73,12 @@ function inferNodeTypeFromResolved(
 }
 
 function inferFilesystemTypeFromMount(
-  source: import("@actant/shared").VfsMountRegistration,
+  mount: import("@actant/shared").VfsMountRegistration,
 ): string {
-  const configured = source.metadata.filesystemType;
+  const configured = mount.metadata.filesystemType;
   if (typeof configured === "string" && configured.length > 0) {
-    if (configured === "memory") {
-      return "memfs";
-    }
-    if (configured === "filesystem") {
-      return "hostfs";
-    }
     return configured;
   }
-
-  if (source.label === "memory" || source.name.includes("memory")) {
-    return "memfs";
-  }
-
-  if (
-    source.name.includes("runtime")
-    || source.name.includes("agents")
-    || source.label.includes("runtime")
-    || source.label.includes("agent")
-  ) {
-    return "runtimefs";
-  }
-
   return "hostfs";
 }
 

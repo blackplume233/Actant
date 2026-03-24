@@ -294,6 +294,8 @@ export const workspaceSourceFactory: FilesystemTypeDefinition<WorkspaceSourceCon
       metadata: {
         description: `Workspace: ${rootDir}`,
         readOnly,
+        filesystemType: "hostfs",
+        mountType: mountPoint === "/" ? "root" : "direct",
       },
       fileSchema: {},
       handlers,

@@ -12,29 +12,20 @@ import {
   McpConfigManager,
   WorkflowManager,
   TemplateRegistry,
+} from "@actant/domain-context";
+import {
   FilesystemTypeRegistry,
   workspaceSourceFactory,
   memorySourceFactory,
-  createSnapshotDomainSource,
+  createDomainSource,
   createMcpRuntimeSource,
   createAgentRuntimeSource,
-  LocalCatalog,
-  GitHubCatalog,
-  CommunityCatalog,
-  type FetchResult,
-  type DomainComponentSnapshot,
-} from "@actant/agent-runtime";
+} from "@actant/vfs";
 import type {
   ActantNamespaceConfig,
-  AgentTemplate,
   ActantNamespaceEntrypoints,
-  CatalogConfig,
-  CatalogDeclaration,
   ChildNamespaceRef,
-  McpServerDefinition,
   PermissionConfig,
-  PromptDefinition,
-  SkillDefinition,
   VfsEntry,
   VfsFeature,
   VfsFileContent,
@@ -44,7 +35,6 @@ import type {
   VfsMountRegistration,
   VfsPermissionRule,
   VfsStatResult,
-  WorkflowDefinition,
 } from "@actant/shared";
 import { ensureWithinWorkspace } from "@actant/shared";
 import {
@@ -63,7 +53,6 @@ export interface ProjectContextSummary {
   description?: string;
   configPath: string | null;
   configsDir: string;
-  catalogWarnings: string[];
   entrypoints: {
     readFirst: string[];
     knowledge: string[];
@@ -95,20 +84,6 @@ export interface LoadedProjectContext {
   effectivePermissions: PermissionConfig;
   children: LoadedProjectContext[];
   summary: ProjectContextSummary;
-  componentSnapshots: {
-    skills: DomainComponentSnapshot[];
-    prompts: DomainComponentSnapshot[];
-    mcpServers: DomainComponentSnapshot[];
-    workflows: DomainComponentSnapshot[];
-    templates: DomainComponentSnapshot[];
-  };
-  resolvedComponents: {
-    skills: SkillDefinition[];
-    prompts: PromptDefinition[];
-    mcpServers: McpServerDefinition[];
-    workflows: WorkflowDefinition[];
-    templates: AgentTemplate[];
-  };
   managers: {
     skillManager: SkillManager;
     promptManager: PromptManager;
@@ -198,44 +173,24 @@ export function createProjectContextRegistrations(
 
   registrations.push(
     {
-      ...createSnapshotDomainSource(
-        context.componentSnapshots.skills,
-        "skills",
-        normalizeMountPoint(layout.skills),
-        lifecycle,
-      ),
+      ...createDomainSource(context.managers.skillManager, "skills", normalizeMountPoint(layout.skills), lifecycle),
       name: `${prefix}-skills`,
     },
     {
-      ...createSnapshotDomainSource(
-        context.componentSnapshots.prompts,
-        "prompts",
-        normalizeMountPoint(layout.prompts),
-        lifecycle,
-      ),
+      ...createDomainSource(context.managers.promptManager, "prompts", normalizeMountPoint(layout.prompts), lifecycle),
       name: `${prefix}-prompts`,
     },
     {
-      ...createSnapshotDomainSource(
-        context.componentSnapshots.mcpServers,
-        "mcp",
-        normalizeMountPoint(layout.mcpLegacy),
-        lifecycle,
-      ),
+      ...createDomainSource(context.managers.mcpConfigManager, "mcp", normalizeMountPoint(layout.mcpLegacy), lifecycle),
       name: `${prefix}-mcp-legacy`,
     },
     {
-      ...createSnapshotDomainSource(
-        context.componentSnapshots.mcpServers,
-        "mcp",
-        normalizeMountPoint(layout.mcpConfigs),
-        lifecycle,
-      ),
+      ...createDomainSource(context.managers.mcpConfigManager, "mcp", normalizeMountPoint(layout.mcpConfigs), lifecycle),
       name: `${prefix}-mcp-configs`,
     },
     {
-      ...createSnapshotDomainSource(
-        context.componentSnapshots.workflows,
+      ...createDomainSource(
+        context.managers.workflowManager,
         "workflows",
         normalizeMountPoint(layout.workflows),
         lifecycle,
@@ -243,8 +198,8 @@ export function createProjectContextRegistrations(
       name: `${prefix}-workflows`,
     },
     {
-      ...createSnapshotDomainSource(
-        context.componentSnapshots.templates,
+      ...createDomainSource(
+        context.managers.templateRegistry,
         "templates",
         normalizeMountPoint(layout.templates),
         lifecycle,
@@ -336,7 +291,7 @@ function createDeclaredMountRegistrations(
         if (declaration.path === "/agents") {
           registrations.push(createRuntimeRegistration(
             {
-              ...createAgentRuntimeSource(createProjectAgentRuntimeProvider(), mountPoint, lifecycle),
+              ...createAgentRuntimeSource(createProjectAgentRuntimeProviderContribution(mountPoint), mountPoint, lifecycle),
               name: `${prefix}-${mountName}`,
             },
           ));
@@ -346,8 +301,8 @@ function createDeclaredMountRegistrations(
         if (declaration.path === "/mcp/runtime") {
           registrations.push(createRuntimeRegistration(
             {
-                ...createMcpRuntimeSource(
-                createProjectMcpRuntimeProvider(context.resolvedComponents.mcpServers),
+              ...createMcpRuntimeSource(
+                createProjectMcpRuntimeProviderContribution(context.managers.mcpConfigManager, mountPoint),
                 mountPoint,
                 lifecycle,
               ),
@@ -404,15 +359,7 @@ async function loadProjectContextInternal(
   const mcpConfigManager = new McpConfigManager();
   const workflowManager = new WorkflowManager();
   const templateRegistry = new TemplateRegistry({ allowOverwrite: true });
-  const catalogComponents = {
-    skills: [] as SkillDefinition[],
-    prompts: [] as PromptDefinition[],
-    mcpServers: [] as McpServerDefinition[],
-    workflows: [] as WorkflowDefinition[],
-    templates: [] as AgentTemplate[],
-  };
 
-  const catalogWarnings: string[] = [...validation.warnings.map((warning) => warning.message)];
   if (resolvedConfigsDir != null && configExists) {
     await loadLocalConfigComponents(resolvedConfigsDir, {
       skillManager,
@@ -423,21 +370,6 @@ async function loadProjectContextInternal(
     });
   }
 
-  for (const catalog of projectConfig.catalogs ?? []) {
-    try {
-      const result = await fetchCatalog(catalog, projectRoot);
-      const qualified = namespaceCatalogComponents(catalog.name, result);
-      catalogComponents.skills.push(...qualified.skills);
-      catalogComponents.prompts.push(...qualified.prompts);
-      catalogComponents.mcpServers.push(...qualified.mcpServers);
-      catalogComponents.workflows.push(...qualified.workflows);
-      catalogComponents.templates.push(...qualified.templates);
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      catalogWarnings.push(`Catalog "${catalog.name}" failed: ${detail}`);
-    }
-  }
-
   const entrypoints = resolveEntrypoints(projectRoot, projectConfig.entrypoints);
   const children = await loadChildren(
     projectRoot,
@@ -445,28 +377,13 @@ async function loadProjectContextInternal(
     effectivePermissions,
     options.visitedConfigs,
   );
-  catalogWarnings.push(...children.warnings);
 
-  const resolvedComponents = {
-    skills: mergeNamedComponents(skillManager.list(), catalogComponents.skills),
-    prompts: mergeNamedComponents(promptManager.list(), catalogComponents.prompts),
-    mcpServers: mergeNamedComponents(mcpConfigManager.list(), catalogComponents.mcpServers),
-    workflows: mergeNamedComponents(workflowManager.list(), catalogComponents.workflows),
-    templates: mergeNamedComponents(templateRegistry.list(), catalogComponents.templates),
-  };
   const available = {
-    skills: sortNames(resolvedComponents.skills.map((skill: { name: string }) => skill.name)),
-    prompts: sortNames(resolvedComponents.prompts.map((prompt: { name: string }) => prompt.name)),
-    mcpServers: sortNames(resolvedComponents.mcpServers.map((server: { name: string }) => server.name)),
-    workflows: sortNames(resolvedComponents.workflows.map((workflow: { name: string }) => workflow.name)),
-    templates: sortNames(resolvedComponents.templates.map((template: { name: string }) => template.name)),
-  };
-  const componentSnapshots = {
-    skills: cloneComponentSnapshots(resolvedComponents.skills),
-    prompts: cloneComponentSnapshots(resolvedComponents.prompts),
-    mcpServers: cloneComponentSnapshots(resolvedComponents.mcpServers),
-    workflows: cloneComponentSnapshots(resolvedComponents.workflows),
-    templates: cloneComponentSnapshots(resolvedComponents.templates),
+    skills: sortNames(skillManager.list().map((skill: { name: string }) => skill.name)),
+    prompts: sortNames(promptManager.list().map((prompt: { name: string }) => prompt.name)),
+    mcpServers: sortNames(mcpConfigManager.list().map((server: { name: string }) => server.name)),
+    workflows: sortNames(workflowManager.list().map((workflow: { name: string }) => workflow.name)),
+    templates: sortNames(templateRegistry.list().map((template: { name: string }) => template.name)),
   };
 
   return {
@@ -486,7 +403,6 @@ async function loadProjectContextInternal(
       description: projectConfig.description,
       configPath: configDocument.configPath,
       configsDir,
-      catalogWarnings,
       entrypoints,
       available,
       components: {
@@ -497,8 +413,6 @@ async function loadProjectContextInternal(
         templates: available.templates.length,
       },
     },
-    componentSnapshots,
-    resolvedComponents,
     managers: {
       skillManager,
       promptManager,
@@ -506,90 +420,6 @@ async function loadProjectContextInternal(
       workflowManager,
       templateRegistry,
     },
-  };
-}
-
-function cloneComponentSnapshots(
-  components: Array<{ name: string; description?: string; content?: string; tags?: string[] }>,
-): DomainComponentSnapshot[] {
-  return components.map((component) => ({
-    name: component.name,
-    description: component.description,
-    content: component.content,
-    tags: component.tags ? [...component.tags] : undefined,
-  }));
-}
-
-function mergeNamedComponents<T extends { name: string }>(primary: T[], overlay: T[]): T[] {
-  const merged = new Map<string, T>();
-  for (const component of overlay) {
-    merged.set(component.name, component);
-  }
-  for (const component of primary) {
-    merged.set(component.name, component);
-  }
-  return Array.from(merged.values());
-}
-
-async function fetchCatalog(entry: CatalogDeclaration, projectRoot: string): Promise<FetchResult> {
-  const config = toCatalogConfig(entry, projectRoot);
-  switch (config.type) {
-    case "local":
-      return new LocalCatalog(entry.name, config).fetch();
-    case "github":
-      return new GitHubCatalog(entry.name, config, join(projectRoot, ".actant-cache", "catalogs")).fetch();
-    case "community":
-      return new CommunityCatalog(entry.name, config, join(projectRoot, ".actant-cache", "catalogs")).fetch();
-  }
-}
-
-function toCatalogConfig(entry: CatalogDeclaration, projectRoot: string): CatalogConfig {
-  switch (entry.type) {
-    case "local": {
-      const pathValue = typeof entry.options.path === "string" ? entry.options.path : ".";
-      return { type: "local", path: resolve(projectRoot, pathValue) };
-    }
-    case "github":
-      return {
-        type: "github",
-        url: String(entry.options.url),
-        branch: typeof entry.options.branch === "string" ? entry.options.branch : undefined,
-      };
-    case "community":
-      return {
-        type: "community",
-        url: String(entry.options.url),
-        branch: typeof entry.options.branch === "string" ? entry.options.branch : undefined,
-        filter: typeof entry.options.filter === "string" ? entry.options.filter : undefined,
-      };
-  }
-}
-
-function namespaceCatalogComponents(catalogName: string, result: FetchResult): LoadedProjectContext["resolvedComponents"] {
-  const qualify = <T extends { name: string }>(component: T): T => ({ ...component, name: `${catalogName}@${component.name}` });
-  const qualifyRef = (name: string) => name.includes("@") ? name : `${catalogName}@${name}`;
-
-  return {
-    skills: result.skills.map((skill) => qualify(skill)),
-    prompts: result.prompts.map((prompt) => qualify(prompt)),
-    mcpServers: result.mcpServers.map((mcp) => qualify(mcp)),
-    workflows: result.workflows.map((workflow) => qualify(workflow)),
-    templates: result.templates.map((template) => ({
-      ...template,
-      name: `${catalogName}@${template.name}`,
-      project: {
-        ...template.project,
-        skills: template.project.skills?.map(qualifyRef),
-        prompts: template.project.prompts?.map(qualifyRef),
-        mcpServers: template.project.mcpServers?.map((server) => ({
-          ...server,
-          name: qualifyRef(server.name),
-        })),
-        workflow: template.project.workflow ? qualifyRef(template.project.workflow) : template.project.workflow,
-        subAgents: template.project.subAgents?.map(qualifyRef),
-        plugins: template.project.plugins?.map(qualifyRef),
-      },
-    })),
   };
 }
 
@@ -752,15 +582,19 @@ function listProjectContextEntries(mountPoint: string, hasNamespaceConfig: boole
   return entries;
 }
 
-function createProjectMcpRuntimeProvider(
-  mcpServers: McpServerDefinition[],
+function createProjectMcpRuntimeProviderContribution(
+  manager: LoadedProjectContext["managers"]["mcpConfigManager"],
+  mountPoint: string,
 ): Parameters<typeof createMcpRuntimeSource>[0] {
   type McpConfigLike = { name: string; command?: string; args?: string[] };
-  const index = new Map(mcpServers.map((server) => [server.name, server]));
 
   return {
-    listRuntimes: () =>
-      mcpServers.map((server: McpConfigLike) => ({
+    kind: "data-source",
+    filesystemType: "runtimefs",
+    mountPoint,
+    description: "Project-context MCP runtime provider contribution",
+    listRecords: () =>
+      manager.list().map((server: McpConfigLike) => ({
         name: server.name,
         status: "inactive",
         command: typeof server.command === "string" ? server.command : undefined,
@@ -768,8 +602,8 @@ function createProjectMcpRuntimeProvider(
         transport: "stdio",
         updatedAt: new Date().toISOString(),
       })),
-    getRuntime: (name: string) => {
-      const server = index.get(name) as McpConfigLike | undefined;
+    getRecord: (name: string) => {
+      const server = manager.get(name) as McpConfigLike | undefined;
       if (!server) {
         return undefined;
       }
@@ -785,10 +619,14 @@ function createProjectMcpRuntimeProvider(
   };
 }
 
-function createProjectAgentRuntimeProvider(): Parameters<typeof createAgentRuntimeSource>[0] {
+function createProjectAgentRuntimeProviderContribution(mountPoint: string): Parameters<typeof createAgentRuntimeSource>[0] {
   return {
-    listAgents: () => [],
-    getAgent: () => undefined,
+    kind: "data-source",
+    filesystemType: "runtimefs",
+    mountPoint,
+    description: "Project-context agent runtime provider contribution",
+    listRecords: () => [],
+    getRecord: () => undefined,
   };
 }
 

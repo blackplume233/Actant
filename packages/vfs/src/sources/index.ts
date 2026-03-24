@@ -16,11 +16,13 @@ export { createMcpConfigSource } from "./mcp-config-source";
 export {
   createMcpRuntimeSource,
   type McpRuntimeRecord,
+  type McpRuntimeProviderContribution,
   type McpRuntimeSourceProvider,
   type McpRuntimeWatchEvent,
 } from "./mcp-runtime-source";
 export {
   createAgentRuntimeSource,
+  type AgentRuntimeProviderContribution,
   type AgentRuntimeSourceProvider,
   type AgentRuntimeWatchEvent,
   type AgentControlRequest,

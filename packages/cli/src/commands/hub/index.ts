@@ -70,9 +70,6 @@ export function createHubCommand(
         if (status.projectRoot) printer.log(`Root:         ${status.projectRoot}`);
         if (status.configPath) printer.log(`Config:       ${status.configPath}`);
         printer.log(`Workspace:    ${status.mounts.workspace}`);
-        if (status.catalogWarnings?.length) {
-          printer.dim(`Warnings:     ${status.catalogWarnings.length}`);
-        }
       } catch (err) {
         presentError(err, printer);
         process.exitCode = 1;
@@ -247,7 +244,6 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
       projectName: context.summary.projectName,
       configPath: context.configPath,
       configsDir: context.configsDir,
-      catalogWarnings: context.summary.catalogWarnings,
       components: context.summary.components,
       mounts: HUB_MOUNT_LAYOUT,
     },

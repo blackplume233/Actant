@@ -7,6 +7,7 @@ import type {
   VfsLifecycle,
   VfsListOptions,
   VfsMountRegistration,
+  RuntimefsProviderContribution,
   VfsStatResult,
   VfsStreamChunk,
   VfsWatchEvent,
@@ -38,14 +39,14 @@ export interface McpRuntimeWatchEvent {
   timestamp?: number;
 }
 
-export interface McpRuntimeSourceProvider {
-  listRuntimes(): McpRuntimeRecord[];
-  getRuntime(name: string): McpRuntimeRecord | undefined;
-  readStream?(name: string, stream: "events"): Promise<VfsFileContent> | VfsFileContent;
-  stream?(name: string, stream: "events"): Promise<AsyncIterable<VfsStreamChunk>> | AsyncIterable<VfsStreamChunk>;
-  writeControl?(name: string, controlPath: "request.json", content: string): Promise<VfsWriteResult>;
-  subscribe?(listener: (event: McpRuntimeWatchEvent) => void): () => void;
-}
+export interface McpRuntimeProviderContribution extends RuntimefsProviderContribution<
+  McpRuntimeRecord,
+  "events",
+  McpRuntimeWatchEvent
+> {}
+
+/** @deprecated Use McpRuntimeProviderContribution. */
+export type McpRuntimeSourceProvider = McpRuntimeProviderContribution;
 
 const MCP_RUNTIME_FILE_SCHEMA: VfsFileSchemaMap = {
   "_catalog.json": {
@@ -130,10 +131,10 @@ function parseRuntimePath(filePath: string): ParsedRuntimePath {
 }
 
 function requireRuntime(
-  provider: McpRuntimeSourceProvider,
+  provider: McpRuntimeProviderContribution,
   runtimeName: string,
 ): McpRuntimeRecord {
-  const runtime = provider.getRuntime(runtimeName);
+  const runtime = provider.getRecord(runtimeName);
   if (!runtime) {
     throw new Error(`MCP runtime not found: ${runtimeName}`);
   }
@@ -202,10 +203,11 @@ async function* oneShotStream(content: VfsFileContent): AsyncGenerator<VfsStream
 }
 
 export function createMcpRuntimeSource(
-  provider: McpRuntimeSourceProvider,
+  provider: McpRuntimeProviderContribution,
   mountPoint: string,
   lifecycle: VfsLifecycle,
 ): VfsMountRegistration {
+  assertRuntimeProviderContribution(provider, mountPoint, "mcp-runtime");
   const handlers: VfsHandlerMap = {};
 
   handlers.read = async (filePath: string): Promise<VfsFileContent> => {
@@ -213,7 +215,7 @@ export function createMcpRuntimeSource(
 
     if (parsed.kind === "catalog") {
       return {
-        content: JSON.stringify(provider.listRuntimes(), null, 2),
+        content: JSON.stringify(provider.listRecords(), null, 2),
         mimeType: "application/json",
       };
     }
@@ -268,7 +270,7 @@ export function createMcpRuntimeSource(
     const parsed = parseRuntimePath(dirPath);
 
     if (parsed.kind === "root") {
-      const entries: VfsEntry[] = provider.listRuntimes().map((runtime) => ({
+      const entries: VfsEntry[] = provider.listRecords().map((runtime) => ({
         name: runtime.name,
         path: runtime.name,
         type: "directory" as const,
@@ -389,10 +391,30 @@ export function createMcpRuntimeSource(
     label: "mcp-runtime",
     features: new Set(MCP_RUNTIME_TRAITS),
     lifecycle,
-    metadata: { description: "Built-in MCP runtime source", virtual: true },
+    metadata: {
+      description: "Built-in MCP runtime source",
+      virtual: true,
+      filesystemType: "runtimefs",
+      mountType: mountPoint === "/" ? "root" : "direct",
+    },
     fileSchema: MCP_RUNTIME_FILE_SCHEMA,
     handlers,
   };
+}
+
+function assertRuntimeProviderContribution(
+  provider: McpRuntimeProviderContribution,
+  mountPoint: string,
+  label: string,
+): void {
+  if (provider.kind !== "data-source" || provider.filesystemType !== "runtimefs") {
+    throw new Error(`Invalid ${label} provider contribution: expected runtimefs data-source`);
+  }
+  if (provider.mountPoint !== mountPoint) {
+    throw new Error(
+      `Invalid ${label} provider contribution: mountPoint "${provider.mountPoint}" does not match "${mountPoint}"`,
+    );
+  }
 }
 function requireEventsStream(streamName: string): "events" {
   if (streamName !== "events") {

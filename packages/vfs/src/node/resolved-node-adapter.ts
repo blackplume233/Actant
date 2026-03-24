@@ -97,7 +97,7 @@ function relativeToBasePath(basePath: string, entryPath: string): string {
   return entryPath.startsWith(prefix) ? entryPath.slice(prefix.length) : entryPath;
 }
 
-export class SourceNodeAdapter {
+export class ResolvedNodeAdapter {
   constructor(private readonly resolved: VfsResolveResult) {}
 
   async readFile(_context: VfsRequestContext): Promise<VfsFileContent> {

@@ -21,7 +21,6 @@ export interface ActiveHubContext {
   projectName: string;
   configPath: string | null;
   configsDir: string;
-  catalogWarnings: string[];
   components: HubActivateResult["components"];
   mounts: HubActivateResult["mounts"];
   mountNames: string[];
@@ -79,7 +78,6 @@ export class HubContextService {
       projectName: this.active.projectName,
       configPath: this.active.configPath,
       configsDir: this.active.configsDir,
-        catalogWarnings: this.active.catalogWarnings,
       components: this.active.components,
       mounts: this.active.mounts,
     };
@@ -103,7 +101,6 @@ export class HubContextService {
       projectName: context.summary.projectName,
       configPath: context.configPath,
       configsDir: context.configsDir,
-      catalogWarnings: context.summary.catalogWarnings,
       components: context.summary.components,
       mounts: HUB_MOUNT_LAYOUT,
       mountNames: registrations.map((registration) => registration.name),
@@ -127,7 +124,6 @@ export class HubContextService {
       projectName: active.projectName,
       configPath: active.configPath,
       configsDir: active.configsDir,
-      catalogWarnings: active.catalogWarnings,
       components: active.components,
       mounts: active.mounts,
     };

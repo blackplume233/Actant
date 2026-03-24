@@ -11,7 +11,6 @@
 
 - `mount namespace` 声明
 - `mount table` 声明
-- `catalog` 声明
 - permission 声明
 - child namespace 关系
 
@@ -37,7 +36,6 @@ interface ActantNamespaceConfig {
   name?: string;
   description?: string;
   mounts: MountDeclaration[];
-  catalogs?: CatalogDeclaration[];
   entrypoints?: ActantNamespaceEntrypoints;
   permissions?: PermissionConfig;
   children?: ChildNamespaceRef[];
@@ -81,7 +79,6 @@ interface MountDeclaration {
 - `hostfs` 必须声明 `options.hostPath`
 - `runtimefs` 在 V1 只允许 `/agents` 与 `/mcp/runtime`
 - 允许最长前缀嵌套挂载，不允许 exact duplicate `path`
-- 若声明了 `catalogs`，则必须声明 `"/config"` 的 `hostfs` 挂载
 
 V1 当前必须支持的 `filesystem type`：
 
@@ -91,27 +88,7 @@ V1 当前必须支持的 `filesystem type`：
 
 ---
 
-## 4. Catalog Declaration
-
-`catalog` 用于声明外部组件仓库来源，不参与 namespace 挂载匹配。
-
-```ts
-interface CatalogDeclaration {
-  name: string;
-  type: "local" | "github" | "community";
-  options: Record<string, unknown>;
-}
-```
-
-约束：
-
-- `catalog` 只表示外部组件来源
-- `catalog` 不声明 `mount point`
-- derived views 如 `/skills`、`/templates`、`/workflows`、`/mcp/configs` 可由 `/config` 与 `catalogs` 共同物化
-
----
-
-## 5. Host Profile
+## 4. Host Profile
 
 守护进程与独立 backend 的 host profile 仍属于当前配置契约的一部分：
 
@@ -128,7 +105,7 @@ type HostProfile = "context" | "runtime" | "autonomous";
 
 ---
 
-## 6. PermissionConfig
+## 5. PermissionConfig
 
 权限由命名空间边界负责，而不是由内容类别负责。
 
@@ -163,7 +140,7 @@ interface PermissionRule {
 
 ---
 
-## 7. Built-In Filesystem Expectations
+## 6. Built-In Filesystem Expectations
 
 ### 7.1 `hostfs`
 
@@ -178,7 +155,7 @@ interface PermissionRule {
 
 最小结构：
 
-- `/_catalog.json`
+- `/_runtime.json`
 - `/<name>/status.json`
 - `/<name>/control/request.json`
 - `/<name>/streams/*`
@@ -190,7 +167,7 @@ interface PermissionRule {
 
 ---
 
-## 8. Namespace Projection
+## 7. Namespace Projection
 
 每个 namespace 在 VFS 中仍需投影为 `/_project.json` 与 `/project/context.json`。
 
@@ -199,15 +176,17 @@ interface PermissionRule {
 - 它是当前 namespace 的只读投影
 - 它不是底层事实源
 - 它用于让 consumer 理解当前作用域、挂载和权限边界
+- `/skills`、`/templates`、`/workflows`、`/mcp/configs` 等派生视图若存在，也只能来自 namespace 内文件与投影解释，而不是独立配置声明
 
 ---
 
-## 9. V1 Non-Goals
+## 8. V1 Non-Goals
 
 以下内容不进入当前配置规范：
 
 - `workflow` 顶层配置
 - query/view mount 配置
 - overlay/fallback mount 配置
+- 外部分发仓库或消费视图声明
 - 旧资源分类继续扩展
 - 旧 `Prompt` 一级对象配置

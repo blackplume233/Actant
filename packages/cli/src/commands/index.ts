@@ -6,8 +6,6 @@ export { createPromptCommand } from "./prompt/index";
 export { createMcpCommand } from "./mcp/index";
 export { createWorkflowCommand } from "./workflow/index";
 export { createPluginCommand } from "./plugin/index";
-export { createCatalogCommand } from "./catalog/index";
-export { createPresetCommand } from "./preset/index";
 export { createScheduleCommand } from "./schedule/index";
 export { createDaemonCommand } from "./daemon/index";
 export { createProxyCommand } from "./proxy";

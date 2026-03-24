@@ -198,7 +198,7 @@ export interface VfsGitDiffOptions {
 
 /**
  * Map of capability IDs to their handler function signatures.
- * A Source implements a subset of these handlers based on what it supports.
+ * A mount backend implements a subset of these handlers based on what it supports.
  */
 export interface VfsCapabilityHandlers {
   read(path: string): Promise<VfsFileContent>;
@@ -232,7 +232,7 @@ export interface VfsCapabilityHandlers {
 }
 
 /**
- * Partial handler map — each source only implements the capabilities it declares.
+ * Partial handler map — each mount backend only implements the capabilities it declares.
  */
 export type VfsHandlerMap = {
   [K in VfsCapabilityId]?: VfsCapabilityHandlers[K];
@@ -318,6 +318,47 @@ export interface VfsMountRegistration {
   metadata: VfsMountMetadata;
   fileSchema: VfsFileSchemaMap;
   handlers: VfsHandlerMap;
+}
+
+// ---------------------------------------------------------------------------
+// Provider contribution SPI — daemon plugin -> VFS injection boundary
+// ---------------------------------------------------------------------------
+
+export type VfsProviderContributionKind =
+  | "mount"
+  | "backend"
+  | "data-source";
+
+export interface VfsProviderContribution {
+  kind: VfsProviderContributionKind;
+  filesystemType: VfsFilesystemType;
+  mountPoint: string;
+  description?: string;
+}
+
+export interface RuntimefsProviderContribution<
+  TRecord,
+  TStreamName extends string,
+  TWatchEvent,
+> extends VfsProviderContribution {
+  kind: "data-source";
+  filesystemType: "runtimefs";
+  listRecords(): TRecord[];
+  getRecord(name: string): TRecord | undefined;
+  readStream?(
+    name: string,
+    stream: TStreamName,
+  ): Promise<VfsFileContent> | VfsFileContent;
+  stream?(
+    name: string,
+    stream: TStreamName,
+  ): Promise<AsyncIterable<VfsStreamChunk>> | AsyncIterable<VfsStreamChunk>;
+  writeControl?(
+    name: string,
+    controlPath: "request.json",
+    content: string,
+  ): Promise<VfsWriteResult>;
+  subscribe?(listener: (event: TWatchEvent) => void): () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -421,7 +462,7 @@ export interface VfsMountInfo {
 }
 
 // ---------------------------------------------------------------------------
-// Resolve result — internal, returned when resolving a VFS path to a source
+// Resolve result — internal, returned when resolving a VFS path to a mounted backend
 // ---------------------------------------------------------------------------
 
 export interface VfsResolveResult {

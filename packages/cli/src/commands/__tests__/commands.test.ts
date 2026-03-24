@@ -365,7 +365,6 @@ describe("createHubCommand", () => {
         projectName: "repo",
         configPath: null,
         configsDir: "/repo/configs",
-        catalogWarnings: [],
         components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
         mounts: {
           project: "/hub/project",
@@ -386,7 +385,6 @@ describe("createHubCommand", () => {
         projectName: "repo",
         configPath: null,
         configsDir: "/repo/configs",
-        catalogWarnings: [],
         components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
         mounts: {
           project: "/hub/project",
@@ -434,7 +432,6 @@ describe("createHubCommand", () => {
           projectName: "repo",
           configPath: null,
           configsDir: "/repo/configs",
-          catalogWarnings: [],
           components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
           mounts: {
             project: "/hub/project",
@@ -470,7 +467,6 @@ describe("createHubCommand", () => {
         projectName: "repo",
         configPath: null,
         configsDir: "/repo/configs",
-        catalogWarnings: [],
         components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
         mounts: {
           project: "/hub/project",
@@ -491,7 +487,6 @@ describe("createHubCommand", () => {
         projectName: "repo",
         configPath: null,
         configsDir: "/repo/configs",
-        catalogWarnings: [],
         components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
         mounts: {
           project: "/hub/project",
@@ -534,7 +529,6 @@ describe("createHubCommand", () => {
         projectName: "repo",
         configPath: null,
         configsDir: "/repo/configs",
-        catalogWarnings: [],
         components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
         mounts: {
           project: "/hub/project",
@@ -555,7 +549,6 @@ describe("createHubCommand", () => {
         projectName: "repo",
         configPath: null,
         configsDir: "/repo/configs",
-        catalogWarnings: [],
         components: { skills: 1, prompts: 0, mcpServers: 0, workflows: 0, templates: 0 },
         mounts: {
           project: "/hub/project",

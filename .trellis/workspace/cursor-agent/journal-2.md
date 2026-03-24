@@ -546,3 +546,167 @@ CODEX_LOOP_CHECK_PASS```
 ### 下一步
 
 - 参考本轮检查结果继续推进
+
+## 会话 15: Codex Loop 第1轮 - 322-phase0-freeze-baseline
+
+**日期**: 2026-03-23
+**任务**: Codex Loop 第1轮 - 322-phase0-freeze-baseline
+
+### 摘要
+
+第1轮已通过。检查结果：PASS；Shell Verify：未配置，已跳过。本轮已通过全部检查门禁。
+
+### 详细记录
+
+## 轮次概览
+
+- 任务名称：`322-phase0-freeze-baseline`
+- 任务目录：`.trellis/tasks/03-23-322-phase0-freeze-baseline`
+- 分支：`codex/03-23-322-phase0-freeze-baseline`
+- 工作树：`/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline`
+- 轮次：`1 / 3`
+- 本轮结论：已通过
+- 检查结果：PASS
+- Shell Verify：未配置，已跳过
+- 说明：本轮已通过全部检查门禁。
+
+## 本轮变更文件
+
+- `.trellis/spec/backend/index.md`
+- `docs/design/actant-vfs-reference-architecture.md`
+- `docs/design/contextfs-architecture.md`
+- `docs/planning/contextfs-roadmap.md`
+- `docs/planning/roadmap.md`
+- `docs/planning/workspace-normalization-todo.md`
+
+## 任务产物
+
+- `.trellis/tasks/03-23-322-phase0-freeze-baseline/check.jsonl`
+- `.trellis/tasks/03-23-322-phase0-freeze-baseline/debug.jsonl`
+- `.trellis/tasks/03-23-322-phase0-freeze-baseline/implement.jsonl`
+- `.trellis/tasks/03-23-322-phase0-freeze-baseline/prd.md`
+- `.trellis/tasks/03-23-322-phase0-freeze-baseline/task.json`
+
+## Implement 输出摘录
+
+```text
+**Round Result**
+- Froze the hosted boundary language in the active architecture/spec docs:
+  - [contextfs-architecture.md](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/design/contextfs-architecture.md)
+  - [actant-vfs-reference-architecture.md](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/design/actant-vfs-reference-architecture.md)
+  - [.trellis/spec/backend/index.md](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/.trellis/spec/backend/index.md)
+- Codified the two frozen chains:
+  - `bridge -> RPC -> daemon`
+  - `daemon -> plugin -> provider -> VFS`
+- Locked final roles for `domain-context` and `manager` so they are explicitly documented as support/orchestration layers, not competing top-level architecture centers.
+- Synced the active planning truth sources:
+  - [contextfs-roadmap.md](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/planning/contextfs-roadmap.md)
+  - [roadmap.md](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/planning/roadmap.md)
+  - [workspace-normalization-todo.md](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/planning/workspace-normalization-todo.md)
+- Reworked the TODO file from stale M7 normalization language into a post-freeze cleanup backlog and replaced its old absolute main-worktree links with relative links.
+
+**Commands**
+- Read required task/Trellis docs with `sed`.
+- Ran `bash ./.trellis/scripts/get-context.sh`.
+- Ran `bash ./.trellis/scripts/task.sh list`.
+- Searched active docs with `rg` for `daemon|plugin|provider|bridge|RPC|domain-context|manager|roadmap|TODO`.
+- Opened ACP reference index: `https://agentclientprotocol.com/llms.txt`.
+- Applied edits with `apply_patch`.
+- Validated with:
+  - `git diff -- <touched files>`
+  - `rg -n "bridge -> RPC -> daemon|daemon -> plugin -> provider -> VFS|domain-context|manager|hosted runtime|hosted implementation" ...`
+  - `git status --short`
+
+All shell commands were run from the requested worktree, with `source .worktree-env.sh 2>/dev/null || true` first.
+
+**Still Blocking Final Verification**
+- I only did targeted doc validation, not a broader sweep of `README.md`, `PROJECT_CONTEXT.md`, workspace docs, guides, and help text. The updated TODO now records that follow-up explicitly.
+- No automated doc guardrail exists yet for catching future misuse of `plugin` / `provider` / `manager` as top-level V1 objects. That remains open.```
+
+## Check 输出摘录
+
+```text
+## Check Result
+
+### Diff Summary
+The diff is doc-only and matches the stated task.
+
+- [`.trellis/spec/backend/index.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/.trellis/spec/backend/index.md) adds the frozen runtime/support-role contract, including `bridge -> RPC -> daemon`, `daemon -> plugin -> provider -> VFS`, and the final role boundaries for `domain-context` and `manager`.
+- [`docs/design/contextfs-architecture.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/design/contextfs-architecture.md) and [`docs/design/actant-vfs-reference-architecture.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/design/actant-vfs-reference-architecture.md) codify the hosted boundary and implementation-chain language in the design layer.
+- [`docs/planning/contextfs-roadmap.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/planning/contextfs-roadmap.md), [`docs/planning/roadmap.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/planning/roadmap.md), and [`docs/planning/workspace-normalization-todo.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/planning/workspace-normalization-todo.md) update the active planning truth sources so the freeze baseline is reflected in roadmap/TODO form without duplicating live milestone state outside the main roadmap.
+
+### Verification
+I ran the most relevant checks available for this doc-only change set.
+
+- Read the Trellis baseline and task context from `README.md`, `PROJECT_CONTEXT.md`, `.trellis/spec/index.md`, `.trellis/workflow.md`, and `.trellis/tasks/03-23-322-phase0-freeze-baseline/prd.md`.
+- Ran a targeted Node-based consistency check after sourcing `.worktree-env.sh`:
+  - verified the required boundary/role phrases exist in the six changed truth-source files
+  - verified the relative Markdown links in those changed files resolve
+  - result: `VERIFY_PASS`
+- Ran `git diff --check` on the changed files:
+  - result: clean, no whitespace/conflict-marker issues
+
+### Self-fixes
+No self-fixes were needed.
+
+### Remaining Problems
+No blocking problems found in this diff.
+
+- There is still intentional follow-up work recorded in [`docs/planning/workspace-normalization-todo.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/planning/workspace-normalization-todo.md) for broader CLI/guides/workspace guardrails, but that is explicitly tracked future work, not a defect in this round.
+- Verification was necessarily targeted to documentation consistency because `.trellis/worktree.yaml` has no configured shell gate and this change set does not touch runtime code.
+
+### Marker
+CODEX_LOOP_CHECK_PASS```
+
+## 最新反馈摘录
+
+```text
+Latest verifier result:
+
+## Check Result
+
+### Diff Summary
+The diff is doc-only and matches the stated task.
+
+- [`.trellis/spec/backend/index.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/.trellis/spec/backend/index.md) adds the frozen runtime/support-role contract, including `bridge -> RPC -> daemon`, `daemon -> plugin -> provider -> VFS`, and the final role boundaries for `domain-context` and `manager`.
+- [`docs/design/contextfs-architecture.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/design/contextfs-architecture.md) and [`docs/design/actant-vfs-reference-architecture.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/design/actant-vfs-reference-architecture.md) codify the hosted boundary and implementation-chain language in the design layer.
+- [`docs/planning/contextfs-roadmap.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/planning/contextfs-roadmap.md), [`docs/planning/roadmap.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/planning/roadmap.md), and [`docs/planning/workspace-normalization-todo.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/planning/workspace-normalization-todo.md) update the active planning truth sources so the freeze baseline is reflected in roadmap/TODO form without duplicating live milestone state outside the main roadmap.
+
+### Verification
+I ran the most relevant checks available for this doc-only change set.
+
+- Read the Trellis baseline and task context from `README.md`, `PROJECT_CONTEXT.md`, `.trellis/spec/index.md`, `.trellis/workflow.md`, and `.trellis/tasks/03-23-322-phase0-freeze-baseline/prd.md`.
+- Ran a targeted Node-based consistency check after sourcing `.worktree-env.sh`:
+  - verified the required boundary/role phrases exist in the six changed truth-source files
+  - verified the relative Markdown links in those changed files resolve
+  - result: `VERIFY_PASS`
+- Ran `git diff --check` on the changed files:
+  - result: clean, no whitespace/conflict-marker issues
+
+### Self-fixes
+No self-fixes were needed.
+
+### Remaining Problems
+No blocking problems found in this diff.
+
+- There is still intentional follow-up work recorded in [`docs/planning/workspace-normalization-todo.md`](/Users/muyuli/Workspace/trellis-worktrees/codex/03-23-322-phase0-freeze-baseline/docs/planning/workspace-normalization-todo.md) for broader CLI/guides/workspace guardrails, but that is explicitly tracked future work, not a defect in this round.
+- Verification was necessarily targeted to documentation consistency because `.trellis/worktree.yaml` has no configured shell gate and this change set does not touch runtime code.
+
+### Marker
+CODEX_LOOP_CHECK_PASS```
+
+### Git 提交
+
+（无提交，本次为过程记录）
+
+### 检查与测试
+
+- [OK] 自动记录，详见上方检查结果
+
+### 状态
+
+[OK] **已记录**
+
+### 下一步
+
+- 参考本轮检查结果继续推进

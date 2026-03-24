@@ -1,4 +1,6 @@
 import { resolve } from "node:path";
+import { validateTemplate } from "@actant/domain-context";
+import { createDefaultStepRegistry } from "@actant/agent-runtime";
 import type {
   TemplateListResult,
   TemplateGetParams,
@@ -88,7 +90,6 @@ async function handleTemplateValidate(
   const { filePath } = params as unknown as TemplateValidateParams;
   try {
     const template = await ctx.templateLoader.loadFromFile(filePath);
-    const { validateTemplate, createDefaultStepRegistry } = await import("@actant/agent-runtime");
     const deep = validateTemplate(template, createDefaultStepRegistry());
 
     ctx.eventBus?.emit("template:validated", { callerType: "user", callerId: "api" }, {
@@ -98,7 +99,7 @@ async function handleTemplateValidate(
     return {
       valid: true,
       template,
-      warnings: deep.warnings.map((w) => ({ path: w.path, message: w.message })),
+      warnings: deep.warnings.map((w: { path: string; message: string }) => ({ path: w.path, message: w.message })),
     };
   } catch (err) {
     const validationErrors = (err as { validationErrors?: Array<{ path: string; message: string }> }).validationErrors;

@@ -4,7 +4,6 @@
     { "path": "packages/shared" },
     { "path": "packages/context" },
     { "path": "packages/domain-context" },
-    { "path": "packages/catalog" },
     { "path": "packages/agent-runtime" },
     { "path": "packages/acp" },
     { "path": "packages/api" },

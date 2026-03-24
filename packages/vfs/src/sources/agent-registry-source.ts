@@ -120,7 +120,12 @@ export function createAgentRegistrySource(
     label: "agent-registry",
     features: new Set(AGENT_REGISTRY_TRAITS),
     lifecycle,
-    metadata: { description: "Agent instances registry (read-only, virtual)", virtual: true },
+    metadata: {
+      description: "Agent instances registry (read-only, virtual)",
+      virtual: true,
+      filesystemType: "runtimefs",
+      mountType: mountPoint === "/" ? "root" : "direct",
+    },
     fileSchema: {},
     handlers,
   };

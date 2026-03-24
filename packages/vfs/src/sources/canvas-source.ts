@@ -76,6 +76,8 @@ export const canvasSourceFactory: FilesystemTypeDefinition<CanvasSourceConfig> =
       metadata: {
         description: "Canvas data store",
         virtual: true,
+        filesystemType: "memfs",
+        mountType: mountPoint === "/" ? "root" : "direct",
       },
       fileSchema: {},
       handlers,

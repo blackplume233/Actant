@@ -19,7 +19,6 @@ import type {
   WorkflowDefinition,
 } from "@actant/shared";
 import type { HeartbeatPlugin } from "@actant/agent-runtime";
-import type { MutableComponentCollection, NamedComponent } from "@actant/agent-runtime";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry, RpcHandler } from "./handler-registry";
 
@@ -35,33 +34,41 @@ interface CrudHandlers {
   export: RpcHandler;
 }
 
+interface NamedComponent {
+  name: string;
+}
+
+interface MutableNamedCollection<T extends NamedComponent> {
+  add(component: T, persist?: boolean): Promise<void>;
+  update(name: string, patch: Partial<T>, persist?: boolean): Promise<T>;
+  remove(name: string, persist?: boolean): Promise<boolean>;
+  importFromFile(filePath: string): Promise<T>;
+  exportToFile(name: string, filePath: string): Promise<void>;
+}
+
 function createCrudHandlers<T extends NamedComponent>(
-  getManager: (ctx: AppContext) => MutableComponentCollection<T>,
+  getManager: (ctx: AppContext) => MutableNamedCollection<T>,
 ): CrudHandlers {
   return {
     add: async (params: Record<string, unknown>, ctx: AppContext) => {
       const { component } = params as unknown as ComponentAddParams;
       const mgr = getManager(ctx);
       await mgr.add(component as T, true);
-      ctx.refreshContextMounts();
       return { name: (component as { name: string }).name };
     },
     update: async (params: Record<string, unknown>, ctx: AppContext) => {
       const { name, patch } = params as unknown as ComponentUpdateParams;
       const result = await getManager(ctx).update(name, patch as Partial<T>, true);
-      ctx.refreshContextMounts();
       return { name: result.name };
     },
     remove: async (params: Record<string, unknown>, ctx: AppContext) => {
       const { name } = params as unknown as ComponentRemoveParams;
       const success = await getManager(ctx).remove(name, true);
-      ctx.refreshContextMounts();
       return { success };
     },
     import: async (params: Record<string, unknown>, ctx: AppContext) => {
       const { filePath } = params as unknown as ComponentImportParams;
       const result = await getManager(ctx).importFromFile(filePath);
-      ctx.refreshContextMounts();
       return { name: result.name };
     },
     export: async (params: Record<string, unknown>, ctx: AppContext) => {
@@ -122,7 +129,7 @@ async function handleSkillList(
   _params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<SkillDefinition[]> {
-  return ctx.listSkillDefinitions();
+  return ctx.skillManager.list();
 }
 
 async function handleSkillGet(
@@ -130,7 +137,7 @@ async function handleSkillGet(
   ctx: AppContext,
 ): Promise<SkillDefinition> {
   const { name } = params as unknown as SkillGetParams;
-  const skill = ctx.getSkillDefinition(name);
+  const skill = ctx.skillManager.get(name);
   if (!skill) {
     throw new ConfigNotFoundError(`Skill "${name}" not found`);
   }
@@ -141,7 +148,7 @@ async function handlePromptList(
   _params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<PromptDefinition[]> {
-  return ctx.listPromptDefinitions();
+  return ctx.promptManager.list();
 }
 
 async function handlePromptGet(
@@ -149,7 +156,7 @@ async function handlePromptGet(
   ctx: AppContext,
 ): Promise<PromptDefinition> {
   const { name } = params as unknown as PromptGetParams;
-  const prompt = ctx.getPromptDefinition(name);
+  const prompt = ctx.promptManager.get(name);
   if (!prompt) {
     throw new ConfigNotFoundError(`Prompt "${name}" not found`);
   }
@@ -160,7 +167,7 @@ async function handleMcpList(
   _params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<McpServerDefinition[]> {
-  return ctx.listMcpServerDefinitions();
+  return ctx.mcpConfigManager.list();
 }
 
 async function handleMcpGet(
@@ -168,7 +175,7 @@ async function handleMcpGet(
   ctx: AppContext,
 ): Promise<McpServerDefinition> {
   const { name } = params as unknown as McpGetParams;
-  const mcp = ctx.getMcpServerDefinition(name);
+  const mcp = ctx.mcpConfigManager.get(name);
   if (!mcp) {
     throw new ConfigNotFoundError(`MCP server "${name}" not found`);
   }
@@ -179,7 +186,7 @@ async function handleWorkflowList(
   _params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<WorkflowDefinition[]> {
-  return ctx.listWorkflowDefinitions();
+  return ctx.workflowManager.list();
 }
 
 async function handleWorkflowGet(
@@ -187,7 +194,7 @@ async function handleWorkflowGet(
   ctx: AppContext,
 ): Promise<WorkflowDefinition> {
   const { name } = params as unknown as WorkflowGetParams;
-  const workflow = ctx.getWorkflowDefinition(name);
+  const workflow = ctx.workflowManager.get(name);
   if (!workflow) {
     throw new ConfigNotFoundError(`Workflow "${name}" not found`);
   }
@@ -247,7 +254,7 @@ async function handleSkillSearch(
   ctx: AppContext,
 ): Promise<Array<{ name: string; description?: string; tags?: string[]; origin?: unknown }>> {
   const { query } = params as { query: string };
-  return ctx.searchSkillDefinitions(query ?? "").map((s) => ({
+  return ctx.skillManager.search(query ?? "").map((s) => ({
     name: s.name,
     description: s.description,
     tags: s.tags,
