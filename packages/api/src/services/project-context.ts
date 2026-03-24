@@ -12,17 +12,21 @@ import {
   McpConfigManager,
   WorkflowManager,
   TemplateRegistry,
+} from "@actant/domain-context";
+import {
   FilesystemTypeRegistry,
   workspaceSourceFactory,
   memorySourceFactory,
   createDomainSource,
   createMcpRuntimeSource,
   createAgentRuntimeSource,
+} from "@actant/vfs";
+import {
   LocalCatalog,
   GitHubCatalog,
   CommunityCatalog,
   type FetchResult,
-} from "@actant/agent-runtime";
+} from "@actant/catalog";
 import type {
   ActantNamespaceConfig,
   ActantNamespaceEntrypoints,

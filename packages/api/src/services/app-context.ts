@@ -3,26 +3,15 @@ import { homedir } from "node:os";
 import { mkdir } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import {
-  TemplateRegistry,
-  TemplateLoader,
-  TemplateFileWatcher,
   AgentInitializer,
   AgentManager,
   SessionRegistry,
-  SkillManager,
-  PromptManager,
-  McpConfigManager,
-  WorkflowManager,
-  PluginManager,
-  CatalogManager,
   createLauncher,
   EmployeeScheduler,
   InstanceRegistry,
   createDefaultStepRegistry,
   registerCommunicator,
   getBackendManager,
-  modelProviderRegistry,
-  registerBuiltinProviders,
   HookEventBus,
   HookCategoryRegistry,
   HookRegistry,
@@ -37,8 +26,30 @@ import {
   createPermissionMiddleware,
   VfsPermissionManager,
   DEFAULT_PERMISSION_RULES,
-  FilesystemTypeRegistry,
   VfsLifecycleManager,
+  RoutingChannelManager,
+  type ActantChannel,
+  type ActantChannelManager,
+  type ActionContext,
+  type ChannelCapabilities,
+  type ChannelConnectOptions,
+  type ChannelHostServices,
+  type LauncherMode,
+} from "@actant/agent-runtime";
+import {
+  TemplateRegistry,
+  TemplateLoader,
+  SkillManager,
+  PromptManager,
+  McpConfigManager,
+  WorkflowManager,
+  PluginManager,
+  modelProviderRegistry,
+  registerBuiltinProviders,
+} from "@actant/domain-context";
+import { CatalogManager } from "@actant/catalog";
+import {
+  FilesystemTypeRegistry,
   workspaceSourceFactory,
   memorySourceFactory,
   configSourceFactory,
@@ -50,15 +61,7 @@ import {
   createMcpConfigSource,
   createMcpRuntimeSource,
   createAgentRuntimeSource,
-  RoutingChannelManager,
-  type ActantChannel,
-  type ActantChannelManager,
-  type ActionContext,
-  type ChannelCapabilities,
-  type ChannelConnectOptions,
-  type ChannelHostServices,
-  type LauncherMode,
-} from "@actant/agent-runtime";
+} from "@actant/vfs";
 import { CanvasStore } from "./canvas-store";
 import type { HostCapability, HostProfile, HostRuntimeState, ModelApiProtocol } from "@actant/shared";
 import { AcpConnectionManager, AcpChannelManagerAdapter } from "@actant/acp";
@@ -66,6 +69,7 @@ import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@
 import { createLogger, getIpcPath, initLogDir, normalizeHostProfile, normalizeIpcPath } from "@actant/shared";
 import { HubContextService } from "./hub-context";
 import { RuntimeToolRegistry } from "./runtime-tool-registry";
+import { TemplateDirectoryWatcher } from "./template-directory-watcher";
 
 const logger = createLogger("app-context");
 
@@ -202,7 +206,7 @@ export class AppContext {
   readonly agentManager: AgentManager;
   readonly sessionRegistry: SessionRegistry;
   readonly catalogManager: CatalogManager;
-  readonly templateWatcher: TemplateFileWatcher;
+  readonly templateWatcher: TemplateDirectoryWatcher;
   readonly schedulers: Map<string, EmployeeScheduler>;
   readonly eventBus: HookEventBus;
   readonly hookCategoryRegistry: HookCategoryRegistry;
@@ -311,7 +315,7 @@ export class AppContext {
         budgetManager: this.budgetManager,
       },
     );
-    this.templateWatcher = new TemplateFileWatcher(this.templatesDir, this.templateRegistry);
+    this.templateWatcher = new TemplateDirectoryWatcher(this.templatesDir, this.templateRegistry);
     this.schedulers = new Map();
     this.pluginHost = new PluginHost();
     this.pluginHost.register(new HeartbeatPlugin());

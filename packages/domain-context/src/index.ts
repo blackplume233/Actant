@@ -38,7 +38,6 @@ export {
 } from "./template/schema/config-validators";
 export { TemplateLoader, toAgentTemplate } from "./template/loader/template-loader";
 export { TemplateRegistry, type RegistryOptions } from "./template/registry/template-registry";
-export { TemplateFileWatcher, type TemplateFileWatcherOptions } from "./template/watcher/index";
 
 // Provider
 export { ModelProviderRegistry, modelProviderRegistry } from "./provider/model-provider-registry";

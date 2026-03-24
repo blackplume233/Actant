@@ -39,7 +39,7 @@ interface NamedComponent {
 }
 
 interface MutableNamedCollection<T extends NamedComponent> {
-  add(component: T, persist?: boolean): Promise<T>;
+  add(component: T, persist?: boolean): Promise<void>;
   update(name: string, patch: Partial<T>, persist?: boolean): Promise<T>;
   remove(name: string, persist?: boolean): Promise<boolean>;
   importFromFile(filePath: string): Promise<T>;

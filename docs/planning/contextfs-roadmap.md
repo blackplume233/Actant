@@ -192,6 +192,7 @@ Progress notes:
 - [x] `agent-runtime` 活跃定位已冻结为 daemon-hosted runtime module / daemon plugin boundary，死掉的 `domain/template` 兼容入口已删除
 - [x] `TemplateRegistry` / `TemplateFileWatcher` 已明确降级为本地 authoring collection / watcher，并纳入 terminology gate
 - [x] `acp` / `pi` 的活跃定位已锁定为协议/transport 模块与 backend package，不能越级成为新的宿主层
+- [x] `packages/api` 已改为直接依赖 `@actant/domain-context` / `@actant/catalog` / `@actant/vfs`；本地 template watcher 已迁到 `packages/api`
 
 Authority rule:
 
@@ -267,7 +268,7 @@ Authority rule:
 - [ ] 列出 `domain-context` keep / migrate / delete 全清单
 - [ ] 保留 parser / schema / validator / renderer / resolver
 - [ ] 删除 manager-first / registry-first 结构
-- [ ] 删除或迁出 watcher 中非 VFS 驱动部分
+- [x] 删除或迁出 watcher 中非 VFS 驱动部分
 - [ ] 禁止 `domain-context` 反向生成 VFS
 - [ ] 禁止 `domain-context` 成为系统状态中心
 - [ ] 明确哪些能力继续作为 `agent-runtime` 依赖保留
