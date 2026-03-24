@@ -18,14 +18,14 @@ describe("McpConfigManager", () => {
   });
 
   it("should register and retrieve an MCP server config", () => {
-    mgr.register(makeMcp("fs"));
+    mgr.set(makeMcp("fs"));
     expect(mgr.has("fs")).toBe(true);
     expect(mgr.get("fs")?.command).toBe("npx");
   });
 
   it("should resolve multiple MCP servers by name", () => {
-    mgr.register(makeMcp("fs"));
-    mgr.register(makeMcp("db"));
+    mgr.set(makeMcp("fs"));
+    mgr.set(makeMcp("db"));
     const resolved = mgr.resolve(["fs", "db"]);
     expect(resolved).toHaveLength(2);
   });

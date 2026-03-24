@@ -150,8 +150,8 @@ describe("Domain Context Full Pipeline", () => {
 
     const tplFile = join(tmpDir, "claude-tpl.json");
     await writeFile(tplFile, JSON.stringify(claudeTemplate));
-    ctx.templateLoader.loadFromFile(tplFile).then((t) => ctx.templateRegistry.register(t));
-    await ctx.templateLoader.loadFromFile(tplFile).then((t) => ctx.templateRegistry.register(t));
+    ctx.templateLoader.loadFromFile(tplFile).then((t) => ctx.templateRegistry.set(t));
+    await ctx.templateLoader.loadFromFile(tplFile).then((t) => ctx.templateRegistry.set(t));
 
     await ctx.agentManager.createAgent("claude-test", "claude-tpl");
 

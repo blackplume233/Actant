@@ -1,7 +1,7 @@
 ---
 id: 322
 title: file-first 下 domain-context 的最终定位：以 VFS 为中心收敛 manager 边界
-status: open
+status: closed
 labels:
   - architecture
   - "priority:P1"
@@ -20,16 +20,21 @@ relatedFiles:
   - packages/api/src/services/project-context.ts
 taskRef: null
 githubRef: "blackplume233/Actant#322"
-closedAs: null
+closedAs: completed
 createdAt: "2026-03-23T08:48:18"
-updatedAt: "2026-03-23T10:58:36"
-closedAt: null
+updatedAt: "2026-03-24T11:43:35"
+closedAt: "2026-03-24T11:43:35"
 ---
 
 **Related Issues**: [[0318-discussion-openviking-deerflow-actant]]
 **Related Files**: `packages/domain-context/src/domain/base-component-manager.ts`, `packages/catalog/src/catalog-manager.ts`, `packages/api/src/services/app-context.ts`, `packages/api/src/services/project-context.ts`
 
 ---
+
+> Issue cache note:
+> This file mirrors issue scope and discussion context for GitHub issue `#322`.
+> Execution truth remains in `docs/planning/contextfs-roadmap.md`.
+
 
 ## 背景
 
@@ -106,7 +111,7 @@ closedAt: null
 - 与仓库整体定位讨论相关，但这是更具体的结构收口 issue
 - 可作为后续 `@actant/context -> @actant/api`、`catalog` 收缩、`manager` 去中心化的前置决策
 
----
+
 **Related Files**: `packages/domain-context/src/domain/base-component-manager.ts`, `packages/catalog/src/catalog-manager.ts`, `packages/api/src/services/app-context.ts`, `packages/api/src/services/project-context.ts`
 **Related Issues**: #318
 
@@ -114,7 +119,7 @@ closedAt: null
 
 ## Comments
 
-### ### ### ### ### ### cursor-agent — 2026-03-23T09:51:08
+### ### ### ### ### ### ### cursor-agent — 2026-03-23T09:51:08
 
 按新的收口方向，建议把工程重画为 **三层 VFS 架构**，并彻底摒弃所有中心注册结构。
 
@@ -661,3 +666,7 @@ flowchart TB
 - [ ] 验证系统内不存在中心注册表真相源
 - [ ] 验证所有真实状态最终收敛到 VFS
 - [ ] 验证 `domain-context` 只负责解释文件
+
+### cursor-agent — 2026-03-24T11:43:35
+
+Closed as completed

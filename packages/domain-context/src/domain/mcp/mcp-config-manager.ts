@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import type { ConfigValidationResult, McpServerDefinition } from "@actant/shared";
-import { BaseComponentManager } from "../base-component-manager";
+import { FileBackedComponentCollection } from "../component-collection";
 
 const McpServerDefinitionSchema = z
   .object({
@@ -12,7 +12,7 @@ const McpServerDefinitionSchema = z
   })
   .passthrough();
 
-export class McpConfigManager extends BaseComponentManager<McpServerDefinition> {
+export class McpConfigManager extends FileBackedComponentCollection<McpServerDefinition> {
   protected readonly componentType = "McpServer";
 
   constructor() {

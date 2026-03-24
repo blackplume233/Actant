@@ -1,7 +1,7 @@
 ---
 id: 323
 title: 清理 packages/core 与 packages/domain 历史残留，完成去 core 化治理
-status: open
+status: closed
 labels:
   - chore
   - "priority:P1"
@@ -22,16 +22,21 @@ relatedFiles:
   - docs/design/channel-protocol/stream-chunk.md
 taskRef: null
 githubRef: "blackplume233/Actant#323"
-closedAs: null
+closedAs: completed
 createdAt: "2026-03-23T09:53:58"
-updatedAt: "2026-03-23T09:53:58"
-closedAt: null
+updatedAt: "2026-03-24T11:43:35"
+closedAt: "2026-03-24T11:43:35"
 ---
 
 **Related Issues**: [[0322-file-first-domain-context-vfs-manager]]
 **Related Files**: `packages/core`, `packages/domain`, `packages/actant/package.json`, `docs/design/channel-protocol/README.md`, `docs/design/channel-protocol/migration.md`, `docs/design/channel-protocol/stream-chunk.md`
 
 ---
+
+> Issue cache note:
+> This file tracks issue `#323` as local delivery memory.
+> Treat it as historical cleanup context, not as roadmap/spec truth.
+
 
 ## 背景
 
@@ -80,3 +85,11 @@ closedAt: null
 - 活文档中不再把 `packages/core` / `packages/domain` 当作当前有效架构层
 - `#322` 中定义的三层 VFS 架构成为唯一有效口径
 - 历史内容若保留，需明确标记为 legacy / archive
+
+---
+
+## Comments
+
+### cursor-agent — 2026-03-24T11:43:35
+
+Closed as completed

@@ -59,6 +59,41 @@ domain-context / acp / pi"]
     PLUGINS --> SUPPORT
 ```
 
+### 1.1 Frozen Package Structure
+
+当前活跃包结构按下面理解，不再引入第二套同级平台层：
+
+| 层级 | 包 | 说明 |
+| --- | --- | --- |
+| `product shell` | `@actant/actant` | 打包层 / 分发层 |
+| `bridge` | `@actant/cli`, `@actant/rest-api`, `@actant/dashboard`, `@actant/mcp-server` | 对外入口；默认经 RPC 进入 daemon |
+| `daemon-hosted modules` | `@actant/api`, `@actant/agent-runtime` | 运行时装配、plugin 生命周期、namespace/hub/runtime service |
+| `VFS core` | `@actant/vfs` | 唯一内核 |
+| `support modules` | `@actant/domain-context`, `@actant/acp`, `@actant/pi`, `@actant/shared` | 文件解释、协议/transport、backend package、共享契约 |
+| `adapter / UI` | `@actant/tui`, `@actant/channel-*` | UI/SDK 适配；不是 bridge host，不是 daemon |
+| `transitional keep` | `@actant/context` | 仅剩 project/namespace projection helper，继续并入 `@actant/api` |
+
+已删除包：
+
+- `@actant/catalog`
+- `@actant/core`
+- `@actant/domain`
+
+### 1.2 Bridge / Edge Audit
+
+bridge / edge 层的冻结结论如下：
+
+| 包 | 结论 | 边界 |
+| --- | --- | --- |
+| `@actant/rest-api` | pure bridge | 只做 HTTP/SSE -> RPC 转发 |
+| `@actant/dashboard` | UI shell | 只包裹 `rest-api` 与前端静态资源 |
+| `@actant/cli` | bridge shell with local exceptions | 允许 `init`、daemon 启动、hub standalone namespace fallback |
+| `@actant/mcp-server` | bridge shell with local exceptions | 允许 standalone namespace fallback，但不能装载 plugin |
+| `@actant/tui` | not bridge | 纯 UI toolkit |
+| `@actant/channel-*` | not bridge | channel adapter / SDK adapter |
+
+这里的“local exception”只表示受控的本地 namespace 读取或产品启动路径，不表示第二套系统组合根。
+
 ---
 
 ## 2. Fixed Layers

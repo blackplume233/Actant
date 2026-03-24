@@ -1,5 +1,8 @@
 # #322 Phase 1 Audit
 
+> Historical audit record.
+> This file preserves Phase 1 evidence and package-boundary analysis; active execution truth remains `docs/planning/contextfs-roadmap.md`.
+
 ## Scope
 
 本阶段只做两件事：

@@ -187,7 +187,57 @@ Provider 不负责：
 - 成为独立 plugin host
 - 绕过 `agent-runtime` / `daemon` 直接进入系统主线
 
-## 2.1 Frozen Runtime And Support Roles
+## 2.1 Frozen Package Retention Matrix
+
+后端基线下的最终保留 / 合并 / 删除清单固定如下：
+
+| 状态 | 包 | 结论 |
+| --- | --- | --- |
+| `keep` | `@actant/vfs` | 唯一 VFS 内核 |
+| `keep` | `@actant/api` | `daemon` 组合、namespace loader、hub/runtime service |
+| `keep` | `@actant/agent-runtime` | daemon-hosted runtime / plugin boundary |
+| `keep` | `@actant/domain-context` | parser / schema / validator / loader / local authoring collection |
+| `keep` | `@actant/acp` | 协议 / transport / gateway 能力 |
+| `keep` | `@actant/pi` | backend package |
+| `keep` | `@actant/shared` | 共享契约、错误、RPC shape、path helper |
+| `keep` | `@actant/cli`, `@actant/rest-api`, `@actant/dashboard`, `@actant/mcp-server` | bridge surfaces |
+| `keep` | `@actant/tui`, `@actant/channel-*` | UI / adapter packages，不是宿主层 |
+| `keep` | `@actant/actant` | 打包层 / 分发层 / 产品壳 |
+| `merge-target` | `@actant/context` | 仅保留 namespace projection / permission compilation helper；后续继续并入 `@actant/api` |
+| `delete` | `@actant/catalog`, `@actant/core`, `@actant/domain` | 已退出活跃边界 |
+
+`@actant/context -> @actant/api` 合并口径固定为：
+
+- `@actant/context` 不再承载独立 orchestration 叙事
+- 只允许保留 `project-manifest` 这一类 helper 出口
+- 新的 namespace / hub / runtime 入口统一落在 `@actant/api`
+- 任何新增 call site 不得再新增对 `@actant/context` 的直接依赖，除非是在收口合并本身
+
+## 2.2 Bridge Audit Conclusions
+
+本轮对 bridge / edge 包的审查结论固定如下：
+
+| 包 | 结论 | 说明 |
+| --- | --- | --- |
+| `@actant/rest-api` | `pure RPC bridge` | 只通过 `RpcBridge` 转发到 daemon，不直接装配 VFS / plugin / runtime |
+| `@actant/dashboard` | `UI shell over rest-api` | 只消费 `@actant/rest-api` 和静态前端资源；不是组合根 |
+| `@actant/cli` | `bridge shell with bounded local exceptions` | 默认是 RPC bridge；允许 `actant init`、daemon entry、hub standalone namespace fallback 这类受控本地路径 |
+| `@actant/mcp-server` | `bridge shell with bounded local exceptions` | 默认经 RPC 消费 daemon；允许 standalone namespace fallback 以提供只读/有限本地 VFS 视图 |
+| `@actant/tui` | `not a bridge` | 纯 UI 组件库，只消费流类型，不承担 RPC/daemon 边界 |
+| `@actant/channel-*` | `adapter, not bridge` | 协议/SDK 适配层，可消费 `agent-runtime` channel contract，但不是 daemon host |
+
+对 bridge 的进一步约束：
+
+- bridge 包不得直接装载 `daemon plugin`
+- bridge 包不得持有 `mount table`、`filesystem type registry`、`provider registry`
+- bridge 包允许存在受控的 local namespace fallback，但该 fallback 只能：
+  - 用于无 daemon 的本地读取 / 诊断 / 初始化路径
+  - 复用既有 namespace projection helper
+  - 不得演化成第二套 plugin host 或系统组合根
+- `rest-api` / `dashboard` 不应引入 standalone VFS kernel 组装逻辑
+- `cli` / `mcp-server` 的本地 fallback 必须继续显式标记为 `standalone namespace mode`
+
+## 2.3 Frozen Runtime And Support Roles
 
 当前 M8 freeze 基线额外固定以下角色：
 

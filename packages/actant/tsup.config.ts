@@ -5,7 +5,6 @@ import { join } from "node:path";
 export default defineConfig({
   entry: [
     "src/index.ts",
-    "src/core.ts",
     "src/shared.ts",
     "src/acp.ts",
     "src/mcp.ts",

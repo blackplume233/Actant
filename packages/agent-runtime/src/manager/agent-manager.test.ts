@@ -14,7 +14,7 @@ import { TemplateRegistry } from "@actant/domain-context";
 import { AgentInitializer } from "../initializer/agent-initializer";
 import { AgentManager } from "./agent-manager";
 import { MockLauncher } from "./launcher/mock-launcher";
-import { getBackendManager } from "./launcher/backend-registry";
+import { createBackendManager, getBackendManager } from "./launcher/backend-registry";
 import { writeInstanceMeta, readInstanceMeta } from "../state/instance-meta-io";
 import type { AgentInstanceMeta } from "@actant/shared";
 
@@ -85,7 +85,7 @@ describe("AgentManager", () => {
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "actant-manager-test-"));
     registry = new TemplateRegistry();
-    registry.register(makeTemplate());
+    registry.set(makeTemplate());
     initializer = new AgentInitializer(registry, tmpDir);
     launcher = new MockLauncher();
     manager = new AgentManager(initializer, launcher, tmpDir);
@@ -170,6 +170,44 @@ describe("AgentManager", () => {
 
       expect(manager.getStatus("agent-1")).toBe("running");
       expect(launcher.launched).toHaveLength(2);
+    });
+
+    it("uses an injected BackendManager across initializer and manager lifecycle", async () => {
+      const backendManager = createBackendManager();
+      backendManager.register({
+        name: "isolated-acp",
+        version: "1.0.0",
+        description: "isolated managed backend",
+        origin: { type: "builtin" },
+        supportedModes: ["resolve", "open", "acp"],
+        runtimeProfile: "managedPrimary",
+        maturity: "stable",
+        capabilities: {
+          supportsOpen: true,
+          supportsManagedSessions: true,
+          supportsServiceArchetype: true,
+          supportsEmployeeArchetype: true,
+          supportsPromptApi: true,
+        },
+        defaultInteractionModes: ["open", "start", "chat", "run"],
+        resolveCommand: { win32: "isolated-acp.cmd", default: "isolated-acp" },
+      });
+
+      registry.set(makeTemplate({
+        name: "isolated-tpl",
+        backend: { type: "isolated-acp" as never },
+      }));
+
+      const isolatedInitializer = new AgentInitializer(registry, tmpDir, { backendManager });
+      const isolatedManager = new AgentManager(isolatedInitializer, launcher, tmpDir, { backendManager });
+
+      await isolatedManager.createAgent("isolated-agent", "isolated-tpl");
+      await isolatedManager.startAgent("isolated-agent");
+
+      expect(isolatedManager.getStatus("isolated-agent")).toBe("running");
+      expect(getBackendManager().get("isolated-acp")).toBeUndefined();
+
+      isolatedManager.dispose();
     });
   });
 
@@ -403,7 +441,7 @@ describe("AgentManager", () => {
 
     it("should mark direct agent as stopped on crash (no restart)", async () => {
       registerTestAcpBackend();
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "direct-tpl",
         archetype: "repo",
         backend: { type: "test-acp" },
@@ -460,7 +498,7 @@ describe("AgentManager", () => {
     it("should update status when watched process exits unexpectedly", async () => {
       // Register a repo template with direct launch mode (no auto-restart)
       registerTestAcpBackend();
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "direct-tpl",
         archetype: "repo",
         backend: { type: "test-acp" },
@@ -504,7 +542,7 @@ describe("AgentManager", () => {
 
     it("should start watcher on initialize", async () => {
       registerTestAcpBackend();
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "direct-tpl",
         archetype: "repo",
         backend: { type: "test-acp" },

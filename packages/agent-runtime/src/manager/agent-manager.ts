@@ -15,6 +15,7 @@ import {
 import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
+import type { BackendManager } from "../domain/backend/backend-manager";
 import { resolveBackend, resolveAcpBackend, openBackend, isAcpOnlyBackend, requireInteractionMode, supportsManagedOperation, getChannelStrategy, type ResolvedBackend } from "./launcher/backend-resolver";
 import { requireMode, getInstallHint, getBackendManager, getBuildProviderEnv } from "./launcher/backend-registry";
 import type { RoutingChannelManager } from "../channel/routing-channel-manager";
@@ -79,6 +80,8 @@ export interface ManagerOptions {
   recordSystem?: RecordSystem;
   /** System budget manager for Service Agent keepAlive / auto-stop. */
   budgetManager?: SystemBudgetManager;
+  /** Explicit backend registry for this manager lifecycle. */
+  backendManager?: BackendManager;
 }
 
 export class AgentManager {
@@ -93,6 +96,7 @@ export class AgentManager {
   private readonly recordSystem?: RecordSystem;
   private readonly rulesProvider = new RulesContextProvider();
   private readonly budgetManager?: SystemBudgetManager;
+  private readonly backendManager: BackendManager;
   private readonly employeeRestartTracker: RestartTracker;
   private readonly agentLocks = new Map<string, Promise<void>>();
   private readonly channelCapabilities = new Map<string, ChannelCapabilities>();
@@ -177,6 +181,7 @@ export class AgentManager {
     this.eventBus = options?.eventBus;
     this.recordSystem = options?.recordSystem;
     this.budgetManager = options?.budgetManager;
+    this.backendManager = options?.backendManager ?? getBackendManager();
 
     if (this.budgetManager) {
       this.budgetManager.setKeepAliveExpiredCallback((agentName) => {
@@ -328,14 +333,14 @@ export class AgentManager {
     const meta = this.requireAgent(name);
     requireInteractionMode(meta, "start");
 
-    const strategy = getChannelStrategy(meta.backendType);
+    const strategy = getChannelStrategy(meta.backendType, this.backendManager);
 
     // ACP backends require the "acp" mode; SDK backends skip this check.
     if (strategy === "acp") {
-      requireMode(meta.backendType, "acp");
+      requireMode(meta.backendType, "acp", this.backendManager);
     }
 
-    if (!supportsManagedOperation(meta.backendType, "start")) {
+    if (!supportsManagedOperation(meta.backendType, "start", this.backendManager)) {
       throw new AgentLaunchError(
         name,
         new Error(
@@ -370,7 +375,7 @@ export class AgentManager {
         await this.connectSdkChannel(name, dir, starting, meta);
       } else {
         // ACP path: spawn backend process + establish ACP connection.
-        const acpOnly = isAcpOnlyBackend(meta.backendType);
+        const acpOnly = isAcpOnlyBackend(meta.backendType, this.backendManager);
 
         if (!acpOnly) {
           const proc = await this.launcher.launch(dir, starting);
@@ -430,7 +435,7 @@ export class AgentManager {
       const spawnMsg = err instanceof Error ? err.message : String(err);
       throw new AgentLaunchError(name, new Error(
         isSpawnNotFound(spawnMsg)
-          ? buildSpawnNotFoundMessage(meta.backendType)
+          ? buildSpawnNotFoundMessage(meta.backendType, this.backendManager)
           : spawnMsg,
       ));
     }
@@ -450,7 +455,7 @@ export class AgentManager {
     const channelManager = this.channelManager;
     if (!channelManager) return;
 
-    const backendEnvBuilder = getBuildProviderEnv(meta.backendType);
+    const backendEnvBuilder = getBuildProviderEnv(meta.backendType, this.backendManager);
     const providerEnv = backendEnvBuilder
       ? backendEnvBuilder(meta.providerConfig, meta.backendConfig)
       : buildDefaultProviderEnv(meta.providerConfig);
@@ -497,8 +502,8 @@ export class AgentManager {
     starting: AgentInstanceMeta,
     meta: AgentInstanceMeta,
   ): Promise<Record<string, unknown>> {
-    const acpResolved = resolveAcpBackend(meta.backendType, dir, meta.backendConfig);
-    const backendEnvBuilder = getBuildProviderEnv(meta.backendType);
+    const acpResolved = resolveAcpBackend(meta.backendType, dir, meta.backendConfig, this.backendManager);
+    const backendEnvBuilder = getBuildProviderEnv(meta.backendType, this.backendManager);
     const providerEnv = backendEnvBuilder
       ? backendEnvBuilder(meta.providerConfig, meta.backendConfig)
       : buildDefaultProviderEnv(meta.providerConfig);
@@ -553,8 +558,7 @@ export class AgentManager {
   ): Promise<void> {
     if (options?.autoInstall === undefined) return;
 
-    const mgr = getBackendManager();
-    const result = await mgr.ensureAvailable(backendType, options);
+    const result = await this.backendManager.ensureAvailable(backendType, options);
 
     if (!result.available) {
       const parts: string[] = [`Backend "${backendType}" is not installed.`];
@@ -589,7 +593,7 @@ export class AgentManager {
       logger.info({ backendType, method: result.installResult.method }, "Backend auto-installed");
     }
 
-    await mgr.ensureResolvePackageAvailable(backendType, options);
+    await this.backendManager.ensureResolvePackageAvailable(backendType, options);
   }
 
   /**
@@ -730,7 +734,7 @@ export class AgentManager {
     await this.ensureBackendAvailable(meta.backendType, name, options);
 
     const dir = join(this.instancesBaseDir, name);
-    const resolved = resolveBackend(meta.backendType, dir, meta.backendConfig);
+    const resolved = resolveBackend(meta.backendType, dir, meta.backendConfig, this.backendManager);
 
     return {
       workspaceDir: dir,
@@ -774,7 +778,7 @@ export class AgentManager {
     await this.ensureBackendAvailable(meta.backendType, name, options);
 
     const dir = join(this.instancesBaseDir, name);
-    return openBackend(meta.backendType, dir);
+    return openBackend(meta.backendType, dir, this.backendManager);
   }
 
   /**
@@ -1281,8 +1285,14 @@ function isSpawnNotFound(msg: string): boolean {
   return /ENOENT|EINVAL|is not recognized|not found/i.test(msg);
 }
 
-function buildSpawnNotFoundMessage(backendType: string): string {
-  const hint = getInstallHint(backendType as import("@actant/shared").AgentBackendType);
+function buildSpawnNotFoundMessage(
+  backendType: string,
+  backendManager?: BackendManager,
+): string {
+  const hint = getInstallHint(
+    backendType as import("@actant/shared").AgentBackendType,
+    backendManager,
+  );
   const base = `Backend "${backendType}" executable not found.`;
   return hint
     ? `${base}\nInstall with: ${hint}`

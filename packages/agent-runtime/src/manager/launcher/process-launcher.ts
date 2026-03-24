@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
 import type { AgentInstanceMeta } from "@actant/shared";
+import type { BackendManager } from "../../domain/backend/backend-manager";
 import {
   AgentLaunchError,
   AgentSpawnTimeoutError,
@@ -23,6 +24,8 @@ export interface ProcessLauncherOptions {
   enableProcessLogs?: boolean;
   /** Options for process log file writer. */
   logWriterOptions?: ProcessLogWriterOptions;
+  /** Explicit backend registry for daemon-scoped runtime resolution. */
+  backendManager?: BackendManager;
 }
 
 const DEFAULT_TERMINATE_TIMEOUT = 5_000;
@@ -41,6 +44,7 @@ export class ProcessLauncher implements AgentLauncher {
   private readonly spawnVerifyDelayMs: number;
   private readonly enableProcessLogs: boolean;
   private readonly logWriterOptions?: ProcessLogWriterOptions;
+  private readonly backendManager?: BackendManager;
   private readonly logWriters = new Map<string, ProcessLogWriter>();
 
   constructor(options?: ProcessLauncherOptions) {
@@ -48,6 +52,7 @@ export class ProcessLauncher implements AgentLauncher {
     this.spawnVerifyDelayMs = options?.spawnVerifyDelayMs ?? DEFAULT_SPAWN_VERIFY_DELAY;
     this.enableProcessLogs = options?.enableProcessLogs ?? true;
     this.logWriterOptions = options?.logWriterOptions;
+    this.backendManager = options?.backendManager;
   }
 
   async launch(workspaceDir: string, meta: AgentInstanceMeta): Promise<AgentProcess> {
@@ -55,9 +60,10 @@ export class ProcessLauncher implements AgentLauncher {
       meta.backendType,
       workspaceDir,
       meta.backendConfig,
+      this.backendManager,
     );
 
-    const useAcp = isAcpBackend(meta.backendType);
+    const useAcp = isAcpBackend(meta.backendType, this.backendManager);
 
     logger.info({ name: meta.name, command, args, backendType: meta.backendType, acp: useAcp }, "Spawning backend process");
 

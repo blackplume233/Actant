@@ -38,6 +38,10 @@ closedAt: null
 ---
 
 **Related Issues**: [[0278-faq]], [[0296-refactor-5-actant-core]], [[0310-thin-kernel-4-m5]]
+
+> Issue cache note:
+> This file mirrors discussion state and supporting analysis for GitHub issue `#318`.
+> It is local issue memory, not an active execution truth source.
 **Related Files**: `README.md`, `PROJECT_CONTEXT.md`, `.trellis/spec/index.md`, `docs/design/contextfs-architecture.md`, `docs/design/actant-vfs-reference-architecture.md`, `docs/planning/contextfs-roadmap.md`, `packages/api/src/services/namespace-authoring.ts`, `packages/mcp-server/src/context-backend.ts`, `packages/vfs/src/namespace/canonical-path.ts`, `packages/acp/src/channel-adapter.ts`, `packages/channel-claude/src/claude-channel-adapter.ts`
 
 ---

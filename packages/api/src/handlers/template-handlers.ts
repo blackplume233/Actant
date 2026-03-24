@@ -33,7 +33,7 @@ async function handleTemplateList(
   _params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<TemplateListResult> {
-  return ctx.listTemplateDefinitions();
+  return ctx.templateRegistry.list();
 }
 
 async function handleTemplateGet(
@@ -41,7 +41,7 @@ async function handleTemplateGet(
   ctx: AppContext,
 ): Promise<TemplateGetResult> {
   const { name } = params as unknown as TemplateGetParams;
-  return ctx.getTemplateDefinitionOrThrow(name);
+  return ctx.templateRegistry.getOrThrow(name);
 }
 
 async function handleTemplateLoad(
@@ -50,8 +50,7 @@ async function handleTemplateLoad(
 ): Promise<TemplateLoadResult> {
   const { filePath } = params as unknown as TemplateLoadParams;
   const template = await ctx.templateLoader.loadFromFile(resolve(filePath));
-  ctx.templateRegistry.register(template);
-  await ctx.templateRegistry.persist(template);
+  await ctx.templateRegistry.add(template, true);
   ctx.refreshContextMounts();
 
   ctx.eventBus?.emit("template:loaded", { callerType: "user", callerId: "api" }, {
@@ -70,7 +69,7 @@ async function handleTemplateUnload(
   ctx: AppContext,
 ): Promise<TemplateUnloadResult> {
   const { name } = params as unknown as TemplateUnloadParams;
-  const removed = ctx.templateRegistry.unregister(name);
+  const removed = await ctx.templateRegistry.remove(name, true);
 
   if (removed) {
     ctx.refreshContextMounts();
@@ -138,11 +137,10 @@ async function handleTemplateCreate(
     if (!overwrite) {
       throw new Error(`Template "${template.name}" already exists`);
     }
-    ctx.templateRegistry.unregister(template.name);
+    await ctx.templateRegistry.remove(template.name, true);
   }
 
-  ctx.templateRegistry.register(template);
-  await ctx.templateRegistry.persist(template);
+  await ctx.templateRegistry.add(template, true);
   ctx.refreshContextMounts();
 
   ctx.eventBus?.emit("template:loaded", { callerType: "user", callerId: "api" }, {

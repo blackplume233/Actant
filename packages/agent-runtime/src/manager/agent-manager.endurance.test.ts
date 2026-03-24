@@ -129,7 +129,7 @@ describe("Endurance tests — Phase 1", () => {
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "actant-endurance-"));
     registry = new TemplateRegistry();
-    registry.register(makeTemplate());
+    registry.set(makeTemplate());
     initializer = new AgentInitializer(registry, tmpDir);
     launcher = new MockLauncher();
   });

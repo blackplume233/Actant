@@ -10,8 +10,8 @@ const DEFAULT_DEBOUNCE_MS = 300;
 interface TemplateRegistryLike {
   list(): AgentTemplate[];
   has(name: string): boolean;
-  register(template: AgentTemplate): void;
-  unregister(name: string): void;
+  set(template: AgentTemplate): void;
+  delete(name: string): boolean;
 }
 
 export interface TemplateDirectoryWatcherOptions {
@@ -109,7 +109,7 @@ export class TemplateDirectoryWatcher {
     if (!fileExists) {
       const previousName = this.fileToName.get(filename);
       if (previousName && this.registry.has(previousName)) {
-        this.registry.unregister(previousName);
+        this.registry.delete(previousName);
         this.fileToName.delete(filename);
         logger.info({ templateName: previousName, filename }, "Template unregistered (file deleted)");
       }
@@ -120,12 +120,12 @@ export class TemplateDirectoryWatcher {
       const template = await this.loader.loadFromFile(filePath);
       const previousName = this.fileToName.get(filename);
       if (previousName && previousName !== template.name && this.registry.has(previousName)) {
-        this.registry.unregister(previousName);
+        this.registry.delete(previousName);
       }
       if (this.registry.has(template.name)) {
-        this.registry.unregister(template.name);
+        this.registry.delete(template.name);
       }
-      this.registry.register(template);
+      this.registry.set(template);
       this.fileToName.set(filename, template.name);
       logger.info({ templateName: template.name, filename }, previousName ? "Template reloaded" : "New template registered");
     } catch (err) {

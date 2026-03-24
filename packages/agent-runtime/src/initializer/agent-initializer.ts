@@ -19,6 +19,7 @@ import {
   createLogger,
 } from "@actant/shared";
 import { WorkspaceBuilder, type ProjectComponentManagers } from "../builder/workspace-builder";
+import type { BackendManager } from "../domain/backend/backend-manager";
 import { resolvePermissions } from "@actant/domain-context";
 import { readInstanceMeta, writeInstanceMeta } from "../state/index";
 import { InitializationPipeline } from "./pipeline/initialization-pipeline";
@@ -34,6 +35,7 @@ const logger = createLogger("agent-initializer");
 export interface InitializerOptions {
   defaultLaunchMode?: LaunchMode;
   projectManagers?: ProjectComponentManagers;
+  backendManager?: BackendManager;
   /** Step registry for InitializerConfig pipeline execution. When provided, template.initializer.steps will be executed during createInstance(). */
   stepRegistry?: StepRegistry;
 }
@@ -61,13 +63,17 @@ export interface TemplateLookup {
 export class AgentInitializer {
   private readonly builder: WorkspaceBuilder;
   private readonly pipeline?: InitializationPipeline;
+  private readonly backendManager?: BackendManager;
 
   constructor(
     private readonly templateLookup: TemplateLookup,
     private readonly instancesBaseDir: string,
     private readonly options?: InitializerOptions,
   ) {
-    this.builder = new WorkspaceBuilder(options?.projectManagers);
+    this.backendManager = options?.backendManager;
+    this.builder = new WorkspaceBuilder(options?.projectManagers, {
+      backendManager: options?.backendManager,
+    });
     if (options?.stepRegistry) {
       this.pipeline = new InitializationPipeline(options.stepRegistry);
     }
@@ -164,7 +170,7 @@ export class AgentInitializer {
       const now = new Date().toISOString();
 
       const archetype = overrides?.archetype ?? template.archetype ?? "repo";
-      const backendDef = getBackendDescriptor(template.backend.type);
+      const backendDef = getBackendDescriptor(template.backend.type, this.backendManager);
 
       // Validate backend/archetype compatibility
       const validation = validateBackendForArchetype(backendDef, archetype);

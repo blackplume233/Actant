@@ -18,13 +18,13 @@ describe("WorkflowManager", () => {
   });
 
   it("should register and retrieve a workflow", () => {
-    mgr.register(makeWorkflow("standard"));
+    mgr.set(makeWorkflow("standard"));
     expect(mgr.has("standard")).toBe(true);
     expect(mgr.get("standard")?.content).toBe("# standard Workflow");
   });
 
   it("should resolve a single workflow by name", () => {
-    mgr.register(makeWorkflow("standard"));
+    mgr.set(makeWorkflow("standard"));
     const resolved = mgr.resolve(["standard"]);
     expect(resolved).toHaveLength(1);
     expect(resolved[0]!.name).toBe("standard");
@@ -47,13 +47,13 @@ describe("WorkflowManager", () => {
   });
 
   it("should list all registered workflows", () => {
-    mgr.register(makeWorkflow("a"));
-    mgr.register(makeWorkflow("b"));
+    mgr.set(makeWorkflow("a"));
+    mgr.set(makeWorkflow("b"));
     expect(mgr.list()).toHaveLength(2);
   });
 
   it("should clear all workflows", () => {
-    mgr.register(makeWorkflow("a"));
+    mgr.set(makeWorkflow("a"));
     mgr.clear();
     expect(mgr.size).toBe(0);
   });

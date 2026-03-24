@@ -161,28 +161,28 @@ Definition of done:
 
 ## Next Actions
 
-- [ ] 在 `#322` 审计基线之上优先推进 Workstream A：去中心注册结构
+- [x] 在 `#322` 审计基线之上完成 Workstream A：去中心注册结构
 - [x] 在 `#322` 审计基线之上完成 Workstream B：收口 `daemon / plugin / provider / VFS` 契约
 - [x] 在 `#322` 审计基线之上完成 Workstream C：同步活文档与门禁
-- [ ] 在 `#322` 收口后推进 `#323`：删除 `packages/core` 与 `packages/domain` 等历史残留
-- [ ] 按 release 流程整理 changelog 汇总与下一阶段里程碑入口
+- [x] 在 `#322` 收口后推进 `#323`：完成历史残留目录与活跃引用清理
+- [x] 按 release 流程整理 changelog 汇总与下一阶段里程碑入口
 
 ## Active Task
 
-### [ ] #322 File-First 下 `domain-context` 最终定位与 VFS 中心边界收口
+### [x] #322 File-First 下 `domain-context` 最终定位与 VFS 中心边界收口
 
-Status: in progress
+Status: completed
 Owner: architecture convergence
 
 Execution order:
 
 - [x] 先串行冻结 `#322` 基线
 - [x] 再串行完成违规路径盘点与包边界决策
-- [ ] 在基线冻结后并行推进三条工作流：
-  - [ ] Workstream A: 去中心注册结构
+- [x] 在基线冻结后并行推进三条工作流：
+  - [x] Workstream A: 去中心注册结构
   - [x] Workstream B: 收口 `daemon / plugin / provider / VFS` 契约
   - [x] Workstream C: 同步活文档与门禁
-- [ ] 最后与 `#323` 联动完成历史残留清理与最终验收
+- [x] 最后与 `#323` 联动完成历史残留清理与最终验收
 
 Progress notes:
 
@@ -219,7 +219,27 @@ Progress notes:
 - [x] template-registry compatibility verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/domain-context type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/domain-context/src/template/registry/template-registry.test.ts packages/api/src/handlers/__tests__/template-handlers.test.ts packages/agent-runtime/src/initializer/agent-initializer.test.ts`
 - [x] `catalog` 已从活跃模块边界删除：`packages/catalog` 物理目录、`catalog/preset` CLI/RPC/REST、plugin `catalogs` contribution、namespace `catalogs` 声明与 overlay 试验实现均已移除
 - [x] focused deletion verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/shared/src/__tests__/host-types.test.ts packages/agent-runtime/src/plugin/plugin-host.test.ts packages/rest-api/src/server.test.ts packages/mcp-server/src/context-backend.test.ts packages/api/src/services/__tests__/host-profile-compat.test.ts`
-- [ ] Workstream A remaining scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；剩余主要是 `BackendManager` singleton 生命周期边界、`domain-context` manager-first 路径与 `manager -> VFS` 投影残留
+- [x] `BaseComponentManager` 已从活跃实现删除；`domain-context` concrete manager 统一收口到 `FileBackedComponentCollection`
+- [x] focused collection verification passed: `node node_modules/vitest/vitest.mjs run packages/domain-context/src/domain/component-collection.test.ts packages/domain-context/src/domain/skill/skill-manager.test.ts packages/domain-context/src/domain/prompt/prompt-manager.test.ts packages/domain-context/src/domain/mcp/mcp-config-manager.test.ts packages/domain-context/src/domain/workflow/workflow-manager.test.ts`，`node node_modules/vitest/vitest.mjs run packages/agent-runtime/src/builder/workspace-builder.test.ts packages/agent-runtime/src/domain/domain-context-resolver.test.ts`
+- [x] 活跃生产路径中的 `createDomainSource(...)` 已清空；`app-context` / `project-context` derived mounts 统一改为 snapshot-backed registrations，`createDomainSource` 公共 re-export 已移除
+- [x] snapshot mount verification passed: `node node_modules/vitest/vitest.mjs run packages/vfs/src/__tests__/domain-source.test.ts packages/mcp-server/src/context-backend.test.ts packages/api/src/handlers/__tests__/vfs-handlers.test.ts`
+- [x] `packages/api` 中遗留的 catalog overlay / projection 测试已删除，不再让已退场概念污染活跃回归面
+- [x] `TemplateRegistry` 已并入 `FileBackedComponentCollection` 模型；active template 写路径统一改为 `set/delete` 或 `add/remove`
+- [x] template collection verification passed: `node node_modules/vitest/vitest.mjs run packages/domain-context/src/template/registry/template-registry.test.ts packages/api/src/handlers/__tests__/template-handlers.test.ts packages/agent-runtime/src/initializer/agent-initializer.test.ts packages/api/src/services/__tests__/domain-context-integration.test.ts`，`node node_modules/vitest/vitest.mjs run packages/agent-runtime/src/manager/agent-manager.test.ts packages/agent-runtime/src/manager/agent-lifecycle-scenarios.test.ts`
+- [x] `/skills` daemon derived mount 已切到 snapshot-backed registration；`createSkillSource` 已从活跃生产路径与顶层 public export 移除
+- [x] skill snapshot verification passed: `node node_modules/vitest/vitest.mjs run packages/api/src/handlers/__tests__/vfs-handlers.test.ts packages/mcp-server/src/context-backend.test.ts packages/vfs/src/__tests__/m5-filesystem-type-features-e2e.test.ts`
+- [x] test-only `createDomainSource` / `createSkillSource` helper 已删除；`domain-source` / `m5` 断言已改成只覆盖当前 snapshot-backed 基线
+- [x] helper retirement verification passed: `node node_modules/vitest/vitest.mjs run packages/vfs/src/__tests__/domain-source.test.ts packages/vfs/src/__tests__/m5-filesystem-type-features-e2e.test.ts packages/api/src/handlers/__tests__/vfs-handlers.test.ts packages/mcp-server/src/context-backend.test.ts`
+- [x] `BackendManager` singleton 生命周期边界已收口：daemon `AppContext` 现在持有显式 backend manager，并注入 `WorkspaceBuilder` / `AgentInitializer` / `AgentManager` / `ProcessLauncher` / resolver
+- [x] backend manager injection verification passed: `node node_modules/vitest/vitest.mjs run packages/agent-runtime/src/builder/workspace-builder.test.ts packages/agent-runtime/src/initializer/agent-initializer.test.ts packages/agent-runtime/src/manager/agent-manager.test.ts packages/agent-runtime/src/manager/launcher/backend-resolver.test.ts`，`node node_modules/vitest/vitest.mjs run packages/api/src/services/__tests__/domain-context-integration.test.ts packages/api/src/services/__tests__/hub-context.test.ts packages/api/src/handlers/__tests__/vfs-handlers.test.ts packages/mcp-server/src/context-backend.test.ts`
+- [x] 包层级冻结与 bridge 审查结论已写回活跃 spec/design：最终保留 / 合并 / 删除包表、`actant` 最小职责边界、bridge 审查结论与受控本地例外路径已固定
+- [x] `cli hub` 与 `mcp-server` 的 standalone namespace 组装已回收进 `@actant/api#createStandaloneProjectContextRuntime`；bridge 层不再直接 new/mount `VfsRegistry` / `VfsKernel`
+- [x] standalone assembly verification passed: `node node_modules/vitest/vitest.mjs run packages/api/src/services/__tests__/project-context-standalone-runtime.test.ts packages/api/src/services/__tests__/hub-context.test.ts`，`node node_modules/vitest/vitest.mjs run packages/mcp-server/src/context-backend.test.ts`，`node node_modules/vitest/vitest.mjs run packages/cli/src/commands/__tests__/commands.test.ts`
+- [x] bridge assembly gate passed: `node node_modules/vitest/vitest.mjs run packages/shared/src/__tests__/contextfs-terminology-gate.test.ts`
+- [x] final boundary gates passed: `node node_modules/vitest/vitest.mjs run packages/shared/src/__tests__/contextfs-boundary-gate.test.ts`
+- [x] daemon/VFS state convergence verification passed: `node node_modules/vitest/vitest.mjs run packages/api/src/services/__tests__/vfs-state-convergence.test.ts`
+- [x] release changelog draft created: `docs/agent/changelog-drafts/2026-03-24-codex-322-323-boundary-closure.md`
+- [x] release changelog aggregated: `docs/stage/0.5.0/changelog.md`
 
 Authority rule:
 
@@ -292,13 +312,13 @@ Authority rule:
 
 #### 7. `domain-context` 治理
 
-- [ ] 列出 `domain-context` keep / migrate / delete 全清单
-- [ ] 保留 parser / schema / validator / renderer / resolver
-- [ ] 删除 manager-first / registry-first 结构
+- [x] 列出 `domain-context` keep / migrate / delete 全清单
+- [x] 保留 parser / schema / validator / renderer / resolver
+- [x] 删除 manager-first / registry-first 结构
 - [x] 删除或迁出 watcher 中非 VFS 驱动部分
-- [ ] 禁止 `domain-context` 反向生成 VFS
-- [ ] 禁止 `domain-context` 成为系统状态中心
-- [ ] 明确哪些能力继续作为 `agent-runtime` 依赖保留
+- [x] 禁止 `domain-context` 反向生成 VFS
+- [x] 禁止 `domain-context` 成为系统状态中心
+- [x] 明确哪些能力继续作为 `agent-runtime` 依赖保留
 
 #### 8. `acp` / `pi` 治理
 
@@ -310,32 +330,32 @@ Authority rule:
 #### 9. 去中心注册结构治理
 
 - [x] 删除活跃 `catalog` 模块与其中心注册职责
-- [ ] 删除 `BaseComponentManager` 中心抽象
-- [ ] 删除 `domain-source` 这类 `manager -> VFS` 投影结构
-- [ ] 清点所有 `register/unregister` 真相源式调用点
-- [ ] 删除所有“内容先进入注册表，再投影回 VFS”的路径
-- [ ] 将剩余 manager 降级为索引 / 缓存 / 派生视图
-- [ ] 禁止新增任何中心注册结构
+- [x] 删除 `BaseComponentManager` 中心抽象
+- [x] 删除 `domain-source` 这类 `manager -> VFS` 投影结构
+- [x] 清点所有 `register/unregister` 真相源式调用点
+- [x] 删除所有“内容先进入注册表，再投影回 VFS”的路径
+- [x] 将剩余 manager 降级为索引 / 缓存 / 派生视图
+- [x] 禁止新增任何中心注册结构
 
 #### 10. 包层级治理
 
-- [ ] 定义最终保留包清单
-- [ ] 定义最终合并包清单
-- [ ] 定义最终删除包清单
-- [ ] 明确 `@actant/context -> @actant/api` 合并口径
+- [x] 定义最终保留包清单
+- [x] 定义最终合并包清单
+- [x] 定义最终删除包清单
+- [x] 明确 `@actant/context -> @actant/api` 合并口径
 - [x] 明确 `@actant/catalog` 彻底删除
-- [ ] 明确 bridge 包的最终保留清单
-- [ ] 明确 daemon-hosted modules 的最终保留清单
-- [ ] 明确打包层 `actant` 的最小职责边界
+- [x] 明确 bridge 包的最终保留清单
+- [x] 明确 daemon-hosted modules 的最终保留清单
+- [x] 明确打包层 `actant` 的最小职责边界
 
 #### 11. 历史残留治理
 
-- [ ] 延续 `#323`，删除 `packages/domain`
-- [ ] 延续 `#323`，删除 `packages/core`
-- [ ] 清理 `dist/` / `tsbuildinfo` 等残留
-- [ ] 修正活文档中的 `core/domain` 旧架构描述
-- [ ] 审视 `actant` 对外导出的 `./core` 别名是否保留
-- [ ] 对历史文档 / issue / 报告统一标记 `legacy` / `archive`
+- [x] 延续 `#323`，删除 `packages/domain`
+- [x] 延续 `#323`，删除 `packages/core`
+- [x] 清理 `dist/` / `tsbuildinfo` 等残留
+- [x] 修正活文档中的 `core/domain` 旧架构描述
+- [x] 审视 `actant` 对外导出的 `./core` 别名是否保留
+- [x] 对历史文档 / issue / 报告统一标记 `legacy` / `archive`
 
 #### 12. 文档与术语治理
 
@@ -350,23 +370,23 @@ Authority rule:
 
 #### 13. Bridge 层治理
 
-- [ ] 审查 `cli` 是否纯 RPC bridge
-- [ ] 审查 `rest-api` 是否纯 RPC bridge
-- [ ] 审查 `tui` 是否纯 RPC bridge
-- [ ] 审查 `dashboard` 是否只是 bridge 的 UI 外壳
-- [ ] 审查 `mcp-server` 是否只是 bridge
-- [ ] 审查 `channel-*` 是否只是 bridge / adapter
-- [ ] 清理 bridge 层任何自行装载系统的能力
+- [x] 审查 `cli` 是否纯 RPC bridge
+- [x] 审查 `rest-api` 是否纯 RPC bridge
+- [x] 审查 `tui` 是否纯 RPC bridge
+- [x] 审查 `dashboard` 是否只是 bridge 的 UI 外壳
+- [x] 审查 `mcp-server` 是否只是 bridge
+- [x] 审查 `channel-*` 是否只是 bridge / adapter
+- [x] 清理 bridge 层任何自行装载系统的能力
 
 #### 14. 验收治理
 
-- [ ] 形成最终模块结构图
-- [ ] 形成最终 VFS 内部结构图
-- [ ] 形成最终依赖方向图
-- [ ] 形成最终保留 / 合并 / 删除包表
-- [ ] 验证 `daemon` 是唯一组合根
-- [ ] 验证 bridge 只通过 RPC 与 daemon 交互
-- [ ] 验证 `provider` 只是 plugin contribution
-- [ ] 验证系统内不存在中心注册表真相源
-- [ ] 验证所有真实状态最终收敛到 VFS
-- [ ] 验证 `domain-context` 只负责解释文件
+- [x] 形成最终模块结构图
+- [x] 形成最终 VFS 内部结构图
+- [x] 形成最终依赖方向图
+- [x] 形成最终保留 / 合并 / 删除包表
+- [x] 验证 `daemon` 是唯一组合根
+- [x] 验证 bridge 只通过 RPC 与 daemon 交互
+- [x] 验证 `provider` 只是 plugin contribution
+- [x] 验证系统内不存在中心注册表真相源
+- [x] 验证所有真实状态最终收敛到 VFS
+- [x] 验证 `domain-context` 只负责解释文件

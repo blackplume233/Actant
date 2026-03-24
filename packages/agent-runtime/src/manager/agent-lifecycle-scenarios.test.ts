@@ -111,7 +111,7 @@ describe("Agent lifecycle scenarios", () => {
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "actant-scenario-"));
     registry = new TemplateRegistry();
-    registry.register(makeTemplate());
+    registry.set(makeTemplate());
     initializer = new AgentInitializer(registry, tmpDir);
     launcher = new MockLauncher();
   });
@@ -239,7 +239,7 @@ describe("Agent lifecycle scenarios", () => {
   describe("Scenario: external spawn full workflow", () => {
     it("resolve → spawn → attach → crash → detach cleanup", async () => {
       // Register a repo template for ephemeral + direct mode testing
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "repo-tpl",
         archetype: "repo",
       }));
@@ -346,7 +346,7 @@ describe("Agent lifecycle scenarios", () => {
 
     it("should NOT recover direct-mode agents after daemon restart", async () => {
       // Register a repo template for direct mode testing
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "repo-tpl",
         archetype: "repo",
       }));
@@ -372,7 +372,7 @@ describe("Agent lifecycle scenarios", () => {
   describe("Scenario: mixed concurrent agents", () => {
     it("should manage multiple agents with different modes simultaneously", async () => {
       // Register a repo template for direct mode testing
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "repo-tpl",
         archetype: "repo",
       }));

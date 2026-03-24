@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import type { ConfigValidationResult, PromptDefinition } from "@actant/shared";
-import { BaseComponentManager } from "../base-component-manager";
+import { FileBackedComponentCollection } from "../component-collection";
 
 const PromptDefinitionSchema = z
   .object({
@@ -11,7 +11,7 @@ const PromptDefinitionSchema = z
   })
   .passthrough();
 
-export class PromptManager extends BaseComponentManager<PromptDefinition> {
+export class PromptManager extends FileBackedComponentCollection<PromptDefinition> {
   protected readonly componentType = "Prompt";
 
   constructor() {

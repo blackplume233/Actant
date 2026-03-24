@@ -22,7 +22,7 @@ import { FilesystemTypeRegistry } from "../filesystem-type-registry";
 import {
   createAgentRuntimeSource,
   createMcpRuntimeSource,
-  createSkillSource,
+  createSnapshotDomainSource,
   createMcpConfigSource,
   type AgentRuntimeSourceProvider,
   type McpRuntimeSourceProvider,
@@ -87,20 +87,8 @@ function createMinimalMcpRuntimeProvider(): McpRuntimeSourceProvider {
   };
 }
 
-interface MinimalSkillManager {
-  list(): Array<{ name: string; description?: string; content?: string; tags?: string[] }>;
-  get(name: string): { name: string; description?: string; content?: string; tags?: string[] } | undefined;
-  register(skill: { name: string; content?: string }): void;
-}
-
-function createMinimalSkillManager(): MinimalSkillManager {
-  const skills = new Map<string, { name: string; description?: string; content?: string; tags?: string[] }>();
-  skills.set("test-skill", { name: "test-skill", content: "# Test" });
-  return {
-    list: () => [...skills.values()],
-    get: (name) => skills.get(name),
-    register: (skill) => skills.set(skill.name, skill),
-  };
+function createSkillSnapshots() {
+  return [{ name: "test-skill", content: "# Test" }];
 }
 
 interface MinimalMcpConfigManager {
@@ -145,10 +133,8 @@ describe("M5: VfsMountRegistration uses features + label", () => {
     expect(sourceRecord["sourceType"]).toBeUndefined();
   });
 
-  it("SkillSource registration has features + label, no sourceType", () => {
-    const manager = createMinimalSkillManager();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager matches internal interface structurally
-    const source = createSkillSource(manager as any, "/skills", { type: "daemon" });
+  it("snapshot-derived skill mount registration has features + label, no sourceType", () => {
+    const source = createSnapshotDomainSource(createSkillSnapshots(), "skills", "/skills", { type: "daemon" });
     const sourceRecord = source as unknown as Record<string, unknown>;
 
     expect(source.features).toBeInstanceOf(Set);
@@ -196,13 +182,11 @@ describe("M5: Built-in Sources declare correct Trait sets", () => {
     expect(source.features.has("persistent")).toBe(false);
   });
 
-  it("SkillSource has persistent + writable features", () => {
-    const manager = createMinimalSkillManager();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager
-    const source = createSkillSource(manager as any, "/skills", { type: "daemon" });
+  it("snapshot-derived skill mount has persistent features without live write-through", () => {
+    const source = createSnapshotDomainSource(createSkillSnapshots(), "skills", "/skills", { type: "daemon" });
 
     expect(source.features.has("persistent")).toBe(true);
-    expect(source.features.has("writable")).toBe(true);
+    expect(source.features.has("writable")).toBe(false);
     // must NOT have ephemeral (mutual exclusion with persistent)
     expect(source.features.has("ephemeral")).toBe(false);
   });
@@ -438,8 +422,7 @@ describe("M5: VfsKernel works with trait-based registrations", () => {
     const kernel = new VfsKernel();
 
     const agentSource = createAgentRuntimeSource(createMinimalAgentProvider(), "/agents", { type: "daemon" });
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mock manager
-    const skillSource = createSkillSource(createMinimalSkillManager() as any, "/skills", { type: "daemon" });
+    const skillSource = createSnapshotDomainSource(createSkillSnapshots(), "skills", "/skills", { type: "daemon" });
 
     kernel.mount({ ...agentSource, name: "agents" });
     kernel.mount({ ...skillSource, name: "skills" });

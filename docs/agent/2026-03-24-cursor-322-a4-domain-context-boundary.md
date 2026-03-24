@@ -3,6 +3,7 @@
 > Date: 2026-03-24
 > Scope: `packages/domain-context`
 > Purpose: 形成 `keep / migrate / delete` 清单，为后续 A4 / A5 / 主题 7 收口提供真相源
+> Historical boundary note: 当前执行状态以 roadmap 为准；本文件保留为阶段性边界分析记录。
 
 ## Conclusion
 

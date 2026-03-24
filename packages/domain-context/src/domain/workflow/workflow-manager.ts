@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import type { ConfigValidationResult, WorkflowDefinition } from "@actant/shared";
-import { BaseComponentManager } from "../base-component-manager";
+import { FileBackedComponentCollection } from "../component-collection";
 
 const WorkflowDefinitionSchema = z
   .object({
@@ -10,7 +10,7 @@ const WorkflowDefinitionSchema = z
   })
   .passthrough();
 
-export class WorkflowManager extends BaseComponentManager<WorkflowDefinition> {
+export class WorkflowManager extends FileBackedComponentCollection<WorkflowDefinition> {
   protected readonly componentType = "Workflow";
 
   constructor() {

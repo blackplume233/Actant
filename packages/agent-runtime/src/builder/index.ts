@@ -9,4 +9,5 @@ export {
   WorkspaceBuilder,
   type ProjectComponentManagers,
   type WorkspaceBuildResult,
+  type WorkspaceBuilderOptions,
 } from "./workspace-builder";

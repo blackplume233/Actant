@@ -54,21 +54,27 @@ function createCrudHandlers<T extends NamedComponent>(
       const { component } = params as unknown as ComponentAddParams;
       const mgr = getManager(ctx);
       await mgr.add(component as T, true);
+      ctx.refreshContextMounts();
       return { name: (component as { name: string }).name };
     },
     update: async (params: Record<string, unknown>, ctx: AppContext) => {
       const { name, patch } = params as unknown as ComponentUpdateParams;
       const result = await getManager(ctx).update(name, patch as Partial<T>, true);
+      ctx.refreshContextMounts();
       return { name: result.name };
     },
     remove: async (params: Record<string, unknown>, ctx: AppContext) => {
       const { name } = params as unknown as ComponentRemoveParams;
       const success = await getManager(ctx).remove(name, true);
+      if (success) {
+        ctx.refreshContextMounts();
+      }
       return { success };
     },
     import: async (params: Record<string, unknown>, ctx: AppContext) => {
       const { filePath } = params as unknown as ComponentImportParams;
       const result = await getManager(ctx).importFromFile(filePath);
+      ctx.refreshContextMounts();
       return { name: result.name };
     },
     export: async (params: Record<string, unknown>, ctx: AppContext) => {

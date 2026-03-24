@@ -6,6 +6,7 @@ import type {
   PermissionsInput,
 } from "@actant/shared";
 import type { SkillManager, PromptManager, McpConfigManager, WorkflowManager, PluginManager } from "@actant/domain-context";
+import type { BackendManager } from "../domain/backend/backend-manager";
 import type { BackendBuilder, VerifyResult } from "./backend-builder";
 import type { ComponentTypeHandler, NamedComponent, ResolvableComponentCollection } from "./component-type-handler";
 import { CursorBuilder } from "./cursor-builder";
@@ -35,11 +36,20 @@ export interface WorkspaceBuildResult {
   backendType: AgentBackendType;
 }
 
+export interface WorkspaceBuilderOptions {
+  backendManager?: BackendManager;
+}
+
 export class WorkspaceBuilder {
   private readonly builders: Map<AgentBackendType, BackendBuilder>;
   private readonly handlers: ComponentTypeHandler[] = [];
+  private readonly backendManager: BackendManager;
 
-  constructor(private readonly managers?: ProjectComponentManagers) {
+  constructor(
+    private readonly managers?: ProjectComponentManagers,
+    options?: WorkspaceBuilderOptions,
+  ) {
+    this.backendManager = options?.backendManager ?? getBackendManager();
     this.builders = new Map<AgentBackendType, BackendBuilder>([
       ["cursor", new CursorBuilder()],
       ["claude-code", new ClaudeCodeBuilder()],
@@ -86,12 +96,11 @@ export class WorkspaceBuilder {
     // Step 1: Resolve builder — check local registry, then BackendManager materialization specs
     let builder = this.builders.get(backendType);
     if (!builder) {
-      const mgr = getBackendManager();
-      const registeredBuilder = mgr.getBuilder(backendType) as BackendBuilder | undefined;
+      const registeredBuilder = this.backendManager.getBuilder(backendType) as BackendBuilder | undefined;
       if (registeredBuilder) {
         builder = registeredBuilder;
       } else {
-        const def = mgr.get(backendType);
+        const def = this.backendManager.get(backendType);
         if (def?.materialization) {
           builder = new DeclarativeBuilder(backendType, def.materialization);
           logger.debug({ backendType }, "Created DeclarativeBuilder from MaterializationSpec");

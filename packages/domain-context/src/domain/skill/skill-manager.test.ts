@@ -18,33 +18,33 @@ describe("SkillManager", () => {
   });
 
   it("should register and retrieve a skill", () => {
-    mgr.register(makeSkill("a"));
+    mgr.set(makeSkill("a"));
     expect(mgr.has("a")).toBe(true);
     expect(mgr.get("a")?.content).toBe("Rules for a");
   });
 
   it("should list all registered skills", () => {
-    mgr.register(makeSkill("a"));
-    mgr.register(makeSkill("b"));
+    mgr.set(makeSkill("a"));
+    mgr.set(makeSkill("b"));
     expect(mgr.list()).toHaveLength(2);
   });
 
   it("should resolve multiple skills by name", () => {
-    mgr.register(makeSkill("a"));
-    mgr.register(makeSkill("b"));
+    mgr.set(makeSkill("a"));
+    mgr.set(makeSkill("b"));
     const resolved = mgr.resolve(["a", "b"]);
     expect(resolved).toHaveLength(2);
     expect(resolved.map((s) => s.name)).toEqual(["a", "b"]);
   });
 
   it("should throw ComponentReferenceError for unresolved name", () => {
-    mgr.register(makeSkill("a"));
+    mgr.set(makeSkill("a"));
     expect(() => mgr.resolve(["a", "missing"])).toThrow(ComponentReferenceError);
   });
 
-  it("should unregister a skill", () => {
-    mgr.register(makeSkill("a"));
-    expect(mgr.unregister("a")).toBe(true);
+  it("should delete a skill", () => {
+    mgr.set(makeSkill("a"));
+    expect(mgr.delete("a")).toBe(true);
     expect(mgr.has("a")).toBe(false);
   });
 

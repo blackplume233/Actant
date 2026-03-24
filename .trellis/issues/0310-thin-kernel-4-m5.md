@@ -25,6 +25,10 @@ closedAt: null
 
 **Related Files**: `packages/shared/src/types/vfs.types.ts`, `packages/vfs/src/vfs-registry.ts`, `packages/vfs/src/mount/direct-mount-table.ts`, `packages/vfs/src/core/vfs-kernel.ts`
 
+> Issue cache note:
+> This file is a local issue/discussion cache.
+> It may preserve scope and rationale, but active milestone state lives in the roadmap.
+
 ---
 
 见 GitHub #310 详细内容。4 处框架层膨胀反模式：VfsSourceType 名义标签、VfsSourceSpec 中心化 union、VfsRegistry/DirectMountTable 重叠、VFS_CAPABILITIES 膨胀。

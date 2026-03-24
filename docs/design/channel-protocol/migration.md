@@ -10,7 +10,7 @@ Phase 1-3 are now functionally in place for the production paths used by `AgentM
 
 Completed implementation scope:
 
-- `@actant/core` owns the protocol surface in `packages/core/src/channel/types.ts`
+- `@actant/agent-runtime` owns the protocol surface in `packages/agent-runtime/src/channel/types.ts`
 - `AgentManager` connects through `channelManager` / `ActantChannelManager`
 - `RoutingChannelManager` delegates by backend type and preserves per-agent capability lookup
 - `RecordingChannelManager` and `RecordingChannelDecorator` record both native `ChannelEvent` payloads and legacy `StreamChunk` fallbacks
@@ -30,7 +30,7 @@ Remaining migration posture:
 
 ### `ChannelCapabilities`
 
-The live capability surface is defined in `packages/core/src/channel/types.ts` and currently includes:
+The live capability surface is defined in `packages/agent-runtime/src/channel/types.ts` and currently includes:
 
 - stream control: `streaming`, `cancel`, `resume`, `multiSession`
 - host integration: `callbacks`, `needsFileIO`, `needsTerminal`, `needsPermission`
@@ -42,7 +42,7 @@ The live capability surface is defined in `packages/core/src/channel/types.ts` a
 
 ### `ChannelHostServices`
 
-The host service contract is also live in `packages/core/src/channel/types.ts`.
+The host service contract is also live in `packages/agent-runtime/src/channel/types.ts`.
 
 Core callbacks in active use:
 
@@ -128,11 +128,11 @@ The rule of thumb is:
 
 The migration is now guarded by:
 
-- manager lifecycle unit coverage in `packages/core/src/manager/agent-manager.test.ts`
-- scenario coverage in `packages/core/src/manager/agent-lifecycle-scenarios.test.ts`
-- channel protocol compatibility coverage in `packages/core/src/channel/*.test.ts`
+- manager lifecycle unit coverage in `packages/agent-runtime/src/manager/agent-manager.test.ts`
+- scenario coverage in `packages/agent-runtime/src/manager/agent-lifecycle-scenarios.test.ts`
+- channel protocol compatibility coverage in `packages/agent-runtime/src/channel/*.test.ts`
 - ACP callback/session coverage in `packages/acp/src/__tests__/*.test.ts`
-- endurance regression in `packages/core/src/manager/agent-manager.endurance.test.ts`
+- endurance regression in `packages/agent-runtime/src/manager/agent-manager.endurance.test.ts`
 
 Required quick-check command after lifecycle or communication changes:
 

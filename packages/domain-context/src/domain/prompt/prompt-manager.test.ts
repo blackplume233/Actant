@@ -18,14 +18,14 @@ describe("PromptManager", () => {
   });
 
   it("should register and retrieve a prompt", () => {
-    mgr.register(makePrompt("a"));
+    mgr.set(makePrompt("a"));
     expect(mgr.has("a")).toBe(true);
     expect(mgr.get("a")?.content).toBe("Prompt for a");
   });
 
   it("should resolve multiple prompts by name", () => {
-    mgr.register(makePrompt("a"));
-    mgr.register(makePrompt("b"));
+    mgr.set(makePrompt("a"));
+    mgr.set(makePrompt("b"));
     const resolved = mgr.resolve(["b", "a"]);
     expect(resolved.map((p) => p.name)).toEqual(["b", "a"]);
   });

@@ -6,7 +6,7 @@
 
 ## Overview
 
-`StreamChunk` 是 `@actant/core` 中当前的流式类型。它是 `ChannelEvent` 的简化投影。本文档描述兼容层与迁移路径。
+`StreamChunk` 是当前 `@actant/agent-runtime` communication surface 中的流式类型。它是 `ChannelEvent` 的简化投影。本文档描述兼容层与迁移路径。
 
 ---
 

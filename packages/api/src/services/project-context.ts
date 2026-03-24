@@ -15,9 +15,12 @@ import {
 } from "@actant/domain-context";
 import {
   FilesystemTypeRegistry,
+  VfsKernel,
+  VfsRegistry,
   workspaceSourceFactory,
   memorySourceFactory,
-  createDomainSource,
+  createDaemonInfoSource,
+  createSnapshotDomainSource,
   createMcpRuntimeSource,
   createAgentRuntimeSource,
 } from "@actant/vfs";
@@ -114,6 +117,30 @@ export interface ProjectContextRegistrationOptions {
   includeNamespaceManifest?: boolean;
 }
 
+export interface StandaloneProjectContextDaemonInfoOptions {
+  mountPoint: string;
+  getVersion?(): string;
+  getUptime?(): number;
+  getAgentCount?(): number;
+  getRpcMethods?(): string[];
+  getHostProfile?(): string;
+  getRuntimeState?(): string;
+  getCapabilities?(): string[];
+}
+
+export interface StandaloneProjectContextRuntimeOptions extends ProjectContextRegistrationOptions {
+  projectDir?: string;
+  layout: ProjectContextMountLayout;
+  lifecycle?: VfsLifecycle;
+  daemonInfo?: StandaloneProjectContextDaemonInfoOptions;
+}
+
+export interface StandaloneProjectContextRuntime {
+  context: LoadedProjectContext;
+  registry: VfsRegistry;
+  kernel: VfsKernel;
+}
+
 export async function loadProjectContext(projectDir?: string): Promise<LoadedProjectContext> {
   return loadProjectContextInternal(projectDir, {
     visitedConfigs: new Set<string>(),
@@ -173,24 +200,44 @@ export function createProjectContextRegistrations(
 
   registrations.push(
     {
-      ...createDomainSource(context.managers.skillManager, "skills", normalizeMountPoint(layout.skills), lifecycle),
+      ...createSnapshotDomainSource(
+        context.managers.skillManager.list(),
+        "skills",
+        normalizeMountPoint(layout.skills),
+        lifecycle,
+      ),
       name: `${prefix}-skills`,
     },
     {
-      ...createDomainSource(context.managers.promptManager, "prompts", normalizeMountPoint(layout.prompts), lifecycle),
+      ...createSnapshotDomainSource(
+        context.managers.promptManager.list(),
+        "prompts",
+        normalizeMountPoint(layout.prompts),
+        lifecycle,
+      ),
       name: `${prefix}-prompts`,
     },
     {
-      ...createDomainSource(context.managers.mcpConfigManager, "mcp", normalizeMountPoint(layout.mcpLegacy), lifecycle),
+      ...createSnapshotDomainSource(
+        context.managers.mcpConfigManager.list(),
+        "mcp",
+        normalizeMountPoint(layout.mcpLegacy),
+        lifecycle,
+      ),
       name: `${prefix}-mcp-legacy`,
     },
     {
-      ...createDomainSource(context.managers.mcpConfigManager, "mcp", normalizeMountPoint(layout.mcpConfigs), lifecycle),
+      ...createSnapshotDomainSource(
+        context.managers.mcpConfigManager.list(),
+        "mcp",
+        normalizeMountPoint(layout.mcpConfigs),
+        lifecycle,
+      ),
       name: `${prefix}-mcp-configs`,
     },
     {
-      ...createDomainSource(
-        context.managers.workflowManager,
+      ...createSnapshotDomainSource(
+        context.managers.workflowManager.list(),
         "workflows",
         normalizeMountPoint(layout.workflows),
         lifecycle,
@@ -198,8 +245,8 @@ export function createProjectContextRegistrations(
       name: `${prefix}-workflows`,
     },
     {
-      ...createDomainSource(
-        context.managers.templateRegistry,
+      ...createSnapshotDomainSource(
+        context.managers.templateRegistry.list(),
         "templates",
         normalizeMountPoint(layout.templates),
         lifecycle,
@@ -322,6 +369,52 @@ export function createProjectContextFilesystemTypeRegistry(): FilesystemTypeRegi
   registry.register(workspaceSourceFactory);
   registry.register(memorySourceFactory);
   return registry;
+}
+
+export async function createStandaloneProjectContextRuntime(
+  options: StandaloneProjectContextRuntimeOptions,
+): Promise<StandaloneProjectContextRuntime> {
+  const context = await loadProjectContext(options.projectDir);
+  const registry = new VfsRegistry();
+  const kernel = new VfsKernel();
+  const factoryRegistry = createProjectContextFilesystemTypeRegistry();
+  const lifecycle = options.lifecycle ?? { type: "daemon" };
+
+  for (const registration of createProjectContextRegistrations(
+    context,
+    factoryRegistry,
+    options.layout,
+    lifecycle,
+    options,
+  )) {
+    registry.mount(registration);
+    kernel.mount(registration);
+  }
+
+  if (options.daemonInfo) {
+    const daemonSource = createDaemonInfoSource(
+      {
+        getVersion: () => options.daemonInfo?.getVersion?.() ?? "standalone",
+        getUptime: () => options.daemonInfo?.getUptime?.() ?? 0,
+        getAgentCount: () => options.daemonInfo?.getAgentCount?.() ?? 0,
+        getRpcMethods: () => options.daemonInfo?.getRpcMethods?.() ?? [],
+        getHostProfile: () => options.daemonInfo?.getHostProfile?.() ?? "context",
+        getRuntimeState: () => options.daemonInfo?.getRuntimeState?.() ?? "inactive",
+        getCapabilities: () => options.daemonInfo?.getCapabilities?.() ?? ["hub", "vfs", "domain"],
+        getHubProject: () => ({
+          projectRoot: context.projectRoot,
+          projectName: context.summary.projectName,
+          configPath: context.configPath,
+        }),
+      },
+      options.daemonInfo.mountPoint,
+      lifecycle,
+    );
+    registry.mount(daemonSource);
+    kernel.mount(daemonSource);
+  }
+
+  return { context, registry, kernel };
 }
 
 async function loadProjectContextInternal(

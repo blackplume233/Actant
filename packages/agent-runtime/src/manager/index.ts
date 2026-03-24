@@ -20,7 +20,19 @@ export type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
 export { ProcessLauncher, type ProcessLauncherOptions } from "./launcher/process-launcher";
 export { createLauncher, type LauncherConfig, type LauncherMode } from "./launcher/create-launcher";
 export { resolveBackend, resolveAcpBackend, openBackend, isAcpBackend, isAcpOnlyBackend, requireInteractionMode, type ResolvedBackend } from "./launcher/backend-resolver";
-export { registerBackend, registerBackendDefinition, getBackendDescriptor, getBackendManager, supportsMode, requireMode, getInstallHint, getBuildProviderEnv } from "./launcher/backend-registry";
+export {
+  createBackendManager,
+  registerBackend,
+  registerBackendDefinition,
+  getBackendDescriptor,
+  getBackendManager,
+  supportsMode,
+  requireMode,
+  getInstallHint,
+  getBuildProviderEnv,
+} from "./launcher/backend-registry";
+export { registerBuiltinBackends } from "./launcher/builtin-backends";
+export { BackendManager } from "../domain/backend/backend-manager";
 export { isProcessAlive } from "./launcher/process-utils";
 export {
   ProcessWatcher,

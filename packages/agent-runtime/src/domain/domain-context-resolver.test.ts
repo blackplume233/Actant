@@ -33,17 +33,17 @@ describe("Domain Context Resolution Integration", () => {
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "actant-integration-"));
     registry = new TemplateRegistry();
-    registry.register(makeTemplate());
+    registry.set(makeTemplate());
 
     skillMgr = new SkillManager();
-    skillMgr.register({ name: "code-review", content: "Check error handling\nReview types" });
-    skillMgr.register({ name: "ts-expert", description: "TypeScript expert", content: "Use strict mode\nPrefer unknown over any" });
+    skillMgr.set({ name: "code-review", content: "Check error handling\nReview types" });
+    skillMgr.set({ name: "ts-expert", description: "TypeScript expert", content: "Use strict mode\nPrefer unknown over any" });
 
     promptMgr = new PromptManager();
-    promptMgr.register({ name: "system-reviewer", content: "You are a code reviewer for {{project}}.", variables: ["project"] });
+    promptMgr.set({ name: "system-reviewer", content: "You are a code reviewer for {{project}}.", variables: ["project"] });
 
     workflowMgr = new WorkflowManager();
-    workflowMgr.register({ name: "standard", content: "# Standard Workflow\n1. Plan\n2. Code\n3. Test" });
+    workflowMgr.set({ name: "standard", content: "# Standard Workflow\n1. Plan\n2. Code\n3. Test" });
   });
 
   afterEach(async () => {

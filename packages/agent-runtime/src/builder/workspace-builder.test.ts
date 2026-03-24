@@ -9,6 +9,7 @@ import {
   WorkflowManager,
   PluginManager,
 } from "@actant/domain-context";
+import { createBackendManager } from "../manager/launcher/backend-registry";
 import { WorkspaceBuilder, CustomBuilder } from "./index";
 
 describe("WorkspaceBuilder", () => {
@@ -126,6 +127,41 @@ describe("WorkspaceBuilder", () => {
       expect(result.backendType).toBe("custom");
       expect(result.verify.valid).toBe(true);
     });
+
+    it("uses an injected BackendManager instead of the singleton fallback", async () => {
+      const backendManager = createBackendManager();
+      backendManager.register({
+        name: "isolated",
+        version: "1.0.0",
+        description: "test-only isolated backend",
+        origin: { type: "builtin" },
+        supportedModes: ["resolve"],
+        defaultInteractionModes: ["open"],
+        runtimeProfile: "openOnly",
+        maturity: "stable",
+        capabilities: {
+          supportsOpen: true,
+          supportsManagedSessions: false,
+          supportsServiceArchetype: false,
+          supportsEmployeeArchetype: false,
+          supportsPromptApi: false,
+        },
+        materialization: {
+          configDir: ".isolated",
+          scaffoldDirs: [".isolated"],
+          components: {},
+          verifyChecks: [{ path: ".isolated", type: "dir", severity: "warning" }],
+        },
+      });
+
+      const builder = new WorkspaceBuilder(undefined, { backendManager });
+      const result = await builder.build(tmpDir, {}, "isolated" as never);
+
+      expect(result.backendType).toBe("isolated");
+      expect(result.verify.valid).toBe(true);
+      const isolatedStat = await stat(join(tmpDir, ".isolated"));
+      expect(isolatedStat.isDirectory()).toBe(true);
+    });
   });
 
   describe("registerBuilder()", () => {
@@ -178,7 +214,7 @@ describe("WorkspaceBuilder", () => {
   describe("build() resolves project context", () => {
     it("resolves skills via SkillManager when provided", async () => {
       const skillManager = new SkillManager();
-      skillManager.register({
+      skillManager.set({
         name: "resolved-skill",
         content: "Resolved content from manager",
         description: "A skill",
@@ -199,7 +235,7 @@ describe("WorkspaceBuilder", () => {
 
     it("resolves prompts via PromptManager when provided", async () => {
       const promptManager = new PromptManager();
-      promptManager.register({
+      promptManager.set({
         name: "resolved-prompt",
         content: "Resolved prompt content",
       });
@@ -217,7 +253,7 @@ describe("WorkspaceBuilder", () => {
 
     it("resolves workflow via WorkflowManager when provided", async () => {
       const workflowManager = new WorkflowManager();
-      workflowManager.register({
+      workflowManager.set({
         name: "trellis",
         content: "# Trellis Workflow\n\nCustom workflow content.",
       });
@@ -235,7 +271,7 @@ describe("WorkspaceBuilder", () => {
 
     it("resolves plugins via PluginManager when provided", async () => {
       const pluginManager = new PluginManager();
-      pluginManager.register({
+      pluginManager.set({
         name: "ts",
         type: "npm",
         source: "typescript",

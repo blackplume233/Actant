@@ -7,11 +7,12 @@ import {
   AgentManager,
   SessionRegistry,
   createLauncher,
+  createBackendManager,
+  registerBuiltinBackends,
   EmployeeScheduler,
   InstanceRegistry,
   createDefaultStepRegistry,
   registerCommunicator,
-  getBackendManager,
   HookEventBus,
   HookCategoryRegistry,
   HookRegistry,
@@ -28,6 +29,7 @@ import {
   DEFAULT_PERMISSION_RULES,
   VfsLifecycleManager,
   RoutingChannelManager,
+  type BackendManager,
   type ActantChannel,
   type ActantChannelManager,
   type ActionContext,
@@ -55,8 +57,7 @@ import {
   canvasSourceFactory,
   vcsSourceFactory,
   processSourceFactory,
-  createDomainSource,
-  createSkillSource,
+  createSnapshotDomainSource,
   createMcpConfigSource,
   createMcpRuntimeSource,
   createAgentRuntimeSource,
@@ -213,6 +214,7 @@ export class AppContext {
   readonly budgetManager: SystemBudgetManager;
   readonly canvasStore: CanvasStore;
   readonly pluginHost: PluginHost;
+  readonly backendManager: BackendManager;
   readonly vfsRegistry: VfsRegistry;
   readonly vfsKernel: VfsKernel;
   readonly vfsSecuredKernel: VfsKernel;
@@ -248,6 +250,8 @@ export class AppContext {
     this.instanceRegistry = new InstanceRegistry(this.registryPath, this.builtinInstancesDir);
     this.templateLoader = new TemplateLoader();
     this.templateRegistry = new TemplateRegistry({ allowOverwrite: true });
+    this.backendManager = createBackendManager();
+    registerBuiltinBackends(this.backendManager);
 
     this.skillManager = new SkillManager();
     this.promptManager = new PromptManager();
@@ -268,6 +272,7 @@ export class AppContext {
           workflows: this.workflowManager,
           plugins: this.pluginManager,
         },
+        backendManager: this.backendManager,
         stepRegistry: createDefaultStepRegistry(),
       },
     );
@@ -289,7 +294,12 @@ export class AppContext {
     const launcherMode = resolvedLauncherMode;
     this.agentManager = new AgentManager(
       this.agentInitializer,
-      createLauncher({ mode: launcherMode }),
+      createLauncher({
+        mode: launcherMode,
+        processOptions: {
+          backendManager: this.backendManager,
+        },
+      }),
       this.instancesDir,
       {
         channelManager: launcherMode !== "mock" ? this.buildRoutingChannelManager() : undefined,
@@ -298,6 +308,7 @@ export class AppContext {
         eventBus: this.eventBus,
         recordSystem: this.recordSystem,
         budgetManager: this.budgetManager,
+        backendManager: this.backendManager,
       },
     );
     this.templateWatcher = new TemplateDirectoryWatcher(this.templatesDir, this.templateRegistry);
@@ -565,17 +576,16 @@ export class AppContext {
   }
 
   private registerPiBackend(): void {
-    const mgr = getBackendManager();
-    const existing = mgr.get("pi");
+    const existing = this.backendManager.get("pi");
     if (existing) {
-      mgr.register({ ...existing, acpOwnsProcess: true });
+      this.backendManager.register({ ...existing, acpOwnsProcess: true });
     }
 
-    mgr.registerAcpResolver("pi", () => ({
+    this.backendManager.registerAcpResolver("pi", () => ({
       command: process.execPath,
       args: [ACP_BRIDGE_PATH],
     }));
-    mgr.registerBuildProviderEnv("pi", (providerConfig) => {
+    this.backendManager.registerBuildProviderEnv("pi", (providerConfig) => {
       const env: Record<string, string> = {};
       const defaultDesc = modelProviderRegistry.getDefault();
       const providerType = providerConfig?.type ?? defaultDesc?.type;
@@ -595,7 +605,7 @@ export class AppContext {
 
       return env;
     });
-    this.agentInitializer.workspaceBuilder.registerBuilder(new PiBuilder());
+    this.backendManager.registerBuilder("pi", new PiBuilder());
     registerCommunicator("pi", (backendConfig) => new PiCommunicator(configFromBackend(backendConfig)));
     logger.info("Pi backend augmented (acpOwnsProcess: true, resolver registered)");
   }
@@ -779,10 +789,10 @@ export class AppContext {
     const lifecycle = { type: "daemon" } as const;
     const coreSources = [
       {
-        ...createSkillSource(this.skillManager, "/skills", lifecycle),
+        ...createSnapshotDomainSource(this.skillManager.list(), "skills", "/skills", lifecycle),
         name: "skills",
       },
-      createDomainSource(this.promptManager, "prompts", "/prompts", lifecycle),
+      createSnapshotDomainSource(this.promptManager.list(), "prompts", "/prompts", lifecycle),
       {
         ...createMcpConfigSource(this.mcpConfigManager, "/mcp/configs", lifecycle),
         name: "mcp-configs",
@@ -791,9 +801,9 @@ export class AppContext {
         ...createMcpRuntimeSource(this.createMcpRuntimeProviderContribution("/mcp/runtime"), "/mcp/runtime", lifecycle),
         name: "mcp-runtime",
       },
-      createDomainSource(this.mcpConfigManager, "mcp", "/mcp", lifecycle),
-      createDomainSource(this.workflowManager, "workflows", "/workflows", lifecycle),
-      createDomainSource(this.templateRegistry, "templates", "/templates", lifecycle),
+      createSnapshotDomainSource(this.mcpConfigManager.list(), "mcp", "/mcp", lifecycle),
+      createSnapshotDomainSource(this.workflowManager.list(), "workflows", "/workflows", lifecycle),
+      createSnapshotDomainSource(this.templateRegistry.list(), "templates", "/templates", lifecycle),
       {
         ...createAgentRuntimeSource(this.createAgentRuntimeProviderContribution("/agents"), "/agents", lifecycle),
         name: "agents",
@@ -944,7 +954,6 @@ export class AppContext {
   }
 
   private async loadDomainComponents(): Promise<void> {
-    const backendManager = getBackendManager();
     const dirs: { manager: { setPersistDir(dir: string): void; loadFromDirectory(dirPath: string): Promise<number> }; sub: string }[] = [
       { manager: this.skillManager, sub: "skills" },
       { manager: this.promptManager, sub: "prompts" },
@@ -952,7 +961,7 @@ export class AppContext {
       { manager: this.workflowManager, sub: "workflows" },
       { manager: this.pluginManager, sub: "plugins" },
       { manager: this.templateRegistry, sub: "templates" },
-      { manager: backendManager, sub: "backends" },
+      { manager: this.backendManager, sub: "backends" },
     ];
 
     for (const { manager, sub } of dirs) {

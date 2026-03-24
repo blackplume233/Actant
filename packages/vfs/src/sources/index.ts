@@ -5,13 +5,11 @@ export { canvasSourceFactory } from "./canvas-source";
 export { processSourceFactory, createProcessSource, OutputBuffer, type ProcessHandle } from "./process-source";
 export { vcsSourceFactory } from "./vcs-source";
 export {
-  createDomainSource,
   createSnapshotDomainSource,
   type DomainComponentSnapshot,
 } from "./domain-source";
 export { createAgentRegistrySource } from "./agent-registry-source";
 export { createDaemonInfoSource } from "./daemon-source";
-export { createSkillSource } from "./skill-source";
 export { createMcpConfigSource } from "./mcp-config-source";
 export {
   createMcpRuntimeSource,

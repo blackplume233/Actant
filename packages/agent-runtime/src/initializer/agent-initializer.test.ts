@@ -38,7 +38,7 @@ describe("AgentInitializer", () => {
   beforeEach(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "actant-init-test-"));
     registry = new TemplateRegistry();
-    registry.register(makeTemplate());
+    registry.set(makeTemplate());
     initializer = new AgentInitializer(registry, tmpDir);
   });
 
@@ -82,7 +82,7 @@ describe("AgentInitializer", () => {
     });
 
     it("should materialize to .claude/ for claude-code backend", async () => {
-      registry.register(
+      registry.set(
         makeTemplate({
           name: "claude-template",
           backend: { type: "claude-code", config: { executablePath: "/usr/bin/claude" } },
@@ -127,7 +127,7 @@ describe("AgentInitializer", () => {
 
     it("should use defaultLaunchMode from options when no override", async () => {
       // Register a template that supports acp-service (claude-code backend + service archetype)
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "service-template",
         backend: { type: "claude-code" },
         archetype: "service",
@@ -160,7 +160,7 @@ describe("AgentInitializer", () => {
     });
 
     it("should create instance with minimal template (empty project)", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "minimal",
         project: {},
       }));
@@ -175,7 +175,7 @@ describe("AgentInitializer", () => {
     // -------------------------------------------------------------------------
 
     it("should allow repo + cursor (openOnly backend)", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "repo-cursor",
         backend: { type: "cursor" },
         archetype: "repo",
@@ -186,7 +186,7 @@ describe("AgentInitializer", () => {
     });
 
     it("should allow service + claude-code (managedPrimary)", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "service-claude",
         backend: { type: "claude-code" },
         archetype: "service",
@@ -197,7 +197,7 @@ describe("AgentInitializer", () => {
     });
 
     it("should allow employee + claude-code (managedPrimary)", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "employee-claude",
         backend: { type: "claude-code" },
         archetype: "employee",
@@ -208,7 +208,7 @@ describe("AgentInitializer", () => {
     });
 
     it("should reject service + cursor (openOnly cannot do managed)", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "service-cursor",
         backend: { type: "cursor" },
         archetype: "service",
@@ -219,7 +219,7 @@ describe("AgentInitializer", () => {
     });
 
     it("should reject employee + cursor (openOnly cannot do managed)", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "employee-cursor",
         backend: { type: "cursor" },
         archetype: "employee",
@@ -230,7 +230,7 @@ describe("AgentInitializer", () => {
     });
 
     it("should reject repo + pi (managedExperimental doesn't support repo)", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "repo-pi",
         backend: { type: "pi" },
         archetype: "repo",
@@ -241,7 +241,7 @@ describe("AgentInitializer", () => {
     });
 
     it("should allow service + pi with warning (managedExperimental)", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "service-pi",
         backend: { type: "pi" },
         archetype: "service",
@@ -253,7 +253,7 @@ describe("AgentInitializer", () => {
     });
 
     it("should derive interaction modes from backend capabilities for cursor (openOnly)", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "cursor-repo",
         backend: { type: "cursor" },
         archetype: "repo",
@@ -264,7 +264,7 @@ describe("AgentInitializer", () => {
     });
 
     it("should derive interaction modes from backend capabilities for claude-code (managedPrimary)", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "claude-service",
         backend: { type: "claude-code" },
         archetype: "service",
@@ -277,7 +277,7 @@ describe("AgentInitializer", () => {
 
   describe("initializer pipeline integration", () => {
     it("executes declared initializer steps during createInstance", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "with-steps",
         initializer: {
           steps: [
@@ -298,7 +298,7 @@ describe("AgentInitializer", () => {
     });
 
     it("rolls back executed initializer steps when a later step fails", async () => {
-      registry.register(makeTemplate({
+      registry.set(makeTemplate({
         name: "with-failing-steps",
         initializer: {
           steps: [

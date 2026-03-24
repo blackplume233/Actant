@@ -10,13 +10,13 @@ function makeSkill(name: string, desc?: string): SkillDefinition {
   return { name, content: `Rules for ${name}`, description: desc };
 }
 
-describe("BaseComponentManager CRUD", () => {
+describe("File-backed component collection CRUD", () => {
   let mgr: SkillManager;
   let tempDir: string;
 
   beforeEach(async () => {
     mgr = new SkillManager();
-    tempDir = await mkdtemp(join(tmpdir(), "bcm-test-"));
+    tempDir = await mkdtemp(join(tmpdir(), "component-collection-test-"));
     mgr.setPersistDir(tempDir);
   });
 
@@ -173,13 +173,13 @@ describe("BaseComponentManager CRUD", () => {
   });
 });
 
-describe("BaseComponentManager loadFromDirectory", () => {
+describe("File-backed component collection loadFromDirectory", () => {
   let mgr: SkillManager;
   let tempDir: string;
 
   beforeEach(async () => {
     mgr = new SkillManager();
-    tempDir = await mkdtemp(join(tmpdir(), "bcm-load-"));
+    tempDir = await mkdtemp(join(tmpdir(), "component-collection-load-"));
   });
 
   afterEach(async () => {

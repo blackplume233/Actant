@@ -887,7 +887,7 @@ type SessionUpdate =
 
 ### 11.1 现有 StreamChunk（向后兼容）
 
-当前 `@actant/core` 的 `StreamChunk` 是 `ChannelEvent` 的简化投影：
+当前 `@actant/agent-runtime` communication surface 中的 `StreamChunk` 是 `ChannelEvent` 的简化投影：
 
 ```typescript
 interface StreamChunk {

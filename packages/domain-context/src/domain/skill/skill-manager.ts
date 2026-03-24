@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import type { ConfigValidationResult, SkillDefinition } from "@actant/shared";
-import { BaseComponentManager } from "../base-component-manager";
+import { FileBackedComponentCollection } from "../component-collection";
 
 const SkillDefinitionSchema = z
   .object({
@@ -14,7 +14,7 @@ const SkillDefinitionSchema = z
   })
   .passthrough();
 
-export class SkillManager extends BaseComponentManager<SkillDefinition> {
+export class SkillManager extends FileBackedComponentCollection<SkillDefinition> {
   protected readonly componentType = "Skill";
 
   constructor() {

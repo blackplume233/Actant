@@ -1,6 +1,6 @@
 import { z } from "zod/v4";
 import type { ConfigValidationResult, PluginDefinition } from "@actant/shared";
-import { BaseComponentManager } from "../base-component-manager";
+import { FileBackedComponentCollection } from "../component-collection";
 
 const PluginDefinitionSchema = z
   .object({
@@ -13,7 +13,7 @@ const PluginDefinitionSchema = z
   })
   .passthrough();
 
-export class PluginManager extends BaseComponentManager<PluginDefinition> {
+export class PluginManager extends FileBackedComponentCollection<PluginDefinition> {
   protected readonly componentType = "Plugin";
 
   constructor() {

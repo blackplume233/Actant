@@ -72,7 +72,7 @@ export function createTestManager(
 ) {
   const template = makeSleeperTemplate(opts?.templateOverrides);
   const registry = new TemplateRegistry();
-  registry.register(template);
+  registry.set(template);
 
   const launcher = createTestLauncher();
   const initializer = new AgentInitializer(registry, instancesBaseDir);

@@ -1,4 +1,5 @@
 import type { AgentBackendType, AgentInstanceMeta, InteractionMode, OpenSpawnOptions, AgentArchetype, BackendDefinition } from "@actant/shared";
+import type { BackendManager } from "../../domain/backend/backend-manager";
 import {
   getBackendDescriptor,
   getAcpResolver,
@@ -25,8 +26,11 @@ export interface ResolvedBackend {
  * Whether a backend type supports the ACP protocol for Actant-managed control.
  * Replaces the old hardcoded `isAcpBackend()`.
  */
-export function isAcpBackend(backendType: AgentBackendType): boolean {
-  return supportsMode(backendType, "acp");
+export function isAcpBackend(
+  backendType: AgentBackendType,
+  backendManager?: BackendManager,
+): boolean {
+  return supportsMode(backendType, "acp", backendManager);
 }
 
 /**
@@ -34,8 +38,11 @@ export function isAcpBackend(backendType: AgentBackendType): boolean {
  * `"sdk"` means the backend uses Actant's own SDK adapter directly;
  * `"acp"` (default) means it spawns an ACP subprocess.
  */
-export function getChannelStrategy(backendType: AgentBackendType): "acp" | "sdk" {
-  const desc = getBackendDescriptor(backendType);
+export function getChannelStrategy(
+  backendType: AgentBackendType,
+  backendManager?: BackendManager,
+): "acp" | "sdk" {
+  const desc = getBackendDescriptor(backendType, backendManager);
   return desc.channelStrategy ?? "acp";
 }
 
@@ -43,9 +50,12 @@ export function getChannelStrategy(backendType: AgentBackendType): "acp" | "sdk"
  * Whether a backend's ACP connection owns the process lifecycle.
  * When true, ProcessLauncher.launch() is skipped — only AcpConnectionManager spawns the process.
  */
-export function isAcpOnlyBackend(backendType: AgentBackendType): boolean {
-  const desc = getBackendDescriptor(backendType);
-  return supportsMode(backendType, "acp") && desc.acpOwnsProcess === true;
+export function isAcpOnlyBackend(
+  backendType: AgentBackendType,
+  backendManager?: BackendManager,
+): boolean {
+  const desc = getBackendDescriptor(backendType, backendManager);
+  return supportsMode(backendType, "acp", backendManager) && desc.acpOwnsProcess === true;
 }
 
 /**
@@ -62,13 +72,14 @@ function buildArgs(
   backendType: AgentBackendType,
   workspaceDir: string,
   backendConfig?: Record<string, unknown>,
+  backendManager?: BackendManager,
 ): string[] {
   const configArgs = backendConfig?.args;
   if (Array.isArray(configArgs)) return configArgs.map(String);
 
   if (backendType === "custom") return [workspaceDir];
 
-  const desc = getBackendDescriptor(backendType);
+  const desc = getBackendDescriptor(backendType, backendManager);
   if (desc.supportedModes.includes("acp")) {
     return [];
   }
@@ -91,21 +102,22 @@ export function resolveBackend(
   backendType: AgentBackendType,
   workspaceDir: string,
   backendConfig?: Record<string, unknown>,
+  backendManager?: BackendManager,
 ): ResolvedBackend {
-  requireMode(backendType, "resolve");
+  requireMode(backendType, "resolve", backendManager);
 
-  const desc = getBackendDescriptor(backendType);
+  const desc = getBackendDescriptor(backendType, backendManager);
   const explicitPath = backendConfig?.executablePath;
 
   if (typeof explicitPath === "string" && explicitPath.length > 0) {
     return {
       command: explicitPath,
-      args: buildArgs(backendType, workspaceDir, backendConfig),
+      args: buildArgs(backendType, workspaceDir, backendConfig, backendManager),
       resolvePackage: desc.resolvePackage,
     };
   }
 
-  const resolver = getAcpResolver(backendType);
+  const resolver = getAcpResolver(backendType, backendManager);
   if (resolver) {
     return resolver(workspaceDir, backendConfig);
   }
@@ -115,8 +127,8 @@ export function resolveBackend(
   }
 
   return {
-    command: getPlatformCommand(desc.resolveCommand),
-    args: buildArgs(backendType, workspaceDir, backendConfig),
+    command: getPlatformCommand(desc.resolveCommand, backendManager),
+    args: buildArgs(backendType, workspaceDir, backendConfig, backendManager),
     resolvePackage: desc.resolvePackage,
   };
 }
@@ -138,10 +150,11 @@ const DEFAULT_OPEN_SPAWN: OpenSpawnOptions = {
 export function openBackend(
   backendType: AgentBackendType,
   workspaceDir: string,
+  backendManager?: BackendManager,
 ): ResolvedBackend {
-  requireMode(backendType, "open");
+  requireMode(backendType, "open", backendManager);
 
-  const desc = getBackendDescriptor(backendType);
+  const desc = getBackendDescriptor(backendType, backendManager);
   if (!desc.openCommand) {
     throw new Error(`Backend "${backendType}" has no openCommand configured.`);
   }
@@ -149,7 +162,7 @@ export function openBackend(
   const useCwd = desc.openWorkspaceDir === "cwd";
 
   return {
-    command: getPlatformCommand(desc.openCommand),
+    command: getPlatformCommand(desc.openCommand, backendManager),
     args: useCwd ? [] : [workspaceDir],
     cwd: useCwd ? workspaceDir : undefined,
     openSpawnOptions: { ...DEFAULT_OPEN_SPAWN, ...desc.openSpawnOptions },
@@ -166,12 +179,13 @@ export function resolveAcpBackend(
   backendType: AgentBackendType,
   workspaceDir: string,
   backendConfig?: Record<string, unknown>,
+  backendManager?: BackendManager,
 ): ResolvedBackend {
-  requireMode(backendType, "acp");
+  requireMode(backendType, "acp", backendManager);
 
-  const desc = getBackendDescriptor(backendType);
+  const desc = getBackendDescriptor(backendType, backendManager);
 
-  const resolver = getAcpResolver(backendType);
+  const resolver = getAcpResolver(backendType, backendManager);
   if (resolver) {
     return resolver(workspaceDir, backendConfig);
   }
@@ -181,12 +195,12 @@ export function resolveAcpBackend(
   const command = typeof explicitPath === "string" && explicitPath.length > 0
     ? explicitPath
     : commandSource
-      ? getPlatformCommand(commandSource)
+      ? getPlatformCommand(commandSource, backendManager)
       : (() => { throw new Error(`Backend "${backendType}" has no command configured for ACP spawn.`); })();
 
   return {
     command,
-    args: buildArgs(backendType, workspaceDir, backendConfig),
+    args: buildArgs(backendType, workspaceDir, backendConfig, backendManager),
     resolvePackage: desc.resolvePackage,
   };
 }
@@ -321,8 +335,9 @@ export function resolveRuntimeContract(
   backendType: AgentBackendType,
   archetype: AgentArchetype,
   options?: { allowExperimental?: boolean },
+  backendManager?: BackendManager,
 ): RuntimeContract {
-  const backendDef = getBackendDescriptor(backendType);
+  const backendDef = getBackendDescriptor(backendType, backendManager);
   if (!backendDef) {
     throw new Error(`Unknown backend type: "${backendType}"`);
   }
@@ -377,8 +392,9 @@ export function resolveRuntimeContract(
 export function supportsManagedOperation(
   backendType: AgentBackendType,
   operation: "start" | "prompt" | "run" | "session",
+  backendManager?: BackendManager,
 ): boolean {
-  const backendDef = getBackendDescriptor(backendType);
+  const backendDef = getBackendDescriptor(backendType, backendManager);
   if (!backendDef) return false;
 
   const profile = backendDef.runtimeProfile;

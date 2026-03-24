@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import type { BackendDefinition } from "@actant/shared";
-import { getBackendManager } from "./backend-registry";
+import { createBackendManager, getBackendManager } from "./backend-registry";
 import * as backendRegistry from "./backend-registry";
 import {
   resolveBackend,
@@ -99,6 +99,34 @@ describe("resolveBackend", () => {
     expect(result.command).toBe("/override/bridge");
     expect(result.args).toEqual([]);
     spy.mockRestore();
+  });
+
+  it("resolves against an injected BackendManager without touching the singleton registry", () => {
+    const isolatedManager = createBackendManager();
+    isolatedManager.register({
+      name: "isolated",
+      version: "1.0.0",
+      description: "isolated backend",
+      origin: { type: "builtin" },
+      supportedModes: ["resolve"],
+      defaultInteractionModes: ["open"],
+      runtimeProfile: "openOnly",
+      maturity: "stable",
+      capabilities: {
+        supportsOpen: true,
+        supportsManagedSessions: false,
+        supportsServiceArchetype: false,
+        supportsEmployeeArchetype: false,
+        supportsPromptApi: false,
+      },
+      resolveCommand: { win32: "isolated.cmd", default: "isolated" },
+    });
+
+    expect(getBackendManager().get("isolated")).toBeUndefined();
+
+    const result = resolveBackend("isolated" as never, "/workspace", undefined, isolatedManager);
+    expect(result.command).toBe("isolated");
+    expect(result.args).toEqual(["/workspace"]);
   });
 });
 

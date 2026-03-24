@@ -2,6 +2,11 @@
 
 This directory contains AI-agent-generated content. All content here should be treated as **agent opinion** and requires human validation before being acted upon.
 
+> Historical / delivery-memory notice:
+> `docs/agent/` is not an active truth source.
+> Use it as audit evidence, delivery memory, and release drafting context only.
+> Active execution state remains in `docs/planning/contextfs-roadmap.md`; active architecture truth remains in spec/design entry docs.
+
 ## Subdirectories
 
 - `sessions/` — AI development session summaries

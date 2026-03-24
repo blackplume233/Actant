@@ -12,7 +12,7 @@ import { PathOutsideWorkspaceError } from "../errors/bridge-errors";
  * | Layer | Location | Purpose |
  * |-------|----------|---------|
  * | **Shared path-boundary** | `@actant/shared/security` | Low-level path resolution + boundary validation. Use when bridging tool params (paths) to real filesystem. |
- * | **VFS permission manager** | `packages/core/vfs` | Action-based access control on VFS paths (read/write/list). Uses principal/identity rules. |
+ * | **VFS permission manager** | `packages/vfs` | Action-based access control on VFS paths (read/write/list). Uses principal/identity rules. |
  * | **Platform utilities** | `@actant/shared/platform` | Agent name validation, IPC paths. No filesystem boundary logic. |
  *
  * ## When to Use

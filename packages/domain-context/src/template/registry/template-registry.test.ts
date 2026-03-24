@@ -24,20 +24,20 @@ describe("TemplateRegistry", () => {
     registry = new TemplateRegistry();
   });
 
-  describe("register", () => {
-    it("should register a template", () => {
+  describe("set/add", () => {
+    it("should store a template", () => {
       const tpl = makeTemplate();
-      registry.register(tpl);
+      registry.set(tpl);
 
       expect(registry.has("test-agent")).toBe(true);
       expect(registry.size).toBe(1);
     });
 
-    it("should throw on duplicate registration by default", () => {
+    it("should throw on duplicate add by default", async () => {
       const tpl = makeTemplate();
-      registry.register(tpl);
+      await registry.add(tpl);
 
-      expect(() => registry.register(tpl)).toThrow(ConfigValidationError);
+      await expect(registry.add(tpl)).rejects.toThrow(ConfigValidationError);
     });
 
     it("should allow overwrite when option is enabled", () => {
@@ -45,26 +45,26 @@ describe("TemplateRegistry", () => {
       const tpl1 = makeTemplate({ description: "v1" });
       const tpl2 = makeTemplate({ description: "v2" });
 
-      registry.register(tpl1);
-      registry.register(tpl2);
+      registry.set(tpl1);
+      registry.set(tpl2);
 
       expect(registry.get("test-agent")?.description).toBe("v2");
       expect(registry.size).toBe(1);
     });
 
     it("should register multiple different templates", () => {
-      registry.register(makeTemplate({ name: "agent-a" }));
-      registry.register(makeTemplate({ name: "agent-b" }));
-      registry.register(makeTemplate({ name: "agent-c" }));
+      registry.set(makeTemplate({ name: "agent-a" }));
+      registry.set(makeTemplate({ name: "agent-b" }));
+      registry.set(makeTemplate({ name: "agent-c" }));
 
       expect(registry.size).toBe(3);
     });
   });
 
-  describe("unregister", () => {
-    it("should unregister an existing template", () => {
-      registry.register(makeTemplate());
-      const result = registry.unregister("test-agent");
+  describe("delete", () => {
+    it("should delete an existing template", () => {
+      registry.set(makeTemplate());
+      const result = registry.delete("test-agent");
 
       expect(result).toBe(true);
       expect(registry.has("test-agent")).toBe(false);
@@ -72,7 +72,7 @@ describe("TemplateRegistry", () => {
     });
 
     it("should return false for non-existent template", () => {
-      const result = registry.unregister("nonexistent");
+      const result = registry.delete("nonexistent");
       expect(result).toBe(false);
     });
   });
@@ -80,7 +80,7 @@ describe("TemplateRegistry", () => {
   describe("get / getOrThrow", () => {
     it("should return template by name", () => {
       const tpl = makeTemplate();
-      registry.register(tpl);
+      registry.set(tpl);
 
       expect(registry.get("test-agent")).toEqual(tpl);
     });
@@ -95,7 +95,7 @@ describe("TemplateRegistry", () => {
 
     it("should return template via getOrThrow when it exists", () => {
       const tpl = makeTemplate();
-      registry.register(tpl);
+      registry.set(tpl);
 
       expect(registry.getOrThrow("test-agent")).toEqual(tpl);
     });
@@ -103,7 +103,7 @@ describe("TemplateRegistry", () => {
 
   describe("has", () => {
     it("should return true for registered template", () => {
-      registry.register(makeTemplate());
+      registry.set(makeTemplate());
       expect(registry.has("test-agent")).toBe(true);
     });
 
@@ -118,9 +118,9 @@ describe("TemplateRegistry", () => {
     });
 
     it("should return all registered templates", () => {
-      registry.register(makeTemplate({ name: "a" }));
-      registry.register(makeTemplate({ name: "b" }));
-      registry.register(makeTemplate({ name: "c" }));
+      registry.set(makeTemplate({ name: "a" }));
+      registry.set(makeTemplate({ name: "b" }));
+      registry.set(makeTemplate({ name: "c" }));
 
       const list = registry.list();
       expect(list).toHaveLength(3);
@@ -130,8 +130,8 @@ describe("TemplateRegistry", () => {
 
   describe("clear", () => {
     it("should remove all templates", () => {
-      registry.register(makeTemplate({ name: "a" }));
-      registry.register(makeTemplate({ name: "b" }));
+      registry.set(makeTemplate({ name: "a" }));
+      registry.set(makeTemplate({ name: "b" }));
       registry.clear();
 
       expect(registry.size).toBe(0);
@@ -140,14 +140,14 @@ describe("TemplateRegistry", () => {
   });
 
 
-  describe("integration: register + unregister + re-register", () => {
-    it("should allow re-registration after unregister", () => {
+  describe("integration: set + delete + set", () => {
+    it("should allow re-store after delete", () => {
       const tpl = makeTemplate();
-      registry.register(tpl);
-      registry.unregister("test-agent");
+      registry.set(tpl);
+      registry.delete("test-agent");
 
       const tpl2 = makeTemplate({ description: "new version" });
-      registry.register(tpl2);
+      registry.set(tpl2);
 
       expect(registry.get("test-agent")?.description).toBe("new version");
     });

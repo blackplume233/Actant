@@ -1,5 +1,5 @@
 import { ComponentReferenceError } from "@actant/shared";
-import type { ComponentCollection, NamedComponent } from "@actant/agent-runtime";
+import type { ComponentCollection, NamedComponent } from "@actant/domain-context";
 
 interface ComponentReader<T extends NamedComponent> {
   get(name: string): T | undefined;
@@ -10,8 +10,8 @@ interface ComponentReader<T extends NamedComponent> {
 }
 
 /**
- * Read-only overlay view that merges a local mutable collection with derived catalog state.
- * Local components keep write authority; overlay components only extend read resolution.
+ * Read-only overlay view that merges a local mutable collection with derived state.
+ * Local components keep write authority; overlays only extend read resolution.
  */
 export class OverlayComponentView<T extends NamedComponent> implements ComponentCollection<T> {
   constructor(

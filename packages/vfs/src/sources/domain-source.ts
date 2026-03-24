@@ -18,35 +18,9 @@ export interface DomainComponentSnapshot {
   tags?: string[];
 }
 
-interface ComponentManager {
-  list(): DomainComponentSnapshot[];
-  get(name: string): DomainComponentSnapshot | undefined;
-  search(query: string): DomainComponentSnapshot[];
-}
-
 interface ComponentView {
   list(): DomainComponentSnapshot[];
   get(name: string): DomainComponentSnapshot | undefined;
-}
-
-/**
- * Creates a read-only VFS source backed by a BaseComponentManager.
- *
- * Virtual file layout:
- *   /                     → list of component names
- *   /_catalog.json         → full catalog (name + description + tags, no content)
- *   /<name>                → component content (markdown or JSON)
- */
-export function createDomainSource(
-  manager: ComponentManager,
-  domain: string,
-  mountPoint: string,
-  lifecycle: VfsLifecycle,
-): VfsMountRegistration {
-  return createDomainRegistration(manager, domain, mountPoint, lifecycle, {
-    description: `${domain} components (read-only, virtual)`,
-    virtual: true,
-  });
 }
 
 /**

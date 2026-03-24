@@ -1,4 +1,5 @@
 import type { BackendDefinition, MaterializationSpec, ModelProviderConfig } from "@actant/shared";
+import type { BackendManager } from "../../domain/backend/backend-manager";
 import { getBackendManager } from "./backend-registry";
 import { modelProviderRegistry, resolveApiKeyFromEnv, resolveUpstreamBaseUrl } from "@actant/domain-context";
 
@@ -238,13 +239,12 @@ function buildClaudeCodeProviderEnv(
   return env;
 }
 
-export function registerBuiltinBackends(): void {
-  const mgr = getBackendManager();
+export function registerBuiltinBackends(manager: BackendManager = getBackendManager()): void {
   for (const def of BUILTIN_BACKENDS) {
-    mgr.register(def);
+    manager.register(def);
   }
 
-  mgr.registerBuildProviderEnv("claude-code", buildClaudeCodeProviderEnv);
+  manager.registerBuildProviderEnv("claude-code", buildClaudeCodeProviderEnv);
 }
 
 registerBuiltinBackends();

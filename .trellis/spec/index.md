@@ -54,6 +54,82 @@ agent-runtime / 其它运行插件"]
     PLUGINS --> VFS
 ```
 
+### 冻结后的包拓扑
+
+当前活跃仓库只保留下面这套包层级：
+
+| 层级 | 保留包 | 固定职责 |
+| --- | --- | --- |
+| `VFS core` | `@actant/vfs` | 唯一文件系统内核、唯一挂载/路径/节点真相源 |
+| `daemon-hosted modules` | `@actant/api`, `@actant/agent-runtime` | `daemon` 组合、plugin 生命周期、runtimefs/provider 接入、namespace 装载 |
+| `support modules` | `@actant/domain-context`, `@actant/acp`, `@actant/pi`, `@actant/shared` | 文件解释、协议/transport、backend package、共享契约 |
+| `bridge packages` | `@actant/cli`, `@actant/rest-api`, `@actant/dashboard`, `@actant/mcp-server` | UI / CLI / HTTP / MCP 入口；默认经 RPC 消费 `daemon` |
+| `adapter / ui packages` | `@actant/tui`, `@actant/channel-claude` | UI 组件库、channel adapter；不是组合根，不是 VFS 真相源 |
+| `product shell` | `@actant/actant` | 打包层 / 分发层 / 产品壳 |
+
+过渡与清理结论固定如下：
+
+| 状态 | 包 | 结论 |
+| --- | --- | --- |
+| `transitional keep` | `@actant/context` | 只允许保留 namespace projection / permission compilation helper；目标是继续并入 `@actant/api`，不得新增独立中心职责 |
+| `deleted` | `@actant/catalog`, `@actant/core`, `@actant/domain` | 已退出活跃边界，不得在 active docs/help/export 中复活 |
+
+```mermaid
+flowchart LR
+    ACTANT["@actant/actant
+打包层 / 分发层"]
+
+    subgraph BRIDGE["Bridge Packages"]
+      CLI["@actant/cli"]
+      REST["@actant/rest-api"]
+      DASH["@actant/dashboard"]
+      MCP["@actant/mcp-server"]
+    end
+
+    subgraph HOST["Daemon-Hosted Modules"]
+      API["@actant/api"]
+      RUNTIME["@actant/agent-runtime"]
+      VFS["@actant/vfs"]
+    end
+
+    subgraph SUPPORT["Support Modules"]
+      DC["@actant/domain-context"]
+      ACP["@actant/acp"]
+      PI["@actant/pi"]
+      SHARED["@actant/shared"]
+      CTX["@actant/context
+transitional keep"]
+    end
+
+    subgraph EDGE["Adapter / UI"]
+      TUI["@actant/tui"]
+      CHAN["@actant/channel-*"]
+    end
+
+    ACTANT --> BRIDGE
+    BRIDGE --> API
+    API --> RUNTIME
+    API --> VFS
+    RUNTIME --> VFS
+    RUNTIME --> DC
+    RUNTIME --> ACP
+    RUNTIME --> PI
+    API --> DC
+    API --> CTX
+    BRIDGE --> SHARED
+    EDGE --> RUNTIME
+```
+
+### `actant` 最小职责边界
+
+`@actant/actant` 只允许承担以下职责：
+
+- 打包产物入口与产品分发壳
+- 对外聚合已冻结的 bridge / shell 能力
+- 不得成为组合根
+- 不得重新导出已删除的 `core` / `catalog` / `domain` 旧入口
+- 不得持有 runtime state、mount table、plugin registry 或 VFS kernel
+
 ---
 
 ## 强制流程
@@ -71,6 +147,7 @@ agent-runtime / 其它运行插件"]
 - `agent-runtime` 只是由 `daemon` 装载的机制模块，不是中心层或组合根
 - `provider contribution` 不得再被当作中心注册结构或顶层插件模型
 - `packages/vfs` 的 core 骨架必须保持在 `facade / kernel / mount / path / node / permission / lifecycle / storage / index / filesystem type SPI`
+- `@actant/context` 只允许作为过渡 helper 包存在，禁止新增中心语义，后续继续并入 `@actant/api`
 - 所有 ship / merge 级交付必须先产出 changelog draft，再汇总正式 release changelog
 - `docs/planning/contextfs-roadmap.md` 是唯一 live milestone truth file
 - `actant.namespace.json` 是默认且唯一运行时 namespace 配置入口

@@ -4,7 +4,15 @@ export * from "./schemas/index";
 // Local mutable collection primitives used by api / authoring flows.
 // These exports remain available for internal package wiring, but they are not
 // the public platform contract and must not define runtime truth.
-export { BaseComponentManager, type NamedComponent } from "./domain/base-component-manager";
+export type {
+  NamedComponent,
+  ComponentReader,
+  ComponentResolver,
+  ComponentAuthoring,
+  ComponentCollection,
+  MutableComponentCollection,
+} from "./domain/component-collection";
+export { FileBackedComponentCollection } from "./domain/component-collection";
 export { SkillManager } from "./domain/skill/skill-manager";
 export { PromptManager } from "./domain/prompt/prompt-manager";
 export { McpConfigManager } from "./domain/mcp/mcp-config-manager";

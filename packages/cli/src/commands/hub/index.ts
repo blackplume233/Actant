@@ -1,12 +1,6 @@
 import { Command } from "commander";
 import {
-  VfsRegistry,
-  createDaemonInfoSource,
-} from "@actant/agent-runtime";
-import {
-  createProjectContextFilesystemTypeRegistry,
-  createProjectContextRegistrations,
-  loadProjectContext,
+  createStandaloneProjectContextRuntime,
 } from "@actant/api";
 import type {
   HubActivateResult,
@@ -201,38 +195,25 @@ async function createConnectedHubBackend(client: RpcClient, projectDir: string):
 }
 
 async function createStandaloneHubBackend(projectDir: string): Promise<HubBackend> {
-  const context = await loadProjectContext(projectDir);
-  const registry = new VfsRegistry();
-  const factoryRegistry = createProjectContextFilesystemTypeRegistry();
-
-  for (const registration of createProjectContextRegistrations(
-    context,
-    factoryRegistry,
-    HUB_MOUNT_LAYOUT,
-    { type: "daemon" },
-    {
-      namePrefix: "standalone-hub",
-      workspaceReadOnly: true,
-      configReadOnly: true,
+  const standalone = await createStandaloneProjectContextRuntime({
+    projectDir,
+    layout: HUB_MOUNT_LAYOUT,
+    lifecycle: { type: "daemon" },
+    namePrefix: "standalone-hub",
+    workspaceReadOnly: true,
+    configReadOnly: true,
+    daemonInfo: {
+      mountPoint: "/daemon",
+      getVersion: () => "standalone",
+      getUptime: () => 0,
+      getAgentCount: () => 0,
+      getRpcMethods: () => [],
+      getHostProfile: () => "context",
+      getRuntimeState: () => "inactive",
+      getCapabilities: () => ["hub", "vfs", "domain"],
     },
-  )) {
-    registry.mount(registration);
-  }
-
-  registry.mount(createDaemonInfoSource({
-    getVersion: () => "standalone",
-    getUptime: () => 0,
-    getAgentCount: () => 0,
-    getRpcMethods: () => [],
-    getHostProfile: () => "context",
-    getRuntimeState: () => "inactive",
-    getCapabilities: () => ["hub", "vfs", "domain"],
-    getHubProject: () => ({
-      projectRoot: context.projectRoot,
-      projectName: context.summary.projectName,
-      configPath: context.configPath,
-    }),
-  }, "/daemon", { type: "daemon" }));
+  });
+  const { context, registry } = standalone;
 
   return {
     mode: "standalone",
@@ -267,7 +248,7 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
       const resolved = registry.resolve(path);
       if (!resolved) {
         const childMounts = registry.listChildMounts(path);
-        return childMounts.map((mount) => ({
+        return childMounts.map((mount: { mountPoint: string; name: string }) => ({
           name: mount.mountPoint.split("/").pop() ?? mount.name,
           path: mount.mountPoint,
           type: "directory" as const,
@@ -280,7 +261,7 @@ async function createStandaloneHubBackend(projectDir: string): Promise<HubBacken
       }
 
       const childMounts = registry.listChildMounts(path);
-      const projectedMounts = childMounts.map((mount) => ({
+      const projectedMounts = childMounts.map((mount: { mountPoint: string; name: string }) => ({
         name: mount.mountPoint.split("/").pop() ?? mount.name,
         path: mount.mountPoint,
         type: "directory" as const,

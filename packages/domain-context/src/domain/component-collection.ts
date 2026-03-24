@@ -34,10 +34,11 @@ export interface MutableComponentCollection<T extends NamedComponent>
   extends ComponentCollection<T>, ComponentAuthoring<T> {}
 
 /**
- * Generic base class for Domain Context component managers.
- * Provides CRUD, persist, import/export, search/filter, and load-from-directory.
+ * Package-local file-backed mutable collection for authoring flows.
+ * This is an implementation detail, not a cross-package platform boundary.
  */
-export abstract class BaseComponentManager<T extends NamedComponent> implements MutableComponentCollection<T> {
+export abstract class FileBackedComponentCollection<T extends NamedComponent>
+  implements MutableComponentCollection<T> {
   protected readonly components = new Map<string, T>();
   protected readonly logger: Logger;
   protected abstract readonly componentType: string;
@@ -52,16 +53,12 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
     this.persistDir = dir;
   }
 
-  // ---------------------------------------------------------------------------
-  // Core registry operations
-  // ---------------------------------------------------------------------------
-
-  register(component: T): void {
+  set(component: T): void {
     this.components.set(component.name, component);
-    this.logger.debug({ name: component.name }, `${this.componentType} registered`);
+    this.logger.debug({ name: component.name }, `${this.componentType} stored`);
   }
 
-  unregister(name: string): boolean {
+  delete(name: string): boolean {
     return this.components.delete(name);
   }
 
@@ -73,10 +70,6 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
     return this.components.has(name);
   }
 
-  /**
-   * Resolve a list of component names to their definitions.
-   * @throws {ComponentReferenceError} if any name is not found
-   */
   resolve(names: string[]): T[] {
     return names.map((name) => {
       const component = this.components.get(name);
@@ -99,13 +92,9 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
     this.components.clear();
   }
 
-  // ---------------------------------------------------------------------------
-  // CRUD operations (with optional persistence)
-  // ---------------------------------------------------------------------------
-
   async add(component: T, persist = false): Promise<void> {
     const validated = this.validateOrThrow(component, "add");
-    this.register(validated);
+    this.set(validated);
     if (persist && this.persistDir) {
       await this.writeComponent(validated);
     }
@@ -118,7 +107,7 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
     }
     const merged = { ...existing, ...patch, name } as unknown;
     const validated = this.validateOrThrow(merged, "update");
-    this.register(validated);
+    this.set(validated);
     if (persist && this.persistDir) {
       await this.writeComponent(validated);
     }
@@ -126,23 +115,19 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
   }
 
   async remove(name: string, persist = false): Promise<boolean> {
-    const existed = this.unregister(name);
+    const existed = this.delete(name);
     if (existed && persist && this.persistDir) {
       await this.deleteComponent(name);
     }
     return existed;
   }
 
-  // ---------------------------------------------------------------------------
-  // Import / Export
-  // ---------------------------------------------------------------------------
-
   async importFromFile(filePath: string): Promise<T> {
     const absPath = resolve(filePath);
     const raw = await readFile(absPath, "utf-8");
     const parsed = JSON.parse(raw) as unknown;
     const component = this.validateOrThrow(parsed, absPath);
-    this.register(component);
+    this.set(component);
     this.logger.info({ name: component.name, filePath: absPath }, `${this.componentType} imported`);
     return component;
   }
@@ -157,17 +142,14 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
     this.logger.info({ name, filePath: absPath }, `${this.componentType} exported`);
   }
 
-  // ---------------------------------------------------------------------------
-  // Search / Filter
-  // ---------------------------------------------------------------------------
-
   search(query: string): T[] {
     const lower = query.toLowerCase();
-    return this.list().filter((c) => {
-      if (c.name.toLowerCase().includes(lower)) return true;
-      const desc = (c as Record<string, unknown>).description;
-      if (typeof desc === "string" && desc.toLowerCase().includes(lower)) return true;
-      return false;
+    return this.list().filter((component) => {
+      if (component.name.toLowerCase().includes(lower)) {
+        return true;
+      }
+      const desc = (component as Record<string, unknown>).description;
+      return typeof desc === "string" && desc.toLowerCase().includes(lower);
     });
   }
 
@@ -175,14 +157,6 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
     return this.list().filter(predicate);
   }
 
-  // ---------------------------------------------------------------------------
-  // Directory loading
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Resolve a content file reference (e.g. "content.md") to its file contents.
-   * Returns null if the ref is inline text (contains newline) or file not found.
-   */
   protected async resolveContentFile(dirPath: string, contentRef: string): Promise<string | null> {
     if (!contentRef || contentRef.includes("\n")) return null;
     if (contentRef.endsWith(".md") || contentRef.endsWith(".txt")) {
@@ -195,11 +169,6 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
     return null;
   }
 
-  /**
-   * Load component definitions from JSON files and directory-based components (manifest.json).
-   * Invalid files/directories are skipped with a warning.
-   * @-prefixed directories are scanned recursively as source namespaces.
-   */
   async loadFromDirectory(dirPath: string): Promise<number> {
     let entries: string[];
     try {
@@ -218,18 +187,16 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
       const entryStat = await stat(fullPath);
 
       if (entryStat.isFile() && extname(entry) === ".json") {
-        // Existing: load flat JSON file
         try {
           const raw = await readFile(fullPath, "utf-8");
           const parsed = JSON.parse(raw) as unknown;
           const component = this.validateOrThrow(parsed, fullPath);
-          this.register(component);
+          this.set(component);
           count++;
         } catch (err) {
           this.logger.warn({ file: entry, error: err }, `Failed to load ${this.componentType}, skipping`);
         }
       } else if (entryStat.isDirectory() && !entry.startsWith("_") && !entry.startsWith(".")) {
-        // New: load directory-based component with manifest.json
         const manifestPath = join(fullPath, "manifest.json");
         try {
           const manifestStat = await stat(manifestPath);
@@ -238,7 +205,6 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
           const raw = await readFile(manifestPath, "utf-8");
           const parsed = JSON.parse(raw) as Record<string, unknown>;
 
-          // Resolve content file if applicable
           if (typeof parsed.content === "string") {
             const resolved = await this.resolveContentFile(fullPath, parsed.content);
             if (resolved !== null) {
@@ -247,17 +213,16 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
               !parsed.content.includes("\n") &&
               (parsed.content.endsWith(".md") || parsed.content.endsWith(".txt"))
             ) {
-              this.logger.warn({ file: parsed.content, dir: entry }, `Content file not found, using path as-is`);
+              this.logger.warn({ file: parsed.content, dir: entry }, "Content file not found, using path as-is");
             }
           }
 
-          // Use directory name as component name if not specified
           if (!parsed.name) {
             parsed.name = entry;
           }
 
           const component = this.validateOrThrow(parsed, manifestPath);
-          this.register(component);
+          this.set(component);
           count++;
         } catch (err) {
           this.logger.warn({ dir: entry, error: err }, `Failed to load ${this.componentType} from directory, skipping`);
@@ -265,17 +230,16 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
       }
     }
 
-    // Also scan @-prefixed directories (source namespaces) recursively
-    const namespaceDirs = entries.filter((e) => e.startsWith("@"));
-    for (const nsDir of namespaceDirs) {
-      const nsPath = join(dirPath, nsDir);
+    const namespaceDirs = entries.filter((entry) => entry.startsWith("@"));
+    for (const namespaceDir of namespaceDirs) {
+      const namespacePath = join(dirPath, namespaceDir);
       try {
-        const nsStat = await stat(nsPath);
-        if (nsStat.isDirectory()) {
-          count += await this.loadFromDirectory(nsPath);
+        const namespaceStat = await stat(namespacePath);
+        if (namespaceStat.isDirectory()) {
+          count += await this.loadFromDirectory(namespacePath);
         }
       } catch {
-        // skip
+        // ignore invalid namespace directories
       }
     }
 
@@ -283,42 +247,25 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
     return count;
   }
 
-  // ---------------------------------------------------------------------------
-  // Validation (#119) — public returns ConfigValidationResult, internal throws
-  // ---------------------------------------------------------------------------
-
-  /**
-   * Validate raw data against the component schema.
-   * Returns a structured ConfigValidationResult with errors and warnings.
-   */
   abstract validate(data: unknown, source: string): ConfigValidationResult<T>;
 
-  /**
-   * Validate and unwrap — throws ConfigValidationError on failure.
-   * Used internally by CRUD and loading operations.
-   */
   protected validateOrThrow(data: unknown, source: string): T {
     const result = this.validate(data, source);
     if (!result.valid || !result.data) {
       throw new ConfigValidationError(
         `Validation failed for ${this.componentType} in ${source}`,
-        result.errors.map((e) => ({ path: e.path, message: e.message })),
+        result.errors.map((error) => ({ path: error.path, message: error.message })),
         result.errors,
       );
     }
     return result.data;
   }
 
-  // ---------------------------------------------------------------------------
-  // Persistence helpers
-  // ---------------------------------------------------------------------------
-
   protected async writeComponent(component: T): Promise<void> {
     if (!this.persistDir) return;
     await mkdir(this.persistDir, { recursive: true });
     const filePath = join(this.persistDir, `${component.name}.json`);
     await writeFile(filePath, JSON.stringify(component, null, 2) + "\n", "utf-8");
-    this.logger.debug({ name: component.name, filePath }, `${this.componentType} persisted`);
   }
 
   protected async deleteComponent(name: string): Promise<void> {
@@ -326,14 +273,14 @@ export abstract class BaseComponentManager<T extends NamedComponent> implements 
     const filePath = join(this.persistDir, `${name}.json`);
     try {
       await unlink(filePath);
-      this.logger.debug({ name, filePath }, `${this.componentType} file deleted`);
     } catch (err) {
-      if (isNodeError(err) && err.code === "ENOENT") return;
-      throw err;
+      if (!isNodeError(err) || err.code !== "ENOENT") {
+        throw err;
+      }
     }
   }
 }
 
-function isNodeError(err: unknown): err is NodeJS.ErrnoException {
-  return err instanceof Error && "code" in err;
+function isNodeError(error: unknown): error is NodeJS.ErrnoException {
+  return typeof error === "object" && error !== null && "code" in error;
 }

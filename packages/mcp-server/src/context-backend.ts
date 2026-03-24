@@ -1,14 +1,12 @@
-import { createDaemonInfoSource, VfsKernel, VfsRegistry } from "@actant/vfs";
 import {
-  createProjectContextFilesystemTypeRegistry,
-  createProjectContextRegistrations,
-  loadProjectContext,
+  createStandaloneProjectContextRuntime,
 } from "@actant/api";
 import type {
   VfsDescribeRpcResult,
   VfsGrepRpcResult,
   VfsListRpcResult,
   VfsReadResult,
+  VfsStreamChunk,
   VfsStreamRpcResult,
   VfsWatchEvent,
   VfsWatchRpcResult,
@@ -143,15 +141,9 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
 }
 
 export async function createStandaloneContext(projectDir?: string): Promise<StandaloneContext> {
-  const context = await loadProjectContext(projectDir);
-  const registry = new VfsRegistry();
-  const kernel = new VfsKernel();
-  const factoryRegistry = createProjectContextFilesystemTypeRegistry();
-
-  for (const registration of createProjectContextRegistrations(
-    context,
-    factoryRegistry,
-    {
+  const standalone = await createStandaloneProjectContextRuntime({
+    projectDir,
+    layout: {
       project: "/project",
       workspace: "/workspace",
       config: "/config",
@@ -164,33 +156,22 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
       workflows: "/workflows",
       templates: "/templates",
     },
-    { type: "daemon" },
-    {
-      namePrefix: "standalone",
-      workspaceReadOnly: true,
-      configReadOnly: true,
+    lifecycle: { type: "daemon" },
+    namePrefix: "standalone",
+    workspaceReadOnly: true,
+    configReadOnly: true,
+    daemonInfo: {
+      mountPoint: "/daemon",
+      getVersion: () => "standalone",
+      getUptime: () => 0,
+      getAgentCount: () => 0,
+      getRpcMethods: () => [],
+      getHostProfile: () => "context",
+      getRuntimeState: () => "inactive",
+      getCapabilities: () => ["hub", "vfs", "domain"],
     },
-  )) {
-    registry.mount(registration);
-    kernel.mount(registration);
-  }
-
-  const daemonSource = createDaemonInfoSource({
-    getVersion: () => "standalone",
-    getUptime: () => 0,
-    getAgentCount: () => 0,
-    getRpcMethods: () => [],
-    getHostProfile: () => "context",
-    getRuntimeState: () => "inactive",
-    getCapabilities: () => ["hub", "vfs", "domain"],
-    getHubProject: () => ({
-      projectRoot: context.projectRoot,
-      projectName: context.summary.projectName,
-      configPath: context.configPath,
-    }),
-  }, "/daemon", { type: "daemon" });
-  registry.mount(daemonSource);
-  kernel.mount(daemonSource);
+  });
+  const { context, registry, kernel } = standalone;
 
   return {
     mode: "standalone",
@@ -276,7 +257,7 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
         pattern: options?.pattern,
         events: options?.events,
       });
-      return collectAsyncIterable(iterable, {
+      return collectAsyncIterable<VfsWatchEvent, VfsWatchRpcResult>(iterable, {
         maxItems: options?.maxEvents ?? 1,
         timeoutMs: options?.timeoutMs ?? 250,
         mapItems: (events) => ({ events }),
@@ -288,7 +269,7 @@ export async function createStandaloneContext(projectDir?: string): Promise<Stan
         throw new Error(`VFS path not found: ${path}`);
       }
       const iterable = await kernel.stream(path);
-      return collectAsyncIterable(iterable, {
+      return collectAsyncIterable<VfsStreamChunk, VfsStreamRpcResult>(iterable, {
         maxItems: options?.maxChunks ?? 1,
         timeoutMs: options?.timeoutMs ?? 250,
         mapItems: (chunks) => ({ chunks }),
