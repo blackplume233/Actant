@@ -223,13 +223,13 @@ Authority rule:
 
 #### 4. Provider contribution 治理
 
-- [ ] 定义 `provider contribution` 的最小 SPI
-- [ ] 明确 `provider` 只是 `daemon plugin` 的子能力
-- [ ] 明确 `provider` 只负责向 VFS 注入 mount/backend/数据来源
-- [ ] 禁止 `provider` 直接注册领域内容
-- [ ] 禁止 `provider` 成为中心注册结构
-- [ ] 禁止 `provider` 替代 `daemon plugin`
-- [ ] 明确现有来源能力如何迁移为 provider contribution
+- [x] 定义 `provider contribution` 的最小 SPI
+- [x] 明确 `provider` 只是 `daemon plugin` 的子能力
+- [x] 明确 `provider` 只负责向 VFS 注入 mount/backend/数据来源
+- [x] 禁止 `provider` 直接注册领域内容
+- [x] 禁止 `provider` 成为中心注册结构
+- [x] 禁止 `provider` 替代 `daemon plugin`
+- [x] 明确现有来源能力如何迁移为 provider contribution
 
 #### 5. VFS 核心治理
 

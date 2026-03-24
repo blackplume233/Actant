@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import type { PluginContext, PluginDefinition } from "@actant/shared";
+import type { PluginContext, PluginDefinition, VfsProviderContribution } from "@actant/shared";
 import { PluginHost } from "./plugin-host";
 import { adaptLegacyPlugin } from "./legacy-adapter";
 import type { ActantPlugin } from "./types";
@@ -286,6 +286,55 @@ describe("PluginHost — plug 3: hooks", () => {
 // ─────────────────────────────────────────────────────────────
 
 describe("PluginHost — plug 4: contextProviders", () => {
+  it("collects provider contributions from all running plugins", async () => {
+    const providerA: VfsProviderContribution = {
+      kind: "data-source",
+      filesystemType: "runtimefs",
+      mountPoint: "/agents",
+    };
+    const providerB: VfsProviderContribution = {
+      kind: "data-source",
+      filesystemType: "runtimefs",
+      mountPoint: "/mcp/runtime",
+    };
+
+    const pluginA = makePlugin({
+      name: "a",
+      providers: () => [providerA],
+    });
+    const pluginB = makePlugin({
+      name: "b",
+      providers: () => [providerB],
+    });
+
+    const host = new PluginHost();
+    host.register(pluginA);
+    host.register(pluginB);
+    await host.start(baseCtx, makeBus());
+
+    expect(host.getProviders()).toHaveLength(2);
+    expect(host.getProviders()).toContainEqual(providerA);
+    expect(host.getProviders()).toContainEqual(providerB);
+  });
+
+  it("does not collect provider contributions from errored plugins", async () => {
+    const provider: VfsProviderContribution = {
+      kind: "data-source",
+      filesystemType: "runtimefs",
+      mountPoint: "/agents",
+    };
+    const bad = makePlugin({
+      name: "bad",
+      runtime: { init: async () => { throw new Error(); } },
+      providers: () => [provider],
+    });
+    const host = new PluginHost();
+    host.register(bad);
+    await host.start(baseCtx, makeBus());
+
+    expect(host.getProviders()).toHaveLength(0);
+  });
+
   it("collects providers from all running plugins", async () => {
     const providerA = { name: "provider-a" } as never;
     const providerB = { name: "provider-b" } as never;
@@ -422,6 +471,7 @@ describe("adaptLegacyPlugin", () => {
     const plugin = adaptLegacyPlugin(legacyDef);
     expect(plugin.runtime).toBeUndefined();
     expect(plugin.hooks).toBeUndefined();
+    expect(plugin.providers).toBeUndefined();
     expect(plugin.contextProviders).toBeUndefined();
     expect(plugin.subsystems).toBeUndefined();
     expect(plugin.catalogs).toBeUndefined();

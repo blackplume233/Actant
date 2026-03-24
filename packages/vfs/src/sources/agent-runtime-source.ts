@@ -8,6 +8,7 @@ import type {
   VfsLifecycle,
   VfsListOptions,
   VfsMountRegistration,
+  RuntimefsProviderContribution,
   VfsStatResult,
   VfsStreamChunk,
   VfsWatchEvent,
@@ -34,24 +35,14 @@ export interface AgentRuntimeWatchEvent {
   timestamp?: number;
 }
 
-export interface AgentRuntimeSourceProvider {
-  listAgents(): AgentInstanceMeta[];
-  getAgent(name: string): AgentInstanceMeta | undefined;
-  readStream?(
-    name: string,
-    stream: "stdout" | "stderr",
-  ): Promise<VfsFileContent> | VfsFileContent;
-  stream?(
-    name: string,
-    stream: "stdout" | "stderr",
-  ): Promise<AsyncIterable<VfsStreamChunk>> | AsyncIterable<VfsStreamChunk>;
-  writeControl?(
-    name: string,
-    controlPath: "request.json",
-    content: string,
-  ): Promise<VfsWriteResult>;
-  subscribe?(listener: (event: AgentRuntimeWatchEvent) => void): () => void;
-}
+export interface AgentRuntimeProviderContribution extends RuntimefsProviderContribution<
+  AgentInstanceMeta,
+  "stdout" | "stderr",
+  AgentRuntimeWatchEvent
+> {}
+
+/** @deprecated Use AgentRuntimeProviderContribution. */
+export type AgentRuntimeSourceProvider = AgentRuntimeProviderContribution;
 
 const AGENT_RUNTIME_FILE_SCHEMA: VfsFileSchemaMap = {
   "_catalog.json": {
@@ -141,10 +132,10 @@ function parseAgentPath(filePath: string): ParsedAgentPath {
 }
 
 function requireAgent(
-  provider: AgentRuntimeSourceProvider,
+  provider: AgentRuntimeProviderContribution,
   agentName: string,
 ): AgentInstanceMeta {
-  const agent = provider.getAgent(agentName);
+  const agent = provider.getRecord(agentName);
   if (!agent) {
     throw new Error(`Agent not found: ${agentName}`);
   }
@@ -224,10 +215,11 @@ async function* oneShotStream(content: VfsFileContent): AsyncGenerator<VfsStream
 }
 
 export function createAgentRuntimeSource(
-  provider: AgentRuntimeSourceProvider,
+  provider: AgentRuntimeProviderContribution,
   mountPoint: string,
   lifecycle: VfsLifecycle,
 ): VfsMountRegistration {
+  assertRuntimeProviderContribution(provider, mountPoint, "agents");
   const handlers: VfsHandlerMap = {};
 
   handlers.read = async (filePath: string): Promise<VfsFileContent> => {
@@ -235,7 +227,7 @@ export function createAgentRuntimeSource(
 
     if (parsed.kind === "catalog") {
       return {
-        content: JSON.stringify(provider.listAgents().map(toCatalogEntry), null, 2),
+        content: JSON.stringify(provider.listRecords().map(toCatalogEntry), null, 2),
         mimeType: "application/json",
       };
     }
@@ -287,7 +279,7 @@ export function createAgentRuntimeSource(
     const parsed = parseAgentPath(dirPath);
 
     if (parsed.kind === "root") {
-      const entries: VfsEntry[] = provider.listAgents().map((agent) => ({
+      const entries: VfsEntry[] = provider.listRecords().map((agent) => ({
         name: agent.name,
         path: agent.name,
         type: "directory" as const,
@@ -413,6 +405,21 @@ export function createAgentRuntimeSource(
     fileSchema: AGENT_RUNTIME_FILE_SCHEMA,
     handlers,
   };
+}
+
+function assertRuntimeProviderContribution(
+  provider: AgentRuntimeProviderContribution,
+  mountPoint: string,
+  label: string,
+): void {
+  if (provider.kind !== "data-source" || provider.filesystemType !== "runtimefs") {
+    throw new Error(`Invalid ${label} provider contribution: expected runtimefs data-source`);
+  }
+  if (provider.mountPoint !== mountPoint) {
+    throw new Error(
+      `Invalid ${label} provider contribution: mountPoint "${provider.mountPoint}" does not match "${mountPoint}"`,
+    );
+  }
 }
 function requireAgentStream(streamName: string): "stdout" | "stderr" {
   if (streamName !== "stdout" && streamName !== "stderr") {

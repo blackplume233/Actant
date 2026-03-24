@@ -26,7 +26,7 @@
 | `VFS` | Implementation | `ContextFS` 的实现内核，负责路径解析、挂载解析、节点分发、权限挂接 | 产品名、旧 source router |
 | `daemon` | Runtime Host | 唯一运行时宿主与唯一组合根；负责装载 VFS、daemon plugins 和内部运行机制 | UI 壳、bridge、产品打包层 |
 | `bridge` | Runtime Edge | 通过 RPC 与 `daemon` 交互的入口层，例如 CLI、HTTP、TUI | 组合根、状态中心 |
-| `daemon plugin` | Runtime Extension | 被 `daemon` 装载的真实扩展单元；可贡献 provider、RPC 能力、hooks、services | 单纯 provider、中心注册表 |
+| `daemon plugin` | Runtime Extension | 被 `daemon` 装载的真实扩展单元；可贡献 provider contribution、RPC 能力、hooks、services | 单纯 provider、中心注册表 |
 | `mount namespace` | Implementation | 当前调用上下文可见的完整路径视图 | 权限系统、业务解释器 |
 | `mount table` | Config / Impl | 挂载点到挂载实例的映射表 | 下层 backend、本体资源树 |
 | `filesystem type` | Config / Impl | 一类文件系统实现的定义，决定实例化方式、能力上界、生命周期语义 | 业务资源分类 |
@@ -44,7 +44,7 @@
 | `tag` | Cross-cutting | 面向 consumer 的轻量用途标记 | 内核对象类型 |
 | `consumer` | Outside VFS | 读取并解释节点用途的外部程序或组件 | VFS 内核自身 |
 | `backend` | Implementation | 节点背后的真实实现，负责读写、观察和流输出 | 顶层产品对象 |
-| `provider` | Plugin Contribution | `daemon plugin` 向 VFS 注入的一类能力，用于提供 mount/backend/数据来源 | 顶层插件模型、内容注册中心 |
+| `provider contribution` | Plugin Contribution | `daemon plugin` 向 VFS 注入的一类能力，用于提供 mount/backend/数据来源 | 顶层插件模型、内容注册中心 |
 
 ---
 

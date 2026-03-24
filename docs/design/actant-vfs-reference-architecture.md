@@ -23,7 +23,7 @@
 - `daemon` 是唯一运行时宿主与唯一组合根
 - `bridge` 只负责通过 RPC 与 `daemon` 交互
 - `daemon plugin` 是系统真实扩展单元
-- `provider` 只是 `daemon plugin` 可贡献的一类能力
+- `provider contribution` 只是 `daemon plugin` 可贡献的一类能力
 
 简化模块图：
 
@@ -192,6 +192,26 @@ V1 当前必须在实现里稳定表达：
 - 不允许把 provider 本身当作系统组合根
 - 不允许 bridge 层直接装载 provider 或 plugin
 - 不允许内容先进入中心注册表，再投影回 VFS
+
+最小 SPI：
+
+- 公共基线字段：`kind`、`filesystemType`、`mountPoint`
+- `runtimefs` data-source contribution：
+  - `listRecords()`
+  - `getRecord(name)`
+  - 可选 `readStream()`
+  - 可选 `stream()`
+  - 可选 `writeControl()`
+  - 可选 `subscribe()`
+
+当前收敛映射：
+
+| Path / Family | Provider Contribution | Rule |
+|------|--------------------------|------|
+| `/agents` | `AgentRuntimeProviderContribution` | `runtimefs` data-source，负责 agent status/control/streams |
+| `/mcp/runtime` | `McpRuntimeProviderContribution` | `runtimefs` data-source，负责 runtime status/control/streams |
+| `hostfs` / `memfs` | 不适用 | 由 filesystem type factory 直接实例化，不经过 provider contribution |
+| `/skills` `/prompts` `/workflows` `/templates` | 不适用 | 派生内容或 manager-backed 视图，不属于 provider contribution |
 
 何时扩展 `filesystem type`：
 

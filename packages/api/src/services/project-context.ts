@@ -296,7 +296,7 @@ function createDeclaredMountRegistrations(
         if (declaration.path === "/agents") {
           registrations.push(createRuntimeRegistration(
             {
-              ...createAgentRuntimeSource(createProjectAgentRuntimeProvider(), mountPoint, lifecycle),
+              ...createAgentRuntimeSource(createProjectAgentRuntimeProviderContribution(mountPoint), mountPoint, lifecycle),
               name: `${prefix}-${mountName}`,
             },
           ));
@@ -307,7 +307,7 @@ function createDeclaredMountRegistrations(
           registrations.push(createRuntimeRegistration(
             {
               ...createMcpRuntimeSource(
-                createProjectMcpRuntimeProvider(context.managers.mcpConfigManager),
+                createProjectMcpRuntimeProviderContribution(context.managers.mcpConfigManager, mountPoint),
                 mountPoint,
                 lifecycle,
               ),
@@ -664,13 +664,18 @@ function listProjectContextEntries(mountPoint: string, hasNamespaceConfig: boole
   return entries;
 }
 
-function createProjectMcpRuntimeProvider(
+function createProjectMcpRuntimeProviderContribution(
   manager: LoadedProjectContext["managers"]["mcpConfigManager"],
+  mountPoint: string,
 ): Parameters<typeof createMcpRuntimeSource>[0] {
   type McpConfigLike = { name: string; command?: string; args?: string[] };
 
   return {
-    listRuntimes: () =>
+    kind: "data-source",
+    filesystemType: "runtimefs",
+    mountPoint,
+    description: "Project-context MCP runtime provider contribution",
+    listRecords: () =>
       manager.list().map((server: McpConfigLike) => ({
         name: server.name,
         status: "inactive",
@@ -679,7 +684,7 @@ function createProjectMcpRuntimeProvider(
         transport: "stdio",
         updatedAt: new Date().toISOString(),
       })),
-    getRuntime: (name: string) => {
+    getRecord: (name: string) => {
       const server = manager.get(name) as McpConfigLike | undefined;
       if (!server) {
         return undefined;
@@ -696,10 +701,14 @@ function createProjectMcpRuntimeProvider(
   };
 }
 
-function createProjectAgentRuntimeProvider(): Parameters<typeof createAgentRuntimeSource>[0] {
+function createProjectAgentRuntimeProviderContribution(mountPoint: string): Parameters<typeof createAgentRuntimeSource>[0] {
   return {
-    listAgents: () => [],
-    getAgent: () => undefined,
+    kind: "data-source",
+    filesystemType: "runtimefs",
+    mountPoint,
+    description: "Project-context agent runtime provider contribution",
+    listRecords: () => [],
+    getRecord: () => undefined,
   };
 }
 

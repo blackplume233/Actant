@@ -830,14 +830,14 @@ export class AppContext {
         name: "mcp-configs",
       },
       {
-        ...createMcpRuntimeSource(this.createMcpRuntimeProvider(), "/mcp/runtime", lifecycle),
+        ...createMcpRuntimeSource(this.createMcpRuntimeProviderContribution("/mcp/runtime"), "/mcp/runtime", lifecycle),
         name: "mcp-runtime",
       },
       createDomainSource(this.mcpConfigManager, "mcp", "/mcp", lifecycle),
       createDomainSource(this.workflowManager, "workflows", "/workflows", lifecycle),
       createDomainSource(this.templateRegistry, "templates", "/templates", lifecycle),
       {
-        ...createAgentRuntimeSource(this.createAgentRuntimeProvider(), "/agents", lifecycle),
+        ...createAgentRuntimeSource(this.createAgentRuntimeProviderContribution("/agents"), "/agents", lifecycle),
         name: "agents",
       },
     ];
@@ -848,11 +848,15 @@ export class AppContext {
     }
   }
 
-  private createMcpRuntimeProvider(): Parameters<typeof createMcpRuntimeSource>[0] {
+  private createMcpRuntimeProviderContribution(mountPoint: string): Parameters<typeof createMcpRuntimeSource>[0] {
     type McpConfigLike = { name: string; command?: string; args?: string[] };
 
     return {
-      listRuntimes: () => this.mcpConfigManager.list().map((server: McpConfigLike) => ({
+      kind: "data-source",
+      filesystemType: "runtimefs",
+      mountPoint,
+      description: "Daemon MCP runtime provider contribution",
+      listRecords: () => this.mcpConfigManager.list().map((server: McpConfigLike) => ({
         name: server.name,
         status: "inactive",
         command: "command" in server && typeof server.command === "string" ? server.command : undefined,
@@ -860,7 +864,7 @@ export class AppContext {
         transport: "stdio",
         updatedAt: new Date().toISOString(),
       })),
-      getRuntime: (name: string) => {
+      getRecord: (name: string) => {
         const server = this.mcpConfigManager.get(name);
         if (!server) {
           return undefined;
@@ -877,10 +881,14 @@ export class AppContext {
     };
   }
 
-  private createAgentRuntimeProvider(): Parameters<typeof createAgentRuntimeSource>[0] {
+  private createAgentRuntimeProviderContribution(mountPoint: string): Parameters<typeof createAgentRuntimeSource>[0] {
     return {
-      listAgents: () => this.agentManager.listAgents(),
-      getAgent: (name: string) => this.agentManager.getAgent(name),
+      kind: "data-source",
+      filesystemType: "runtimefs",
+      mountPoint,
+      description: "Daemon agent runtime provider contribution",
+      listRecords: () => this.agentManager.listAgents(),
+      getRecord: (name: string) => this.agentManager.getAgent(name),
       readStream: (name: string, stream: "stdout" | "stderr") => ({
         content: this.readAgentLog(name, stream),
       }),

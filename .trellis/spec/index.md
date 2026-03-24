@@ -28,7 +28,7 @@ Actant 当前只承认一套新的顶层叙述：
 - `bridge` 只负责通过 RPC 与 `daemon` 交互
 - `actant` 是打包层 / 分发层 / 产品壳，不是组合根
 - `daemon plugin` 是系统的真实扩展单元
-- `provider` 只是 `daemon plugin` 可注入的一类能力，不是插件总概念
+- `provider contribution` 只是 `daemon plugin` 可注入的一类能力，不是插件总概念
 
 ```mermaid
 flowchart TB
@@ -68,7 +68,7 @@ agent-runtime / 其它运行插件"]
 - 活跃文档必须使用 Linux 术语
 - 历史迁移说明必须留在默认入口之外
 - `daemon` 是唯一运行时组合根，bridge 层不得二次装配系统
-- `provider` 不得再被当作中心注册结构或顶层插件模型
+- `provider contribution` 不得再被当作中心注册结构或顶层插件模型
 - 所有 ship / merge 级交付必须先产出 changelog draft，再汇总正式 release changelog
 - `docs/planning/contextfs-roadmap.md` 是唯一 live milestone truth file
 - `actant.namespace.json` 是默认且唯一运行时 namespace 配置入口
@@ -95,7 +95,7 @@ agent-runtime / 其它运行插件"]
 - 是否仍遵守 `ContextFS` / `VFS` 的层次分工
 - 是否仍遵守 `daemon host -> RPC bridge -> VFS core` 的运行时分工
 - 是否把 consumer interpretation 重新写回 VFS 核心模型
-- 是否把 `provider` 误提升成了独立组合根或中心注册结构
+- 是否把 `provider contribution` 误提升成了独立组合根或中心注册结构
 - 是否把旧 `Source` / `Prompt` 术语重新写成当前真相
 - 是否在 spec、design、roadmap 三层同步修改
 - 是否把 live progress 只维护在 `docs/planning/contextfs-roadmap.md`

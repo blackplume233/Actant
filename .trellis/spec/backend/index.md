@@ -89,7 +89,9 @@
 
 负责：
 
-- 真实资源访问
+- 作为 `daemon plugin` 的子能力向 `VFS` 注入 mount/backend/数据来源
+- 声明稳定 SPI：`kind`、`filesystemType`、`mountPoint`
+- 对具体 `filesystem type` 暴露最小数据访问面
 - 节点内容读写
 - 可选 watch/stream 能力
 
@@ -99,6 +101,28 @@ Provider 不负责：
 - 挂载路由
 - consumer interpretation
 - 内容注册中心
+- 替代 `daemon plugin` 成为顶层扩展模型
+
+最小 SPI 约束：
+
+- 所有 provider contribution 都必须显式声明：
+  - `kind`
+  - `filesystemType`
+  - `mountPoint`
+- `runtimefs` data-source contribution 额外固定为：
+  - `listRecords()`
+  - `getRecord(name)`
+  - 可选 `readStream()`
+  - 可选 `stream()`
+  - 可选 `writeControl()`
+  - 可选 `subscribe()`
+
+当前迁移口径：
+
+- `/agents` 由 `AgentRuntimeProviderContribution` 提供
+- `/mcp/runtime` 由 `McpRuntimeProviderContribution` 提供
+- `hostfs` / `memfs` 继续由 filesystem type factory 负责，不归入 provider contribution
+- `skill` / `prompt` / `workflow` / `template` 这类派生内容不属于 provider contribution
 
 ---
 

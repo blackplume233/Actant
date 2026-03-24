@@ -52,8 +52,11 @@ function createMinimalAgentProvider(): AgentRuntimeSourceProvider {
   };
 
   return {
-    listAgents: () => [agent],
-    getAgent: (name: string) => (name === "test-agent" ? agent : undefined),
+    kind: "data-source",
+    filesystemType: "runtimefs",
+    mountPoint: "/agents",
+    listRecords: () => [agent],
+    getRecord: (name: string) => (name === "test-agent" ? agent : undefined),
     readStream: () => ({ content: "" }),
     stream: (_name: string, _stream: "stdout" | "stderr") => ({
       async *[Symbol.asyncIterator]() {
@@ -65,10 +68,13 @@ function createMinimalAgentProvider(): AgentRuntimeSourceProvider {
 
 function createMinimalMcpRuntimeProvider(): McpRuntimeSourceProvider {
   return {
-    listRuntimes: () => [
+    kind: "data-source",
+    filesystemType: "runtimefs",
+    mountPoint: "/mcp/runtime",
+    listRecords: () => [
       { name: "test-mcp", status: "active", transport: "stdio", updatedAt: new Date().toISOString() },
     ],
-    getRuntime: (name: string) =>
+    getRecord: (name: string) =>
       name === "test-mcp"
         ? { name: "test-mcp", status: "active", transport: "stdio", updatedAt: new Date().toISOString() }
         : undefined,

@@ -20,6 +20,7 @@ import type {
   PluginScope,
   PluginRuntimeHooks,
   SubsystemDefinition,
+  VfsProviderContribution,
 } from "@actant/shared";
 import type { ContextProvider } from "../context-injector/session-context-types";
 import type { HookEventBus } from "../hooks/hook-event-bus";
@@ -67,6 +68,8 @@ export interface ActantPlugin {
    * Use bus.on() / bus.off() to subscribe to system events.
    */
   hooks?: (bus: HookEventBus, ctx: PluginContext) => void;
+
+  providers?: (ctx: PluginContext) => VfsProviderContribution[];
 
   // ── Plug 4: contextProviders ──────────────────────────────
   /**

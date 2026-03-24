@@ -4,6 +4,7 @@ import type {
   PluginRuntimeState,
   CatalogConfig,
   SubsystemDefinition,
+  VfsProviderContribution,
 } from "@actant/shared";
 import type { ContextProvider } from "../context-injector/session-context-types";
 import type { HookEventBus } from "../hooks/hook-event-bus";
@@ -51,6 +52,7 @@ export class PluginHost {
   private sortedNames: string[] = [];
 
   /** Collected registrations from plugs 4/5/6. */
+  private collectedProviders: VfsProviderContribution[] = [];
   private collectedContextProviders: ContextProvider[] = [];
   private collectedSubsystems: SubsystemDefinition[] = [];
   private collectedCatalogs: CatalogConfig[] = [];
@@ -131,6 +133,15 @@ export class PluginHost {
       }
 
       rec.state = "running";
+
+      if (plugin.providers) {
+        try {
+          const providers = plugin.providers(ctx);
+          this.collectedProviders.push(...providers);
+        } catch {
+          // collection errors are non-fatal; log silently
+        }
+      }
 
       // collect plug-4 contextProviders
       if (plugin.contextProviders) {
@@ -256,6 +267,10 @@ export class PluginHost {
    */
   getPlugin(name: string): ActantPlugin | undefined {
     return this.records.get(name)?.plugin;
+  }
+
+  getProviders(): VfsProviderContribution[] {
+    return [...this.collectedProviders];
   }
 
   // ── Plug 4/5/6 Collection Accessors ─────────────────────────

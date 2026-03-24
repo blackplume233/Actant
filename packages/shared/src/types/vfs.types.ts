@@ -321,6 +321,47 @@ export interface VfsMountRegistration {
 }
 
 // ---------------------------------------------------------------------------
+// Provider contribution SPI — daemon plugin -> VFS injection boundary
+// ---------------------------------------------------------------------------
+
+export type VfsProviderContributionKind =
+  | "mount"
+  | "backend"
+  | "data-source";
+
+export interface VfsProviderContribution {
+  kind: VfsProviderContributionKind;
+  filesystemType: VfsFilesystemType;
+  mountPoint: string;
+  description?: string;
+}
+
+export interface RuntimefsProviderContribution<
+  TRecord,
+  TStreamName extends string,
+  TWatchEvent,
+> extends VfsProviderContribution {
+  kind: "data-source";
+  filesystemType: "runtimefs";
+  listRecords(): TRecord[];
+  getRecord(name: string): TRecord | undefined;
+  readStream?(
+    name: string,
+    stream: TStreamName,
+  ): Promise<VfsFileContent> | VfsFileContent;
+  stream?(
+    name: string,
+    stream: TStreamName,
+  ): Promise<AsyncIterable<VfsStreamChunk>> | AsyncIterable<VfsStreamChunk>;
+  writeControl?(
+    name: string,
+    controlPath: "request.json",
+    content: string,
+  ): Promise<VfsWriteResult>;
+  subscribe?(listener: (event: TWatchEvent) => void): () => void;
+}
+
+// ---------------------------------------------------------------------------
 // Filesystem type definitions — declarative factory registration
 // ---------------------------------------------------------------------------
 
