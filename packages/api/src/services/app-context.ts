@@ -47,7 +47,6 @@ import {
   modelProviderRegistry,
   registerBuiltinProviders,
 } from "@actant/domain-context";
-import { CatalogManager } from "@actant/catalog";
 import {
   FilesystemTypeRegistry,
   workspaceSourceFactory,
@@ -184,7 +183,6 @@ export interface AppConfig {
 export class AppContext {
   readonly homeDir: string;
   readonly configsDir: string;
-  readonly catalogsDir: string;
   readonly templatesDir: string;
   readonly instancesDir: string;
   readonly registryPath: string;
@@ -205,7 +203,6 @@ export class AppContext {
   readonly claudeChannelManager: ActantChannelManager;
   readonly agentManager: AgentManager;
   readonly sessionRegistry: SessionRegistry;
-  readonly catalogManager: CatalogManager;
   readonly templateWatcher: TemplateDirectoryWatcher;
   readonly schedulers: Map<string, EmployeeScheduler>;
   readonly eventBus: HookEventBus;
@@ -229,8 +226,6 @@ export class AppContext {
   private initialized = false;
   private workflowHooksRegistered = false;
   private instanceHooksRegistered = false;
-  private catalogManagerInitialized = false;
-  private catalogManagerInitPromise?: Promise<void>;
   private runtimeActivationState: HostRuntimeState = "inactive";
   private runtimeActivationPromise?: Promise<void>;
   private pluginsStarted = false;
@@ -240,7 +235,6 @@ export class AppContext {
   constructor(config?: AppConfig) {
     this.homeDir = config?.homeDir ?? process.env.ACTANT_HOME ?? DEFAULT_HOME;
     this.configsDir = config?.configsDir ?? join(this.homeDir, "configs");
-    this.catalogsDir = join(this.homeDir, "catalogs");
     this.templatesDir = join(this.configsDir, "templates");
     this.instancesDir = join(this.homeDir, "instances");
     this.registryPath = join(this.homeDir, "instances", "registry.json");
@@ -260,17 +254,8 @@ export class AppContext {
     this.mcpConfigManager = new McpConfigManager();
     this.workflowManager = new WorkflowManager();
     this.pluginManager = new PluginManager();
-
     const resolvedLauncherMode = config?.launcherMode
       ?? (process.env["ACTANT_LAUNCHER_MODE"] as LauncherMode | undefined);
-    this.catalogManager = new CatalogManager(this.homeDir, {
-      skillManager: this.skillManager,
-      promptManager: this.promptManager,
-      mcpConfigManager: this.mcpConfigManager,
-      workflowManager: this.workflowManager,
-      backendManager: getBackendManager(),
-      templateRegistry: this.templateRegistry,
-    }, { skipDefaultCatalog: resolvedLauncherMode === "mock" });
 
     this.agentInitializer = new AgentInitializer(
       this.templateRegistry,
@@ -424,9 +409,6 @@ export class AppContext {
 
   getHostCapabilities(): HostCapability[] {
     const capabilities: HostCapability[] = ["hub", "vfs", "domain"];
-    if (this.catalogManagerInitialized) {
-      capabilities.push("catalogs");
-    }
     if (this.runtimeActivationState === "active") {
       capabilities.push("runtime", "agents", "sessions", "schedules", "plugins");
     }
@@ -435,11 +417,6 @@ export class AppContext {
 
   async prepareForRpc(method: string): Promise<void> {
     if (method === "daemon.ping" || method === "daemon.shutdown" || method.startsWith("hub.") || method.startsWith("vfs.") || method.startsWith("events.")) {
-      return;
-    }
-
-    if (method.startsWith("catalog.") || method.startsWith("preset.")) {
-      await this.ensureCatalogManagerInitialized();
       return;
     }
 
@@ -470,25 +447,6 @@ export class AppContext {
     }
   }
 
-  async ensureCatalogManagerInitialized(): Promise<void> {
-    if (this.catalogManagerInitialized) return;
-    if (this.catalogManagerInitPromise) {
-      await this.catalogManagerInitPromise;
-      return;
-    }
-
-    this.catalogManagerInitPromise = (async () => {
-      await this.catalogManager.initialize();
-      this.catalogManagerInitialized = true;
-    })();
-
-    try {
-      await this.catalogManagerInitPromise;
-    } finally {
-      this.catalogManagerInitPromise = undefined;
-    }
-  }
-
   async ensureRuntimeActivated(options?: {
     initializeSources?: boolean;
     startPlugins?: boolean;
@@ -511,10 +469,6 @@ export class AppContext {
 
     this.runtimeActivationState = "activating";
     this.runtimeActivationPromise = (async () => {
-      if (options?.initializeSources) {
-        await this.ensureCatalogManagerInitialized();
-      }
-
       this.registerWorkflowHooks();
       this.listenForInstanceHooks();
       await this.agentManager.initialize();

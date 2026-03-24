@@ -9,8 +9,6 @@ import {
   createMcpCommand,
   createWorkflowCommand,
   createPluginCommand,
-  createCatalogCommand,
-  createPresetCommand,
   createScheduleCommand,
   createDaemonCommand,
   createProxyCommand,
@@ -48,8 +46,6 @@ export function createProgram(
   program.addCommand(createMcpCommand(client, printer));
   program.addCommand(createWorkflowCommand(client, printer));
   program.addCommand(createPluginCommand(client, printer));
-  program.addCommand(createCatalogCommand(client, printer));
-  program.addCommand(createPresetCommand(client, printer));
   program.addCommand(createScheduleCommand(client, printer));
   program.addCommand(createDaemonCommand(printer));
   program.addCommand(createProxyCommand(printer));

@@ -4,7 +4,7 @@
 
 - 把 `TemplateFileWatcher` 从 `domain-context` 活跃包边界迁到 `packages/api/src/services/template-directory-watcher.ts`，明确它只服务本地 authoring 路径。
 - 删除 `packages/domain-context/src/template/watcher/*` 这条已经无活跃调用者的死边界，避免 watcher 作为 `domain-context` 内部残留继续回流。
-- `packages/api` 改为直接依赖 `@actant/domain-context`、`@actant/catalog`、`@actant/vfs`，不再经 `@actant/agent-runtime` 转发 `TemplateRegistry`、manager、catalog、VFS factory/source。
+- `packages/api` 改为直接依赖 `@actant/domain-context` 与 `@actant/vfs`，不再经 `@actant/agent-runtime` 转发 `TemplateRegistry`、manager 与 VFS factory/source。
 - 顺手修掉 `domain-handlers` 的旧 mutable contract 误配，以及 `template-handlers` 对 `validateTemplate` 的旧 `@actant/agent-runtime` 动态依赖。
 
 ## Verification

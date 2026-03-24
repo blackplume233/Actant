@@ -1,16 +1,8 @@
-import type { CatalogConfig } from "./catalog.types";
-
 export interface MountDeclaration {
   name?: string;
   type: "hostfs" | "runtimefs" | "memfs";
   path: string;
   options?: Record<string, unknown>;
-}
-
-export interface CatalogDeclaration {
-  name: string;
-  type: CatalogConfig["type"];
-  options: Record<string, unknown>;
 }
 
 export interface PermissionSet {
@@ -45,7 +37,6 @@ export interface ActantNamespaceConfig {
   name?: string;
   description?: string;
   mounts: MountDeclaration[];
-  catalogs?: CatalogDeclaration[];
   entrypoints?: ActantNamespaceEntrypoints;
   permissions?: PermissionConfig;
   children?: ChildNamespaceRef[];

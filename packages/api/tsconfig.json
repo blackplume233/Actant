@@ -6,5 +6,5 @@
     "rootDir": "./src"
   },
   "include": ["src"],
-  "references": [{ "path": "../shared" }, { "path": "../context" }, { "path": "../domain-context" }, { "path": "../catalog" }, { "path": "../vfs" }, { "path": "../agent-runtime" }, { "path": "../acp" }, { "path": "../pi" }, { "path": "../channel-claude" }]
+  "references": [{ "path": "../shared" }, { "path": "../context" }, { "path": "../domain-context" }, { "path": "../vfs" }, { "path": "../agent-runtime" }, { "path": "../acp" }, { "path": "../pi" }, { "path": "../channel-claude" }]
 }

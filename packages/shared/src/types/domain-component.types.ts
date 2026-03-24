@@ -8,12 +8,10 @@
 // ---------------------------------------------------------------------------
 
 /** Tracks where a component came from. */
-export type ComponentOriginType = "builtin" | "catalog" | "local";
+export type ComponentOriginType = "builtin" | "local";
 
 export interface ComponentOrigin {
   type: ComponentOriginType;
-  /** For catalog-originated components: the catalog package name */
-  catalogName?: string;
   /** Hash at the time of last sync */
   syncHash?: string;
   syncedAt?: string;

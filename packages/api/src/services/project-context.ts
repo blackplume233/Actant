@@ -21,17 +21,9 @@ import {
   createMcpRuntimeSource,
   createAgentRuntimeSource,
 } from "@actant/vfs";
-import {
-  LocalCatalog,
-  GitHubCatalog,
-  CommunityCatalog,
-  type FetchResult,
-} from "@actant/catalog";
 import type {
   ActantNamespaceConfig,
   ActantNamespaceEntrypoints,
-  CatalogConfig,
-  CatalogDeclaration,
   ChildNamespaceRef,
   PermissionConfig,
   VfsEntry,
@@ -61,7 +53,6 @@ export interface ProjectContextSummary {
   description?: string;
   configPath: string | null;
   configsDir: string;
-  catalogWarnings: string[];
   entrypoints: {
     readFirst: string[];
     knowledge: string[];
@@ -369,7 +360,6 @@ async function loadProjectContextInternal(
   const workflowManager = new WorkflowManager();
   const templateRegistry = new TemplateRegistry({ allowOverwrite: true });
 
-  const catalogWarnings: string[] = [...validation.warnings.map((warning) => warning.message)];
   if (resolvedConfigsDir != null && configExists) {
     await loadLocalConfigComponents(resolvedConfigsDir, {
       skillManager,
@@ -380,22 +370,6 @@ async function loadProjectContextInternal(
     });
   }
 
-  for (const catalog of projectConfig.catalogs ?? []) {
-    try {
-      const result = await fetchCatalog(catalog, projectRoot);
-      injectCatalogComponents(catalog.name, result, {
-        skillManager,
-        promptManager,
-        mcpConfigManager,
-        workflowManager,
-        templateRegistry,
-      });
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : String(error);
-      catalogWarnings.push(`Catalog "${catalog.name}" failed: ${detail}`);
-    }
-  }
-
   const entrypoints = resolveEntrypoints(projectRoot, projectConfig.entrypoints);
   const children = await loadChildren(
     projectRoot,
@@ -403,7 +377,6 @@ async function loadProjectContextInternal(
     effectivePermissions,
     options.visitedConfigs,
   );
-  catalogWarnings.push(...children.warnings);
 
   const available = {
     skills: sortNames(skillManager.list().map((skill: { name: string }) => skill.name)),
@@ -430,7 +403,6 @@ async function loadProjectContextInternal(
       description: projectConfig.description,
       configPath: configDocument.configPath,
       configsDir,
-      catalogWarnings,
       entrypoints,
       available,
       components: {
@@ -449,64 +421,6 @@ async function loadProjectContextInternal(
       templateRegistry,
     },
   };
-}
-
-async function fetchCatalog(entry: CatalogDeclaration, projectRoot: string): Promise<FetchResult> {
-  const config = toCatalogConfig(entry, projectRoot);
-  switch (config.type) {
-    case "local":
-      return new LocalCatalog(entry.name, config).fetch();
-    case "github":
-      return new GitHubCatalog(entry.name, config, join(projectRoot, ".actant-cache", "catalogs")).fetch();
-    case "community":
-      return new CommunityCatalog(entry.name, config, join(projectRoot, ".actant-cache", "catalogs")).fetch();
-  }
-}
-
-function toCatalogConfig(entry: CatalogDeclaration, projectRoot: string): CatalogConfig {
-  switch (entry.type) {
-    case "local": {
-      const pathValue = typeof entry.options.path === "string" ? entry.options.path : ".";
-      return { type: "local", path: resolve(projectRoot, pathValue) };
-    }
-    case "github":
-      return {
-        type: "github",
-        url: String(entry.options.url),
-        branch: typeof entry.options.branch === "string" ? entry.options.branch : undefined,
-      };
-    case "community":
-      return {
-        type: "community",
-        url: String(entry.options.url),
-        branch: typeof entry.options.branch === "string" ? entry.options.branch : undefined,
-        filter: typeof entry.options.filter === "string" ? entry.options.filter : undefined,
-      };
-  }
-}
-
-function injectCatalogComponents(
-  catalogName: string,
-  result: FetchResult,
-  managers: LoadedProjectContext["managers"],
-): void {
-  const qualify = (name: string) => `${catalogName}@${name}`;
-
-  for (const skill of result.skills) {
-    managers.skillManager.register({ ...skill, name: qualify(skill.name) });
-  }
-  for (const prompt of result.prompts) {
-    managers.promptManager.register({ ...prompt, name: qualify(prompt.name) });
-  }
-  for (const mcp of result.mcpServers) {
-    managers.mcpConfigManager.register({ ...mcp, name: qualify(mcp.name) });
-  }
-  for (const workflow of result.workflows) {
-    managers.workflowManager.register({ ...workflow, name: qualify(workflow.name) });
-  }
-  for (const template of result.templates) {
-    managers.templateRegistry.register({ ...template, name: qualify(template.name) });
-  }
 }
 
 async function loadLocalConfigComponents(

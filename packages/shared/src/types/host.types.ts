@@ -21,7 +21,6 @@ export type HostCapability =
   | "hub"
   | "vfs"
   | "domain"
-  | "catalogs"
   | "runtime"
   | "agents"
   | "sessions"

@@ -22,7 +22,6 @@ export function createDefaultNamespaceConfig(projectRoot: string): ActantNamespa
     version: 1,
     name: basename(projectRoot),
     mounts: [],
-    catalogs: [],
   };
 }
 
@@ -81,14 +80,6 @@ export function validateNamespaceDocument(document: NamespaceConfigDocument): Na
     mountDeclarationIssues.push({
       path: "mounts",
       message: "Namespace config must declare mounts as an array.",
-    });
-  }
-
-  if (document.config.catalogs != null && !Array.isArray(document.config.catalogs)) {
-    schemaValid = false;
-    derivedViewPreconditions.push({
-      path: "catalogs",
-      message: "Catalog declarations must be an array when present.",
     });
   }
 
@@ -156,14 +147,6 @@ export function validateNamespaceDocument(document: NamespaceConfigDocument): Na
         message: "memfs options must be an object when present.",
       });
     }
-  }
-
-  const configMount = getConfigHostMount(document.config);
-  if ((document.config.catalogs?.length ?? 0) > 0 && !configMount) {
-    derivedViewPreconditions.push({
-      path: "catalogs",
-      message: 'Catalog-backed derived views require a hostfs mount at "/config".',
-    });
   }
 
   if (!document.exists) {
@@ -270,7 +253,6 @@ function normalizeNamespaceConfig(
     name: typeof parsed.name === "string" && parsed.name.length > 0 ? parsed.name : basename(projectRoot),
     description: typeof parsed.description === "string" ? parsed.description : undefined,
     mounts,
-    catalogs: Array.isArray(parsed.catalogs) ? parsed.catalogs : [],
     entrypoints: parsed.entrypoints,
     permissions: parsed.permissions,
     children: Array.isArray(parsed.children) ? parsed.children : [],

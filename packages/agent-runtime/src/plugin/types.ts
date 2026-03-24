@@ -11,7 +11,6 @@
  *   - `providers`: VFS provider contributions
  *   - `contextProviders`: session context injectors
  *   - `subsystems`: subsystem declarations
- *   - `catalogs`: catalog declarations
  *
  * This interface is not a system composition root. Plugins are loaded by the
  * daemon and may contribute capabilities into already-defined runtime surfaces.
@@ -19,7 +18,6 @@
 
 import type {
   ProjectContextConfig,
-  CatalogConfig,
   PluginContext,
   PluginScope,
   PluginRuntimeHooks,
@@ -100,12 +98,4 @@ export interface ActantPlugin {
   */
   subsystems?: (ctx: PluginContext) => SubsystemDefinition[];
 
-  // ── Catalog contribution ──────────────────────────────────
-  /**
-   * Return CatalogConfig entries to register with CatalogManager.
-   * Called once during PluginHost.start().
-   * Results are collected via PluginHost.getCatalogs() and wired
-   * into CatalogManager by AppContext in Step 5.
-   */
-  catalogs?: (ctx: PluginContext) => CatalogConfig[];
 }

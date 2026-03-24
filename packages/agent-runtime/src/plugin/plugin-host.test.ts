@@ -401,27 +401,6 @@ describe("PluginHost — plug 5: subsystems", () => {
 });
 
 // ─────────────────────────────────────────────────────────────
-//  PluginHost — Plug 6: catalogs
-// ─────────────────────────────────────────────────────────────
-
-describe("PluginHost — plug 6: catalogs", () => {
-  it("collects catalog configs from running plugins", async () => {
-    const catalog = { type: "local" as const, path: "/my/path" };
-
-    const plugin = makePlugin({
-      name: "src-plugin",
-      catalogs: () => [catalog],
-    });
-    const host = new PluginHost();
-    host.register(plugin);
-    await host.start(baseCtx, makeBus());
-
-    expect(host.getCatalogs()).toHaveLength(1);
-    expect(host.getCatalogs()[0]).toEqual(catalog);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────
 //  PluginHost — list()
 // ─────────────────────────────────────────────────────────────
 
@@ -474,7 +453,6 @@ describe("adaptLegacyPlugin", () => {
     expect(plugin.providers).toBeUndefined();
     expect(plugin.contextProviders).toBeUndefined();
     expect(plugin.subsystems).toBeUndefined();
-    expect(plugin.catalogs).toBeUndefined();
     expect(plugin.project).toBeDefined();
   });
 

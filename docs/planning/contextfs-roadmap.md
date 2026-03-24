@@ -192,9 +192,9 @@ Progress notes:
 - [x] Phase 1 audit and package-boundary baseline 已完成
 - [x] Detailed audit note: `docs/agent/2026-03-23-cursor-322-phase1-audit.md`
 - [x] Phase 2 standalone/project-context derived mounts 已切到 snapshot-backed VFS source
-- [x] Phase 3 daemon app-context derived mounts 已切到 snapshot-backed VFS source，并在 template / domain / catalog 变更后刷新挂载
+- [x] Phase 3 daemon app-context derived mounts 已切到 snapshot-backed VFS source，并在 template / domain 变更后刷新挂载
 - [x] Phase 3 verification passed: `pnpm lint`, `pnpm type-check`, `pnpm test`
-- [x] Phase 4 catalog snapshot / overlay cut 已完成：`CatalogManager` 改为持有 namespaced snapshot state，daemon 与 project-context 通过 aggregate view / resolved snapshots 读取 catalog 组件，不再依赖 catalog 注入 domain managers
+- [x] Phase 4 overlay cut 已完成并已继续收口：早期 catalog snapshot 实验已退场，当前主线不再保留 `CatalogManager`、catalog overlay 或 namespace `catalogs` 声明
 - [x] Phase 4 verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
 - [x] Phase 5 manager contract cut 已完成：builder / API handler / overlay 读取层已切到 `ComponentResolver` / `MutableComponentCollection` / `ComponentCollection`
 - [x] Phase 5 verification passed: `pnpm type-check`, `pnpm lint`, `pnpm test`
@@ -209,15 +209,17 @@ Progress notes:
 - [x] `agent-runtime` 活跃定位已冻结为 daemon-hosted runtime module / daemon plugin boundary，死掉的 `domain/template` 兼容入口已删除
 - [x] `TemplateRegistry` / `TemplateFileWatcher` 已明确降级为本地 authoring collection / watcher，并纳入 terminology gate
 - [x] `acp` / `pi` 的活跃定位已锁定为协议/transport 模块与 backend package，不能越级成为新的宿主层
-- [x] `packages/api` 已改为直接依赖 `@actant/domain-context` / `@actant/catalog` / `@actant/vfs`；本地 template watcher 已迁到 `packages/api`
+- [x] `packages/api` 已改为直接依赖 `@actant/domain-context` / `@actant/vfs`；本地 template watcher 已迁到 `packages/api`
 - [x] B3 provider SPI / runtimefs contract freeze 已完成：`runtimefs` provider contribution 现在强制为 `data-source`，且必须显式声明 `filesystemType=runtimefs` 与精确 `mountPoint`
 - [x] B3 verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/vfs type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/vfs/src/__tests__/b3-runtimefs-provider-contract.test.ts packages/vfs/src/__tests__/m5-control-stream-e2e.test.ts`
 - [x] dead `packages/domain-context/src/template/watcher/*` 已删除；活跃 template watcher 只保留 `packages/api/src/services/template-directory-watcher.ts`
 - [x] `BackendManager` 已脱离 `BaseComponentManager` 继承，`agent-runtime` 保留 API 兼容的本地 backend store / persistence / validation 逻辑
-- [x] backend-manager compatibility verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/agent-runtime type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/agent-runtime/src/domain/backend/backend-manager-install.test.ts packages/agent-runtime/src/manager/launcher/backend-resolver.test.ts packages/agent-runtime/src/manager/launcher/build-provider-env.test.ts`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/catalog/src/catalog-manager.test.ts packages/api/src/services/__tests__/hub-context.test.ts`
-- [x] `TemplateRegistry` 已脱离 `BaseComponentManager` 继承，保留 `template-handlers` / `agent-initializer` / `catalog-manager` 现有 API 兼容
-- [x] template-registry compatibility verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/domain-context type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/domain-context/src/template/registry/template-registry.test.ts packages/api/src/handlers/__tests__/template-handlers.test.ts packages/catalog/src/catalog-manager.test.ts packages/agent-runtime/src/initializer/agent-initializer.test.ts`
-- [ ] Workstream A remaining scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；剩余主要是 `CatalogManager` 的中心注册职责与 `BackendManager` singleton 生命周期边界
+- [x] backend-manager compatibility verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/agent-runtime type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/agent-runtime/src/domain/backend/backend-manager-install.test.ts packages/agent-runtime/src/manager/launcher/backend-resolver.test.ts packages/agent-runtime/src/manager/launcher/build-provider-env.test.ts packages/api/src/services/__tests__/hub-context.test.ts`
+- [x] `TemplateRegistry` 已脱离 `BaseComponentManager` 继承，并收口为本地 authoring collection；活跃接口不再为 `catalog-manager` 保留兼容
+- [x] template-registry compatibility verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm --filter @actant/domain-context type-check`，`PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/domain-context/src/template/registry/template-registry.test.ts packages/api/src/handlers/__tests__/template-handlers.test.ts packages/agent-runtime/src/initializer/agent-initializer.test.ts`
+- [x] `catalog` 已从活跃模块边界删除：`packages/catalog` 物理目录、`catalog/preset` CLI/RPC/REST、plugin `catalogs` contribution、namespace `catalogs` 声明与 overlay 试验实现均已移除
+- [x] focused deletion verification passed: `PATH="/opt/homebrew/opt/node@22/bin:$PATH" pnpm vitest run --configLoader runner packages/shared/src/__tests__/host-types.test.ts packages/agent-runtime/src/plugin/plugin-host.test.ts packages/rest-api/src/server.test.ts packages/mcp-server/src/context-backend.test.ts packages/api/src/services/__tests__/host-profile-compat.test.ts`
+- [ ] Workstream A remaining scope: `BaseComponentManager` 已降级为 `domain-context` 本地 mutable collection；剩余主要是 `BackendManager` singleton 生命周期边界、`domain-context` manager-first 路径与 `manager -> VFS` 投影残留
 
 Authority rule:
 
@@ -307,7 +309,7 @@ Authority rule:
 
 #### 9. 去中心注册结构治理
 
-- [ ] 删除 `CatalogManager` 的中心注册职责
+- [x] 删除活跃 `catalog` 模块与其中心注册职责
 - [ ] 删除 `BaseComponentManager` 中心抽象
 - [ ] 删除 `domain-source` 这类 `manager -> VFS` 投影结构
 - [ ] 清点所有 `register/unregister` 真相源式调用点
@@ -321,7 +323,7 @@ Authority rule:
 - [ ] 定义最终合并包清单
 - [ ] 定义最终删除包清单
 - [ ] 明确 `@actant/context -> @actant/api` 合并口径
-- [ ] 明确 `@actant/catalog` 是拆散为 plugin contribution 还是彻底删除
+- [x] 明确 `@actant/catalog` 彻底删除
 - [ ] 明确 bridge 包的最终保留清单
 - [ ] 明确 daemon-hosted modules 的最终保留清单
 - [ ] 明确打包层 `actant` 的最小职责边界

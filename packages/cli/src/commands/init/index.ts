@@ -89,6 +89,5 @@ function buildNamespaceConfig(scaffold: InitScaffold): ActantNamespaceConfig {
   return {
     version: 1,
     mounts,
-    catalogs: [],
   };
 }

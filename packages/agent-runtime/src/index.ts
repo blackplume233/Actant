@@ -7,7 +7,6 @@ export * from "./manager/index";
 export * from "./communicator/index";
 export * from "./permissions/index";
 export * from "./session/index";
-export * from "./catalog/index";
 export * from "./provider/index";
 export * from "./hooks/index";
 export * from "./record/index";

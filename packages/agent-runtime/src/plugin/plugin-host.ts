@@ -2,7 +2,6 @@ import type {
   PluginContext,
   PluginRef,
   PluginRuntimeState,
-  CatalogConfig,
   SubsystemDefinition,
   VfsProviderContribution,
 } from "@actant/shared";
@@ -50,7 +49,6 @@ export class PluginHost {
   private collectedProviders: VfsProviderContribution[] = [];
   private collectedContextProviders: ContextProvider[] = [];
   private collectedSubsystems: SubsystemDefinition[] = [];
-  private collectedCatalogs: CatalogConfig[] = [];
 
   // ── Registration ────────────────────────────────────────────
 
@@ -82,8 +80,6 @@ export class PluginHost {
    *   4. providers()            — collect VFS provider contributions
    *   5. contextProviders()     — collect session context providers
    *   6. subsystems()           — collect subsystem declarations
-   *   7. catalogs()             — collect catalog declarations
-   *
    * A plugin that throws in init() or start() transitions to "error" state.
    * Remaining plugins are unaffected.
    */
@@ -159,15 +155,6 @@ export class PluginHost {
         }
       }
 
-      // collect catalog declarations
-      if (plugin.catalogs) {
-        try {
-          const catalogs = plugin.catalogs(ctx);
-          this.collectedCatalogs.push(...catalogs);
-        } catch {
-          // collection errors are non-fatal
-        }
-      }
     }
   }
 
@@ -279,11 +266,6 @@ export class PluginHost {
   /** Returns all SubsystemDefinitions collected from plugin contributions. */
   getSubsystems(): SubsystemDefinition[] {
     return [...this.collectedSubsystems];
-  }
-
-  /** Returns all CatalogConfigs collected from plugin contributions. */
-  getCatalogs(): CatalogConfig[] {
-    return [...this.collectedCatalogs];
   }
 
   // ── Private ──────────────────────────────────────────────────

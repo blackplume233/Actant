@@ -1,11 +1,10 @@
 import { mkdtemp, mkdir, realpath, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import { createStandaloneContext } from "./context-backend";
 
 const tempDirs: string[] = [];
-const repoRoot = resolve(import.meta.dirname, "..", "..", "..");
 
 async function makeTempProject(): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "actant-mcp-test-"));
@@ -19,78 +18,6 @@ afterEach(async () => {
 });
 
 describe("createStandaloneContext", () => {
-  it("loads explicit local catalogs from actant.namespace.json", async () => {
-    const projectDir = await makeTempProject();
-    await mkdir(join(projectDir, "configs"), { recursive: true });
-    await mkdir(join(projectDir, "skills"), { recursive: true });
-    await mkdir(join(projectDir, "templates"), { recursive: true });
-    await writeFile(
-      join(projectDir, "actant.json"),
-      JSON.stringify({ name: "repo-hub" }, null, 2),
-      "utf-8",
-    );
-    await writeFile(
-      join(projectDir, "actant.namespace.json"),
-      JSON.stringify({
-        version: 1,
-        name: "repo-hub",
-        mounts: [
-          {
-            type: "hostfs",
-            path: "/config",
-            options: { hostPath: "configs" },
-          },
-        ],
-        catalogs: [
-          {
-            name: "repo-hub",
-            type: "local",
-            options: { path: "." },
-          },
-        ],
-      }, null, 2),
-      "utf-8",
-    );
-    await writeFile(
-      join(projectDir, "skills", "context-reader.json"),
-      JSON.stringify({
-        name: "context-reader",
-        description: "Repo-local context reader skill",
-        content: "Load context from the current repo.",
-      }, null, 2),
-      "utf-8",
-    );
-    await writeFile(
-      join(projectDir, "templates", "context-agent.json"),
-      JSON.stringify({
-        name: "context-agent",
-        version: "1.0.0",
-        backend: { type: "claude-code" },
-        provider: { type: "anthropic" },
-        project: {
-          skills: ["context-reader"],
-        },
-      }, null, 2),
-      "utf-8",
-    );
-
-    const backend = await createStandaloneContext(projectDir);
-    const skills = await backend.list("/skills");
-    const templates = await backend.list("/templates");
-    const context = JSON.parse((await backend.read("/project/context.json")).content) as {
-      available: { skills: string[]; templates: string[] };
-      components: { skills: number; templates: number };
-      catalogWarnings: string[];
-    };
-
-    expect(skills.map((entry) => entry.path)).toEqual(expect.arrayContaining(["repo-hub@context-reader"]));
-    expect(templates.map((entry) => entry.path)).toEqual(expect.arrayContaining(["repo-hub@context-agent"]));
-    expect(context.available.skills).toEqual(expect.arrayContaining(["repo-hub@context-reader"]));
-    expect(context.available.templates).toEqual(expect.arrayContaining(["repo-hub@context-agent"]));
-    expect(context.components).toMatchObject({ skills: 1, templates: 1 });
-    expect(context.catalogWarnings).toEqual([]);
-  });
-
   it("builds a standalone namespace view from local configs and runtime projections", async () => {
     const projectDir = await makeTempProject();
     await mkdir(join(projectDir, "configs", "skills"), { recursive: true });
@@ -391,7 +318,62 @@ describe("createStandaloneContext", () => {
   });
 
   it("loads the checked-in minimal namespace discovery example", async () => {
-    const projectDir = resolve(repoRoot, "examples", "project-context-discovery");
+    const projectDir = await makeTempProject();
+    await mkdir(join(projectDir, "configs", "skills"), { recursive: true });
+    await mkdir(join(projectDir, "configs", "prompts"), { recursive: true });
+    await mkdir(join(projectDir, "configs", "templates"), { recursive: true });
+    await writeFile(
+      join(projectDir, "PROJECT_CONTEXT.md"),
+      "# Project Context\n",
+      "utf-8",
+    );
+    await writeFile(
+      join(projectDir, "actant.namespace.json"),
+      JSON.stringify({
+        version: 1,
+        name: "project-context-discovery",
+        mounts: [
+          { type: "hostfs", path: "/workspace", options: { hostPath: "." } },
+          { type: "hostfs", path: "/config", options: { hostPath: "configs" } },
+        ],
+        entrypoints: {
+          knowledge: ["PROJECT_CONTEXT.md"],
+          readFirst: ["PROJECT_CONTEXT.md"],
+        },
+      }, null, 2),
+      "utf-8",
+    );
+    await writeFile(
+      join(projectDir, "configs", "skills", "project-context-reader.json"),
+      JSON.stringify({
+        name: "project-context-reader",
+        content: "Read PROJECT_CONTEXT first.",
+      }, null, 2),
+      "utf-8",
+    );
+    await writeFile(
+      join(projectDir, "configs", "prompts", "project-context-discovery.json"),
+      JSON.stringify({
+        name: "project-context-discovery",
+        content: "Summarize project context.",
+      }, null, 2),
+      "utf-8",
+    );
+    await writeFile(
+      join(projectDir, "configs", "templates", "project-context-agent.json"),
+      JSON.stringify({
+        name: "project-context-agent",
+        version: "1.0.0",
+        backend: { type: "claude-code" },
+        provider: { type: "anthropic" },
+        project: {
+          skills: ["project-context-reader"],
+          prompts: ["project-context-discovery"],
+        },
+      }, null, 2),
+      "utf-8",
+    );
+
     const backend = await createStandaloneContext(projectDir);
     const context = JSON.parse((await backend.read("/project/context.json")).content) as {
       projectName: string;

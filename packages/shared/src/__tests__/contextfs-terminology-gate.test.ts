@@ -24,13 +24,11 @@ const activeTruthFiles = [
   "packages/agent-runtime/src/plugin/plugin-host.ts",
   "packages/agent-runtime/src/plugin/legacy-adapter.ts",
   "packages/cli/src/commands/help.ts",
-  "packages/cli/src/commands/catalog/list.ts",
   "packages/cli/src/commands/hub/index.ts",
   "packages/cli/src/commands/proxy.ts",
   "packages/mcp-server/src/index.ts",
   "packages/mcp-server/src/context-backend.ts",
   "packages/rest-api/src/server.ts",
-  "packages/rest-api/src/routes/catalogs.ts",
   "scripts/install.sh",
   "scripts/install.ps1",
   "examples/actant-hub/README.md",
@@ -57,6 +55,13 @@ const bannedPhrases = [
 ] as const;
 
 const removedImplementationPaths = [
+  "packages/catalog/package.json",
+  "packages/cli/src/commands/catalog/index.ts",
+  "packages/cli/src/commands/preset/index.ts",
+  "packages/api/src/handlers/catalog-handlers.ts",
+  "packages/api/src/handlers/preset-handlers.ts",
+  "packages/rest-api/src/routes/catalogs.ts",
+  "packages/shared/src/types/catalog.types.ts",
   "packages/domain-context/src/template/watcher/index.ts",
   "packages/domain-context/src/template/watcher/template-file-watcher.ts",
 ] as const;
