@@ -100,6 +100,24 @@ Provider 不负责：
 - consumer interpretation
 - 内容注册中心
 
+### Current Package Ownership Snapshot
+
+后端模块结构治理当前按以下包层级收敛：
+
+- 打包层：`actant`
+- bridge 层：`@actant/cli`、`@actant/rest-api`、`@actant/tui`、`@actant/dashboard`、`@actant/mcp-server`、`@actant/channel-*`
+- daemon 内部模块：`@actant/api`、`@actant/agent-runtime`、`@actant/domain-context`、`@actant/acp`、`@actant/pi`
+- `VFS` 核心：`@actant/vfs`
+- 共享支撑：`@actant/shared`
+
+额外约束：
+
+- `actant` 只属于打包层，不是运行时组合根
+- bridge 包只能通过 RPC 与 `daemon` 交互，不得直接装载 plugin / provider
+- `@actant/agent-runtime`、`@actant/domain-context`、`@actant/acp`、`@actant/pi` 都属于 daemon 侧能力，不得把依赖方向反推回 `VFS`
+- `@actant/context`、`@actant/catalog` 仍视为待治理的历史过渡包，不得作为新中心继续扩展
+- 新增后端模块必须先声明其层级归属，并证明没有引入 `bridge -> provider` 或 `VFS -> runtime module` 的反向依赖
+
 ---
 
 ## 3. V1 Required Types

@@ -13,6 +13,7 @@ const activeTruthFiles = [
   ".trellis/spec/backend/index.md",
   ".trellis/spec/backend/quality-guidelines.md",
   "docs/design/contextfs-architecture.md",
+  "docs/design/actant-vfs-reference-architecture.md",
   "docs/planning/contextfs-roadmap.md",
   "packages/cli/src/commands/help.ts",
   "packages/cli/src/commands/catalog/list.ts",
@@ -24,7 +25,6 @@ const activeTruthFiles = [
   "packages/rest-api/src/routes/catalogs.ts",
   "scripts/install.sh",
   "scripts/install.ps1",
-  "examples/actant-hub/README.md",
 ] as const;
 
 const removedLegacyProfile = ["boot", "strap"].join("");

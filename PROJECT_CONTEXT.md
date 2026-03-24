@@ -16,6 +16,7 @@
 
 - 产品层：`ContextFS`
 - 实现层：`VFS`
+- 运行时模块结构：`actant -> bridge -> RPC -> daemon -> daemon plugin -> provider contribution -> VFS`
 - 核心对象：`mount namespace`、`mount table`、`filesystem type`、`mount instance`、`node type`
 - V1 操作面：`read`、`write`、`list`、`stat`、`watch`、`stream`
 - V1 必要 `mount type`：`root`、`direct`
@@ -30,6 +31,7 @@
 - M0-M7 已完成，主线能力已经覆盖文档基线、契约替换、Kernel、编排层、执行模型、facade 统一与 namespace 写路径闭环
 - 当前默认用户入口固定为 `actant init`、`actant hub status`、`actant namespace validate`、`actant vfs mount add/remove/list`
 - M8 关注 release hardening：遗留接口清理、全量回归、V1 边界冻结
+- 模块结构治理以 `docs/design/actant-vfs-reference-architecture.md` 中的层级归属和依赖方向为唯一默认判断口径
 - live milestone progress 只在 `docs/planning/contextfs-roadmap.md` 维护，本文件不重复标注 checklist 状态
 
 默认以当前 spec/design/roadmap 为准。只有在处理迁移残留或历史清理时，才读取历史说明文档。

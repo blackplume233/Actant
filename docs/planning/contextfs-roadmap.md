@@ -202,13 +202,13 @@ Authority rule:
 
 #### 2. 模块结构治理
 
-- [ ] 固化简化模块结构图
-- [ ] 固化 VFS 内部结构图
-- [ ] 明确 `daemon -> daemon plugin -> provider contribution -> VFS` 的装载方向
-- [ ] 明确 `bridge -> RPC -> daemon` 的调用方向
-- [ ] 明确哪些模块属于 daemon 内部模块
-- [ ] 明确哪些模块属于 bridge 层
-- [ ] 明确哪些模块属于打包层
+- [x] 固化简化模块结构图
+- [x] 固化 VFS 内部结构图
+- [x] 明确 `daemon -> daemon plugin -> provider contribution -> VFS` 的装载方向
+- [x] 明确 `bridge -> RPC -> daemon` 的调用方向
+- [x] 明确哪些模块属于 daemon 内部模块
+- [x] 明确哪些模块属于 bridge 层
+- [x] 明确哪些模块属于打包层
 
 #### 3. 插件模型治理
 

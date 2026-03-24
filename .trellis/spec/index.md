@@ -41,6 +41,9 @@ cli / rest-api / tui / dashboard / mcp-server / channel-*"]
     DAEMON["Actant Daemon
 唯一运行时宿主 / 唯一组合根"]
 
+    CONTRIBUTIONS["Provider Contributions
+mount / backend / data source SPI"]
+
     VFS["@actant/vfs
 唯一核心 / 唯一真相源"]
 
@@ -51,7 +54,8 @@ agent-runtime / 其它运行插件"]
     BRIDGE -. RPC .-> DAEMON
     DAEMON --> PLUGINS
     DAEMON --> VFS
-    PLUGINS --> VFS
+    PLUGINS --> CONTRIBUTIONS
+    CONTRIBUTIONS --> VFS
 ```
 
 ---

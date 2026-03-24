@@ -1,7 +1,7 @@
 # Actant VFS Reference Architecture
 
 > Status: Draft
-> Date: 2026-03-22
+> Date: 2026-03-24
 > Scope: 实现层内核架构（Linux 语义）
 > Related: [ContextFS V1 Linux Terminology](./contextfs-v1-linux-terminology.md), [ContextFS Architecture](./contextfs-architecture.md), [ContextFS Roadmap](../planning/contextfs-roadmap.md)
 
@@ -38,6 +38,9 @@ cli / rest-api / tui / dashboard / mcp-server / channel-*"]
     DAEMON["Actant Daemon
 唯一运行时宿主 / 唯一组合根"]
 
+    CONTRIBUTIONS["Provider Contributions
+mount / backend / data source SPI"]
+
     VFS["@actant/vfs
 唯一核心 / 唯一真相源"]
 
@@ -48,8 +51,33 @@ agent-runtime / 其它运行插件"]
     BRIDGE -. RPC .-> DAEMON
     DAEMON --> PLUGINS
     DAEMON --> VFS
-    PLUGINS --> VFS
+    PLUGINS --> CONTRIBUTIONS
+    CONTRIBUTIONS --> VFS
 ```
+
+模块结构治理的固定口径：
+
+- `actant -> bridge`：打包层只负责分发入口、命令封装和产品壳，不成为运行时组合根
+- `bridge -> RPC -> daemon`：桥接层只能通过 RPC/HTTP socket 等协议调用 `daemon`
+- `daemon -> daemon plugin`：运行时扩展只能由 `daemon` 装载
+- `daemon plugin -> provider contribution -> VFS`：插件通过 provider contribution 向 VFS 注入 mount/backend/数据来源能力
+- `VFS` 不得反向依赖 `agent-runtime`、`domain-context`、`acp`、`pi` 或任意 bridge 包
+
+当前活跃包归属快照：
+
+| Layer | Packages / Modules | Rule |
+|------|---------------------|------|
+| 打包层 | `actant` | 负责分发、命令包装、入口编排；不持有运行时真相 |
+| Bridge 层 | `@actant/cli`, `@actant/rest-api`, `@actant/tui`, `@actant/dashboard`, `@actant/mcp-server`, `@actant/channel-*` | 只做请求转发、协议转换、响应格式化和交互适配 |
+| daemon 内部模块 | `@actant/api`, `@actant/agent-runtime`, `@actant/domain-context`, `@actant/acp`, `@actant/pi` | 作为 `daemon` 内部运行机制或被其装载的插件能力存在 |
+| VFS 核心 | `@actant/vfs` | 唯一核心、唯一真相源；不接收反向业务编排依赖 |
+| 共享支撑 | `@actant/shared` | 提供类型、日志、路径和桥接公共工具；不升级为架构中心 |
+
+补充约束：
+
+- `@actant/context`、`@actant/catalog` 属于待收敛的历史过渡包，不得作为新架构中心继续扩张
+- 新增模块必须先声明自己属于打包层、bridge 层、daemon 内部模块或 `VFS` 核心中的哪一层
+- 如果一个变更让 bridge 直接依赖 provider/VFS 内部实现，或让 `VFS` 反向依赖运行机制模块，该变更默认判定为越层
 
 ---
 
