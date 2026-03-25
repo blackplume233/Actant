@@ -49,8 +49,6 @@ import {
 } from "@actant/domain-context";
 import {
   FilesystemTypeRegistry,
-  workspaceSourceFactory,
-  memorySourceFactory,
   configSourceFactory,
   canvasSourceFactory,
   vcsSourceFactory,
@@ -60,6 +58,7 @@ import {
   createMcpRuntimeSource,
   createAgentRuntimeSource,
 } from "@actant/vfs";
+import { workspaceSourceFactory } from "@actant/mountfs-workspace";
 import { CanvasStore } from "./canvas-store";
 import type {
   HostCapability,
@@ -335,7 +334,6 @@ export class AppContext {
     });
     this.filesystemTypeRegistry = new FilesystemTypeRegistry();
     this.filesystemTypeRegistry.register(workspaceSourceFactory);
-    this.filesystemTypeRegistry.register(memorySourceFactory);
     this.filesystemTypeRegistry.register(configSourceFactory);
     this.filesystemTypeRegistry.register(canvasSourceFactory);
     this.filesystemTypeRegistry.register(vcsSourceFactory);
@@ -697,14 +695,6 @@ export class AppContext {
       mountPoint: "/config",
       type: "config",
       config: {},
-      lifecycle: { type: "daemon" },
-    }));
-
-    reg.mount(factory.createMount({
-      name: "memory",
-      mountPoint: "/memory",
-      type: "memory",
-      config: { maxSize: "16MB" },
       lifecycle: { type: "daemon" },
     }));
 

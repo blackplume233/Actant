@@ -312,7 +312,7 @@ async function handleVfsStat(
       capabilities: resolved.fileSchema?.capabilities ?? Object.keys(resolved.mount.handlers),
       metadata: resolved.mount.metadata,
       tags: Array.isArray(resolved.mount.metadata.tags)
-        ? resolved.mount.metadata.tags.filter((tag): tag is string => typeof tag === "string")
+        ? resolved.mount.metadata.tags.filter((tag: unknown): tag is string => typeof tag === "string")
         : [],
     };
   } catch (error) {

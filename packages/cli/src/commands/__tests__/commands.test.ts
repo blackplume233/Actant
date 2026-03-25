@@ -633,14 +633,21 @@ describe("createNamespaceCommand", () => {
 
 describe("createVfsCommand", () => {
   let savedExitCode: number | undefined;
+  const savedSessionToken = process.env["ACTANT_SESSION_TOKEN"];
 
   beforeEach(() => {
     const raw = process.exitCode;
     savedExitCode = typeof raw === "number" ? raw : undefined;
+    delete process.env["ACTANT_SESSION_TOKEN"];
   });
 
   afterEach(() => {
     process.exitCode = savedExitCode;
+    if (savedSessionToken == null) {
+      delete process.env["ACTANT_SESSION_TOKEN"];
+    } else {
+      process.env["ACTANT_SESSION_TOKEN"] = savedSessionToken;
+    }
   });
 
   it("routes mount add to namespace authoring params", async () => {
@@ -694,5 +701,22 @@ describe("createVfsCommand", () => {
     await parent.parseAsync(["node", "test", "vfs", "mount", "remove", "/scratch"]);
 
     expect(mock.call).toHaveBeenCalledWith("vfs.mountRemove", { path: "/scratch" });
+  });
+
+  it("threads the bridge session token through mount list", async () => {
+    process.env["ACTANT_SESSION_TOKEN"] = "session-token";
+
+    const mock = createMockClient();
+    mock.call.mockResolvedValue({ mounts: [] });
+
+    const client = mock as unknown as RpcClient;
+    const { printer } = createTestPrinter();
+    const parent = new Command();
+    parent.exitOverride();
+    parent.addCommand(createVfsCommand(client, printer));
+
+    await parent.parseAsync(["node", "test", "vfs", "mount", "list"]);
+
+    expect(mock.call).toHaveBeenCalledWith("vfs.mountList", { token: "session-token" });
   });
 });

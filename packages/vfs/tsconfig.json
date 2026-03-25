@@ -6,5 +6,5 @@
     "rootDir": "./src"
   },
   "include": ["src"],
-  "references": [{ "path": "../shared" }]
+  "references": [{ "path": "../shared" }, { "path": "../mountfs-workspace" }, { "path": "../mountfs-process" }, { "path": "../mountfs-runtime-agents" }, { "path": "../mountfs-runtime-mcp" }]
 }

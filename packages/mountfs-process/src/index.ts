@@ -1,19 +1,19 @@
 import {
-  type VfsFeature,
-  type FilesystemTypeDefinition,
-  type VfsMountRegistration,
-  type VfsLifecycle,
-  type VfsHandlerMap,
-  type VfsFileContent,
-  type VfsWriteResult,
   type VfsEntry,
+  type VfsFeature,
+  type VfsFileContent,
   type VfsFileSchemaMap,
-  type VfsGrepResult,
   type VfsGrepMatch,
+  type VfsGrepResult,
+  type VfsHandlerMap,
+  type VfsLifecycle,
   type VfsListOptions,
+  type VfsMountRegistration,
+  type VfsWriteResult,
+  type FilesystemTypeDefinition,
 } from "@actant/shared";
 
-export interface ProcessSourceConfig {
+export interface ProcessMountfsConfig {
   command?: string;
   args?: string[];
   pid?: number;
@@ -55,7 +55,7 @@ class OutputBuffer {
 
   search(pattern: RegExp): VfsGrepMatch[] {
     const matches: VfsGrepMatch[] = [];
-    for (let i = 0; i < this.lines.length; i++) {
+    for (let i = 0; i < this.lines.length; i += 1) {
       const line = this.lines[i] ?? "";
       if (pattern.test(line)) {
         matches.push({ path: "stdout", line: i + 1, content: line });
@@ -177,22 +177,17 @@ function createHandlers(handle: ProcessHandle): VfsHandlerMap {
     }
   };
 
-  handlers.list = async (_dirPath: string, _opts?: VfsListOptions): Promise<VfsEntry[]> => {
-    return Object.keys(PROC_FILE_SCHEMA).map((name) => ({
-      name,
-      path: name,
-      type: "file" as const,
-    }));
-  };
+  handlers.list = async (_dirPath: string, _opts?: VfsListOptions): Promise<VfsEntry[]> => Object.keys(PROC_FILE_SCHEMA).map((name) => ({
+    name,
+    path: name,
+    type: "file" as const,
+  }));
 
   handlers.grep = async (pattern: string): Promise<VfsGrepResult> => {
     const regex = new RegExp(pattern, "g");
     const stdoutMatches = handle.stdout.search(regex);
     regex.lastIndex = 0;
-    const stderrMatches = handle.stderr
-      .search(regex)
-      .map((m) => ({ ...m, path: "stderr" }));
-
+    const stderrMatches = handle.stderr.search(regex).map((match) => ({ ...match, path: "stderr" }));
     const matches = [...stdoutMatches, ...stderrMatches];
     return { matches, totalMatches: matches.length, truncated: false };
   };
@@ -200,10 +195,6 @@ function createHandlers(handle: ProcessHandle): VfsHandlerMap {
   return handlers;
 }
 
-/**
- * Creates a VfsMountRegistration for a managed process.
- * The caller provides a ProcessHandle with output buffers and control callbacks.
- */
 export function createProcessSource(
   name: string,
   mountPoint: string,
@@ -228,19 +219,19 @@ export function createProcessSource(
   };
 }
 
-export const processSourceFactory: FilesystemTypeDefinition<ProcessSourceConfig> = {
+export const processSourceFactory: FilesystemTypeDefinition<ProcessMountfsConfig> = {
   type: "process",
   label: "process",
   defaultFeatures: PROCESS_TRAITS,
 
-  validate(spec: ProcessSourceConfig) {
+  validate(spec: ProcessMountfsConfig) {
     if (!spec.pid && !spec.command) {
       return { valid: false, errors: ["Either pid or command is required"] };
     }
     return { valid: true };
   },
 
-  create(spec: ProcessSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsMountRegistration {
+  create(spec: ProcessMountfsConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsMountRegistration {
     const bufferSize = spec.bufferSize ?? 10000;
     const handle: ProcessHandle = {
       pid: spec.pid ?? 0,

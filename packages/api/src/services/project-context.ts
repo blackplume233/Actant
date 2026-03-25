@@ -15,12 +15,11 @@ import {
 } from "@actant/domain-context";
 import {
   FilesystemTypeRegistry,
-  workspaceSourceFactory,
-  memorySourceFactory,
   createSnapshotDomainSource,
   createMcpRuntimeSource,
   createAgentRuntimeSource,
 } from "@actant/vfs";
+import { workspaceSourceFactory } from "@actant/mountfs-workspace";
 import type {
   ActantNamespaceConfig,
   ActantNamespaceEntrypoints,
@@ -291,22 +290,6 @@ function createDeclaredMountRegistrations(
         );
         break;
       }
-      case "memfs":
-        registrations.push(
-          factoryRegistry.createMount({
-            name: `${prefix}-${mountName}`,
-            mountPoint,
-            type: "memory",
-            config: declaration.options ?? {},
-            lifecycle,
-            metadata: {
-              filesystemType: "memfs",
-              mountType: "direct",
-              description: `memfs mount for ${context.summary.projectName} at ${declaration.path}`,
-            },
-          }),
-        );
-        break;
       case "runtimefs":
         if (declaration.path === "/agents") {
           registrations.push(createRuntimeRegistration(
@@ -340,7 +323,6 @@ function createDeclaredMountRegistrations(
 export function createProjectContextFilesystemTypeRegistry(): FilesystemTypeRegistry {
   const registry = new FilesystemTypeRegistry();
   registry.register(workspaceSourceFactory);
-  registry.register(memorySourceFactory);
   return registry;
 }
 

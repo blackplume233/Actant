@@ -1035,7 +1035,9 @@ export interface VfsMountRemoveResult {
   path: string;
 }
 
-export type VfsMountListParams = Record<string, never>;
+export interface VfsMountListParams {
+  token?: string;
+}
 export interface VfsMountListResult {
   mounts: Array<{
     name?: string;

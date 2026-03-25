@@ -74,33 +74,27 @@ importers:
 
   packages/actant:
     dependencies:
-      '@actant/acp':
-        specifier: workspace:0.5.0
-        version: link:../acp
-      '@actant/agent-runtime':
-        specifier: workspace:0.5.0
-        version: link:../agent-runtime
-      '@actant/api':
-        specifier: workspace:0.5.0
-        version: link:../api
       '@actant/cli':
         specifier: workspace:0.5.0
         version: link:../cli
-      '@actant/mcp-server':
-        specifier: workspace:0.5.0
-        version: link:../mcp-server
-      '@actant/pi':
-        specifier: workspace:0.5.0
-        version: link:../pi
-      '@actant/shared':
-        specifier: workspace:0.5.0
-        version: link:../shared
 
   packages/agent-runtime:
     dependencies:
       '@actant/domain-context':
         specifier: workspace:0.5.0
         version: link:../domain-context
+      '@actant/mountfs-process':
+        specifier: workspace:0.5.0
+        version: link:../mountfs-process
+      '@actant/mountfs-runtime-agents':
+        specifier: workspace:0.5.0
+        version: link:../mountfs-runtime-agents
+      '@actant/mountfs-runtime-mcp':
+        specifier: workspace:0.5.0
+        version: link:../mountfs-runtime-mcp
+      '@actant/mountfs-workspace':
+        specifier: workspace:0.5.0
+        version: link:../mountfs-workspace
       '@actant/shared':
         specifier: workspace:0.5.0
         version: link:../shared
@@ -135,6 +129,9 @@ importers:
       '@actant/domain-context':
         specifier: workspace:0.5.0
         version: link:../domain-context
+      '@actant/mountfs-workspace':
+        specifier: workspace:0.5.0
+        version: link:../mountfs-workspace
       '@actant/pi':
         specifier: workspace:0.5.0
         version: link:../pi
@@ -284,21 +281,39 @@ importers:
 
   packages/mcp-server:
     dependencies:
-      '@actant/api':
-        specifier: workspace:0.5.0
-        version: link:../api
       '@actant/shared':
         specifier: workspace:0.5.0
         version: link:../shared
-      '@actant/vfs':
-        specifier: workspace:0.5.0
-        version: link:../vfs
       '@modelcontextprotocol/sdk':
         specifier: ^1.27.1
         version: 1.27.1(zod@4.3.6)
       zod:
         specifier: ^4.3.6
         version: 4.3.6
+
+  packages/mountfs-process:
+    dependencies:
+      '@actant/shared':
+        specifier: workspace:0.5.0
+        version: link:../shared
+
+  packages/mountfs-runtime-agents:
+    dependencies:
+      '@actant/shared':
+        specifier: workspace:0.5.0
+        version: link:../shared
+
+  packages/mountfs-runtime-mcp:
+    dependencies:
+      '@actant/shared':
+        specifier: workspace:0.5.0
+        version: link:../shared
+
+  packages/mountfs-workspace:
+    dependencies:
+      '@actant/shared':
+        specifier: workspace:0.5.0
+        version: link:../shared
 
   packages/pi:
     dependencies:
@@ -365,6 +380,18 @@ importers:
 
   packages/vfs:
     dependencies:
+      '@actant/mountfs-process':
+        specifier: workspace:0.5.0
+        version: link:../mountfs-process
+      '@actant/mountfs-runtime-agents':
+        specifier: workspace:0.5.0
+        version: link:../mountfs-runtime-agents
+      '@actant/mountfs-runtime-mcp':
+        specifier: workspace:0.5.0
+        version: link:../mountfs-runtime-mcp
+      '@actant/mountfs-workspace':
+        specifier: workspace:0.5.0
+        version: link:../mountfs-workspace
       '@actant/shared':
         specifier: workspace:0.5.0
         version: link:../shared

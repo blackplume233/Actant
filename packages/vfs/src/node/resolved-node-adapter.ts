@@ -261,7 +261,7 @@ export class ResolvedNodeAdapter {
 
     return {
       ...result,
-      matches: result.matches.map((match) => ({
+      matches: result.matches.map((match: import("@actant/shared").VfsGrepMatch) => ({
         ...match,
         path: relativeToBasePath(this.resolved.relativePath, match.path),
       })),

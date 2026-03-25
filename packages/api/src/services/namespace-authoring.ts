@@ -141,12 +141,6 @@ export function validateNamespaceDocument(document: NamespaceConfigDocument): Na
       });
     }
 
-    if (mount.type === "memfs" && mount.options != null && typeof mount.options !== "object") {
-      mountDeclarationIssues.push({
-        path: `${mountPath}.options`,
-        message: "memfs options must be an object when present.",
-      });
-    }
   }
 
   if (!document.exists) {
@@ -175,7 +169,7 @@ export async function addNamespaceMount(
   const document = await readNamespaceConfigDocument(projectRoot);
   const normalizedDeclaration = normalizeMountDeclaration(declaration);
   document.config.mounts = [
-    ...document.config.mounts.filter((mount) => normalizeVfsPath(mount.path) !== normalizedDeclaration.path),
+    ...document.config.mounts.filter((mount: MountDeclaration) => normalizeVfsPath(mount.path) !== normalizedDeclaration.path),
     normalizedDeclaration,
   ];
   return document;
@@ -187,7 +181,7 @@ export async function removeNamespaceMount(
 ): Promise<{ document: NamespaceConfigDocument; removed: boolean }> {
   const document = await readNamespaceConfigDocument(projectRoot);
   const normalizedPath = normalizeVfsPath(mountPath);
-  const nextMounts = document.config.mounts.filter((mount) => normalizeVfsPath(mount.path) !== normalizedPath);
+  const nextMounts = document.config.mounts.filter((mount: MountDeclaration) => normalizeVfsPath(mount.path) !== normalizedPath);
   const removed = nextMounts.length !== document.config.mounts.length;
   document.config.mounts = nextMounts;
   return { document, removed };
@@ -204,7 +198,7 @@ export function listNamespaceMountDeclarations(
   mounted: boolean;
   options?: Record<string, unknown>;
 }> {
-  return document.config.mounts.map((mount) => {
+  return document.config.mounts.map((mount: MountDeclaration) => {
     const normalizedPath = normalizeMountDeclaration(mount).path;
     const effectivePath = joinNamespaceMountPoint(namespaceRoot, normalizedPath);
     return {
@@ -247,7 +241,9 @@ function normalizeNamespaceConfig(
   parsed: Partial<ActantNamespaceConfig>,
   projectRoot: string,
 ): ActantNamespaceConfig {
-  const mounts = Array.isArray(parsed.mounts) ? parsed.mounts.filter(isMountDeclarationLike).map(normalizeMountDeclaration) : [];
+  const mounts = Array.isArray(parsed.mounts)
+    ? parsed.mounts.filter(isMountDeclarationLike).map((mount: MountDeclaration) => normalizeMountDeclaration(mount))
+    : [];
   return {
     version: 1,
     name: typeof parsed.name === "string" && parsed.name.length > 0 ? parsed.name : basename(projectRoot),
@@ -269,7 +265,7 @@ function normalizeMountDeclaration(declaration: MountDeclaration): MountDeclarat
 }
 
 function getConfigHostMount(config: ActantNamespaceConfig): MountDeclaration | undefined {
-  return config.mounts.find((mount) => mount.type === "hostfs" && normalizeVfsPath(mount.path) === "/config");
+  return config.mounts.find((mount: MountDeclaration) => mount.type === "hostfs" && normalizeVfsPath(mount.path) === "/config");
 }
 
 function isMountDeclarationLike(value: unknown): value is MountDeclaration {
@@ -278,7 +274,7 @@ function isMountDeclarationLike(value: unknown): value is MountDeclaration {
   }
   const candidate = value as Partial<MountDeclaration>;
   return (
-    (candidate.type === "hostfs" || candidate.type === "runtimefs" || candidate.type === "memfs")
+    (candidate.type === "hostfs" || candidate.type === "runtimefs")
     && typeof candidate.path === "string"
   );
 }

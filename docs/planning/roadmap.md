@@ -7,12 +7,16 @@
 - [x] ContextFS V1 freeze baseline 已完成
 - [x] 单仓 stack boundary freeze 已完成
 - [x] 活跃文档、帮助入口与 workspace 叙事收口完成
-- [ ] 在文档收口完成后整理下一阶段 planning intake
+- [ ] 把 `mountfs` 提升为权威 spec 术语并冻结边界
+- [ ] 按 owner 文件推进 `packages/vfs/src/sources/* -> @actant/mountfs-*` 迁移计划
+- [ ] 明确多仓 shared skill governance 的 planning intake，并冻结最小里程碑边界
 
 ## Current Truth Sources
 
 - [x] Repo-level planning entry: [roadmap.md](./roadmap.md)
 - [x] Active cleanup backlog: [workspace-normalization-todo.md](./workspace-normalization-todo.md)
+- [x] Scoped execution plan: [mountfs-execution-plan.md](./mountfs-execution-plan.md)
+- [x] Shared skill governance milestone draft: [shared-skill-governance-plan.md](./shared-skill-governance-plan.md)
 - [x] Historical pre-freeze milestone log: [docs/history/contextfs-roadmap-pre-stack-freeze.md](../history/contextfs-roadmap-pre-stack-freeze.md)
 - [x] 其他文档只能链接或总结，不重复维护同一组活跃 checklist 状态
 

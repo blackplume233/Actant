@@ -4,6 +4,10 @@
     "paths": {
       "@actant/shared": ["packages/shared/src/index.ts"],
       "@actant/shared/vfs-contracts": ["packages/shared/src/vfs-contracts.ts"],
+      "@actant/mountfs-process": ["packages/mountfs-process/src/index.ts"],
+      "@actant/mountfs-runtime-agents": ["packages/mountfs-runtime-agents/src/index.ts"],
+      "@actant/mountfs-runtime-mcp": ["packages/mountfs-runtime-mcp/src/index.ts"],
+      "@actant/mountfs-workspace": ["packages/mountfs-workspace/src/index.ts"],
       "@actant/domain-context": ["packages/domain-context/src/index.ts"],
       "@actant/vfs": ["packages/vfs/src/index.ts"],
       "@actant/agent-runtime": ["packages/agent-runtime/src/index.ts"],

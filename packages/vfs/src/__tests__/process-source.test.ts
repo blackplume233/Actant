@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import type { VfsEntry } from "@actant/shared";
-import { createProcessSource, OutputBuffer, type ProcessHandle } from "../sources/process-source";
+import { createProcessSource, OutputBuffer, type ProcessHandle } from "@actant/mountfs-process";
 
 describe("ProcessSource", () => {
   function createTestProcess(): ProcessHandle {

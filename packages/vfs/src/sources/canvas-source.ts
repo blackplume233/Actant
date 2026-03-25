@@ -8,6 +8,7 @@ import {
   type VfsWriteResult,
   type VfsEntry,
   type VfsListOptions,
+  type VfsStatResult,
 } from "@actant/shared";
 
 export interface CanvasSourceConfig {
@@ -54,6 +55,21 @@ function createHandlers(items: Map<string, CanvasItem>, maxItems: number): VfsHa
     }));
   };
 
+  handlers.stat = async (filePath: string): Promise<VfsStatResult> => {
+    const id = filePath.replace(/\.json$/, "");
+    const item = items.get(id);
+    if (!item) {
+      throw new Error(`Canvas item not found: ${id}`);
+    }
+
+    return {
+      size: Buffer.byteLength(item.content),
+      mtime: new Date(item.updatedAt).toISOString(),
+      type: "file",
+      mimeType: "application/json",
+    };
+  };
+
   return handlers;
 }
 
@@ -76,7 +92,7 @@ export const canvasSourceFactory: FilesystemTypeDefinition<CanvasSourceConfig> =
       metadata: {
         description: "Canvas data store",
         virtual: true,
-        filesystemType: "memfs",
+        filesystemType: "canvasfs",
         mountType: mountPoint === "/" ? "root" : "direct",
       },
       fileSchema: {},

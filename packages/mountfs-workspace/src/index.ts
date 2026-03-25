@@ -4,8 +4,8 @@ import { existsSync } from "node:fs";
 import {
   type VfsFeature,
   type FilesystemTypeDefinition,
-  type VfsMountRegistration,
   type VfsLifecycle,
+  type VfsMountRegistration,
   type VfsHandlerMap,
   type VfsFileContent,
   type VfsWriteResult,
@@ -21,7 +21,7 @@ import {
   type VfsGrepMatch,
 } from "@actant/shared";
 
-export interface WorkspaceSourceConfig {
+export interface WorkspaceMountfsConfig {
   path: string;
   readOnly?: boolean;
   watchEnabled?: boolean;
@@ -35,6 +35,12 @@ function resolveAbsolute(rootDir: string, relativePath: string): string {
     throw new Error(`Path traversal denied: ${relativePath}`);
   }
   return resolved;
+}
+
+function matchGlobSimple(pattern: string, value: string): boolean {
+  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`^${escaped.replace(/\*/g, ".*")}$`);
+  return regex.test(value);
 }
 
 function createHandlers(rootDir: string, readOnly: boolean): VfsHandlerMap {
@@ -54,12 +60,9 @@ function createHandlers(rootDir: string, readOnly: boolean): VfsHandlerMap {
     const abs = resolveAbsolute(rootDir, filePath);
     const content = await fs.readFile(abs, "utf-8");
     const lines = content.split("\n");
-
     const start = startLine < 0 ? Math.max(0, lines.length + startLine) : startLine - 1;
     const end = endLine != null ? endLine : lines.length;
-    const sliced = lines.slice(start, end);
-
-    return { content: sliced.join("\n") };
+    return { content: lines.slice(start, end).join("\n") };
   };
 
   if (!readOnly) {
@@ -79,8 +82,8 @@ function createHandlers(rootDir: string, readOnly: boolean): VfsHandlerMap {
     ): Promise<VfsEditResult> => {
       const abs = resolveAbsolute(rootDir, filePath);
       let content = await fs.readFile(abs, "utf-8");
-
       let replacements = 0;
+
       if (replaceAll) {
         const parts = content.split(oldStr);
         replacements = parts.length - 1;
@@ -127,12 +130,10 @@ function createHandlers(rootDir: string, readOnly: boolean): VfsHandlerMap {
     }
 
     if (opts?.recursive) {
-      const dirs = result.filter((e) => e.type === "directory");
-      for (const dir of dirs) {
+      for (const dir of result.filter((entry) => entry.type === "directory")) {
         const listHandler = handlers.list;
         if (!listHandler) continue;
-        const subEntries = await listHandler(dir.path, { ...opts, recursive: true });
-        result.push(...subEntries);
+        result.push(...await listHandler(dir.path, { ...opts, recursive: true }));
       }
     }
 
@@ -167,15 +168,14 @@ function createHandlers(rootDir: string, readOnly: boolean): VfsHandlerMap {
         for (const entry of entries) {
           if (entry.name.startsWith(".")) continue;
           if (opts?.pattern && !entry.isDirectory() && !entry.name.includes(opts.pattern)) continue;
-          node.children.push(
-            await buildNode(
-              path.join(absPath, entry.name),
-              relPath ? `${relPath}/${entry.name}` : entry.name,
-              depth + 1,
-            ),
-          );
+          node.children.push(await buildNode(
+            path.join(absPath, entry.name),
+            relPath ? `${relPath}/${entry.name}` : entry.name,
+            depth + 1,
+          ));
         }
       }
+
       return node;
     }
 
@@ -198,10 +198,8 @@ function createHandlers(rootDir: string, readOnly: boolean): VfsHandlerMap {
             if (matchGlobSimple(pattern, rel)) results.push(rel);
           }
           await walk(abs, rel);
-        } else {
-          if (!opts?.type || opts.type === "file" || opts.type === "all") {
-            if (matchGlobSimple(pattern, rel)) results.push(rel);
-          }
+        } else if (!opts?.type || opts.type === "file" || opts.type === "all") {
+          if (matchGlobSimple(pattern, rel)) results.push(rel);
         }
       }
     }
@@ -218,32 +216,31 @@ function createHandlers(rootDir: string, readOnly: boolean): VfsHandlerMap {
     async function searchDir(dir: string, relDir: string): Promise<void> {
       if (matches.length >= maxResults) return;
       const entries = await fs.readdir(dir, { withFileTypes: true });
+
       for (const entry of entries) {
         if (matches.length >= maxResults) return;
         if (entry.name.startsWith(".")) continue;
+
         const abs = path.join(dir, entry.name);
         const rel = relDir ? `${relDir}/${entry.name}` : entry.name;
 
         if (entry.isDirectory()) {
           await searchDir(abs, rel);
-        } else {
-          if (opts?.glob && !matchGlobSimple(opts.glob, rel)) continue;
-          try {
-            const content = await fs.readFile(abs, "utf-8");
-            const lines = content.split("\n");
-            for (let i = 0; i < lines.length && matches.length < maxResults; i++) {
-              const line = lines[i] ?? "";
-              if (regex.test(line)) {
-                matches.push({
-                  path: rel,
-                  line: i + 1,
-                  content: line,
-                });
-                regex.lastIndex = 0;
-              }
-            }
-          } catch {
-            // Skip binary/unreadable files
+          continue;
+        }
+
+        if (opts?.glob && !matchGlobSimple(opts.glob, rel)) {
+          continue;
+        }
+
+        const content = await fs.readFile(abs, "utf-8");
+        const lines = content.split("\n");
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i] ?? "";
+          if (regex.test(line)) {
+            matches.push({ path: rel, line: i + 1, content: line });
+            regex.lastIndex = 0;
+            if (matches.length >= maxResults) break;
           }
         }
       }
@@ -260,45 +257,27 @@ function createHandlers(rootDir: string, readOnly: boolean): VfsHandlerMap {
   return handlers;
 }
 
-function matchGlobSimple(pattern: string, filePath: string): boolean {
-  const regexStr = pattern
-    .replace(/\./g, "\\.")
-    .replace(/\*\*/g, "<<<GLOBSTAR>>>")
-    .replace(/\*/g, "[^/]*")
-    .replace(/<<<GLOBSTAR>>>/g, ".*")
-    .replace(/\?/g, "[^/]");
-  return new RegExp(`^${regexStr}$`).test(filePath);
-}
-
-export const workspaceSourceFactory: FilesystemTypeDefinition<WorkspaceSourceConfig> = {
-  type: "filesystem",
+export const workspaceSourceFactory: FilesystemTypeDefinition<WorkspaceMountfsConfig> = {
+  type: "workspace",
   label: "workspace",
   defaultFeatures: WORKSPACE_TRAITS,
-
-  validate(config: WorkspaceSourceConfig) {
-    if (!config.path) return { valid: false, errors: ["path is required"] };
-    return { valid: true };
-  },
-
-  create(spec: WorkspaceSourceConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsMountRegistration {
+  create(spec: WorkspaceMountfsConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsMountRegistration {
     const rootDir = path.resolve(spec.path);
     const readOnly = spec.readOnly ?? false;
-    const handlers = createHandlers(rootDir, readOnly);
-
     return {
       name: "",
       mountPoint,
       label: "workspace",
-      features: new Set(WORKSPACE_TRAITS),
+      features: new Set(readOnly ? ["persistent", "watchable"] : WORKSPACE_TRAITS),
       lifecycle,
       metadata: {
-        description: `Workspace: ${rootDir}`,
-        readOnly,
+        description: `Workspace root: ${rootDir}`,
         filesystemType: "hostfs",
         mountType: mountPoint === "/" ? "root" : "direct",
+        readOnly,
       },
       fileSchema: {},
-      handlers,
+      handlers: createHandlers(rootDir, readOnly),
     };
   },
 };

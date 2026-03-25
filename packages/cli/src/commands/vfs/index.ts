@@ -290,18 +290,19 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
       }
     });
 
+  // Namespace authoring also runs through the authenticated bridge surface.
   const mount = new Command("mount").description("Mount point operations");
 
   mount
     .command("add")
     .description("Add a mount declaration to the active namespace config")
-    .requiredOption("--type <type>", "Filesystem type: hostfs, memfs, runtimefs")
+    .requiredOption("--type <type>", "Filesystem type: hostfs, runtimefs")
     .requiredOption("--path <path>", "Mount path inside the namespace")
     .option("--name <name>", "Optional mount name")
     .option("--host-path <path>", "Required for hostfs: host path relative to the project root")
     .option("--json", "Output as JSON")
     .action(async (opts: {
-      type: "hostfs" | "memfs" | "runtimefs";
+      type: "hostfs" | "runtimefs";
       path: string;
       name?: string;
       hostPath?: string;
@@ -365,7 +366,7 @@ export function createVfsCommand(client: RpcClient, printer: CliPrinter = defaul
     .option("--json", "Output as JSON")
     .action(async (opts: { json?: boolean }) => {
       try {
-        const result = await client.call("vfs.mountList", {});
+        const result = await client.call("vfs.mountList", withToken({}));
         const r = result as {
           mounts: Array<{
             name?: string;

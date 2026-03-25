@@ -47,9 +47,9 @@ describe("vfs handlers", () => {
   it("uses secured kernel permissions when a session token is provided", async () => {
     const token = ctx.sessionTokenStore.generate("agent-a", "session-a");
     ctx.vfsRegistry.mount(ctx.filesystemTypeRegistry.createMount({
-      name: "memory-agent-a",
-      mountPoint: "/memory/agent-a",
-      type: "memory",
+      name: "canvas-agent-a",
+      mountPoint: "/canvas/agent-a",
+      type: "canvas",
       config: {},
       lifecycle: { type: "manual" },
       metadata: { owner: "agent-a" },
@@ -61,7 +61,7 @@ describe("vfs handlers", () => {
 
     try {
       await expect(writeHandler({
-        path: "/memory/default.txt",
+        path: "/canvas/default.json",
         content: "blocked",
         token,
       }, ctx)).rejects.toMatchObject({
@@ -69,28 +69,28 @@ describe("vfs handlers", () => {
       });
 
       const writeResult = await writeHandler({
-        path: "/memory/agent-a/note.md",
+        path: "/canvas/agent-a/note.json",
         content: "hello kernel",
         token,
       }, ctx) as { bytesWritten: number; created: boolean };
       expect(writeResult.bytesWritten).toBeGreaterThan(0);
 
       const readResult = await readHandler({
-        path: "/memory/agent-a/note.md",
+        path: "/canvas/agent-a/note.json",
         token,
       }, ctx) as { content: string };
       expect(readResult.content).toBe("hello kernel");
 
       const statResult = await statHandler({
-        path: "/memory/agent-a/note.md",
+        path: "/canvas/agent-a/note.json",
         token,
       }, ctx) as { type: string; nodeType: string; filesystemType: string; mountPoint: string };
       expect(statResult.type).toBe("file");
       expect(statResult.nodeType).toBe("regular");
-      expect(statResult.filesystemType).toBe("memfs");
-      expect(statResult.mountPoint).toBe("/memory/agent-a");
+      expect(statResult.filesystemType).toBe("canvasfs");
+      expect(statResult.mountPoint).toBe("/canvas/agent-a");
     } finally {
-      ctx.vfsRegistry.unmount("memory-agent-a");
+      ctx.vfsRegistry.unmount("canvas-agent-a");
     }
   });
 
@@ -154,11 +154,12 @@ describe("vfs handlers", () => {
   });
 
   it("preserves direct child mount listing for unresolved parent paths", async () => {
+    const workspaceDir = await mkdtemp(join(tmpdir(), "actant-vfs-listing-"));
     ctx.vfsRegistry.mount(ctx.filesystemTypeRegistry.createMount({
       name: "workspace-agent-a",
       mountPoint: "/workspace/agent-a",
-      type: "memory",
-      config: {},
+      type: "filesystem",
+      config: { path: workspaceDir },
       lifecycle: { type: "manual" },
       metadata: { owner: "agent-a" },
     }));
@@ -178,6 +179,7 @@ describe("vfs handlers", () => {
       ]));
     } finally {
       ctx.vfsRegistry.unmount("workspace-agent-a");
+      await rm(workspaceDir, { recursive: true, force: true });
     }
   });
 
@@ -430,6 +432,7 @@ describe("vfs handlers", () => {
   it("writes namespace-backed mount declarations for add/remove/list", async () => {
     const projectDir = await mkdtemp(join(tmpdir(), "actant-vfs-authoring-"));
     await mkdir(join(projectDir, "configs"), { recursive: true });
+    await mkdir(join(projectDir, "scratch"), { recursive: true });
     await writeFile(
       join(projectDir, "actant.namespace.json"),
       JSON.stringify({
@@ -451,11 +454,12 @@ describe("vfs handlers", () => {
 
     await expect(mountAddHandler({
       path: "/scratch",
-      type: "memfs",
+      type: "hostfs",
+      options: { hostPath: "scratch" },
     }, ctx)).resolves.toMatchObject({
       mount: {
         path: "/scratch",
-        filesystemType: "memfs",
+        filesystemType: "hostfs",
         mounted: true,
       },
     });
@@ -466,7 +470,7 @@ describe("vfs handlers", () => {
     expect(listResult.mounts).toEqual(expect.arrayContaining([
       expect.objectContaining({
         path: "/scratch",
-        filesystemType: "memfs",
+        filesystemType: "hostfs",
         mounted: true,
       }),
     ]));
@@ -475,7 +479,7 @@ describe("vfs handlers", () => {
       mounts: Array<{ path: string; type: string }>;
     };
     expect(persisted.mounts).toEqual(expect.arrayContaining([
-      expect.objectContaining({ path: "/scratch", type: "memfs" }),
+      expect.objectContaining({ path: "/scratch", type: "hostfs" }),
     ]));
 
     await expect(mountRemoveHandler({

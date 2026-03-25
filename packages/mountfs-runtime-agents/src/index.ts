@@ -214,7 +214,7 @@ async function* oneShotStream(content: VfsFileContent): AsyncGenerator<VfsStream
   };
 }
 
-export function createAgentRuntimeSource(
+export function createAgentRuntimeMountfs(
   provider: AgentRuntimeProviderContribution,
   mountPoint: string,
   lifecycle: VfsLifecycle,
@@ -279,7 +279,7 @@ export function createAgentRuntimeSource(
     const parsed = parseAgentPath(dirPath);
 
     if (parsed.kind === "root") {
-      const entries: VfsEntry[] = provider.listRecords().map((agent) => ({
+      const entries: VfsEntry[] = provider.listRecords().map((agent: AgentInstanceMeta) => ({
         name: agent.name,
         path: agent.name,
         type: "directory" as const,
@@ -358,7 +358,7 @@ export function createAgentRuntimeSource(
       return () => undefined;
     }
 
-    return provider.subscribe((event) => {
+    return provider.subscribe((event: AgentRuntimeWatchEvent) => {
       if (opts?.events && !opts.events.includes(event.type)) {
         return;
       }
@@ -426,9 +426,12 @@ function assertRuntimeProviderContribution(
     );
   }
 }
+
 function requireAgentStream(streamName: string): "stdout" | "stderr" {
   if (streamName !== "stdout" && streamName !== "stderr") {
     throw new Error(`Stream not found: ${streamName}`);
   }
   return streamName;
 }
+
+export { createAgentRuntimeMountfs as createAgentRuntimeSource };

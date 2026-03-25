@@ -185,7 +185,6 @@ V1 当前必须固定的 `filesystem type`：
 
 - `hostfs`
 - `runtimefs`
-- `memfs`
 
 V1 当前必须固定的 `node type`：
 

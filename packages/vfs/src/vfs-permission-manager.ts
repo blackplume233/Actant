@@ -29,14 +29,6 @@ export const DEFAULT_PERMISSION_RULES: VfsPermissionRule[] = [
     "semantic_search", "read_lints", "watch", "on_change",
   ], effect: "allow", priority: 10 },
 
-  // /memory/${self}/** — owner RW, others R
-  { pathPattern: "/memory/${self}/**", principal: { type: "self" }, actions: [
-    "read", "write", "list", "stat", "grep",
-  ], effect: "allow", priority: 20 },
-  { pathPattern: "/memory/**", principal: { type: "any" }, actions: [
-    "read", "list", "stat",
-  ], effect: "allow", priority: 10 },
-
   // /proc/${self}/** — owner RW (including cmd), parent RW, others R
   { pathPattern: "/proc/${self}/**", principal: { type: "self" }, actions: [
     "read", "read_range", "write", "list", "stat", "grep",

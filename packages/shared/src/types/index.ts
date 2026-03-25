@@ -357,6 +357,7 @@ export {
   type VfsFileSchemaMap,
   type VfsFeature,
   type FilesystemTypeDefinition,
+  type MountfsDefinition,
   type FilesystemRequirement,
   type VfsLifecycle,
   type VfsMountMetadata,

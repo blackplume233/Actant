@@ -7,9 +7,8 @@ import type { VfsKernelDispatchState } from "../middleware/types";
 import { VfsPermissionManager, DEFAULT_PERMISSION_RULES } from "../vfs-permission-manager";
 import { createPermissionMiddleware } from "../middleware/permission-middleware";
 import { VfsKernel } from "../core/vfs-kernel";
-import { memorySourceFactory } from "../sources/memory-source";
-import { createProcessSource, OutputBuffer, type ProcessHandle } from "../sources/process-source";
-import { workspaceSourceFactory } from "../sources/workspace-source";
+import { createProcessSource, OutputBuffer, type ProcessHandle } from "@actant/mountfs-process";
+import { workspaceSourceFactory } from "@actant/mountfs-workspace";
 
 const WORKSPACE_TRAITS = new Set<VfsFeature>(["persistent", "writable", "watchable"]);
 const tempDirs: string[] = [];
@@ -27,17 +26,6 @@ function createIdentity(agentName: string) {
     archetype: "repo" as const,
     sessionId: "session-1",
   };
-}
-
-function createMemoryMount() {
-  const mount = memorySourceFactory.create(
-    { maxSize: "1mb" },
-    "/memory/agent-a",
-    { type: "agent", agentName: "agent-a" },
-  );
-  mount.name = "mem-a";
-  mount.metadata.owner = "agent-a";
-  return mount;
 }
 
 function createProcessMount() {
@@ -99,27 +87,41 @@ afterEach(async () => {
 describe("VfsKernel", () => {
   it("routes read, write, list, and stat through direct mounts", async () => {
     const kernel = createKernel();
-    kernel.mount(createMemoryMount());
+    const root = await createWorkspaceFixture();
+    const registration = workspaceSourceFactory.create(
+      { path: root },
+      "/workspace",
+      { type: "manual" },
+    );
+    registration.name = "workspace";
+    kernel.mount(registration);
 
     const context = { identity: createIdentity("agent-a") };
-    await kernel.write("/memory/agent-a/notes.md", "hello", context);
+    await kernel.write("/workspace/notes.md", "hello", context);
 
-    const readResult = await kernel.read("/memory/agent-a/notes.md", context);
+    const readResult = await kernel.read("/workspace/notes.md", context);
     expect(readResult.content).toBe("hello");
 
-    const listResult = await kernel.list("/memory/agent-a", context);
+    const listResult = await kernel.list("/workspace", context);
     expect(listResult.map((entry) => entry.name)).toContain("notes.md");
 
-    const statResult = await kernel.stat("/memory/agent-a/notes.md", context);
+    const statResult = await kernel.stat("/workspace/notes.md", context);
     expect(statResult?.type).toBe("file");
   });
 
   it("applies permission middleware before write", async () => {
     const kernel = createKernel();
-    kernel.mount(createMemoryMount());
+    const root = await createWorkspaceFixture();
+    const registration = workspaceSourceFactory.create(
+      { path: root },
+      "/workspace",
+      { type: "manual" },
+    );
+    registration.name = "workspace";
+    kernel.mount(registration);
 
     await expect(
-      kernel.write("/memory/agent-a/notes.md", "blocked"),
+      kernel.write("/workspace/notes.md", "blocked"),
     ).rejects.toThrow(/Permission denied/);
   });
 
@@ -197,7 +199,7 @@ describe("VfsKernel", () => {
 
     const tree = await kernel.tree("/workspace/src", { depth: 2 }, context);
     expect(tree.type).toBe("directory");
-    expect(tree.children?.map((child) => child.name)).toContain("a.txt");
+    expect(tree.children?.map((child: { name: string }) => child.name)).toContain("a.txt");
 
     const scopedGlob = await kernel.glob("/workspace/src", "*.txt", { type: "file" }, context);
     expect(scopedGlob).toEqual(expect.arrayContaining(["a.txt", "b.txt"]));

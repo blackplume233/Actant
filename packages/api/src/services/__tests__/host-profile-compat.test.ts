@@ -15,6 +15,7 @@ describe("AppContext context profile", () => {
   beforeAll(async () => {
     tmpDir = await mkdtemp(join(tmpdir(), "actant-context-"));
     await mkdir(join(tmpDir, "configs", "templates"), { recursive: true });
+    await mkdir(join(tmpDir, "scratch"), { recursive: true });
     await writeFile(
       join(tmpDir, "configs", "templates", "minimal.json"),
       JSON.stringify({
@@ -74,11 +75,12 @@ describe("AppContext context profile", () => {
     await expect(mountHandler?.({
       name: "tmp",
       path: "/tmp",
-      type: "memfs",
+      type: "hostfs",
+      options: { hostPath: "scratch" },
     }, ctx)).resolves.toMatchObject({
       mount: {
         path: "/tmp",
-        filesystemType: "memfs",
+        filesystemType: "hostfs",
         mounted: true,
       },
     });
@@ -87,7 +89,7 @@ describe("AppContext context profile", () => {
       mounts: Array<{ path: string; type: string }>;
     };
     expect(persisted.mounts).toEqual(expect.arrayContaining([
-      expect.objectContaining({ path: "/tmp", type: "memfs" }),
+      expect.objectContaining({ path: "/tmp", type: "hostfs" }),
     ]));
     expect(ctx.runtimeState).toBe("inactive");
   });

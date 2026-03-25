@@ -1,6 +1,6 @@
 export interface MountDeclaration {
   name?: string;
-  type: "hostfs" | "runtimefs" | "memfs";
+  type: "hostfs" | "runtimefs";
   path: string;
   options?: Record<string, unknown>;
 }

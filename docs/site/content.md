@@ -15,7 +15,7 @@ The current public baseline is:
 - Product layer: `ContextFS`
 - Implementation layer: `VFS`
 - Core objects: `mount namespace`, `mount table`, `filesystem type`, `mount instance`, `node type`
-- V1 filesystem types: `hostfs`, `runtimefs`, `memfs`
+- V1 filesystem types: `hostfs`, `runtimefs`
 - V1 node types: `directory`, `regular`, `control`, `stream`
 - V1 operations: `read`, `write`, `list`, `stat`, `watch`, `stream`
 

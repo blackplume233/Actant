@@ -22,7 +22,7 @@
 
 - 先文档，后实现
 - 当前有效对象模型只有 `mount namespace`、`mount table`、`filesystem type`、`mount instance`、`node type`
-- V1 必要 `filesystem type`：`hostfs`、`runtimefs`、`memfs`
+- V1 必要 `filesystem type`：`hostfs`、`runtimefs`
 - V1 必要 `node type`：`directory`、`regular`、`control`、`stream`
 - V1 不做 `workflow`、query/view mount、overlay/fallback 行为实现
 

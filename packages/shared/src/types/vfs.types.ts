@@ -44,7 +44,6 @@ export type VfsMountType =
 export type VfsFilesystemType =
   | "hostfs"
   | "runtimefs"
-  | "memfs"
   | (string & Record<never, never>);
 
 // ---------------------------------------------------------------------------
@@ -362,7 +361,7 @@ export interface RuntimefsProviderContribution<
 }
 
 // ---------------------------------------------------------------------------
-// Filesystem type definitions — declarative factory registration
+// MountFS / filesystem type definitions — declarative mount implementation SPI
 // ---------------------------------------------------------------------------
 
 export interface FilesystemTypeDefinition<TConfig = Record<string, unknown>> {
@@ -373,6 +372,15 @@ export interface FilesystemTypeDefinition<TConfig = Record<string, unknown>> {
   create(config: TConfig, mountPoint: string, lifecycle: VfsLifecycle): VfsMountRegistration;
   validate?(config: TConfig): { valid: boolean; errors?: string[] };
 }
+
+/**
+ * Preferred active term for a single mount-type implementation contract.
+ *
+ * `FilesystemTypeDefinition` remains the storage/runtime-level wire name for
+ * backward compatibility; new implementation code should prefer `MountfsDefinition`.
+ */
+export type MountfsDefinition<TConfig = Record<string, unknown>> =
+  FilesystemTypeDefinition<TConfig>;
 
 export interface FilesystemRequirement {
   required: VfsFeature[];

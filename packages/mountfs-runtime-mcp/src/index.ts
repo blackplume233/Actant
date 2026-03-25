@@ -202,7 +202,7 @@ async function* oneShotStream(content: VfsFileContent): AsyncGenerator<VfsStream
   };
 }
 
-export function createMcpRuntimeSource(
+export function createMcpRuntimeMountfs(
   provider: McpRuntimeProviderContribution,
   mountPoint: string,
   lifecycle: VfsLifecycle,
@@ -270,7 +270,7 @@ export function createMcpRuntimeSource(
     const parsed = parseRuntimePath(dirPath);
 
     if (parsed.kind === "root") {
-      const entries: VfsEntry[] = provider.listRecords().map((runtime) => ({
+      const entries: VfsEntry[] = provider.listRecords().map((runtime: McpRuntimeRecord) => ({
         name: runtime.name,
         path: runtime.name,
         type: "directory" as const,
@@ -345,7 +345,7 @@ export function createMcpRuntimeSource(
       return () => undefined;
     }
 
-    return provider.subscribe((event) => {
+    return provider.subscribe((event: McpRuntimeWatchEvent) => {
       if (opts?.events && !opts.events.includes(event.type)) {
         return;
       }
@@ -416,9 +416,12 @@ function assertRuntimeProviderContribution(
     );
   }
 }
+
 function requireEventsStream(streamName: string): "events" {
   if (streamName !== "events") {
     throw new Error(`Stream not found: ${streamName}`);
   }
   return streamName;
 }
+
+export { createMcpRuntimeMountfs as createMcpRuntimeSource };

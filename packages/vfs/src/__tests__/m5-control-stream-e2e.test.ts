@@ -3,11 +3,13 @@ import type { AgentInstanceMeta, VfsStreamChunk, VfsWriteResult } from "@actant/
 import { VfsKernel } from "../core/vfs-kernel";
 import {
   createAgentRuntimeSource,
-  createMcpRuntimeSource,
   type AgentControlRequest,
   type AgentRuntimeSourceProvider,
+} from "@actant/mountfs-runtime-agents";
+import {
+  createMcpRuntimeSource,
   type McpRuntimeSourceProvider,
-} from "../sources";
+} from "@actant/mountfs-runtime-mcp";
 
 function createAgentMeta(name: string): AgentInstanceMeta {
   return {
@@ -44,12 +46,12 @@ describe("M5 control + stream execution model", () => {
       filesystemType: "runtimefs",
       mountPoint: "/agents",
       listRecords: () => [createAgentMeta("worker")],
-      getRecord: (name) => (name === "worker" ? createAgentMeta(name) : undefined),
-      writeControl: async (_name, _controlPath, content): Promise<VfsWriteResult> => {
+      getRecord: (name: string) => (name === "worker" ? createAgentMeta(name) : undefined),
+      writeControl: async (_name: string, _controlPath: "request.json", content: string): Promise<VfsWriteResult> => {
         calls.push(JSON.parse(content) as AgentControlRequest);
         return { bytesWritten: Buffer.byteLength(content), created: false };
       },
-      stream: async function* (_name, stream) {
+      stream: async function* (_name: string, stream: "stdout" | "stderr") {
         expect(stream).toBe("stdout");
         yield { content: "booting\n", timestamp: 1 };
         yield { content: "done\n", timestamp: 2 };
@@ -88,7 +90,7 @@ describe("M5 control + stream execution model", () => {
           transport: "stdio",
         },
       ],
-      getRecord: (name) => (
+      getRecord: (name: string) => (
         name === "local-runtime"
           ? {
             name,
@@ -116,7 +118,7 @@ describe("M5 control + stream execution model", () => {
       filesystemType: "runtimefs",
       mountPoint: "/agents",
       listRecords: () => [createAgentMeta("worker")],
-      getRecord: (name) => (name === "worker" ? createAgentMeta(name) : undefined),
+      getRecord: (name: string) => (name === "worker" ? createAgentMeta(name) : undefined),
       writeControl: async () => ({ bytesWritten: 0, created: false }),
     };
 

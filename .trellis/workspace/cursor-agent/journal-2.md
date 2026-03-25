@@ -710,3 +710,201 @@ CODEX_LOOP_CHECK_PASS```
 ### 下一步
 
 - 参考本轮检查结果继续推进
+
+## 会话 16: Codex Loop 第1轮 - mountfs-source-cleanup
+
+**日期**: 2026-03-25
+**任务**: Codex Loop 第1轮 - mountfs-source-cleanup
+
+### 摘要
+
+第1轮已通过。检查结果：PASS；Shell Verify：未配置，已跳过。本轮已通过全部检查门禁。
+
+### 详细记录
+
+## 轮次概览
+
+- 任务名称：`mountfs-source-cleanup`
+- 任务目录：`.trellis/tasks/03-25-mountfs-source-cleanup`
+- 分支：`codex/03-25-mountfs-source-cleanup`
+- 工作树：`/Users/muyuli/Workspace/trellis-worktrees/codex/03-25-mountfs-source-cleanup`
+- 轮次：`1 / 5`
+- 本轮结论：已通过
+- 检查结果：PASS
+- Shell Verify：未配置，已跳过
+- 说明：本轮已通过全部检查门禁。
+
+## 本轮变更文件
+
+- `packages/acp/src/__tests__/vfs-interceptor.test.ts`
+- `packages/acp/src/vfs-interceptor.ts`
+- `packages/api/src/daemon/daemon.ts`
+- `packages/api/src/handlers/vfs-handlers.ts`
+- `packages/api/src/services/app-context.ts`
+- `packages/api/src/services/hub-context.ts`
+
+## 任务产物
+
+- `.trellis/tasks/03-25-mountfs-source-cleanup/check.jsonl`
+- `.trellis/tasks/03-25-mountfs-source-cleanup/debug.jsonl`
+- `.trellis/tasks/03-25-mountfs-source-cleanup/implement.jsonl`
+- `.trellis/tasks/03-25-mountfs-source-cleanup/prd.md`
+- `.trellis/tasks/03-25-mountfs-source-cleanup/task.json`
+
+## Implement 输出摘录
+
+```text
+**This Round**
+
+I made a concrete boundary cleanup so VFS-facing code in `api` and `acp` stops pulling VFS symbols through `@actant/agent-runtime`’s compatibility surface and imports them directly from `@actant/vfs` instead. That touched [daemon.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-25-mountfs-source-cleanup/packages/api/src/daemon/daemon.ts), [hub-context.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-25-mountfs-source-cleanup/packages/api/src/services/hub-context.ts), [app-context.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-25-mountfs-source-cleanup/packages/api/src/services/app-context.ts), [vfs-handlers.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-25-mountfs-source-cleanup/packages/api/src/handlers/vfs-handlers.ts), [vfs-interceptor.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-25-mountfs-source-cleanup/packages/acp/src/vfs-interceptor.ts), and [vfs-interceptor.test.ts](/Users/muyuli/Workspace/trellis-worktrees/codex/03-25-mountfs-source-cleanup/packages/acp/src/__tests__/vfs-interceptor.test.ts).
+
+This is intentionally small-scope but real progress: it reduces remaining cross-package VFS leakage without changing behavior, and it leaves an actual diff for the round.
+
+**Commands Run**
+
+- `sed -n '1,220p' .agents/skills/codex-loop/SKILL.md`
+- `sed -n '1,220p' .trellis/workflow.md`
+- `sed -n '1,220p' .trellis/spec/backend/index.md`
+- `sed -n '1,220p' .trellis/spec/guides/cross-layer-thinking-guide.md`
+- `sed -n '1,220p' .trellis/tasks/03-25-mountfs-source-cleanup/prd.md`
+- `sed -n '1,220p' .trellis/tasks/03-25-mountfs-source-cleanup/implement.jsonl`
+- `sed -n '1,220p' .trellis/tasks/03-25-mountfs-source-cleanup/check.jsonl`
+- `git status --short`
+- multiple `rg` searches to locate remaining VFS/source-boundary imports
+- `source .worktree-env.sh 2>/dev/null || true; pnpm --filter @actant/vfs run type-check`
+- `source .worktree-env.sh 2>/dev/null || true; pnpm --filter @actant/api run type-check`
+- `source .worktree-env.sh 2>/dev/null || true; pnpm --filter @actant/acp run type-check`
+- attempted focused vitest run, which failed in sandbox with `EPERM` writing `node_modules/.vite-temp/...`
+
+**Still Blocking Final Verification**
+
+- Focused `vitest` is currently blocked by sandbox filesystem restrictions on `node_modules/.vite-temp`, so I could not restore test-level green from this environment yet.
+- The broader task is not done yet; this round only cleaned one slice of the remaining VFS-source boundary debt. More direct `@actant/agent-runtime` VFS compatibility usage likely remains elsewhere, and focused tests still need to run in an environment where Vitest can write its temp config files.```
+
+## Check 输出摘录
+
+```text
+## Check Result
+### Diff Summary
+当前 diff 只涉及 6 个文件，核心是把剩余 VFS 内核相关符号从 `@actant/agent-runtime` 收口到 `@actant/vfs`，与 `.trellis/spec/index.md`、`.trellis/spec/backend/index.md`、`docs/design/actant-vfs-reference-architecture.md` 里“`@actant/vfs` 是唯一 VFS 真相源”的边界一致。
+
+具体改动面：
+- `packages/api/src/services/hub-context.ts`
+- `packages/api/src/daemon/daemon.ts`
+- `packages/api/src/handlers/vfs-handlers.ts`
+- `packages/acp/src/vfs-interceptor.ts`
+- `packages/acp/src/__tests__/vfs-interceptor.test.ts`
+- `packages/api/src/services/app-context.ts`
+
+其中 `app-context.ts` 只是把 VFS import 分组挪到 `@actant/vfs` 段，没有新增行为改动；其余文件是直接替换 import 来源或类型引用来源。
+
+### Verification
+已读取相关 Trellis/spec 约束：
+- `.trellis/workflow.md`
+- `.trellis/spec/index.md`
+- `.trellis/spec/backend/index.md`
+- `.trellis/spec/api-contracts.md`
+- `docs/design/actant-vfs-reference-architecture.md`
+- `.trellis/tasks/archive/2026-03/03-23-322-vfs-first-manager-boundary/task.json`
+- `.trellis/tasks/archive/2026-03/03-23-322-vfs-first-manager-boundary/TODO.md`
+
+已执行校验：
+- `source .worktree-env.sh 2>/dev/null || true && pnpm --filter @actant/api type-check`
+- `source .worktree-env.sh 2>/dev/null || true && pnpm --filter @actant/acp type-check`
+- `source .worktree-env.sh 2>/dev/null || true && node node_modules/vitest/vitest.mjs run --configLoader runner packages/api/src/handlers/__tests__/vfs-handlers.test.ts packages/api/src/services/__tests__/hub-context.test.ts packages/acp/src/__tests__/vfs-interceptor.test.ts`
+
+结果：
+- `@actant/api` type-check 通过
+- `@actant/acp` type-check 通过
+- focused tests 3/3 文件通过，16/16 测试通过
+
+补充说明：
+- 直接用 `vitest` 默认 config loader 会因为沙箱拒绝写 `node_modules/.vite-temp/*` 而启动失败；改用仓库已有先例的 `--configLoader runner` 后通过，这属于环境规避，不是代码问题。
+
+### Self-fixes
+未做 self-fix。当前 focused verification 已绿，diff 也没有暴露出需要立即补的小范围问题。
+
+### Remaining Problems
+未发现当前 diff 直接引入的失败项。
+
+剩余风险很低，但本轮还没覆盖：
+- `packages/api/src/services/app-context.ts` 的更广路径回归
+- 全仓级 `pnpm lint` / `pnpm type-check` / `pnpm test`
+
+就当前 check worker 的 focused 范围看，这一轮已达到可继续收敛的状态。
+
+### Marker
+CODEX_LOOP_CHECK_PASS```
+
+## 最新反馈摘录
+
+```text
+Latest verifier result:
+
+## Check Result
+### Diff Summary
+当前 diff 只涉及 6 个文件，核心是把剩余 VFS 内核相关符号从 `@actant/agent-runtime` 收口到 `@actant/vfs`，与 `.trellis/spec/index.md`、`.trellis/spec/backend/index.md`、`docs/design/actant-vfs-reference-architecture.md` 里“`@actant/vfs` 是唯一 VFS 真相源”的边界一致。
+
+具体改动面：
+- `packages/api/src/services/hub-context.ts`
+- `packages/api/src/daemon/daemon.ts`
+- `packages/api/src/handlers/vfs-handlers.ts`
+- `packages/acp/src/vfs-interceptor.ts`
+- `packages/acp/src/__tests__/vfs-interceptor.test.ts`
+- `packages/api/src/services/app-context.ts`
+
+其中 `app-context.ts` 只是把 VFS import 分组挪到 `@actant/vfs` 段，没有新增行为改动；其余文件是直接替换 import 来源或类型引用来源。
+
+### Verification
+已读取相关 Trellis/spec 约束：
+- `.trellis/workflow.md`
+- `.trellis/spec/index.md`
+- `.trellis/spec/backend/index.md`
+- `.trellis/spec/api-contracts.md`
+- `docs/design/actant-vfs-reference-architecture.md`
+- `.trellis/tasks/archive/2026-03/03-23-322-vfs-first-manager-boundary/task.json`
+- `.trellis/tasks/archive/2026-03/03-23-322-vfs-first-manager-boundary/TODO.md`
+
+已执行校验：
+- `source .worktree-env.sh 2>/dev/null || true && pnpm --filter @actant/api type-check`
+- `source .worktree-env.sh 2>/dev/null || true && pnpm --filter @actant/acp type-check`
+- `source .worktree-env.sh 2>/dev/null || true && node node_modules/vitest/vitest.mjs run --configLoader runner packages/api/src/handlers/__tests__/vfs-handlers.test.ts packages/api/src/services/__tests__/hub-context.test.ts packages/acp/src/__tests__/vfs-interceptor.test.ts`
+
+结果：
+- `@actant/api` type-check 通过
+- `@actant/acp` type-check 通过
+- focused tests 3/3 文件通过，16/16 测试通过
+
+补充说明：
+- 直接用 `vitest` 默认 config loader 会因为沙箱拒绝写 `node_modules/.vite-temp/*` 而启动失败；改用仓库已有先例的 `--configLoader runner` 后通过，这属于环境规避，不是代码问题。
+
+### Self-fixes
+未做 self-fix。当前 focused verification 已绿，diff 也没有暴露出需要立即补的小范围问题。
+
+### Remaining Problems
+未发现当前 diff 直接引入的失败项。
+
+剩余风险很低，但本轮还没覆盖：
+- `packages/api/src/services/app-context.ts` 的更广路径回归
+- 全仓级 `pnpm lint` / `pnpm type-check` / `pnpm test`
+
+就当前 check worker 的 focused 范围看，这一轮已达到可继续收敛的状态。
+
+### Marker
+CODEX_LOOP_CHECK_PASS```
+
+### Git 提交
+
+（无提交，本次为过程记录）
+
+### 检查与测试
+
+- [OK] 自动记录，详见上方检查结果
+
+### 状态
+
+[OK] **已记录**
+
+### 下一步
+
+- 参考本轮检查结果继续推进

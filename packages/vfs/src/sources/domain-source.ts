@@ -26,8 +26,8 @@ interface ComponentView {
 /**
  * Creates a read-only VFS source backed by a frozen component snapshot.
  *
- * The returned registration is intentionally detached from later manager mutations so
- * standalone/project-context mounts no longer treat manager state as the live source of truth.
+ * The returned registration is intentionally detached from later manager mutations
+ * so the VFS mount remains a snapshot view rather than a live manager proxy.
  */
 export function createSnapshotDomainSource(
   components: DomainComponentSnapshot[],

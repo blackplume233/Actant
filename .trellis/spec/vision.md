@@ -56,7 +56,7 @@ Actant 的产品层核心是 `ContextFS`，实现核心是 `VFS`。
 
 V1 只做最小闭环，不追求大而全：
 
-- `hostfs`、`runtimefs`、`memfs`
+- `hostfs`、`runtimefs`
 - `directory`、`regular`、`control`、`stream`
 - `read`、`write`、`list`、`stat`、`watch`、`stream`
 - 无常驻进程普通读取

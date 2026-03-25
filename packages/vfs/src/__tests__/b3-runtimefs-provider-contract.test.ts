@@ -1,11 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { AgentInstanceMeta } from "@actant/shared";
-import {
-  createAgentRuntimeSource,
-  createMcpRuntimeSource,
-  type AgentRuntimeProviderContribution,
-  type McpRuntimeProviderContribution,
-} from "../sources";
+import { createAgentRuntimeSource, type AgentRuntimeProviderContribution } from "@actant/mountfs-runtime-agents";
+import { createMcpRuntimeSource, type McpRuntimeProviderContribution } from "@actant/mountfs-runtime-mcp";
 
 function createAgentMeta(name: string): AgentInstanceMeta {
   return {
@@ -81,7 +77,7 @@ describe("B3 runtimefs provider contract", () => {
     )).toThrow("Invalid mcp-runtime provider contribution: expected runtimefs data-source");
 
     expect(() => createMcpRuntimeSource(
-      createMcpProvider({ filesystemType: "memfs" as never }),
+      createMcpProvider({ filesystemType: "legacyfs" as never }),
       "/mcp/runtime",
       { type: "manual" },
     )).toThrow("Invalid mcp-runtime provider contribution: expected runtimefs data-source");

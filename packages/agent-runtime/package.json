@@ -42,6 +42,10 @@
   },
   "dependencies": {
     "@actant/domain-context": "workspace:0.5.0",
+    "@actant/mountfs-process": "workspace:0.5.0",
+    "@actant/mountfs-runtime-agents": "workspace:0.5.0",
+    "@actant/mountfs-runtime-mcp": "workspace:0.5.0",
+    "@actant/mountfs-workspace": "workspace:0.5.0",
     "@actant/shared": "workspace:0.5.0",
     "@actant/vfs": "workspace:0.5.0",
     "croner": "^9.0.0",

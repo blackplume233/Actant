@@ -6,7 +6,7 @@ import type { VfsKernelDispatchState } from "../middleware/types";
 import { VfsKernel } from "../core/vfs-kernel";
 import { createPermissionMiddleware } from "../middleware/permission-middleware";
 import { FilesystemTypeRegistry } from "../filesystem-type-registry";
-import { workspaceSourceFactory } from "../sources/workspace-source";
+import { workspaceSourceFactory } from "@actant/mountfs-workspace";
 import { DEFAULT_PERMISSION_RULES, VfsPermissionManager } from "../vfs-permission-manager";
 import { VfsFacade } from "../vfs-facade";
 import { VfsRegistry } from "../vfs-registry";
@@ -76,7 +76,7 @@ describe("M6: VfsFacade + kernel extension", () => {
 
     const tree = await facade.tree("/workspace/src", { depth: 2 }, context);
     expect(tree.type).toBe("directory");
-    expect(tree.children?.map((child) => child.name)).toContain("a.txt");
+    expect(tree.children?.map((child: { name: string }) => child.name)).toContain("a.txt");
 
     const globMatches = await facade.glob("/workspace", "src/*.txt", { type: "file" }, context);
     expect(globMatches).toEqual(expect.arrayContaining(["src/a.txt", "src/b.txt"]));

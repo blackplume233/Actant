@@ -23,7 +23,7 @@
 - 产品层：`ContextFS`
 - 实现层：`VFS`
 - 核心对象：`mount namespace`、`mount table`、`filesystem type`、`mount instance`、`node type`
-- V1 必要 `filesystem type`：`hostfs`、`runtimefs`、`memfs`
+- V1 必要 `filesystem type`：`hostfs`、`runtimefs`
 - V1 必要 `node type`：`directory`、`regular`、`control`、`stream`
 - V1 操作面：`read`、`write`、`list`、`stat`、`watch`、`stream`
 

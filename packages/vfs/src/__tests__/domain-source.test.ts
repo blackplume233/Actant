@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { VfsEntry } from "@actant/shared";
 import {
   createSnapshotDomainSource,
   type DomainComponentSnapshot,
@@ -22,7 +23,7 @@ describe("Domain source snapshots", () => {
     const entries = await snapshotMount.handlers.list!("");
     const readAlpha = await snapshotMount.handlers.read!("alpha");
 
-    expect(entries.map((entry) => entry.path)).toEqual(["_catalog.json", "alpha"]);
+    expect((entries as VfsEntry[]).map((entry: VfsEntry) => entry.path)).toEqual(["_catalog.json", "alpha"]);
     expect(readAlpha.content).toBe("original");
   });
 });

@@ -1,27 +1,12 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { VfsPermissionManager, DEFAULT_PERMISSION_RULES } from "../vfs-permission-manager";
-import type { VfsFeature, VfsIdentity, VfsMountRegistration } from "@actant/shared";
-
-const MEMORY_TRAITS = new Set<VfsFeature>(["ephemeral", "writable"]);
+import type { VfsIdentity } from "@actant/shared";
 
 function agentIdentity(name: string, archetype: "repo" | "service" | "employee" = "repo"): VfsIdentity {
   return { type: "agent", agentName: name, archetype, sessionId: "s1" };
 }
 
 const anonymousIdentity: VfsIdentity = { type: "anonymous" };
-
-function createSource(owner?: string): VfsMountRegistration {
-  return {
-    name: "test",
-    mountPoint: "/test",
-    label: "memory",
-    features: new Set(MEMORY_TRAITS),
-    lifecycle: { type: "manual" },
-    metadata: { owner },
-    fileSchema: {},
-    handlers: {},
-  };
-}
 
 describe("VfsPermissionManager", () => {
   let pm: VfsPermissionManager;
@@ -40,25 +25,6 @@ describe("VfsPermissionManager", () => {
 
     it("denies anonymous access to /workspace", () => {
       expect(pm.check(anonymousIdentity, "/workspace/src/index.ts", "read")).toBe("deny");
-    });
-  });
-
-  describe("memory access", () => {
-    it("allows agent to read/write own memory", () => {
-      const identity = agentIdentity("agent-a");
-      const source = createSource("agent-a");
-      expect(pm.check(identity, "/memory/agent-a/notes.md", "read", source)).toBe("allow");
-      expect(pm.check(identity, "/memory/agent-a/notes.md", "write", source)).toBe("allow");
-      expect(pm.check(identity, "/memory/agent-a/notes.md", "stat", source)).toBe("allow");
-    });
-
-    it("allows any agent to read other's memory", () => {
-      const identity = agentIdentity("agent-b");
-      expect(pm.check(identity, "/memory/agent-a/notes.md", "read")).toBe("allow");
-    });
-
-    it("denies anonymous access to /memory", () => {
-      expect(pm.check(anonymousIdentity, "/memory/agent-a/notes.md", "read")).toBe("deny");
     });
   });
 

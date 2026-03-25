@@ -1,3 +1,9 @@
+/**
+ * Public VFS package surface.
+ *
+ * Keep this barrel focused on stable package exports. Internal source wiring
+ * should point at concrete files rather than layering extra local barrels.
+ */
 export { VfsRegistry, type VfsRegistryEvents } from "./vfs-registry";
 export { VfsFacade } from "./vfs-facade";
 export { VfsPathResolver } from "./vfs-path-resolver";
@@ -20,33 +26,41 @@ export {
   DEFAULT_PERMISSION_RULES,
   type VfsPermissionDecision,
 } from "./vfs-permission-manager";
-export { FilesystemTypeRegistry } from "./filesystem-type-registry";
+export { FilesystemTypeRegistry, defineMountfs } from "./filesystem-type-registry";
 export {
+  // Transitional re-exports while mountfs packages are rolled out.
   workspaceSourceFactory,
-  memorySourceFactory,
-  configSourceFactory,
-  canvasSourceFactory,
+} from "@actant/mountfs-workspace";
+export { configSourceFactory } from "./sources/config-source";
+export { canvasSourceFactory } from "./sources/canvas-source";
+export {
   processSourceFactory,
   createProcessSource,
   OutputBuffer,
   type ProcessHandle,
-  vcsSourceFactory,
+} from "@actant/mountfs-process";
+export { vcsSourceFactory } from "./sources/vcs-source";
+export {
   createSnapshotDomainSource,
-  createAgentRegistrySource,
-  createDaemonInfoSource,
-  createMcpConfigSource,
+  type DomainComponentSnapshot,
+} from "./sources/domain-source";
+export { createAgentRegistrySource } from "./sources/agent-registry-source";
+export { createDaemonInfoSource } from "./sources/daemon-source";
+export { createMcpConfigSource } from "./sources/mcp-config-source";
+export {
   createMcpRuntimeSource,
-  createAgentRuntimeSource,
   type McpRuntimeRecord,
   type McpRuntimeProviderContribution,
   type McpRuntimeSourceProvider,
   type McpRuntimeWatchEvent,
+} from "@actant/mountfs-runtime-mcp";
+export {
+  createAgentRuntimeSource,
   type AgentRuntimeProviderContribution,
   type AgentRuntimeSourceProvider,
   type AgentRuntimeWatchEvent,
   type AgentControlRequest,
-  type DomainComponentSnapshot,
-} from "./sources/index";
+} from "@actant/mountfs-runtime-agents";
 export {
   VfsDataStore,
   type VfsFileMeta,
