@@ -24,13 +24,23 @@
 |------|-------|------------|----------|
 | `ContextFS` | Product | Actant 的对外模型名，表示面向 agent 的上下文文件系统 | 某个 daemon、某个包名 |
 | `VFS` | Implementation | `ContextFS` 的实现内核，负责路径解析、挂载解析、节点分发、权限挂接 | 产品名、旧 source router |
+| `mountfs` | Mount Implementation | 单一挂载类型的独立实现边界；通过稳定 SPI 向 `VFS` 提供 registration、node schema、handler 与 metadata | `VFS` kernel、本体 namespace、旧式 source registry |
 | `daemon` | Runtime Host | 唯一运行时宿主与唯一组合根；负责装载 VFS 与内部运行机制 | UI 壳、bridge、产品打包层 |
 | `bridge` | Runtime Edge | 通过 RPC 与 `daemon` 交互的入口层，例如 CLI、HTTP、TUI | 组合根、状态中心 |
 | `Contracts Layer` | Monorepo Boundary | 单仓中的共享合同层，只承载 DTO / types / errors / 最小公共基础设施 | 业务真相源、组合根 |
 | `VFS Stack` | Monorepo Boundary | 单仓中拥有文件系统真相的边界，当前主包是 `@actant/vfs` | 执行运行时、产品壳 |
 | `AgentRuntime Stack` | Monorepo Boundary | 单仓中拥有执行真相与解释能力的边界，包含 `agent-runtime` 与 `domain-context` | VFS 真相源、产品壳 |
 | `Surface Stack` | Monorepo Boundary | 单仓中对外暴露的薄包装/入口层，是唯一允许同时依赖 VFS 与 Runtime 的 stack | 新的真相源 |
-| `agent-runtime` | Runtime Module | 被 `daemon` 装载的运行机制模块；负责 agent 生命周期、执行状态与 runtime integration | 组合根、VFS 真相源 |
+| `core` | Package Taxonomy | 宿主与内核包层，包含 `shared`、`vfs`、`rpc-contracts`、`plugin-sdk`、`plugin-runtime`、`daemon-host` | feature capability 实现层 |
+| `sdk` | Package Taxonomy | 面向 builtin / external plugin 的稳定可导入表面，只暴露 token、types、client helpers、builders | daemon side 真实实现 |
+| `support` | Package Taxonomy | 主要给 builtin plugin 复用的实现积木层 | 对外稳定 capability contract |
+| `plugins` | Package Taxonomy | daemon 内实际装载的 capability 实现层 | 宿主层、bridge 层 |
+| `bridges` | Package Taxonomy | CLI / HTTP / Dashboard / MCP 等对外入口壳层 | 宿主与真相源 |
+| `third-party` | Package Taxonomy | 外部插件开发、安装、兼容、审核、物化所在层 | runtime host、plugin capability 本身 |
+| `app` | Package Taxonomy | 打包、分发与产品壳 | 组合根 |
+| `plugin family` | Logical Grouping | 一个 capability family 的逻辑归属；可横跨 `sdk`、`support`、`plugins`、`third-party` 多个包 | 新的物理目录层、运行时宿主 |
+| `builtin plugin` | Runtime Module | 由仓库内实现、由 `daemon` 装载的 capability plugin；与 third-party plugin 共用宿主协议 | bridge feature、独立宿主 |
+| `agent-runtime` | Builtin Plugin Capability | 被 `daemon` 装载的运行机制 capability；负责 agent 生命周期、执行状态与 runtime integration | 组合根、VFS 真相源、对外公共实现入口 |
 | `domain-context` | Agent Domain Layer | 归属 `AgentRuntime Stack` 的领域包，负责 parser / schema / validator / loader / permission compilation 与本地 authoring helper | VFS 真相源、系统状态中心 |
 | `acp` | Protocol Adapter | agent-runtime / daemon 使用的协议与 transport 模块，用于 ACP 会话、gateway、callback、VFS interception | 独立宿主、组合根 |
 | `pi` | Backend Package | 被 `agent-runtime` backend 体系消费的后端包，提供 builder / communicator / bridge 适配 | 系统中心层 |
@@ -38,6 +48,7 @@
 | `mount table` | Config / Impl | 挂载点到挂载实例的映射表 | 下层 backend、本体资源树 |
 | `filesystem type` | Config / Impl | 一类文件系统实现的定义，决定实例化方式、能力上界、生命周期语义 | 业务资源分类 |
 | `mount instance` | Config / Runtime | 某个文件系统类型的具体挂载实例，向命名空间暴露一棵子树 | 单个文件、业务对象 |
+| `mountfs package` | Monorepo Boundary | 单一挂载类型的独立实现包，推荐命名为 `@actant/mountfs-*` | 新的 kernel、跨类型中心化平台层 |
 | `mount point` | Config | 某个挂载实例接入命名空间的路径前缀 | 挂载实例本体 |
 | `node` | Implementation | VFS 中可被寻址、读写、列举、观察、流式消费的统一对象 | 必然落盘的真实文件 |
 | `node type` | Implementation | 节点的语义种类 | 业务用途分类 |
@@ -88,7 +99,6 @@ V1 当前只承认以下 `filesystem type`：
 
 - `hostfs`
 - `runtimefs`
-- `memfs`
 
 后续扩展如 `gitfs`、`dbfs` 只允许在 design/spec 中作为预留扩展出现，不进入当前交付承诺。
 
@@ -117,11 +127,14 @@ VFS 不负责：
 
 - `daemon` 负责装载系统
 - `bridge` 只负责 RPC 交互
-- `agent-runtime` 只是被 `daemon` 装载的机制模块
+- `agent-runtime` 只是被 `daemon` 装载的 builtin plugin capability
 - `domain-context` 属于 `AgentRuntime Stack`
 - `acp` 是协议/transport 模块，不能越级成为宿主层
 - `pi` 是 backend package，必须通过 `agent-runtime` / `daemon` 进入系统
 - `consumer` 可以依赖 `VFS`，但不能替代 `daemon` 成为组合根
+- `plugin family` 只表达能力归属，不替代 `sdk` / `support` / `plugins` / `third-party` 这些物理层级
+- builtin plugin 之间的稳定复用面应命名并下沉到 `sdk` 或 `support`
+- third-party plugin 的开发与安装治理属于 `third-party`，不是 runtime host
 
 ---
 
@@ -132,12 +145,12 @@ VFS 不负责：
 | Legacy Term | Current Meaning |
 |-------------|-----------------|
 | `SourceType` | `filesystem type` |
-| `Source` | `mount instance` |
+| `Source` | 历史统称；当前应按上下文收敛为 `mountfs` 或 `mount instance`，不得继续作为主术语 |
 | `Source 配置` | `mount table declaration` |
 | `App 负责装载系统` | `daemon` 才是唯一组合根；`actant` 只是打包层 |
 | `actant.project.json` | 迁移期遗留配置文件名；不属于当前运行时入口 |
 | `Prompt` | 普通文件的一种 consumer interpretation |
-| `SkillSource` / `McpConfigSource` / `McpRuntimeSource` / `AgentRuntime` | 某些内置 `filesystem type` / `mount instance` 家族的历史名称 |
+| `SkillSource` / `McpConfigSource` / `McpRuntimeSource` / `AgentRuntimeSource` | 某些内置 mountfs / mount instance 家族的历史名称 |
 
 规则：
 

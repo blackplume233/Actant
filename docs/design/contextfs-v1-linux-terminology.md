@@ -561,6 +561,8 @@ flowchart LR
 
 这是运行时子树的核心文件系统类型。
 
+### 8.2 V1 后续扩展的 `filesystem type`
+
 #### `memfs`
 
 定义：
@@ -582,9 +584,10 @@ flowchart LR
 
 - `stream node`
 
-V1 如果希望在不依赖宿主文件系统和常驻进程的前提下完成最小自举，建议保留并实现。
+说明：
 
-### 8.2 V1 后续扩展的 `filesystem type`
+- `memfs` 在当前 active V1 baseline 中不属于必须实现项
+- 若未来重新引入，必须先同步 active spec、reference architecture 与 contract docs
 
 #### `gitfs`
 
@@ -776,8 +779,8 @@ V1 固定：
 3. 增加 `filesystem type` 类型定义：
    - `hostfs`
    - `runtimefs`
-   - `memfs`
 4. 为扩展预留：
+   - `memfs`
    - `gitfs`
    - `dbfs`
 
@@ -836,9 +839,8 @@ V1 固定：
 4. 文件系统类型边界：
    - `hostfs` 只暴露普通文件树
    - `runtimefs` 暴露控制与流节点
-   - `memfs` 可在无宿主目录依赖下工作
 5. 无常驻进程读取：
-   - 直连 `hostfs` / `memfs` 可读取上下文
+   - 直连 `hostfs` 可读取上下文
 6. 运行时行为：
    - 写入 `control node` 触发 effectful request
    - 订阅 `stream node` 获得有序 chunk
@@ -861,8 +863,8 @@ V1 固定：
 - V1 必须实现的 `filesystem type`：
   - `hostfs`
   - `runtimefs`
-  - `memfs`
 - V1 预留扩展的 `filesystem type`：
+  - `memfs`
   - `gitfs`
   - `dbfs`
 - consumer interpretation 永远在 VFS 外部。

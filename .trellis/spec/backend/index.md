@@ -12,6 +12,7 @@
 - `bridge`
 - `Contracts Layer`
 - `VFS Stack`
+- `mountfs`
 - `agent-runtime`
 - `domain-context`
 - `Surface Stack`
@@ -68,13 +69,15 @@
 负责：
 
 - 作为 `daemon` 内部执行与解释能力层的一部分
-- 承载 `agent-runtime`、`domain-context`、`acp`、`pi` 等运行时能力
+- 以 builtin plugin capability 的形式承载 `agent-runtime`
 - 维护 agent 生命周期、执行状态与集成能力
+- 允许把只服务该 capability 的 orchestration、session、launcher、state、record、channel、communicator、budget、builder / initializer glue 内聚到 plugin 实现内部
 
 不负责：
 
 - 替代 `daemon` 成为组合根
 - 直接成为中心注册结构
+- 继续把只服务 `agent-runtime` 的实现残片维持成新的顶层公共包
 
 ### VFS Layer
 
@@ -88,16 +91,41 @@
 - `lifecycle`
 - `events`
 
+不负责：
+
+- 承载某一类挂载的具体 backend 实现
+- 继续维护 `packages/vfs/src/sources/*` 作为长期活跃扩展面
+
+### MountFS Layer
+
+`mountfs` 是单一挂载类型的独立实现边界。
+
+负责：
+
+- 通过稳定 SPI 构造某类 `mount instance`
+- 定义该挂载的 node schema、handler、metadata 与 backend 适配
+- 把 hostfs / runtimefs 与后续扩展挂载的具体语义封装为可装配单元
+
+不负责：
+
+- 成为 VFS kernel
+- 持有全局 `mount namespace` 或 `mount table`
+- 成为新的中心注册表
+- 定义跨挂载类型的系统对象模型
+
+实现 contract、审查门槛与迁移顺序以 [MountFS 实现规范](../mountfs-implementation-spec.md) 为准。
+
 ### Agent Runtime Layer
 
-`agent-runtime` 在 V1 中是由 `daemon` 装载的运行机制模块。
+`agent-runtime` 在 V1 中是由 `daemon` 装载的 builtin plugin capability。
 
 负责：
 
 - 承载 agent orchestration
 - 基于 VFS 公开能力读写运行时状态
 - 依赖 `domain-context`、`acp`、`pi` 等下游能力模块完成解释、协议或集成
- - 通过兼容适配承接遗留 workspace materialization
+- 通过兼容适配承接遗留 workspace materialization
+- 吸纳只服务 agent execution 的内部实现模块，而不是继续扩散新的顶层包边界
 
 不负责：
 
@@ -105,6 +133,63 @@
 - 绕过 `daemon` 直接向 bridge 暴露宿主能力
 - 绕过 VFS 建立第二套系统状态真相源
 - 把 legacy workspace materialization adapter 升级成新的顶层扩展模型
+- 充当其他插件直接 import 的公共实现入口
+
+### SDK Layer
+
+`sdk` 是 builtin / third-party plugin 的稳定可导入表面。
+
+负责：
+
+- 暴露 service token、types、DTO、client helper、builder
+- 为跨包 / 跨仓 plugin 提供 semver 管理的公共 contract
+
+不负责：
+
+- 承载 daemon side 状态
+- 暴露 plugin 内部 manager / watcher / launcher / mutable collection 实现
+- 因为 family 归属而被嵌回某个 plugin 实现目录
+
+### Support Layer
+
+`support` 是主要给 builtin plugin 复用的实现积木层。
+
+负责：
+
+- 提供 command/page/provider/handler helper
+- 沉淀多个 builtin plugin 共用、但不应升级为公共 capability contract 的实现工具
+
+不负责：
+
+- 取代 `sdk` 成为外部稳定依赖面
+- 取代 `plugins` 成为 capability 实现层
+- 因为 family 归属而被视为 plugin 实现目录的子层
+
+### Third-Party Layer
+
+`third-party` 是外部插件的开发、安装、兼容、审核、物化层。
+
+负责：
+
+- plugin devkit / scaffold
+- source fetch / install / materialization / lockfile
+- compatibility shim / manifest migration
+- permission / risk / audit review
+
+不负责：
+
+- 成为 runtime host
+- 直接承载 builtin capability 实现
+
+### Plugin Family Grouping
+
+`plugin family` 是能力归属维度，不是物理目录层。
+
+规则：
+
+- 一个 family 可同时包含 `sdk`、`support`、`plugins`、`third-party` 中的多个包
+- 运行时被 daemon 装载的只有 `plugins` 中的 plugin implementation package
+- `sdk` / `support` / `third-party` 若属于某个 family，仍应保留各自独立的物理层级与依赖规则
 
 ### Domain-Context Layer
 
@@ -155,6 +240,7 @@
 | 状态 | 包 | 结论 |
 | --- | --- | --- |
 | `keep` | `@actant/vfs` | 唯一 VFS 内核 |
+| `planned` | `@actant/mountfs-*` | 单一挂载类型实现包；逐步替代 `packages/vfs/src/sources/*` |
 | `keep` | `@actant/api` | `Surface Stack` 里的 daemon 组合与 project-context 入口 |
 | `keep` | `@actant/agent-runtime` | `AgentRuntime Stack` 核心 |
 | `keep` | `@actant/domain-context` | `AgentRuntime Stack` 里的 parser / schema / validator / local authoring collection |
@@ -166,6 +252,18 @@
 | `keep` | `@actant/actant` | 打包层 / 分发层 / 产品壳 |
 | `delete` | `@actant/context` | 本轮并入 `@actant/api` 并删除 |
 | `delete` | `@actant/catalog`, `@actant/core`, `@actant/domain` | 已退出活跃边界 |
+
+面向后续目录收口时，活跃仓库的目标包层级固定为：
+
+| 层级 | 目标职责 |
+| --- | --- |
+| `core` | 宿主、内核、plugin runtime、共享合同 |
+| `sdk` | 可稳定 import 的公共 contract 表面 |
+| `support` | builtin plugin 复用积木 |
+| `plugins` | builtin capability 与 future third-party capability 实现 |
+| `bridges` | CLI / REST / Dashboard / MCP 入口壳 |
+| `third-party` | 开发、安装、兼容、审核、物化 |
+| `app` | 打包与分发壳 |
 
 `@actant/context -> @actant/api` 合并口径固定为：
 
@@ -205,9 +303,10 @@
 边界要求：
 
 - hosted runtime 路径固定经 `bridge -> RPC -> daemon`
-- daemon 内部实现链固定为 `daemon -> runtime integration -> VFS`
+- daemon 内部实现链固定为 `daemon -> builtin plugin / runtime integration -> VFS`
 - runtime integration 不得旁路 `mount namespace`、`mount table` 或 permission chain 暴露第二套访问内核
 - 无 daemon 时 bridge 层不提供 runtime / namespace public contract
+- bridge 与 third-party tooling 都不得直接依赖 plugin 实现包；稳定复用面必须经 `sdk` 或 `support`
 
 ---
 
@@ -216,7 +315,7 @@
 V1 后端实现必须围绕以下固定类型工作：
 
 - `mount type`: `root` / `direct`
-- `filesystem type`: `hostfs` / `runtimefs` / `memfs`
+- `filesystem type`: `hostfs` / `runtimefs`
 - `node type`: `directory` / `regular` / `control` / `stream`
 
 实现文档和代码评审时，必须先回答：
@@ -226,6 +325,7 @@ V1 后端实现必须围绕以下固定类型工作：
 - 哪些 capability 支持，哪些不支持
 - permission 由谁判定
 - 生命周期由谁持有
+- 具体挂载语义属于哪个 `mountfs`
 
 ---
 

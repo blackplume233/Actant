@@ -3,7 +3,7 @@
 > Status: Draft
 > Date: 2026-03-23
 > Scope: 实现层内核架构（Linux 语义）
-> Related: [ContextFS V1 Linux Terminology](./contextfs-v1-linux-terminology.md), [ContextFS Architecture](./contextfs-architecture.md), [Product Roadmap](../planning/roadmap.md), [Workspace Normalization To-Do](../planning/workspace-normalization-todo.md)
+> Related: [ContextFS V1 Linux Terminology](./contextfs-v1-linux-terminology.md), [ContextFS Architecture](./contextfs-architecture.md), [MountFS 实现规范](../../.trellis/spec/mountfs-implementation-spec.md), [Product Roadmap](../planning/roadmap.md), [Workspace Normalization To-Do](../planning/workspace-normalization-todo.md)
 
 ---
 
@@ -14,6 +14,9 @@
 它不是业务资源分类器，也不是旧式 source router。  
 它的职责是把 ContextFS 的文件系统语义落实为统一的访问内核。
 
+`mountfs` 是与之配套的挂载实现层。  
+它负责某一种挂载类型的具体后端语义，但不拥有 VFS kernel 权威。
+
 核心判断：
 
 > **Actant VFS 应被设计为 filesystem kernel，而不是资源分类路由器。**
@@ -23,7 +26,7 @@
 - `daemon` 是唯一运行时宿主与唯一组合根
 - `bridge` 只负责通过 RPC 与 `daemon` 交互
 - 单仓当前按 `Contracts Layer`、`VFS Stack`、`AgentRuntime Stack`、`Surface Stack` 理解
-- `agent-runtime` 是被 `daemon` 装载的机制模块，不是组合根
+- `agent-runtime` 是被 `daemon` 装载的 builtin plugin capability，不是组合根
 - `domain-context` 归属 `AgentRuntime Stack`，不是运行时真相源
 - `acp` 是协议/transport 模块
 - `pi` 是 backend package，而不是宿主层
@@ -78,6 +81,24 @@ api / cli / rest-api / dashboard / mcp-server / actant"]
 | `AgentRuntime Stack` | `@actant/agent-runtime`, `@actant/domain-context`, `@actant/acp`, `@actant/pi`, `@actant/tui`, `@actant/channel-*` | 运行时执行、解释、协议与集成能力 |
 | `Surface Stack` | `@actant/api`, `@actant/cli`, `@actant/rest-api`, `@actant/dashboard`, `@actant/mcp-server`, `actant` | 对外入口、daemon 组合、产品壳 |
 | `cleanup-target` | `@actant/context` | 已并入 `@actant/api`；物理包与残留引用都应删除 |
+
+面向插件化目录收口时，还应额外按以下包层理解仓库：
+
+| 层级 | 作用 |
+| --- | --- |
+| `core` | 宿主、内核、共享合同、plugin runtime |
+| `sdk` | 稳定可导入 contract 表面 |
+| `support` | builtin plugin 复用积木 |
+| `plugins` | daemon 内 capability 实现 |
+| `bridges` | 对外入口壳 |
+| `third-party` | 外部插件开发、安装、兼容、审核、物化 |
+| `app` | 打包与分发 |
+
+这里的 `plugin family` 只应理解为逻辑归属：
+
+- 同一个 family 可同时拥有 `sdk`、`support`、`plugins`、`third-party` 中的多个包
+- `sdk` / `support` 即使属于某个 family，也不应因为这种归属被重新嵌回 plugin 实现目录
+- 物理目录层仍以 `core / sdk / support / plugins / bridges / third-party / app` 为准
 
 已删除包：
 
@@ -185,7 +206,7 @@ V1 的 `node type` 固定为：
 相关上层边界：
 
 - `agent-runtime`
-  - daemon-hosted runtime module
+  - daemon-hosted builtin plugin capability
   - agent orchestration / builder integration
   - may expose runtimefs-facing integrations through `Surface Stack`
 - `domain-context`
@@ -202,11 +223,43 @@ V1 的 `node type` 固定为：
 约束：
 
 - 上述目录和文件是当前 V1 的核心骨架
-- `sources/*` 仍是过渡期 helper/factory 集合，不得反向定义 `VFS core`
+- `packages/vfs/src/sources/*` 只是迁移期残留，不是长期活跃扩展面
+- 后续新增挂载类型必须优先实现为 `@actant/mountfs-*` 包
+- `mountfs` 可以定义某一类挂载的 backend / handler / metadata，但不得反向定义 `VFS core`
 - `domain` / `catalog` / `manager` 语义不得继续渗入 `kernel`、`mount`、`path`、`node`、`permission` 主骨架
 - `agent-runtime` 只能通过稳定公开边界消费 `VFS`
+- `agent-runtime` 内部可吸纳只服务 agent execution 的实现模块，但若形成稳定复用面，必须提升到 `sdk` 或 `support`
 - `domain-context` 不得反向定义 `mount`、`node` 或 `filesystem type`
 - `acp` 与 `pi` 的接入必须遵守 `bridge -> RPC -> daemon` 与 `daemon -> runtime integration -> VFS` 既有边界
+- `third-party` tooling 只能服务 plugin 开发、安装、兼容、审核与物化，不得成为第二宿主层
+
+### 2.8 MountFS Packaging Direction
+
+`mountfs` 的推荐落地方式固定为独立包：
+
+- `@actant/mountfs-workspace`
+- 初期 mountfs family 只保留 `localfs`、`githubfs`、`mcpfs`
+- `@actant/mountfs-process`
+- `@actant/mountfs-vcs`
+- `@actant/mountfs-runtime-agents`
+- `@actant/mountfs-runtime-mcp`
+- `@actant/mountfs-config`
+
+这些包负责：
+
+- 某一类 mount 的 registration builder
+- 该 mount 的 node schema / handler / metadata
+- 对底层 backend 的适配
+
+这些包不负责：
+
+- 替代 `@actant/vfs` 成为 kernel
+- 把 mountfs 再做成新的中心化平台层
+
+说明：
+
+- 本文档只解释分层与推荐包拓扑
+- mountfs 的接口 contract、审查标准与迁移顺序以 spec 中的 [MountFS 实现规范](../../.trellis/spec/mountfs-implementation-spec.md) 为权威
 
 ---
 
@@ -239,7 +292,7 @@ sequenceDiagram
 V1 当前必须在实现里稳定表达：
 
 - `mount type`: `root | direct`
-- `filesystem type`: `hostfs | runtimefs | memfs`
+- `filesystem type`: `hostfs | runtimefs`
 - `node type`: `directory | regular | control | stream`
 
 对外出口至少要能稳定暴露：

@@ -16,6 +16,10 @@ function validateTraitExclusions(features: ReadonlySet<VfsFeature>, context: str
   }
 }
 
+function resolveDefinitionType(type: string): string {
+  return type === "filesystem" ? "workspace" : type;
+}
+
 export class FilesystemTypeRegistry {
   private definitions = new Map<string, FilesystemTypeDefinition<Record<string, unknown>>>();
 
@@ -31,15 +35,15 @@ export class FilesystemTypeRegistry {
   }
 
   unregister(type: string): boolean {
-    return this.definitions.delete(type);
+    return this.definitions.delete(resolveDefinitionType(type));
   }
 
   has(type: string): boolean {
-    return this.definitions.has(type);
+    return this.definitions.has(resolveDefinitionType(type));
   }
 
   get(type: string): FilesystemTypeDefinition<Record<string, unknown>> | undefined {
-    return this.definitions.get(type);
+    return this.definitions.get(resolveDefinitionType(type));
   }
 
   create<TConfig>(
@@ -48,7 +52,8 @@ export class FilesystemTypeRegistry {
     mountPoint: string,
     lifecycle: VfsLifecycle,
   ): VfsMountRegistration {
-    const definition = this.definitions.get(type);
+    const definitionType = resolveDefinitionType(type);
+    const definition = this.definitions.get(definitionType);
     if (!definition) {
       throw new Error(`No VFS filesystem type registered for type "${type}"`);
     }
@@ -86,7 +91,7 @@ export class FilesystemTypeRegistry {
   }
 
   validate(type: string, config: Record<string, unknown>): { valid: boolean; errors?: string[] } {
-    const definition = this.definitions.get(type);
+    const definition = this.definitions.get(resolveDefinitionType(type));
     if (!definition) {
       return { valid: false, errors: [`No filesystem type for "${type}"`] };
     }
@@ -101,6 +106,18 @@ export class FilesystemTypeRegistry {
   }
 
   static satisfies(mount: Pick<VfsMountRegistration, "features">, requirement: FilesystemRequirement): boolean {
-    return requirement.required.every((trait) => mount.features.has(trait));
+    return requirement.required.every((trait: VfsFeature) => mount.features.has(trait));
   }
+}
+
+/**
+ * Semantic helper for the active `mountfs` terminology.
+ *
+ * The returned object is the underlying filesystem type definition unchanged;
+ * the helper only makes call sites explicit about the intended architecture role.
+ */
+export function defineMountfs<TConfig>(
+  definition: FilesystemTypeDefinition<TConfig>,
+): FilesystemTypeDefinition<TConfig> {
+  return definition;
 }

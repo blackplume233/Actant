@@ -21,12 +21,14 @@ import { VfsKernel } from "../core/vfs-kernel";
 import { FilesystemTypeRegistry } from "../filesystem-type-registry";
 import {
   createAgentRuntimeSource,
-  createMcpRuntimeSource,
-  createSnapshotDomainSource,
-  createMcpConfigSource,
   type AgentRuntimeSourceProvider,
+} from "@actant/mountfs-runtime-agents";
+import {
+  createMcpRuntimeSource,
   type McpRuntimeSourceProvider,
-} from "../sources";
+} from "@actant/mountfs-runtime-mcp";
+import { createSnapshotDomainSource } from "../sources/domain-source";
+import { createMcpConfigSource } from "../sources/mcp-config-source";
 
 // ---------------------------------------------------------------------------
 // Minimal mock providers (reuse patterns from control-stream E2E)
@@ -218,7 +220,7 @@ describe("M5: FilesystemTypeRegistry — open registration", () => {
       type: "test-source",
       label: "Test Source",
       defaultFeatures: new Set(["ephemeral", "writable"] as VfsFeature[]),
-      create(_config, mountPoint, lifecycle) {
+      create(_config: Record<string, unknown>, mountPoint: string, lifecycle: import("@actant/shared").VfsLifecycle) {
         return {
           name: "test",
           mountPoint,
@@ -237,12 +239,40 @@ describe("M5: FilesystemTypeRegistry — open registration", () => {
     expect(registry.listTypes()).toContain("test-source");
   });
 
+  it('treats "filesystem" as an alias of "workspace" across registry helpers', () => {
+    const workspaceDefinition: FilesystemTypeDefinition = {
+      type: "workspace",
+      label: "Workspace",
+      defaultFeatures: new Set(["persistent"] as VfsFeature[]),
+      create(_config: Record<string, unknown>, mountPoint: string, lifecycle: import("@actant/shared").VfsLifecycle) {
+        return {
+          name: "workspace-instance",
+          mountPoint,
+          features: new Set(["persistent"] as VfsFeature[]),
+          label: "workspace",
+          lifecycle,
+          metadata: {},
+          fileSchema: {},
+          handlers: {},
+        } as VfsMountRegistration;
+      },
+    };
+
+    registry.register(workspaceDefinition);
+
+    expect(registry.has("workspace")).toBe(true);
+    expect(registry.has("filesystem")).toBe(true);
+    expect(registry.get("filesystem")).toBe(workspaceDefinition);
+    expect(registry.unregister("filesystem")).toBe(true);
+    expect(registry.has("workspace")).toBe(false);
+  });
+
   it("create() produces a registration with correct features", () => {
     const mockDefinition: FilesystemTypeDefinition = {
       type: "custom-type",
       label: "Custom",
       defaultFeatures: new Set(["persistent", "watchable"] as VfsFeature[]),
-      create(_config, mountPoint, lifecycle) {
+      create(_config: Record<string, unknown>, mountPoint: string, lifecycle: import("@actant/shared").VfsLifecycle) {
         return {
           name: "custom-instance",
           mountPoint,
@@ -278,7 +308,7 @@ describe("M5: FilesystemTypeRegistry — open registration", () => {
         if (!config.required) return { valid: false, errors: ["missing required field"] };
         return { valid: true };
       },
-      create(_config, mountPoint, lifecycle) {
+      create(_config: Record<string, unknown>, mountPoint: string, lifecycle: import("@actant/shared").VfsLifecycle) {
         return {
           name: "validated",
           mountPoint,
@@ -366,7 +396,7 @@ describe("M5: Trait mutual exclusion validation", () => {
       type: "conflicting",
       label: "Conflicting",
       defaultFeatures: new Set(["persistent", "ephemeral"] as VfsFeature[]),
-      create(_config, mountPoint, lifecycle) {
+      create(_config: Record<string, unknown>, mountPoint: string, lifecycle: import("@actant/shared").VfsLifecycle) {
         return {
           name: "conflict",
           mountPoint,
