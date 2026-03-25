@@ -1,6 +1,6 @@
 import chalk from "chalk";
 import { Command } from "commander";
-import type { AgentAdoptResult } from "@actant/shared/core";
+import type { AgentAdoptResult } from "@actant/shared";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, type OutputFormat, type CliPrinter, defaultPrinter } from "../../output/index";
 

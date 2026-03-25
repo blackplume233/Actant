@@ -5,7 +5,7 @@ export default defineConfig({
   cacheDir: resolve(__dirname, "../../.vite/mcp-server"),
   resolve: {
     alias: {
-      "@actant/shared/core": resolve(__dirname, "../shared/src/core.ts"),
+      "@actant/shared": resolve(__dirname, "../shared/src/index.ts"),
       "@actant/api": resolve(__dirname, "../api/src/index.ts"),
       "@actant/vfs": resolve(__dirname, "../vfs/src/index.ts"),
     },

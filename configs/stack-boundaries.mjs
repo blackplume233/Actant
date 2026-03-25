@@ -7,9 +7,7 @@ export const STACK_IDS = {
 };
 
 export const SHARED_PUBLIC_SUBPATHS = [
-  "@actant/shared/core",
   "@actant/shared/vfs-contracts",
-  "@actant/shared/runtime-contracts",
 ];
 
 export const PACKAGE_PUBLIC_SUBPATHS = {

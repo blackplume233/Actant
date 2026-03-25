@@ -1,6 +1,6 @@
 import { EventEmitter } from "node:events";
-import { createLogger, mapHookEventToCategory } from "@actant/shared/core";
-import type { HookEventName, HookCallerType, HookEmitContext } from "@actant/shared/core";
+import { createLogger, mapHookEventToCategory } from "@actant/shared";
+import type { HookEventName, HookCallerType, HookEmitContext } from "@actant/shared";
 import type { RecordSystem } from "../record/record-system";
 
 const logger = createLogger("hook-event-bus");

@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import type { AgentInstanceMeta } from "@actant/shared/core";
+import type { AgentInstanceMeta } from "@actant/shared";
 import type { BackendManager } from "../../domain/backend/backend-manager";
 import {
   AgentLaunchError,
@@ -7,7 +7,7 @@ import {
   AgentSpawnFailedError,
   AgentProcessExitedImmediatelyError,
   createLogger,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import type { AgentLauncher, AgentProcess } from "./agent-launcher";
 import { resolveBackend, isAcpBackend } from "./backend-resolver";
 import { isProcessAlive, sendSignal, killProcessTree, delay } from "./process-utils";

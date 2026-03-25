@@ -13,7 +13,7 @@ import {
   type VfsEntry,
   type VfsStatResult,
   type VfsListOptions,
-} from "@actant/shared/core";
+} from "@actant/shared";
 
 export interface ConfigSourceConfig {
   namespace?: string;

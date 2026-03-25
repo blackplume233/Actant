@@ -1,4 +1,4 @@
-import type { AgentInstanceMeta } from "@actant/shared/core";
+import type { AgentInstanceMeta } from "@actant/shared";
 import type { ContextProvider } from "./session-context-types";
 
 /**

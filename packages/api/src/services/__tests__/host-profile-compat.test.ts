@@ -2,7 +2,7 @@ import { mkdtemp, mkdir, writeFile, rm, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { RPC_ERROR_CODES } from "@actant/shared/core";
+import { RPC_ERROR_CODES } from "@actant/shared";
 import { AppContext } from "../app-context";
 import { HandlerRegistry } from "../../handlers/handler-registry";
 import { registerVfsHandlers } from "../../handlers/vfs-handlers";

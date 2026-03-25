@@ -1,7 +1,7 @@
 import type {
   DaemonPingResult,
   DaemonShutdownResult,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import { getApiPackageVersion } from "../services/package-version";
 import type { HandlerRegistry } from "./handler-registry";

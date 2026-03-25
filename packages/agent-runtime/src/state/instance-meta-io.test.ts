@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, mkdir, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentInstanceMeta } from "@actant/shared/core";
-import { InstanceCorruptedError } from "@actant/shared/core";
+import type { AgentInstanceMeta } from "@actant/shared";
+import { InstanceCorruptedError } from "@actant/shared";
 import {
   readInstanceMeta,
   writeInstanceMeta,

@@ -7,9 +7,7 @@ const rootDir = fileURLToPath(new URL(".", import.meta.url));
 export default defineConfig({
   resolve: {
     alias: [
-      { find: "@actant/shared/core", replacement: resolve(rootDir, "packages/shared/src/core.ts") },
       { find: "@actant/shared/vfs-contracts", replacement: resolve(rootDir, "packages/shared/src/vfs-contracts.ts") },
-      { find: "@actant/shared/runtime-contracts", replacement: resolve(rootDir, "packages/shared/src/runtime-contracts.ts") },
       { find: "@actant/tui/testing", replacement: resolve(rootDir, "packages/tui/src/testing.ts") },
       { find: "@actant/domain-context", replacement: resolve(rootDir, "packages/domain-context/src/index.ts") },
       { find: "@actant/agent-runtime", replacement: resolve(rootDir, "packages/agent-runtime/src/index.ts") },

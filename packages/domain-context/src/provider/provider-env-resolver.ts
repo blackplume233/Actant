@@ -1,5 +1,5 @@
-import type { ModelApiProtocol, ModelProviderConfig } from "@actant/shared/core";
-import { createLogger } from "@actant/shared/core";
+import type { ModelApiProtocol, ModelProviderConfig } from "@actant/shared";
+import { createLogger } from "@actant/shared";
 
 const logger = createLogger("provider-env-resolver");
 

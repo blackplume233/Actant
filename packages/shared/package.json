@@ -8,7 +8,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/blackplume233/Actant.git",
-    "directory": "packages/shared/core"
+    "directory": "packages/shared"
   },
   "homepage": "https://github.com/blackplume233/Actant#readme",
   "bugs": "https://github.com/blackplume233/Actant/issues",
@@ -30,21 +30,13 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./core": {
-      "import": "./dist/core.js",
-      "types": "./dist/core.d.ts"
-    },
     "./vfs-contracts": {
       "import": "./dist/vfs-contracts.js",
       "types": "./dist/vfs-contracts.d.ts"
-    },
-    "./runtime-contracts": {
-      "import": "./dist/runtime-contracts.js",
-      "types": "./dist/runtime-contracts.d.ts"
     }
   },
   "scripts": {
-    "build": "tsup src/index.ts src/core.ts src/vfs-contracts.ts src/runtime-contracts.ts",
+    "build": "tsup src/index.ts src/vfs-contracts.ts",
     "dev": "tsup --watch",
     "type-check": "tsc -b --pretty false",
     "test": "vitest run",

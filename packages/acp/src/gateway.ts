@@ -11,12 +11,12 @@ import {
   type LoadSessionResponse,
   type SetSessionConfigOptionResponse,
 } from "@agentclientprotocol/sdk";
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 import {
   AcpGatewayStateError,
   AcpConnectionStateError,
   AcpTerminalHandleMissingError,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import type { AcpConnection } from "./connection";
 import { ClientCallbackRouter, type UpstreamHandler } from "./callback-router";
 import { getAcpPackageVersion } from "./package-version";

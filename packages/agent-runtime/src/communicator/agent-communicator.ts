@@ -1,4 +1,4 @@
-import type { AgentBackendType } from "@actant/shared/core";
+import type { AgentBackendType } from "@actant/shared";
 
 export interface ChannelContentText {
   type: "text";

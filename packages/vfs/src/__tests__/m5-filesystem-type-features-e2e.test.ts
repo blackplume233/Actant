@@ -16,7 +16,7 @@ import type {
   VfsFeature,
   FilesystemTypeDefinition,
   FilesystemRequirement,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import { VfsKernel } from "../core/vfs-kernel";
 import { FilesystemTypeRegistry } from "../filesystem-type-registry";
 import {

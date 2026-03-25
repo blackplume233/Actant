@@ -8,7 +8,7 @@ import type {
   VfsListOptions,
   VfsStatResult,
   AgentInstanceMeta,
-} from "@actant/shared/core";
+} from "@actant/shared";
 
 const AGENT_REGISTRY_TRAITS = new Set<VfsFeature>(["ephemeral", "watchable"]);
 

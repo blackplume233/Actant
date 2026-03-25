@@ -35,8 +35,8 @@ import type {
   VfsMountRegistration,
   VfsPermissionRule,
   VfsStatResult,
-} from "@actant/shared/core";
-import { ensureWithinWorkspace } from "@actant/shared/core";
+} from "@actant/shared";
+import { ensureWithinWorkspace } from "@actant/shared";
 import {
   joinNamespaceMountPoint,
   readNamespaceConfigDocument,

@@ -11,7 +11,7 @@ import type {
   PermissionsInput,
   ProjectContextConfig,
   AgentTemplate,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import {
   AgentBackendSchema,
   ModelProviderSchema,

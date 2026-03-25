@@ -1,4 +1,4 @@
-import type { VfsCapabilityId, VfsIdentity } from "@actant/shared/core";
+import type { VfsCapabilityId, VfsIdentity } from "@actant/shared";
 import { VfsPermissionManager } from "../vfs-permission-manager";
 import type { VfsKernelOperation } from "../namespace/canonical-path";
 import type { VfsMiddleware } from "./types";

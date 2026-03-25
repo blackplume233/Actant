@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { getBridgeAgentName, bridgeLogger } from "@actant/shared/core";
+import { getBridgeAgentName, bridgeLogger, type VfsGrepRpcResult, type VfsListRpcResult } from "@actant/shared";
 import { createContextBackend } from "./context-backend.js";
 import { getMcpServerPackageVersion } from "./package-version.js";
 
@@ -63,7 +63,7 @@ export async function startServer(): Promise<void> {
     async ({ path, recursive, long }) => {
       try {
         const entries = await backend.list(path, recursive, long);
-        const text = entries.map((entry) => {
+        const text = entries.map((entry: VfsListRpcResult[number]) => {
           const suffix = entry.type === "directory" ? "/" : "";
           const size = entry.size != null ? ` (${entry.size}B)` : "";
           return `${entry.path}${suffix}${size}`;
@@ -145,7 +145,7 @@ export async function startServer(): Promise<void> {
     async ({ pattern, path, caseInsensitive, maxResults }) => {
       try {
         const result = await backend.grep(pattern, path, caseInsensitive, maxResults);
-        const text = result.matches.map((match) => `${match.path}:${match.line}: ${match.content}`).join("\n");
+        const text = result.matches.map((match: VfsGrepRpcResult["matches"][number]) => `${match.path}:${match.line}: ${match.content}`).join("\n");
         return { content: [{ type: "text" as const, text: text || "(no matches)" }] };
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);

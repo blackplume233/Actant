@@ -1,5 +1,5 @@
-import type { ModelProviderDescriptor } from "@actant/shared/core";
-import { createLogger } from "@actant/shared/core";
+import type { ModelProviderDescriptor } from "@actant/shared";
+import { createLogger } from "@actant/shared";
 
 const logger = createLogger("model-provider-registry");
 

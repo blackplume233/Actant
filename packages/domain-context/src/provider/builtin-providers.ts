@@ -1,4 +1,4 @@
-import type { ModelProviderDescriptor } from "@actant/shared/core";
+import type { ModelProviderDescriptor } from "@actant/shared";
 import { modelProviderRegistry } from "./model-provider-registry";
 
 export const BUILTIN_PROVIDERS: readonly ModelProviderDescriptor[] = [

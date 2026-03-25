@@ -1,5 +1,5 @@
 import { Daemon } from "@actant/api";
-import { onShutdownSignal } from "@actant/shared/core";
+import { onShutdownSignal } from "@actant/shared";
 import { DAEMON_READY_SIGNAL } from "./commands/daemon/start";
 
 try {

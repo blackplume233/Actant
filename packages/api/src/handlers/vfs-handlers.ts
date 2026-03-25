@@ -30,7 +30,7 @@ import {
   type VfsMountListResult,
   type VfsMountRemoveParams,
   type VfsMountRemoveResult,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 import {
@@ -54,7 +54,7 @@ function inferNodeTypeFromStatType(type: "file" | "directory" | "symlink"): "reg
 }
 
 function inferNodeTypeFromResolved(
-  resolved: import("@actant/shared/core").VfsResolveResult,
+  resolved: import("@actant/shared").VfsResolveResult,
   fallbackType: "file" | "directory" | "symlink",
 ): string {
   const schemaType = resolved.fileSchema?.type;
@@ -73,7 +73,7 @@ function inferNodeTypeFromResolved(
 }
 
 function inferFilesystemTypeFromMount(
-  mount: import("@actant/shared/core").VfsMountRegistration,
+  mount: import("@actant/shared").VfsMountRegistration,
 ): string {
   const configured = mount.metadata.filesystemType;
   if (typeof configured === "string" && configured.length > 0) {

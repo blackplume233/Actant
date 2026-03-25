@@ -5,7 +5,7 @@ import type {
   MountDeclaration,
   NamespaceValidateResult,
   NamespaceValidationIssue,
-} from "@actant/shared/core";
+} from "@actant/shared";
 
 export const NAMESPACE_CONFIG_FILENAME = "actant.namespace.json";
 const LEGACY_CONFIG_FILENAME = "actant.project.json";

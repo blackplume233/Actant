@@ -30,7 +30,7 @@
  *  │  Layer      │ Scope    │ Categories                      │
  *  ├──────────────────────────────────────────────────────────┤
  *  │  System     │ Global   │ actant:*                        │
- *  │  Entity     │ Global   │ agent:* / source:* / template:* │
+ *  │  Entity     │ Global   │ agent:* / template:*             │
  *  │  Runtime    │ Instance │ process:* / session:* / prompt:*│
  *  │  Schedule   │ Config.  │ cron:* / heartbeat:*            │
  *  │  User       │ Config.  │ user:dispatch/run/prompt        │
@@ -61,8 +61,8 @@
  *  Registration Methods
  * ═══════════════════════════════════════════════════════════════
  *
- *  1. Declarative — Workflow JSON loaded from project context
- *     or actant-hub packages.
+ *  1. Declarative — Workflow JSON loaded from current namespace-derived
+ *     views or built-in packages.
  *  2. Programmatic — HookRegistry.registerWorkflow() from system
  *     code or plugin initializers.
  *  3. Category Extension — HookCategoryRegistry.register() to
@@ -272,7 +272,7 @@ type SystemEvents =
   | "actant:start"
   | "actant:stop";
 
-/** Entity-layer events: agent, source & template CRUD. */
+/** Entity-layer events: agent and template lifecycle operations. */
 type EntityEvents =
   | "agent:created"
   | "agent:destroyed"

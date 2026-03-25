@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { VfsFeature, VfsMountRegistration } from "@actant/shared/core";
+import type { VfsFeature, VfsMountRegistration } from "@actant/shared";
 import { DEFAULT_PERMISSION_RULES, VfsKernel, VfsPermissionManager, createPermissionMiddleware } from "@actant/agent-runtime";
 import { VfsInterceptor } from "../vfs-interceptor";
 

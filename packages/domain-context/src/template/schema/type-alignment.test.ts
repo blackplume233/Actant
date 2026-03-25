@@ -6,7 +6,7 @@ import type {
   ProjectContextConfig,
   McpServerRef,
   InitializerConfig,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import type { AgentTemplateOutput } from "./template-schema";
 
 /**

@@ -5,8 +5,8 @@ import type {
   VfsGrepRpcResult,
   VfsListRpcResult,
   VfsReadResult,
-} from "@actant/shared/core";
-import { getBridgeSessionToken, mapHubPath } from "@actant/shared/core";
+} from "@actant/shared";
+import { getBridgeSessionToken, mapHubPath } from "@actant/shared";
 import type { RpcClient } from "../../client/rpc-client";
 import { ensureDaemonRunning } from "../daemon/start";
 import { presentError, type CliPrinter, defaultPrinter, type OutputFormat } from "../../output/index";

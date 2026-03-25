@@ -1,5 +1,5 @@
-import { createLogger } from "@actant/shared/core";
-import type { WorkflowDefinition, HookDeclaration } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
+import type { WorkflowDefinition, HookDeclaration } from "@actant/shared";
 import { HookEventBus, type HookEventPayload } from "./hook-event-bus";
 import { runActions, type ActionContext, type ActionResult } from "./action-runner";
 

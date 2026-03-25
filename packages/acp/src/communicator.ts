@@ -5,7 +5,7 @@ import type {
   RunPromptOptions,
   StreamChunk,
 } from "@actant/agent-runtime";
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 import type { AcpConnection } from "./connection";
 
 interface PlanEntry { status: string; content: string }

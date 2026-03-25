@@ -1,4 +1,4 @@
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 import {
   HOOK_CATEGORIES,
   BUILTIN_EVENT_META,
@@ -8,7 +8,7 @@ import {
   type HookCallerType,
   type HookEventMeta,
   type HookLayer,
-} from "@actant/shared/core";
+} from "@actant/shared";
 
 const logger = createLogger("hook-category-registry");
 

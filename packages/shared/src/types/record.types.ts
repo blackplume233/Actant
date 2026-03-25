@@ -108,12 +108,13 @@ export interface RecordSessionSummary {
 /**
  * Deterministic mapping from HookEventName strings to RecordCategory.
  * Used by the EventBus bridge to route hook events into the unified system.
+ * This mapping must stay aligned with the built-in hook categories defined in
+ * `hook.types.ts`.
  */
 export function mapHookEventToCategory(event: string): RecordCategory {
   if (event.startsWith("actant:")) return "system";
   if (event === "idle") return "system";
   if (event.startsWith("agent:")) return "lifecycle";
-  if (event.startsWith("source:")) return "lifecycle";
   if (event.startsWith("template:")) return "lifecycle";
   if (event.startsWith("process:")) return "process";
   if (event.startsWith("session:")) return "session";

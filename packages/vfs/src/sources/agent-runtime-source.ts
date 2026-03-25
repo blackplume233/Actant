@@ -13,7 +13,7 @@ import type {
   VfsWatchEvent,
   VfsWatchOptions,
   VfsWriteResult,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import type { RuntimefsProviderContribution } from "@actant/shared/vfs-contracts";
 
 const AGENT_RUNTIME_TRAITS = new Set<VfsFeature>([

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AgentInstanceMeta, VfsStreamChunk, VfsWriteResult } from "@actant/shared/core";
+import type { AgentInstanceMeta, VfsStreamChunk, VfsWriteResult } from "@actant/shared";
 import { VfsKernel } from "../core/vfs-kernel";
 import {
   createAgentRuntimeSource,

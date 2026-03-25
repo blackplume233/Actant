@@ -1,10 +1,10 @@
 import type { Socket } from "node:net";
-import { createLogger } from "@actant/shared/core";
-import type { PermissionsConfig } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
+import type { PermissionsConfig } from "@actant/shared";
 import {
   AcpConnectionAlreadyExistsError,
   AcpGatewayNotFoundError,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import { PermissionPolicyEnforcer, PermissionAuditLogger } from "@actant/agent-runtime";
 import type { ActantToolDefinition, ChannelHostServices, McpServerSpec, RecordSystem } from "@actant/agent-runtime";
 import { AcpConnection, type AcpConnectionOptions, type AcpSessionInfo, type ClientCallbackHandler } from "./connection";

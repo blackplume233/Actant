@@ -1,8 +1,8 @@
 import { readFile, writeFile, rename, readdir, stat, mkdir } from "node:fs/promises";
 import { join, dirname, resolve, relative } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { AgentInstanceMeta } from "@actant/shared/core";
-import { InstanceCorruptedError } from "@actant/shared/core";
+import type { AgentInstanceMeta } from "@actant/shared";
+import { InstanceCorruptedError } from "@actant/shared";
 import { readInstanceMeta } from "./instance-meta-io";
 import type { InstanceRegistryAdapter } from "./instance-registry-types";
 

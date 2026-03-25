@@ -6,7 +6,7 @@ import type {
   PluginDefinition,
   AgentBackendType,
   PermissionsInput,
-} from "@actant/shared/core";
+} from "@actant/shared";
 
 export interface VerifyResult {
   valid: boolean;

@@ -17,7 +17,7 @@ import type {
   ReleaseTerminalRequest,
   ReleaseTerminalResponse,
 } from "@agentclientprotocol/sdk";
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 import type { RecordSystem } from "@actant/agent-runtime";
 import type { ClientCallbackHandler } from "./connection";
 
@@ -71,7 +71,7 @@ export class RecordingCallbackHandler implements ClientCallbackHandler {
   ): void {
     const sid = this.activityId(sessionId);
     this.recordSystem.record({
-      category: category as import("@actant/shared/core").RecordCategory,
+      category: category as import("@actant/shared").RecordCategory,
       type,
       agentName: this.agentName,
       sessionId: sid,

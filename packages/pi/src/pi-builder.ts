@@ -7,8 +7,8 @@ import type {
   WorkflowDefinition,
   PluginDefinition,
   PermissionsInput,
-} from "@actant/shared/core";
-import { createLogger } from "@actant/shared/core";
+} from "@actant/shared";
+import { createLogger } from "@actant/shared";
 import { resolvePermissions } from "@actant/agent-runtime";
 import type { BackendBuilder, VerifyResult } from "@actant/agent-runtime";
 

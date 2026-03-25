@@ -1,5 +1,5 @@
-import { createLogger } from "@actant/shared/core";
-import type { RecordCategory } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
+import type { RecordCategory } from "@actant/shared";
 import type { StreamChunk } from "../communicator/agent-communicator";
 import type { ActantChannel, ChannelPromptResult } from "./types";
 import { channelEventToRecordEntry, legacyChunkToChannelEvent } from "./event-compat";

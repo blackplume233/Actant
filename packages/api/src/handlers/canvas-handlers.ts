@@ -6,8 +6,8 @@ import type {
   CanvasListResult,
   CanvasClearParams,
   CanvasClearResult,
-} from "@actant/shared/core";
-import { RPC_ERROR_CODES } from "@actant/shared/core";
+} from "@actant/shared";
+import { RPC_ERROR_CODES } from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

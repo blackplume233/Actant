@@ -16,7 +16,7 @@ import type {
   VfsWatchEvent,
   VfsWatchOptions,
   VfsWriteResult,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import { VfsKernel } from "./core/vfs-kernel";
 import type { VfsRequestContext, VfsStreamChunk } from "./namespace/canonical-path";
 import { FilesystemTypeRegistry } from "./filesystem-type-registry";

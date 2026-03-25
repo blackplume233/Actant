@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { join } from "node:path";
 import { WorkflowManager } from "./workflow-manager";
-import { ComponentReferenceError } from "@actant/shared/core";
-import type { WorkflowDefinition } from "@actant/shared/core";
+import { ComponentReferenceError } from "@actant/shared";
+import type { WorkflowDefinition } from "@actant/shared";
 
 const FIXTURES = join(import.meta.dirname, "__fixtures__");
 

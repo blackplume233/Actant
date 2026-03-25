@@ -1,5 +1,5 @@
-import type { DaemonPingResult, RpcMethodMap, RpcMethod } from "@actant/shared/core";
-import { RpcTransportClient, RpcTransportError } from "@actant/shared/core";
+import type { DaemonPingResult, RpcMethodMap, RpcMethod } from "@actant/shared";
+import { RpcTransportClient, RpcTransportError } from "@actant/shared";
 
 const CONNECTION_ERROR_PATTERN = /Cannot connect|ECONNREFUSED|ENOENT|EPIPE|socket/i;
 

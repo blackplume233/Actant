@@ -19,7 +19,7 @@ import {
   type VfsGrepResult,
   type VfsGrepOptions,
   type VfsGrepMatch,
-} from "@actant/shared/core";
+} from "@actant/shared";
 
 export interface WorkspaceSourceConfig {
   path: string;

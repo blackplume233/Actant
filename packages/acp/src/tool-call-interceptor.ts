@@ -1,6 +1,6 @@
 import type { SessionNotification } from "@agentclientprotocol/sdk";
 import type { RecordSystem } from "@actant/agent-runtime";
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 
 const logger = createLogger("tool-call-interceptor");
 

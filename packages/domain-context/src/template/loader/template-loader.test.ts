@@ -4,7 +4,7 @@ import { TemplateLoader } from "./template-loader";
 import {
   ConfigNotFoundError,
   ConfigValidationError,
-} from "@actant/shared/core";
+} from "@actant/shared";
 
 const FIXTURES = join(import.meta.dirname, "__fixtures__");
 

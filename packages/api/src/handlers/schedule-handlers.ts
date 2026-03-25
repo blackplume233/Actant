@@ -7,7 +7,7 @@ import type {
   AgentLogsResult,
   ScheduleListParams,
   ScheduleListResult,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry } from "./handler-registry";
 

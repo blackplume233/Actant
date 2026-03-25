@@ -1,7 +1,7 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { Command } from "commander";
-import type { ActantNamespaceConfig } from "@actant/shared/core";
+import type { ActantNamespaceConfig } from "@actant/shared";
 import { defaultPrinter, type CliPrinter, presentError } from "../../output/index";
 
 type InitScaffold = "minimal" | "standard";

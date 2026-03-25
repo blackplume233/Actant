@@ -1,4 +1,4 @@
-import type { AgentTemplate } from "@actant/shared/core";
+import type { AgentTemplate } from "@actant/shared";
 import { ProcessLauncher } from "../manager/launcher/process-launcher";
 import { TemplateRegistry } from "@actant/domain-context";
 import { AgentInitializer } from "../initializer/agent-initializer";

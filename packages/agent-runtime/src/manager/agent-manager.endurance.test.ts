@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, readdir, access } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentTemplate, AgentStatus } from "@actant/shared/core";
+import type { AgentTemplate, AgentStatus } from "@actant/shared";
 import { TemplateRegistry } from "@actant/domain-context";
 import { AgentInitializer } from "../initializer/agent-initializer";
 import { AgentManager, type ManagerOptions } from "./agent-manager";

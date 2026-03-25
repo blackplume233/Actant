@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 import { createRequestHandler } from "./server";
 
 const logger = createLogger("dashboard");

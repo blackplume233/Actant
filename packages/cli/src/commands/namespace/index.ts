@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import type { NamespaceValidateResult } from "@actant/shared/core";
+import type { NamespaceValidateResult } from "@actant/shared";
 import type { RpcClient } from "../../client/rpc-client";
 import { defaultPrinter, type CliPrinter, presentError } from "../../output/index";
 

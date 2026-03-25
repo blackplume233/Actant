@@ -68,10 +68,10 @@ import type {
   McpServerDefinition,
   ModelApiProtocol,
   AgentTemplate,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import { AcpConnectionManager, AcpChannelManagerAdapter } from "@actant/acp";
 import { PiBuilder, PiCommunicator, configFromBackend, ACP_BRIDGE_PATH } from "@actant/pi";
-import { createLogger, getIpcPath, initLogDir, normalizeHostProfile, normalizeIpcPath } from "@actant/shared/core";
+import { createLogger, getIpcPath, initLogDir, normalizeHostProfile, normalizeIpcPath } from "@actant/shared";
 import { HubContextService } from "./hub-context";
 import { RuntimeToolRegistry } from "./runtime-tool-registry";
 import { TemplateDirectoryWatcher } from "./template-directory-watcher";

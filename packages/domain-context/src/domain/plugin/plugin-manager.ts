@@ -1,5 +1,5 @@
 import { z } from "zod/v4";
-import type { ConfigValidationResult, PluginDefinition } from "@actant/shared/core";
+import type { ConfigValidationResult, PluginDefinition } from "@actant/shared";
 import { FileBackedComponentCollection } from "../component-collection";
 
 const PluginDefinitionSchema = z

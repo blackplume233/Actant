@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { ProjectContextConfig } from "@actant/shared/core";
+import type { ProjectContextConfig } from "@actant/shared";
 import {
   SkillManager,
   PromptManager,

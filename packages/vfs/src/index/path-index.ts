@@ -1,4 +1,4 @@
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 
 const logger = createLogger("vfs-path-index");
 

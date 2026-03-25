@@ -1,4 +1,4 @@
-import { ConfigNotFoundError } from "@actant/shared/core";
+import { ConfigNotFoundError } from "@actant/shared";
 import type {
   SkillGetParams,
   PromptGetParams,
@@ -15,7 +15,7 @@ import type {
   PromptDefinition,
   McpServerDefinition,
   WorkflowDefinition,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import type { AppContext } from "../services/app-context";
 import type { HandlerRegistry, RpcHandler } from "./handler-registry";
 

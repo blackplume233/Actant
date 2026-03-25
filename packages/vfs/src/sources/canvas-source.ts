@@ -8,7 +8,7 @@ import {
   type VfsWriteResult,
   type VfsEntry,
   type VfsListOptions,
-} from "@actant/shared/core";
+} from "@actant/shared";
 
 export interface CanvasSourceConfig {
   maxItems?: number;

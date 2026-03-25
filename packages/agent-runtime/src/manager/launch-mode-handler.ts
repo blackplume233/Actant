@@ -1,5 +1,5 @@
-import type { AgentInstanceMeta, LaunchMode } from "@actant/shared/core";
-import { createLogger } from "@actant/shared/core";
+import type { AgentInstanceMeta, LaunchMode } from "@actant/shared";
+import { createLogger } from "@actant/shared";
 
 const logger = createLogger("launch-mode-handler");
 

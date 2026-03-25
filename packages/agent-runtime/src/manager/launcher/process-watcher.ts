@@ -1,4 +1,4 @@
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 import { isProcessAlive } from "./process-utils";
 
 const logger = createLogger("process-watcher");

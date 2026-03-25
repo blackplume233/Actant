@@ -1,7 +1,7 @@
 import { watch, type FSWatcher } from "node:fs";
 import { access } from "node:fs/promises";
 import { join } from "node:path";
-import { createLogger, type AgentTemplate } from "@actant/shared/core";
+import { createLogger, type AgentTemplate } from "@actant/shared";
 import { TemplateLoader } from "@actant/domain-context";
 
 const logger = createLogger("template-directory-watcher");

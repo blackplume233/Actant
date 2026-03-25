@@ -1,4 +1,4 @@
-import { RpcTransportClient } from "@actant/shared/core";
+import { RpcTransportClient } from "@actant/shared";
 
 export interface RpcClient {
   ping(): Promise<boolean>;

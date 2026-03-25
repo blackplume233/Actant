@@ -1,5 +1,5 @@
-import type { SystemBudgetConfig, BudgetSnapshot, AgentUptimeRecord, BudgetPeriod } from "@actant/shared/core";
-import { createLogger } from "@actant/shared/core";
+import type { SystemBudgetConfig, BudgetSnapshot, AgentUptimeRecord, BudgetPeriod } from "@actant/shared";
+import { createLogger } from "@actant/shared";
 
 const logger = createLogger("system-budget-manager");
 

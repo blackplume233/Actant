@@ -8,7 +8,7 @@ if (!process.env["LOG_LEVEL"]) {
 
 if (process.argv.includes("--__actant-daemon")) {
   const { Daemon } = await import("@actant/api");
-  const { onShutdownSignal, bridgeLogger } = await import("@actant/shared/core");
+  const { onShutdownSignal, bridgeLogger } = await import("@actant/shared");
   const { DAEMON_READY_SIGNAL } = await import("../commands/daemon/start");
   try {
     const daemon = new Daemon();

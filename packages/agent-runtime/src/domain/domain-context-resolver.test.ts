@@ -2,8 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentTemplate } from "@actant/shared/core";
-import { ComponentReferenceError } from "@actant/shared/core";
+import type { AgentTemplate } from "@actant/shared";
+import { ComponentReferenceError } from "@actant/shared";
 import { TemplateRegistry, SkillManager, PromptManager, WorkflowManager } from "@actant/domain-context";
 import { AgentInitializer } from "../initializer/agent-initializer";
 

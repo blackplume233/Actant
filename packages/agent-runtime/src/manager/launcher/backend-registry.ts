@@ -1,4 +1,4 @@
-import type { AgentBackendType, AgentOpenMode, BackendDefinition, PlatformCommand } from "@actant/shared/core";
+import type { AgentBackendType, AgentOpenMode, BackendDefinition, PlatformCommand } from "@actant/shared";
 import { BackendManager, type AcpResolverFn, type BuildProviderEnvFn } from "../../domain/backend/backend-manager";
 
 // ---------------------------------------------------------------------------

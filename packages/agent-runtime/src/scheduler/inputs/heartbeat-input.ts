@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 import { loadTemplate, renderTemplate } from "../../prompts/template-engine";
 import type { InputSource, TaskCallback } from "./input-source";
 import type { HookEventBus } from "../../hooks/hook-event-bus";

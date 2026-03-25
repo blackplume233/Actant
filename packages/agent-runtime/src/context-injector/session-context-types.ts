@@ -3,4 +3,4 @@ export type {
   ToolScope,
   ActantToolDefinition,
   ContextProvider,
-} from "@actant/shared/core";
+} from "@actant/shared";

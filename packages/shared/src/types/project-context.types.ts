@@ -1,3 +1,8 @@
+/**
+ * Legacy derived-view configuration used inside templates and projection
+ * helpers. This is not the namespace truth source; the runtime filesystem and
+ * namespace configuration live in `project.types.ts`.
+ */
 export interface ProjectContextConfig {
   skills?: string[];
   prompts?: string[];

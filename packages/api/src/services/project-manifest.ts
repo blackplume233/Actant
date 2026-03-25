@@ -9,7 +9,7 @@ import type {
   VfsPermissionRule,
   VfsMountRegistration,
   VfsStatResult,
-} from "@actant/shared/core";
+} from "@actant/shared";
 
 const PROJECT_MANIFEST_FEATURES = new Set<VfsFeature>(["persistent", "virtual"]);
 

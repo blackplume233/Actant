@@ -7,5 +7,5 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   target: "es2022",
-  external: ["@actant/shared/core", "zod", "zod/v4"],
+  external: ["@actant/shared", "zod", "zod/v4"],
 });

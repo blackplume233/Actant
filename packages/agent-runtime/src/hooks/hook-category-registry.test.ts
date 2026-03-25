@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { HookCategoryRegistry } from "./hook-category-registry";
-import { HOOK_CATEGORIES, BUILTIN_EVENT_META } from "@actant/shared/core";
-import type { HookCategoryDefinition, HookEventMeta } from "@actant/shared/core";
+import { HOOK_CATEGORIES, BUILTIN_EVENT_META } from "@actant/shared";
+import type { HookCategoryDefinition, HookEventMeta } from "@actant/shared";
 
 describe("HookCategoryRegistry", () => {
   let registry: HookCategoryRegistry;

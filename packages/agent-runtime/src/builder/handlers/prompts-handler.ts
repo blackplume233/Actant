@@ -1,4 +1,4 @@
-import type { PromptDefinition } from "@actant/shared/core";
+import type { PromptDefinition } from "@actant/shared";
 import type { ComponentTypeHandler } from "../component-type-handler";
 import type { BackendBuilder } from "../backend-builder";
 

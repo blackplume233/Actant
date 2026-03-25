@@ -1,10 +1,10 @@
 import { readFile, writeFile, rename, readdir, stat, mkdir } from "node:fs/promises";
 import { join, dirname } from "node:path";
 import { randomUUID } from "node:crypto";
-import type { AgentInstanceMeta } from "@actant/shared/core";
-import { InstanceCorruptedError } from "@actant/shared/core";
+import type { AgentInstanceMeta } from "@actant/shared";
+import { InstanceCorruptedError } from "@actant/shared";
 import { AgentInstanceMetaSchema } from "./instance-meta-schema";
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 import type { InstanceRegistryAdapter } from "./instance-registry-types";
 
 const logger = createLogger("instance-meta-io");

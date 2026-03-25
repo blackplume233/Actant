@@ -2,7 +2,7 @@ import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { rename, mkdir } from "node:fs/promises";
 import { randomUUID } from "node:crypto";
-import type { AgentInstanceMeta, AgentStatus, ResolveResult, DetachResult, ModelProviderConfig } from "@actant/shared/core";
+import type { AgentInstanceMeta, AgentStatus, ResolveResult, DetachResult, ModelProviderConfig } from "@actant/shared";
 import {
   AgentNotFoundError,
   AgentAlreadyRunningError,
@@ -11,7 +11,7 @@ import {
   AgentLaunchError,
   createLogger,
   validateAgentName,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import type { AgentInitializer } from "../initializer/index";
 import type { InstanceOverrides } from "../initializer/index";
 import type { AgentLauncher, AgentProcess } from "./launcher/agent-launcher";
@@ -33,7 +33,7 @@ import type { HookEventBus } from "../hooks/hook-event-bus";
 import type { RecordSystem } from "../record/record-system";
 import { RulesContextProvider } from "../context-injector/rules-context-provider";
 import type { SystemBudgetManager } from "../budget/system-budget-manager";
-import type { PermissionsConfig } from "@actant/shared/core";
+import type { PermissionsConfig } from "@actant/shared";
 
 const logger = createLogger("agent-manager");
 
@@ -1290,7 +1290,7 @@ function buildSpawnNotFoundMessage(
   backendManager?: BackendManager,
 ): string {
   const hint = getInstallHint(
-    backendType as import("@actant/shared/core").AgentBackendType,
+    backendType as import("@actant/shared").AgentBackendType,
     backendManager,
   );
   const base = `Backend "${backendType}" executable not found.`;

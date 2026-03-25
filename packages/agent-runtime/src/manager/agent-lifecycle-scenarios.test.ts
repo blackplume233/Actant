@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, access } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import type { AgentTemplate } from "@actant/shared/core";
+import type { AgentTemplate } from "@actant/shared";
 import { TemplateRegistry } from "@actant/domain-context";
 import { AgentInitializer } from "../initializer/agent-initializer";
 import { AgentManager } from "./agent-manager";

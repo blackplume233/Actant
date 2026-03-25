@@ -7,8 +7,8 @@ import type {
   VfsWatchEvent,
   VfsWatchRpcResult,
   VfsWriteRpcResult,
-} from "@actant/shared/core";
-import { getBridgeSessionToken, getBridgeSocketPath, mapHubPath } from "@actant/shared/core";
+} from "@actant/shared";
+import { getBridgeSessionToken, getBridgeSocketPath, mapHubPath } from "@actant/shared";
 import { createRpcClient } from "./rpc-client.js";
 
 export interface ContextBackend {

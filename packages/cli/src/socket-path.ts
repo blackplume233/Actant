@@ -1,4 +1,4 @@
-import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared/core";
+import { getDefaultIpcPath, normalizeIpcPath } from "@actant/shared";
 
 export function defaultSocketPath(): string {
   const home = process.env["ACTANT_HOME"];

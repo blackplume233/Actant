@@ -2,7 +2,7 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { createLogger, isWindows } from "@actant/shared/core";
+import { createLogger, isWindows } from "@actant/shared";
 
 const logger = createLogger("binary-resolver");
 

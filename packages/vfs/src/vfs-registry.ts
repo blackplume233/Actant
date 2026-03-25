@@ -10,7 +10,7 @@ import {
   type VfsNodeType,
   type VfsResolveResult,
   type VfsHandlerMap,
-} from "@actant/shared/core";
+} from "@actant/shared";
 import { VfsPathResolver } from "./vfs-path-resolver";
 
 const logger = createLogger("vfs-registry");

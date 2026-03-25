@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { writeFile, mkdir, readFile, readdir, stat } from "node:fs/promises";
 import { join, dirname } from "node:path";
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 import {
   INLINE_THRESHOLD,
   PREVIEW_LENGTH,
@@ -16,7 +16,7 @@ import {
   type JournalEntry,
   type JournalCategory,
   type JournalQueryFilter,
-} from "@actant/shared/core";
+} from "@actant/shared";
 
 const logger = createLogger("record-system");
 

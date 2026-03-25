@@ -6,7 +6,7 @@ import type {
   RunPromptOptions,
   StreamChunk,
 } from "@actant/agent-runtime";
-import { createLogger } from "@actant/shared/core";
+import { createLogger } from "@actant/shared";
 import { createPiAgent, type PiAgentOptions } from "./pi-tool-bridge";
 
 const logger = createLogger("pi-communicator");

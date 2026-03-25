@@ -1,5 +1,5 @@
 import { Command } from "commander";
-import { getBridgeSessionToken } from "@actant/shared/core";
+import { getBridgeSessionToken } from "@actant/shared";
 import type { RpcClient } from "../../client/rpc-client";
 import { presentError, type CliPrinter, defaultPrinter } from "../../output/index";
 

@@ -3,7 +3,7 @@ import { InitializationPipeline } from "./initialization-pipeline";
 import { InitializerStepExecutor } from "./step-executor";
 import { StepRegistry } from "./step-registry";
 import type { StepContext, StepResult, StepValidationResult } from "./types";
-import type { AgentTemplate } from "@actant/shared/core";
+import type { AgentTemplate } from "@actant/shared";
 
 class SuccessStep extends InitializerStepExecutor {
   readonly type = "success";

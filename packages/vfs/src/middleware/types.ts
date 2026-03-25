@@ -1,4 +1,4 @@
-import type { VfsResolveResult } from "@actant/shared/core";
+import type { VfsResolveResult } from "@actant/shared";
 import type { CanonicalUri, VfsKernelOperation, VfsRequestContext } from "../namespace/canonical-path";
 
 export interface VfsKernelDispatchState {

@@ -1,4 +1,4 @@
-import type { AgentArchetype, InteractionMode, LaunchMode, BackendDefinition, WorkspacePolicy } from "@actant/shared/core";
+import type { AgentArchetype, InteractionMode, LaunchMode, BackendDefinition, WorkspacePolicy } from "@actant/shared";
 import { validateBackendForArchetype } from "../manager/launcher/backend-resolver";
 
 export interface ArchetypeDefaults {

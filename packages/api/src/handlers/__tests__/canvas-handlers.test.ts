@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { RPC_ERROR_CODES } from "@actant/shared/core";
+import { RPC_ERROR_CODES } from "@actant/shared";
 import { HandlerRegistry } from "../handler-registry";
 import { registerCanvasHandlers } from "../canvas-handlers";
 import { CanvasStore } from "../../services/canvas-store";

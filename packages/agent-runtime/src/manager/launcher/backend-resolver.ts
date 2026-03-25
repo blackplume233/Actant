@@ -1,4 +1,4 @@
-import type { AgentBackendType, AgentInstanceMeta, InteractionMode, OpenSpawnOptions, AgentArchetype, BackendDefinition } from "@actant/shared/core";
+import type { AgentBackendType, AgentInstanceMeta, InteractionMode, OpenSpawnOptions, AgentArchetype, BackendDefinition } from "@actant/shared";
 import type { BackendManager } from "../../domain/backend/backend-manager";
 import {
   getBackendDescriptor,
@@ -9,7 +9,7 @@ import {
 } from "./backend-registry";
 import "./builtin-backends";
 
-export type { BackendDefinition, AgentOpenMode, PlatformCommand, OpenSpawnOptions } from "@actant/shared/core";
+export type { BackendDefinition, AgentOpenMode, PlatformCommand, OpenSpawnOptions } from "@actant/shared";
 
 export interface ResolvedBackend {
   command: string;

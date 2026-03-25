@@ -1,4 +1,4 @@
-import { createLogger, type VfsMountRegistration } from "@actant/shared/core";
+import { createLogger, type VfsMountRegistration } from "@actant/shared";
 import type { VfsRegistry } from "./vfs-registry";
 
 const logger = createLogger("vfs-lifecycle");
