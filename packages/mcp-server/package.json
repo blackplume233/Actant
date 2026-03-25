@@ -44,9 +44,7 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@actant/api": "workspace:0.5.0",
     "@actant/shared": "workspace:0.5.0",
-    "@actant/vfs": "workspace:0.5.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "zod": "^4.3.6"
   }

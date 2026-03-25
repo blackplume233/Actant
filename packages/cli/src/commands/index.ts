@@ -9,7 +9,6 @@ export { createPluginCommand } from "./plugin/index";
 export { createScheduleCommand } from "./schedule/index";
 export { createDaemonCommand } from "./daemon/index";
 export { createProxyCommand } from "./proxy";
-export { createSelfUpdateCommand } from "./self-update";
 export { createInitCommand } from "./init/index";
 export { createDashboardCommand } from "./dashboard/index";
 export { createApiCommand } from "./api/index";

@@ -16,7 +16,6 @@ const dirs = [
   "configs/plugins",
   "configs/templates",
   "instances",
-  "sources/cache",
   "logs",
   "backups",
 ];
@@ -31,7 +30,6 @@ if (!existsSync(configFile)) {
     configFile,
     JSON.stringify(
       {
-        devSourcePath: "",
         update: {
           maxBackups: 3,
           preUpdateTestCommand: "pnpm test:changed",

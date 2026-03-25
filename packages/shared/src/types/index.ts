@@ -275,10 +275,6 @@ export {
   type EventsRecentResult,
   type EventsEmitParams,
   type EventsEmitResult,
-  type PluginRuntimeListParams,
-  type PluginRuntimeListResult,
-  type PluginRuntimeStatusParams,
-  type PluginRuntimeStatusResult,
   type VfsReadParams,
   type VfsReadResult,
   type VfsWriteParams,
@@ -324,16 +320,6 @@ export type {
   SessionToken,
   SessionTokenValidator,
 } from "./context-provider.types";
-export type {
-  PluginScope,
-  PluginRuntimeState,
-  PluginContext,
-  PluginRuntimeHooks,
-  PluginRef,
-  SubsystemScope,
-  SubsystemOrigin,
-  SubsystemDefinition,
-} from "./plugin.types";
 export {
   VFS_CAPABILITIES,
   type VfsCapabilityId,

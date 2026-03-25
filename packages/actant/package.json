@@ -34,26 +34,6 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
-    },
-    "./shared/core": {
-      "import": "./dist/shared.js",
-      "types": "./dist/shared.d.ts"
-    },
-    "./acp": {
-      "import": "./dist/acp.js",
-      "types": "./dist/acp.d.ts"
-    },
-    "./mcp": {
-      "import": "./dist/mcp.js",
-      "types": "./dist/mcp.d.ts"
-    },
-    "./pi": {
-      "import": "./dist/pi.js",
-      "types": "./dist/pi.d.ts"
-    },
-    "./cli": {
-      "import": "./dist/cli.js",
-      "types": "./dist/cli.d.ts"
     }
   },
   "scripts": {
@@ -64,12 +44,6 @@
     "prepublishOnly": "tsup"
   },
   "dependencies": {
-    "@actant/cli": "workspace:0.5.0",
-    "@actant/agent-runtime": "workspace:0.5.0",
-    "@actant/shared": "workspace:0.5.0",
-    "@actant/api": "workspace:0.5.0",
-    "@actant/acp": "workspace:0.5.0",
-    "@actant/mcp-server": "workspace:0.5.0",
-    "@actant/pi": "workspace:0.5.0"
+    "@actant/cli": "workspace:0.5.0"
   }
 }

@@ -3,14 +3,7 @@ import { copyFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 export default defineConfig({
-  entry: [
-    "src/index.ts",
-    "src/shared.ts",
-    "src/acp.ts",
-    "src/mcp.ts",
-    "src/pi.ts",
-    "src/cli.ts",
-  ],
+  entry: ["src/index.ts"],
   format: ["esm"],
   dts: false,
   clean: true,

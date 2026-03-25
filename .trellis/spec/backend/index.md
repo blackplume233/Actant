@@ -181,8 +181,8 @@
 | --- | --- | --- |
 | `@actant/rest-api` | `pure RPC bridge` | 只通过 `RpcBridge` 转发到 daemon，不直接装配 VFS / runtime |
 | `@actant/dashboard` | `UI shell over rest-api` | 只消费 `@actant/rest-api` 和静态前端资源；不是组合根 |
-| `@actant/cli` | `bridge shell with bounded local exceptions` | 默认是 RPC bridge；允许 `actant init`、daemon entry、hub standalone namespace fallback 这类受控本地路径 |
-| `@actant/mcp-server` | `bridge shell with bounded local exceptions` | 默认经 RPC 消费 daemon；允许 standalone namespace fallback 以提供只读/有限本地 VFS 视图 |
+| `@actant/cli` | `RPC bridge shell` | `hub` / runtime 访问只能经 RPC 进入 daemon；保留 `actant init` 与 daemon entry 这类产品壳路径 |
+| `@actant/mcp-server` | `RPC bridge shell` | 所有 VFS / runtime 能力都必须经 RPC 消费 daemon；无 standalone namespace fallback |
 | `@actant/tui` | `not a bridge` | 纯 UI 组件库，只消费流类型，不承担 RPC/daemon 边界 |
 | `@actant/channel-*` | `adapter, not bridge` | 协议/SDK 适配层，可消费 `agent-runtime` channel contract，但不是 daemon host |
 
@@ -190,12 +190,9 @@
 
 - bridge 包不得直接持有第二套 runtime 组合逻辑
 - bridge 包不得持有 `mount table`、`filesystem type registry`
-- bridge 包允许存在受控的 local namespace fallback，但该 fallback 只能：
-  - 用于无 daemon 的本地读取 / 诊断 / 初始化路径
-  - 复用既有 namespace projection helper
-  - 不得演化成第二套系统组合根
+- bridge 包不得提供 standalone namespace fallback 或任何本地只读 VFS 旁路
 - `rest-api` / `dashboard` 不应引入 standalone VFS kernel 组装逻辑
-- `cli` / `mcp-server` 的本地 fallback 必须继续显式标记为 `standalone namespace mode`
+- `cli` / `mcp-server` 的 bridge 访问必须严格收口为 `RPC -> daemon`
 
 ## 2.3 Frozen Runtime And Support Roles
 
@@ -210,7 +207,7 @@
 - hosted runtime 路径固定经 `bridge -> RPC -> daemon`
 - daemon 内部实现链固定为 `daemon -> runtime integration -> VFS`
 - runtime integration 不得旁路 `mount namespace`、`mount table` 或 permission chain 暴露第二套访问内核
-- 无 daemon 的本地读取可以直接进入 `VFS`，但不能因此引入第二套 public contract
+- 无 daemon 时 bridge 层不提供 runtime / namespace public contract
 
 ---
 

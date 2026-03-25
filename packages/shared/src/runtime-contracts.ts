@@ -5,5 +5,4 @@ export * from "./types/hook.types";
 export * from "./types/activity.types";
 export * from "./types/journal.types";
 export * from "./types/record.types";
-export * from "./types/plugin.types";
 export * from "./types/rpc.types";

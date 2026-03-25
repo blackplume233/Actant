@@ -8,14 +8,14 @@
 
 - `daemon -> plugin -> provider -> VFS` 与 `bridge -> RPC -> daemon` 边界固定
 - `mount namespace` / `mount table` / `filesystem type` / `node type` 成为唯一活跃对象模型
-- `cli` / `mcp-server` 的 standalone namespace fallback 收口到统一 API helper
+- `cli` / `mcp-server` 的 standalone namespace fallback 已删除，bridge 访问统一收口为 `RPC -> daemon`
 - `packages/catalog`、`packages/core`、`packages/domain` 与相关活跃引用退场
 - 活跃 spec/design/roadmap/TODO 与代码门禁已经对齐
 
 ## User-Visible Changes
 
 - 新的 namespace / standalone 读取路径统一围绕 `actant.namespace.json` 与 `ContextFS` Linux 术语工作
-- bridge 层不再自行装配 kernel；本地 fallback 走 `@actant/api#createStandaloneProjectContextRuntime`
+- bridge 层不再自行装配 kernel，也不再提供任何本地 fallback；无 daemon 时直接失败并提示先启动 daemon
 - CLI、MCP、daemon、VFS 的边界术语与导出面更统一，减少旧模型混淆
 
 ## Architecture Freeze
@@ -26,7 +26,7 @@
 - `@actant/cli`、`@actant/rest-api`、`@actant/dashboard`、`@actant/mcp-server`：bridge packages
 - `@actant/tui`、`@actant/channel-*`：adapter / UI packages
 - `@actant/actant`：打包层 / 分发层 / 产品壳
-- `@actant/context`：仅保留过渡 helper 身份，继续并入 `@actant/api`
+- `@actant/context`：清退目标；已并入 `@actant/api`，不得保留物理包残留
 
 ## Removed / Retired
 
@@ -41,7 +41,7 @@
 
 - `node node_modules/vitest/vitest.mjs run packages/shared/src/__tests__/contextfs-terminology-gate.test.ts`
 - `node node_modules/vitest/vitest.mjs run packages/shared/src/__tests__/contextfs-boundary-gate.test.ts`
-- `node node_modules/vitest/vitest.mjs run packages/api/src/services/__tests__/project-context-standalone-runtime.test.ts packages/api/src/services/__tests__/vfs-state-convergence.test.ts`
+- `node node_modules/vitest/vitest.mjs run packages/api/src/services/__tests__/vfs-state-convergence.test.ts`
 - `node node_modules/vitest/vitest.mjs run packages/mcp-server/src/context-backend.test.ts`
 - `node node_modules/vitest/vitest.mjs run packages/cli/src/commands/__tests__/commands.test.ts`
 

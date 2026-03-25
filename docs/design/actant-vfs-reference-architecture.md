@@ -77,7 +77,7 @@ api / cli / rest-api / dashboard / mcp-server / actant"]
 | `VFS Stack` | `@actant/vfs` | 唯一内核 |
 | `AgentRuntime Stack` | `@actant/agent-runtime`, `@actant/domain-context`, `@actant/acp`, `@actant/pi`, `@actant/tui`, `@actant/channel-*` | 运行时执行、解释、协议与集成能力 |
 | `Surface Stack` | `@actant/api`, `@actant/cli`, `@actant/rest-api`, `@actant/dashboard`, `@actant/mcp-server`, `actant` | 对外入口、daemon 组合、产品壳 |
-| `cleanup-target` | `@actant/context` | 本轮并入 `@actant/api` 并删除 |
+| `cleanup-target` | `@actant/context` | 已并入 `@actant/api`；物理包与残留引用都应删除 |
 
 已删除包：
 
@@ -93,12 +93,12 @@ bridge / edge 层的冻结结论如下：
 | --- | --- | --- |
 | `@actant/rest-api` | pure bridge | 只做 HTTP/SSE -> RPC 转发 |
 | `@actant/dashboard` | UI shell | 只包裹 `rest-api` 与前端静态资源 |
-| `@actant/cli` | bridge shell with local exceptions | 允许 `init`、daemon 启动、hub standalone namespace fallback |
-| `@actant/mcp-server` | bridge shell with local exceptions | 允许 standalone namespace fallback，但不能自带 runtime 组合根 |
+| `@actant/cli` | RPC bridge shell | `hub` / runtime 访问固定经 RPC 进入 daemon；仅保留产品壳级 `init` / daemon entry |
+| `@actant/mcp-server` | RPC bridge shell | 不提供 standalone namespace fallback，所有能力都经 daemon RPC |
 | `@actant/tui` | not bridge | 纯 UI toolkit |
 | `@actant/channel-*` | not bridge | channel adapter / SDK adapter |
 
-这里的“local exception”只表示受控的本地 namespace 读取或产品启动路径，不表示第二套系统组合根。
+bridge 层不再保留本地 namespace 读取例外；无 daemon 时只能失败并提示启动 daemon。
 
 ---
 

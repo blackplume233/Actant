@@ -5,12 +5,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 cd "$ROOT_DIR"
 
+CONTEXT_ROOT="$ROOT_DIR/.trellis/tmp"
+mkdir -p "$CONTEXT_ROOT"
+CONTEXT_HOME="$(mktemp -d "$CONTEXT_ROOT/context-smoke-shell.XXXXXX")"
+export ACTANT_HOME="$CONTEXT_HOME"
+export ACTANT_SOCKET="$CONTEXT_HOME/daemon.sock"
+
 run() {
   bash scripts/run-workspace-entry.sh "$@"
 }
 
 cleanup() {
   run packages/cli/src/bin/actant.ts daemon stop >/dev/null 2>&1 || true
+  rm -rf "$CONTEXT_HOME"
 }
 
 trap cleanup EXIT
@@ -41,9 +48,9 @@ connected_out="$(run packages/mcp-server/src/index.ts </dev/null 2>&1 || true)"
 echo "$connected_out"
 printf '%s' "$connected_out" | grep 'connected to daemon' >/dev/null
 
-echo "[6/6] MCP standalone fallback with invalid socket"
+echo "[6/6] MCP rejects invalid socket instead of falling back locally"
 standalone_out="$(ACTANT_SOCKET=/tmp/actant-context-smoke-missing.sock run packages/mcp-server/src/index.ts </dev/null 2>&1 || true)"
 echo "$standalone_out"
-printf '%s' "$standalone_out" | grep 'standalone namespace mode' >/dev/null
+printf '%s' "$standalone_out" | grep 'could not reach the daemon' >/dev/null
 
 echo "Context smoke passed."

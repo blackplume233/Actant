@@ -4,7 +4,6 @@ import type { AgentInstanceMeta, LaunchMode, WorkspacePolicy, ResolveResult, Det
 import type { SkillDefinition, PromptDefinition, McpServerDefinition, WorkflowDefinition, PluginDefinition } from "./domain-component.types";
 import type { HostCapability, HostProfile, HostRuntimeState } from "./host.types";
 import type { ActivityRecord, ActivitySessionSummary, ConversationTurn } from "./activity.types";
-import type { PluginRef } from "./plugin.types";
 import type { VfsStreamChunk, VfsWatchEvent } from "./vfs.types";
 import type { MountDeclaration } from "./project.types";
 
@@ -463,16 +462,6 @@ export interface PluginGetParams {
 }
 export type PluginGetResult = PluginDefinition;
 
-// plugin.runtime* — runtime state from PluginHost
-
-export type PluginRuntimeListParams = Record<string, never>;
-export type PluginRuntimeListResult = PluginRef[];
-
-export interface PluginRuntimeStatusParams {
-  name: string;
-}
-export type PluginRuntimeStatusResult = PluginRef;
-
 // daemon.*
 
 export type DaemonPingParams = Record<string, never>;
@@ -822,8 +811,6 @@ export interface RpcMethodMap {
   "plugin.remove": { params: ComponentRemoveParams; result: ComponentRemoveResult };
   "plugin.import": { params: ComponentImportParams; result: ComponentImportResult };
   "plugin.export": { params: ComponentExportParams; result: ComponentExportResult };
-  "plugin.runtimeList": { params: PluginRuntimeListParams; result: PluginRuntimeListResult };
-  "plugin.runtimeStatus": { params: PluginRuntimeStatusParams; result: PluginRuntimeStatusResult };
   "daemon.ping": { params: DaemonPingParams; result: DaemonPingResult };
   "daemon.shutdown": { params: DaemonShutdownParams; result: DaemonShutdownResult };
   "hub.activate": { params: HubActivateParams; result: HubActivateResult };

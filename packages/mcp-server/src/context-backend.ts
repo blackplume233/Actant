@@ -1,12 +1,8 @@
-import {
-  createStandaloneProjectContextRuntime,
-} from "@actant/api";
 import type {
   VfsDescribeRpcResult,
   VfsGrepRpcResult,
   VfsListRpcResult,
   VfsReadResult,
-  VfsStreamChunk,
   VfsStreamRpcResult,
   VfsWatchEvent,
   VfsWatchRpcResult,
@@ -16,7 +12,7 @@ import { getBridgeSessionToken, getBridgeSocketPath, mapHubPath } from "@actant/
 import { createRpcClient } from "./rpc-client.js";
 
 export interface ContextBackend {
-  readonly mode: "connected" | "standalone";
+  readonly mode: "connected";
   read(path: string, startLine?: number, endLine?: number): Promise<VfsReadResult>;
   write(path: string, content: string): Promise<VfsWriteRpcResult>;
   list(path?: string, recursive?: boolean, long?: boolean): Promise<VfsListRpcResult>;
@@ -40,31 +36,25 @@ export interface ContextBackendOptions {
   socketPath?: string;
 }
 
-export interface StandaloneContext extends ContextBackend {
-  readonly mode: "standalone";
-  readonly projectRoot: string;
-  readonly configPath: string | null;
-}
-
 export async function createContextBackend(options?: ContextBackendOptions): Promise<ContextBackend> {
   const socketPath = options?.socketPath ?? getBridgeSocketPath();
-  if (socketPath) {
-    const rpc = createRpcClient(socketPath);
-    const ping = await rpc.pingInfo();
-    if (ping) {
-      const activation = await rpc.call("hub.activate", { projectDir: options?.projectDir ?? process.cwd() }) as {
-        projectRoot: string;
-      };
-      logBridgeInfo(
-        `Actant MCP connected to daemon at ${socketPath} (profile=${ping.hostProfile}, runtime=${ping.runtimeState}, project=${activation.projectRoot})`,
-      );
-      return createConnectedBackend(rpc);
-    }
+  if (!socketPath) {
+    throw new Error("Actant MCP requires daemon access via ACTANT_SOCKET or the default daemon socket.");
   }
 
-  const standalone = await createStandaloneContext(options?.projectDir);
-  logBridgeInfo(`Actant MCP running in standalone namespace mode for ${standalone.projectRoot}`);
-  return standalone;
+  const rpc = createRpcClient(socketPath);
+  const ping = await rpc.pingInfo();
+  if (!ping) {
+    throw new Error(`Actant MCP could not reach the daemon at ${socketPath}. Start the daemon and retry.`);
+  }
+
+  const activation = await rpc.call("hub.activate", { projectDir: options?.projectDir ?? process.cwd() }) as {
+    projectRoot: string;
+  };
+  logBridgeInfo(
+    `Actant MCP connected to daemon at ${socketPath} (profile=${ping.hostProfile}, runtime=${ping.runtimeState}, project=${activation.projectRoot})`,
+  );
+  return createConnectedBackend(rpc);
 }
 
 function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): ContextBackend {
@@ -140,229 +130,6 @@ function createConnectedBackend(rpc: ReturnType<typeof createRpcClient>): Contex
   };
 }
 
-export async function createStandaloneContext(projectDir?: string): Promise<StandaloneContext> {
-  const standalone = await createStandaloneProjectContextRuntime({
-    projectDir,
-    layout: {
-      project: "/project",
-      workspace: "/workspace",
-      config: "/config",
-      skills: "/skills",
-      agents: "/agents",
-      mcpConfigs: "/mcp/configs",
-      mcpRuntime: "/mcp/runtime",
-      mcpLegacy: "/mcp",
-      prompts: "/prompts",
-      workflows: "/workflows",
-      templates: "/templates",
-    },
-    lifecycle: { type: "daemon" },
-    namePrefix: "standalone",
-    workspaceReadOnly: true,
-    configReadOnly: true,
-    daemonInfo: {
-      mountPoint: "/daemon",
-      getVersion: () => "standalone",
-      getUptime: () => 0,
-      getAgentCount: () => 0,
-      getRpcMethods: () => [],
-      getHostProfile: () => "context",
-      getRuntimeState: () => "inactive",
-      getCapabilities: () => ["hub", "vfs", "domain"],
-    },
-  });
-  const { context, registry, kernel } = standalone;
-
-  return {
-    mode: "standalone",
-    projectRoot: context.projectRoot,
-    configPath: context.configPath,
-    async read(path, startLine, endLine) {
-      const resolved = registry.resolve(path);
-      if (!resolved) {
-        throw new Error(`VFS path not found: ${path}`);
-      }
-
-      if (startLine != null) {
-        const handler = requireHandler(resolved.mount.handlers.read_range, "read_range", path);
-        const result = await handler(resolved.relativePath, startLine, endLine);
-        return { content: result.content, mimeType: result.mimeType };
-      }
-
-      const handler = requireHandler(resolved.mount.handlers.read, "read", path);
-      const result = await handler(resolved.relativePath);
-      return { content: result.content, mimeType: result.mimeType };
-    },
-    async write(path, content) {
-      const resolved = registry.resolve(path);
-      if (!resolved) {
-        throw new Error(`VFS path not found: ${path}`);
-      }
-      const handler = requireHandler(resolved.mount.handlers.write, "write", path);
-      return handler(resolved.relativePath, content);
-    },
-    async list(path = "/", recursive, long) {
-      const resolved = registry.resolve(path);
-      if (!resolved) {
-        const childMounts = registry.listChildMounts(path);
-        return childMounts.map((s: { mountPoint: string; name: string }) => ({
-          name: s.mountPoint.split("/").pop() ?? s.name,
-          path: s.mountPoint,
-          type: "directory" as const,
-        }));
-      }
-      const handler = requireHandler(resolved.mount.handlers.list, "list", path);
-      const entries = await handler(resolved.relativePath, { recursive, long });
-      if (resolved.relativePath !== "") {
-        return entries;
-      }
-
-      const childMounts = registry.listChildMounts(path);
-      const projectedMounts = childMounts.map((s: { mountPoint: string; name: string }) => ({
-        name: s.mountPoint.split("/").pop() ?? s.name,
-        path: s.mountPoint,
-        type: "directory" as const,
-      }));
-      const deduped = new Map<string, (typeof entries)[number]>();
-      for (const entry of [...entries, ...projectedMounts]) {
-        deduped.set(entry.path, entry);
-      }
-      return [...deduped.values()];
-    },
-    async describe(path) {
-      const desc = registry.describe(path);
-      if (!desc) {
-        throw new Error(`VFS path not found: ${path}`);
-      }
-      return {
-        path: desc.path,
-        mountPoint: desc.mountPoint,
-        mountType: desc.mountType,
-        filesystemType: desc.filesystemType,
-        nodeType: desc.nodeType,
-        mountName: desc.mountName,
-        label: desc.label,
-        features: Array.from(desc.features),
-        capabilities: desc.capabilities,
-        metadata: desc.metadata,
-        tags: desc.tags,
-      };
-    },
-    async watch(path, options) {
-      const resolved = kernel.resolve(path);
-      if (!resolved) {
-        throw new Error(`VFS path not found: ${path}`);
-      }
-      const iterable = await kernel.watch(path, {}, {
-        pattern: options?.pattern,
-        events: options?.events,
-      });
-      return collectAsyncIterable<VfsWatchEvent, VfsWatchRpcResult>(iterable, {
-        maxItems: options?.maxEvents ?? 1,
-        timeoutMs: options?.timeoutMs ?? 250,
-        mapItems: (events) => ({ events }),
-      });
-    },
-    async stream(path, options) {
-      const resolved = kernel.resolve(path);
-      if (!resolved) {
-        throw new Error(`VFS path not found: ${path}`);
-      }
-      const iterable = await kernel.stream(path);
-      return collectAsyncIterable<VfsStreamChunk, VfsStreamRpcResult>(iterable, {
-        maxItems: options?.maxChunks ?? 1,
-        timeoutMs: options?.timeoutMs ?? 250,
-        mapItems: (chunks) => ({ chunks }),
-      });
-    },
-    async grep(pattern, path = "/workspace", caseInsensitive, maxResults) {
-      const resolved = registry.resolve(path);
-      if (!resolved) {
-        throw new Error(`VFS path not found: ${path}`);
-      }
-      const handler = requireHandler(resolved.mount.handlers.grep, "grep", path);
-      return handler(pattern, { caseInsensitive, maxResults });
-    },
-    async callRpc(method) {
-      throw new Error(
-        `RPC ${method} unavailable in standalone mode. Use "actant hub status" to start the host when runtime operations are needed.`,
-      );
-    },
-  };
-}
-
 function logBridgeInfo(message: string): void {
   process.stderr.write(`[actant] ${message}\n`);
-}
-
-function requireHandler<T>(handler: T | undefined | null, capability: string, path: string): T {
-  if (!handler) {
-    throw new Error(`Capability "${capability}" not supported for path "${path}"`);
-  }
-  return handler;
-}
-
-async function collectAsyncIterable<T, TResult extends { truncated: boolean; timedOut: boolean }>(
-  iterable: AsyncIterable<T>,
-  options: {
-    maxItems: number;
-    timeoutMs: number;
-    mapItems(items: T[]): Omit<TResult, "truncated" | "timedOut">;
-  },
-): Promise<TResult> {
-  const items: T[] = [];
-  const iterator = iterable[Symbol.asyncIterator]();
-  const deadline = Date.now() + Math.max(options.timeoutMs, 0);
-  let truncated = false;
-  let timedOut = false;
-
-  try {
-    while (items.length < options.maxItems) {
-      const remainingMs = Math.max(deadline - Date.now(), 0);
-      const next = await nextWithTimeout(iterator, remainingMs);
-      if (next === "timeout") {
-        timedOut = true;
-        break;
-      }
-      if (next.done) {
-        break;
-      }
-      items.push(next.value);
-    }
-
-    if (items.length >= options.maxItems) {
-      truncated = true;
-    }
-  } finally {
-    await iterator.return?.();
-  }
-
-  return {
-    ...options.mapItems(items),
-    truncated,
-    timedOut,
-  } as TResult;
-}
-
-async function nextWithTimeout<T>(
-  iterator: AsyncIterator<T>,
-  timeoutMs: number,
-): Promise<IteratorResult<T> | "timeout"> {
-  if (timeoutMs <= 0) {
-    return "timeout";
-  }
-
-  return new Promise<IteratorResult<T> | "timeout">((resolve, reject) => {
-    const timer = setTimeout(() => resolve("timeout"), timeoutMs);
-    iterator.next().then(
-      (result) => {
-        clearTimeout(timer);
-        resolve(result);
-      },
-      (error) => {
-        clearTimeout(timer);
-        reject(error);
-      },
-    );
-  });
 }

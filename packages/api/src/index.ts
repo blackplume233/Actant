@@ -6,12 +6,9 @@ export {
   createProjectContextPermissionRules,
   createProjectContextFilesystemTypeRegistry,
   createProjectContextRegistrations,
-  createStandaloneProjectContextRuntime,
   type LoadedProjectContext,
   type ProjectContextSummary,
   type ProjectContextMountLayout,
-  type StandaloneProjectContextRuntime,
-  type StandaloneProjectContextRuntimeOptions,
 } from "./services/project-context";
 export {
   createActantNamespaceConfigRegistrations,

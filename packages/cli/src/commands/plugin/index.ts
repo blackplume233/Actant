@@ -6,7 +6,6 @@ import { createPluginShowCommand } from "./show";
 import { createPluginAddCommand } from "./add";
 import { createPluginRemoveCommand } from "./remove";
 import { createPluginExportCommand } from "./export";
-import { createPluginStatusCommand } from "./status";
 
 export function createPluginCommand(client: RpcClient, printer?: CliPrinter): Command {
   const cmd = new Command("plugin")
@@ -17,7 +16,6 @@ export function createPluginCommand(client: RpcClient, printer?: CliPrinter): Co
   cmd.addCommand(createPluginAddCommand(client, printer));
   cmd.addCommand(createPluginRemoveCommand(client, printer));
   cmd.addCommand(createPluginExportCommand(client, printer));
-  cmd.addCommand(createPluginStatusCommand(client, printer));
 
   return cmd;
 }
