@@ -7,12 +7,6 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../shared" },
-    { "path": "../agent-runtime" },
-    { "path": "../acp" },
-    { "path": "../api" },
-    { "path": "../mcp-server" },
-    { "path": "../pi" },
     { "path": "../cli" }
   ]
 }

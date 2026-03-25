@@ -13,7 +13,6 @@ import {
   createDaemonCommand,
   createProxyCommand,
   createHelpCommand,
-  createSelfUpdateCommand,
   createInitCommand,
   createDashboardCommand,
   createApiCommand,
@@ -50,7 +49,6 @@ export function createProgram(
   program.addCommand(createDaemonCommand(printer));
   program.addCommand(createProxyCommand(printer));
   program.addCommand(createHelpCommand());
-  program.addCommand(createSelfUpdateCommand());
   program.addCommand(createInitCommand(printer));
   program.addCommand(createDashboardCommand(printer));
   program.addCommand(createApiCommand(printer));

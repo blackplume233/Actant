@@ -24,5 +24,4 @@ export type HostCapability =
   | "runtime"
   | "agents"
   | "sessions"
-  | "schedules"
-  | "plugins";
+  | "schedules";

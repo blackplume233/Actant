@@ -19,5 +19,6 @@ describe("host type freeze", () => {
     const capabilities: HostCapability[] = ["hub", "runtime", "vfs"];
     expect(capabilities).toContain("vfs");
     expect(capabilities).not.toContain("sources" as never);
+    expect(capabilities).not.toContain("plugins" as never);
   });
 });
