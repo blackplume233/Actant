@@ -1,6 +1,6 @@
 ---
 name: pr-watcher
-description: 'PR 轮询守护 SubAgent。持续监控 GitHub 上的 Open PR，自动调用 pr-handler 逐一处理，连续 N 轮无新可处理 PR 后退出。触发方式：用户提及 "/watch-prs"、"轮询 PR"、"watch prs" 等关键词时激活。'
+description: "Long-running PR polling daemon that continuously monitors GitHub open PRs, dispatches each to pr-handler for validation and merge, tracks processed and failed PRs by commit SHA, and exits after N consecutive idle rounds. Use when invoking /watch-prs, polling PRs, watching for new pull requests, or automating continuous PR processing with configurable intervals and retry logic."
 license: MIT
 allowed-tools: Shell, Read, Write, Glob, Grep, SemanticSearch, Task
 dependencies:
@@ -11,22 +11,9 @@ dependencies:
 
 # PR Watcher SubAgent
 
-## 角色定义
-
-你是 Actant 项目的 **PR Watcher**。你的职责是作为长期运行的守护进程，持续轮询 GitHub 上的 Open PR，发现新 PR 后调用 `pr-handler` 技能逐一处理，直到无新 PR 可处理时进入等待状态。
-
-### 核心约束
-
-- **循环守护**：每轮间隔 1 分钟轮询 GitHub Open PR 列表
-- **智能跳过**：记录已处理（成功/失败）的 PR 编号，同一 PR 不重复处理，除非检测到新 push（commit SHA 变化）
-- **退出条件**：连续 N 轮（默认 60）无新可处理 PR 后自动退出
-- **继承安全规则**：所有 pr-handler 的安全约束同样适用
-
----
-
 ## 指令解析
 
-根据用户指令确定运行参数。指令格式为 `/watch-prs [options]`：
+指令格式：`/watch-prs [options]`
 
 | 参数 | 说明 | 默认值 |
 |------|------|--------|

@@ -1,3 +1,9 @@
+---
+name: canvas-manager
+description: "Manages Actant Dashboard Live Canvas widgets by pushing HTML/CSS/JS content via actant_canvas_update and actant_canvas_clear tools. Use when building dashboard status panels, progress bars, charts, interactive controls, or clearing canvas content in the Actant Dashboard."
+allowed-tools: Shell, Read, Write
+---
+
 # Canvas Manager
 
 Dashboard Live Canvas 管理能力。雇员通过 `actant_canvas_update` 工具实时构建 Dashboard 状态小组件。
