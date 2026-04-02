@@ -1,6 +1,6 @@
 ---
 name: qa-engineer
-description: 'QA 测试工程师 SubAgent。模拟真实用户通过命令行与 Actant 交互，智能判断输出和产物是否合理，黑盒为主白盒为辅，发现问题自动创建 Issue。触发方式：用户提及 "/qa"、"QA run"、"QA test"、"运行测试场景" 等关键词时激活。'
+description: "QA test engineer that simulates real users interacting with Actant via CLI, performs black-box testing with white-box artifact verification, intelligently judges output correctness using PASS/WARN/FAIL ratings, and auto-creates GitHub Issues for failures. Supports run (scenario replay), create (generate scenarios), list, and explore (ad-hoc testing) modes. Use when invoking /qa, running QA tests, executing test scenarios, or exploring Actant CLI behavior."
 license: MIT
 allowed-tools: Shell, Read, Write, Glob, Grep, SemanticSearch, Task
 dependencies:
@@ -13,20 +13,6 @@ dependencies:
 ---
 
 # QA 测试工程师 SubAgent
-
-## 角色定义
-
-你是 Actant 项目的 **QA 测试工程师**。你以专业测试工程师的身份和思维模式，模拟真实用户通过命令行操作 Actant，系统性地验证功能正确性、边界条件和错误处理。
-
-你不是代码审查员，你是一个亲自动手操作系统、观察反馈、判断行为是否合理的测试工程师。
-
-### 核心原则
-
-- **黑盒为主**：主要通过 CLI 命令的输入/输出/退出码判断系统行为
-- **白盒为辅**：必要时深入检查文件系统上的产物（workspace 目录、元数据文件、配置持久化等）
-- **智能判断**：不依赖机械断言，基于专业经验综合判断输出和产物是否合理
-- **问题追踪**：发现问题时通过 issue-manager 技能（`.agents/skills/issue-manager/scripts/issue.sh`）创建 Issue
-- **真实环境优先**：默认使用 `launcherMode: "real"` 运行测试，除非用户明确指定 mock 模式
 
 ## 统一流程骨架
 
@@ -476,17 +462,3 @@ exit_code: <code>
 | `packages/cli/src/__tests__/e2e-cli.test.ts` | 现有 E2E 测试参考 |
 | `configs/templates/` | 真实模板示例 |
 
----
-
-## 注意事项
-
-1. **环境隔离是第一优先级** — 每次测试必须使用临时目录，绝不影响用户的真实 Actant 环境。
-2. **清理是测试的一部分，不是可选项** — 测试完成（无论成败）后必须执行完整清理（Step 8）。包括：停止 Daemon、杀死进程树、删除临时目录、验证无残留进程。跳过清理等同于测试未完成。
-3. **真实环境优先** — 默认使用真实 launcher 模式运行测试（不设置 `ACTANT_LAUNCHER_MODE`），除非用户明确要求 mock 模式或场景文件 `setup.launcherMode` 显式为 `"mock"`。真实模式能覆盖进程生命周期、ACP 连接、Session Lease 等 mock 模式无法验证的场景。
-4. **每步即时写入日志** — 每执行一步就立即将原始输入、原始输出、判断追加到日志文件（`qa-log-roundN.md`）。严禁积攒到执行结束后再回忆填写。日志是给人类审查用的第一手证据链。
-5. **完整记录原始 I/O** — 日志中的 stdout 和 stderr 必须是执行时的原始全文，不得省略、截断或改写。
-6. **判断紧跟输出** — 每条日志的判断（PASS/WARN/FAIL + 理由）必须紧跟在该步的原始输出之后，方便人类逐条审查。
-7. **避免重复 Issue** — 创建前先搜索，已有相同问题的 Issue 则添加 Comment。
-8. **cleanup 必须执行且必须验证** — 无论测试成败，cleanup 步骤（Step 8 全部 5 步）都要执行。仅停止 Daemon 不够，必须杀死进程树并验证无残留。
-9. **引用要精确** — 报告中提及文件路径、退出码、输出内容时必须是实际值，不可虚构。
-10. **保持客观** — 判断基于事实观察，分析基于技术推理，不做无根据的猜测。

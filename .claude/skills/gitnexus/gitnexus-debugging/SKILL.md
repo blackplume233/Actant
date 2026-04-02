@@ -1,6 +1,6 @@
 ---
 name: gitnexus-debugging
-description: "Use when the user is debugging a bug, tracing an error, or asking why something fails. Examples: \"Why is X failing?\", \"Where does this error come from?\", \"Trace this bug\""
+description: "Traces bugs and errors through the codebase using GitNexus code intelligence tools. Finds related execution flows via gitnexus_query, inspects callers and callees with gitnexus_context, traces full execution paths via process resources, and runs custom call-chain queries with gitnexus_cypher. Use when debugging failures, tracing error origins, identifying callers of a method, investigating 500 errors, or diagnosing intermittent issues and regressions."
 ---
 
 # Debugging with GitNexus
@@ -15,40 +15,36 @@ description: "Use when the user is debugging a bug, tracing an error, or asking 
 
 ## Workflow
 
-```
-1. gitnexus_query({query: "<error or symptom>"})            → Find related execution flows
-2. gitnexus_context({name: "<suspect>"})                    → See callers/callees/processes
-3. READ gitnexus://repo/{name}/process/{name}                → Trace execution flow
-4. gitnexus_cypher({query: "MATCH path..."})                 → Custom traces if needed
-```
+1. **Find related flows**: `gitnexus_query({query: "<error or symptom>"})` — returns execution flows and symbols matching the error
+2. **Inspect suspect**: `gitnexus_context({name: "<suspect>"})` — shows all callers, callees, and process participation
+3. **Trace execution**: `READ gitnexus://repo/{name}/process/{name}` — step-by-step execution flow
+4. **Custom traces**: `gitnexus_cypher({query: "MATCH path..."})` — when standard tools need supplementing
 
-> If "Index is stale" → run `npx gitnexus analyze` in terminal.
+> If "Index is stale" → run `npx gitnexus analyze` in terminal first.
 
-## Checklist
+## Debugging Checklist
 
-```
-- [ ] Understand the symptom (error message, unexpected behavior)
-- [ ] gitnexus_query for error text or related code
-- [ ] Identify the suspect function from returned processes
-- [ ] gitnexus_context to see callers and callees
-- [ ] Trace execution flow via process resource if applicable
-- [ ] gitnexus_cypher for custom call chain traces if needed
-- [ ] Read source files to confirm root cause
-```
+1. Understand the symptom (error message, unexpected behavior)
+2. `gitnexus_query` for error text or related code
+3. Identify the suspect function from returned processes
+4. `gitnexus_context` to see callers and callees
+5. Trace execution flow via process resource if applicable
+6. `gitnexus_cypher` for custom call chain traces if needed
+7. Read source files to confirm root cause
 
 ## Debugging Patterns
 
-| Symptom              | GitNexus Approach                                          |
-| -------------------- | ---------------------------------------------------------- |
-| Error message        | `gitnexus_query` for error text → `context` on throw sites |
-| Wrong return value   | `context` on the function → trace callees for data flow    |
-| Intermittent failure | `context` → look for external calls, async deps            |
-| Performance issue    | `context` → find symbols with many callers (hot paths)     |
-| Recent regression    | `detect_changes` to see what your changes affect           |
+| Symptom | GitNexus Approach |
+|---------|-------------------|
+| Error message | `gitnexus_query` for error text → `context` on throw sites |
+| Wrong return value | `context` on the function → trace callees for data flow |
+| Intermittent failure | `context` → look for external calls, async deps |
+| Performance issue | `context` → find symbols with many callers (hot paths) |
+| Recent regression | `detect_changes` to see what your changes affect |
 
-## Tools
+## Tool Reference
 
-**gitnexus_query** — find code related to error:
+### gitnexus_query — find code related to error
 
 ```
 gitnexus_query({query: "payment validation error"})
@@ -56,7 +52,7 @@ gitnexus_query({query: "payment validation error"})
 → Symbols: validatePayment, handlePaymentError, PaymentException
 ```
 
-**gitnexus_context** — full context for a suspect:
+### gitnexus_context — full context for a suspect
 
 ```
 gitnexus_context({name: "validatePayment"})
@@ -65,7 +61,7 @@ gitnexus_context({name: "validatePayment"})
 → Processes: CheckoutFlow (step 3/7)
 ```
 
-**gitnexus_cypher** — custom call chain traces:
+### gitnexus_cypher — custom call chain traces
 
 ```cypher
 MATCH path = (a)-[:CodeRelation {type: 'CALLS'}*1..2]->(b:Function {name: "validatePayment"})
